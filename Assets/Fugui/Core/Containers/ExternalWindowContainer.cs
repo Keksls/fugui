@@ -115,8 +115,12 @@ namespace Fugui.Core
             // get back to old fugui context
             lastImGuiContext.SetAsCurrent();
 
-            // register imgui render to main thread after main ImGui context render
-            _fuguiContext.OnLayout += UImGuiUtility_PostLayout;
+            // register Fugui render to main thread after main ImGui context render
+            _fuguiContext.OnRender += FuguiContext_OnRender;
+            // register Fugui post render to main thread after fuguiContext render
+            _fuguiContext.OnPostRender += FuguiContext_OnPostRender;
+            // register Fugui prepare frame to inject inputes at this time
+            _fuguiContext.OnPrepareFrame += FuguiContext_OnPrepareFrame;
         }
 
         #region Container
@@ -191,11 +195,6 @@ namespace Fugui.Core
         /// </summary>
         public void RenderUIWindows()
         {
-            // store current UI context for restore it later
-            var lastUIContext = FuGui.CurrentContext;
-            // set UI context as window related
-            _fuguiContext.SetAsCurrent();
-
             ImGuiIOPtr io = ImGui.GetIO();
 
             // if it's first frame, let's set textureID to UI (in this main thread)
@@ -205,28 +204,17 @@ namespace Fugui.Core
                 io.Fonts.ClearTexData();
             }
 
-            // start new UI Frame
-            ImGui.NewFrame();
-
             // set UI per-frame data
             _backendFlags = io.BackendFlags;
             io.DisplaySize = new UnityEngine.Vector2(Width, Height);
             io.DisplayFramebufferScale = UnityEngine.Vector2.one;
-            io.DeltaTime = UIWindow.DeltaTime;
+            //io.DeltaTime = UIWindow.DeltaTime;
 
             // update UI Inputs
             InjectImGuiInput();
 
             // render UI window
             RenderUIWindow(UIWindow);
-
-            // render UI 
-            ImGui.Render();
-
-            _drawData.Bind(ImGui.GetDrawData());
-
-            // store current UI context for restore it later
-            lastUIContext.SetAsCurrent();
         }
 
         /// <summary>
@@ -384,7 +372,7 @@ namespace Fugui.Core
         {
             base.OnClosed(e);
             // unregister UI render loop event
-            _fuguiContext.OnLayout -= UImGuiUtility_PostLayout;
+            _fuguiContext.OnRender -= FuguiContext_OnRender;
             // dispose this window
             Dispose();
             UIWindow.Fire_OnRemovedFromContainer();
@@ -799,23 +787,8 @@ namespace Fugui.Core
         /// <summary>
         /// this will be called every frame after main UI render
         /// </summary>
-        private void UImGuiUtility_PostLayout()
+        private void FuguiContext_OnRender()
         {
-            // return we are not started or no context is initialized
-            if (!_started || !_contextInitialized)
-            {
-                return;
-            }
-
-            // do fixed update (that will register inputs)
-            RegisterInputs();
-
-            // wait for GL ended render. register inputs anyway if GL context is initialized
-            if (!_readyToNewFrame || !UIWindow.MustBeDraw())
-            {
-                return;
-            }
-
             // prevent UI to render until next frame is draw
             _readyToNewFrame = false;
             // do UI render callback into main thread
@@ -829,6 +802,32 @@ namespace Fugui.Core
                 UIWindow.Fire_OnReady();
                 _fireOnReadyNextFrame = false;
             }
+        }
+
+        /// <summary>
+        /// this will be called every frame after FuguiContext render
+        /// </summary>
+        private void FuguiContext_OnPostRender()
+        {
+            _drawData.Bind(ImGui.GetDrawData());
+        }
+
+        /// <summary>
+        /// this will be called every frame berore FuguiContext create NewFrame
+        /// It's time to inject inputs if needed
+        /// </summary>
+        private bool FuguiContext_OnPrepareFrame()
+        {
+            // return we are not started or no context is initialized
+            if (!_started || !_contextInitialized || !_readyToNewFrame || !UIWindow.MustBeDraw())
+            {
+                return false;
+            }
+
+            // do fixed update (that will register inputs)
+            RegisterInputs();
+
+            return true;
         }
 
         /// <summary>

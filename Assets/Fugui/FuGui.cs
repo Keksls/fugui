@@ -390,9 +390,11 @@ namespace Fugui.Framework
             {
                 if (context.Key != 0 && context.Value.Started)
                 {
-                    context.Value.PrepareRender();
-                    context.Value.Render();
-                    context.Value.EndRender();
+                    if (context.Value.PrepareRender())
+                    {
+                        context.Value.Render();
+                        context.Value.EndRender();
+                    }
                 }
             }
             // prepare a new frame after all render, so we can use ImGui methods outside FuguiContext.OnLayout events

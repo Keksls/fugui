@@ -111,13 +111,13 @@ namespace Fugui.Framework
         /// <param name="linesBg">colorize evens rows</param>
         /// <param name="isResponsivelyResized">whatever this method determinate if the grid need to be resized (if it's too small). At this point, the grid has beed resized for you</param>
         /// <returns>true if the grid was created</returns>
-        internal bool SetupTable(string gridName, bool linesBg, ref bool isResponsivelyResized)
+        internal bool SetupTable(string gridName, float outterPadding, bool linesBg, ref bool isResponsivelyResized)
         {
             isResponsivelyResized = false;
             // prepare columns width
             float[] colWidth = null;
             int nbCols = NbColumns;
-            float availWidth = ImGui.GetContentRegionAvail().x;
+            float availWidth = ImGui.GetContentRegionAvail().x - (outterPadding * 2f);
             switch (GridType)
             {
                 // set auto width
@@ -182,7 +182,7 @@ namespace Fugui.Framework
                 // this mode derterminate the number of rows, according to a fixed column width
                 // can not be forced to responsive
                 case UIGridType.FlexibleCols:
-                    nbCols = (int)(ImGui.GetContentRegionAvail().x / ColumnWidth);
+                    nbCols = (int)(availWidth / ColumnWidth);
                     if (nbCols < 1)
                     {
                         nbCols = 1;
@@ -199,7 +199,8 @@ namespace Fugui.Framework
             }
 
             // try to create the table
-            bool tableCreated = ImGui.BeginTable(gridName, nbCols, linesBg ? ImGuiTableFlags.RowBg : ImGuiTableFlags.None);
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + outterPadding);
+            bool tableCreated = ImGui.BeginTable(gridName, nbCols, linesBg ? ImGuiTableFlags.RowBg : ImGuiTableFlags.None, new UnityEngine.Vector2(availWidth, 0f));
             if (!tableCreated)
             {
                 return false;

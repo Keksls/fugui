@@ -459,11 +459,18 @@ namespace Fugui.Core
         /// <returns>true if we must draw this UI this frame</returns>
         public bool MustBeDraw()
         {
-            bool draw = FuGui.Time > _lastRenderTime + _targetDeltaTimeMs
-                || _forceRedraw
-                || (IsInMainContainer && IsInterractible
-                    && (IsHovered || WantCaptureKeyboard || WindowPerformanceState == NativeWindowState.Manipulating));
-            return draw;
+            switch (IsInMainContainer)
+            {
+                case true:
+                    return FuGui.Time > _lastRenderTime + _targetDeltaTimeMs
+                        || _forceRedraw
+                        || (IsInterractible && (IsHovered || WantCaptureKeyboard || WindowPerformanceState == NativeWindowState.Manipulating));
+
+                case false:
+                    return FuGui.Time > _lastRenderTime + _targetDeltaTimeMs
+                        || _forceRedraw
+                        || WorldRect.Contains(FuGui.WorldMousePosition);
+            }
         }
 
         /// <summary>

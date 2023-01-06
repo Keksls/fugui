@@ -247,7 +247,7 @@ public class UIWindowDemo : MonoBehaviour
                 {
                     layout.Collapsable("Transform", () =>
                     {
-                        using (UIGrid grid = new UIGrid("transformGrid", rowsPadding: 1f))
+                        using (UIGrid grid = new UIGrid("transformGrid", rowsPadding: 1f, outterPadding:8f))
                         {
                             grid.SetMinimumLineHeight(20f);
                             pos = cam1.transform.position;
@@ -271,11 +271,11 @@ public class UIWindowDemo : MonoBehaviour
                                 cam1.transform.localScale = scale;
                             }
                         }
-                    });
+                    }, 8f);
 
                     layout.Collapsable("Camera", () =>
                     {
-                        using (UIGrid grid = new UIGrid("cameraGrid"))
+                        using (UIGrid grid = new UIGrid("cameraGrid", outterPadding: 8f))
                         {
                             grid.SetMinimumLineHeight(22f);
                             grid.SetNextElementToolTip("Clear flag of the main camera");
@@ -312,7 +312,7 @@ public class UIWindowDemo : MonoBehaviour
                             grid.SetNextElementToolTip("It's just a test for Alphaless colorPicker");
                             grid.ColorPicker("Color alphaless", ref coloralphaless);
                         }
-                    });
+                    }, 8f);
                 }
             }
         });
@@ -478,7 +478,7 @@ public class UIWindowDemo : MonoBehaviour
         if (ShowImGuiDemoWindow)
         {
             // TODO : Use Context
-            FuGui.DefaultContext.OnLayout += UImGuiUtility_Layout;
+            FuGui.DefaultContext.OnRender += UImGuiUtility_Layout;
         }
 
         // set default layout (will create UIWindows)

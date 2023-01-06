@@ -1,5 +1,4 @@
-﻿using Fugui.Core;
-using ImGuiNET;
+﻿using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -30,13 +29,13 @@ namespace Fugui.Framework
         /// <param name="autoLabel">Did the grid need to create a label for each UIElement</param>
         /// <param name="dontDisableLabels">Did the auto created labels is disabled if UIElement is disabled</param>
         /// <param name="rowsPadding">spaces in pixel between rows</param>
-        public UIGrid(string gridName, bool linesBg = false, bool autoLabel = true, bool dontDisableLabels = false, float rowsPadding = 2f)
+        public UIGrid(string gridName, bool linesBg = false, bool autoLabel = true, bool dontDisableLabels = false, float rowsPadding = 2f, float outterPadding = 4f)
         {
             _autoDrawLabel = autoLabel;
             _dontDisableLabels = dontDisableLabels;
             _currentGridDef = UIGridDefinition.DefaultFixed;
             _gridName = gridName;
-            setGrid(linesBg, rowsPadding);
+            setGrid(linesBg, rowsPadding, outterPadding);
         }
 
         /// <summary>
@@ -48,75 +47,14 @@ namespace Fugui.Framework
         /// <param name="autoLabel">Did the grid need to create a label for each UIElement</param>
         /// <param name="dontDisableLabels">Did the auto created labels is disabled if UIElement is disabled</param>
         /// <param name="rowsPadding">spaces in pixel between rows</param>
-        public UIGrid(string gridName, UIGridDefinition gridDef, bool linesBg = false, bool autoLabel = true, bool dontDisableLabels = false, float rowsPadding = 2f)
+        public UIGrid(string gridName, UIGridDefinition gridDef, bool linesBg = false, bool autoLabel = true, bool dontDisableLabels = false, float rowsPadding = 2f, float outterPadding = 4f)
         {
             _autoDrawLabel = autoLabel;
             _dontDisableLabels = dontDisableLabels;
             _currentGridDef = gridDef;
             _gridName = gridName;
-            setGrid(linesBg, rowsPadding);
+            setGrid(linesBg, rowsPadding, outterPadding);
         }
-
-        #region private Layout
-        /// <summary>
-        /// call this right before drawing an element. this will apply style and handle the grid layout for you
-        /// </summary>
-        /// <param name="style">Element Style to apply</param>
-        protected override void beginElement(IUIElementStyle style = null)
-        {
-            base.beginElement(style);
-            if (!_gridCreated)
-            {
-                return;
-            }
-            if (!_nextIgnoreGrid)
-            {
-                NextColumn();
-
-                // add padding to value if grid is responsively resized
-                if (_isResponsivelyResized && _currentRowIndex % 2 == 0)
-                {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f);
-                }
-
-                _beginElementCursorY = ImGui.GetCursorPosY();
-                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-            }
-        }
-
-        /// <summary>
-        /// call this after drawing an element. handle style and row height
-        /// </summary>
-        /// <param name="style"></param>
-        protected override void endElement(IUIElementStyle style = null)
-        {
-            if (!_gridCreated)
-            {
-                return;
-            }
-            base.endElement(style);
-
-            float lineHeight = ImGui.GetCursorPosY() - _beginElementCursorY;
-            if (lineHeight < _minLineHeight)
-            {
-                ImGui.Dummy(new Vector2(0f, _minLineHeight - lineHeight));
-            }
-        }
-
-        /// <summary>
-        /// If you see this summary, you failed.
-        /// This should never been call manualy. => it work, but we are trying to unify things here.
-        /// Please use USING statement
-        /// </summary>
-        public override void Dispose()
-        {
-            if (_gridCreated)
-            {
-                ImGui.EndTable();
-            }
-            FuGui.PopStyle();
-        }
-        #endregion
 
         #region Grid
         /// <summary>
@@ -169,6 +107,87 @@ namespace Fugui.Framework
         {
             _minLineHeight = minLineHeight;
         }
+
+        /// <summary>
+        /// Set the grid according to the current grid definition
+        /// </summary>
+        /// <param name="linesBg">Colorise evens rows</param>
+        /// <param name="rowPadding">rows padding</param>
+        private void setGrid(bool linesBg, float rowPadding, float outterPadding)
+        {
+            if (IsInsidePopUp)
+            {
+                Debug.LogError("You are trying to create a grid inside a PopUp, wich is not a good idee. Please check your code and remove it.");
+            }
+            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(8f, rowPadding));
+            _gridCreated = _currentGridDef.SetupTable(_gridName, outterPadding, linesBg, ref _isResponsivelyResized);
+            if (!_gridCreated)
+            {
+                return;
+            }
+        }
+        #endregion
+
+        #region private Layout
+        /// <summary>
+        /// call this right before drawing an element. this will apply style and handle the grid layout for you
+        /// </summary>
+        /// <param name="style">Element Style to apply</param>
+        protected override string beginElement(string elementID, IUIElementStyle style = null)
+        {
+            elementID = base.beginElement(elementID, style);
+            if (!_gridCreated)
+            {
+                return elementID;
+            }
+            if (!_nextIgnoreGrid)
+            {
+                NextColumn();
+
+                // add padding to value if grid is responsively resized
+                if (_isResponsivelyResized && _currentRowIndex % 2 == 0)
+                {
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f);
+                }
+
+                _beginElementCursorY = ImGui.GetCursorPosY();
+                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
+            }
+            return elementID;
+        }
+
+        /// <summary>
+        /// call this after drawing an element. handle style and row height
+        /// </summary>
+        /// <param name="style"></param>
+        protected override void endElement(IUIElementStyle style = null)
+        {
+            if (!_gridCreated)
+            {
+                return;
+            }
+            base.endElement(style);
+
+            float lineHeight = ImGui.GetCursorPosY() - _beginElementCursorY;
+            if (lineHeight < _minLineHeight)
+            {
+                ImGui.Dummy(new Vector2(0f, _minLineHeight - lineHeight));
+            }
+        }
+
+        /// <summary>
+        /// If you see this summary, you failed.
+        /// This should never been call manualy. => it work, but we are trying to unify things here.
+        /// Please use USING statement
+        /// </summary>
+        public override void Dispose()
+        {
+            if (_gridCreated)
+            {
+                ImGui.EndTable();
+            }
+            FuGui.PopStyle();
+        }
         #endregion
 
         #region Generic UI Elements
@@ -184,7 +203,7 @@ namespace Fugui.Framework
             {
                 return;
             }
-            beginElement(style);
+            beginElement("", style);
             // horizontaly center Label
             float textHeight = ImGui.CalcTextSize(text).y;
             if (textHeight < _minLineHeight)
@@ -213,7 +232,7 @@ namespace Fugui.Framework
             {
                 return;
             }
-            beginElement(style);
+            beginElement("", style);
             // horizontaly center Label
             float textHeight = ImGui.CalcTextSize(text).y;
             if (textHeight < _minLineHeight)
@@ -246,7 +265,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(text, style.TextStyle);
+            drawElementLabel(text, style.TextStyle);
             return base.CheckBox("##" + text, ref isChecked, style);
         }
         #endregion
@@ -268,7 +287,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(text, style.Frame.TextStyle);
+            drawElementLabel(text, style.Frame.TextStyle);
             return base._customSlider(text, ref value, min, max, isInt, style);
         }
         #endregion
@@ -291,7 +310,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(text, style.TextStyle);
+            drawElementLabel(text, style.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             return base.Drag(text, ref value, vString, min, max, style);
         }
@@ -314,7 +333,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(text, style.TextStyle);
+            drawElementLabel(text, style.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             return base.Drag(text, ref value, v1String, v2String, min, max, style);
         }
@@ -338,7 +357,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(text, style.TextStyle);
+            drawElementLabel(text, style.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             return base.Drag(text, ref value, v1String, v2String, v3String, min, max, style);
         }
@@ -363,7 +382,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(text, style.TextStyle);
+            drawElementLabel(text, style.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             return base.Drag(text, ref value, v1String, v2String, v3String, v4String, min, max, style);
         }
@@ -385,7 +404,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(text, style.TextStyle);
+            drawElementLabel(text, style.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             return base.Drag(text, vString, ref value, min, max, style);
         }
@@ -405,7 +424,7 @@ namespace Fugui.Framework
             {
                 return;
             }
-            DrawElementLabel(text, style.ButtonStyle.TextStyle);
+            drawElementLabel(text, style.ButtonStyle.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             base._customCombobox("##" + text, items, itemChange, style);
         }
@@ -424,7 +443,7 @@ namespace Fugui.Framework
             {
                 return;
             }
-            DrawElementLabel(text, style.ButtonStyle.TextStyle);
+            drawElementLabel(text, style.ButtonStyle.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             base.Combobox("##" + text, selectedItemText, callback, style, height);
         }
@@ -447,7 +466,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(label, style.TextStyle);
+            drawElementLabel(label, style.TextStyle);
             return base.TextInput(label, hint, ref text, size, height, style);
         }
         #endregion
@@ -465,7 +484,7 @@ namespace Fugui.Framework
             {
                 return;
             }
-            DrawElementLabel(id, UITextStyle.Default);
+            drawElementLabel(id, UITextStyle.Default);
             base.Image(id, texture, size);
         }
 
@@ -481,7 +500,7 @@ namespace Fugui.Framework
             {
                 return;
             }
-            DrawElementLabel(id, UITextStyle.Default);
+            drawElementLabel(id, UITextStyle.Default);
             base.Image(id, texture, size);
         }
 
@@ -498,7 +517,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(id, UITextStyle.Default);
+            drawElementLabel(id, UITextStyle.Default);
             return base.ImageButton(id, texture, size);
         }
 
@@ -515,7 +534,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(id, UITextStyle.Default);
+            drawElementLabel(id, UITextStyle.Default);
             return base.ImageButton(id, texture, size, color);
         }
         #endregion
@@ -534,7 +553,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(id, UITextStyle.Default);
+            drawElementLabel(id, UITextStyle.Default);
             return base.ColorPicker(id, ref color, style);
         }
 
@@ -551,7 +570,7 @@ namespace Fugui.Framework
             {
                 return false;
             }
-            DrawElementLabel(id, UITextStyle.Default);
+            drawElementLabel(id, UITextStyle.Default);
             return base.ColorPicker(id, ref color, style);
         }
         #endregion
@@ -559,30 +578,11 @@ namespace Fugui.Framework
 
         #region private Utils
         /// <summary>
-        /// Set the grid according to the current grid definition
-        /// </summary>
-        /// <param name="linesBg">Colorise evens rows</param>
-        /// <param name="rowPadding">rows padding</param>
-        private void setGrid(bool linesBg, float rowPadding)
-        {
-            if (IsInsidePopUp)
-            {
-                Debug.LogError("You are trying to create a grid inside a PopUp, wich is not a good idee. Please check your code and remove it.");
-            }
-            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(8f, rowPadding));
-            _gridCreated = _currentGridDef.SetupTable(_gridName, linesBg, ref _isResponsivelyResized);
-            if (!_gridCreated)
-            {
-                return;
-            }
-        }
-
-        /// <summary>
         /// Draw the Label of an element (if _autoDrawLabel is set to true)
         /// </summary>
         /// <param name="text">the text of the label</param>
         /// <param name="style">the UITextStyle of the label (Text color whatever it's enabled or disabled)</param>
-        private void DrawElementLabel(string text, UITextStyle style)
+        private void drawElementLabel(string text, UITextStyle style)
         {
             if (!_gridCreated)
             {

@@ -5,11 +5,13 @@ FiGui is here to revolutionize the way you build UI for your Unity projects! Bas
 ## Key Features
 - Target FPS handling for smooth and optimal UI window performance
 - Display of cameras within UI windows for improved idle performance
+- native (almost free-cost) camera supersampling rendering
 - Overlay support for adding extra visual elements to your camera windows
 - Save/restore functionality for custom docking layouts
 - Display UI windows outside of the Unity build window using OpenTK
 - Attractive and customizable themes
 - Window definition support for instantiating multiple instances of the same window
+- Responsive and unified layout components
 
 ## Installation
 Installing FiGui into your project is a breeze thanks to the unity package manager. Simply add this git to the unity package manager into your project and you're ready to start building your UI.

@@ -10,6 +10,7 @@ FiGui is here to revolutionize the way you build UI for your Unity projects! Bas
 - Display UI windows outside of the Unity build window using OpenTK
 - Attractive and customizable themes
 - Window definition support for instantiating multiple instances of the same window
+- Responsive and unified layout components
 
 ## Installation
 Installing FiGui into your project is a breeze thanks to the unity package manager. Simply add this git to the unity package manager into your project and you're ready to start building your UI.

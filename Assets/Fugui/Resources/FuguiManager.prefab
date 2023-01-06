@@ -126,7 +126,7 @@ MonoBehaviour:
     ManipulatingFPS: 48
     ExternalManipulatingTicks: 10000
     ExternalShowTitleBar: 0
-    DrawDebugPanel: 1
+    DrawDebugPanel: 0
     ExternalizationKey: 3301000034010000
     InternalizationKey: 0500000006000000
     MaximizeIcon: {fileID: 2800000, guid: 29b96c3657f037d479544d03c83b829d, type: 3}

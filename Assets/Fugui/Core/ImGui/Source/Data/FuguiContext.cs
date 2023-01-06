@@ -22,8 +22,9 @@ namespace Fugui.Core.DearImGui
         public IntPtr ImNodesContext;
         public IntPtr ImPlotContext;
         public TextureManager TextureManager;
-        public event Action OnLayout;
-        public event Action OnPrepareFrame;
+        public event Action OnRender;
+        public event Action OnPostRender;
+        public event Func<bool> OnPrepareFrame;
         public event Action OnInitialize;
         public bool AutoUpdateMouse = true;
         public bool AutoUpdateKeyboard = true;
@@ -167,7 +168,7 @@ namespace Fugui.Core.DearImGui
 
             try
             {
-                OnLayout?.Invoke();
+                OnRender?.Invoke();
             }
             catch (Exception ex)
             {
@@ -177,26 +178,36 @@ namespace Fugui.Core.DearImGui
             {
                 ImGui.Render();
             }
+            OnPostRender?.Invoke();
         }
 
         /// <summary>
         /// Prepare render for next frame. Don't call it, Fugui layout handle it for you
         /// </summary>
-        public void PrepareRender()
+        public bool PrepareRender()
         {
             FuGui.SetCurrentContext(this);
+            if (OnPrepareFrame != null) // check whatever someonbe is registered on PrepareFrame Event
+            {
+                // call event and stop here before creating a new frame if event return false
+                if (!OnPrepareFrame.Invoke())
+                {
+                    renderPrepared = false;
+                    return renderPrepared;
+                }
+            }
 
             if (Camera != null)
             {
                 TextureManager.PrepareFrame(IO);
                 _platform.PrepareFrame(IO, Camera.pixelRect, AutoUpdateMouse, AutoUpdateKeyboard);
             }
-            OnPrepareFrame?.Invoke();
             ImGui.NewFrame();
 #if !UIMGUI_REMOVE_IMGUIZMO
             ImGuizmoNET.ImGuizmo.BeginFrame();
 #endif
             renderPrepared = true;
+            return renderPrepared;
         }
 
         /// <summary>

@@ -58,9 +58,10 @@ namespace Fugui.Framework
         /// Begins an element in this layout with the specified style.
         /// </summary>
         /// <param name="style">The style to use for this element.</param>
-        protected virtual void beginElement(IUIElementStyle style = null)
+        protected virtual string beginElement(string elementID, IUIElementStyle style = null)
         {
             style?.Push(!_nextIsDisabled);
+            return elementID + "##" + (UIWindow.CurrentDrawingWindow?.ID ?? "");
         }
 
         /// <summary>
@@ -137,7 +138,7 @@ namespace Fugui.Framework
         /// <returns>True if the button was clicked, false otherwise.</returns>
         public virtual bool Button(string text, Vector2 size, UIButtonStyle style)
         {
-            beginElement(style); // apply style and check if the element should be disabled
+            text = beginElement(text, style); // apply style and check if the element should be disabled
             if (size.x == -1)
             {
                 size.x = ImGui.GetContentRegionAvail().x; // set size to the available content region size if it is set to -1
@@ -170,7 +171,7 @@ namespace Fugui.Framework
         /// <param name="style">The style to apply to the text.</param>
         public virtual void Text(string text, UITextStyle style)
         {
-            beginElement(style); //apply the style to the element
+            beginElement("", style); //apply the style to the element
             // verticaly align text to frame padding
             ImGui.AlignTextToFramePadding();
             ImGui.Text(text); //display the text
@@ -207,7 +208,7 @@ namespace Fugui.Framework
         /// <param name="style">default style to use</param>
         public virtual void SmartText(string text, UITextStyle style)
         {
-            beginElement(style);
+            beginElement("", style);
             _customText(text);
             if (_currentToolTipsOnLabels)
             {
@@ -405,7 +406,7 @@ namespace Fugui.Framework
         public virtual bool CheckBox(string text, ref bool isChecked, UIFrameStyle style)
         {
             bool clicked = false;
-            beginElement(style); // Push the style for the checkbox element
+            text = beginElement(text, style); // Push the style for the checkbox element
             if (_nextIsDisabled)
             {
                 bool value = isChecked; // Create a temporary variable to hold the value of isChecked
@@ -518,7 +519,7 @@ namespace Fugui.Framework
         /// <returns>true if value changed</returns>
         protected virtual bool _customSlider(string text, ref float value, float min, float max, bool isInt, UISliderStyle style)
         {
-            beginElement(style);
+            text = beginElement(text, style);
 
             // Calculate the position and size of the slider
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
@@ -653,7 +654,7 @@ namespace Fugui.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public virtual bool Drag(string id, ref float value, string vString, float min, float max, UIFrameStyle style)
         {
-            beginElement(style);
+            id = beginElement(id, style);
             bool valueChanged = dragFloat(id, ref value, vString, min, max);
             endElement(style);
             return valueChanged;
@@ -744,7 +745,7 @@ namespace Fugui.Framework
         public virtual bool Drag(string id, ref Vector2 value, string v1String, string v2String, float min, float max, UIFrameStyle style)
         {
             // Begin the element and apply the specified style
-            beginElement(style);
+            id = beginElement(id, style);
 
             bool valueChanged = false;
             // Calculate the column width for the table
@@ -825,7 +826,7 @@ namespace Fugui.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public virtual bool Drag(string id, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, UIFrameStyle style)
         {
-            beginElement(style);
+            id = beginElement(id, style);
             bool valueChanged = false;
             float colWidth = ImGui.GetContentRegionAvail().x / 3f;
             if (ImGui.BeginTable(id + "dragTable", 3))
@@ -913,7 +914,7 @@ namespace Fugui.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public virtual bool Drag(string id, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, UIFrameStyle style)
         {
-            beginElement(style);
+            id = beginElement(id, style);
             bool valueChanged = false;
             float colWidth = ImGui.GetContentRegionAvail().x * 0.25f;
             if (ImGui.BeginTable(id + "dragTable", 4))
@@ -1012,7 +1013,7 @@ namespace Fugui.Framework
         public virtual bool Drag(string id, string vString, ref int value, int min, int max, UIFrameStyle style)
         {
             // start drawing the element
-            beginElement(style);
+            id = beginElement(id, style);
             // display the label, if there is one
             if (!string.IsNullOrEmpty(vString))
             {
@@ -1167,7 +1168,7 @@ namespace Fugui.Framework
             }
             int selectedIndex = _comboSelectedIndices[text];
 
-            beginElement(style);
+            text = beginElement(text, style);
             FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f));
             FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
             if (ImGui.BeginCombo(text, items[selectedIndex].ToString()))
@@ -1236,7 +1237,7 @@ namespace Fugui.Framework
         /// <param name="height">The height of the list of items</param>
         public virtual void Combobox(string text, string selectedItemText, Action callback, UIComboboxStyle style, int height = 0)
         {
-            beginElement(style);
+            text = beginElement(text, style);
 
             // Adjust the padding for the frame and window
             FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f));
@@ -1303,10 +1304,10 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="id">The identifier of the element.</param>
         /// <param name="innerUI">The content to display within the collapsable element.</param>
-        public void Collapsable(string id, Action innerUI)
+        public void Collapsable(string id, Action innerUI, float indent = 16f)
         {
             // Use the default style for the collapsable element
-            Collapsable(id, innerUI, UICollapsableStyle.Default);
+            Collapsable(id, innerUI, UICollapsableStyle.Default, indent);
         }
 
         /// <summary>
@@ -1315,10 +1316,10 @@ namespace Fugui.Framework
         /// <param name="id">The identifier of the element.</param>
         /// <param name="innerUI">The content to display within the collapsable element.</param>
         /// <param name="style">The style to apply to the element.</param>
-        public void Collapsable(string id, Action innerUI, UICollapsableStyle style)
+        public void Collapsable(string id, Action innerUI, UICollapsableStyle style, float indent = 16f)
         {
             // Begin the element and apply the specified style
-            beginElement(style);
+            id = beginElement(id, style);
             // Adjust the padding and spacing for the frame and the items within it
             FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 4f));
             FuGui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
@@ -1347,9 +1348,9 @@ namespace Fugui.Framework
             {
                 // dummy for natural frame padding after lines
                 ImGui.Dummy(new Vector2(0f, 0f));
-                ImGui.Indent(16f);
+                ImGui.Indent(indent);
                 innerUI();
-                ImGui.Indent(-16f);
+                ImGui.Indent(-indent);
             }
         }
         #endregion
@@ -1419,7 +1420,7 @@ namespace Fugui.Framework
         {
             bool edited;
             // Begin the element and apply the specified style
-            beginElement(style);
+            id = beginElement(id, style);
             // Set the width of the next item to the width of the available content region
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             // If a height was specified, create a multiline text input
@@ -1563,7 +1564,7 @@ namespace Fugui.Framework
         private bool _customColorPicker(string id, bool alpha, ref Vector4 color, UIFrameStyle style)
         {
             bool edited = false;
-            beginElement(style);
+            id = beginElement(id, style);
 
             float height = 18f;
             float width = ImGui.GetContentRegionAvail().x;

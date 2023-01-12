@@ -41,6 +41,8 @@ namespace Fugui.Framework
         private static Dictionary<string, int> _comboSelectedIndices = new Dictionary<string, int>();
         // A dictionary that store displaying toggle data.
         private static Dictionary<string, ToggleData> _toggleDatas = new Dictionary<string, ToggleData>();
+        // A dictionary that store displaying toggle data.
+        private static Dictionary<string, int> _buttonsGroupIndex = new Dictionary<string, int>();
         #endregion
 
         #region Layout
@@ -1664,22 +1666,22 @@ namespace Fugui.Framework
         #endregion
 
         #region Toggle
-        public bool Toggle(string id, ref bool value)
+        public bool Toggle(string id, ref bool value, ToggleFlags flags = ToggleFlags.Default)
         {
-            return Toggle(id, ref value, null, null, UIToggleStyle.Default);
+            return _customToggle(id, ref value, null, null, flags, UIToggleStyle.Default);
         }
 
-        public bool Toggle(string id, ref bool value, string textLeft, string textRight)
+        public bool Toggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags = ToggleFlags.Default)
         {
-            return Toggle(id, ref value, textLeft, textRight, UIToggleStyle.Default);
+            return _customToggle(id, ref value, textLeft, textRight, flags, UIToggleStyle.Default);
         }
 
-        public bool Toggle(string id, ref bool value, string textLeft, string textRight, UIToggleStyle style)
+        public bool Toggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags, UIToggleStyle style)
         {
-            return _customToggle(id, ref value, textLeft, textRight, style);
+            return _customToggle(id, ref value, textLeft, textRight, flags, style);
         }
 
-        protected virtual bool _customToggle(string id, ref bool value, string textLeft, string textRight, UIToggleStyle style)
+        protected virtual bool _customToggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags, UIToggleStyle style)
         {
             beginElement(id, style);
 
@@ -1690,14 +1692,41 @@ namespace Fugui.Framework
             }
             ToggleData data = _toggleDatas[id];
 
-            // draw states
+            // process Text Size
             string currentText = value ? textRight : textLeft;
-            Vector2 textSize = string.IsNullOrEmpty(currentText) ? Vector2.zero : ImGui.CalcTextSize(currentText);
+            Vector2 textSize = Vector2.zero;
+            if (!string.IsNullOrEmpty(currentText))
+            {
+                if (flags.HasFlag(ToggleFlags.MaximumTextSize))
+                {
+                    Vector2 leftTextSize = ImGui.CalcTextSize(textLeft);
+                    Vector2 rightTextSize = ImGui.CalcTextSize(textRight);
+                    if (leftTextSize.x > rightTextSize.x)
+                    {
+                        textSize = leftTextSize;
+                    }
+                    else
+                    {
+                        textSize = rightTextSize;
+                    }
+                }
+                else
+                {
+                    textSize = ImGui.CalcTextSize(currentText);
+                }
+            }
+
+            // draw states
             float height = string.IsNullOrEmpty(currentText) ? 18f : textSize.y + 4f;
             bool valueChanged = false;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-            Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 size = new Vector2(string.IsNullOrEmpty(currentText) ? height * 2f : height * 2f + textSize.x, height);
+            if (!flags.HasFlag(ToggleFlags.AlignLeft))
+            {
+                ImGui.Dummy(new Vector2(ImGui.GetContentRegionAvail().x - size.x - 4f, 0f));
+                ImGui.SameLine();
+            }
+            Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 center = pos + new Vector2(size.x / 2, size.y / 2);
             float radius = size.y / 2f - 3f;
             Vector2 startCursorPos = ImGui.GetCursorPos();
@@ -1724,27 +1753,25 @@ namespace Fugui.Framework
                 {
                     BGColor = style.SelectedBGColor;
                     KnobColor = style.SelectedKnobColor;
-                    style.SelectedTextStyle.Push(true);
                 }
                 // unselected
                 else
                 {
                     BGColor = style.BGColor;
                     KnobColor = style.KnobColor;
-                    style.TextStyle.Push(true);
                 }
 
                 BorderColor = BGColor * 0.5f;
                 // handle active and hover if enabled
                 if (active)
                 {
-                    BGColor *= 1.2f;
+                    BGColor *= 0.75f;
                     KnobColor *= 1.2f;
                 }
                 else if (hovered)
                 {
-                    BGColor *= 0.8f;
-                    KnobColor *= 0.8f;
+                    BGColor *= 0.85f;
+                    KnobColor *= 1.1f;
                 }
             }
             // disabled
@@ -1755,16 +1782,14 @@ namespace Fugui.Framework
                 {
                     BGColor = style.DisabledSelectedBGColor;
                     KnobColor = style.DisabledSelectedKnobColor;
-                    style.SelectedTextStyle.Push(false);
                 }
                 // unselected
                 else
                 {
                     BGColor = style.DisabledBGColor;
                     KnobColor = style.KnobColor;
-                    style.TextStyle.Push(false);
                 }
-                BorderColor = BGColor * 0.5f;
+                BorderColor = BGColor * 0.66f;
             }
             //BorderColor.w = 1f;
 
@@ -1780,7 +1805,7 @@ namespace Fugui.Framework
             {
                 if (!value)
                 {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + radius * 2f + 8f);
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + radius * 2f + 12f);
                 }
                 else
                 {
@@ -1795,18 +1820,122 @@ namespace Fugui.Framework
             ImGui.Dummy(size);
 
             // handle hover and click
-            if (clicked)
+            if (clicked && !_nextIsDisabled)
             {
                 value = !value;
                 valueChanged = true;
             }
 
-            data.Update(value);
+            data.Update(value, flags);
 
-            // pop text style
-            style.TextStyle.Pop();
             endElement(style);
             return valueChanged;
+        }
+        #endregion
+
+        #region Buttons Group
+        public void ButtonsGroup<TEnum>(string text, Action<TEnum> itemChange, int defaultSelected = 0, ButtonsGroupFlags flags = ButtonsGroupFlags.Default) where TEnum : struct, IConvertible
+        {
+            ButtonsGroup<TEnum>(text, itemChange, defaultSelected, flags, UIButtonsGroupStyle.Default);
+        }
+
+        public void ButtonsGroup<TEnum>(string text, Action<TEnum> itemChange, int defaultSelected, ButtonsGroupFlags flags, UIButtonsGroupStyle style) where TEnum : struct, IConvertible
+        {
+            if (!typeof(TEnum).IsEnum)
+            {
+                throw new ArgumentException("TEnum must be an enumerated type");
+            }
+            // list to store the enum values
+            List<TEnum> enumValues = new List<TEnum>();
+            // list to store the combobox items
+            List<string> cItems = new List<string>();
+            // iterate over the enum values and add them to the lists
+            foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
+            {
+                enumValues.Add(enumValue);
+                cItems.Add(addSpacesBeforeUppercase(enumValue.ToString()));
+            }
+            // call the custom combobox function, passing in the lists and the itemChange
+            _buttonsGroup(text, cItems, (index) =>
+            {
+                itemChange?.Invoke(enumValues[index]);
+            }, defaultSelected, flags, style);
+        }
+
+        public void ButtonsGroup<T>(string id, List<T> items, Action<T> callback, int defaultSelected, ButtonsGroupFlags flags = ButtonsGroupFlags.Default)
+        {
+            _buttonsGroup<T>(id, items, (index) => { callback?.Invoke(items[index]); }, defaultSelected, flags, UIButtonsGroupStyle.Default);
+        }
+
+        public void ButtonsGroup<T>(string id, List<T> items, Action<T> callback, int defaultSelected, ButtonsGroupFlags flags, UIButtonsGroupStyle style)
+        {
+            _buttonsGroup<T>(id, items, (index) => { callback?.Invoke(items[index]); }, defaultSelected, flags, style);
+        }
+
+        protected virtual void _buttonsGroup<T>(string id, List<T> items, Action<int> callback, int defaultSelected, ButtonsGroupFlags flags, UIButtonsGroupStyle style)
+        {
+            beginElement(id, style);
+            // get selected
+            if (!_buttonsGroupIndex.ContainsKey(id))
+            {
+                _buttonsGroupIndex.Add(id, defaultSelected);
+            }
+            int selected = _buttonsGroupIndex[id];
+
+            // draw data
+            int nbItems = items.Count;
+            float cursorPos = ImGui.GetCursorPos().x;
+            float avail = ImGui.GetContentRegionAvail().x;
+            float itemWidth = avail / nbItems;
+            bool autoSize = flags.HasFlag(ButtonsGroupFlags.AutoSizeButtons);
+
+            float naturalSize = 0f;
+            // align group to the right
+            if (!flags.HasFlag(ButtonsGroupFlags.AlignLeft) && autoSize)
+            {
+                for (int i = 0; i < nbItems; i++)
+                {
+                    Vector2 txtSize = ImGui.CalcTextSize(items[i].ToString());
+                    naturalSize += 8f + Mathf.Max(txtSize.x, txtSize.y + 4f);
+                }
+                cursorPos = cursorPos + ImGui.GetContentRegionAvail().x - naturalSize;
+            }
+
+            FuGui.Push(ImGuiStyleVar.FrameRounding, 0f);
+            // draw buttons
+            for (int i = 0; i < nbItems; i++)
+            {
+                if (selected == i)
+                {
+                    style.SelectedButtonStyle.Push(!_nextIsDisabled);
+                }
+                else
+                {
+                    style.ButtonStyle.Push(!_nextIsDisabled);
+                }
+
+                ImGui.SetCursorPosX(cursorPos);
+                if (autoSize)
+                {
+                    Vector2 txtSize = ImGui.CalcTextSize(items[i].ToString());
+                    itemWidth = 8f + Mathf.Max(txtSize.x, txtSize.y + 4f);
+                }
+                cursorPos += itemWidth - 1f;
+                FuGui.Push(ImGuiStyleVar.FramePadding, new Vector4(4f, 4f));
+                if (ImGui.Button(items[i].ToString() + "##" + id, new Vector2(itemWidth, 0)) && !_nextIsDisabled)
+                {
+                    _buttonsGroupIndex[id] = i;
+                    callback?.Invoke(i);
+                }
+                if (i < nbItems - 1)
+                {
+                    ImGui.SameLine();
+                }
+                FuGui.PopStyle();
+                UIButtonStyle.Default.Pop();
+            }
+            FuGui.PopStyle();
+            endElement();
         }
         #endregion
 

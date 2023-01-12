@@ -28,8 +28,14 @@ namespace Fugui.Framework
             _enlapsed = 0f;
         }
 
-        public void Update(bool value)
+        public void Update(bool value, ToggleFlags flags)
         {
+            if(flags.HasFlag(ToggleFlags.NoAnimation))
+            {
+                _currentValue = value ? 1f : 0f;
+                return;
+            }
+
             if(value != _lastFrameValue)
             {
                 animate(value);

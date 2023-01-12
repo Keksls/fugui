@@ -6,9 +6,6 @@ namespace Fugui.Framework
 {
     public struct UIToggleStyle : IUIElementStyle
     {
-        // text
-        internal UITextStyle TextStyle;
-        internal UITextStyle SelectedTextStyle;
         // background
         internal Color BGColor;
         internal Color SelectedBGColor;
@@ -49,14 +46,10 @@ namespace Fugui.Framework
             // default button style
             defaultToggleStyle = new UIToggleStyle()
             {
-                TextStyle = UITextStyle.Default,
-                SelectedTextStyle = new UITextStyle(ThemeManager.GetColor(ImGuiCustomCol.ToggleTextSelected),
-                ThemeManager.GetColor(ImGuiCustomCol.ToggleTextSelected) * 0.3f),
-
                 BGColor = ThemeManager.GetColor(ImGuiCol.FrameBg),
-                SelectedBGColor = ThemeManager.GetColor(ImGuiCustomCol.Highlight),
+                SelectedBGColor = ThemeManager.GetColor(ImGuiCustomCol.Selected),
                 DisabledBGColor = ThemeManager.GetColor(ImGuiCol.FrameBg) * 0.3f,
-                DisabledSelectedBGColor = ThemeManager.GetColor(ImGuiCustomCol.Highlight) * 0.3f,
+                DisabledSelectedBGColor = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.3f,
 
                 KnobColor = ThemeManager.GetColor(ImGuiCustomCol.ToggleKnob),
                 SelectedKnobColor = ThemeManager.GetColor(ImGuiCustomCol.ToggleKnobSelected),

@@ -1,4 +1,3 @@
-using Fugui.Core;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;

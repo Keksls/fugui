@@ -77,8 +77,21 @@ public class UIWindowDemo : MonoBehaviour
                 using (UIGrid grid = new UIGrid("toolBoxGrid"))
                 {
                     grid.Toggle("Toggle nude", ref toggleVal);
-                    grid.Toggle("Toggle On/Off", ref toggleVal, "OFF", "ON");
-                    grid.Toggle("Toggle custom text", ref toggleVal, "This is", "Custom text");
+                    grid.Toggle("Toggle On/Off", ref toggleVal, "OFF", "ON", ToggleFlags.AlignLeft);
+                    grid.Toggle("Auto text size", ref toggleVal, "sm txt", "this is large text", ToggleFlags.AlignLeft);
+                    grid.Toggle("Max text size", ref toggleVal, "sm txt", "this is large text", ToggleFlags.MaximumTextSize);
+                    grid.Toggle("No Animation", ref toggleVal, "No", "Anim", ToggleFlags.NoAnimation | ToggleFlags.MaximumTextSize);
+                    grid.DisableNextElement();
+                    grid.Toggle("Disabled", ref toggleVal, "OFF", "ON", ToggleFlags.NoAnimation | ToggleFlags.MaximumTextSize);
+
+                    grid.ButtonsGroup<ToggleFlags>("Buttons Group", (flag) => { Debug.Log(flag + " selected"); });
+                    grid.DisableNextElement();
+                    grid.ButtonsGroup<ToggleFlags>("Btn Grp disabled", (flag) => { Debug.Log(flag + " selected"); });
+
+                    grid.ButtonsGroup("Default", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.Default);
+                    grid.ButtonsGroup("Left", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.AlignLeft);
+                    grid.ButtonsGroup("Auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.AutoSizeButtons);
+                    grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.AlignLeft | ButtonsGroupFlags.AutoSizeButtons);
                 }
             }
             //        layout.Slider("testSl", ref sliderIntValue, 0, 10);

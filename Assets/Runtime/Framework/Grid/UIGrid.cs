@@ -576,14 +576,26 @@ namespace Fugui.Framework
         #endregion
 
         #region Toggle
-        protected override bool _customToggle(string text, ref bool value, string textLeft, string textRight, UIToggleStyle style)
+        protected override bool _customToggle(string text, ref bool value, string textLeft, string textRight, ToggleFlags flags, UIToggleStyle style)
         {
             if (!_gridCreated)
             {
                 return false;
             }
-            drawElementLabel(text, style.TextStyle);
-            return base._customToggle(text, ref value, textLeft, textRight, style);
+            drawElementLabel(text, UITextStyle.Default);
+            return base._customToggle(text, ref value, textLeft, textRight, flags, style);
+        }
+        #endregion
+
+        #region Buttons Group
+        protected override void _buttonsGroup<T>(string text, List<T> items, Action<int> callback, int defaultSelected, ButtonsGroupFlags flags, UIButtonsGroupStyle style)
+        {
+            if (!_gridCreated)
+            {
+                return;
+            }
+            drawElementLabel(text, UITextStyle.Default);
+            base._buttonsGroup<T>(text, items, callback, defaultSelected, flags, style);
         }
         #endregion
         #endregion

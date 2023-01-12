@@ -40,7 +40,7 @@ namespace Fugui.Framework
             defaultSliderStyle = new UISliderStyle()
             {
                 Line = ThemeManager.GetColor(ImGuiCustomCol.SliderLine),
-                Knob = ThemeManager.GetColor(ImGuiCustomCol.SliderKnob),
+                Knob = ThemeManager.GetColor(ImGuiCol.CheckMark),
                 DisabledLine = ThemeManager.GetColor(ImGuiCustomCol.SliderLineDisabled),
                 DisabledKnob = ThemeManager.GetColor(ImGuiCustomCol.SliderKnobDisabled),
                 Frame = UIFrameStyle.Default

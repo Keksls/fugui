@@ -9,13 +9,12 @@ namespace Fugui.Framework
         // background
         internal Color BGColor;
         internal Color SelectedBGColor;
-        internal Color DisabledBGColor;
-        internal Color DisabledSelectedBGColor;
         // knob
         internal Color KnobColor;
         internal Color SelectedKnobColor;
-        internal Color DisabledKnobColor;
-        internal Color DisabledSelectedKnobColor;
+        // knob
+        internal Color TextColor;
+        internal Color SelectedTextColor;
 
         #region Pressets
         // default toggle style
@@ -48,13 +47,12 @@ namespace Fugui.Framework
             {
                 BGColor = ThemeManager.GetColor(ImGuiCol.FrameBg),
                 SelectedBGColor = ThemeManager.GetColor(ImGuiCustomCol.Selected),
-                DisabledBGColor = ThemeManager.GetColor(ImGuiCol.FrameBg) * 0.3f,
-                DisabledSelectedBGColor = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.3f,
 
-                KnobColor = ThemeManager.GetColor(ImGuiCustomCol.ToggleKnob),
-                SelectedKnobColor = ThemeManager.GetColor(ImGuiCustomCol.ToggleKnobSelected),
-                DisabledKnobColor = ThemeManager.GetColor(ImGuiCustomCol.ToggleKnobDisabled),
-                DisabledSelectedKnobColor = ThemeManager.GetColor(ImGuiCustomCol.ToggleKnobSelectedDisabled),
+                KnobColor = ThemeManager.GetColor(ImGuiCol.Text),
+                SelectedKnobColor = ThemeManager.GetColor(ImGuiCol.Text),
+
+                TextColor = ThemeManager.GetColor(ImGuiCol.Text),
+                SelectedTextColor = ThemeManager.GetColor(ImGuiCustomCol.SelectedText),
             };
         }
     }

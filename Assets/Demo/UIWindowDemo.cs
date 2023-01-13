@@ -74,92 +74,59 @@ public class UIWindowDemo : MonoBehaviour
         {
             using (new UIContainer("debugContainer"))
             {
-                using (UIGrid grid = new UIGrid("toolBoxGrid"))
+                using (UIGrid grid = new UIGrid("debugGrid"))
                 {
-                    grid.Toggle("Toggle nude", ref toggleVal);
-                    grid.Toggle("Toggle On/Off", ref toggleVal, "OFF", "ON", ToggleFlags.AlignLeft);
-                    grid.Toggle("Auto text size", ref toggleVal, "sm txt", "this is large text", ToggleFlags.AlignLeft);
-                    grid.Toggle("Max text size", ref toggleVal, "sm txt", "this is large text", ToggleFlags.MaximumTextSize);
-                    grid.Toggle("No Animation", ref toggleVal, "No", "Anim", ToggleFlags.NoAnimation | ToggleFlags.MaximumTextSize);
-                    grid.DisableNextElement();
-                    grid.Toggle("Disabled", ref toggleVal, "OFF", "ON", ToggleFlags.NoAnimation | ToggleFlags.MaximumTextSize);
+                    grid.Text("Local position");
+                    grid.Text(window.LocalPosition.ToString());
 
-                    grid.ButtonsGroup<ToggleFlags>("Buttons Group", (flag) => { Debug.Log(flag + " selected"); });
-                    grid.DisableNextElement();
-                    grid.ButtonsGroup<ToggleFlags>("Btn Grp disabled", (flag) => { Debug.Log(flag + " selected"); });
+                    grid.Text("Local Rect");
+                    grid.Text(window.LocalRect.ToString());
 
-                    grid.ButtonsGroup("Default", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.Default);
-                    grid.ButtonsGroup("Left", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.AlignLeft);
-                    grid.ButtonsGroup("Auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.AutoSizeButtons);
-                    grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.AlignLeft | ButtonsGroupFlags.AutoSizeButtons);
+                    grid.Separator();
+
+                    grid.Text("World position");
+                    grid.Text(window.WorldPosition.ToString());
+
+                    grid.Text("World Rect");
+                    grid.Text(window.WorldRect.ToString());
+
+                    grid.Separator();
+                    if (window.Container != null)
+                    {
+                        grid.Text("Container Pos");
+                        grid.Text(window.Container.Position.ToString());
+
+                        grid.Text("Container Size");
+                        grid.Text(window.Container.Size.ToString());
+
+                        grid.Separator();
+
+                        grid.Text("FPS");
+                        grid.Text(window.CurrentFPS.ToString("f2"));
+
+                        grid.Text("State");
+                        grid.Text(window.WindowPerformanceState.ToString());
+
+                        bool chkVal = window.IsDragging;
+                        grid.DisableNextElement();
+                        grid.CheckBox("Dragging", ref chkVal);
+
+                        chkVal = window.IsResizing;
+                        grid.DisableNextElement();
+                        grid.CheckBox("Resizing", ref chkVal);
+                    }
+
+                    grid.Separator();
+
+                    if (grid.Button("Mouse Pos and Down Text", UIButtonStyle.FullSize))
+                    {
+                        Debug.Log("click !");
+                    }
+                    grid.DisableNextElement();
+                    grid.Button("Mouse Pos and Down Text", UIButtonStyle.FullSize, UIButtonStyle.Blue);
                 }
+                window.Container.ImGuiImage(TmpDebugTexture, new Vector2(240f, 100f));
             }
-            //        layout.Slider("testSl", ref sliderIntValue, 0, 10);
-            //        using (UIGrid grid = new UIGrid("debugGrid"))
-            //        {
-            //            grid.Label("Local position");
-            //            grid.Label(window.LocalPosition.ToString());
-
-            //            grid.Label("Local Rect");
-            //            grid.Label(window.LocalRect.ToString());
-
-            //            grid.Separator();
-
-            //            grid.Label("World position");
-            //            grid.Label(window.WorldPosition.ToString());
-
-            //            grid.Label("World Rect");
-            //            grid.Label(window.WorldRect.ToString());
-
-            //            grid.Separator();
-            //            if (window.Container != null)
-            //            {
-            //                grid.Label("Container Pos");
-            //                grid.Label(window.Container.Position.ToString());
-
-            //                grid.Label("Container Size");
-            //                grid.Label(window.Container.Size.ToString());
-
-            //                grid.Separator();
-
-            //                grid.Label("FPS");
-            //                grid.Label(window.CurrentFPS.ToString("f2"));
-
-            //                grid.Label("State");
-            //                grid.Label(window.WindowPerformanceState.ToString());
-
-            //                bool chkVal = window.IsDragging;
-            //                grid.DisableNextElement();
-            //                grid.CheckBox("Dragging", ref chkVal);
-
-            //                chkVal = window.IsResizing;
-            //                grid.DisableNextElement();
-            //                grid.CheckBox("Resizing", ref chkVal);
-            //            }
-
-            //            grid.Separator();
-
-            //            if (grid.Button("Mouse Pos and Down Text", UIButtonStyle.FullSize))
-            //            {
-            //                Debug.Log("click !");
-            //            }
-            //            grid.DisableNextElement();
-            //            grid.Button("Mouse Pos and Down Text", UIButtonStyle.FullSize, UIButtonStyle.Blue);
-
-            //            grid.Separator();
-
-            //            grid.DisableNextElement();
-            //            grid.Slider("Slider test", ref sliderValue, 0f, 20f);
-
-            //            grid.Slider("Slider int test", ref sliderIntValue, 0, 10);
-            //        }
-            //    }
-
-            //    //ImGui.InputText("cmd", ref inputTextBuffer, 1024);
-            //    ImGui.InputTextMultiline("Keyboard test", ref inputTextBuffer, 4096, new Vector2(128f, 64f));
-
-            //    window.Container.ImGuiImage(TmpDebugTexture, new Vector2(240f, 100f));
-            //}
         }
 
         // add Tree Window
@@ -200,6 +167,27 @@ public class UIWindowDemo : MonoBehaviour
                         grid.Slider("slider float ena", ref floatVal);
                         grid.DisableNextElement();
                         grid.Slider("slider float dis", ref floatVal);
+
+                        grid.Toggle("Toggle nude", ref toggleVal);
+                        grid.Toggle("Toggle On/Off", ref toggleVal, "OFF", "ON", ToggleFlags.AlignLeft);
+                        grid.Toggle("Auto text size", ref toggleVal, "sm txt", "this is large text", ToggleFlags.AlignLeft);
+                        grid.Toggle("Max text size", ref toggleVal, "sm txt", "this is large text", ToggleFlags.MaximumTextSize);
+                        grid.DisableAnimationsFromNow();
+                        grid.Toggle("No Animation", ref toggleVal, "No", "Anim");
+                        grid.EnableAnimationsFromNow();
+                        grid.DisableNextElement();
+                        grid.Toggle("Disabled", ref toggleVal, "OFF", "ON", ToggleFlags.MaximumTextSize);
+
+                        grid.ButtonsGroup<ToggleFlags>("Buttons Group", (flag) => { Debug.Log(flag + " selected"); });
+                        grid.DisableNextElement();
+                        grid.ButtonsGroup<ToggleFlags>("Btn Grp disabled", (flag) => { Debug.Log(flag + " selected"); });
+
+                        grid.SetNextElementToolTip("About", "Accelerate", "Arch", "Arrow Down");
+                        grid.ButtonsGroup("Default", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.Default);
+
+                        grid.ButtonsGroup("Left", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.AlignLeft);
+                        grid.ButtonsGroup("Auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.AutoSizeButtons);
+                        grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, ButtonsGroupFlags.AlignLeft | ButtonsGroupFlags.AutoSizeButtons);
                     }
 
                     layout.Collapsable("Drag Tests", () =>
@@ -336,12 +324,19 @@ public class UIWindowDemo : MonoBehaviour
             }
         });
 
-        // add Inspector Window
-        string inputPromptBuffer = "";
-        new UIWindowDefinition(UIWindowName.Console, "Console", (window) =>
+        // add Theme Window
+        new UIWindowDefinition(UIWindowName.Theme, "Theme Configurator", (window) =>
             {
-                ImGui.InputText("cmd", ref inputPromptBuffer, 1024);
-                ImGui.Text(inputPromptBuffer);
+                using (UIGrid grid = new UIGrid("FuguiThemeGrid"))
+                {
+                    Vector4 selectedColor = ThemeManager.GetColor(ImGuiCustomCol.Selected);
+                    if(grid.ColorPicker("Selected Color", ref selectedColor))
+                    {
+                        ThemeManager.CurrentStyleColor[(int)ImGuiCustomCol.Selected] = selectedColor;
+                        ThemeManager.CurrentStyleColor[(int)ImGuiCol.CheckMark] = ThemeManager.CurrentStyleColor[(int)ImGuiCustomCol.Selected];
+                        ThemeManager.UpdateTheme();
+                    }
+                }
             });
 
         // add main camera window
@@ -433,24 +428,27 @@ public class UIWindowDemo : MonoBehaviour
 
         void drawCameraOverlay(UICameraWindow cam)
         {
-            if (ImGui.RadioButton("x0.5", cam.SuperSampling == 0.5f))
+            using (var layout = new UILayout())
             {
-                cam.SuperSampling = 0.5f;
-            }
-            ImGui.SameLine();
-            if (ImGui.RadioButton("x1", cam.SuperSampling == 1f))
-            {
-                cam.SuperSampling = 1f;
-            }
-            ImGui.SameLine();
-            if (ImGui.RadioButton("x1.5", cam.SuperSampling == 1.5f))
-            {
-                cam.SuperSampling = 1.5f;
-            }
-            ImGui.SameLine();
-            if (ImGui.RadioButton("x2", cam.SuperSampling == 2f))
-            {
-                cam.SuperSampling = 2f;
+                if (layout.RadioButton("x0.5", cam.SuperSampling == 0.5f))
+                {
+                    cam.SuperSampling = 0.5f;
+                }
+                layout.SameLine();
+                if (layout.RadioButton("x1", cam.SuperSampling == 1f))
+                {
+                    cam.SuperSampling = 1f;
+                }
+                layout.SameLine();
+                if (layout.RadioButton("x1.5", cam.SuperSampling == 1.5f))
+                {
+                    cam.SuperSampling = 1.5f;
+                }
+                layout.SameLine();
+                if (layout.RadioButton("x2", cam.SuperSampling == 2f))
+                {
+                    cam.SuperSampling = 2f;
+                }
             }
         }
 

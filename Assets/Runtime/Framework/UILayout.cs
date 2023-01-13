@@ -30,6 +30,7 @@ namespace Fugui.Framework
         private int _currentToolTipsIndex = 0;
         // whatever tooltip must be display hover Labels
         protected bool _currentToolTipsOnLabels = false;
+        protected bool _animationEnabled = true;
         #endregion
 
         #region Elements Data
@@ -40,7 +41,9 @@ namespace Fugui.Framework
         // A dictionary of integers representing the combo selected indices.
         private static Dictionary<string, int> _comboSelectedIndices = new Dictionary<string, int>();
         // A dictionary that store displaying toggle data.
-        private static Dictionary<string, ToggleData> _toggleDatas = new Dictionary<string, ToggleData>();
+        private static Dictionary<string, UIElementAnimationData> _uiElementAnimationDatas = new Dictionary<string, UIElementAnimationData>();
+        // A dictionary that store displaying toggle data.
+        private static Dictionary<string, int> _buttonsGroupIndex = new Dictionary<string, int>();
         #endregion
 
         #region Layout
@@ -97,6 +100,22 @@ namespace Fugui.Framework
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCustomCol.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
                 }
             }
+        }
+
+        /// <summary>
+        ///  From this point, animations in this layout are enabled
+        /// </summary>
+        public void EnableAnimationsFromNow()
+        {
+            _animationEnabled = true;
+        }
+
+        /// <summary>
+        ///  From this point, animations in this layout are disabled
+        /// </summary>
+        public void DisableAnimationsFromNow()
+        {
+            _animationEnabled = false;
         }
         #endregion
 
@@ -398,7 +417,7 @@ namespace Fugui.Framework
         /// <returns>True if the checkbox was clicked, false otherwise</returns>
         public bool CheckBox(string text, ref bool isChecked)
         {
-            return CheckBox(text, ref isChecked, UIFrameStyle.Default);
+            return CheckBox(text, ref isChecked, UICheckboxStyle.Default);
         }
 
         /// <summary>
@@ -408,10 +427,12 @@ namespace Fugui.Framework
         /// <param name="isChecked">Boolean variable to store the value of the checkbox</param>
         /// <param name="style">Style to use for the checkbox</param>
         /// <returns>True if the checkbox was clicked, false otherwise</returns>
-        public virtual bool CheckBox(string text, ref bool isChecked, UIFrameStyle style)
+        public virtual bool CheckBox(string text, ref bool isChecked, UICheckboxStyle style)
         {
             bool clicked = false;
             text = beginElement(text, style); // Push the style for the checkbox element
+
+            style.Push(!_nextIsDisabled, isChecked);
             if (_nextIsDisabled)
             {
                 bool value = isChecked; // Create a temporary variable to hold the value of isChecked
@@ -423,6 +444,99 @@ namespace Fugui.Framework
             }
             displayToolTip(); // Display a tooltip if one has been set for this element
             _elementHoverFramed = true; // Set the flag indicating that this element should have a hover frame drawn around it
+            endElement(style); // Pop the style for the checkbox element
+            return clicked; // Return a boolean indicating whether the checkbox was clicked by the user
+        }
+        #endregion
+
+        #region Radio Button
+        /// <summary>
+        /// Renders a Radio Button with the given text and returns true if the checkbox was clicked. The value of the checkbox is stored in the provided boolean variable.
+        /// </summary>
+        /// <param name="text">Text to display next to the checkbox</param>
+        /// <param name="isChecked">Boolean variable to store the value of the checkbox</param>
+        /// <returns>True if the checkbox was clicked, false otherwise</returns>
+        public bool RadioButton(string text, bool isChecked)
+        {
+            return RadioButton(text, isChecked, UIFrameStyle.Default);
+        }
+
+        /// <summary>
+        /// Renders a Radio Button with the given text and returns true if the checkbox was clicked. The value of the checkbox is stored in the provided boolean variable.
+        /// </summary>
+        /// <param name="text">Text to display next to the checkbox</param>
+        /// <param name="isChecked">Boolean variable to store the value of the checkbox</param>
+        /// <param name="style">Style to use for the checkbox</param>
+        /// <returns>True if the checkbox was clicked, false otherwise</returns>
+        public virtual bool RadioButton(string text, bool isChecked, UIFrameStyle style)
+        {
+            beginElement(text, style); // Push the style for the checkbox element
+
+            // get or create animation data
+            if (!_uiElementAnimationDatas.ContainsKey(text))
+            {
+                _uiElementAnimationDatas.Add(text, new UIElementAnimationData(!isChecked));
+            }
+            UIElementAnimationData animationData = _uiElementAnimationDatas[text];
+
+            // layout states
+            float height = 18f;
+            Vector2 pos = ImGui.GetCursorScreenPos();
+            Vector2 CircleCenter = new Vector2(pos.x + height / 2f + 2f, pos.y + height / 2f + 2f);
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            // input stats
+            bool hovered = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(height + 4f, height));
+            bool active = hovered && ImGui.IsMouseDown(0);
+            bool clicked = hovered && ImGui.IsMouseReleased(0);
+            // frame colors
+            Vector4 BGColor = default;
+            Vector4 knobColor = default;
+            if (_nextIsDisabled)
+            {
+                BGColor = style.DisabledFrame;
+                knobColor = style.DisabledCheckMark;
+            }
+            else
+            {
+                BGColor = style.Frame;
+                knobColor = style.CheckMark;
+                if (active)
+                {
+                    BGColor = style.HoveredFrame;
+                    knobColor *= 0.8f;
+                }
+                else if (hovered)
+                {
+                    BGColor = style.ActiveFrame;
+                    knobColor *= 0.9f;
+                }
+            }
+
+            // draw radio button
+            drawList.AddCircleFilled(CircleCenter, height / 2f, ImGui.GetColorU32(!isChecked ? ThemeManager.GetColor(ImGuiCol.FrameBg) : knobColor), 64);
+            if (animationData.CurrentValue > 0f)
+            {
+                float knobSize = Mathf.Lerp(0f, height / 5f, animationData.CurrentValue);
+                drawList.AddCircleFilled(CircleCenter, knobSize, ImGui.GetColorU32(style.TextStyle.Text), 64);
+            }
+            else
+            {
+                drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(style.Border), 64);
+            }
+
+            // update animation data
+            animationData.Update(isChecked, _animationEnabled);
+
+            // dummy display button
+            ImGui.Dummy(new Vector2(height + 4f, height));
+            ImGui.SameLine();
+            // align and draw text
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text(text);
+
+            // display tooltip if needed
+            displayToolTip(); // Display a tooltip if one has been set for this element
+            _elementHoverFramed = false; // Set the flag indicating that this element should have a hover frame drawn around it
             endElement(style); // Pop the style for the checkbox element
             return clicked; // Return a boolean indicating whether the checkbox was clicked by the user
         }
@@ -597,7 +711,7 @@ namespace Fugui.Framework
             }
 
             // draw drag input
-            ImGui.Dummy(new Vector2(ImGui.GetContentRegionAvail().x - 52f - 8f, 0f));
+            ImGui.Dummy(new Vector2(ImGui.GetContentRegionAvail().x - 52f - 4f, 0f));
             ImGui.SameLine();
             string formatString = getFloatString("##sliderInput" + text, value);
             ImGui.PushItemWidth(52f);
@@ -1664,40 +1778,67 @@ namespace Fugui.Framework
         #endregion
 
         #region Toggle
-        public bool Toggle(string id, ref bool value)
+        public bool Toggle(string id, ref bool value, ToggleFlags flags = ToggleFlags.Default)
         {
-            return Toggle(id, ref value, null, null, UIToggleStyle.Default);
+            return _customToggle(id, ref value, null, null, flags, UIToggleStyle.Default);
         }
 
-        public bool Toggle(string id, ref bool value, string textLeft, string textRight)
+        public bool Toggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags = ToggleFlags.Default)
         {
-            return Toggle(id, ref value, textLeft, textRight, UIToggleStyle.Default);
+            return _customToggle(id, ref value, textLeft, textRight, flags, UIToggleStyle.Default);
         }
 
-        public bool Toggle(string id, ref bool value, string textLeft, string textRight, UIToggleStyle style)
+        public bool Toggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags, UIToggleStyle style)
         {
-            return _customToggle(id, ref value, textLeft, textRight, style);
+            return _customToggle(id, ref value, textLeft, textRight, flags, style);
         }
 
-        protected virtual bool _customToggle(string id, ref bool value, string textLeft, string textRight, UIToggleStyle style)
+        protected virtual bool _customToggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags, UIToggleStyle style)
         {
             beginElement(id, style);
 
             // and and get toggle data struct
-            if (!_toggleDatas.ContainsKey(id))
+            if (!_uiElementAnimationDatas.ContainsKey(id))
             {
-                _toggleDatas.Add(id, new ToggleData(value));
+                _uiElementAnimationDatas.Add(id, new UIElementAnimationData(value));
             }
-            ToggleData data = _toggleDatas[id];
+            UIElementAnimationData data = _uiElementAnimationDatas[id];
+
+            // process Text Size
+            string currentText = value ? textRight : textLeft;
+            Vector2 textSize = Vector2.zero;
+            if (!string.IsNullOrEmpty(currentText))
+            {
+                if (flags.HasFlag(ToggleFlags.MaximumTextSize))
+                {
+                    Vector2 leftTextSize = ImGui.CalcTextSize(textLeft);
+                    Vector2 rightTextSize = ImGui.CalcTextSize(textRight);
+                    if (leftTextSize.x > rightTextSize.x)
+                    {
+                        textSize = leftTextSize;
+                    }
+                    else
+                    {
+                        textSize = rightTextSize;
+                    }
+                }
+                else
+                {
+                    textSize = ImGui.CalcTextSize(currentText);
+                }
+            }
 
             // draw states
-            string currentText = value ? textRight : textLeft;
-            Vector2 textSize = string.IsNullOrEmpty(currentText) ? Vector2.zero : ImGui.CalcTextSize(currentText);
             float height = string.IsNullOrEmpty(currentText) ? 18f : textSize.y + 4f;
             bool valueChanged = false;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-            Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 size = new Vector2(string.IsNullOrEmpty(currentText) ? height * 2f : height * 2f + textSize.x, height);
+            if (!flags.HasFlag(ToggleFlags.AlignLeft))
+            {
+                ImGui.Dummy(new Vector2(ImGui.GetContentRegionAvail().x - size.x - 4f, 0f));
+                ImGui.SameLine();
+            }
+            Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 center = pos + new Vector2(size.x / 2, size.y / 2);
             float radius = size.y / 2f - 3f;
             Vector2 startCursorPos = ImGui.GetCursorPos();
@@ -1711,62 +1852,27 @@ namespace Fugui.Framework
             bool hovered = ImGui.IsMouseHoveringRect(pos, pos + size);
             bool clicked = hovered && ImGui.IsMouseReleased(0);
             bool active = hovered && ImGui.IsMouseDown(0);
-            Vector4 BGColor = default;
-            Vector4 KnobColor = default;
-            Vector4 BorderColor = default;
 
-            // process current colors
-            // enabled
-            if (!_nextIsDisabled)
-            {
-                // selected
-                if (value)
-                {
-                    BGColor = style.SelectedBGColor;
-                    KnobColor = style.SelectedKnobColor;
-                    style.SelectedTextStyle.Push(true);
-                }
-                // unselected
-                else
-                {
-                    BGColor = style.BGColor;
-                    KnobColor = style.KnobColor;
-                    style.TextStyle.Push(true);
-                }
+            Vector4 BGColor = value ? style.SelectedBGColor : style.BGColor;
+            Vector4 KnobColor = value ? style.SelectedKnobColor : style.KnobColor;
+            Vector4 TextColor = value ? style.SelectedTextColor : style.TextColor;
 
-                BorderColor = BGColor * 0.5f;
-                // handle active and hover if enabled
-                if (active)
-                {
-                    BGColor *= 1.2f;
-                    KnobColor *= 1.2f;
-                }
-                else if (hovered)
-                {
-                    BGColor *= 0.8f;
-                    KnobColor *= 0.8f;
-                }
-            }
-            // disabled
-            else
+            if (_nextIsDisabled)
             {
-                // selected
-                if (value)
-                {
-                    BGColor = style.DisabledSelectedBGColor;
-                    KnobColor = style.DisabledSelectedKnobColor;
-                    style.SelectedTextStyle.Push(false);
-                }
-                // unselected
-                else
-                {
-                    BGColor = style.DisabledBGColor;
-                    KnobColor = style.KnobColor;
-                    style.TextStyle.Push(false);
-                }
-                BorderColor = BGColor * 0.5f;
+                BGColor *= 0.5f;
+                KnobColor *= 0.5f;
             }
-            //BorderColor.w = 1f;
+            else if (active)
+            {
+                BGColor *= 0.8f;
+                KnobColor *= 0.8f;
+            }
+            else if (hovered)
+            {
+                BGColor *= 0.9f;
+                KnobColor *= 0.9f;
+            }
+            Vector4 BorderColor = BGColor * 0.66f;
 
             // draw background
             drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(BGColor), 99);
@@ -1780,14 +1886,16 @@ namespace Fugui.Framework
             {
                 if (!value)
                 {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + radius * 2f + 8f);
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + radius * 2f + 12f);
                 }
                 else
                 {
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 8f);
                 }
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2f);
+                FuGui.Push(ImGuiCol.Text, TextColor);
                 ImGui.Text(currentText);
+                FuGui.PopColor();
             }
 
             // draw dummy to match ImGui layout
@@ -1795,18 +1903,123 @@ namespace Fugui.Framework
             ImGui.Dummy(size);
 
             // handle hover and click
-            if (clicked)
+            if (clicked && !_nextIsDisabled)
             {
                 value = !value;
                 valueChanged = true;
             }
 
-            data.Update(value);
+            data.Update(value, _animationEnabled);
 
-            // pop text style
-            style.TextStyle.Pop();
             endElement(style);
             return valueChanged;
+        }
+        #endregion
+
+        #region Buttons Group
+        public void ButtonsGroup<TEnum>(string text, Action<TEnum> itemChange, int defaultSelected = 0, ButtonsGroupFlags flags = ButtonsGroupFlags.Default) where TEnum : struct, IConvertible
+        {
+            ButtonsGroup<TEnum>(text, itemChange, defaultSelected, flags, UIButtonsGroupStyle.Default);
+        }
+
+        public void ButtonsGroup<TEnum>(string text, Action<TEnum> itemChange, int defaultSelected, ButtonsGroupFlags flags, UIButtonsGroupStyle style) where TEnum : struct, IConvertible
+        {
+            if (!typeof(TEnum).IsEnum)
+            {
+                throw new ArgumentException("TEnum must be an enumerated type");
+            }
+            // list to store the enum values
+            List<TEnum> enumValues = new List<TEnum>();
+            // list to store the combobox items
+            List<string> cItems = new List<string>();
+            // iterate over the enum values and add them to the lists
+            foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
+            {
+                enumValues.Add(enumValue);
+                cItems.Add(addSpacesBeforeUppercase(enumValue.ToString()));
+            }
+            // call the custom combobox function, passing in the lists and the itemChange
+            _buttonsGroup(text, cItems, (index) =>
+            {
+                itemChange?.Invoke(enumValues[index]);
+            }, defaultSelected, flags, style);
+        }
+
+        public void ButtonsGroup<T>(string id, List<T> items, Action<T> callback, int defaultSelected, ButtonsGroupFlags flags = ButtonsGroupFlags.Default)
+        {
+            _buttonsGroup<T>(id, items, (index) => { callback?.Invoke(items[index]); }, defaultSelected, flags, UIButtonsGroupStyle.Default);
+        }
+
+        public void ButtonsGroup<T>(string id, List<T> items, Action<T> callback, int defaultSelected, ButtonsGroupFlags flags, UIButtonsGroupStyle style)
+        {
+            _buttonsGroup<T>(id, items, (index) => { callback?.Invoke(items[index]); }, defaultSelected, flags, style);
+        }
+
+        protected virtual void _buttonsGroup<T>(string id, List<T> items, Action<int> callback, int defaultSelected, ButtonsGroupFlags flags, UIButtonsGroupStyle style)
+        {
+            beginElement(id, style);
+            // get selected
+            if (!_buttonsGroupIndex.ContainsKey(id))
+            {
+                _buttonsGroupIndex.Add(id, defaultSelected);
+            }
+            int selected = _buttonsGroupIndex[id];
+
+            // draw data
+            int nbItems = items.Count;
+            float cursorPos = ImGui.GetCursorPos().x;
+            float avail = ImGui.GetContentRegionAvail().x;
+            float itemWidth = avail / nbItems;
+            bool autoSize = flags.HasFlag(ButtonsGroupFlags.AutoSizeButtons);
+
+            float naturalSize = 0f;
+            // align group to the right
+            if (!flags.HasFlag(ButtonsGroupFlags.AlignLeft) && autoSize)
+            {
+                for (int i = 0; i < nbItems; i++)
+                {
+                    Vector2 txtSize = ImGui.CalcTextSize(items[i].ToString());
+                    naturalSize += 8f + Mathf.Max(txtSize.x, txtSize.y + 4f);
+                }
+                cursorPos = cursorPos + ImGui.GetContentRegionAvail().x - naturalSize;
+            }
+
+            FuGui.Push(ImGuiStyleVar.FrameRounding, 0f);
+            // draw buttons
+            for (int i = 0; i < nbItems; i++)
+            {
+                if (selected == i)
+                {
+                    style.SelectedButtonStyle.Push(!_nextIsDisabled);
+                }
+                else
+                {
+                    style.ButtonStyle.Push(!_nextIsDisabled);
+                }
+
+                ImGui.SetCursorPosX(cursorPos);
+                if (autoSize)
+                {
+                    Vector2 txtSize = ImGui.CalcTextSize(items[i].ToString());
+                    itemWidth = 8f + Mathf.Max(txtSize.x, txtSize.y + 4f);
+                }
+                cursorPos += itemWidth - 1f;
+                FuGui.Push(ImGuiStyleVar.FramePadding, new Vector4(4f, 4f));
+                if (ImGui.Button(items[i].ToString() + "##" + id, new Vector2(itemWidth, 0)) && !_nextIsDisabled)
+                {
+                    _buttonsGroupIndex[id] = i;
+                    callback?.Invoke(i);
+                }
+                if (i < nbItems - 1)
+                {
+                    ImGui.SameLine();
+                }
+                FuGui.PopStyle();
+                UIButtonStyle.Default.Pop();
+                displayToolTip();
+            }
+            FuGui.PopStyle();
+            endElement();
         }
         #endregion
 

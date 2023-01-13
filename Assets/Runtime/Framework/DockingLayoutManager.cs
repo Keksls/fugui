@@ -92,7 +92,7 @@ namespace Fugui.Framework
             // list windows to get for this layout
             List<UIWindowName> windowsToGet = new List<UIWindowName>() {
                 UIWindowName.Captures,
-                UIWindowName.Console,
+                UIWindowName.Theme,
                 UIWindowName.Inspector,
                 UIWindowName.MainCameraView,
                 UIWindowName.Metadata,
@@ -127,7 +127,7 @@ namespace Fugui.Framework
                 ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.Metadata].ID, right);
                 ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.ToolBox].ID, rightBottom);
                 ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.MainCameraView].ID, center);
-                ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.Console].ID, centerBottom);
+                ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.Theme].ID, centerBottom);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
                 IsSettingLayout = false;
@@ -143,7 +143,7 @@ namespace Fugui.Framework
             // list windows to get for this layout
             List<UIWindowName> windowsToGet = new List<UIWindowName>() {
                 UIWindowName.Captures,
-                UIWindowName.Console,
+                UIWindowName.Theme,
                 UIWindowName.Inspector,
                 UIWindowName.MainCameraView,
                 UIWindowName.Metadata,
@@ -176,7 +176,7 @@ namespace Fugui.Framework
                 ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.Inspector].ID, right);
                 ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.Metadata].ID, right);
                 ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.ToolBox].ID, rightBottom);
-                ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.Console].ID, rightBottom);
+                ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.Theme].ID, rightBottom);
                 ImGuiDocking.DockBuilderDockWindow(windows[UIWindowName.MainCameraView].ID, center);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 

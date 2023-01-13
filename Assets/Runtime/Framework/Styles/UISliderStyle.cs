@@ -39,10 +39,10 @@ namespace Fugui.Framework
         {
             defaultSliderStyle = new UISliderStyle()
             {
-                Line = ThemeManager.GetColor(ImGuiCustomCol.SliderLine),
-                Knob = ThemeManager.GetColor(ImGuiCol.CheckMark),
-                DisabledLine = ThemeManager.GetColor(ImGuiCustomCol.SliderLineDisabled),
-                DisabledKnob = ThemeManager.GetColor(ImGuiCustomCol.SliderKnobDisabled),
+                Line = ThemeManager.GetColor(ImGuiCol.CheckMark),
+                Knob = ThemeManager.GetColor(ImGuiCol.Text),
+                DisabledLine = ThemeManager.GetColor(ImGuiCol.Text) * 0.5f,
+                DisabledKnob = ThemeManager.GetColor(ImGuiCol.Text) * 0.6f,
                 Frame = UIFrameStyle.Default
             };
         }

@@ -7,32 +7,34 @@ namespace Fugui.Framework
     public struct UITextStyle : IUIElementStyle
     {
         // enabled
-        private Color _text;
+        internal Color Text;
         // disabled
-        private Color _disabledText;
+        internal Color DisabledText;
 
         #region Pressets
         static UITextStyle _defaultTextStyle;
         public static UITextStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultTextStyle; } }
+        static UITextStyle _selectedTextStyle;
+        public static UITextStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedTextStyle; } }
         static UITextStyle _pureTextStyle;
         public static UITextStyle Pure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _pureTextStyle; } }
         #endregion
 
         public UITextStyle(Color text, Color disabledText)
         {
-            _text = text;
-            _disabledText = disabledText;
+            Text = text;
+            DisabledText = disabledText;
         }
 
         public void Push(bool enabled)
         {
             if (enabled)
             {
-                FuGui.Push(ImGuiCol.Text, _text);
+                FuGui.Push(ImGuiCol.Text, Text);
             }
             else
             {
-                FuGui.Push(ImGuiCol.Text, _disabledText);
+                FuGui.Push(ImGuiCol.Text, DisabledText);
             }
         }
 
@@ -50,14 +52,20 @@ namespace Fugui.Framework
             // default text style
             _defaultTextStyle = new UITextStyle()
             {
-                _text = ThemeManager.GetColor(ImGuiCol.Text),
-                _disabledText = ThemeManager.GetColor(ImGuiCol.TextDisabled)
+                Text = ThemeManager.GetColor(ImGuiCol.Text),
+                DisabledText = ThemeManager.GetColor(ImGuiCol.TextDisabled)
             };
             // pure text style
             _pureTextStyle = new UITextStyle()
             {
-                _text = ThemeManager.CurrentTheme == Theme.Dark ? Color.white : Color.black,
-                _disabledText = ThemeManager.GetColor(ImGuiCol.TextDisabled)
+                Text = ThemeManager.CurrentTheme == Theme.Dark ? Color.white : Color.black,
+                DisabledText = ThemeManager.GetColor(ImGuiCol.TextDisabled)
+            };
+            // selectd text style
+            _selectedTextStyle = new UITextStyle()
+            {
+                Text = ThemeManager.GetColor(ImGuiCustomCol.SelectedText),
+                DisabledText = ThemeManager.GetColor(ImGuiCustomCol.SelectedText) * 0.8f
             };
         }
     }

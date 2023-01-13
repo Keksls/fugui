@@ -6,7 +6,7 @@ public enum UIWindowName
     Captures,
     Inspector,
     Metadata,
-    Console,
+    Theme,
     ToolBox,
     ToolBar
 }

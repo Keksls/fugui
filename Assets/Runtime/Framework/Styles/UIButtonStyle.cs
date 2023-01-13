@@ -20,6 +20,8 @@ namespace Fugui.Framework
         #region Pressets
         static UIButtonStyle defaultButtonStyle;
         public static UIButtonStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return defaultButtonStyle; } }
+        static UIButtonStyle selectedButtonStyle;
+        public static UIButtonStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return selectedButtonStyle; } }
         static UIButtonStyle blueButtonStyle;
         public static UIButtonStyle Blue { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return blueButtonStyle; } }
         static UIButtonStyle darkButtonStyle;
@@ -95,11 +97,20 @@ namespace Fugui.Framework
             darkButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 2f),
-                _button = new Vector4(0.1098039224743843f, 0.1098039224743843f, 0.1098039224743843f, 1.0f),
-                _buttonHovered = new Vector4(0.1411764770746231f, 0.1411764770746231f, 0.1411764770746231f, 1.0f),
+                _button = new Vector4(0.1411764770746231f, 0.1411764770746231f, 0.1411764770746231f, 1.0f),
+                _buttonHovered = new Vector4(0.1098039224743843f, 0.1098039224743843f, 0.1098039224743843f, 1.0f),
                 _buttonActive = new Vector4(0.2039215713739395f, 0.2039215713739395f, 0.2039215713739395f, 1.0f),
                 _disabledButton = new Vector4(0.1098039224743843f * 2f, 0.1098039224743843f * 2f, 0.1098039224743843f * 2f, 1.0f),
                 TextStyle = UITextStyle.Default
+            };
+            // selected
+            selectedButtonStyle = new UIButtonStyle()
+            {
+                _button = ThemeManager.GetColor(ImGuiCustomCol.Selected),
+                _buttonHovered = ThemeManager.GetColor(ImGuiCustomCol.SelectedHovered),
+                _buttonActive = ThemeManager.GetColor(ImGuiCustomCol.SelectedActive),
+                _disabledButton = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.5f,
+                TextStyle = UITextStyle.Selected
             };
         }
     }

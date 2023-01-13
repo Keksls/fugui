@@ -19,6 +19,7 @@ namespace Fugui.Framework
         private float _minLineHeight = 20f;
         private float _beginElementCursorY = 0;
         private bool _isResponsivelyResized = false;
+        private static Dictionary<Type, UIAutoGridDescription> _gridDescriptions = new Dictionary<Type, UIAutoGridDescription>();
         #endregion
 
         /// <summary>
@@ -617,6 +618,20 @@ namespace Fugui.Framework
             base._buttonsGroup<T>(text, items, callback, defaultSelected, flags, style);
         }
         #endregion
+        #endregion
+
+        #region Object
+        public bool DrawObject<T>(T objectInstance)
+        {
+            // type already registered
+            if (!_gridDescriptions.ContainsKey(typeof(T)))
+            {
+                // register type
+                _gridDescriptions.Add(typeof(T), new UIAutoGridDescription().BindFromObject<T>());
+            }
+            // draw grid
+            return _gridDescriptions[typeof(T)].DrawObject<T>(this, objectInstance);
+        }
         #endregion
 
         #region private Utils

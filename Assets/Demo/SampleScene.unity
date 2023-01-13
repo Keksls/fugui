@@ -130,34 +130,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 963194227, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 963194227, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: field of view
-      value: 26.991467
-      objectReference: {fileID: 0}
-    - target: {fileID: 963194227, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: m_BackGroundColor.a
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 963194227, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: m_BackGroundColor.b
-      value: 0.7019608
-      objectReference: {fileID: 0}
-    - target: {fileID: 963194227, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: m_BackGroundColor.g
-      value: 0.44705883
-      objectReference: {fileID: 0}
-    - target: {fileID: 963194227, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: m_BackGroundColor.r
-      value: 0.2784314
-      objectReference: {fileID: 0}
-    - target: {fileID: 963194227, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: m_projectionMatrixMode
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 2932005272966750018, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
       propertyPath: m_Name
       value: FuguiManager

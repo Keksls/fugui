@@ -325,16 +325,37 @@ public class UIWindowDemo : MonoBehaviour
         });
 
         // add Theme Window
+        FuguiTheme theme = new FuguiTheme();
         new UIWindowDefinition(UIWindowName.Theme, "Theme Configurator", (window) =>
             {
-                using (UIGrid grid = new UIGrid("FuguiThemeGrid"))
+                using (new UIContainer("themeManagerContainer"))
                 {
-                    Vector4 selectedColor = ThemeManager.GetColor(ImGuiCustomCol.Selected);
-                    if(grid.ColorPicker("Selected Color", ref selectedColor))
+                    using (UILayout layout = new UILayout())
                     {
-                        ThemeManager.CurrentStyleColor[(int)ImGuiCustomCol.Selected] = selectedColor;
-                        ThemeManager.CurrentStyleColor[(int)ImGuiCol.CheckMark] = ThemeManager.CurrentStyleColor[(int)ImGuiCustomCol.Selected];
-                        ThemeManager.UpdateTheme();
+                        layout.Collapsable("Theme Variables", () =>
+                        {
+                            using (UIGrid grid = new UIGrid("FuguiThemeVariablesGrid"))
+                            {
+                                if (grid.DrawObject<FuguiTheme>(theme))
+                                {
+                                    theme.Apply();
+                                }
+                            }
+                        });
+
+                        layout.Collapsable("Theme Colors", () =>
+                        {
+                            using (UIGrid grid = new UIGrid("FuguiThemeColorGrid"))
+                            {
+                                Vector4 selectedColor = ThemeManager.GetColor(ImGuiCustomCol.Selected);
+                                if (grid.ColorPicker("Selected Color", ref selectedColor))
+                                {
+                                    ThemeManager.CurrentStyleColor[(int)ImGuiCustomCol.Selected] = selectedColor;
+                                    ThemeManager.CurrentStyleColor[(int)ImGuiCol.CheckMark] = ThemeManager.CurrentStyleColor[(int)ImGuiCustomCol.Selected];
+                                    ThemeManager.UpdateTheme();
+                                }
+                            }
+                        });
                     }
                 }
             });

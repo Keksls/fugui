@@ -656,8 +656,10 @@ namespace Fugui.Framework
             {
                 // Calculate the position of the knob
                 float knobPos = (x + knobRadius) + (width - knobRadius * 2f) * (value - min) / (max - min);
-                // Draw the slider line
-                ImGui.GetWindowDrawList().AddLine(new Vector2(x, y), new Vector2(x + width, y), ImGui.GetColorU32(_nextIsDisabled ? style.DisabledLine : style.Line), lineHeight);
+                // Draw the left slider line
+                ImGui.GetWindowDrawList().AddLine(new Vector2(x, y), new Vector2(knobPos, y), ImGui.GetColorU32(_nextIsDisabled ? style.DisabledLine : style.Line), lineHeight);
+                // Draw the right slider line
+                ImGui.GetWindowDrawList().AddLine(new Vector2(knobPos, y), new Vector2(x + width, y), ImGui.GetColorU32((_nextIsDisabled ? style.DisabledKnob : style.Knob) * 0.66f), lineHeight);
                 // Check if the mouse is hovering over the slider
                 bool isLineHovered = ImGui.IsMouseHoveringRect(new Vector2(x, y - hoverPaddingY - lineHeight), new Vector2(x + width, y + hoverPaddingY + lineHeight));
 
@@ -1800,7 +1802,7 @@ namespace Fugui.Framework
             // and and get toggle data struct
             if (!_uiElementAnimationDatas.ContainsKey(id))
             {
-                _uiElementAnimationDatas.Add(id, new UIElementAnimationData(value));
+                _uiElementAnimationDatas.Add(id, new UIElementAnimationData(!value));
             }
             UIElementAnimationData data = _uiElementAnimationDatas[id];
 

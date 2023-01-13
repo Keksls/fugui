@@ -110,7 +110,7 @@ namespace Fugui.Framework
                 _buttonHovered = ThemeManager.GetColor(ImGuiCustomCol.SelectedHovered),
                 _buttonActive = ThemeManager.GetColor(ImGuiCustomCol.SelectedActive),
                 _disabledButton = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.5f,
-                TextStyle = UITextStyle.Selected
+                TextStyle = UITextStyle.Default
             };
         }
     }

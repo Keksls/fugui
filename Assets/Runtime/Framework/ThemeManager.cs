@@ -27,7 +27,6 @@ namespace Fugui.Framework
             UIElementStyleTypes.Add(typeof(UICollapsableStyle));
             UIElementStyleTypes.Add(typeof(UIToggleStyle));
             UIElementStyleTypes.Add(typeof(UIButtonsGroupStyle));
-            UIElementStyleTypes.Add(typeof(UICheckboxStyle));
         }
 
         public static void SetTheme(Theme theme)
@@ -43,11 +42,6 @@ namespace Fugui.Framework
                     break;
             }
             CurrentTheme = theme;
-            UpdateTheme();
-        }
-
-        internal static void UpdateTheme()
-        {
             // call OnThemeSet on each structs that inherit from 
             foreach (Type structType in UIElementStyleTypes)
             {
@@ -96,7 +90,7 @@ namespace Fugui.Framework
 
             CurrentStyleColor = new Vector4[(int)ImGuiCustomCol.COUNT];
             // imgui colors
-            CurrentStyleColor[(int)ImGuiCol.Text] = new Vector4(223f / 255f, 223f / 255f, 223f / 255f, 1.0f);
+            CurrentStyleColor[(int)ImGuiCol.Text] = new Vector4(186f / 255f, 183f / 255f, 176f / 255f, 1.0f);
             CurrentStyleColor[(int)ImGuiCol.TextDisabled] = new Vector4(0.3764705955982208f, 0.3764705955982208f, 0.3764705955982208f, 1.0f);
             CurrentStyleColor[(int)ImGuiCol.WindowBg] = new Vector4(46f / 255f, 46f / 255f, 46f / 255f, 1.0f);
             CurrentStyleColor[(int)ImGuiCol.ChildBg] = new Vector4(0.164705f, 0.164705f, 0.164705f, 1.0f);
@@ -114,7 +108,7 @@ namespace Fugui.Framework
             CurrentStyleColor[(int)ImGuiCol.ScrollbarGrab] = new Vector4(0.2823529541492462f, 0.2823529541492462f, 0.2823529541492462f, 0.5411764979362488f);
             CurrentStyleColor[(int)ImGuiCol.ScrollbarGrabHovered] = new Vector4(0.321568638086319f, 0.321568638086319f, 0.321568638086319f, 0.5411764979362488f);
             CurrentStyleColor[(int)ImGuiCol.ScrollbarGrabActive] = new Vector4(0.4392156898975372f, 0.4392156898975372f, 0.4392156898975372f, 0.5411764979362488f);
-            CurrentStyleColor[(int)ImGuiCol.CheckMark] = new Vector4(41f / 255f, 126f / 255f, 204f / 255f, 1f);//new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
+            CurrentStyleColor[(int)ImGuiCol.CheckMark] = new Vector4(10f / 255f, 104f / 255f, 144f / 255f, 1f);//new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
             CurrentStyleColor[(int)ImGuiCol.SliderGrab] = new Vector4(0.3372549116611481f, 0.3372549116611481f, 0.3372549116611481f, 0.5400000214576721f);
             CurrentStyleColor[(int)ImGuiCol.SliderGrabActive] = new Vector4(0.5568627715110779f, 0.5568627715110779f, 0.5568627715110779f, 0.5400000214576721f);
             CurrentStyleColor[(int)ImGuiCol.Button] = new Vector4(58f / 255f, 58f / 255f, 58f / 255f, 1f);
@@ -151,26 +145,27 @@ namespace Fugui.Framework
             CurrentStyleColor[(int)ImGuiCol.ModalWindowDimBg] = new Vector4(0.09411764889955521f, 0.09411764889955521f, 0.09411764889955521f, 0.7843137383460999f);
             CurrentStyleColor[(int)ImGuiCol.DockingEmptyBg] = CurrentStyleColor[(int)ImGuiCol.FrameBg];
             CurrentStyleColor[(int)ImGuiCol.DockingPreview] = Color.black;
-
             // custom colors
             CurrentStyleColor[(int)ImGuiCustomCol.Highlight] = new Vector4(1f / 255f, 122f / 255f, 1f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.HighlightHovered] = new Vector4(1f / 255f * 0.9f, 122f / 255f * 0.9f, 1f * 0.9f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.HighlightActive] = new Vector4(1f / 255f * 0.8f, 122f / 255f * 0.8f, 1f * 0.8f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.HighlightDisabled] = new Vector4(1f / 255f * 0.5f, 122f / 255f * 0.5f, 1f * 0.5f, 1f);
-
             CurrentStyleColor[(int)ImGuiCustomCol.FrameHoverFeedback] = new Vector4(0.8f, 0.8f, 0.8f, 0.2f);
             CurrentStyleColor[(int)ImGuiCustomCol.FrameSelectedFeedback] = new Vector4(42f / 255f, 68f / 255f, 83f / 255f, 1f);
-
             CurrentStyleColor[(int)ImGuiCustomCol.Collapsable] = new Vector4(0.205f, 0.205f, 0.205f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.CollapsableHovered] = new Vector4(0.22f, 0.22f, 0.22f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.CollapsableActive] = new Vector4(0.25f, 0.25f, 0.25f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.CollapsableDisabled] = new Vector4(0.18f, 0.18f, 0.18f, 1f) * 0.5f;
-
-            CurrentStyleColor[(int)ImGuiCustomCol.Selected] = new Vector4(18f / 255f, 98f / 255f, 181f / 255f, 1f); //new Vector4(35f / 255f, 74f / 255f, 108f / 255f, 1f);
+            CurrentStyleColor[(int)ImGuiCustomCol.SliderLine] = new Vector4(0.5f, 0.5f, 0.5f, 1f);
+            CurrentStyleColor[(int)ImGuiCustomCol.SliderLineDisabled] = new Vector4(0.5f, 0.5f, 0.5f, 0.75f);
+            CurrentStyleColor[(int)ImGuiCustomCol.SliderKnobDisabled] = new Vector4(0.5f, 0.5f, 0.5f, 0.75f);
+            CurrentStyleColor[(int)ImGuiCustomCol.ToggleKnob] = CurrentStyleColor[(int)ImGuiCol.Text];
+            CurrentStyleColor[(int)ImGuiCustomCol.ToggleKnobDisabled] = CurrentStyleColor[(int)ImGuiCol.TextDisabled];
+            CurrentStyleColor[(int)ImGuiCustomCol.ToggleKnobSelected] = CurrentStyleColor[(int)ImGuiCol.Text];
+            CurrentStyleColor[(int)ImGuiCustomCol.ToggleKnobSelectedDisabled] = CurrentStyleColor[(int)ImGuiCol.TextDisabled];
+            CurrentStyleColor[(int)ImGuiCustomCol.Selected] = new Vector4(32f / 255f, 67f / 255f, 99f / 255f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.SelectedHovered] = CurrentStyleColor[(int)ImGuiCustomCol.Selected] * 0.9f;
             CurrentStyleColor[(int)ImGuiCustomCol.SelectedActive] = CurrentStyleColor[(int)ImGuiCustomCol.Selected] * 0.8f;
-            CurrentStyleColor[(int)ImGuiCustomCol.SelectedText] = Vector4.one;
-            CurrentStyleColor[(int)ImGuiCol.CheckMark] = CurrentStyleColor[(int)ImGuiCustomCol.Selected]; //new Vector4(58f / 255f, 121f / 255f, 179f / 255f, 1f);
 
             // set style colors
             for (int i = 0; i < (int)ImGuiCol.COUNT; i++)
@@ -239,7 +234,7 @@ namespace Fugui.Framework
             CurrentStyleColor[(int)ImGuiCol.ScrollbarGrab] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
             CurrentStyleColor[(int)ImGuiCol.ScrollbarGrabHovered] = new Vector4(1.00f, 0.69f, 0.07f, 0.69f);
             CurrentStyleColor[(int)ImGuiCol.ScrollbarGrabActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
-            CurrentStyleColor[(int)ImGuiCol.CheckMark] = new Vector4(41f / 255f, 126f / 255f, 204f / 255f, 1f);//new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
+            CurrentStyleColor[(int)ImGuiCol.CheckMark] = new Vector4(0.01f, 0.01f, 0.01f, 0.63f);
             CurrentStyleColor[(int)ImGuiCol.SliderGrab] = new Vector4(1.00f, 0.69f, 0.07f, 0.69f);
             CurrentStyleColor[(int)ImGuiCol.SliderGrabActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
             CurrentStyleColor[(int)ImGuiCol.Button] = new Vector4(0.83f, 0.83f, 0.83f, 1.00f);
@@ -279,19 +274,22 @@ namespace Fugui.Framework
             CurrentStyleColor[(int)ImGuiCustomCol.HighlightHovered] = new Vector4(1f / 255f * 0.9f, 122f / 255f * 0.9f, 1f * 0.9f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.HighlightActive] = new Vector4(1f / 255f * 0.8f, 122f / 255f * 0.8f, 1f * 0.8f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.HighlightDisabled] = new Vector4(1f / 255f * 0.5f, 122f / 255f * 0.5f, 1f * 0.5f, 1f);
-
             CurrentStyleColor[(int)ImGuiCustomCol.FrameHoverFeedback] = new Vector4(0.8f, 0.8f, 0.8f, 0.2f);
             CurrentStyleColor[(int)ImGuiCustomCol.FrameSelectedFeedback] = new Vector4(42f / 255f, 68f / 255f, 83f / 255f, 1f);
-
-            CurrentStyleColor[(int)ImGuiCustomCol.Collapsable] = new Vector4(0.205f, 0.205f, 0.205f, 1f);
-            CurrentStyleColor[(int)ImGuiCustomCol.CollapsableHovered] = new Vector4(0.22f, 0.22f, 0.22f, 1f);
-            CurrentStyleColor[(int)ImGuiCustomCol.CollapsableActive] = new Vector4(0.25f, 0.25f, 0.25f, 1f);
-            CurrentStyleColor[(int)ImGuiCustomCol.CollapsableDisabled] = new Vector4(0.18f, 0.18f, 0.18f, 1f) * 0.5f;
-
-            CurrentStyleColor[(int)ImGuiCustomCol.Selected] = new Vector4(32f / 255f, 67f / 255f, 99f / 255f, 1f);
+            CurrentStyleColor[(int)ImGuiCustomCol.Collapsable] = new Vector4(0.805f, 0.805f, 0.805f, 1f);
+            CurrentStyleColor[(int)ImGuiCustomCol.CollapsableHovered] = new Vector4(0.752f, 0.752f, 0.752f, 1f);
+            CurrentStyleColor[(int)ImGuiCustomCol.CollapsableActive] = new Vector4(0.625f, 0.625f, 0.625f, 1f);
+            CurrentStyleColor[(int)ImGuiCustomCol.CollapsableDisabled] = new Vector4(0.618f, 0.618f, 0.618f, 1f) * 0.5f;
+            CurrentStyleColor[(int)ImGuiCustomCol.SliderLine] = new Vector4(0.5f, 0.5f, 0.5f, 1f);
+            CurrentStyleColor[(int)ImGuiCustomCol.SliderLineDisabled] = new Vector4(0.5f, 0.5f, 0.5f, 0.75f);
+            CurrentStyleColor[(int)ImGuiCustomCol.SliderKnobDisabled] = new Vector4(0.5f, 0.5f, 0.5f, 0.75f);
+            CurrentStyleColor[(int)ImGuiCustomCol.ToggleKnob] = CurrentStyleColor[(int)ImGuiCol.Text];
+            CurrentStyleColor[(int)ImGuiCustomCol.ToggleKnobDisabled] = CurrentStyleColor[(int)ImGuiCol.TextDisabled];
+            CurrentStyleColor[(int)ImGuiCustomCol.ToggleKnobSelected] = CurrentStyleColor[(int)ImGuiCol.Text];
+            CurrentStyleColor[(int)ImGuiCustomCol.ToggleKnobSelectedDisabled] = CurrentStyleColor[(int)ImGuiCol.TextDisabled];
+            CurrentStyleColor[(int)ImGuiCustomCol.Selected] = new Vector4(0f / 255f, 66f / 255f, 166f / 255f, 1f);
             CurrentStyleColor[(int)ImGuiCustomCol.SelectedHovered] = CurrentStyleColor[(int)ImGuiCustomCol.Selected] * 0.9f;
             CurrentStyleColor[(int)ImGuiCustomCol.SelectedActive] = CurrentStyleColor[(int)ImGuiCustomCol.Selected] * 0.8f;
-            CurrentStyleColor[(int)ImGuiCustomCol.SelectedText] = Vector4.one;
 
             // set style colors
             for (int i = 0; i < (int)ImGuiCol.COUNT; i++)
@@ -317,21 +315,24 @@ namespace Fugui.Framework
         HighlightHovered = 57,
         HighlightActive = 58,
         HighlightDisabled = 59,
-
         FrameHoverFeedback = 60,
         FrameSelectedFeedback = 61,
-
         Collapsable = 62,
         CollapsableHovered = 63,
         CollapsableActive = 64,
         CollapsableDisabled = 65,
+        SliderLine = 66,
+        SliderLineDisabled = 67,
+        SliderKnobDisabled = 68,
+        ToggleKnob = 69,
+        ToggleKnobDisabled = 70,
+        ToggleKnobSelected = 71,
+        ToggleKnobSelectedDisabled = 72,
+        Selected = 73,
+        SelectedHovered = 74,
+        SelectedActive = 75,
 
-        Selected = 66,
-        SelectedHovered = 67,
-        SelectedActive = 68,
-        SelectedText = 69,
-
-        COUNT = 70
+        COUNT = 76
     }
 
     public enum Theme

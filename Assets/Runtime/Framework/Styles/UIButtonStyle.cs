@@ -91,7 +91,7 @@ namespace Fugui.Framework
                 _buttonHovered = ThemeManager.GetColor(ImGuiCustomCol.HighlightHovered),
                 _buttonActive = ThemeManager.GetColor(ImGuiCustomCol.HighlightActive),
                 _disabledButton = ThemeManager.GetColor(ImGuiCustomCol.HighlightDisabled),
-                TextStyle = UITextStyle.Pure
+                TextStyle = UITextStyle.Default
             };
             // dark button style
             darkButtonStyle = new UIButtonStyle()

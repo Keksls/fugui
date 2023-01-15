@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   DefaultSize: 14
   AdditionnalFontSizes: 0a0000000c0000001000000012000000
-  FontsFolder: fonts/current/
+  FontsFolder: Fugui/fonts/current/
   RegularFontName: regular.ttf
   BoldFontName: bold.ttf
   IconsFontName: icons.ttf

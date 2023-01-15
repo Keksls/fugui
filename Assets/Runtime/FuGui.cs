@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
 
@@ -84,6 +85,9 @@ namespace Fugui.Framework
             _canAddWindow = true;
             // assume that render thread is not already started
             _renderThreadStarted = false;
+
+            // initialize theme manager
+            ThemeManager.Initialize();
 
             // create Default Fugui Context
             DefaultContext = CreateUnityContext(mainContainerUICamera);
@@ -662,6 +666,25 @@ namespace Fugui.Framework
         #endregion
 
         #region public Utils
+        /// <summary>
+        /// Adds spaces before uppercase letters in the input string.
+        /// </summary>
+        /// <param name="input">The input string.</param>
+        /// <returns>The input string with spaces added before uppercase letters.</returns>
+        public static string AddSpacesBeforeUppercase(string input)
+        {
+            // Use a regular expression to add spaces before uppercase letters, but ignore the first letter of the string
+            return Regex.Replace(input, "(?<!^)([A-Z])", " $1");
+        }
+
+        public static void ForceDrawAllWindows()
+        {
+            foreach(UIWindow window in UIWindows.Values)
+            {
+                window.ForceDraw();
+            }
+        }
+
         public static bool GetWantCaptureInputs(bool excludeDesktop = false)
         {
             foreach (var pair in Contexts)

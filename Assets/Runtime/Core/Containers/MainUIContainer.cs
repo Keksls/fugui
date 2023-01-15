@@ -69,8 +69,8 @@ namespace Fugui.Core
 
             // Subscribe to the Layout event of the given FuguiContext
             _fuguiContext.OnRender += UImGuiUtility_Layout;
-            // Set the docking style color to dark theme
-            ThemeManager.SetTheme(Theme.Dark);
+            // Set the docking style color to current theme
+            ThemeManager.SetTheme(ThemeManager.CurrentTheme);
         }
 
         private void UImGuiUtility_Layout()

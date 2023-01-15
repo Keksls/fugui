@@ -55,10 +55,6 @@ public class UIWindowDemo : MonoBehaviour
         MainMenu.RegisterItem("Layout", null);
         MainMenu.RegisterItem("Default", () => DockingLayoutManager.SetLayout(UIDockingLayout.Default), "Layout", "Alt + Left Arrow");
         MainMenu.RegisterItem("Console on Bottom", () => DockingLayoutManager.SetLayout(UIDockingLayout.Console), "Layout", "Alt + Right Arrow");
-        MainMenu.RegisterSeparator("Layout");
-        MainMenu.RegisterItem("Themes", null, "Layout");
-        MainMenu.RegisterItem("Dark Theme", () => ThemeManager.SetTheme(Theme.Dark), "Themes");
-        MainMenu.RegisterItem("Light Theme", () => ThemeManager.SetTheme(Theme.Light), "Themes");
         MainMenu.RegisterItem("Windows", null);
         foreach (UIWindowName windowName in Enum.GetValues(typeof(UIWindowName)))
         {
@@ -325,39 +321,9 @@ public class UIWindowDemo : MonoBehaviour
         });
 
         // add Theme Window
-        FuguiTheme theme = new FuguiTheme();
         new UIWindowDefinition(UIWindowName.Theme, "Theme Configurator", (window) =>
             {
-                using (new UIContainer("themeManagerContainer"))
-                {
-                    using (UILayout layout = new UILayout())
-                    {
-                        layout.Collapsable("Theme Variables", () =>
-                        {
-                            using (UIGrid grid = new UIGrid("FuguiThemeVariablesGrid"))
-                            {
-                                if (grid.DrawObject<FuguiTheme>(theme))
-                                {
-                                    theme.Apply();
-                                }
-                            }
-                        });
-
-                        layout.Collapsable("Theme Colors", () =>
-                        {
-                            using (UIGrid grid = new UIGrid("FuguiThemeColorGrid"))
-                            {
-                                Vector4 selectedColor = ThemeManager.GetColor(ImGuiCustomCol.Selected);
-                                if (grid.ColorPicker("Selected Color", ref selectedColor))
-                                {
-                                    ThemeManager.CurrentStyleColor[(int)ImGuiCustomCol.Selected] = selectedColor;
-                                    ThemeManager.CurrentStyleColor[(int)ImGuiCol.CheckMark] = ThemeManager.CurrentStyleColor[(int)ImGuiCustomCol.Selected];
-                                    ThemeManager.UpdateTheme();
-                                }
-                            }
-                        });
-                    }
-                }
+                ThemeManager.DrawThemeManagerUI();
             });
 
         // add main camera window

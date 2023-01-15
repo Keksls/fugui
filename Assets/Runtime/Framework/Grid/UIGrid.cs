@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SFB;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,35 +9,51 @@ namespace Fugui.Framework
     public class UIGrid : UILayout
     {
         #region Variables
+        // comment : The current column index being used in the grid
         private int _currentColIndex = 0;
+        // The current row index being used in the grid
         private int _currentRowIndex = 0;
+        // The current grid definition
         private UIGridDefinition _currentGridDef;
-        private bool _nextIgnoreGrid = false;
+        // Flag to indicate if labels should be automatically drawn
         private bool _autoDrawLabel = true;
+        // Flag to indicate if labels should not be disabled
         private bool _dontDisableLabels = true;
+        // Flag to indicate if labels should always have tooltip
+        private bool _alwaysAutoTooltipsOnLabels = false;
+        // The name of the grid
         private string _gridName;
+        // Flag to indicate if the grid has been created
         private bool _gridCreated = false;
+        // The minimum line height for elements in the grid
         private float _minLineHeight = 20f;
+        // The y-coordinate of the cursor position when the current group of elements began
         private float _beginElementCursorY = 0;
+        // Flag to indicate if the grid is responsively resized
         private bool _isResponsivelyResized = false;
-        private static Dictionary<Type, UIAutoGridDescription> _gridDescriptions = new Dictionary<Type, UIAutoGridDescription>();
+        // A dictionary to store grid descriptions for different types
+        private static Dictionary<Type, UIObjectDescription> _objectsDescriptions = new Dictionary<Type, UIObjectDescription>();
         #endregion
 
         /// <summary>
         /// Create a new UI Grid
         /// </summary>
         /// <param name="gridName">Unique Name of the Grid</param>
-        /// <param name="linesBg">Did the grid need to colorize evens rows</param>
-        /// <param name="autoLabel">Did the grid need to create a label for each UIElement</param>
-        /// <param name="dontDisableLabels">Did the auto created labels is disabled if UIElement is disabled</param>
+        /// <param name="flags">Bitmask that constraint specific grid behaviour</param>
         /// <param name="rowsPadding">spaces in pixel between rows</param>
-        public UIGrid(string gridName, bool linesBg = false, bool autoLabel = true, bool dontDisableLabels = false, float rowsPadding = 2f, float outterPadding = 4f)
+        /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
+        public UIGrid(string gridName = null, UIGridFlag flags = UIGridFlag.Default, float rowsPadding = 2f, float outterPadding = 4f)
         {
-            _autoDrawLabel = autoLabel;
-            _dontDisableLabels = dontDisableLabels;
+            if (gridName == null)
+            {
+                gridName = Guid.NewGuid().ToString();
+            }
+            _autoDrawLabel = !flags.HasFlag(UIGridFlag.NoAutoLabels);
+            _dontDisableLabels = flags.HasFlag(UIGridFlag.DoNotDisableLabels);
+            _alwaysAutoTooltipsOnLabels = flags.HasFlag(UIGridFlag.AutoToolTipsOnLabels);
             _currentGridDef = UIGridDefinition.DefaultFixed;
             _gridName = gridName;
-            setGrid(linesBg, rowsPadding, outterPadding);
+            setGrid(flags.HasFlag(UIGridFlag.LinesBackground), rowsPadding, outterPadding);
         }
 
         /// <summary>
@@ -44,17 +61,21 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="gridName">Unique Name of the Grid</param>
         /// <param name="gridDef">Definition of the Grid. Assume grid behaviour and style. Can be fully custom or use a presset (UIGridDefinition.XXX)</param>
-        /// <param name="linesBg">Did the grid need to colorize evens rows</param>
-        /// <param name="autoLabel">Did the grid need to create a label for each UIElement</param>
-        /// <param name="dontDisableLabels">Did the auto created labels is disabled if UIElement is disabled</param>
+        /// <param name="flags">Bitmask that constraint specific grid behaviour</param>
         /// <param name="rowsPadding">spaces in pixel between rows</param>
-        public UIGrid(string gridName, UIGridDefinition gridDef, bool linesBg = false, bool autoLabel = true, bool dontDisableLabels = false, float rowsPadding = 2f, float outterPadding = 4f)
+        /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
+        public UIGrid(UIGridDefinition gridDef, string gridName = null, UIGridFlag flags = UIGridFlag.Default, float rowsPadding = 2f, float outterPadding = 4f)
         {
-            _autoDrawLabel = autoLabel;
-            _dontDisableLabels = dontDisableLabels;
+            if (gridName == null)
+            {
+                gridName = Guid.NewGuid().ToString();
+            }
+            _autoDrawLabel = !flags.HasFlag(UIGridFlag.NoAutoLabels);
+            _dontDisableLabels = flags.HasFlag(UIGridFlag.DoNotDisableLabels);
+            _alwaysAutoTooltipsOnLabels = flags.HasFlag(UIGridFlag.AutoToolTipsOnLabels);
             _currentGridDef = gridDef;
             _gridName = gridName;
-            setGrid(linesBg, rowsPadding, outterPadding);
+            setGrid(flags.HasFlag(UIGridFlag.LinesBackground), rowsPadding, outterPadding);
         }
 
         #region Grid
@@ -141,19 +162,16 @@ namespace Fugui.Framework
             {
                 return elementID;
             }
-            if (!_nextIgnoreGrid)
+            NextColumn();
+
+            // add padding to value if grid is responsively resized
+            if (_isResponsivelyResized && _currentRowIndex % 2 == 0)
             {
-                NextColumn();
-
-                // add padding to value if grid is responsively resized
-                if (_isResponsivelyResized && _currentRowIndex % 2 == 0)
-                {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f);
-                }
-
-                _beginElementCursorY = ImGui.GetCursorPosY();
-                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f);
             }
+
+            _beginElementCursorY = ImGui.GetCursorPosY();
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             return elementID;
         }
 
@@ -618,19 +636,38 @@ namespace Fugui.Framework
             base._buttonsGroup<T>(text, items, callback, defaultSelected, flags, style);
         }
         #endregion
+
+        #region Path Field
+        protected override void _pathField(string text, bool onlyFolder, Action<string> callback, UIFrameStyle style, string defaultPath = null, params ExtensionFilter[] extentions)
+        {
+            if (!_gridCreated)
+            {
+                return;
+            }
+            drawElementLabel(text, UITextStyle.Default);
+            base._pathField(text, onlyFolder, callback, style, defaultPath, extentions);
+        }
+        #endregion
         #endregion
 
         #region Object
+        /// <summary>
+        /// Draw the object instance
+        /// </summary>
+        /// <typeparam name="T">Type of the object to draw</typeparam>
+        /// <param name="objectInstance">object instance to draw</param>
+        /// <returns>true if some value has just been edited</returns>
         public bool DrawObject<T>(T objectInstance)
         {
+            Type type = typeof(T);
             // type already registered
-            if (!_gridDescriptions.ContainsKey(typeof(T)))
+            if (!_objectsDescriptions.ContainsKey(type))
             {
                 // register type
-                _gridDescriptions.Add(typeof(T), new UIAutoGridDescription().BindFromObject<T>());
+                _objectsDescriptions.Add(type, new UIObjectDescription());
             }
-            // draw grid
-            return _gridDescriptions[typeof(T)].DrawObject<T>(this, objectInstance);
+            // draw object into this grid
+            return _objectsDescriptions[type].DrawObject<T>(this, objectInstance);
         }
         #endregion
 
@@ -649,6 +686,13 @@ namespace Fugui.Framework
             if (!_autoDrawLabel)
             {
                 return;
+            }
+
+            // we need to display tooltip on this label and there are no tooltips to display
+            if (_alwaysAutoTooltipsOnLabels && (_currentToolTips == null || _currentToolTipsIndex >= _currentToolTips.Length))
+            {
+                // add layout natural toolTip on label
+                SetNextElementToolTipWithLabel(text);
             }
 
             bool disabled = _nextIsDisabled;

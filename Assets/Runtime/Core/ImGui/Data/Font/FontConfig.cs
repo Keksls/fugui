@@ -8,7 +8,7 @@ namespace Fugui.Core.DearImGui
         public int DefaultSize = 14;
         public int[] AdditionnalFontSizes = new int[] { 12, 16 };
         [Header("The font folder must be paced into StreamingAssets")]
-        public string FontsFolder = "fonts/current/";
+        public string FontsFolder = "Fugui/fonts/current/";
         public string RegularFontName = "regular.ttf";
         public string BoldFontName = "bold.ttf";
         public string IconsFontName = "icons.ttf";

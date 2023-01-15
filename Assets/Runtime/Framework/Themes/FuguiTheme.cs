@@ -5,76 +5,345 @@ namespace Fugui.Framework
 {
     public class FuguiTheme
     {
-        [SliderFloatAtttribute(0.1f, 1f)]
+        public string ThemeName = "Fugui Theme";
+        [Disabled]
+        [Slider(0.1f, 1f)]
         public float Alpha = 1.0f;
-        [DragVector2Atttribute(0f, 10f)]
+        [Drag(0f, 10f)]
         public Vector2 WindowPadding = new Vector2(1.0f, 0.0f);
-        [SliderFloatAtttribute(0f, 8f)]
+        [Slider(0f, 8f)]
         public float WindowRounding = 2.0f;
-        [SliderFloatAtttribute(0f, 4f)]
+        [Slider(0f, 4f)]
         public float WindowBorderSize = 1.0f;
-        [DragVector2Atttribute(1f, 100f)]
+        [Drag(1f, 100f, "width", "height")]
         public Vector2 WindowMinSize = new Vector2(64.0f, 64.0f);
-        [DragVector2Atttribute(0f, 1f)]
+        [Drag(0f, 1f)]
         public Vector2 WindowTitleAlign = new Vector2(0.0f, 0.5f);
-        [ComboboxAtttribute]
         public ImGuiDir WindowMenuButtonPosition = ImGuiDir.Right;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float ChildRounding = 2.0f;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float ChildBorderSize = 1.0f;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float PopupRounding = 2.0f;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float PopupBorderSize = 1.0f;
-        [DragVector2Atttribute(0f, 10f)]
+        [Drag(0f, 10f)]
         public Vector2 FramePadding = new Vector2(8f, 4f);
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float FrameRounding = 2.0f;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float FrameBorderSize = 1.1f;
-        [DragVector2Atttribute(0f, 20f)]
+        [Drag(0f, 20f)]
         public Vector2 ItemSpacing = new Vector2(4.0f, 6.0f);
-        [DragVector2Atttribute(0f, 20f)]
+        [Drag(0f, 20f)]
         public Vector2 ItemInnerSpacing = new Vector2(4.0f, 6.0f);
-        [DragVector2Atttribute(0f, 20f)]
+        [Drag(0f, 20f)]
         public Vector2 CellPadding = new Vector2(6.0f, 1.0f);
-        [SliderFloatAtttribute(0f, 50f)]
+        [Slider(0f, 50f)]
         public float IndentSpacing = 24.0f;
-        [SliderFloatAtttribute(0f, 50f)]
+        [Slider(0f, 50f)]
         public float ColumnsMinSpacing = 6.0f;
-        [SliderFloatAtttribute(0f, 50f)]
+        [Slider(0f, 50f)]
         public float ScrollbarSize = 14.0f;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float ScrollbarRounding = 2.0f;
-        [SliderFloatAtttribute(0f, 50f)]
+        [Slider(0f, 50f)]
         public float GrabMinSize = 10.0f;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float GrabRounding = 2.0f;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float TabRounding = 2.0f;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float TabBorderSize = 1.0f;
-        [SliderFloatAtttribute(0f, 10f)]
+        [Slider(0f, 10f)]
         public float TabMinWidthForCloseButton = 0.0f;
-        [ComboboxAtttribute]
         public ImGuiDir ColorButtonPosition = ImGuiDir.Right;
-        [DragVector2Atttribute(0f, 1f)]
+        [Drag(0f, 1f)]
         public Vector2 ButtonTextAlign = new Vector2(0.5f, 0.5f);
-        [DragVector2Atttribute(0f, 1f)]
+        [Drag(0f, 1f)]
         public Vector2 SelectableTextAlign = new Vector2(0.0f, 0.0f);
-        [SliderFloatAtttribute(0.001f, 2f)]
+        [Slider(0.001f, 2f)]
         public float CircleTessellationMaxError = 0.01f;
-        [ToggleAtttribute]
+        [Toggle]
         public bool AntiAliasedLinesUseTex = false;
-        [ToggleAtttribute]
+        [Toggle]
         public bool AntiAliasedLines = true;
-        [ToggleAtttribute]
+        [Toggle]
         public bool AntiAliasedFill = true;
+        // colors
+        public Vector4[] Colors;
 
-        public void Apply()
+        /// <summary>
+        /// Instantiate a new FuguiTheme instance. Default values are Dark theme
+        /// </summary>
+        /// <param name="name">name of the theme (must be unique, overise it will overwite the last theme with same name)</param>
+        public FuguiTheme(string name)
+        {
+            ThemeName = name;
+            // set default colors
+            SetAsDefaultDarkTheme();
+        }
+
+        /// <summary>
+        /// try to register this theme to ThemManager
+        /// </summary>
+        /// <returns>true if success, false if a theme with the same name already exists in theme manager</returns>
+        public bool RegisterToThemeManager()
+        {
+            return ThemeManager.RegisterTheme(this);
+        }
+
+        /// <summary>
+        /// try to unregister this theme from ThemManager
+        /// </summary>
+        /// <returns>true if success, false if a no with the same name exists in theme manager</returns>
+        public bool UnregisterToThemeManager()
+        {
+            return ThemeManager.UnregisterTheme(this);
+        }
+
+        /// <summary>
+        /// Set default Dark Theme colors to this theme
+        /// </summary>
+        public void SetAsDefaultDarkTheme()
+        {
+
+            Alpha = 1.0f;
+            WindowPadding = new Vector2(1.0f, 0.0f);
+            WindowRounding = 2.0f;
+            WindowBorderSize = 1.0f;
+            WindowMinSize = new Vector2(64.0f, 64.0f);
+            WindowTitleAlign = new Vector2(0.0f, 0.5f);
+            WindowMenuButtonPosition = ImGuiDir.Right;
+            ChildRounding = 2.0f;
+            ChildBorderSize = 1.0f;
+            PopupRounding = 2.0f;
+            PopupBorderSize = 1.0f;
+            FramePadding = new Vector2(8f, 4f);
+            FrameRounding = 2.0f;
+            FrameBorderSize = 1.1f;
+            ItemSpacing = new Vector2(4.0f, 6.0f);
+            ItemInnerSpacing = new Vector2(4.0f, 6.0f);
+            CellPadding = new Vector2(6.0f, 1.0f);
+            IndentSpacing = 24.0f;
+            ColumnsMinSpacing = 6.0f;
+            ScrollbarSize = 14.0f;
+            ScrollbarRounding = 2.0f;
+            GrabMinSize = 10.0f;
+            GrabRounding = 2.0f;
+            TabRounding = 2.0f;
+            TabBorderSize = 1.0f;
+            TabMinWidthForCloseButton = 0.0f;
+            ColorButtonPosition = ImGuiDir.Right;
+            ButtonTextAlign = new Vector2(0.5f, 0.5f);
+            SelectableTextAlign = new Vector2(0.0f, 0.0f);
+            CircleTessellationMaxError = 0.01f;
+            AntiAliasedLinesUseTex = false;
+            AntiAliasedLines = true;
+            AntiAliasedFill = true;
+
+            Colors = new Vector4[(int)ImGuiCustomCol.COUNT];
+            // imgui colors
+            Colors[(int)ImGuiCol.Text] = new Vector4(223f / 255f, 223f / 255f, 223f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.TextDisabled] = new Vector4(0.3764705955982208f, 0.3764705955982208f, 0.3764705955982208f, 1.0f);
+            Colors[(int)ImGuiCol.WindowBg] = new Vector4(46f / 255f, 46f / 255f, 46f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.ChildBg] = new Vector4(0.164705f, 0.164705f, 0.164705f, 1.0f);
+            Colors[(int)ImGuiCol.PopupBg] = new Vector4(0.1882352977991104f, 0.1882352977991104f, 0.1882352977991104f, 1.0f);
+            Colors[(int)ImGuiCol.Border] = new Vector4(24f / 255f, 24f / 255f, 24f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.BorderShadow] = Vector4.zero;//  new Vector4(0.0f, 0.0f, 0.0f, 0.28f);
+            Colors[(int)ImGuiCol.FrameBg] = new Vector4(35f / 255f, 35f / 255f, 35f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.FrameBgHovered] = new Vector4(0.09442061185836792f, 0.09441966563463211f, 0.09441966563463211f, 0.5400000214576721f);
+            Colors[(int)ImGuiCol.FrameBgActive] = new Vector4(0.1802556961774826f, 0.1802569776773453f, 0.1802574992179871f, 1.0f);
+            Colors[(int)ImGuiCol.TitleBg] = new Vector4(34f / 255f, 34f / 255f, 34f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.TitleBgActive] = new Vector4(34f / 255f, 34f / 255f, 34f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.TitleBgCollapsed] = new Vector4(34f / 255f, 34f / 255f, 34f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.MenuBarBg] = new Vector4(0.09411764889955521f, 0.09411764889955521f, 0.09411764889955521f, 1.0f);
+            Colors[(int)ImGuiCol.ScrollbarBg] = new Vector4(0.0470588244497776f, 0.0470588244497776f, 0.0470588244497776f, 0.5411764979362488f);
+            Colors[(int)ImGuiCol.ScrollbarGrab] = new Vector4(0.2823529541492462f, 0.2823529541492462f, 0.2823529541492462f, 0.5411764979362488f);
+            Colors[(int)ImGuiCol.ScrollbarGrabHovered] = new Vector4(0.321568638086319f, 0.321568638086319f, 0.321568638086319f, 0.5411764979362488f);
+            Colors[(int)ImGuiCol.ScrollbarGrabActive] = new Vector4(0.4392156898975372f, 0.4392156898975372f, 0.4392156898975372f, 0.5411764979362488f);
+            Colors[(int)ImGuiCol.CheckMark] = new Vector4(41f / 255f, 126f / 255f, 204f / 255f, 1f);//new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
+            Colors[(int)ImGuiCol.SliderGrab] = new Vector4(0.3372549116611481f, 0.3372549116611481f, 0.3372549116611481f, 0.5400000214576721f);
+            Colors[(int)ImGuiCol.SliderGrabActive] = new Vector4(0.5568627715110779f, 0.5568627715110779f, 0.5568627715110779f, 0.5400000214576721f);
+            Colors[(int)ImGuiCol.Button] = new Vector4(58f / 255f, 58f / 255f, 58f / 255f, 1f);
+            Colors[(int)ImGuiCol.ButtonHovered] = new Vector4(64f / 255f, 64f / 255f, 64f / 255f, 1f);
+            Colors[(int)ImGuiCol.ButtonActive] = new Vector4(42f / 255f, 68f / 255f, 83f / 255f, 1f);
+            Colors[(int)ImGuiCol.Header] = new Vector4(0.1098039224743843f, 0.1098039224743843f, 0.1098039224743843f, 1.0f);
+            Colors[(int)ImGuiCol.HeaderHovered] = new Vector4(42f / 255f, 68f / 255f, 83f / 255f, 0.5f);
+            Colors[(int)ImGuiCol.HeaderActive] = new Vector4(0.2000000029802322f, 0.2196078449487686f, 0.2274509817361832f, 0.3300000131130219f);
+            Colors[(int)ImGuiCol.Separator] = new Vector4(0.1098039224743843f, 0.1098039224743843f, 0.1098039224743843f, 1.0f);
+            Colors[(int)ImGuiCol.SeparatorHovered] = new Vector4(0.0313725508749485f, 0.0313725508749485f, 0.0313725508749485f, 1.0f);
+            Colors[(int)ImGuiCol.SeparatorActive] = new Vector4(0.250980406999588f, 0.250980406999588f, 0.250980406999588f, 1.0f);
+            Colors[(int)ImGuiCol.ResizeGrip] = new Vector4(0.1098039224743843f, 0.1098039224743843f, 0.1098039224743843f, 1.0f);
+            Colors[(int)ImGuiCol.ResizeGripHovered] = new Vector4(0.0313725508749485f, 0.0313725508749485f, 0.0313725508749485f, 1.0f);
+            Colors[(int)ImGuiCol.ResizeGripActive] = new Vector4(0.250980406999588f, 0.250980406999588f, 0.250980406999588f, 1.0f);
+            Colors[(int)ImGuiCol.Tab] = new Vector4(34f / 255f, 34f / 255f, 34f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.TabHovered] = new Vector4(0.250980406999588f, 0.250980406999588f, 0.250980406999588f, 1.0f);
+            Colors[(int)ImGuiCol.TabActive] = new Vector4(46f / 255f, 46f / 255f, 46f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.TabUnfocused] = new Vector4(34f / 255f, 34f / 255f, 34f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.TabUnfocusedActive] = new Vector4(46f / 255f, 46f / 255f, 46f / 255f, 1.0f);
+            Colors[(int)ImGuiCol.PlotLines] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+            Colors[(int)ImGuiCol.PlotLinesHovered] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+            Colors[(int)ImGuiCol.PlotHistogram] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+            Colors[(int)ImGuiCol.PlotHistogramHovered] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+            Colors[(int)ImGuiCol.TableHeaderBg] = new Vector4(0.0f, 0.0f, 0.0f, 0.5199999809265137f);
+            Colors[(int)ImGuiCol.TableBorderStrong] = new Vector4(0.0f, 0.0f, 0.0f, 0.5199999809265137f);
+            Colors[(int)ImGuiCol.TableBorderLight] = new Vector4(0.2784313857555389f, 0.2784313857555389f, 0.2784313857555389f, 0.2899999916553497f);
+            Colors[(int)ImGuiCol.TableRowBg] = new Vector4(1.0f, 1.0f, 1.0f, 1f / 255f);
+            Colors[(int)ImGuiCol.TableRowBgAlt] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+            Colors[(int)ImGuiCol.TextSelectedBg] = new Vector4(0.2000000029802322f, 0.2196078449487686f, 0.2274509817361832f, 1.0f);
+            Colors[(int)ImGuiCol.DragDropTarget] = new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
+            Colors[(int)ImGuiCol.NavHighlight] = new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
+            Colors[(int)ImGuiCol.NavWindowingHighlight] = new Vector4(0.1764705926179886f, 0.407843142747879f, 0.5372549295425415f, 1.0f);
+            Colors[(int)ImGuiCol.NavWindowingDimBg] = new Vector4(0.09411764889955521f, 0.09411764889955521f, 0.09411764889955521f, 0.7843137383460999f);
+            Colors[(int)ImGuiCol.ModalWindowDimBg] = new Vector4(0.09411764889955521f, 0.09411764889955521f, 0.09411764889955521f, 0.7843137383460999f);
+            Colors[(int)ImGuiCol.DockingEmptyBg] = Colors[(int)ImGuiCol.FrameBg];
+            Colors[(int)ImGuiCol.DockingPreview] = Color.black;
+
+            // custom colors
+            Colors[(int)ImGuiCustomCol.Highlight] = new Vector4(1f / 255f, 122f / 255f, 1f, 1f);
+            Colors[(int)ImGuiCustomCol.HighlightHovered] = new Vector4(1f / 255f * 0.9f, 122f / 255f * 0.9f, 1f * 0.9f, 1f);
+            Colors[(int)ImGuiCustomCol.HighlightActive] = new Vector4(1f / 255f * 0.8f, 122f / 255f * 0.8f, 1f * 0.8f, 1f);
+            Colors[(int)ImGuiCustomCol.HighlightDisabled] = new Vector4(1f / 255f * 0.5f, 122f / 255f * 0.5f, 1f * 0.5f, 1f);
+
+            Colors[(int)ImGuiCustomCol.FrameHoverFeedback] = new Vector4(0.8f, 0.8f, 0.8f, 0.2f);
+            Colors[(int)ImGuiCustomCol.FrameSelectedFeedback] = new Vector4(42f / 255f, 68f / 255f, 83f / 255f, 1f);
+
+            Colors[(int)ImGuiCustomCol.Collapsable] = new Vector4(0.205f, 0.205f, 0.205f, 1f);
+            Colors[(int)ImGuiCustomCol.CollapsableHovered] = new Vector4(0.22f, 0.22f, 0.22f, 1f);
+            Colors[(int)ImGuiCustomCol.CollapsableActive] = new Vector4(0.25f, 0.25f, 0.25f, 1f);
+            Colors[(int)ImGuiCustomCol.CollapsableDisabled] = new Vector4(0.18f, 0.18f, 0.18f, 1f) * 0.5f;
+
+            Colors[(int)ImGuiCustomCol.Selected] = new Vector4(18f / 255f, 98f / 255f, 181f / 255f, 1f); //new Vector4(35f / 255f, 74f / 255f, 108f / 255f, 1f);
+            Colors[(int)ImGuiCustomCol.SelectedHovered] = Colors[(int)ImGuiCustomCol.Selected] * 0.9f;
+            Colors[(int)ImGuiCustomCol.SelectedActive] = Colors[(int)ImGuiCustomCol.Selected] * 0.8f;
+            Colors[(int)ImGuiCustomCol.SelectedText] = Vector4.one;
+            Colors[(int)ImGuiCol.CheckMark] = Colors[(int)ImGuiCustomCol.Selected]; //new Vector4(58f / 255f, 121f / 255f, 179f / 255f, 1f);
+        }
+
+        /// <summary>
+        /// Set default Light Theme colors to this theme
+        /// </summary>
+        public void SetAsDefaultLightTheme()
+        {
+            Alpha = 1.0f;
+            WindowPadding = new Vector2(1.0f, 0.0f);
+            WindowRounding = 2.0f;
+            WindowBorderSize = 1.0f;
+            WindowMinSize = new Vector2(64.0f, 64.0f);
+            WindowTitleAlign = new Vector2(0.0f, 0.5f);
+            WindowMenuButtonPosition = ImGuiDir.Right;
+            ChildRounding = 2.0f;
+            ChildBorderSize = 1.0f;
+            PopupRounding = 2.0f;
+            PopupBorderSize = 1.0f;
+            FramePadding = new Vector2(8f, 4f);
+            FrameRounding = 2.0f;
+            FrameBorderSize = 1.1f;
+            ItemSpacing = new Vector2(4.0f, 6.0f);
+            ItemInnerSpacing = new Vector2(4.0f, 6.0f);
+            CellPadding = new Vector2(6.0f, 1.0f);
+            IndentSpacing = 24.0f;
+            ColumnsMinSpacing = 6.0f;
+            ScrollbarSize = 14.0f;
+            ScrollbarRounding = 2.0f;
+            GrabMinSize = 10.0f;
+            GrabRounding = 2.0f;
+            TabRounding = 2.0f;
+            TabBorderSize = 1.0f;
+            TabMinWidthForCloseButton = 0.0f;
+            ColorButtonPosition = ImGuiDir.Right;
+            ButtonTextAlign = new Vector2(0.5f, 0.5f);
+            SelectableTextAlign = new Vector2(0.0f, 0.0f);
+            CircleTessellationMaxError = 0.01f;
+            AntiAliasedLinesUseTex = false;
+            AntiAliasedLines = true;
+            AntiAliasedFill = true;
+
+            // imgui colors
+            Colors = new Vector4[(int)ImGuiCustomCol.COUNT];
+
+            Colors[(int)ImGuiCol.Text] = new Vector4(0.15f, 0.15f, 0.15f, 1.00f);
+            Colors[(int)ImGuiCol.TextDisabled] = new Vector4(0.60f, 0.60f, 0.60f, 1.00f);
+            Colors[(int)ImGuiCol.WindowBg] = new Vector4(0.87f, 0.87f, 0.87f, 1.00f);
+            Colors[(int)ImGuiCol.ChildBg] = new Vector4(0.87f, 0.87f, 0.87f, 1.00f);
+            Colors[(int)ImGuiCol.PopupBg] = new Vector4(0.87f, 0.87f, 0.87f, 1.00f);
+            Colors[(int)ImGuiCol.Border] = new Vector4(0.89f, 0.89f, 0.89f, 1.00f);
+            Colors[(int)ImGuiCol.BorderShadow] = new Vector4(0.00f, 0.00f, 0.00f, 0.00f);
+            Colors[(int)ImGuiCol.FrameBg] = new Vector4(0.93f, 0.93f, 0.93f, 1.00f);
+            Colors[(int)ImGuiCol.FrameBgHovered] = new Vector4(1.00f, 0.69f, 0.07f, 0.69f);
+            Colors[(int)ImGuiCol.FrameBgActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
+            Colors[(int)ImGuiCol.TitleBg] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+            Colors[(int)ImGuiCol.TitleBgActive] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+            Colors[(int)ImGuiCol.TitleBgCollapsed] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+            Colors[(int)ImGuiCol.MenuBarBg] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+            Colors[(int)ImGuiCol.ScrollbarBg] = new Vector4(0.87f, 0.87f, 0.87f, 1.00f);
+            Colors[(int)ImGuiCol.ScrollbarGrab] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+            Colors[(int)ImGuiCol.ScrollbarGrabHovered] = new Vector4(1.00f, 0.69f, 0.07f, 0.69f);
+            Colors[(int)ImGuiCol.ScrollbarGrabActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
+            Colors[(int)ImGuiCol.CheckMark] = new Vector4(41f / 255f, 126f / 255f, 204f / 255f, 1f);//new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
+            Colors[(int)ImGuiCol.SliderGrab] = new Vector4(1.00f, 0.69f, 0.07f, 0.69f);
+            Colors[(int)ImGuiCol.SliderGrabActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
+            Colors[(int)ImGuiCol.Button] = new Vector4(0.83f, 0.83f, 0.83f, 1.00f);
+            Colors[(int)ImGuiCol.ButtonHovered] = new Vector4(1.00f, 0.69f, 0.07f, 0.69f);
+            Colors[(int)ImGuiCol.ButtonActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
+            Colors[(int)ImGuiCol.Header] = new Vector4(0.67f, 0.67f, 0.67f, 1.00f);
+            Colors[(int)ImGuiCol.HeaderHovered] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)ImGuiCol.HeaderActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
+            Colors[(int)ImGuiCol.Separator] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+            Colors[(int)ImGuiCol.SeparatorHovered] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)ImGuiCol.SeparatorActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
+            Colors[(int)ImGuiCol.ResizeGrip] = new Vector4(1.00f, 1.00f, 1.00f, 0.18f);
+            Colors[(int)ImGuiCol.ResizeGripHovered] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)ImGuiCol.ResizeGripActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
+            Colors[(int)ImGuiCol.Tab] = new Vector4(0.16f, 0.16f, 0.16f, 0.00f);
+            Colors[(int)ImGuiCol.TabHovered] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)ImGuiCol.TabActive] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)ImGuiCol.TabUnfocused] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+            Colors[(int)ImGuiCol.TabUnfocusedActive] = new Vector4(0.87f, 0.87f, 0.87f, 1.00f);
+            Colors[(int)ImGuiCol.DockingPreview] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
+            Colors[(int)ImGuiCol.DockingEmptyBg] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+            Colors[(int)ImGuiCol.PlotLines] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+            Colors[(int)ImGuiCol.PlotLinesHovered] = new Vector4(0.90f, 0.70f, 0.00f, 1.00f);
+            Colors[(int)ImGuiCol.PlotHistogram] = new Vector4(0.90f, 0.70f, 0.00f, 1.00f);
+            Colors[(int)ImGuiCol.PlotHistogramHovered] = new Vector4(1.00f, 0.60f, 0.00f, 1.00f);
+            Colors[(int)ImGuiCol.TextSelectedBg] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)ImGuiCol.DragDropTarget] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)ImGuiCol.NavHighlight] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)ImGuiCol.NavWindowingHighlight] = new Vector4(1.00f, 1.00f, 1.00f, 0.70f);
+            Colors[(int)ImGuiCol.NavWindowingDimBg] = new Vector4(0.87f, 0.87f, 0.87f, 1.00f);
+            Colors[(int)ImGuiCol.ModalWindowDimBg] = new Vector4(0.20f, 0.20f, 0.20f, 0.35f);
+            Colors[(int)ImGuiCol.DockingEmptyBg] = Colors[(int)ImGuiCol.FrameBg];
+            Colors[(int)ImGuiCol.DockingPreview] = Color.white;
+
+            // custom colors
+            Colors[(int)ImGuiCustomCol.Highlight] = new Vector4(1f / 255f, 122f / 255f, 1f, 1f);
+            Colors[(int)ImGuiCustomCol.HighlightHovered] = new Vector4(1f / 255f * 0.9f, 122f / 255f * 0.9f, 1f * 0.9f, 1f);
+            Colors[(int)ImGuiCustomCol.HighlightActive] = new Vector4(1f / 255f * 0.8f, 122f / 255f * 0.8f, 1f * 0.8f, 1f);
+            Colors[(int)ImGuiCustomCol.HighlightDisabled] = new Vector4(1f / 255f * 0.5f, 122f / 255f * 0.5f, 1f * 0.5f, 1f);
+
+            Colors[(int)ImGuiCustomCol.FrameHoverFeedback] = new Vector4(0.8f, 0.8f, 0.8f, 0.2f);
+            Colors[(int)ImGuiCustomCol.FrameSelectedFeedback] = new Vector4(42f / 255f, 68f / 255f, 83f / 255f, 1f);
+
+            Colors[(int)ImGuiCustomCol.Collapsable] = new Vector4(0.205f, 0.205f, 0.205f, 1f);
+            Colors[(int)ImGuiCustomCol.CollapsableHovered] = new Vector4(0.22f, 0.22f, 0.22f, 1f);
+            Colors[(int)ImGuiCustomCol.CollapsableActive] = new Vector4(0.25f, 0.25f, 0.25f, 1f);
+            Colors[(int)ImGuiCustomCol.CollapsableDisabled] = new Vector4(0.18f, 0.18f, 0.18f, 1f) * 0.5f;
+
+            Colors[(int)ImGuiCustomCol.Selected] = new Vector4(32f / 255f, 67f / 255f, 99f / 255f, 1f);
+            Colors[(int)ImGuiCustomCol.SelectedHovered] = Colors[(int)ImGuiCustomCol.Selected] * 0.9f;
+            Colors[(int)ImGuiCustomCol.SelectedActive] = Colors[(int)ImGuiCustomCol.Selected] * 0.8f;
+            Colors[(int)ImGuiCustomCol.SelectedText] = Vector4.one;
+        }
+
+        /// <summary>
+        /// Apply this theme to the current ImGui context
+        /// </summary>
+        internal void Apply()
         {
             var style = ImGui.GetStyle();
+            // set style var
             style.Alpha = Alpha;
             style.WindowPadding = WindowPadding;
             style.WindowRounding = WindowRounding;
@@ -108,6 +377,11 @@ namespace Fugui.Framework
             style.AntiAliasedLinesUseTex = AntiAliasedLinesUseTex;
             style.AntiAliasedLines = AntiAliasedLines;
             style.AntiAliasedFill = AntiAliasedFill;
+            // set style colors
+            for (int i = 0; i < (int)ImGuiCol.COUNT; i++)
+            {
+                style.Colors[i] = Colors[i];
+            }
         }
     }
 }

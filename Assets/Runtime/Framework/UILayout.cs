@@ -1,7 +1,9 @@
 using Fugui.Core;
 using ImGuiNET;
+using SFB;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -25,9 +27,9 @@ namespace Fugui.Framework
         // A flag indicating whether the next element should be disabled.
         protected bool _nextIsDisabled;
         // An array of strings representing the current tool tips.
-        private string[] _currentToolTips = null;
+        protected string[] _currentToolTips = null;
         // An integer representing the current tool tips index.
-        private int _currentToolTipsIndex = 0;
+        protected int _currentToolTipsIndex = 0;
         // whatever tooltip must be display hover Labels
         protected bool _currentToolTipsOnLabels = false;
         protected bool _animationEnabled = true;
@@ -44,6 +46,8 @@ namespace Fugui.Framework
         private static Dictionary<string, UIElementAnimationData> _uiElementAnimationDatas = new Dictionary<string, UIElementAnimationData>();
         // A dictionary that store displaying toggle data.
         private static Dictionary<string, int> _buttonsGroupIndex = new Dictionary<string, int>();
+        // A dictionary of strings representing the current PathFields string value.
+        private static Dictionary<string, string> _pathFieldValues = new Dictionary<string, string>();
         #endregion
 
         #region Layout
@@ -744,7 +748,7 @@ namespace Fugui.Framework
         ///<param name="value">The float value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref float value, string vString = null)
+        public bool Drag(string id, ref float value, string vString = null)
         {
             return Drag(id, ref value, vString, 0, 100, UIFrameStyle.Default);
         }
@@ -758,7 +762,7 @@ namespace Fugui.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref float value, string vString, float min, float max)
+        public bool Drag(string id, ref float value, string vString, float min, float max)
         {
             return Drag(id, ref value, vString, min, max, UIFrameStyle.Default);
         }
@@ -832,7 +836,7 @@ namespace Fugui.Framework
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
         ///<param name="v2String">A string to be displayed before the input field Y. If empty, no string will be displayed.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref Vector2 value, string v1String = null, string v2String = null)
+        public bool Drag(string id, ref Vector2 value, string v1String = null, string v2String = null)
         {
             return Drag(id, ref value, v1String, v2String, 0f, 100f, UIFrameStyle.Default);
         }
@@ -847,7 +851,7 @@ namespace Fugui.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref Vector2 value, string v1String, string v2String, float min, float max)
+        public bool Drag(string id, ref Vector2 value, string v1String, string v2String, float min, float max)
         {
             return Drag(id, ref value, v1String, v2String, min, max, UIFrameStyle.Default);
         }
@@ -912,7 +916,7 @@ namespace Fugui.Framework
         ///<param name="v2String">A string to be displayed before the input field Y. If empty, no string will be displayed.</param>
         ///<param name="v3String">A string to be displayed before the input field Z. If empty, no string will be displayed.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref Vector3 value, string v1String = null, string v2String = null, string v3String = null)
+        public bool Drag(string id, ref Vector3 value, string v1String = null, string v2String = null, string v3String = null)
         {
             return Drag(id, ref value, v1String, v2String, v3String, 0f, 100f, UIFrameStyle.Default);
         }
@@ -928,7 +932,7 @@ namespace Fugui.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max)
+        public bool Drag(string id, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max)
         {
             return Drag(id, ref value, v1String, v2String, v3String, min, max, UIFrameStyle.Default);
         }
@@ -1000,7 +1004,7 @@ namespace Fugui.Framework
         ///<param name="v3String">A string to be displayed before the input field Z. If empty, no string will be displayed.</param>
         ///<param name="v4String">A string to be displayed before the input field W. If empty, no string will be displayed.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref Vector4 value, string v1String = null, string v2String = null, string v3String = null, string v4String = null)
+        public bool Drag(string id, ref Vector4 value, string v1String = null, string v2String = null, string v3String = null, string v4String = null)
         {
             return Drag(id, ref value, v1String, v2String, v3String, v4String, 0f, 100f, UIFrameStyle.Default);
         }
@@ -1016,7 +1020,7 @@ namespace Fugui.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max)
+        public bool Drag(string id, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max)
         {
             return Drag(id, ref value, v1String, v2String, v3String, v4String, min, max, UIFrameStyle.Default);
         }
@@ -1075,7 +1079,7 @@ namespace Fugui.Framework
         ///<param name="id">The identifier for the input field.</param>
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref int value)
+        public bool Drag(string id, ref int value)
         {
             return Drag(id, null, ref value, 0, 100, UIFrameStyle.Default);
         }
@@ -1087,7 +1091,7 @@ namespace Fugui.Framework
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, string vString, ref int value)
+        public bool Drag(string id, string vString, ref int value)
         {
             return Drag(id, vString, ref value, 0, 100, UIFrameStyle.Default);
         }
@@ -1101,7 +1105,7 @@ namespace Fugui.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, string vString, ref int value, int min, int max)
+        public bool Drag(string id, string vString, ref int value, int min, int max)
         {
             return Drag(id, vString, ref value, min, max, UIFrameStyle.Default);
         }
@@ -1114,7 +1118,7 @@ namespace Fugui.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref int value, int min, int max)
+        public bool Drag(string id, ref int value, int min, int max)
         {
             return Drag(id, null, ref value, min, max, UIFrameStyle.Default);
         }
@@ -1201,7 +1205,7 @@ namespace Fugui.Framework
             foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
             {
                 enumValues.Add(enumValue);
-                cItems.Add(new ComboboxTextItem(addSpacesBeforeUppercase(enumValue.ToString()), true));
+                cItems.Add(new ComboboxTextItem(FuGui.AddSpacesBeforeUppercase(enumValue.ToString()), true));
             }
             // call the custom combobox function, passing in the lists and the itemChange
             _customCombobox(text, cItems, (index) =>
@@ -1239,7 +1243,7 @@ namespace Fugui.Framework
             foreach (T item in items)
             {
                 // Add the item to the list of combobox items
-                cItems.Add(new ComboboxTextItem(addSpacesBeforeUppercase(item.ToString()), true));
+                cItems.Add(new ComboboxTextItem(FuGui.AddSpacesBeforeUppercase(item.ToString()), true));
             }
             // Display the custom combobox and call the specified action when the selected item changes
             _customCombobox(text, cItems, (index) =>
@@ -1831,7 +1835,7 @@ namespace Fugui.Framework
             }
 
             // draw states
-            float height = string.IsNullOrEmpty(currentText) ? 18f : textSize.y + 4f;
+            float height = string.IsNullOrEmpty(currentText) ? 16f : textSize.y + 4f;
             bool valueChanged = false;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             Vector2 size = new Vector2(string.IsNullOrEmpty(currentText) ? height * 2f : height * 2f + textSize.x, height);
@@ -1938,7 +1942,7 @@ namespace Fugui.Framework
             foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
             {
                 enumValues.Add(enumValue);
-                cItems.Add(addSpacesBeforeUppercase(enumValue.ToString()));
+                cItems.Add(FuGui.AddSpacesBeforeUppercase(enumValue.ToString()));
             }
             // call the custom combobox function, passing in the lists and the itemChange
             _buttonsGroup(text, cItems, (index) =>
@@ -2025,6 +2029,126 @@ namespace Fugui.Framework
         }
         #endregion
 
+        #region PathField
+        public void InputFolder(string id, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
+        {
+            _pathField(id, true, callback, UIFrameStyle.Default, defaultPath, extentions);
+        }
+
+        public void InputFolder(string id, UIFrameStyle style, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
+        {
+            _pathField(id, true, callback, style, defaultPath, extentions);
+        }
+
+        public void InputFile(string id, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
+        {
+            _pathField(id, false, callback, UIFrameStyle.Default, defaultPath, extentions);
+        }
+
+        public void InputFile(string id, UIFrameStyle style, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
+        {
+            _pathField(id, false, callback, style, defaultPath, extentions);
+        }
+
+        protected virtual void _pathField(string id, bool onlyFolder, Action<string> callback, UIFrameStyle style, string defaultPath = null, params ExtensionFilter[] extentions)
+        {
+            // apply style and set unique ID
+            id = beginElement(id, style);
+
+            // set path if not exist in dic
+            if (!_pathFieldValues.ContainsKey(id))
+            {
+                _pathFieldValues.Add(id, string.IsNullOrEmpty(defaultPath) ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) : defaultPath);
+            }
+            string path = _pathFieldValues[id];
+
+            // display values
+            float cursorPos = ImGui.GetCursorScreenPos().x;
+            float width = ImGui.GetContentRegionAvail().x;
+            float buttonWidth = ImGui.CalcTextSize("...").x + 8f;
+
+            // draw input text
+            ImGui.SetNextItemWidth(width - buttonWidth);
+            bool edited = false;
+            if (ImGui.InputText("##" + id, ref path, 2048, ImGuiInputTextFlags.EnterReturnsTrue))
+            {
+                validatePath();
+            }
+            // draw text input frame and tooltip
+            _elementHoverFramed = true;
+            drawHoverFrame();
+            displayToolTip(false, true);
+
+            // draw button
+            ImGui.SameLine();
+            ImGui.SetCursorScreenPos(new Vector2(cursorPos + width - buttonWidth, ImGui.GetCursorScreenPos().y));
+            if (ImGui.Button("...##" + id, new Vector2(buttonWidth, 0)))
+            {
+                string[] paths = null;
+                if (onlyFolder)
+                {
+                    paths = StandaloneFileBrowser.OpenFolderPanel("Open Folder", "", false);
+                }
+                else
+                {
+                    paths = StandaloneFileBrowser.OpenFilePanel("Open File", "", extentions, false);
+                }
+                if(paths != null && paths.Length > 0)
+                {
+                    path = paths[0];
+                    validatePath();
+                }
+            }
+            _elementHoverFramed = true;
+            endElement(style);
+
+            if (edited)
+            {
+                callback?.Invoke(_pathFieldValues[id]);
+            }
+
+            void validatePath()
+            {
+                // it must be a directory and it exists
+                if (onlyFolder && Directory.Exists(path))
+                {
+                    _pathFieldValues[id] = path;
+                    edited = true;
+                }
+                // it must be a file and it exists
+                else if (File.Exists(path))
+                {
+                    // we need to check if extention match
+                    if (extentions.Length > 0)
+                    {
+                        string fileExt = Path.GetExtension(path).Replace(".", "");
+                        // iterate on filters
+                        foreach (var ext in extentions)
+                        {
+                            // iterate on extentions
+                            foreach (string extStr in ext.Extensions)
+                            {
+                                // check whatever extention is valid
+                                if (extStr == "*" || extStr == fileExt)
+                                {
+                                    _pathFieldValues[id] = path;
+                                    edited = true;
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    // we do not need to check extentions
+                    else
+                    {
+                        _pathFieldValues[id] = path;
+                        edited = true;
+                    }
+                }
+            }
+        }
+        #endregion
+
         /// <summary>
         /// Draw a Separator Line
         /// </summary>
@@ -2097,21 +2221,10 @@ namespace Fugui.Framework
 
         #region string utils
         /// <summary>
-        /// Adds spaces before uppercase letters in the input string.
-        /// </summary>
-        /// <param name="input">The input string.</param>
-        /// <returns>The input string with spaces added before uppercase letters.</returns>
-        private string addSpacesBeforeUppercase(string input)
-        {
-            // Use a regular expression to add spaces before uppercase letters, but ignore the first letter of the string
-            return Regex.Replace(input, "(?<!^)([A-Z])", " $1");
-        }
-
-        /// <summary>
         /// Displays a tooltip if the current element is hovered over, or if force is set to true.
         /// </summary>
         /// <param name="force">Whether to force display the tooltip or not.</param>
-        protected void displayToolTip(bool force = false)
+        protected void displayToolTip(bool force = false, bool ignoreAvancement = false)
         {
             // If there are tooltips to display and we haven't displayed all of them yet
             if (_currentToolTips != null && _currentToolTipsIndex < _currentToolTips.Length)
@@ -2135,6 +2248,11 @@ namespace Fugui.Framework
                     FuGui.PopStyle();
                 }
 
+                // is we want to ignore tooltip avancement, let's return without increment the index
+                if (ignoreAvancement)
+                {
+                    return;
+                }
                 // Move on to the next tooltip
                 _currentToolTipsIndex++;
                 // If we have displayed all the tooltips, reset the current tooltips array

@@ -225,6 +225,11 @@ namespace Fugui.Core
         /// Fugui Font configuration
         /// </summary>
         public FontConfig FontConfig;
+        /// <summary>
+        /// Fugui Themes folder (must be inside streaming assetes folder)
+        /// </summary>
+        [Tooltip("Fugui Themes folder (must be inside streaming assetes folder)")]
+        public string ThemesFolder = "Fugui/Themes";
 
         [Header("Docking")]
         [Tooltip("Docking flags for the main container dockSpace.")]

@@ -16,8 +16,6 @@ namespace Fugui.Framework
         public static UITextStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultTextStyle; } }
         static UITextStyle _selectedTextStyle;
         public static UITextStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedTextStyle; } }
-        static UITextStyle _pureTextStyle;
-        public static UITextStyle Pure { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _pureTextStyle; } }
         #endregion
 
         public UITextStyle(Color text, Color disabledText)
@@ -53,12 +51,6 @@ namespace Fugui.Framework
             _defaultTextStyle = new UITextStyle()
             {
                 Text = ThemeManager.GetColor(ImGuiCol.Text),
-                DisabledText = ThemeManager.GetColor(ImGuiCol.TextDisabled)
-            };
-            // pure text style
-            _pureTextStyle = new UITextStyle()
-            {
-                Text = ThemeManager.CurrentTheme == Theme.Dark ? Color.white : Color.black,
                 DisabledText = ThemeManager.GetColor(ImGuiCol.TextDisabled)
             };
             // selectd text style

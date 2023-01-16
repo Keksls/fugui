@@ -18,14 +18,12 @@ namespace Fugui.Framework
         private Vector2 _framePadding;
 
         #region Pressets
-        static UIButtonStyle defaultButtonStyle;
-        public static UIButtonStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return defaultButtonStyle; } }
-        static UIButtonStyle selectedButtonStyle;
-        public static UIButtonStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return selectedButtonStyle; } }
-        static UIButtonStyle blueButtonStyle;
-        public static UIButtonStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return blueButtonStyle; } }
-        static UIButtonStyle darkButtonStyle;
-        public static UIButtonStyle Dark { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return darkButtonStyle; } }
+        static UIButtonStyle _defaultButtonStyle;
+        public static UIButtonStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultButtonStyle; } }
+        static UIButtonStyle _selectedButtonStyle;
+        public static UIButtonStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedButtonStyle; } }
+        static UIButtonStyle _highlightButtonStyle;
+        public static UIButtonStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightButtonStyle; } }
 
         // button sizes
         static readonly Vector2 _frameAutoSize = new Vector2(0, 0);
@@ -74,17 +72,17 @@ namespace Fugui.Framework
         private static void OnThemeSet()
         {
             // default button style
-            defaultButtonStyle = new UIButtonStyle()
+            _defaultButtonStyle = new UIButtonStyle()
             {
-                _framePadding = new Vector2(8f, 2f),
-                _button = ImGui.GetStyle().Colors[(int)ImGuiCol.Button],
-                _buttonHovered = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered],
-                _buttonActive = ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive],
-                _disabledButton = ImGui.GetStyle().Colors[(int)ImGuiCol.Button] / 2f,
+                _framePadding = new Vector2(8f, 4f),
+                _button = ThemeManager.GetColor(ImGuiCol.Button),
+                _buttonHovered = ThemeManager.GetColor(ImGuiCol.ButtonHovered),
+                _buttonActive = ThemeManager.GetColor(ImGuiCol.ButtonActive),
+                _disabledButton = ThemeManager.GetColor(ImGuiCol.Button) * 0.5f,
                 TextStyle = UITextStyle.Default
             };
             // blue button style
-            blueButtonStyle = new UIButtonStyle()
+            _highlightButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 2f),
                 _button = ThemeManager.GetColor(ImGuiCustomCol.Highlight),
@@ -93,18 +91,8 @@ namespace Fugui.Framework
                 _disabledButton = ThemeManager.GetColor(ImGuiCustomCol.HighlightDisabled),
                 TextStyle = UITextStyle.Default
             };
-            // dark button style
-            darkButtonStyle = new UIButtonStyle()
-            {
-                _framePadding = new Vector2(8f, 2f),
-                _button = new Vector4(0.1411764770746231f, 0.1411764770746231f, 0.1411764770746231f, 1.0f),
-                _buttonHovered = new Vector4(0.1098039224743843f, 0.1098039224743843f, 0.1098039224743843f, 1.0f),
-                _buttonActive = new Vector4(0.2039215713739395f, 0.2039215713739395f, 0.2039215713739395f, 1.0f),
-                _disabledButton = new Vector4(0.1098039224743843f * 2f, 0.1098039224743843f * 2f, 0.1098039224743843f * 2f, 1.0f),
-                TextStyle = UITextStyle.Default
-            };
             // selected
-            selectedButtonStyle = new UIButtonStyle()
+            _selectedButtonStyle = new UIButtonStyle()
             {
                 _button = ThemeManager.GetColor(ImGuiCustomCol.Selected),
                 _buttonHovered = ThemeManager.GetColor(ImGuiCustomCol.SelectedHovered),

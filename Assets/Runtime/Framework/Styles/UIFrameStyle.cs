@@ -15,8 +15,6 @@ namespace Fugui.Framework
         internal Color Shadow;
         // disabled
         internal Color DisabledFrame;
-        internal Color DisabledHoveredFrame;
-        internal Color DisabledActiveFrame;
         internal Color DisabledCheckMark;
         internal Color DisabledBorder;
         internal Color DisabledShadow;
@@ -27,9 +25,6 @@ namespace Fugui.Framework
         // default button style
         static UIFrameStyle _defaultFrameStyle;
         public static UIFrameStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultFrameStyle; } }
-        // checked
-        static UIFrameStyle _checkedFrameStyle;
-        public static UIFrameStyle Checked { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _checkedFrameStyle; } }
         #endregion
 
         /// <summary>
@@ -49,8 +44,8 @@ namespace Fugui.Framework
             else
             {
                 FuGui.Push(ImGuiCol.FrameBg, DisabledFrame);
-                FuGui.Push(ImGuiCol.FrameBgHovered, DisabledHoveredFrame);
-                FuGui.Push(ImGuiCol.FrameBgActive, DisabledActiveFrame);
+                FuGui.Push(ImGuiCol.FrameBgHovered, DisabledFrame);
+                FuGui.Push(ImGuiCol.FrameBgActive, DisabledFrame);
                 FuGui.Push(ImGuiCol.CheckMark, DisabledCheckMark);
                 FuGui.Push(ImGuiCol.Border, DisabledBorder);
                 FuGui.Push(ImGuiCol.BorderShadow, DisabledShadow);
@@ -84,28 +79,7 @@ namespace Fugui.Framework
                 Shadow = ThemeManager.GetColor(ImGuiCol.BorderShadow),
 
                 DisabledFrame = ThemeManager.GetColor(ImGuiCol.FrameBg) * 0.3f,
-                DisabledHoveredFrame = ThemeManager.GetColor(ImGuiCol.FrameBg) * 0.3f,
-                DisabledActiveFrame = ThemeManager.GetColor(ImGuiCol.FrameBg) * 0.3f,
                 DisabledCheckMark = ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.3f,
-                DisabledBorder = ThemeManager.GetColor(ImGuiCol.Border),
-                DisabledShadow = ThemeManager.GetColor(ImGuiCol.BorderShadow),
-
-                TextStyle = UITextStyle.Default
-            };
-            // checked style
-            _checkedFrameStyle = new UIFrameStyle()
-            {
-                Frame = ThemeManager.GetColor(ImGuiCustomCol.Selected),
-                HoveredFrame = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.9f,
-                ActiveFrame = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.8f,
-                CheckMark = ThemeManager.GetColor(ImGuiCustomCol.SelectedText),
-                Border = Vector4.zero * 0.5f,
-                Shadow = Vector4.zero,
-
-                DisabledFrame = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.3f,
-                DisabledHoveredFrame = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.3f,
-                DisabledActiveFrame = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.3f,
-                DisabledCheckMark = ThemeManager.GetColor(ImGuiCustomCol.SelectedText) * 0.3f,
                 DisabledBorder = ThemeManager.GetColor(ImGuiCol.Border),
                 DisabledShadow = ThemeManager.GetColor(ImGuiCol.BorderShadow),
 

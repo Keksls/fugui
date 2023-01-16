@@ -232,7 +232,9 @@ namespace Fugui.Core
             // draw drag button
             if (_collapsable || _draggable)
             {
-                dragDragButton(screenPos);
+                UIButtonStyle.Default.Push(true);
+                drawDragButton(screenPos);
+                UIButtonStyle.Default.Pop();
             }
 
             // draw overlay UI
@@ -275,7 +277,7 @@ namespace Fugui.Core
             FuGui.PopStyle();
         }
 
-        private void dragDragButton(Vector2 screenPos)
+        private void drawDragButton(Vector2 screenPos)
         {
             // set draggingColor
             if (_draging)

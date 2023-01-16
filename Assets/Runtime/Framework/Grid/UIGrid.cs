@@ -276,16 +276,15 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="text">Element ID and Label</param>
         /// <param name="isChecked">whatever the checkbox is checked</param>
-        /// <param name="style">Checkbox style to apply</param>
         /// <returns>true if value change</returns>
-        public override bool CheckBox(string text, ref bool isChecked, UICheckboxStyle style)
+        public override bool CheckBox(string text, ref bool isChecked)
         {
             if (!_gridCreated)
             {
                 return false;
             }
-            drawElementLabel(text, style.Unchecked.TextStyle);
-            return base.CheckBox("##" + text, ref isChecked, style);
+            drawElementLabel(text, UITextStyle.Default);
+            return base.CheckBox("##" + text, ref isChecked);
         }
         #endregion
 
@@ -317,16 +316,15 @@ namespace Fugui.Framework
         /// <param name="min">minimum value of the slider</param>
         /// <param name="max">maximum value of the slider</param>
         /// <param name="isInt">whatever the slider is an Int slider (default is float). If true, the value will be rounded</param>
-        /// <param name="style">slider style</param>
         /// <returns>true if value changed</returns>
-        protected override bool _customSlider(string text, ref float value, float min, float max, bool isInt, UISliderStyle style)
+        protected override bool _customSlider(string text, ref float value, float min, float max, bool isInt)
         {
             if (!_gridCreated)
             {
                 return false;
             }
-            drawElementLabel(text, style.Frame.TextStyle);
-            return base._customSlider(text, ref value, min, max, isInt, style);
+            drawElementLabel(text, UITextStyle.Default);
+            return base._customSlider(text, ref value, min, max, isInt);
         }
         #endregion
 
@@ -615,14 +613,14 @@ namespace Fugui.Framework
         #endregion
 
         #region Toggle
-        protected override bool _customToggle(string text, ref bool value, string textLeft, string textRight, ToggleFlags flags, UIToggleStyle style)
+        protected override bool _customToggle(string text, ref bool value, string textLeft, string textRight, ToggleFlags flags)
         {
             if (!_gridCreated)
             {
                 return false;
             }
             drawElementLabel(text, UITextStyle.Default);
-            return base._customToggle(text, ref value, textLeft, textRight, flags, style);
+            return base._customToggle(text, ref value, textLeft, textRight, flags);
         }
         #endregion
 

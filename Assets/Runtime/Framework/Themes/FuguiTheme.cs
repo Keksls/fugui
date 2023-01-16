@@ -72,6 +72,7 @@ namespace Fugui.Framework
         [Toggle]
         public bool AntiAliasedFill = true;
         // colors
+        [Hidden]
         public Vector4[] Colors;
 
         /// <summary>
@@ -382,6 +383,11 @@ namespace Fugui.Framework
             {
                 style.Colors[i] = Colors[i];
             }
+        }
+
+        public override string ToString()
+        {
+            return ThemeName;
         }
     }
 }

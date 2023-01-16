@@ -19,12 +19,12 @@ namespace Fugui.Core
         private CommandBuffer _renderCommandBuffer;
         private RenderImGui _renderFeature = null;
 
-        public UnityContext(int index, Camera camera, RenderImGui renderFeature) : base(index)
+        public UnityContext(int index, Action onInitialize, Camera camera, RenderImGui renderFeature) : base(index, onInitialize)
         {
             _renderFeature = renderFeature;
             TextureManager = new TextureManager();
             Camera = camera;
-            initialize(index);
+            initialize(index, onInitialize);
         }
 
         /// <summary>

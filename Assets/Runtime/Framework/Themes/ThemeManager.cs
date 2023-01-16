@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using System.IO;
+using System.Linq;
 
 namespace Fugui.Framework
 {
@@ -40,7 +41,7 @@ namespace Fugui.Framework
         internal static void Initialize()
         {
             LoadAllThemes();
-            if(GetTheme(DEFAULT_FUGUI_THEME_NAME, out FuguiTheme theme))
+            if (GetTheme(DEFAULT_FUGUI_THEME_NAME, out FuguiTheme theme))
             {
                 SetTheme(theme);
             }
@@ -117,7 +118,17 @@ namespace Fugui.Framework
                     {
                         using (UIGrid grid = new UIGrid("themeManagmentGrid"))
                         {
-                            grid.InputFolder("Themes Folder");
+                            grid.Combobox("Current theme", Themes.Values.ToList(), (theme) =>
+                            {
+                                SetTheme(theme);
+                            }, () => { return CurrentTheme; });
+                        }
+
+                        if (layout.Button("Save", UIButtonStyle.Highlight))
+                        {
+                            SaveTheme(CurrentTheme);
+                            LoadAllThemes();
+                            SetTheme(CurrentTheme);
                         }
                     });
 
@@ -186,7 +197,7 @@ namespace Fugui.Framework
             foreach (string file in Directory.GetFiles(folderPath))
             {
                 // try to load theme from file
-                if (LoadTheme(file, out FuguiTheme theme))
+                if (LoadTheme(Path.GetFileNameWithoutExtension(file), out FuguiTheme theme))
                 {
                     // if theme loaded, add it to dic
                     Themes.Add(theme.ThemeName, theme);
@@ -267,7 +278,7 @@ namespace Fugui.Framework
             }
             return true;
         }
-        
+
         /// <summary>
         /// try to register this theme to ThemManager
         /// </summary>
@@ -275,7 +286,7 @@ namespace Fugui.Framework
         public static bool RegisterTheme(FuguiTheme theme)
         {
             // check whatever a theme with the same name already exists in theme manager
-            if(Themes.ContainsKey(theme.ThemeName))
+            if (Themes.ContainsKey(theme.ThemeName))
             {
                 return false;
             }

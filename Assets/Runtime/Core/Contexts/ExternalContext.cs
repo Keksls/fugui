@@ -1,13 +1,14 @@
 using Fugui.Framework;
 using ImGuiNET;
+using System;
 
 namespace Fugui.Core
 {
     public class ExternalContext : FuguiContext
     {
-        public ExternalContext(int index) : base(index)
+        public ExternalContext(int index, Action onInitialize = null) : base(index, onInitialize)
         {
-            initialize(index);
+            initialize(index, onInitialize);
         }
 
         protected override void sub_initialize()

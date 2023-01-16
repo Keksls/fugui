@@ -455,8 +455,9 @@ namespace Fugui.Framework
         /// <param name="text">Label/ID of the combobox</param>
         /// <param name="items">List of items of the combobox</param>
         /// <param name="itemChange">event raised on item change. When raised, param (int) is ID of new selected item in items list</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
         /// <param name="style">Combobox style to apply</param>
-        protected override void _customCombobox(string text, List<IComboboxItem> items, Action<int> itemChange, UIComboboxStyle style)
+        protected override void _customCombobox(string text, List<IComboboxItem> items, Action<int> itemChange, Func<string> itemGetter, UIComboboxStyle style)
         {
             if (!_gridCreated)
             {
@@ -464,7 +465,7 @@ namespace Fugui.Framework
             }
             drawElementLabel(text, style.ButtonStyle.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-            base._customCombobox("##" + text, items, itemChange, style);
+            base._customCombobox("##" + text, items, itemChange, itemGetter, style);
         }
 
         /// <summary>
@@ -697,7 +698,7 @@ namespace Fugui.Framework
 
             bool disabled = _nextIsDisabled;
             _nextIsDisabled = _nextIsDisabled && !_dontDisableLabels;
-            Text(text, style);
+            Text(FuGui.AddSpacesBeforeUppercase(text), style);
             _nextIsDisabled = disabled;
         }
         #endregion

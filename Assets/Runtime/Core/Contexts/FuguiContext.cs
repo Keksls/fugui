@@ -20,7 +20,6 @@ namespace Fugui.Core
         public event Action OnRender;
         public event Action OnPostRender;
         public event Func<bool> OnPrepareFrame;
-        public event Action OnInitialize;
         public bool AutoUpdateMouse = true;
         public bool AutoUpdateKeyboard = true;
         public bool Started { get; private set; }
@@ -32,7 +31,7 @@ namespace Fugui.Core
         /// Create new imgui native contexts
         /// </summary>
         /// <param name="index">ID of the context</param>
-        public FuguiContext(int index)
+        public FuguiContext(int index, Action onInitialize)
         {
         }
 
@@ -40,7 +39,7 @@ namespace Fugui.Core
         /// Initialize this context
         /// </summary>
         /// <param name="index"></param>
-        protected void initialize(int index)
+        protected void initialize(int index, Action onInitialize)
         {
             ImGuiContext = ImGui.CreateContext();
 #if !UIMGUI_REMOVE_IMPLOT
@@ -55,8 +54,8 @@ namespace Fugui.Core
             ImGuiNative.igSetCurrentContext(ImGuiContext);
             IO = ImGui.GetIO();
             ID = index;
+            onInitialize?.Invoke();
             sub_initialize();
-            OnInitialize?.Invoke();
             if (lastDFContext != null)
             {
                 FuGui.SetCurrentContext(lastDFContext);

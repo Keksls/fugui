@@ -119,7 +119,7 @@ public class UIWindowDemo : MonoBehaviour
                         Debug.Log("click !");
                     }
                     grid.DisableNextElement();
-                    grid.Button("Mouse Pos and Down Text", UIButtonStyle.FullSize, UIButtonStyle.Blue);
+                    grid.Button("Mouse Pos and Down Text", UIButtonStyle.FullSize, UIButtonStyle.Highlight);
                 }
                 window.Container.ImGuiImage(TmpDebugTexture, new Vector2(240f, 100f));
             }
@@ -217,14 +217,14 @@ public class UIWindowDemo : MonoBehaviour
                                 layout.Drag("drdag", ref floatVal);
                                 layout.Button("big button");
                                 layout.DisableNextElement();
-                                layout.Button("big button", UIButtonStyle.Blue);
+                                layout.Button("big button", UIButtonStyle.Highlight);
                                 layout.Slider("sdlc1", ref intVal);
                                 layout.DisableNextElement();
                                 layout.Slider("sdlc2", ref intVal);
                                 layout.Slider("sdlc3", ref floatVal);
                             });
 
-                            grid.Combobox<string>("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
+                            grid.Combobox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
                             grid.Combobox("test button box", cbButtons, (newValue) => { Debug.Log(newValue); });
                         }
                     });
@@ -278,14 +278,14 @@ public class UIWindowDemo : MonoBehaviour
 
                     layout.Collapsable("Camera", () =>
                     {
-                        using (UIGrid grid = new UIGrid("cameraGrid", outterPadding: 8f))
+                    using (UIGrid grid = new UIGrid("cameraGrid", outterPadding: 8f))
+                    {
+                        grid.SetMinimumLineHeight(22f);
+                        grid.SetNextElementToolTip("Clear flag of the main camera");
+                        grid.ComboboxEnum<CameraClearFlags>("Clear Flags", (CameraClearFlags) =>
                         {
-                            grid.SetMinimumLineHeight(22f);
-                            grid.SetNextElementToolTip("Clear flag of the main camera");
-                            grid.ComboboxEnum<CameraClearFlags>("Clear Flags", (CameraClearFlags) =>
-                            {
-                                cam1.clearFlags = CameraClearFlags;
-                            });
+                            cam1.clearFlags = CameraClearFlags;
+                        }, () => {return cam1.clearFlags; });
 
                             float FOV = cam1.fieldOfView;
                             grid.SetNextElementToolTip("Field of View (FOV) of the main camera");
@@ -337,11 +337,11 @@ public class UIWindowDemo : MonoBehaviour
         {
             using (UILayout layout = new UILayout())
             {
-                layout.ComboboxEnum<AnchorLocation>("##rgCbTest", (val) => { }, UIComboboxStyle.Default);
+                layout.ComboboxEnum<AnchorLocation>("##rgCbTest", (val) => { });
                 layout.SameLine();
                 layout.Button(Icons.Ghost, UIButtonStyle.AutoSize);
                 layout.SameLine();
-                layout.Button(Icons.DataFusion, UIButtonStyle.AutoSize, UIButtonStyle.Blue);
+                layout.Button(Icons.DataFusion, UIButtonStyle.AutoSize, UIButtonStyle.Highlight);
             };
         }, OverlayFlags.NoBackground | OverlayFlags.NoClose | OverlayFlags.NoMove);
         rg.AnchorWindowDefinition(camWinDef, AnchorLocation.TopLeft, Vector2.zero);
@@ -393,7 +393,7 @@ public class UIWindowDemo : MonoBehaviour
                 layout.SameLine();
                 ImGui.Dummy(Vector2.one);
                 layout.SameLine();
-                layout.Button(Icons.EditShape, new Vector2(32f, 32f), UIButtonStyle.Blue);
+                layout.Button(Icons.EditShape, new Vector2(32f, 32f), UIButtonStyle.Highlight);
                 FuGui.PopFont();
             }
         }, OverlayFlags.Default, OverlayDragPosition.Top);

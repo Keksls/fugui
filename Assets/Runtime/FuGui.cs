@@ -86,11 +86,8 @@ namespace Fugui.Framework
             // assume that render thread is not already started
             _renderThreadStarted = false;
 
-            // initialize theme manager
-            ThemeManager.Initialize();
-
-            // create Default Fugui Context
-            DefaultContext = CreateUnityContext(mainContainerUICamera);
+            // create Default Fugui Context and initialize themeManager
+            DefaultContext = CreateUnityContext(mainContainerUICamera, ThemeManager.Initialize);
             DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
@@ -571,35 +568,35 @@ namespace Fugui.Framework
         #endregion
 
         #region Contexts
-        public static unsafe UnityContext CreateUnityContext(Camera camera)
+        public static unsafe UnityContext CreateUnityContext(Camera camera, Action onInitialize = null)
         {
-            return CreateUnityContext(_contextID++, camera);
+            return CreateUnityContext(_contextID++, camera, onInitialize);
         }
 
-        private static unsafe UnityContext CreateUnityContext(int index, Camera camera)
+        private static unsafe UnityContext CreateUnityContext(int index, Camera camera, Action onInitialize = null)
         {
             if (Contexts.ContainsKey(index))
                 return null;
 
             // create and add context
-            UnityContext context = new UnityContext(index, camera, Manager.Render);
+            UnityContext context = new UnityContext(index, onInitialize, camera, Manager.Render);
             Contexts.Add(index, context);
 
             return context;
         }
 
-        public static unsafe ExternalContext CreateExternalContext()
+        public static unsafe ExternalContext CreateExternalContext(Action onInitialize = null)
         {
             return CreateExternalContext(_contextID++);
         }
 
-        private static unsafe ExternalContext CreateExternalContext(int index)
+        private static unsafe ExternalContext CreateExternalContext(int index, Action onInitialize = null)
         {
             if (Contexts.ContainsKey(index))
                 return null;
 
             // create and add context
-            ExternalContext context = new ExternalContext(index);
+            ExternalContext context = new ExternalContext(index, onInitialize);
             Contexts.Add(index, context);
 
             return context;

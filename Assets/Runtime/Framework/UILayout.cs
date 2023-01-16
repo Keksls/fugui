@@ -1179,9 +1179,10 @@ namespace Fugui.Framework
         /// <typeparam name="TEnum">The type of the enum that will be displayed in the combobox. It must be an enumerated type.</typeparam>
         /// <param name="text">The label text to be displayed next to the combobox</param>
         /// <param name="itemChange">The action that will be called when the selected item changes</param>
-        public void ComboboxEnum<TEnum>(string text, Action<TEnum> itemChange) where TEnum : struct, IConvertible
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        public void ComboboxEnum<TEnum>(string text, Action<TEnum> itemChange, Func<TEnum> itemGetter = null) where TEnum : struct, IConvertible
         {
-            ComboboxEnum<TEnum>(text, itemChange, UIComboboxStyle.Default);
+            ComboboxEnum<TEnum>(text, itemChange, itemGetter, UIComboboxStyle.Default);
         }
 
         /// <summary>
@@ -1190,8 +1191,9 @@ namespace Fugui.Framework
         /// <typeparam name="TEnum">The type of the enum that will be displayed in the combobox. It must be an enumerated type.</typeparam>
         /// <param name="text">The label text to be displayed next to the combobox</param>
         /// <param name="itemChange">The action that will be called when the selected item changes</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
         /// <param name="style">The style to be applied to the combobox</param>
-        public void ComboboxEnum<TEnum>(string text, Action<TEnum> itemChange, UIComboboxStyle style) where TEnum : struct, IConvertible
+        public void ComboboxEnum<TEnum>(string text, Action<TEnum> itemChange, Func<TEnum> itemGetter, UIComboboxStyle style) where TEnum : struct, IConvertible
         {
             if (!typeof(TEnum).IsEnum)
             {
@@ -1211,7 +1213,7 @@ namespace Fugui.Framework
             _customCombobox(text, cItems, (index) =>
             {
                 itemChange?.Invoke(enumValues[index]);
-            }, style);
+            }, () => { return itemGetter?.Invoke().ToString(); }, style);
         }
         #endregion
 
@@ -1223,9 +1225,10 @@ namespace Fugui.Framework
         /// <param name="text">The label of the dropdown box.</param>
         /// <param name="items">The list of items to display in the dropdown box.</param>
         /// <param name="itemChange">The action to call when the selected item changes.</param>
-        public void Combobox<T>(string text, List<T> items, Action<T> itemChange)
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter = null)
         {
-            Combobox<T>(text, items, itemChange, UIComboboxStyle.Default);
+            Combobox<T>(text, items, itemChange, itemGetter, UIComboboxStyle.Default);
         }
 
         /// <summary>
@@ -1235,65 +1238,74 @@ namespace Fugui.Framework
         /// <param name="text">The label of the dropdown box.</param>
         /// <param name="items">The list of items to display in the dropdown box.</param>
         /// <param name="itemChange">The action to call when the selected item changes.</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
         /// <param name="style">The style to use for the dropdown box.</param>
-        public void Combobox<T>(string text, List<T> items, Action<T> itemChange, UIComboboxStyle style)
+        public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter, UIComboboxStyle style)
         {
             // Create a list of combobox items from the list of items
             List<IComboboxItem> cItems = new List<IComboboxItem>();
             foreach (T item in items)
             {
-                // Add the item to the list of combobox items
-                cItems.Add(new ComboboxTextItem(FuGui.AddSpacesBeforeUppercase(item.ToString()), true));
+                // the item is already a combobox item
+                if (item is IComboboxItem)
+                {
+                    cItems.Add((IComboboxItem)item);
+                }
+                else
+                {
+                    // Add the item to the list of combobox items
+                    cItems.Add(new ComboboxTextItem(FuGui.AddSpacesBeforeUppercase(item.ToString()), true));
+                }
             }
             // Display the custom combobox and call the specified action when the selected item changes
             _customCombobox(text, cItems, (index) =>
             {
                 itemChange?.Invoke(items[index]);
-            }, style);
+            }, () => { return itemGetter?.Invoke()?.ToString(); }, style);
         }
         #endregion
 
         #region IComboboxItems
-        ///<summary>
-        ///Displays a dropdown menu with the given list of items, and calls the itemChange action with the selected item when an item is selected.
-        ///</summary>
-        ///<param name="text">The label for the dropdown menu.</param>
-        ///<param name="items">The list of items to display in the dropdown menu.</param>
-        ///<param name="itemChange">The action to be called when an item is selected. The selected item is passed as a parameter to the action.</param>
-        public void Combobox(string text, List<IComboboxItem> items, Action<IComboboxItem> itemChange)
-        {
-            Combobox(text, items, itemChange, UIComboboxStyle.Default);
-        }
-
-        ///<summary>
-        ///Displays a dropdown menu with the given list of items, and calls the itemChange action with the selected item when an item is selected.
-        ///</summary>
-        ///<param name="text">The label for the dropdown menu.</param>
-        ///<param name="items">The list of items to display in the dropdown menu.</param>
-        ///<param name="itemChange">The action to be called when an item is selected. The selected item is passed as a parameter to the action.</param>
-        ///<param name="style">The style to use for the dropdown menu.</param>
-        public void Combobox(string text, List<IComboboxItem> items, Action<IComboboxItem> itemChange, UIComboboxStyle style)
-        {
-            _customCombobox(text, items, (index) => { itemChange?.Invoke(items[index]); }, style);
-        }
-
         ///<summary>
         /// Renders a combobox with a list of custom items.
         ///</summary>
         ///<param name="text">The label for the combobox.</param>
         ///<param name="items">The list of custom items to be displayed in the combobox.</param>
         ///<param name="itemChange">The action to be performed when an item is selected.</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
         ///<param name="style">The style for the combobox element.</param>
-        protected virtual void _customCombobox(string text, List<IComboboxItem> items, Action<int> itemChange, UIComboboxStyle style)
+        protected virtual void _customCombobox(string text, List<IComboboxItem> items, Action<int> itemChange, Func<string> itemGetter, UIComboboxStyle style)
         {
+            text = beginElement(text, style);
+
             if (!_comboSelectedIndices.ContainsKey(text))
             {
                 // Initialize the selected index for the combobox
                 _comboSelectedIndices.Add(text, 0);
             }
+
+            // Set current item as setted by getter
+            if (itemGetter != null)
+            {
+                int i = 0;
+                string selectedItemString = itemGetter.Invoke();
+                if (!string.IsNullOrEmpty(selectedItemString))
+                {
+                    selectedItemString = FuGui.AddSpacesBeforeUppercase(selectedItemString);
+                    foreach (var item in items)
+                    {
+                        if (item.ToString() == selectedItemString)
+                        {
+                            _comboSelectedIndices[text] = i;
+                            break;
+                        }
+                        i++;
+                    }
+                }
+            }
+
             int selectedIndex = _comboSelectedIndices[text];
 
-            text = beginElement(text, style);
             FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f));
             FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
             if (ImGui.BeginCombo(text, items[selectedIndex].ToString()))
@@ -1709,14 +1721,17 @@ namespace Fugui.Framework
             if (alpha)
             {
                 // draw alpha 1
-                float alphaWidth = color.w * width;
+                float alphaWidth = color.w * (max.x - min.x);
                 drawList.AddRectFilled(new Vector2(min.x, max.y - 4), new Vector2(min.x + alphaWidth, max.y), ImGui.GetColorU32(Vector4.one), rounding);
-                // draw alpha 0
-                drawList.AddRectFilled(new Vector2(min.x + alphaWidth, max.y - 4), new Vector2(max.x, max.y), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), rounding);
+                if (color.w < 1.0f)
+                {
+                    // draw alpha 0
+                    drawList.AddRectFilled(new Vector2(min.x + alphaWidth, max.y - 4), new Vector2(max.x, max.y), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), rounding);
+                }
             }
 
             // draw frame
-            drawList.AddRect(min, max, ImGui.GetColorU32(new Vector4(0, 0, 0, 1f)), rounding, ImDrawFlags.None, 1.5f);
+            drawList.AddRect(min, max, ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.Border)), rounding, ImDrawFlags.None, 1f);
             // fake draw the element
             ImGui.Dummy(max - min + Vector2.one * 2f);
             _elementHoverFramed = true;
@@ -2093,7 +2108,7 @@ namespace Fugui.Framework
                 {
                     paths = StandaloneFileBrowser.OpenFilePanel("Open File", "", extentions, false);
                 }
-                if(paths != null && paths.Length > 0)
+                if (paths != null && paths.Length > 0)
                 {
                     path = paths[0];
                     validatePath();

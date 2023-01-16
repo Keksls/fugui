@@ -23,7 +23,7 @@ namespace Fugui.Framework
         static UIButtonStyle selectedButtonStyle;
         public static UIButtonStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return selectedButtonStyle; } }
         static UIButtonStyle blueButtonStyle;
-        public static UIButtonStyle Blue { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return blueButtonStyle; } }
+        public static UIButtonStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return blueButtonStyle; } }
         static UIButtonStyle darkButtonStyle;
         public static UIButtonStyle Dark { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return darkButtonStyle; } }
 

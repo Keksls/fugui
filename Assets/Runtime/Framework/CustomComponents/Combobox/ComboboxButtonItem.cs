@@ -49,7 +49,7 @@ namespace Fugui.Framework
         {
             if (selected)
             {
-                UIButtonStyle.Blue.Push(_enabled);
+                UIButtonStyle.Highlight.Push(_enabled);
             }
             else
             {

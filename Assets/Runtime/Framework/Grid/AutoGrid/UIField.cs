@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Fugui.Framework
 {
     public abstract class UIField
     {
+        public bool Disabled = false;
         public string FieldName;
         protected FieldInfo _fieldInfo;
 
@@ -15,6 +15,7 @@ namespace Fugui.Framework
         {
             _fieldInfo = fieldInfo;
             FieldName = FuGui.AddSpacesBeforeUppercase(_fieldInfo.Name);
+            Disabled = fieldInfo.IsDefined(typeof(Disabled));
         }
 
         public abstract bool Draw(UIGrid grid, object objectInstance);
@@ -28,6 +29,10 @@ namespace Fugui.Framework
 
         public override bool Draw(UIGrid grid, object objectInstance)
         {
+            if(Disabled)
+            {
+                grid.DisableNextElement();
+            }
             int value = (int)_fieldInfo.GetValue(objectInstance);
             List<string> Values = new List<string>();
             foreach (var Value in Enum.GetValues(_fieldInfo.FieldType))
@@ -40,7 +45,7 @@ namespace Fugui.Framework
                 newValue = newValue.Replace(" ", "");
                 _fieldInfo.SetValue(objectInstance, Enum.Parse(_fieldInfo.FieldType, newValue));
                 updated = true;
-            });
+            }, () => { return _fieldInfo.GetValue(objectInstance).ToString(); });
             return updated;
         }
     }
@@ -53,6 +58,10 @@ namespace Fugui.Framework
 
         public override bool Draw(UIGrid grid, object objectInstance)
         {
+            if (Disabled)
+            {
+                grid.DisableNextElement();
+            }
             bool isChecked = (bool)_fieldInfo.GetValue(objectInstance);
             bool updated = grid.CheckBox(FieldName, ref isChecked);
             if (updated)
@@ -71,6 +80,10 @@ namespace Fugui.Framework
 
         public override bool Draw(UIGrid grid, object objectInstance)
         {
+            if (Disabled)
+            {
+                grid.DisableNextElement();
+            }
             bool isChecked = (bool)_fieldInfo.GetValue(objectInstance);
             bool updated = grid.Toggle(FieldName, ref isChecked);
             if (updated)
@@ -89,6 +102,10 @@ namespace Fugui.Framework
 
         public override bool Draw(UIGrid grid, object objectInstance)
         {
+            if (Disabled)
+            {
+                grid.DisableNextElement();
+            }
             grid.Text(FieldName);
             object value = _fieldInfo.GetValue(objectInstance);
             grid.Text(value.ToString());
@@ -114,6 +131,10 @@ namespace Fugui.Framework
 
         public override bool Draw(UIGrid grid, object objectInstance)
         {
+            if (Disabled)
+            {
+                grid.DisableNextElement();
+            }
             string value = (string)_fieldInfo.GetValue(objectInstance);
             bool updated = grid.TextInput(FieldName, _hint, ref value, _lenght, _height);
             if (updated)
@@ -152,6 +173,10 @@ namespace Fugui.Framework
 
         public override bool Draw(UIGrid grid, object objectInstance)
         {
+            if (Disabled)
+            {
+                grid.DisableNextElement();
+            }
             bool updated = false;
             switch (_fieldType)
             {
@@ -250,6 +275,10 @@ namespace Fugui.Framework
 
         public override bool Draw(UIGrid grid, object objectInstance)
         {
+            if (Disabled)
+            {
+                grid.DisableNextElement();
+            }
             bool updated = false;
             switch (_fieldType)
             {
@@ -349,6 +378,10 @@ namespace Fugui.Framework
 
         public override bool Draw(UIGrid grid, object objectInstance)
         {
+            if (Disabled)
+            {
+                grid.DisableNextElement();
+            }
             bool updated = false;
             if (alpha)
             {

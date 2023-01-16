@@ -131,7 +131,7 @@ namespace Fugui.Framework
                 Type fieldType = field.FieldType;
 
                 // check whatever the field need to be switched (hiden => not displayed)
-                if (field.IsDefined(typeof(Hiden)))
+                if (field.IsDefined(typeof(Hidden)))
                 {
                     continue;
                 }

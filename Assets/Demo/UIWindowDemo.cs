@@ -347,22 +347,28 @@ public class UIWindowDemo : MonoBehaviour
         rg.AnchorWindowDefinition(camWinDef, AnchorLocation.TopLeft, Vector2.zero);
 
         // gizmos panel
-        UIOverlay gz = new UIOverlay("GizmoPanel", new Vector2(136f, 36f), (overlay) =>
+        UIOverlay gz = new UIOverlay("GizmoPanel", new Vector2(146f, 36f), (overlay) =>
         {
-            ImGui.Button("Gizmos Settings");
-            ImGui.SameLine();
-            ImGui.Button("1");
+            using (UILayout layout = new UILayout())
+            {
+                layout.Button("Gizmos Settings", UIButtonStyle.AutoSize);
+                layout.SameLine();
+                layout.Button("1");
+            }
         }, OverlayFlags.NoClose | OverlayFlags.NoMove, OverlayDragPosition.Right);
         gz.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, Vector2.zero);
 
         // legend
         UIOverlay bc = new UIOverlay("LegendPanel", new Vector2(128f, 128f), (overlay) =>
         {
-            ImGui.Text("Legend 1");
-            ImGui.Text("Legend 2");
-            ImGui.Text("Legend 3");
-            ImGui.Text("Legend 4");
-            ImGui.Text("Legend 5");
+            using (UILayout layout = new UILayout())
+            {
+                layout.Text("Legend 1");
+                layout.Text("Legend 2");
+                layout.Text("Legend 3");
+                layout.Text("Legend 4");
+                layout.Text("Legend 5");
+            }
         }, OverlayFlags.NoEditAnchor, OverlayDragPosition.Bottom);
         bc.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomLeft, Vector2.zero);
 

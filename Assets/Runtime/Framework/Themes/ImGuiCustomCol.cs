@@ -2,24 +2,28 @@
 {
     public enum ImGuiCustomCol // must start at ImGuiCol.COUNT
     {
-        Highlight = 56,
-        HighlightHovered = 57,
-        HighlightActive = 58,
-        HighlightDisabled = 59,
+        Highlight = 55,
+        HighlightHovered = 56,
+        HighlightActive = 57,
+        HighlightDisabled = 58,
 
-        FrameHoverFeedback = 60,
-        FrameSelectedFeedback = 61,
+        FrameHoverFeedback = 59,
+        FrameSelectedFeedback = 60,
 
-        Collapsable = 62,
-        CollapsableHovered = 63,
-        CollapsableActive = 64,
-        CollapsableDisabled = 65,
+        Collapsable = 61,
+        CollapsableHovered = 62,
+        CollapsableActive = 63,
+        CollapsableDisabled = 64,
 
-        Selected = 66,
-        SelectedHovered = 67,
-        SelectedActive = 68,
-        SelectedText = 69,
+        Selected = 65,
+        SelectedHovered = 66,
+        SelectedActive = 67,
+        SelectedText = 68,
 
-        COUNT = 70
+        Knob = 69,
+        KnobHovered = 70,
+        KnobActive = 71,
+
+        COUNT = 72
     }
 }

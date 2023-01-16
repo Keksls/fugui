@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.IO;
 using System.Linq;
+using Fugui.Core;
 
 namespace Fugui.Framework
 {
@@ -25,14 +26,11 @@ namespace Fugui.Framework
             _uiElementStyleTypes.Add(typeof(UITextStyle));
             _uiElementStyleTypes.Add(typeof(UIButtonStyle));
             _uiElementStyleTypes.Add(typeof(UIFrameStyle));
-            _uiElementStyleTypes.Add(typeof(UISliderStyle));
             _uiElementStyleTypes.Add(typeof(UIComboboxStyle));
             _uiElementStyleTypes.Add(typeof(UIContainerStyle));
+            _uiElementStyleTypes.Add(typeof(UIButtonsGroupStyle));
             _uiElementStyleTypes.Add(typeof(UILayoutStyle));
             _uiElementStyleTypes.Add(typeof(UICollapsableStyle));
-            _uiElementStyleTypes.Add(typeof(UIToggleStyle));
-            _uiElementStyleTypes.Add(typeof(UIButtonsGroupStyle));
-            _uiElementStyleTypes.Add(typeof(UICheckboxStyle));
         }
 
         /// <summary>
@@ -55,9 +53,26 @@ namespace Fugui.Framework
         /// set and apply a FuguiTheme
         /// </summary>
         /// <param name="theme">Theme to set</param>
-        public static void SetTheme(FuguiTheme theme)
+        public static void SetTheme(FuguiTheme theme, bool allContexts = true)
         {
-            theme.Apply();
+            if (allContexts)
+            {
+                // get current context id
+                int currentContextID = FuGui.CurrentContext.ID;
+                // apply theme on each contexts
+                foreach (FuguiContext context in FuGui.Contexts.Values)
+                {
+                    context.SetAsCurrent();
+                    theme.Apply();
+                }
+                // set current last context
+                FuGui.GetContext(currentContextID)?.SetAsCurrent();
+            }
+            else
+            {
+                theme.Apply();
+            }
+
             CurrentTheme = theme;
             // call OnThemeSet on each structs that inherit from 
             foreach (Type structType in _uiElementStyleTypes)
@@ -151,7 +166,7 @@ namespace Fugui.Framework
                             for (int i = 0; i < (int)ImGuiCustomCol.COUNT; i++)
                             {
                                 Vector4 selectedColor = CurrentTheme.Colors[i];
-                                string colorName = i < ((int)ImGuiCol.COUNT - 1) ? ((ImGuiCol)i).ToString() : ((ImGuiCustomCol)i).ToString();
+                                string colorName = i < (int)ImGuiCol.COUNT ? ((ImGuiCol)i).ToString() : ((ImGuiCustomCol)i).ToString();
                                 colorName = FuGui.AddSpacesBeforeUppercase(colorName);
                                 if (grid.ColorPicker(colorName, ref selectedColor))
                                 {
@@ -269,6 +284,12 @@ namespace Fugui.Framework
                 string json = File.ReadAllText(filePath);
                 // deserialize json data
                 theme = JsonUtility.FromJson<FuguiTheme>(json);
+                Vector4[] colors = new Vector4[(int)ImGuiCustomCol.COUNT];
+                for (int i = 0; i < theme.Colors.Length; i++)
+                {
+                    colors[i] = theme.Colors[i];
+                }
+                theme.Colors = colors;
             }
             catch (Exception ex)
             {

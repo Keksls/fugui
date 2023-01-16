@@ -109,7 +109,6 @@ namespace Fugui.Framework
         /// </summary>
         public void SetAsDefaultDarkTheme()
         {
-
             Alpha = 1.0f;
             WindowPadding = new Vector2(1.0f, 0.0f);
             WindowRounding = 2.0f;
@@ -220,7 +219,9 @@ namespace Fugui.Framework
             Colors[(int)ImGuiCustomCol.SelectedHovered] = Colors[(int)ImGuiCustomCol.Selected] * 0.9f;
             Colors[(int)ImGuiCustomCol.SelectedActive] = Colors[(int)ImGuiCustomCol.Selected] * 0.8f;
             Colors[(int)ImGuiCustomCol.SelectedText] = Vector4.one;
-            Colors[(int)ImGuiCol.CheckMark] = Colors[(int)ImGuiCustomCol.Selected]; //new Vector4(58f / 255f, 121f / 255f, 179f / 255f, 1f);
+            Colors[(int)ImGuiCustomCol.Knob] = new Vector4(1f, 1f, 1f, 1f);
+            Colors[(int)ImGuiCustomCol.KnobHovered] = new Vector4(0.9f, 0.9f, 0.9f, 1f);
+            Colors[(int)ImGuiCustomCol.KnobActive] = new Vector4(0.8f, 0.8f, 0.8f, 1f);
         }
 
         /// <summary>
@@ -336,6 +337,10 @@ namespace Fugui.Framework
             Colors[(int)ImGuiCustomCol.SelectedHovered] = Colors[(int)ImGuiCustomCol.Selected] * 0.9f;
             Colors[(int)ImGuiCustomCol.SelectedActive] = Colors[(int)ImGuiCustomCol.Selected] * 0.8f;
             Colors[(int)ImGuiCustomCol.SelectedText] = Vector4.one;
+
+            Colors[(int)ImGuiCustomCol.Knob] = new Vector4(0f, 0f, 0f, 1f);
+            Colors[(int)ImGuiCustomCol.KnobHovered] = new Vector4(0.1f, 0.1f, 0.1f, 1f);
+            Colors[(int)ImGuiCustomCol.KnobActive] = new Vector4(0.2f, 0.2f, 0.2f, 1f);
         }
 
         /// <summary>

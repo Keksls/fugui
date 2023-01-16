@@ -418,25 +418,38 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="text">Text to display next to the checkbox</param>
         /// <param name="isChecked">Boolean variable to store the value of the checkbox</param>
-        /// <returns>True if the checkbox was clicked, false otherwise</returns>
-        public bool CheckBox(string text, ref bool isChecked)
-        {
-            return CheckBox(text, ref isChecked, UICheckboxStyle.Default);
-        }
-
-        /// <summary>
-        /// Renders a checkbox with the given text and returns true if the checkbox was clicked. The value of the checkbox is stored in the provided boolean variable.
-        /// </summary>
-        /// <param name="text">Text to display next to the checkbox</param>
-        /// <param name="isChecked">Boolean variable to store the value of the checkbox</param>
         /// <param name="style">Style to use for the checkbox</param>
         /// <returns>True if the checkbox was clicked, false otherwise</returns>
-        public virtual bool CheckBox(string text, ref bool isChecked, UICheckboxStyle style)
+        public virtual bool CheckBox(string text, ref bool isChecked)
         {
             bool clicked = false;
-            text = beginElement(text, style); // Push the style for the checkbox element
+            text = beginElement(text, null); // Push the style for the checkbox element
 
-            style.Push(!_nextIsDisabled, isChecked);
+            // push colors
+            if (_nextIsDisabled)
+            {
+                FuGui.Push(ImGuiCol.CheckMark, ThemeManager.GetColor(ImGuiCustomCol.Knob) * 0.3f);
+                FuGui.Push(ImGuiCol.FrameBg, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.3f);
+                FuGui.Push(ImGuiCol.FrameBgHovered, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.3f);
+                FuGui.Push(ImGuiCol.FrameBgActive, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.3f);
+            }
+            else
+            {
+                if (isChecked)
+                {
+                    FuGui.Push(ImGuiCol.CheckMark, ThemeManager.GetColor(ImGuiCustomCol.Knob));
+                    FuGui.Push(ImGuiCol.FrameBg, ThemeManager.GetColor(ImGuiCol.CheckMark));
+                    FuGui.Push(ImGuiCol.FrameBgHovered, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.9f);
+                    FuGui.Push(ImGuiCol.FrameBgActive, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.8f);
+                }
+                else
+                {
+                    FuGui.Push(ImGuiCol.CheckMark, ThemeManager.GetColor(ImGuiCustomCol.Knob));
+                    FuGui.Push(ImGuiCol.FrameBg, ThemeManager.GetColor(ImGuiCol.FrameBg));
+                    FuGui.Push(ImGuiCol.FrameBgHovered, ThemeManager.GetColor(ImGuiCol.FrameBgHovered));
+                    FuGui.Push(ImGuiCol.FrameBgActive, ThemeManager.GetColor(ImGuiCol.FrameBgActive));
+                }
+            }
             if (_nextIsDisabled)
             {
                 bool value = isChecked; // Create a temporary variable to hold the value of isChecked
@@ -448,7 +461,8 @@ namespace Fugui.Framework
             }
             displayToolTip(); // Display a tooltip if one has been set for this element
             _elementHoverFramed = true; // Set the flag indicating that this element should have a hover frame drawn around it
-            endElement(style); // Pop the style for the checkbox element
+            endElement(null); // Pop the style for the checkbox element
+            FuGui.PopColor(4);
             return clicked; // Return a boolean indicating whether the checkbox was clicked by the user
         }
         #endregion
@@ -498,30 +512,30 @@ namespace Fugui.Framework
             if (_nextIsDisabled)
             {
                 BGColor = style.DisabledFrame;
-                knobColor = style.DisabledCheckMark;
+                knobColor = ThemeManager.GetColor(ImGuiCustomCol.Knob) * 0.3f;
             }
             else
             {
-                BGColor = style.Frame;
-                knobColor = style.CheckMark;
+                BGColor = style.CheckMark;
+                knobColor = ThemeManager.GetColor(ImGuiCustomCol.Knob);
                 if (active)
                 {
-                    BGColor = style.HoveredFrame;
-                    knobColor *= 0.8f;
+                    BGColor = style.CheckMark * 0.8f;
+                    knobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobActive);
                 }
                 else if (hovered)
                 {
-                    BGColor = style.ActiveFrame;
-                    knobColor *= 0.9f;
+                    BGColor = style.CheckMark * 0.9f;
+                    knobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobHovered);
                 }
             }
 
             // draw radio button
-            drawList.AddCircleFilled(CircleCenter, height / 2f, ImGui.GetColorU32(!isChecked ? ThemeManager.GetColor(ImGuiCol.FrameBg) : knobColor), 64);
+            drawList.AddCircleFilled(CircleCenter, height / 2f, ImGui.GetColorU32(!isChecked ? ThemeManager.GetColor(ImGuiCol.FrameBg) : BGColor), 64);
             if (animationData.CurrentValue > 0f)
             {
                 float knobSize = Mathf.Lerp(0f, height / 5f, animationData.CurrentValue);
-                drawList.AddCircleFilled(CircleCenter, knobSize, ImGui.GetColorU32(style.TextStyle.Text), 64);
+                drawList.AddCircleFilled(CircleCenter, knobSize, ImGui.GetColorU32(knobColor), 64);
             }
             else
             {
@@ -556,7 +570,7 @@ namespace Fugui.Framework
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
         public bool Slider(string text, ref int value)
         {
-            return Slider(text, ref value, 0, 100, UISliderStyle.Default);
+            return Slider(text, ref value, 0, 100);
         }
 
         /// <summary>
@@ -569,22 +583,8 @@ namespace Fugui.Framework
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
         public bool Slider(string text, ref int value, int min, int max)
         {
-            return Slider(text, ref value, min, max, UISliderStyle.Default);
-        }
-
-        /// <summary>
-        /// Creates a horizontal slider widget that allows the user to choose an integer value from a range.
-        /// </summary>
-        /// <param name="text">The label for the slider.</param>
-        /// <param name="value">The current value of the slider, which will be updated if the user interacts with the slider.</param>
-        /// <param name="min">The minimum value that the user can select.</param>
-        /// <param name="max">The maximum value that the user can select.</param>
-        /// <param name="style">Slider style to use</param>
-        /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Slider(string text, ref int value, int min, int max, UISliderStyle style)
-        {
             float val = value;
-            bool valueChange = _customSlider(text, ref val, min, max, true, style);
+            bool valueChange = _customSlider(text, ref val, min, max, true);
             value = (int)val;
             return valueChange;
         }
@@ -599,7 +599,7 @@ namespace Fugui.Framework
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
         public bool Slider(string text, ref float value)
         {
-            return Slider(text, ref value, 0f, 100f, UISliderStyle.Default);
+            return Slider(text, ref value, 0f, 100f);
         }
 
         /// <summary>
@@ -612,21 +612,7 @@ namespace Fugui.Framework
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
         public bool Slider(string text, ref float value, float min, float max)
         {
-            return Slider(text, ref value, min, max, UISliderStyle.Default);
-        }
-
-        /// <summary>
-        /// Creates a horizontal slider widget that allows the user to choose an integer value from a range.
-        /// </summary>
-        /// <param name="text">The label for the slider.</param>
-        /// <param name="value">The current value of the slider, which will be updated if the user interacts with the slider.</param>
-        /// <param name="min">The minimum value that the user can select.</param>
-        /// <param name="max">The maximum value that the user can select.</param>
-        /// <param name="style">Slider style to use</param>
-        /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Slider(string text, ref float value, float min, float max, UISliderStyle style)
-        {
-            return _customSlider(text, ref value, min, max, false, style);
+            return _customSlider(text, ref value, min, max, false);
         }
         #endregion
 
@@ -638,11 +624,10 @@ namespace Fugui.Framework
         /// <param name="min">minimum value of the slider</param>
         /// <param name="max">maximum value of the slider</param>
         /// <param name="isInt">whatever the slider is an Int slider (default is float). If true, the value will be rounded</param>
-        /// <param name="style">slider style</param>
         /// <returns>true if value changed</returns>
-        protected virtual bool _customSlider(string text, ref float value, float min, float max, bool isInt, UISliderStyle style)
+        protected virtual bool _customSlider(string text, ref float value, float min, float max, bool isInt)
         {
-            text = beginElement(text, style);
+            text = beginElement(text, null);
 
             // Calculate the position and size of the slider
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
@@ -660,17 +645,39 @@ namespace Fugui.Framework
             {
                 // Calculate the position of the knob
                 float knobPos = (x + knobRadius) + (width - knobRadius * 2f) * (value - min) / (max - min);
-                // Draw the left slider line
-                ImGui.GetWindowDrawList().AddLine(new Vector2(x, y), new Vector2(knobPos, y), ImGui.GetColorU32(_nextIsDisabled ? style.DisabledLine : style.Line), lineHeight);
-                // Draw the right slider line
-                ImGui.GetWindowDrawList().AddLine(new Vector2(knobPos, y), new Vector2(x + width, y), ImGui.GetColorU32((_nextIsDisabled ? style.DisabledKnob : style.Knob) * 0.66f), lineHeight);
                 // Check if the mouse is hovering over the slider
                 bool isLineHovered = ImGui.IsMouseHoveringRect(new Vector2(x, y - hoverPaddingY - lineHeight), new Vector2(x + width, y + hoverPaddingY + lineHeight));
-
                 // Check if the mouse is hovering over the knob
                 bool isKnobHovered = ImGui.IsMouseHoveringRect(new Vector2(knobPos - knobRadius, y - knobRadius), new Vector2(knobPos + knobRadius, y + knobRadius));
+                // Check if slider is dragging
+                bool isDragging = _draggingSliders.Contains(text);
+                // Calculate colors
+                Vector4 leftLineColor = ThemeManager.GetColor(ImGuiCol.CheckMark);
+                Vector4 rightLineColor = ThemeManager.GetColor(ImGuiCol.Text);
+                Vector4 knobColor = ThemeManager.GetColor(ImGuiCustomCol.Knob);
+                if (_nextIsDisabled)
+                {
+                    leftLineColor *= 0.5f;
+                    rightLineColor *= 0.5f;
+                    knobColor *= 0.5f;
+                }
+                else
+                {
+                    if (isDragging)
+                    {
+                        knobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobActive);
+                    }
+                    else if (isKnobHovered)
+                    {
+                        knobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobHovered);
+                    }
+                }
+                // Draw the left slider line
+                ImGui.GetWindowDrawList().AddLine(new Vector2(x, y), new Vector2(knobPos, y), ImGui.GetColorU32(leftLineColor), lineHeight);
+                // Draw the right slider line
+                ImGui.GetWindowDrawList().AddLine(new Vector2(knobPos, y), new Vector2(x + width, y), ImGui.GetColorU32(rightLineColor), lineHeight);
+
                 // Draw the knob
-                Vector4 knobColor = _nextIsDisabled ? style.DisabledKnob : style.Knob;
                 if (!_nextIsDisabled)
                 {
                     if (_draggingSliders.Contains(text))
@@ -683,7 +690,7 @@ namespace Fugui.Framework
                     }
                     knobColor.w = 1f;
                 }
-                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), knobRadius, ImGui.GetColorU32(knobColor), 32);
+                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), (isKnobHovered || isDragging) && !_nextIsDisabled ? knobRadius : knobRadius * 0.8f, ImGui.GetColorU32(knobColor), 32); ;
 
                 // start dragging this slider
                 if ((isLineHovered || isKnobHovered) && !_draggingSliders.Contains(text) && ImGui.IsMouseClicked(0))
@@ -734,7 +741,7 @@ namespace Fugui.Framework
             updateFloatString("##sliderInput" + text, value);
             displayToolTip();
             _elementHoverFramed = true;
-            endElement(style);
+            endElement(null);
             return value != oldValue;
         }
         #endregion
@@ -1801,22 +1808,17 @@ namespace Fugui.Framework
         #region Toggle
         public bool Toggle(string id, ref bool value, ToggleFlags flags = ToggleFlags.Default)
         {
-            return _customToggle(id, ref value, null, null, flags, UIToggleStyle.Default);
+            return _customToggle(id, ref value, null, null, flags);
         }
 
         public bool Toggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags = ToggleFlags.Default)
         {
-            return _customToggle(id, ref value, textLeft, textRight, flags, UIToggleStyle.Default);
+            return _customToggle(id, ref value, textLeft, textRight, flags);
         }
 
-        public bool Toggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags, UIToggleStyle style)
+        protected virtual bool _customToggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags)
         {
-            return _customToggle(id, ref value, textLeft, textRight, flags, style);
-        }
-
-        protected virtual bool _customToggle(string id, ref bool value, string textLeft, string textRight, ToggleFlags flags, UIToggleStyle style)
-        {
-            beginElement(id, style);
+            beginElement(id, null);
 
             // and and get toggle data struct
             if (!_uiElementAnimationDatas.ContainsKey(id))
@@ -1874,9 +1876,9 @@ namespace Fugui.Framework
             bool clicked = hovered && ImGui.IsMouseReleased(0);
             bool active = hovered && ImGui.IsMouseDown(0);
 
-            Vector4 BGColor = value ? style.SelectedBGColor : style.BGColor;
-            Vector4 KnobColor = value ? style.SelectedKnobColor : style.KnobColor;
-            Vector4 TextColor = value ? style.SelectedTextColor : style.TextColor;
+            Vector4 BGColor = value ? ThemeManager.GetColor(ImGuiCustomCol.Selected) : ThemeManager.GetColor(ImGuiCol.FrameBg);
+            Vector4 KnobColor = ThemeManager.GetColor(ImGuiCustomCol.Knob);
+            Vector4 TextColor = value ? ThemeManager.GetColor(ImGuiCustomCol.SelectedText) : ThemeManager.GetColor(ImGuiCol.Text);
 
             if (_nextIsDisabled)
             {
@@ -1885,13 +1887,13 @@ namespace Fugui.Framework
             }
             else if (active)
             {
-                BGColor *= 0.8f;
-                KnobColor *= 0.8f;
+                KnobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobActive);
+                BGColor = value ? ThemeManager.GetColor(ImGuiCustomCol.SelectedActive) : ThemeManager.GetColor(ImGuiCol.FrameBgActive);
             }
             else if (hovered)
             {
-                BGColor *= 0.9f;
-                KnobColor *= 0.9f;
+                KnobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobHovered);
+                BGColor = value ? ThemeManager.GetColor(ImGuiCustomCol.SelectedHovered) : ThemeManager.GetColor(ImGuiCol.FrameBgHovered);
             }
             Vector4 BorderColor = BGColor * 0.66f;
 
@@ -1932,7 +1934,7 @@ namespace Fugui.Framework
 
             data.Update(value, _animationEnabled);
 
-            endElement(style);
+            endElement(null);
             return valueChanged;
         }
         #endregion

@@ -101,11 +101,11 @@ namespace Fugui.Framework
             // _modal style
             _modalStyle = new UIStyle()
             {
-                _containerStyle = UIPanelStyle.PopUp,
+                _containerStyle = UIPanelStyle.Default,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
                 _framePadding = new Vector2(6f, 1f),
-                WindowPadding = new Vector2(2f, 2f)
+                WindowPadding = new Vector2(0f, 0f)
             };
         }
     }

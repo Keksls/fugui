@@ -1,5 +1,4 @@
-﻿using Fugui.Core;
-using ImGuiNET;
+﻿using ImGuiNET;
 using System;
 using UnityEngine;
 
@@ -13,8 +12,8 @@ namespace Fugui.Framework
         private static UIModalButton[] _modalButtons;
         private static float _currentBodyHeight = 0f;
         private static UIModalSize _currentModalSize;
-        private const float MODAL_TITLE_HEIGHT = 24f;
-        private const float MODAL_FOOTER_HEIGHT = 36f;
+        private static float _currentModalTitleHeight = 24f;
+        private static float _currentModalFooterheight = 36f;
         private const float ANIMATION_DURATION = 0.2f;
         private static float _enlapsed = 0f;
 
@@ -28,6 +27,14 @@ namespace Fugui.Framework
         {
             _modalTitle = title; //store the title
             _modalBody = body; //store the body
+            // add default button if needed
+            if (buttons == null || buttons.Length == 0)
+            {
+                buttons = new UIModalButton[]
+                {
+                    new UIModalButton("OK", HideModal, UIButtonStyle.Default)
+                };
+            }
             _modalButtons = buttons; //store the buttons
             _showModal = true; //set showModal to true to show the modal
             _currentModalSize = modalSize;
@@ -54,6 +61,15 @@ namespace Fugui.Framework
             {
                 ImGui.OpenPopup(_modalTitle); //open the modal with the stored title
 
+                // claculate y padding
+                float yPadding = ThemeManager.CurrentTheme.FramePadding.y * 2f + ThemeManager.CurrentTheme.WindowPadding.y * 2f;
+
+                // calculate footer height
+                _currentModalFooterheight = _modalButtons[0].GetButtonSize().y;
+
+                // calculate title height
+                _currentModalTitleHeight = ImGui.CalcTextSize(_modalTitle).y;
+
                 // calculate body size
                 Vector2 bodySize = _currentModalSize.Size;
                 if (_currentBodyHeight > 0f)
@@ -63,26 +79,27 @@ namespace Fugui.Framework
                 bodySize.y = Mathf.Clamp(bodySize.y, 32f, FuGui.MainContainer.Size.y - 256f);
 
                 // calculate full size and pos
-                Vector2 modalSize = new Vector2(bodySize.x, bodySize.y + MODAL_FOOTER_HEIGHT + MODAL_TITLE_HEIGHT);
+                Vector2 modalSize = new Vector2(bodySize.x, bodySize.y + _currentModalFooterheight + _currentModalTitleHeight);
                 Vector2 modalPos = new Vector2(FuGui.MainContainer.Size.x / 2f - modalSize.x / 2f, FuGui.MainContainer.Size.y / 2f - modalSize.y / 2f);
                 Vector2 modalStartPos = new Vector2(FuGui.MainContainer.Size.x / 2f - (modalSize.x * 0.01f) / 2f, 64f);
                 ImGui.SetNextWindowSize(Vector2.Lerp(modalSize * 0.01f, modalSize, _enlapsed / ANIMATION_DURATION), ImGuiCond.Always);
                 ImGui.SetNextWindowPos(Vector2.Lerp(modalStartPos, modalPos, _enlapsed / ANIMATION_DURATION), ImGuiCond.Always);
 
                 // beggin modal
-                if (ImGui.BeginPopupModal(_modalTitle, ref _showModal, ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration))
+                if (ImGui.BeginPopupModal(_modalTitle, ref _showModal, ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     // draw body BG
                     ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-                    drawList.AddRectFilled(new Vector2(modalPos.x, modalPos.y + MODAL_TITLE_HEIGHT), new Vector2(modalPos.x + modalSize.x, modalPos.y + MODAL_TITLE_HEIGHT + bodySize.y), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.WindowBg)));
+                    //drawList.AddRectFilled(new Vector2(modalPos.x, modalPos.y + _currentModalTitleHeight), new Vector2(modalPos.x + modalSize.x, modalPos.y + _currentModalTitleHeight + bodySize.y), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.WindowBg)));
                     // draw title and footer line
-                    drawList.AddLine(new Vector2(modalPos.x, modalPos.y + MODAL_TITLE_HEIGHT), new Vector2(modalPos.x + modalSize.x, modalPos.y + MODAL_TITLE_HEIGHT), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.Separator)));
-                    drawList.AddLine(new Vector2(modalPos.x, modalPos.y + MODAL_TITLE_HEIGHT + bodySize.y), new Vector2(modalPos.x + modalSize.x, modalPos.y + MODAL_TITLE_HEIGHT + bodySize.y), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.Separator)));
+                    drawList.AddLine(new Vector2(modalPos.x, modalPos.y + _currentModalTitleHeight), new Vector2(modalPos.x + modalSize.x, modalPos.y + _currentModalTitleHeight), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.Separator)));
+                    drawList.AddLine(new Vector2(modalPos.x, modalPos.y + _currentModalTitleHeight + bodySize.y), new Vector2(modalPos.x + modalSize.x, modalPos.y + _currentModalTitleHeight + bodySize.y), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.Separator)));
 
                     // draw modal title
                     drawTitle(_modalTitle);
 
-                    using (new UIPanel("FuguiModalBody", bodySize.y - 24f, scrollable: true))
+                    // draw modal body
+                    using (new UIPanel("FuguiModalBody", UIStyle.Modal, bodySize.y, scrollable: true))
                     {
                         using (UILayout layout = new UILayout())
                         {
@@ -92,7 +109,7 @@ namespace Fugui.Framework
                                 //call the stored body callback
                                 _modalBody();
                                 // get body height for this frame
-                                _currentBodyHeight = ImGui.GetCursorScreenPos().y - cursorY + 32f;
+                                _currentBodyHeight = ImGui.GetCursorScreenPos().y - cursorY;
                             }
                         }
                     }
@@ -127,14 +144,15 @@ namespace Fugui.Framework
         /// </summary>
         private static void drawFooter()
         {
-            if(_modalButtons.Length == 0)
+            if (_modalButtons.Length == 0)
             {
                 return;
             }
 
             using (UILayout layout = new UILayout())
             {
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 16f);
+                float buttonsHeight = _modalButtons[0].GetButtonSize().y;
+                ImGui.Dummy(new Vector2(0f, ImGui.GetContentRegionAvail().y - _currentModalFooterheight / 2f - buttonsHeight / 2f));
                 float cursorX = ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().x;
                 ImGui.SetCursorPosX(cursorX);
 
@@ -210,7 +228,7 @@ namespace Fugui.Framework
 
         public void Draw(UILayout layout)
         {
-            if (layout.Button(text, UIButtonStyle.AutoSize, style))
+            if (layout.Button(text, GetButtonSize(), style))
             {
                 callback();
             }
@@ -218,7 +236,8 @@ namespace Fugui.Framework
 
         public Vector2 GetButtonSize()
         {
-            return ImGui.CalcTextSize(text) + new Vector2(32f, 8f);
+            Vector2 framePadding = ThemeManager.CurrentTheme.FramePadding;
+            return ImGui.CalcTextSize(text) + (framePadding * 2f);
         }
     }
 }

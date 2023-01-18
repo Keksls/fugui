@@ -20,6 +20,8 @@ namespace Fugui.Core
         public Vector2Int Position { get { return _position; } }
         private bool _isHoverOverlay;
         public bool IsHoverOverlay { get { return _isHoverOverlay; } }
+        private bool _isHoverPupUp;
+        public bool IsHoverPopup { get { return _isHoverPupUp; } }
 
         /// <summary>
         /// instantiate a new UIMouseState and init mouse Buttons array
@@ -59,6 +61,7 @@ namespace Fugui.Core
             {
                 _isHoverOverlay |= overlay.LocalRect.Contains(position);
             }
+            _isHoverPupUp = !string.IsNullOrEmpty(UILayout.CurrentPopUpID) ? UILayout.CurrentPopUpRect.Contains(window.Container.LocalMousePos) : false;
         }
 
         /// <summary>

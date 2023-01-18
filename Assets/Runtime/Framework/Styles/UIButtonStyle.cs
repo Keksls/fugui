@@ -1,4 +1,3 @@
-using Fugui.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -84,16 +83,17 @@ namespace Fugui.Framework
             // blue button style
             _highlightButtonStyle = new UIButtonStyle()
             {
-                _framePadding = new Vector2(8f, 2f),
+                _framePadding = new Vector2(8f, 4f),
                 _button = ThemeManager.GetColor(ImGuiCustomCol.Highlight),
                 _buttonHovered = ThemeManager.GetColor(ImGuiCustomCol.HighlightHovered),
                 _buttonActive = ThemeManager.GetColor(ImGuiCustomCol.HighlightActive),
                 _disabledButton = ThemeManager.GetColor(ImGuiCustomCol.HighlightDisabled),
-                TextStyle = UITextStyle.Default
+                TextStyle = UITextStyle.Highlight
             };
             // selected
             _selectedButtonStyle = new UIButtonStyle()
             {
+                _framePadding = new Vector2(8f, 4f),
                 _button = ThemeManager.GetColor(ImGuiCustomCol.Selected),
                 _buttonHovered = ThemeManager.GetColor(ImGuiCustomCol.SelectedHovered),
                 _buttonActive = ThemeManager.GetColor(ImGuiCustomCol.SelectedActive),

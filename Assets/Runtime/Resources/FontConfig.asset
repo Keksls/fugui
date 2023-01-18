@@ -15,7 +15,7 @@ MonoBehaviour:
   DefaultSize: 14
   AdditionnalFontSizes: 0a0000000c0000001000000012000000
   FontsFolder: Fugui/fonts/current/
-  RegularFontName: regular.ttf
+  RegularFontName: regular2.ttf
   BoldFontName: bold.ttf
   IconsFontName: icons.ttf
   StartIconsGlyph: 61184

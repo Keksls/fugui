@@ -1,6 +1,6 @@
 using System;
 
-namespace SFB {
+namespace Fugui.Framework {
     public interface IStandaloneFileBrowser {
         string[] OpenFilePanel(string title, string directory, ExtensionFilter[] extensions, bool multiselect);
         string[] OpenFolderPanel(string title, string directory, bool multiselect);

@@ -24,6 +24,10 @@
         KnobHovered = 70,
         KnobActive = 71,
 
-        COUNT = 72
+        MainMenuText = 72,
+        HighlightText = 73,
+        HighlightTextDisabled = 74,
+
+        COUNT = 75
     }
 }

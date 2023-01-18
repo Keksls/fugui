@@ -41,7 +41,7 @@ namespace Fugui.Core
                                 isChild = name.Split('/')[1].StartsWith(name.Split('/')[0] + "container"); // is it the forced child ?
                                 name = isChild ? name.Split('/')[0] : "";
                             }
-                            else // it's a child lvl 2+, so child of child, we need to store it to
+                            else // it's a child lvl 2+, so child of child, we need to store it too
                             {
                                 // it's a child of a windows, we must store it.
                                 windows[name.Split('/')[0]].ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdListsRange[i]);

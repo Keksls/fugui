@@ -1,5 +1,4 @@
 ﻿using ImGuiNET;
-using SFB;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -41,19 +40,16 @@ namespace Fugui.Framework
         /// <param name="gridName">Unique Name of the Grid</param>
         /// <param name="flags">Bitmask that constraint specific grid behaviour</param>
         /// <param name="rowsPadding">spaces in pixel between rows</param>
+        /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public UIGrid(string gridName = null, UIGridFlag flags = UIGridFlag.Default, float rowsPadding = 2f, float outterPadding = 4f)
+        public UIGrid(string gridName, UIGridFlag flags = UIGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f)
         {
-            if (gridName == null)
-            {
-                gridName = Guid.NewGuid().ToString();
-            }
             _autoDrawLabel = !flags.HasFlag(UIGridFlag.NoAutoLabels);
             _dontDisableLabels = flags.HasFlag(UIGridFlag.DoNotDisableLabels);
             _alwaysAutoTooltipsOnLabels = flags.HasFlag(UIGridFlag.AutoToolTipsOnLabels);
             _currentGridDef = UIGridDefinition.DefaultFixed;
             _gridName = gridName;
-            setGrid(flags.HasFlag(UIGridFlag.LinesBackground), rowsPadding, outterPadding);
+            setGrid(flags.HasFlag(UIGridFlag.LinesBackground), cellPadding, rowsPadding, outterPadding);
         }
 
         /// <summary>
@@ -63,19 +59,16 @@ namespace Fugui.Framework
         /// <param name="gridDef">Definition of the Grid. Assume grid behaviour and style. Can be fully custom or use a presset (UIGridDefinition.XXX)</param>
         /// <param name="flags">Bitmask that constraint specific grid behaviour</param>
         /// <param name="rowsPadding">spaces in pixel between rows</param>
+        /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public UIGrid(UIGridDefinition gridDef, string gridName = null, UIGridFlag flags = UIGridFlag.Default, float rowsPadding = 2f, float outterPadding = 4f)
+        public UIGrid(string gridName, UIGridDefinition gridDef, UIGridFlag flags = UIGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f)
         {
-            if (gridName == null)
-            {
-                gridName = Guid.NewGuid().ToString();
-            }
             _autoDrawLabel = !flags.HasFlag(UIGridFlag.NoAutoLabels);
             _dontDisableLabels = flags.HasFlag(UIGridFlag.DoNotDisableLabels);
             _alwaysAutoTooltipsOnLabels = flags.HasFlag(UIGridFlag.AutoToolTipsOnLabels);
             _currentGridDef = gridDef;
             _gridName = gridName;
-            setGrid(flags.HasFlag(UIGridFlag.LinesBackground), rowsPadding, outterPadding);
+            setGrid(flags.HasFlag(UIGridFlag.LinesBackground), cellPadding, rowsPadding, outterPadding);
         }
 
         #region Grid
@@ -135,13 +128,13 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="linesBg">Colorise evens rows</param>
         /// <param name="rowPadding">rows padding</param>
-        private void setGrid(bool linesBg, float rowPadding, float outterPadding)
+        private void setGrid(bool linesBg, float cellPadding, float rowPadding, float outterPadding)
         {
             if (IsInsidePopUp)
             {
                 Debug.LogError("You are trying to create a grid inside a PopUp, wich is not a good idee. Please check your code and remove it.");
             }
-            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(8f, rowPadding));
+            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
             _gridCreated = _currentGridDef.SetupTable(_gridName, outterPadding, linesBg, ref _isResponsivelyResized);
             if (!_gridCreated)
             {

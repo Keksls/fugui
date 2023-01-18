@@ -56,8 +56,8 @@ namespace Fugui.Framework
         public float TabRounding = 2.0f;
         [Slider(0f, 10f)]
         public float TabBorderSize = 1.0f;
-        [Slider(0f, 10f)]
-        public float TabMinWidthForCloseButton = 0.0f;
+        [Slider(0f, 64f)]
+        public float TabMinWidthForCloseButton = 16f;
         public ImGuiDir ColorButtonPosition = ImGuiDir.Right;
         [Drag(0f, 1f)]
         public Vector2 ButtonTextAlign = new Vector2(0.5f, 0.5f);
@@ -222,6 +222,9 @@ namespace Fugui.Framework
             Colors[(int)ImGuiCustomCol.Knob] = new Vector4(1f, 1f, 1f, 1f);
             Colors[(int)ImGuiCustomCol.KnobHovered] = new Vector4(0.9f, 0.9f, 0.9f, 1f);
             Colors[(int)ImGuiCustomCol.KnobActive] = new Vector4(0.8f, 0.8f, 0.8f, 1f);
+            Colors[(int)ImGuiCustomCol.MainMenuText] = Colors[(int)ImGuiCol.Text];
+            Colors[(int)ImGuiCustomCol.HighlightText] = Colors[(int)ImGuiCol.Text];
+            Colors[(int)ImGuiCustomCol.HighlightTextDisabled] = Colors[(int)ImGuiCol.TextDisabled];
         }
 
         /// <summary>
@@ -341,6 +344,9 @@ namespace Fugui.Framework
             Colors[(int)ImGuiCustomCol.Knob] = new Vector4(0f, 0f, 0f, 1f);
             Colors[(int)ImGuiCustomCol.KnobHovered] = new Vector4(0.1f, 0.1f, 0.1f, 1f);
             Colors[(int)ImGuiCustomCol.KnobActive] = new Vector4(0.2f, 0.2f, 0.2f, 1f);
+            Colors[(int)ImGuiCustomCol.MainMenuText] = Colors[(int)ImGuiCol.Text];
+            Colors[(int)ImGuiCustomCol.HighlightText] = Colors[(int)ImGuiCol.Text];
+            Colors[(int)ImGuiCustomCol.HighlightTextDisabled] = Colors[(int)ImGuiCol.TextDisabled];
         }
 
         /// <summary>

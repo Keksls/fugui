@@ -568,11 +568,24 @@ namespace Fugui.Framework
         #endregion
 
         #region Contexts
+        /// <summary>
+        /// Create a new Fugui context to render into unity
+        /// </summary>
+        /// <param name="camera">Camera that will render the context</param>
+        /// <param name="onInitialize">invoked on context initialization</param>
+        /// <returns>the context created</returns>
         public static unsafe UnityContext CreateUnityContext(Camera camera, Action onInitialize = null)
         {
             return CreateUnityContext(_contextID++, camera, onInitialize);
         }
 
+        /// <summary>
+        /// Create a new Fugui context to render into unity
+        /// </summary>
+        /// <param name="index">index of the context</param>
+        /// <param name="camera">Camera that will render the context</param>
+        /// <param name="onInitialize">invoked on context initialization</param>
+        /// <returns>the context created</returns>
         private static unsafe UnityContext CreateUnityContext(int index, Camera camera, Action onInitialize = null)
         {
             if (Contexts.ContainsKey(index))
@@ -585,11 +598,22 @@ namespace Fugui.Framework
             return context;
         }
 
+        /// <summary>
+        /// Create a new Fugui context to render outside of unity
+        /// </summary>
+        /// <param name="onInitialize">invoked on context initialization</param>
+        /// <returns>the context created</returns>
         public static unsafe ExternalContext CreateExternalContext(Action onInitialize = null)
         {
             return CreateExternalContext(_contextID++);
         }
 
+        /// <summary>
+        /// Create a new Fugui context to render outside of unity
+        /// </summary>
+        /// <param name="index">index of the context</param>
+        /// <param name="onInitialize">invoked on context initialization</param>
+        /// <returns>the context created</returns>
         private static unsafe ExternalContext CreateExternalContext(int index, Action onInitialize = null)
         {
             if (Contexts.ContainsKey(index))
@@ -602,6 +626,10 @@ namespace Fugui.Framework
             return context;
         }
 
+        /// <summary>
+        /// Destroy a fugui context by it's ID
+        /// </summary>
+        /// <param name="contextID">ID of the fugui context</param>
         public static void DestroyContext(int contextID)
         {
             if (ContextExists(contextID))
@@ -611,11 +639,20 @@ namespace Fugui.Framework
             }
         }
 
+        /// <summary>
+        /// Destroy a fugui context by it's context instance
+        /// </summary>
+        /// <param name="context">the fugui context to destroy</param>
         public static void DestroyContext(FuguiContext context)
         {
             ToDeleteContexts.Enqueue(context.ID);
         }
 
+        /// <summary>
+        /// Get a fugui context by it's ID
+        /// </summary>
+        /// <param name="contextID">ID of the context to get</param>
+        /// <returns>null if context's ID does not exists</returns>
         public static FuguiContext GetContext(int contextID)
         {
             if (Contexts.ContainsKey(contextID))
@@ -625,11 +662,20 @@ namespace Fugui.Framework
             return null;
         }
 
+        /// <summary>
+        /// Whatever a context exists
+        /// </summary>
+        /// <param name="contextID">ID of the context to check</param>
+        /// <returns>true if exists</returns>
         public static bool ContextExists(int contextID)
         {
             return Contexts.ContainsKey(contextID);
         }
 
+        /// <summary>
+        /// set the current fugui context by ID
+        /// </summary>
+        /// <param name="contextID">ID of the fugui context</param>
         public static void SetCurrentContext(int contextID)
         {
             if (Contexts.ContainsKey(contextID))
@@ -638,6 +684,10 @@ namespace Fugui.Framework
             }
         }
 
+        /// <summary>
+        /// set the current fugui context
+        /// </summary>
+        /// <param name="context">instance of the fugui context</param>
         public static void SetCurrentContext(FuguiContext context)
         {
             if (context != null)
@@ -674,119 +724,15 @@ namespace Fugui.Framework
             return Regex.Replace(input, "(?<!^)([A-Z])", " $1");
         }
 
+        /// <summary>
+        /// Each open window will be draw next frame
+        /// </summary>
         public static void ForceDrawAllWindows()
         {
             foreach(UIWindow window in UIWindows.Values)
             {
                 window.ForceDraw();
             }
-        }
-
-        public static bool GetWantCaptureInputs(bool excludeDesktop = false)
-        {
-            foreach (var pair in Contexts)
-            {
-                if (!excludeDesktop || pair.Key > 0)
-                {
-                    if (pair.Value.IO.WantCaptureMouse || pair.Value.IO.WantCaptureKeyboard || pair.Value.IO.WantTextInput)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        public static bool IsMouseHoverUI(bool excludeDesktop = false)
-        {
-            foreach (var pair in Contexts)
-            {
-                if (!excludeDesktop || pair.Key > 0)
-                {
-                    if (pair.Value.IO.WantCaptureMouse)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        public static bool GetWantCaptureInputsDesktop()
-        {
-            ImGuiIOPtr io = GetContext(0).IO;
-            return io.WantCaptureMouse || io.WantCaptureKeyboard || io.WantTextInput;
-        }
-
-        public static bool GetWantCaptureKeyboard()
-        {
-            foreach (var pair in Contexts)
-            {
-                if (pair.Value.IO.WantCaptureKeyboard || pair.Value.IO.WantTextInput)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static bool GetWantCaptureMouse(bool excludeDesktop = false)
-        {
-            foreach (var pair in Contexts)
-            {
-                if (!excludeDesktop || pair.Key > 0)
-                {
-                    if (pair.Value.IO.WantCaptureMouse)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        public static bool IsMouseHoverCurrentWindow()
-        {
-            Vector2 pos = ImGui.GetWindowPos();
-            Vector2 size = ImGui.GetWindowSize();
-            Vector2 mousePos = ImGui.GetMousePos();
-            //mousePos.y = Screen.height - mousePos.y;
-            return mousePos.x >= pos.x && mousePos.x <= (pos + size).x && mousePos.y >= pos.y && mousePos.y <= (pos + size).y;
-        }
-
-        public static bool IsMouseHoverWindow(Vector2 pos, Vector2 size)
-        {
-            Vector2 mousePos = ImGui.GetMousePos();
-            return mousePos.x >= pos.x && mousePos.x <= (pos + size).x && mousePos.y >= pos.y && mousePos.y <= (pos + size).y;
-        }
-        #endregion
-
-        #region Clipper
-        private static unsafe readonly ImGuiListClipper* s_clipper = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
-
-        public static unsafe void ListClipperBegin(int count = -1, float itemHeight = -1f)
-        {
-            ImGuiNative.ImGuiListClipper_Begin(s_clipper, count, itemHeight);
-        }
-
-        public static unsafe bool ListClipperStep()
-        {
-            return ImGuiNative.ImGuiListClipper_Step(s_clipper) == 1;
-        }
-
-        public static unsafe void ListClipperEnd()
-        {
-            ImGuiNative.ImGuiListClipper_End(s_clipper);
-        }
-
-        public static unsafe int ListClipperDisplayStart()
-        {
-            return s_clipper->DisplayStart;
-        }
-
-        public static unsafe int ListClipperDisplayEnd()
-        {
-            return s_clipper->DisplayEnd;
         }
         #endregion
     }

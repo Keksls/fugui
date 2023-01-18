@@ -1,6 +1,5 @@
 using UnityEngine;
 using Fugui.Core;
-using ImGuiNET;
 using Fugui.Framework;
 using System.Collections.Generic;
 using System;
@@ -46,9 +45,7 @@ public class UIWindowDemo : MonoBehaviour
         Vector3 coloralphaless = new Vector3(.5f, 1f, .8f);
         bool physicalCamera = false;
         string title = "";
-        string description = "A regular size <b> Bold TEXT</b>, and a lineBreak<br/>this score-splitted-text can be breal-lined on score.<br/>" +
-            "<size=10>a small text (10px)</size> then a <size=18>realy BIG <b>Bold</b> text (18px)</size> then back to normal.<br/>" +
-            "<color=#FF00FFFF>Want some <color=#00FF00FF><b>COLOR</b>?</color> : here <b> it is</b></color>!";
+        string description = "A <color=red>red</color> <b>Bold TEXT</b>";
 
         // set demo Main menu
         MainMenu.RegisterItem(Icons.DragonflyLogo + " Files", null);
@@ -121,25 +118,31 @@ public class UIWindowDemo : MonoBehaviour
                     grid.DisableNextElement();
                     grid.Button("Mouse Pos and Down Text", UIButtonStyle.FullSize, UIButtonStyle.Highlight);
                 }
-                window.Container.ImGuiImage(TmpDebugTexture, new Vector2(240f, 100f));
+                window.Container.ImGuiImage(TmpDebugTexture, new Vector2(128, 128));
             }
         }
 
         // add Tree Window
         new UIWindowDefinition(UIWindowName.Tree, "Tree", (window) =>
             {
-                for (int i = 0; i < 10; i++)
+                using (UILayout layout = new UILayout())
                 {
-                    ImGui.Text("Tree Item " + i);
+                    for (int i = 0; i < 10; i++)
+                    {
+                        layout.Text("Tree Item " + i);
+                    }
                 }
             }, isInterractible: false);
 
         // add Capture Window
         new UIWindowDefinition(UIWindowName.Captures, "Captures", (window) =>
         {
-            for (int i = 0; i < 10; i++)
+            using (UILayout layout = new UILayout())
             {
-                ImGui.Button("Capture " + i, new Vector2(128f, 128f));
+                for (int i = 0; i < 10; i++)
+                {
+                    layout.Button("Capture " + i, new Vector2(128f, 128f));
+                }
             }
         }, isInterractible: false);
 
@@ -235,9 +238,12 @@ public class UIWindowDemo : MonoBehaviour
         // add Tree Window
         new UIWindowDefinition(UIWindowName.Tree, "Tree", (window) =>
         {
-            for (int i = 0; i < 10; i++)
+            using (UILayout layout = new UILayout())
             {
-                ImGui.Text("Tree Item " + i);
+                for (int i = 0; i < 10; i++)
+                {
+                    layout.Text("Tree Item " + i);
+                }
             }
         }, isInterractible: false);
 
@@ -278,14 +284,14 @@ public class UIWindowDemo : MonoBehaviour
 
                     layout.Collapsable("Camera", () =>
                     {
-                    using (UIGrid grid = new UIGrid("cameraGrid", outterPadding: 8f))
-                    {
-                        grid.SetMinimumLineHeight(22f);
-                        grid.SetNextElementToolTip("Clear flag of the main camera");
-                        grid.ComboboxEnum<CameraClearFlags>("Clear Flags", (CameraClearFlags) =>
+                        using (UIGrid grid = new UIGrid("cameraGrid", outterPadding: 8f))
                         {
-                            cam1.clearFlags = CameraClearFlags;
-                        }, () => {return cam1.clearFlags; });
+                            grid.SetMinimumLineHeight(22f);
+                            grid.SetNextElementToolTip("Clear flag of the main camera");
+                            grid.ComboboxEnum<CameraClearFlags>("Clear Flags", (CameraClearFlags) =>
+                            {
+                                cam1.clearFlags = CameraClearFlags;
+                            }, () => { return cam1.clearFlags; });
 
                             float FOV = cam1.fieldOfView;
                             grid.SetNextElementToolTip("Field of View (FOV) of the main camera");
@@ -347,15 +353,13 @@ public class UIWindowDemo : MonoBehaviour
         rg.AnchorWindowDefinition(camWinDef, AnchorLocation.TopLeft, Vector2.zero);
 
         // gizmos panel
-        UIOverlay gz = new UIOverlay("GizmoPanel", new Vector2(146f, 36f), (overlay) =>
+        UIOverlay gz = new UIOverlay("GizmoPanel", new Vector2(46f, 36f), (overlay) =>
         {
             using (UILayout layout = new UILayout())
             {
-                layout.Button("Gizmos Settings", UIButtonStyle.AutoSize);
-                layout.SameLine();
-                layout.Button("1");
+                layout.Button(Icons.Gizmo, UIButtonStyle.Highlight);
             }
-        }, OverlayFlags.NoClose | OverlayFlags.NoMove, OverlayDragPosition.Right);
+        }, OverlayFlags.NoClose | OverlayFlags.NoMove | OverlayFlags.NoBackground, OverlayDragPosition.Right);
         gz.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, Vector2.zero);
 
         // legend
@@ -385,19 +389,19 @@ public class UIWindowDemo : MonoBehaviour
                 layout.SameLine();
                 layout.Button(Icons.Section, new Vector2(32f, 32f));
                 layout.SameLine();
-                ImGui.Dummy(Vector2.zero);
+                layout.Dummy(0, 0);
                 layout.SameLine();
                 layout.Button(Icons.Cube, new Vector2(32f, 32f));
                 layout.SameLine();
                 layout.Button(Icons.EditShape, new Vector2(32f, 32f));
                 layout.SameLine();
-                ImGui.Dummy(Vector2.zero);
+                layout.Dummy(Vector2.zero);
                 layout.SameLine();
                 layout.Button(Icons.Manikin, new Vector2(32f, 32f));
                 layout.SameLine();
                 layout.Button(Icons.Environment, new Vector2(32f, 32f));
                 layout.SameLine();
-                ImGui.Dummy(Vector2.one);
+                layout.Dummy(Vector2.one);
                 layout.SameLine();
                 layout.Button(Icons.EditShape, new Vector2(32f, 32f), UIButtonStyle.Highlight);
                 FuGui.PopFont();
@@ -446,25 +450,43 @@ public class UIWindowDemo : MonoBehaviour
         }
 
         // cam 1 SS
-        UIOverlay fastest = new UIOverlay("FastestF", new Vector2(224f, 36f), (overlay) =>
+        int qualityIndex = 3;
+        UIOverlay fastest = new UIOverlay("FastestF", new Vector2(278f, 36f), (overlay) =>
         {
             using (UILayout layout = new UILayout())
             {
-                FuGui.PushFont(12, Fugui.Framework.FontType.Regular);
+                FuGui.PushFont(12, FontType.Regular);
                 layout.Text("Fastest");
                 layout.SameLine();
-                ImGui.RadioButton("", false);
-                ImGui.SameLine();
-                ImGui.RadioButton("", false);
-                ImGui.SameLine();
-                ImGui.RadioButton("", false);
-                ImGui.SameLine();
-                ImGui.RadioButton("", false);
-                ImGui.SameLine();
-                ImGui.RadioButton("", false);
-                ImGui.SameLine();
-                ImGui.RadioButton("", true);
-                ImGui.SameLine();
+                if(layout.RadioButton("##q0", qualityIndex == 0))
+                {
+                    qualityIndex = 0;
+                }
+                layout.SameLine();
+                if (layout.RadioButton("##q1", qualityIndex == 1))
+                {
+                    qualityIndex = 1;
+                }
+                layout.SameLine();
+                if (layout.RadioButton("##q2", qualityIndex == 2))
+                {
+                    qualityIndex = 2;
+                }
+                layout.SameLine();
+                if (layout.RadioButton("##q3", qualityIndex == 3))
+                {
+                    qualityIndex = 3;
+                }
+                layout.SameLine();
+                if (layout.RadioButton("##q4", qualityIndex == 4))
+                {
+                    qualityIndex = 4;
+                }
+                layout.SameLine();
+                if (layout.RadioButton("##q5", qualityIndex == 5))
+                {
+                    qualityIndex = 5;
+                }
                 layout.SameLine();
                 layout.Text("Fantastic");
                 FuGui.PopFont();
@@ -474,15 +496,14 @@ public class UIWindowDemo : MonoBehaviour
 
         void drawCameraFPSOverlay(UICameraWindow cam)
         {
-            ImGui.Text("cam FPS : " + (int)cam.CurrentCameraFPS);
-            ImGui.Text("ui. FPS : " + (int)cam.CurrentFPS);
+            using (UIGrid grid = new UIGrid("camFPS", new UIGridDefinition(2, new int[] { 42 }, responsiveMinWidth: 0)))
+            {
+                grid.Text("cam FPS");
+                grid.Text(((int)cam.CurrentCameraFPS).ToString());
+                grid.Text("ui. FPS");
+                grid.Text(((int)cam.CurrentFPS).ToString());
+            }
         }
-        #endregion
-
-        #region Toolbar
-        UIWindowDefinition toolbarDef = new UIWindowDefinition(UIWindowName.ToolBar, "toolbarWindow").SetCustomWindowType<UIToolBarWindow>();
-        toolbarDef.OnUIWindowCreated += ToolbarDef_OnUIWindowCreated;
-        //new UIWindow(toolbarDef).TryAddToContainer(FuGui.MainContainer);
         #endregion
 
         // imgui demo window
@@ -496,33 +517,6 @@ public class UIWindowDemo : MonoBehaviour
         DockingLayoutManager.SetLayout(UIDockingLayout.Default);
     }
 
-    private void ToolbarDef_OnUIWindowCreated(UIWindow window)
-    {
-        UIToolBarWindow toolbar = (UIToolBarWindow)window;
-        toolbar.AddShortcut(new Shortcut("1", "shortcut 1", null)
-            .AddAction("a1", "Action 1", null)
-            .AddAction("a2", "Action 2", null));
-
-        toolbar.AddShortcut(new Shortcut("2", "shortcut 2", null)
-            .AddAction("a1", "Action 1", null)
-            .AddAction("a2", "Action 2", null));
-
-        toolbar.AddShortcut(new Shortcut("3", "shortcut 3", null)
-            .AddAction("a1", "Action 1", null)
-            .AddAction("a2", "Action 2", null)
-            .AddAction("a3", "Action 3", null));
-
-        toolbar.AddShortcut(new Shortcut("4", "shortcut 4", null)
-            .AddAction("a1", "Action 1", null)
-            .AddAction("a2", "Action 2", null)
-            .AddAction("a3", "Action 3", null));
-
-        toolbar.AddShortcut(new Shortcut("5", "shortcut 5", null)
-            .AddAction("a1", "Action 1", null)
-            .AddAction("a2", "Action 2", null)
-            .AddAction("a3", "Action 3", null));
-    }
-
     private void CamWinDef_OnUIWindowCreated(UIWindow camWindow)
     {
         _mainCam = (UICameraWindow)camWindow;
@@ -531,7 +525,7 @@ public class UIWindowDemo : MonoBehaviour
 
     private void UImGuiUtility_Layout()
     {
-        ImGui.ShowDemoWindow();
+        ImGuiNET.ImGui.ShowDemoWindow();
     }
 
     private void Update()
@@ -541,7 +535,7 @@ public class UIWindowDemo : MonoBehaviour
             return;
         }
 
-        if (_mainCam.Mouse.IsDown(0) && !_mainCam.Mouse.IsHoverOverlay)
+        if (_mainCam.Mouse.IsDown(0) && !_mainCam.Mouse.IsHoverOverlay && !_mainCam.Mouse.IsHoverPopup)
         {
             RaycastHit hit;
             Ray ray = _mainCam.GetCameraRay();
@@ -556,7 +550,6 @@ public class UIWindowDemo : MonoBehaviour
     private void clickOnSphere(RaycastHit hit, Ray ray)
     {
         LastPointObject.transform.position = hit.point;
-
         Rigidbody rb = hit.collider.GetComponent<Rigidbody>();
         if (rb == null)
             return;

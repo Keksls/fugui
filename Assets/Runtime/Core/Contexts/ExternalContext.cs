@@ -4,6 +4,10 @@ using System;
 
 namespace Fugui.Core
 {
+    /// <summary>
+    /// class that represent an External window Fugui Context.
+    /// Must be used to render external window Container
+    /// </summary>
     public class ExternalContext : FuguiContext
     {
         public ExternalContext(int index, Action onInitialize = null) : base(index, onInitialize)
@@ -11,6 +15,9 @@ namespace Fugui.Core
             initialize(index, onInitialize);
         }
 
+        /// <summary>
+        /// Initialize this context for specific sub class. Don't call it, Fugui layout handle it for you
+        /// </summary>
         protected override void sub_initialize()
         {
             LoadFonts();
@@ -18,6 +25,9 @@ namespace Fugui.Core
             SetDefaultImGuiIniFilePath(null);
         }
 
+        /// <summary>
+        /// Destroy this context. Don't call it, Fugui layout handle it for you
+        /// </summary>
         internal override void Destroy()
         {
             ImGui.DestroyContext(ImGuiContext);
@@ -29,10 +39,16 @@ namespace Fugui.Core
 #endif
         }
 
+        /// <summary>
+        /// End the context render. Don't call it, Fugui layout handle it for you
+        /// </summary>
         internal override void EndRender()
         {
         }
 
+        /// <summary>
+        /// Prepare render for next frame. Don't call it, Fugui layout handle it for you
+        /// </summary>
         internal override bool PrepareRender()
         {
             FuGui.SetCurrentContext(this);

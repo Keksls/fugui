@@ -10705,6 +10705,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cam1: {fileID: 5027617570534833868}
-  TmpDebugTexture: {fileID: 2800000, guid: cb44b28daf423fc4789aa7055e8c3634, type: 3}
+  TmpDebugTexture: {fileID: 2800000, guid: d7f0d3be02ca8a54086ef7e5b10c95b9, type: 3}
   LastPointObject: {fileID: 5027617569182750668}
   ShowImGuiDemoWindow: 0

@@ -493,7 +493,7 @@ namespace Fugui.Core
             base.OnMouseUp(e);
 
             // maximize if release window on top of screen
-            if (Dragging && MonitorWindowState != MonitorWindowState.Maximized && _worldPosition.y <= MonitorsManager.GetCurrentMonitor(_worldPosition.x + (_size.x / 2), false).WorkingArea.top)
+            if (Dragging && MonitorWindowState != MonitorWindowState.Maximized && _worldPosition.y <= MonitorsUtils.GetCurrentMonitor(_worldPosition.x + (_size.x / 2), false).WorkingArea.top)
             {
                 SetMonitorState(MonitorWindowState.Maximized);
             }
@@ -890,7 +890,7 @@ namespace Fugui.Core
         {
             if (!force)
             {
-                _worldPosition = MonitorsManager.GetBestPos(x, y, _size.x, _size.y, _lastPosition.x, _lastPosition.y);
+                _worldPosition = MonitorsUtils.GetBestPos(x, y, _size.x, _size.y, _lastPosition.x, _lastPosition.y);
                 _lastPosition = _worldPosition;
             }
             else
@@ -926,7 +926,7 @@ namespace Fugui.Core
         {
             if (!force)
             {
-                _size = MonitorsManager.GetBestSize(_worldPosition.x, _worldPosition.y, width, height);
+                _size = MonitorsUtils.GetBestSize(_worldPosition.x, _worldPosition.y, width, height);
             }
             else
             {
@@ -943,7 +943,7 @@ namespace Fugui.Core
         /// <param name="state">state to set</param>
         public void SetMonitorState(MonitorWindowState state)
         {
-            MonitorRect maxRect = MonitorsManager.GetCurrentMonitor(_worldPosition.x + (_size.x / 2), false).WorkingArea;
+            MonitorRect maxRect = MonitorsUtils.GetCurrentMonitor(_worldPosition.x + (_size.x / 2), false).WorkingArea;
             int x, y, width, height;
             switch (state)
             {

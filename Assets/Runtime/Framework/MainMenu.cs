@@ -7,6 +7,9 @@ namespace Fugui.Framework
 {
     public static class MainMenu
     {
+        /// <summary>
+        /// menu items of the main menu
+        /// </summary>
         private static readonly Dictionary<string, MenuItem> _menuItems = new Dictionary<string, MenuItem>();
 
         /// <summary>
@@ -83,6 +86,7 @@ namespace Fugui.Framework
             FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 8f));
             FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
             FuGui.Push(ImGuiCol.Header, ThemeManager.GetColor(ImGuiCol.HeaderHovered));
+            FuGui.Push(ImGuiCol.Text, ThemeManager.GetColor(ImGuiCustomCol.MainMenuText));
 
             // Begin the main menu bar
             if (ImGui.BeginMainMenuBar())
@@ -101,7 +105,7 @@ namespace Fugui.Framework
             }
 
             // Pop the set style options
-            FuGui.PopColor();
+            FuGui.PopColor(2);
             FuGui.PopStyle(3);
         }
 
@@ -114,6 +118,10 @@ namespace Fugui.Framework
         /// <param name="item">The menu item to be drawn.</param>
         private static void DrawItem(MenuItem item)
         {
+            if (item.Parent != null)
+            {
+                FuGui.Push(ImGuiCol.Text, ThemeManager.GetColor(ImGuiCol.Text));
+            }
             if (item.Children != null && item.Children.Count > 0)
             {
                 // Begin a submenu if the menu item has children
@@ -140,8 +148,15 @@ namespace Fugui.Framework
                     item.Callback?.Invoke();
                 }
             }
+            if (item.Parent != null)
+            {
+                FuGui.PopColor();
+            }
         }
 
+        /// <summary>
+        /// Class that will store menu items data
+        /// </summary>
         private class MenuItem
         {
             /// <summary>
@@ -217,7 +232,6 @@ namespace Fugui.Framework
                     parent.Children.Add(this);
                 }
             }
-
         }
     }
 }

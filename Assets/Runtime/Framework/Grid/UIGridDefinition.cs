@@ -10,6 +10,7 @@ namespace Fugui.Framework
         public int MinSecondColumnSize { get; private set; }
         public float[] ColumnsWidth { get; private set; }
         public int ColumnWidth { get; private set; }
+        public float ResponsiveMinWidth { get; private set; }
         public UIGridType GridType { get; private set; }
         public const float MINIMUM_GRID_WIDTH_BEFORE_FORCE_RESPONSIVE_RESIZE = 196f;
 
@@ -47,7 +48,8 @@ namespace Fugui.Framework
         /// <param name="nbCols">Number of columns to create</param>
         /// <param name="colsPixels">array that represent the width of the columns (can be smaller than the number of cols)</param>
         /// <param name="minSecondColumnSize">represent the minimus size of the second columns before resizing the first. Keep -1 for ignore that feature</param>
-        public UIGridDefinition(int nbCols, int[] colsPixels, int minSecondColumnSize = -1)
+        /// <param name="responsiveMinWidth">represent the minimus width of the wole grid before responsive layout</param>
+        public UIGridDefinition(int nbCols, int[] colsPixels, int minSecondColumnSize = -1, float responsiveMinWidth = -1f)
         {
             NbColumns = nbCols;
             ColumnsWidth = new float[Math.Min(nbCols, colsPixels.Length)];
@@ -58,6 +60,7 @@ namespace Fugui.Framework
             MinSecondColumnSize = minSecondColumnSize;
             ColumnWidth = 0;
             GridType = UIGridType.FixedWidth;
+            ResponsiveMinWidth = responsiveMinWidth;
         }
 
         /// <summary>
@@ -71,6 +74,7 @@ namespace Fugui.Framework
             MinSecondColumnSize = -1;
             ColumnWidth = 0;
             GridType = UIGridType.Auto;
+            ResponsiveMinWidth = -1f;
         }
 
         /// <summary>
@@ -79,15 +83,17 @@ namespace Fugui.Framework
         /// It use Minimum second column size to determinate whatever the first fixed columns need to be erased
         /// </summary>
         /// <param name="nbCols">Number of columns to create</param>
-        /// <param name="colsPixels">array that represent the width ratio (percent 0.0f-1.0f of available width) of the columns (can be smaller than the number of cols)</param>
+        /// <param name="colsRatios">array that represent the width ratio (percent 0.0f-1.0f of available width) of the columns (can be smaller than the number of cols)</param>
         /// <param name="minSecondColumnSize">represent the minimus size of the second columns before resizing the first. Keep -1 for ignore that feature</param>
-        public UIGridDefinition(int nbCols, float[] colsRatios, int minSecondColumnSize = -1)
+        /// <param name="responsiveMinWidth">represent the minimus width of the wole grid before responsive layout</param>
+        public UIGridDefinition(int nbCols, float[] colsRatios, int minSecondColumnSize = -1, float responsiveMinWidth = -1f)
         {
             NbColumns = nbCols;
             ColumnsWidth = colsRatios;
             MinSecondColumnSize = minSecondColumnSize;
             ColumnWidth = 0;
             GridType = UIGridType.RatioWidth;
+            ResponsiveMinWidth = responsiveMinWidth;
         }
 
         /// <summary>
@@ -102,6 +108,7 @@ namespace Fugui.Framework
             MinSecondColumnSize = -1;
             ColumnsWidth = null;
             GridType = UIGridType.FlexibleCols;
+            ResponsiveMinWidth = -1f;
         }
 
         /// <summary>
@@ -142,7 +149,9 @@ namespace Fugui.Framework
                             colWidth[1] = Math.Max(16f, availWidth - colWidth[0]);
                         }
                     }
-                    if (availWidth <= MINIMUM_GRID_WIDTH_BEFORE_FORCE_RESPONSIVE_RESIZE)
+
+                    float responsiveMinWidth = ResponsiveMinWidth == -1f ? MINIMUM_GRID_WIDTH_BEFORE_FORCE_RESPONSIVE_RESIZE : ResponsiveMinWidth;
+                    if (availWidth <= responsiveMinWidth)
                     {
                         nbCols = 1;
                         colWidth = new float[1] { availWidth };

@@ -133,17 +133,24 @@ namespace Fugui.Framework
                     {
                         using (UIGrid grid = new UIGrid("themeManagmentGrid"))
                         {
+                            grid.InputFolder("cc");
                             grid.Combobox("Current theme", Themes.Values.ToList(), (theme) =>
                             {
                                 SetTheme(theme);
                             }, () => { return CurrentTheme; });
                         }
-
-                        if (layout.Button("Save", UIButtonStyle.Highlight))
+                        using (UIGrid grid = new UIGrid("themeManagmentActions", UIGridDefinition.DefaultRatio, cellPadding: 0f))
                         {
-                            SaveTheme(CurrentTheme);
-                            LoadAllThemes();
-                            SetTheme(CurrentTheme);
+                            if (grid.Button("Save"))
+                            {
+                                SaveTheme(CurrentTheme);
+                                LoadAllThemes();
+                                SetTheme(CurrentTheme);
+                            }
+                            if (grid.Button("New"))
+                            {
+
+                            }
                         }
                     });
 
@@ -161,7 +168,7 @@ namespace Fugui.Framework
 
                     layout.Collapsable("Theme Colors", () =>
                     {
-                        using (UIGrid grid = new UIGrid(new UIGridDefinition(2, new int[] { 196 }), "FuguiThemeColorGrid", UIGridFlag.AutoToolTipsOnLabels | UIGridFlag.LinesBackground, 4f))
+                        using (UIGrid grid = new UIGrid("FuguiThemeColorGrid", new UIGridDefinition(2, new int[] { 196 }), UIGridFlag.AutoToolTipsOnLabels | UIGridFlag.LinesBackground, 4f))
                         {
                             for (int i = 0; i < (int)ImGuiCustomCol.COUNT; i++)
                             {

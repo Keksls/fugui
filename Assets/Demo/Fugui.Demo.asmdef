@@ -1,0 +1,16 @@
+{
+    "name": "Fugui.Demo",
+    "rootNamespace": "",
+    "references": [
+        "GUID:9e80a81481228754181e73eb2cededc3"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

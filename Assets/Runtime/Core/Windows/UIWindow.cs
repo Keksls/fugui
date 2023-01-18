@@ -290,6 +290,7 @@ namespace Fugui.Core
             bool createChild = IsDocked && IsInMainContainer;
             // invoke user custom constraints
             Constraints?.Invoke(this);
+            // set current theme frame padding
             if (ImGui.Begin(ID, ref _open, _windowFlags))
             {
                 bool docked = ImGui.IsWindowDocked();

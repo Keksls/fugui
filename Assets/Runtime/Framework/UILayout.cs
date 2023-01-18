@@ -1,11 +1,9 @@
 using Fugui.Core;
 using ImGuiNET;
-using SFB;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Fugui.Framework
@@ -20,6 +18,8 @@ namespace Fugui.Framework
         public static string CurrentPopUpWindowID { get; private set; } = null;
         // The current pop-up ID.
         public static string CurrentPopUpID { get; private set; } = null;
+        // The current pop-up Rect.
+        public static Rect CurrentPopUpRect { get; private set; } = default;
         // A flag indicating whether the layout is inside a pop-up.
         public static bool IsInsidePopUp { get; private set; } = false;
         // A flag indicating whether the element is hover framed.
@@ -488,14 +488,14 @@ namespace Fugui.Framework
         /// <returns>True if the checkbox was clicked, false otherwise</returns>
         public virtual bool RadioButton(string text, bool isChecked, UIFrameStyle style)
         {
-            beginElement(text, style); // Push the style for the checkbox element
-
+            string id = beginElement(text, style); // Push the style for the checkbox element
+            text = text.Split(new char[] { '#', '#' })[0];
             // get or create animation data
-            if (!_uiElementAnimationDatas.ContainsKey(text))
+            if (!_uiElementAnimationDatas.ContainsKey(id))
             {
-                _uiElementAnimationDatas.Add(text, new UIElementAnimationData(!isChecked));
+                _uiElementAnimationDatas.Add(id, new UIElementAnimationData(!isChecked));
             }
-            UIElementAnimationData animationData = _uiElementAnimationDatas[text];
+            UIElementAnimationData animationData = _uiElementAnimationDatas[id];
 
             // layout states
             float height = 18f;
@@ -540,6 +540,12 @@ namespace Fugui.Framework
             else
             {
                 drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(style.Border), 64);
+            }
+
+            //draw hover frame
+            if(hovered && !_nextIsDisabled)
+            {
+                drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCustomCol.FrameHoverFeedback)),64, 1f);
             }
 
             // update animation data
@@ -653,7 +659,7 @@ namespace Fugui.Framework
                 bool isDragging = _draggingSliders.Contains(text);
                 // Calculate colors
                 Vector4 leftLineColor = ThemeManager.GetColor(ImGuiCol.CheckMark);
-                Vector4 rightLineColor = ThemeManager.GetColor(ImGuiCol.Text);
+                Vector4 rightLineColor = ThemeManager.GetColor(ImGuiCol.FrameBg);
                 Vector4 knobColor = ThemeManager.GetColor(ImGuiCustomCol.Knob);
                 if (_nextIsDisabled)
                 {
@@ -690,8 +696,11 @@ namespace Fugui.Framework
                     }
                     knobColor.w = 1f;
                 }
-                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), (isKnobHovered || isDragging) && !_nextIsDisabled ? knobRadius : knobRadius * 0.8f, ImGui.GetColorU32(knobColor), 32); ;
-
+                // draw knob border
+                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), ((isKnobHovered || isDragging) && !_nextIsDisabled ? knobRadius : knobRadius * 0.8f) + 1f, ImGui.GetColorU32(ImGuiCol.Border), 32);
+                // draw knob
+                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), (isKnobHovered || isDragging) && !_nextIsDisabled ? knobRadius : knobRadius * 0.8f, ImGui.GetColorU32(knobColor), 32);
+                
                 // start dragging this slider
                 if ((isLineHovered || isKnobHovered) && !_draggingSliders.Contains(text) && ImGui.IsMouseClicked(0))
                 {
@@ -1331,7 +1340,6 @@ namespace Fugui.Framework
                     }
                 }
                 IsInsidePopUp = false;
-                ImGui.EndCombo();
 
                 // Update the current pop-up window and ID
                 if (CurrentPopUpID != text)
@@ -1339,6 +1347,9 @@ namespace Fugui.Framework
                     CurrentPopUpWindowID = UIWindow.CurrentDrawingWindow.ID;
                     CurrentPopUpID = text;
                 }
+                // Set CurrentPopUpRect to ImGui item rect
+                CurrentPopUpRect = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+                ImGui.EndCombo();
             }
             else
             {
@@ -1406,8 +1417,6 @@ namespace Fugui.Framework
                 }
                 // Set the IsInsidePopUp flag to false
                 IsInsidePopUp = false;
-                // End the combobox
-                ImGui.EndCombo();
 
                 // Check if the CurrentPopUpID is not equal to the given text
                 if (CurrentPopUpID != text)
@@ -1417,7 +1426,10 @@ namespace Fugui.Framework
                     // Set the CurrentPopUpID to the given text
                     CurrentPopUpID = text;
                 }
-
+                // Set CurrentPopUpRect to ImGui item rect
+                CurrentPopUpRect = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+                // End the combobox
+                ImGui.EndCombo();
             }
             else
             {
@@ -1710,6 +1722,9 @@ namespace Fugui.Framework
             bool edited = false;
             id = beginElement(id, style);
 
+            // set padding
+            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
+
             float height = 18f;
             float width = ImGui.GetContentRegionAvail().x;
             float rounding = 0f;
@@ -1765,18 +1780,21 @@ namespace Fugui.Framework
                 // Draw the color picker
                 ImGui.SetNextItemWidth(184f);
                 edited = ImGui.ColorPicker4("##picker" + id, ref color, ImGuiColorEditFlags.DefaultOptions | ImGuiColorEditFlags.DisplayHex | (alpha ? ImGuiColorEditFlags.AlphaBar : ImGuiColorEditFlags.NoAlpha));
-                ImGui.EndPopup();
                 if (CurrentPopUpID != "ColorPicker" + id)
                 {
                     CurrentPopUpWindowID = UIWindow.CurrentDrawingWindow.ID;
                     CurrentPopUpID = "ColorPicker" + id;
                 }
+                // Set CurrentPopUpRect to ImGui item rect
+                CurrentPopUpRect = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+                ImGui.EndPopup();
             }
             else if (CurrentPopUpID == "ColorPicker" + id)
             {
                 CurrentPopUpWindowID = null;
                 CurrentPopUpID = null;
             }
+            FuGui.PopStyle();
             endElement(style);
             return edited;
         }
@@ -2004,6 +2022,7 @@ namespace Fugui.Framework
                     Vector2 txtSize = ImGui.CalcTextSize(items[i].ToString());
                     naturalSize += 8f + Mathf.Max(txtSize.x, txtSize.y + 4f);
                 }
+                naturalSize += nbItems;
                 cursorPos = cursorPos + ImGui.GetContentRegionAvail().x - naturalSize;
             }
 
@@ -2104,11 +2123,11 @@ namespace Fugui.Framework
                 string[] paths = null;
                 if (onlyFolder)
                 {
-                    paths = StandaloneFileBrowser.OpenFolderPanel("Open Folder", "", false);
+                    paths = FileBrowser.OpenFolderPanel("Open Folder", "", false);
                 }
                 else
                 {
-                    paths = StandaloneFileBrowser.OpenFilePanel("Open File", "", extentions, false);
+                    paths = FileBrowser.OpenFilePanel("Open File", "", extentions, false);
                 }
                 if (paths != null && paths.Length > 0)
                 {
@@ -2166,6 +2185,10 @@ namespace Fugui.Framework
         }
         #endregion
 
+#region Modal
+
+#endregion
+
         /// <summary>
         /// Draw a Separator Line
         /// </summary>
@@ -2178,6 +2201,25 @@ namespace Fugui.Framework
         /// Draw the next element on Same Line as current
         /// </summary>
         public void SameLine()
+        {
+            ImGui.SameLine();
+        }
+
+        /// <summary>
+        /// Draw an empty dummy element of size x y
+        /// </summary>
+        /// <param name="x">width of the dummy</param>
+        /// <param name="y">height of the dummy</param>
+        public void Dummy(float x = 0f, float y = 0f)
+        {
+            ImGui.SameLine();
+        }
+
+        /// <summary>
+        /// Draw an empty dummy element of size 'size'
+        /// </summary>
+        /// <param name="size">size of the dummy</param>
+        public void Dummy(Vector2 size)
         {
             ImGui.SameLine();
         }

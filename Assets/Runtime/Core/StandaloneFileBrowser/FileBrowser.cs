@@ -1,6 +1,6 @@
 using System;
 
-namespace SFB {
+namespace Fugui.Framework {
     public struct ExtensionFilter {
         public string Name;
         public string[] Extensions;
@@ -11,10 +11,10 @@ namespace SFB {
         }
     }
 
-    public class StandaloneFileBrowser {
+    public class FileBrowser {
         private static IStandaloneFileBrowser _platformWrapper = null;
 
-        static StandaloneFileBrowser() {
+        static FileBrowser() {
 #if UNITY_STANDALONE_OSX
             _platformWrapper = new StandaloneFileBrowserMac();
 #elif UNITY_STANDALONE_WIN

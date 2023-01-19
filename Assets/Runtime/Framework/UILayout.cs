@@ -130,7 +130,7 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="text">The text to display on the button.</param>
         /// <returns>True if the button was clicked, false otherwise.</returns>
-        public virtual bool Button(string text)
+        public bool Button(string text)
         {
             return Button(text, UIButtonStyle.FullSize, UIButtonStyle.Default);
         }
@@ -141,7 +141,7 @@ namespace Fugui.Framework
         /// <param name="text">The text to display on the button.</param>
         /// <param name="size">The size of the button. If either dimension is set to -1, it will be set to the available content region size in that direction.</param>
         /// <returns>True if the button was clicked, false otherwise.</returns>
-        public virtual bool Button(string text, Vector2 size)
+        public bool Button(string text, Vector2 size)
         {
             return Button(text, size, UIButtonStyle.Default);
         }
@@ -152,7 +152,7 @@ namespace Fugui.Framework
         /// <param name="text">The text to display on the button.</param>
         /// <param name="style">The style to apply to the button.</param>
         /// <returns>True if the button was clicked, false otherwise.</returns>
-        public virtual bool Button(string text, UIButtonStyle style)
+        public bool Button(string text, UIButtonStyle style)
         {
             return Button(text, UIButtonStyle.FullSize, style);
         }
@@ -543,9 +543,9 @@ namespace Fugui.Framework
             }
 
             //draw hover frame
-            if(hovered && !_nextIsDisabled)
+            if (hovered && !_nextIsDisabled)
             {
-                drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCustomCol.FrameHoverFeedback)),64, 1f);
+                drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCustomCol.FrameHoverFeedback)), 64, 1f);
             }
 
             // update animation data
@@ -700,7 +700,7 @@ namespace Fugui.Framework
                 ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), ((isKnobHovered || isDragging) && !_nextIsDisabled ? knobRadius : knobRadius * 0.8f) + 1f, ImGui.GetColorU32(ImGuiCol.Border), 32);
                 // draw knob
                 ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), (isKnobHovered || isDragging) && !_nextIsDisabled ? knobRadius : knobRadius * 0.8f, ImGui.GetColorU32(knobColor), 32);
-                
+
                 // start dragging this slider
                 if ((isLineHovered || isKnobHovered) && !_draggingSliders.Contains(text) && ImGui.IsMouseClicked(0))
                 {
@@ -1344,7 +1344,7 @@ namespace Fugui.Framework
                 // Update the current pop-up window and ID
                 if (CurrentPopUpID != text)
                 {
-                    CurrentPopUpWindowID = UIWindow.CurrentDrawingWindow.ID;
+                    CurrentPopUpWindowID = UIWindow.CurrentDrawingWindow?.ID;
                     CurrentPopUpID = text;
                 }
                 // Set CurrentPopUpRect to ImGui item rect
@@ -1422,7 +1422,7 @@ namespace Fugui.Framework
                 if (CurrentPopUpID != text)
                 {
                     // Set the CurrentPopUpWindowID to the current drawing window ID
-                    CurrentPopUpWindowID = UIWindow.CurrentDrawingWindow.ID;
+                    CurrentPopUpWindowID = UIWindow.CurrentDrawingWindow?.ID;
                     // Set the CurrentPopUpID to the given text
                     CurrentPopUpID = text;
                 }
@@ -1609,7 +1609,7 @@ namespace Fugui.Framework
         /// <param name="size">size of the image</param>
         public virtual void Image(string id, Texture2D texture, Vector2 size)
         {
-            UIWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size);
+            UIWindow.CurrentDrawingWindow?.Container.ImGuiImage(texture, size);
             displayToolTip();
         }
 
@@ -1621,7 +1621,7 @@ namespace Fugui.Framework
         /// <param name="size">size of the RenderTexture</param>
         public virtual void Image(string id, RenderTexture texture, Vector2 size)
         {
-            UIWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size);
+            UIWindow.CurrentDrawingWindow?.Container.ImGuiImage(texture, size);
             displayToolTip();
         }
 
@@ -1634,7 +1634,7 @@ namespace Fugui.Framework
         /// <returns>true if clicked</returns>
         public virtual bool ImageButton(string id, Texture2D texture, Vector2 size)
         {
-            bool clicked = UIWindow.CurrentDrawingWindow.Container.ImGuiImageButton(texture, size);
+            bool clicked = UIWindow.CurrentDrawingWindow?.Container.ImGuiImageButton(texture, size) ?? false;
             displayToolTip();
             return clicked;
         }
@@ -1649,7 +1649,7 @@ namespace Fugui.Framework
         /// <returns>true if clicked</returns>
         public virtual bool ImageButton(string id, Texture2D texture, Vector2 size, Vector4 color)
         {
-            bool clicked = UIWindow.CurrentDrawingWindow.Container.ImGuiImageButton(texture, size, color);
+            bool clicked = UIWindow.CurrentDrawingWindow?.Container.ImGuiImageButton(texture, size, color) ?? false;
             displayToolTip();
             return clicked;
         }
@@ -1782,7 +1782,7 @@ namespace Fugui.Framework
                 edited = ImGui.ColorPicker4("##picker" + id, ref color, ImGuiColorEditFlags.DefaultOptions | ImGuiColorEditFlags.DisplayHex | (alpha ? ImGuiColorEditFlags.AlphaBar : ImGuiColorEditFlags.NoAlpha));
                 if (CurrentPopUpID != "ColorPicker" + id)
                 {
-                    CurrentPopUpWindowID = UIWindow.CurrentDrawingWindow.ID;
+                    CurrentPopUpWindowID = UIWindow.CurrentDrawingWindow?.ID;
                     CurrentPopUpID = "ColorPicker" + id;
                 }
                 // Set CurrentPopUpRect to ImGui item rect
@@ -2185,9 +2185,9 @@ namespace Fugui.Framework
         }
         #endregion
 
-#region Modal
+        #region Modal
 
-#endregion
+        #endregion
 
         /// <summary>
         /// Draw a Separator Line
@@ -2212,7 +2212,7 @@ namespace Fugui.Framework
         /// <param name="y">height of the dummy</param>
         public void Dummy(float x = 0f, float y = 0f)
         {
-            ImGui.SameLine();
+            ImGui.Dummy(new Vector2(x, y));
         }
 
         /// <summary>
@@ -2221,7 +2221,7 @@ namespace Fugui.Framework
         /// <param name="size">size of the dummy</param>
         public void Dummy(Vector2 size)
         {
-            ImGui.SameLine();
+            ImGui.Dummy(size);
         }
         #endregion
 

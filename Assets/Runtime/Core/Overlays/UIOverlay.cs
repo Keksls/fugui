@@ -261,17 +261,17 @@ namespace Fugui.Core
                 }
                 if (_noBackground)
                 {
-                    UILayoutStyle.NoBackgroundOverlay.Push(true);
+                    UIStyle.NoBackgroundOverlay.Push(true);
                 }
                 else
                 {
-                    UILayoutStyle.Overlay.Push(true);
+                    UIStyle.Overlay.Push(true);
                 }
                 ImGui.BeginChild(ID, Size, true, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
                 {
                     UI?.Invoke(this);
                 }
-                UILayoutStyle.Overlay.Pop();
+                UIStyle.Overlay.Pop();
                 ImGui.EndChild();
             }
             FuGui.PopStyle();

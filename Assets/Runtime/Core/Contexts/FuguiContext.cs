@@ -106,11 +106,11 @@ namespace Fugui.Core
 
             try
             {
-                UILayoutStyle.Default.Push(true);
+                UIStyle.Default.Push(true);
                 FuGui.Push(ImGuiStyleVar.FramePadding, ThemeManager.CurrentTheme.FramePadding);
                 OnRender?.Invoke();
                 FuGui.PopStyle(1);
-                UILayoutStyle.Default.Pop();
+                UIStyle.Default.Pop();
             }
             catch (Exception ex)
             {

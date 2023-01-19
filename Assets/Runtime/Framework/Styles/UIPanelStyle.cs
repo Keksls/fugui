@@ -5,21 +5,21 @@ using UnityEngine;
 
 namespace Fugui.Framework
 {
-    public struct UIContainerStyle : IUIElementStyle
+    public struct UIPanelStyle : IUIElementStyle
     {
         private Color _bgColor;
         private Color _borderColor;
 
         #region Pressets
         // default container style
-        static UIContainerStyle _defaultContainerStyle;
-        public static UIContainerStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultContainerStyle; } }
+        static UIPanelStyle _defaultContainerStyle;
+        public static UIPanelStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultContainerStyle; } }
         // popup container style
-        static UIContainerStyle _popupContainerStyle;
-        public static UIContainerStyle PopUp { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _popupContainerStyle; } }
+        static UIPanelStyle _popupContainerStyle;
+        public static UIPanelStyle PopUp { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _popupContainerStyle; } }
         // transparent container style
-        static UIContainerStyle _transparentContainerStyle;
-        public static UIContainerStyle Transparent { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _transparentContainerStyle; } }
+        static UIPanelStyle _transparentContainerStyle;
+        public static UIPanelStyle Transparent { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _transparentContainerStyle; } }
         #endregion
 
         /// <summary>
@@ -46,22 +46,22 @@ namespace Fugui.Framework
         private static void OnThemeSet()
         {
             // default container style
-            _defaultContainerStyle = new UIContainerStyle()
+            _defaultContainerStyle = new UIPanelStyle()
             {
                 _bgColor = ThemeManager.GetColor(ImGuiCol.WindowBg),
                 _borderColor = ThemeManager.GetColor(ImGuiCol.Border)
             };
             // popup container style
-            _popupContainerStyle = new UIContainerStyle()
+            _popupContainerStyle = new UIPanelStyle()
             {
                 _bgColor = ThemeManager.GetColor(ImGuiCol.PopupBg),
                 _borderColor = ThemeManager.GetColor(ImGuiCol.Border)
             };
             // transparent container style
-            _transparentContainerStyle = new UIContainerStyle()
+            _transparentContainerStyle = new UIPanelStyle()
             {
-                _bgColor = Vector4.zero,
-                _borderColor = Vector4.zero
+                _bgColor = ThemeManager.GetColor(ImGuiCol.WindowBg) / 254f,
+                _borderColor = ThemeManager.GetColor(ImGuiCol.Border) / 254f
             };
         }
     }

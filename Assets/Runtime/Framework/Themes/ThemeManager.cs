@@ -27,9 +27,9 @@ namespace Fugui.Framework
             _uiElementStyleTypes.Add(typeof(UIButtonStyle));
             _uiElementStyleTypes.Add(typeof(UIFrameStyle));
             _uiElementStyleTypes.Add(typeof(UIComboboxStyle));
-            _uiElementStyleTypes.Add(typeof(UIContainerStyle));
+            _uiElementStyleTypes.Add(typeof(UIPanelStyle));
             _uiElementStyleTypes.Add(typeof(UIButtonsGroupStyle));
-            _uiElementStyleTypes.Add(typeof(UILayoutStyle));
+            _uiElementStyleTypes.Add(typeof(UIStyle));
             _uiElementStyleTypes.Add(typeof(UICollapsableStyle));
         }
 
@@ -101,6 +101,7 @@ namespace Fugui.Framework
             return false;
         }
 
+        // TODO : Merge Im to FuguiCol
         /// <summary>
         /// return the color of the current theme that match with the giver enum parameter
         /// </summary>
@@ -125,7 +126,7 @@ namespace Fugui.Framework
         #region UI
         public static void DrawThemeManagerUI()
         {
-            using (new UIContainer("themeManagerContainer", UILayoutStyle.Unpadded))
+            using (new UIPanel("themeManagerContainer", UIStyle.Unpadded))
             {
                 using (UILayout layout = new UILayout())
                 {
@@ -133,7 +134,6 @@ namespace Fugui.Framework
                     {
                         using (UIGrid grid = new UIGrid("themeManagmentGrid"))
                         {
-                            grid.InputFolder("cc");
                             grid.Combobox("Current theme", Themes.Values.ToList(), (theme) =>
                             {
                                 SetTheme(theme);

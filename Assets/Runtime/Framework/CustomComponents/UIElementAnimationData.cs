@@ -1,4 +1,5 @@
 using Fugui.Core;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fugui.Framework
@@ -49,9 +50,16 @@ namespace Fugui.Framework
             {
                 return;
             }
-            UIWindow.CurrentDrawingWindow.ForceDraw();
+            UIWindow.CurrentDrawingWindow?.ForceDraw();
             _currentValue = Mathf.Lerp(_startValue, _targetValue, _enlapsed / ANIMATION_DURATION);
-            _enlapsed += UIWindow.CurrentDrawingWindow.DeltaTime;
+            if (UIWindow.CurrentDrawingWindow != null)
+            {
+                _enlapsed += UIWindow.CurrentDrawingWindow.DeltaTime;
+            }
+            else
+            {
+                _enlapsed += ImGui.GetIO().DeltaTime;
+            }
             if (_enlapsed > ANIMATION_DURATION)
             {
                 _animating = false;

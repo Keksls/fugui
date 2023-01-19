@@ -9,7 +9,7 @@ namespace Fugui.Framework
     {
         public bool Disabled = false;
         public string FieldName;
-        protected FieldInfo _fieldInfo;
+        private protected FieldInfo _fieldInfo;
 
         public UIField(FieldInfo fieldInfo)
         {

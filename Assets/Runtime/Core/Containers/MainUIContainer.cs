@@ -294,6 +294,9 @@ namespace Fugui.Core
                 ImGui.End();
             }
             FuGui.PopStyle(5);
+
+            // draw modal
+            FuguiModal.RenderModal();
         }
         #endregion
     }

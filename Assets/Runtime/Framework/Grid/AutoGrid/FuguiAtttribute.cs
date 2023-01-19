@@ -44,7 +44,7 @@ namespace Fugui.Framework
     [AttributeUsage(AttributeTargets.Field)]
     public class Text : Attribute
     {
-        public string Hint = "";
+        public string Hint = string.Empty;
         public float Height = -1f;
         public int Lenght = 4096;
         public Text(string hint, float height, int lenght)

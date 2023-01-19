@@ -5,30 +5,34 @@ using UnityEngine;
 
 namespace Fugui.Framework
 {
-    public struct UILayoutStyle : IUIElementStyle
+    public struct UIStyle : IUIElementStyle
     {
         private UITextStyle _textStyle;
         private UIFrameStyle _frameStyle;
-        private UIContainerStyle _containerStyle;
+        private UIPanelStyle _containerStyle;
         private Vector2 _framePadding;
         public Vector2 WindowPadding { get; private set; }
 
         #region Pressets
         // default layout style
-        static UILayoutStyle _defaultGridStyle;
-        public static UILayoutStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultGridStyle; } }
+        static UIStyle _defaultGridStyle;
+        public static UIStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultGridStyle; } }
+
+        // modal layout style
+        static UIStyle _modalStyle;
+        public static UIStyle Modal { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _modalStyle; } }
 
         // unpadded layout style
-        static UILayoutStyle _unpaddedGridStyle;
-        public static UILayoutStyle Unpadded { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _unpaddedGridStyle; } }
+        static UIStyle _unpaddedGridStyle;
+        public static UIStyle Unpadded { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _unpaddedGridStyle; } }
 
         // overlay layout style
-        static UILayoutStyle _overlayGridStyle;
-        public static UILayoutStyle Overlay { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _overlayGridStyle; } }
+        static UIStyle _overlayGridStyle;
+        public static UIStyle Overlay { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _overlayGridStyle; } }
 
         // overlay layout style
-        static UILayoutStyle _noBGOverlayGridStyle;
-        public static UILayoutStyle NoBackgroundOverlay { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGOverlayGridStyle; } }
+        static UIStyle _noBGOverlayGridStyle;
+        public static UIStyle NoBackgroundOverlay { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGOverlayGridStyle; } }
         #endregion
 
         public void Push(bool enabled)
@@ -55,9 +59,9 @@ namespace Fugui.Framework
         private static void OnThemeSet()
         {
             // default layout style
-            _defaultGridStyle = new UILayoutStyle()
+            _defaultGridStyle = new UIStyle()
             {
-                _containerStyle = UIContainerStyle.Default,
+                _containerStyle = UIPanelStyle.Default,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
                 _framePadding = new Vector2(6f, 1f),
@@ -65,9 +69,9 @@ namespace Fugui.Framework
             };
 
             // unpadded layout style
-            _unpaddedGridStyle = new UILayoutStyle()
+            _unpaddedGridStyle = new UIStyle()
             {
-                _containerStyle = UIContainerStyle.Default,
+                _containerStyle = UIPanelStyle.Default,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
                 _framePadding = new Vector2(6f, 1f),
@@ -75,9 +79,9 @@ namespace Fugui.Framework
             };
 
             // overlay layout style
-            _overlayGridStyle = new UILayoutStyle()
+            _overlayGridStyle = new UIStyle()
             {
-                _containerStyle = UIContainerStyle.Default,
+                _containerStyle = UIPanelStyle.Default,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
                 _framePadding = new Vector2(6f, 4f),
@@ -85,13 +89,23 @@ namespace Fugui.Framework
             };
 
             // no background overlay style
-            _noBGOverlayGridStyle = new UILayoutStyle()
+            _noBGOverlayGridStyle = new UIStyle()
             {
-                _containerStyle = UIContainerStyle.Transparent,
+                _containerStyle = UIPanelStyle.Transparent,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
                 _framePadding = new Vector2(6f, 4f),
                 WindowPadding = new Vector2(8f, 8f)
+            };
+
+            // _modal style
+            _modalStyle = new UIStyle()
+            {
+                _containerStyle = UIPanelStyle.PopUp,
+                _frameStyle = UIFrameStyle.Default,
+                _textStyle = UITextStyle.Default,
+                _framePadding = new Vector2(6f, 1f),
+                WindowPadding = new Vector2(2f, 2f)
             };
         }
     }

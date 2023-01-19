@@ -12,7 +12,7 @@ namespace Fugui.Framework
         private Color _colorActive;
         private Color _disabledColor;
         private UITextStyle _text;
-        private UILayoutStyle _layout;
+        private UIStyle _layout;
 
         #region Pressets
         // default collapsable style
@@ -69,7 +69,7 @@ namespace Fugui.Framework
                 _colorActive = ThemeManager.GetColor(ImGuiCustomCol.CollapsableActive),
                 _disabledColor = ThemeManager.GetColor(ImGuiCustomCol.CollapsableDisabled),
                 _text = UITextStyle.Default,
-                _layout = UILayoutStyle.Default
+                _layout = UIStyle.Default
             };
         }
     }

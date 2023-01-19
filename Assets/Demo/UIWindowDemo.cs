@@ -45,6 +45,7 @@ public class UIWindowDemo : MonoBehaviour
         Vector3 coloralphaless = new Vector3(.5f, 1f, .8f);
         bool physicalCamera = false;
         string title = "";
+        string modalText = "plop";
         string description = "A <color=red>red</color> <b>Bold TEXT</b>";
 
         // set demo Main menu
@@ -65,7 +66,7 @@ public class UIWindowDemo : MonoBehaviour
         new UIWindowDefinition(UIWindowName.ToolBox, "Tool Box", debugWindow_UI);
         void debugWindow_UI(UIWindow window)
         {
-            using (new UIContainer("debugContainer"))
+            using (new UIPanel("debugContainer"))
             {
                 using (UIGrid grid = new UIGrid("debugGrid"))
                 {
@@ -129,10 +130,61 @@ public class UIWindowDemo : MonoBehaviour
                 {
                     for (int i = 0; i < 10; i++)
                     {
-                        layout.Text("Tree Item " + i);
+                        if (layout.Button("Tree Item " + i))
+                        {
+                            FuguiModal.ShowInfoBoxModal("This is an info", () =>
+                            {
+                                using (UIGrid grid = new UIGrid("modalGrid"))
+                                {
+                                    grid.TextInput("some input text", ref modalText);
+                                }
+                                layout.Collapsable("Drag Tests", () =>
+                                {
+                                    using (var grid = new UIGrid("gridMD2"))
+                                    {
+                                        grid.Drag("drag int ena", ref intVal);
+                                        grid.DisableNextElement();
+                                        grid.Drag("drag int dis", ref intVal);
+
+                                        grid.Drag("drag float ena", ref floatVal, "value");
+                                        grid.DisableNextElement();
+                                        grid.Drag("drag float dis", ref floatVal, "value");
+
+                                        grid.Drag("drag v2 ena", ref v2Val, "x", "y");
+                                        grid.DisableNextElement();
+                                        grid.Drag("drag v2 dis", ref v2Val, "x", "y");
+
+                                        grid.Drag("drag v3 ena", ref v3Val, "x", "y", "z");
+                                        grid.DisableNextElement();
+                                        grid.Drag("drag v3 dis", ref v3Val, "x", "y", "z");
+
+                                        grid.Drag("drag v4 ena", ref v4Val, "x", "y", "z", "w");
+                                        grid.DisableNextElement();
+                                        grid.Drag("drag v4 dis", ref v4Val, "x", "y", "z", "w");
+
+                                        grid.Combobox("test callback combo", "click me custom", () =>
+                                        {
+                                            bool chk = true;
+                                            layout.CheckBox("chdk1", ref chk);
+                                            layout.Drag("drdag", ref floatVal);
+                                            layout.Button("big button");
+                                            layout.DisableNextElement();
+                                            layout.Button("big button", UIButtonStyle.Highlight);
+                                            layout.Slider("sdlc1", ref intVal);
+                                            layout.DisableNextElement();
+                                            layout.Slider("sdlc2", ref intVal);
+                                            layout.Slider("sdlc3", ref floatVal);
+                                        });
+
+                                        grid.Combobox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
+                                        grid.Combobox("test button box", cbButtons, (newValue) => { Debug.Log(newValue); });
+                                    }
+                                });
+                            }, UIModalSize.Medium);
+                        }
                     }
                 }
-            }, isInterractible: false);
+            });
 
         // add Capture Window
         new UIWindowDefinition(UIWindowName.Captures, "Captures", (window) =>
@@ -149,7 +201,7 @@ public class UIWindowDemo : MonoBehaviour
         // add Metadata Window
         new UIWindowDefinition(UIWindowName.Metadata, "Metadata", (window) =>
         {
-            using (new UIContainer("mdcc"))
+            using (new UIPanel("mdcc"))
             {
                 using (var layout = new UILayout())
                 {
@@ -235,22 +287,10 @@ public class UIWindowDemo : MonoBehaviour
             }
         });
 
-        // add Tree Window
-        new UIWindowDefinition(UIWindowName.Tree, "Tree", (window) =>
-        {
-            using (UILayout layout = new UILayout())
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    layout.Text("Tree Item " + i);
-                }
-            }
-        }, isInterractible: false);
-
         // add Inspector Window
         new UIWindowDefinition(UIWindowName.Inspector, "Inspector", (window) =>
         {
-            using (new UIContainer("demoContainer", UILayoutStyle.Unpadded))
+            using (new UIPanel("demoContainer", UIStyle.Unpadded))
             {
                 using (var layout = new UILayout())
                 {
@@ -458,7 +498,7 @@ public class UIWindowDemo : MonoBehaviour
                 FuGui.PushFont(12, FontType.Regular);
                 layout.Text("Fastest");
                 layout.SameLine();
-                if(layout.RadioButton("##q0", qualityIndex == 0))
+                if (layout.RadioButton("##q0", qualityIndex == 0))
                 {
                     qualityIndex = 0;
                 }

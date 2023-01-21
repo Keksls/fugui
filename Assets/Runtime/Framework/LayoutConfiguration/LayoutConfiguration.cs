@@ -12,9 +12,11 @@ using UnityEngine;
 public class LayoutConfiguration : MonoBehaviour
 {
     #region ATTRIBUTES
+    private const string FUGUI_WINDOWS_DEFINTION_ENUM_PATH = "Assets\\Runtime\\Settings\\FuGuiWindows.cs";
+
     private Dictionary<int, string> _fuguiWindows;
     private string _windowsToAdd = string.Empty;
-    private const string FUGUI_WINDOWS_DEFINTION_ENUM_PATH = "Assets\\Runtime\\Settings\\FuGuiWindows.cs";
+    private string _selectedValue = string.Empty;
     #endregion
 
     #region UNITY METHODS
@@ -43,11 +45,11 @@ public class LayoutConfiguration : MonoBehaviour
             {
                 using (UIGrid grid = new UIGrid("mainGrid"))
                 {
-                    grid.Combobox("Windows definition :", _fuguiWindows.Values.ToList(), (newValue) => { Debug.Log(newValue); });
+                    grid.Combobox("Windows definition :", _fuguiWindows.Values.ToList(), (x) => { _selectedValue = x; });
                     grid.Spacing();
                     grid.TextInput("Window name :", ref _windowsToAdd);
 
-                    using(UILayout layout = new UILayout())
+                    using (UILayout layout = new UILayout())
                     {
                         if (!string.IsNullOrEmpty(_windowsToAdd))
                         {
@@ -73,6 +75,33 @@ public class LayoutConfiguration : MonoBehaviour
                                             WriteToFile(FUGUI_WINDOWS_DEFINTION_ENUM_PATH, GenerateEnum("FuGuiWindows", _fuguiWindows));
                                             _windowsToAdd = string.Empty;
                                         }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(_selectedValue) && _selectedValue != "None")
+                        {
+                            if (layout.Button(string.Format($"Remove {_selectedValue}", UIButtonStyle.FullSize, UIButtonStyle.Default)))
+                            {
+                                if (_fuguiWindows.Values.Contains(_selectedValue))
+                                {
+                                    int keyToDelete = -1;
+
+                                    foreach (KeyValuePair<int, string> item in _fuguiWindows)
+                                    {
+                                        if (item.Value == _selectedValue)
+                                        {
+                                            keyToDelete = item.Key;
+                                            break;
+                                        }
+                                    }
+
+                                    if (keyToDelete != -1)
+                                    {
+                                        _fuguiWindows.Remove(keyToDelete);
+                                        WriteToFile(FUGUI_WINDOWS_DEFINTION_ENUM_PATH, GenerateEnum("FuGuiWindows", _fuguiWindows));
+                                        _selectedValue = "None";
                                     }
                                 }
                             }

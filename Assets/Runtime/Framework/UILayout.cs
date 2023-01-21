@@ -2198,6 +2198,14 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Draw a space
+        /// </summary>
+        public void Spacing()
+        {
+            ImGui.Spacing();
+        }
+
+        /// <summary>
         /// Draw the next element on Same Line as current
         /// </summary>
         public void SameLine()

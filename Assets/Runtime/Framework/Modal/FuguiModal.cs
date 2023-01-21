@@ -90,10 +90,10 @@ namespace Fugui.Framework
                 {
                     // draw body BG
                     ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-                    //drawList.AddRectFilled(new Vector2(modalPos.x, modalPos.y + _currentModalTitleHeight), new Vector2(modalPos.x + modalSize.x, modalPos.y + _currentModalTitleHeight + bodySize.y), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.WindowBg)));
+                    //drawList.AddRectFilled(new Vector2(modalPos.x, modalPos.y + _currentModalTitleHeight), new Vector2(modalPos.x + modalSize.x, modalPos.y + _currentModalTitleHeight + bodySize.y), ImGui.GetColorU32(ThemeManager.GetColor(FuguiColor.WindowBg)));
                     // draw title and footer line
-                    drawList.AddLine(new Vector2(modalPos.x, modalPos.y + _currentModalTitleHeight), new Vector2(modalPos.x + modalSize.x, modalPos.y + _currentModalTitleHeight), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.Separator)));
-                    drawList.AddLine(new Vector2(modalPos.x, modalPos.y + _currentModalTitleHeight + bodySize.y), new Vector2(modalPos.x + modalSize.x, modalPos.y + _currentModalTitleHeight + bodySize.y), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.Separator)));
+                    drawList.AddLine(new Vector2(modalPos.x, modalPos.y + _currentModalTitleHeight), new Vector2(modalPos.x + modalSize.x, modalPos.y + _currentModalTitleHeight), ImGui.GetColorU32(ThemeManager.GetColor(FuguiColors.Separator)));
+                    drawList.AddLine(new Vector2(modalPos.x, modalPos.y + _currentModalTitleHeight + bodySize.y), new Vector2(modalPos.x + modalSize.x, modalPos.y + _currentModalTitleHeight + bodySize.y), ImGui.GetColorU32(ThemeManager.GetColor(FuguiColors.Separator)));
 
                     // draw modal title
                     drawTitle(_modalTitle);

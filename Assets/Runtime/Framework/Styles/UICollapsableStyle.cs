@@ -64,10 +64,10 @@ namespace Fugui.Framework
             // default collapsable style
             _defaultContainerStyle = new UICollapsableStyle()
             {
-                _color = ThemeManager.GetColor(ImGuiCustomCol.Collapsable),
-                _colorHovered = ThemeManager.GetColor(ImGuiCustomCol.CollapsableHovered),
-                _colorActive = ThemeManager.GetColor(ImGuiCustomCol.CollapsableActive),
-                _disabledColor = ThemeManager.GetColor(ImGuiCustomCol.CollapsableDisabled),
+                _color = ThemeManager.GetColor(FuguiColors.Collapsable),
+                _colorHovered = ThemeManager.GetColor(FuguiColors.CollapsableHovered),
+                _colorActive = ThemeManager.GetColor(FuguiColors.CollapsableActive),
+                _disabledColor = ThemeManager.GetColor(FuguiColors.CollapsableDisabled),
                 _text = UITextStyle.Default,
                 _layout = UIStyle.Default
             };

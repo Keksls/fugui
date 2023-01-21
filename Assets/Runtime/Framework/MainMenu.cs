@@ -85,8 +85,8 @@ namespace Fugui.Framework
             FuGui.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
             FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 8f));
             FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
-            FuGui.Push(ImGuiCol.Header, ThemeManager.GetColor(ImGuiCol.HeaderHovered));
-            FuGui.Push(ImGuiCol.Text, ThemeManager.GetColor(ImGuiCustomCol.MainMenuText));
+            FuGui.Push(ImGuiCol.Header, ThemeManager.GetColor(FuguiColors.HeaderHovered));
+            FuGui.Push(ImGuiCol.Text, ThemeManager.GetColor(FuguiColors.MainMenuText));
 
             // Begin the main menu bar
             if (ImGui.BeginMainMenuBar())
@@ -120,7 +120,7 @@ namespace Fugui.Framework
         {
             if (item.Parent != null)
             {
-                FuGui.Push(ImGuiCol.Text, ThemeManager.GetColor(ImGuiCol.Text));
+                FuGui.Push(ImGuiCol.Text, ThemeManager.GetColor(FuguiColors.Text));
             }
             if (item.Children != null && item.Children.Count > 0)
             {

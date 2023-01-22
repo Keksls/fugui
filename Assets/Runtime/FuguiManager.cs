@@ -176,7 +176,7 @@ namespace Fugui.Core
         /// <summary>
         /// A boolean value indicating whether the title bar should be shown for externally manipulated UI windows.
         /// </summary>
-        public bool ExternalShowTitleBar = false;
+        public UIExternalWindowFlags ExternalWindowFlags = UIExternalWindowFlags.Default;
         /// <summary>
         /// A boolean value indicating whether the debug panel should be drawn.
         /// </summary>

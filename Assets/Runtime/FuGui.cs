@@ -124,7 +124,7 @@ namespace Fugui.Framework
                 UIWindow imguiWindow = _windowsToExternalize.Dequeue();
 
                 // create new window
-                ExternalWindowContainer window = new ExternalWindowContainer(imguiWindow, Settings.ExternalShowTitleBar);
+                ExternalWindowContainer window = new ExternalWindowContainer(imguiWindow, Settings.ExternalWindowFlags);
                 window.Closed += (sender, args) =>
                 {
                     lock (_externalWindows)

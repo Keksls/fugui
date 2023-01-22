@@ -196,7 +196,7 @@ public class UIWindowDemo : MonoBehaviour
                     layout.Button("Capture " + i, new Vector2(128f, 128f));
                 }
             }
-        }, isInterractible: false);
+        }, flags: UIWindowFlags.NoInterractions);
 
         // add Metadata Window
         new UIWindowDefinition(FuGuiWindows.Metadata, "Metadata", (window) =>
@@ -373,7 +373,7 @@ public class UIWindowDemo : MonoBehaviour
             });
 
         // add main camera window
-        UIWindowDefinition camWinDef = new UICameraWindowDefinition(FuGuiWindows.MainCameraView, cam1, "3DView", null, isInterractible: false)
+        UIWindowDefinition camWinDef = new UICameraWindowDefinition(FuGuiWindows.MainCameraView, cam1, "3DView", null, flags: UIWindowFlags.NoInterractions)
             .SetCustomWindowType<UICameraWindow>();
         camWinDef.OnUIWindowCreated += CamWinDef_OnUIWindowCreated;
 

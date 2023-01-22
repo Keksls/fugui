@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace Fugui.Framework
 {
-    public static class FuGui
+    public static partial class FuGui
     {
         public static FuguiContext CurrentContext { get; internal set; }
         public static Dictionary<int, FuguiContext> Contexts { get; internal set; } = new Dictionary<int, FuguiContext>();

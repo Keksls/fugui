@@ -50,9 +50,13 @@ public class UIWindowDemo : MonoBehaviour
 
         // set demo Main menu
         MainMenu.RegisterItem(Icons.DragonflyLogo + " Files", null);
+
         MainMenu.RegisterItem("Layout", null);
-        MainMenu.RegisterItem("Default", () => DockingLayoutManager.SetLayout(UIDockingLayout.Default), "Layout", "Alt + Left Arrow");
-        MainMenu.RegisterItem("Console on Bottom", () => DockingLayoutManager.SetLayout(UIDockingLayout.Console), "Layout", "Alt + Right Arrow");
+        foreach (UIDockingLayout layout in Enum.GetValues(typeof(UIDockingLayout)))
+        {
+            MainMenu.RegisterItem(FuGui.AddSpacesBeforeUppercase(layout.ToString()), () => DockingLayoutManager.SetLayout(layout), "Layout");
+        }
+
         MainMenu.RegisterItem("Windows", null);
         foreach (FuGuiWindows windowName in Enum.GetValues(typeof(FuGuiWindows)))
         {
@@ -62,6 +66,9 @@ public class UIWindowDemo : MonoBehaviour
             }
             MainMenu.RegisterItem(windowName.ToString(), () => FuGui.CreateWindowAsync(windowName, null), "Windows");
         }
+
+        new UIWindowDefinition(FuGuiWindows.DockSpaceManager, "DockSpace Manager", FuGui.DockSpaceManager);
+        new UIWindowDefinition(FuGuiWindows.WindowsDefinitionManager, "Windows Definition Manager", FuGui.WindowsDefinitionManager);
 
         new UIWindowDefinition(FuGuiWindows.ToolBox, "Tool Box", debugWindow_UI);
         void debugWindow_UI(UIWindow window)
@@ -369,7 +376,7 @@ public class UIWindowDemo : MonoBehaviour
         // add Theme Window
         new UIWindowDefinition(FuGuiWindows.Theme, "Theme Configurator", (window) =>
             {
-                ThemeManager.DrawThemeManagerUI();
+                FuGui.DrawThemes();
             });
 
         // add main camera window

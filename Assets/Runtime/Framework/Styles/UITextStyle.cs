@@ -52,20 +52,20 @@ namespace Fugui.Framework
             // default text style
             _defaultTextStyle = new UITextStyle()
             {
-                Text = ThemeManager.GetColor(ImGuiCol.Text),
-                DisabledText = ThemeManager.GetColor(ImGuiCol.TextDisabled)
+                Text = ThemeManager.GetColor(FuguiColors.Text),
+                DisabledText = ThemeManager.GetColor(FuguiColors.TextDisabled)
             };
             // selected text style
             _selectedTextStyle = new UITextStyle()
             {
-                Text = ThemeManager.GetColor(ImGuiCustomCol.SelectedText),
-                DisabledText = ThemeManager.GetColor(ImGuiCustomCol.SelectedText) * 0.8f
+                Text = ThemeManager.GetColor(FuguiColors.SelectedText),
+                DisabledText = ThemeManager.GetColor(FuguiColors.SelectedText) * 0.8f
             };
             // highlight text style
             _highlightTextStyle = new UITextStyle()
             {
-                Text = ThemeManager.GetColor(ImGuiCustomCol.HighlightText),
-                DisabledText = ThemeManager.GetColor(ImGuiCustomCol.HighlightTextDisabled)
+                Text = ThemeManager.GetColor(FuguiColors.HighlightText),
+                DisabledText = ThemeManager.GetColor(FuguiColors.HighlightTextDisabled)
             };
         }
     }

@@ -1,6 +1,7 @@
 # FuGui: The Ultimate Unity UI Framework
 Imediate GUI Framework for Unity based on https://github.com/ocornut/imgui.
 FuGui is here to revolutionize the way you build UI for your Unity projects! Based on DearImgui, FuGui offers a range of powerful features to make UI development fast and easy.
+Follow the avancement here : https://trello.com/b/2zY2a0y2/fugui
 
 ## Key Features
 - Target FPS handling for smooth and optimal UI window performance

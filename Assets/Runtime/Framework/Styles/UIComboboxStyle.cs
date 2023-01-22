@@ -73,10 +73,10 @@ namespace Fugui.Framework
         blueButtonStyle = new UIComboboxStyle()
         {
             ButtonStyle = UIButtonStyle.Highlight,
-            _frame = ThemeManager.GetColor(ImGuiCustomCol.Highlight),
-            _frameHovered = ThemeManager.GetColor(ImGuiCustomCol.HighlightHovered),
-            _frameActive = ThemeManager.GetColor(ImGuiCustomCol.HighlightActive),
-            _frameDisabled = ThemeManager.GetColor(ImGuiCustomCol.HighlightDisabled)
+            _frame = ThemeManager.GetColor(FuguiColors.Highlight),
+            _frameHovered = ThemeManager.GetColor(FuguiColors.HighlightHovered),
+            _frameActive = ThemeManager.GetColor(FuguiColors.HighlightActive),
+            _frameDisabled = ThemeManager.GetColor(FuguiColors.HighlightDisabled)
         };
     }
     }

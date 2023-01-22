@@ -71,17 +71,17 @@ namespace Fugui.Framework
             // default button style
             _defaultFrameStyle = new UIFrameStyle()
             {
-                Frame = ThemeManager.GetColor(ImGuiCol.FrameBg),
-                HoveredFrame = ThemeManager.GetColor(ImGuiCol.FrameBgHovered),
-                ActiveFrame = ThemeManager.GetColor(ImGuiCol.FrameBgActive),
-                CheckMark = ThemeManager.GetColor(ImGuiCol.CheckMark),
-                Border = ThemeManager.GetColor(ImGuiCol.Border),
-                Shadow = ThemeManager.GetColor(ImGuiCol.BorderShadow),
+                Frame = ThemeManager.GetColor(FuguiColors.FrameBg),
+                HoveredFrame = ThemeManager.GetColor(FuguiColors.FrameBgHovered),
+                ActiveFrame = ThemeManager.GetColor(FuguiColors.FrameBgActive),
+                CheckMark = ThemeManager.GetColor(FuguiColors.CheckMark),
+                Border = ThemeManager.GetColor(FuguiColors.Border),
+                Shadow = ThemeManager.GetColor(FuguiColors.BorderShadow),
 
-                DisabledFrame = ThemeManager.GetColor(ImGuiCol.FrameBg) * 0.3f,
-                DisabledCheckMark = ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.3f,
-                DisabledBorder = ThemeManager.GetColor(ImGuiCol.Border),
-                DisabledShadow = ThemeManager.GetColor(ImGuiCol.BorderShadow),
+                DisabledFrame = ThemeManager.GetColor(FuguiColors.FrameBg) * 0.3f,
+                DisabledCheckMark = ThemeManager.GetColor(FuguiColors.CheckMark) * 0.3f,
+                DisabledBorder = ThemeManager.GetColor(FuguiColors.Border),
+                DisabledShadow = ThemeManager.GetColor(FuguiColors.BorderShadow),
 
                 TextStyle = UITextStyle.Default
             };

@@ -74,30 +74,30 @@ namespace Fugui.Framework
             _defaultButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(ImGuiCol.Button),
-                _buttonHovered = ThemeManager.GetColor(ImGuiCol.ButtonHovered),
-                _buttonActive = ThemeManager.GetColor(ImGuiCol.ButtonActive),
-                _disabledButton = ThemeManager.GetColor(ImGuiCol.Button) * 0.5f,
+                _button = ThemeManager.GetColor(FuguiColors.Button),
+                _buttonHovered = ThemeManager.GetColor(FuguiColors.ButtonHovered),
+                _buttonActive = ThemeManager.GetColor(FuguiColors.ButtonActive),
+                _disabledButton = ThemeManager.GetColor(FuguiColors.Button) * 0.5f,
                 TextStyle = UITextStyle.Default
             };
             // blue button style
             _highlightButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(ImGuiCustomCol.Highlight),
-                _buttonHovered = ThemeManager.GetColor(ImGuiCustomCol.HighlightHovered),
-                _buttonActive = ThemeManager.GetColor(ImGuiCustomCol.HighlightActive),
-                _disabledButton = ThemeManager.GetColor(ImGuiCustomCol.HighlightDisabled),
+                _button = ThemeManager.GetColor(FuguiColors.Highlight),
+                _buttonHovered = ThemeManager.GetColor(FuguiColors.HighlightHovered),
+                _buttonActive = ThemeManager.GetColor(FuguiColors.HighlightActive),
+                _disabledButton = ThemeManager.GetColor(FuguiColors.HighlightDisabled),
                 TextStyle = UITextStyle.Highlight
             };
             // selected
             _selectedButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(ImGuiCustomCol.Selected),
-                _buttonHovered = ThemeManager.GetColor(ImGuiCustomCol.SelectedHovered),
-                _buttonActive = ThemeManager.GetColor(ImGuiCustomCol.SelectedActive),
-                _disabledButton = ThemeManager.GetColor(ImGuiCustomCol.Selected) * 0.5f,
+                _button = ThemeManager.GetColor(FuguiColors.Selected),
+                _buttonHovered = ThemeManager.GetColor(FuguiColors.SelectedHovered),
+                _buttonActive = ThemeManager.GetColor(FuguiColors.SelectedActive),
+                _disabledButton = ThemeManager.GetColor(FuguiColors.Selected) * 0.5f,
                 TextStyle = UITextStyle.Selected
             };
         }

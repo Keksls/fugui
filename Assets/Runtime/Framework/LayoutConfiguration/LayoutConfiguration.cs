@@ -41,76 +41,73 @@ public class LayoutConfiguration : MonoBehaviour
 
         void WindowsDefinitionManager(UIWindow window)
         {
-            using (new UIPanel("mainPanel"))
+            using (UIGrid grid = new UIGrid("mainGrid"))
             {
-                using (UIGrid grid = new UIGrid("mainGrid"))
-                {
-                    grid.Combobox("Windows definition :", _fuguiWindows.Values.ToList(), (x) => { _selectedValue = x; });
-                    grid.Spacing();
-                    grid.TextInput("Window name :", ref _windowsToAdd);
+                grid.Combobox("Windows definition :", _fuguiWindows.Values.ToList(), (x) => { _selectedValue = x; });
+                grid.Spacing();
+                grid.TextInput("Window name :", ref _windowsToAdd);
 
-                    using (UILayout layout = new UILayout())
+                using (UILayout layout = new UILayout())
+                {
+                    if (!string.IsNullOrEmpty(_windowsToAdd))
                     {
-                        if (!string.IsNullOrEmpty(_windowsToAdd))
+                        if (_fuguiWindows.Values.Contains(_windowsToAdd))
                         {
-                            if (_fuguiWindows.Values.Contains(_windowsToAdd))
+                            layout.SmartText(string.Format($"<color=red>The name <b>'{_windowsToAdd}'</b> is already present in the current FuGui windows definition !</color>"));
+                        }
+                        else
+                        {
+                            if (!FuGui.IsAlphaNumericWithSpaces(_windowsToAdd))
                             {
-                                layout.SmartText(string.Format($"<color=red>The name <b>'{_windowsToAdd}'</b> is already present in the current FuGui windows definition !</color>"));
+                                layout.SmartText(string.Format($"<color=red>The name <b>'{_windowsToAdd}'</b> is not a valid name for a FuGui window !</color>"));
                             }
                             else
                             {
-                                if (!FuGui.IsAlphaNumericWithSpaces(_windowsToAdd))
+                                layout.Spacing();
+                                if (layout.Button("Add new FuGui window definition", UIButtonStyle.FullSize, UIButtonStyle.Default))
                                 {
-                                    layout.SmartText(string.Format($"<color=red>The name <b>'{_windowsToAdd}'</b> is not a valid name for a FuGui window !</color>"));
-                                }
-                                else
-                                {
-                                    layout.Spacing();
-                                    if (layout.Button("Add new FuGui window definition", UIButtonStyle.FullSize, UIButtonStyle.Default))
+                                    if (!_fuguiWindows.Values.Contains(_windowsToAdd))
                                     {
-                                        if (!_fuguiWindows.Values.Contains(_windowsToAdd))
+                                        int newIndex = _fuguiWindows.Max(x => x.Key) + 1;
+                                        _fuguiWindows.Add(_fuguiWindows.Keys.Last() + 1, _windowsToAdd);
+
+                                        Dictionary<int, string> formatedFuGuiWindowsName = new Dictionary<int, string>();
+
+                                        foreach (KeyValuePair<int, string> fuguiItem in _fuguiWindows)
                                         {
-                                            int newIndex = _fuguiWindows.Max(x => x.Key) + 1;
-                                            _fuguiWindows.Add(_fuguiWindows.Keys.Last() + 1, _windowsToAdd);
-
-                                            Dictionary<int, string> formatedFuGuiWindowsName = new Dictionary<int, string>();
-
-                                            foreach (KeyValuePair<int, string> fuguiItem in _fuguiWindows)
-                                            {
-                                                formatedFuGuiWindowsName.Add(fuguiItem.Key, FuGui.RemoveSpaceAndCapitalize(fuguiItem.Value));
-                                            }
-
-                                            WriteToFile(FUGUI_WINDOWS_DEFINTION_ENUM_PATH, GenerateEnum("FuGuiWindows", formatedFuGuiWindowsName));
-                                            _windowsToAdd = string.Empty;
+                                            formatedFuGuiWindowsName.Add(fuguiItem.Key, FuGui.RemoveSpaceAndCapitalize(fuguiItem.Value));
                                         }
+
+                                        WriteToFile(FUGUI_WINDOWS_DEFINTION_ENUM_PATH, GenerateEnum("FuGuiWindows", formatedFuGuiWindowsName));
+                                        _windowsToAdd = string.Empty;
                                     }
                                 }
                             }
                         }
+                    }
 
-                        if (!string.IsNullOrEmpty(_selectedValue) && _selectedValue != "None")
+                    if (!string.IsNullOrEmpty(_selectedValue) && _selectedValue != "None")
+                    {
+                        if (layout.Button(string.Format($"Remove {_selectedValue}", UIButtonStyle.FullSize, UIButtonStyle.Default)))
                         {
-                            if (layout.Button(string.Format($"Remove {_selectedValue}", UIButtonStyle.FullSize, UIButtonStyle.Default)))
+                            if (_fuguiWindows.Values.Contains(_selectedValue))
                             {
-                                if (_fuguiWindows.Values.Contains(_selectedValue))
+                                int keyToDelete = -1;
+
+                                foreach (KeyValuePair<int, string> item in _fuguiWindows)
                                 {
-                                    int keyToDelete = -1;
-
-                                    foreach (KeyValuePair<int, string> item in _fuguiWindows)
+                                    if (item.Value == _selectedValue)
                                     {
-                                        if (item.Value == _selectedValue)
-                                        {
-                                            keyToDelete = item.Key;
-                                            break;
-                                        }
+                                        keyToDelete = item.Key;
+                                        break;
                                     }
+                                }
 
-                                    if (keyToDelete != -1)
-                                    {
-                                        _fuguiWindows.Remove(keyToDelete);
-                                        WriteToFile(FUGUI_WINDOWS_DEFINTION_ENUM_PATH, GenerateEnum("FuGuiWindows", _fuguiWindows));
-                                        _selectedValue = "None";
-                                    }
+                                if (keyToDelete != -1)
+                                {
+                                    _fuguiWindows.Remove(keyToDelete);
+                                    WriteToFile(FUGUI_WINDOWS_DEFINTION_ENUM_PATH, GenerateEnum("FuGuiWindows", _fuguiWindows));
+                                    _selectedValue = "None";
                                 }
                             }
                         }

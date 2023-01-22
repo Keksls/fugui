@@ -720,8 +720,8 @@ namespace Fugui.Framework
         /// <returns>The input string with spaces added before uppercase letters.</returns>
         public static string AddSpacesBeforeUppercase(string input)
         {
-            // Use a regular expression to add spaces before uppercase letters, but ignore the first letter of the string
-            return Regex.Replace(input, "(?<!^)([A-Z])", " $1");
+            // Use a regular expression to add spaces before uppercase letters, but ignore the first letter of the string and avoid adding a space if it is preceded by whitespace
+            return Regex.Replace(input, "(?<!^)(?<!\\s)([A-Z])", " $1");
         }
 
         /// <summary>

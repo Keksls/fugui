@@ -267,7 +267,7 @@ namespace Fugui.Core
             MainMenu.Draw();
             float mainMenuHeight = 31f;
             // draw main menu separator
-            ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - 1f), new Vector2(_size.x, mainMenuHeight - 1f), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.HeaderHovered)));
+            ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - 1f), new Vector2(_size.x, mainMenuHeight - 1f), ImGui.GetColorU32(ThemeManager.GetColor(FuguiColors.HeaderHovered)));
 
             // draw main dockspace
             uint viewPortID = 0;

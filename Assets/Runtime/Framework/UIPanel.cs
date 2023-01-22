@@ -26,12 +26,11 @@ namespace Fugui.Framework
         /// <param name="id">The ID of the panel.</param>
         /// <param name="height">The optional height of the panel. Defaults to 0.</param>
         /// <param name="width">The optional width of the panel. Defaults to 0.</param>
-        /// <param name="scrollable">A flag indicating whether the panel is scrollable or not. Defaults to true.</param>
-        /// <param name="border">A flag indicating whether the panel has a border or not. Defaults to false.</param>
-        public UIPanel(string id, float height = 0, float width = 0, bool scrollable = true, bool border = false)
+        /// <param name="flags">Behaviour flags of this panel.</param>
+        public UIPanel(string id, float height = 0, float width = 0, PanelFlags flags = PanelFlags.Default)
         {
             _currentStyle = UIStyle.Default;
-            beginPanel(id, height, width, scrollable, border);
+            beginPanel(id, height, width, !flags.HasFlag(PanelFlags.NoScroll), flags.HasFlag(PanelFlags.DrawBorders));
         }
 
         /// <summary>
@@ -42,12 +41,11 @@ namespace Fugui.Framework
         /// <param name="style">The layout style of the panel.</param>
         /// <param name="height">The optional height of the panel. Defaults to 0.</param>
         /// <param name="width">The optional width of the panel. Defaults to 0.</param>
-        /// <param name="scrollable">A flag indicating whether the panel is scrollable or not. Defaults to true.</param>
-        /// <param name="border">A flag indicating whether the panel has a border or not. Defaults to false.</param>
-        public UIPanel(string id, UIStyle style, float height = 0, float width = 0, bool scrollable = true, bool border = false)
+        /// <param name="flags">Behaviour flags of this panel.</param>
+        public UIPanel(string id, UIStyle style, float height = 0, float width = 0, PanelFlags flags = PanelFlags.Default)
         {
             _currentStyle = style;
-            beginPanel(id, height, width, scrollable, border);
+            beginPanel(id, height, width, !flags.HasFlag(PanelFlags.NoScroll), flags.HasFlag(PanelFlags.DrawBorders));
         }
 
         /// <summary>

@@ -13,4 +13,11 @@
         MaximumTextSize = 1,
         AlignLeft = 2
     }
+
+    public enum PanelFlags
+    {
+        Default = 0,
+        NoScroll = 1,
+        DrawBorders = 2
+    }
 }

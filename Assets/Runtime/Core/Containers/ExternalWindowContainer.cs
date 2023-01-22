@@ -61,7 +61,7 @@ namespace Fugui.Core
         private bool _fireOnReadyNextFrame = false;
         #endregion
 
-        public ExternalWindowContainer(UIWindow window, bool showTitleBar)
+        public ExternalWindowContainer(UIWindow window, UIExternalWindowFlags flags = UIExternalWindowFlags.Default)
         {
             // set imguiWindow object to render
             if (!TryAddWindow(window))
@@ -74,7 +74,7 @@ namespace Fugui.Core
             // set title to this window
             Title = window.ID;
             // show / hide title bar
-            WindowBorder = showTitleBar ? WindowBorder.Fixed : WindowBorder.Hidden;
+            WindowBorder = flags.HasFlag(UIExternalWindowFlags.ShhowWindowTitle) ? WindowBorder.Fixed : WindowBorder.Hidden;
             // store window device context handle ptr
             _windowHDC = WindowInfo.Handle;
             // assume that this window is started, render thread will set this as true once graphic context is created (used for threads loop)

@@ -245,7 +245,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7280319400249430176, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
@@ -259,6 +259,10 @@ PrefabInstance:
     - target: {fileID: 8052268084316367205, guid: ea9354a7b2f1d3a49b43315ea69c9425, type: 3}
       propertyPath: m_Name
       value: LayoutConfiguration
+      objectReference: {fileID: 0}
+    - target: {fileID: 8052268084316367205, guid: ea9354a7b2f1d3a49b43315ea69c9425, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8052268084316367207, guid: ea9354a7b2f1d3a49b43315ea69c9425, type: 3}
       propertyPath: m_RootOrder

@@ -41,11 +41,8 @@ namespace Fugui.Core
         /// <param name="ui">The action to be performed on the UI window.</param>
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
-        /// <param name="externalizable">A boolean value indicating whether the UI window can be externalized.</param>
-        /// <param name="dockable">A boolean value indicating whether the UI window can be docked.</param>
-        /// <param name="isInterractible">A boolean value indicating whether the UI window is interactible.</param>
-        /// <param name="noDockingOverMe">A boolean value indicating whether docking is allowed over the UI window.</param>
-        public UIWindowDefinition(FuGuiWindows windowName, string id, Action<UIWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, bool externalizable = true, bool dockable = true, bool isInterractible = true, bool noDockingOverMe = false)
+        /// <param name="flags">Behaviour flag of this window definition</param>
+        public UIWindowDefinition(FuGuiWindows windowName, string id, Action<UIWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, UIWindowFlags flags = UIWindowFlags.Default)
         {
             // Assign the specified values to the corresponding fields
             WindowID = windowName;
@@ -53,10 +50,10 @@ namespace Fugui.Core
             UI = ui;
             Position = pos.HasValue ? pos.Value : new Vector2Int(256, 256);
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
-            IsExternalizable = externalizable;
-            IsDockable = dockable;
-            IsInterractible = isInterractible;
-            NoDockingOverMe = noDockingOverMe;
+            IsExternalizable = !flags.HasFlag(UIWindowFlags.NoExternalization);
+            IsDockable = !flags.HasFlag(UIWindowFlags.NoDocking);
+            IsInterractible = !flags.HasFlag(UIWindowFlags.NoInterractions);
+            NoDockingOverMe = !flags.HasFlag(UIWindowFlags.NoDockingOverMe);
             _uiWindowType = typeof(UIWindow);
             Overlays = new Dictionary<string, UIOverlay>();
             FuGui.RegisterWindowDefinition(this);

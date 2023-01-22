@@ -1,5 +1,4 @@
 using UnityEngine;
-using ImGuiNET;
 using System.Collections.Generic;
 using System;
 using System.Reflection;
@@ -101,23 +100,12 @@ namespace Fugui.Framework
             return false;
         }
 
-        // TODO : Merge Im to FuguiCol
         /// <summary>
         /// return the color of the current theme that match with the giver enum parameter
         /// </summary>
         /// <param name="color">color enum to get value of</param>
         /// <returns>color value as Vector4</returns>
-        public static Vector4 GetColor(ImGuiCol color)
-        {
-            return CurrentTheme.Colors[(int)color];
-        }
-
-        /// <summary>
-        /// return the color of the current theme that match with the giver enum parameter
-        /// </summary>
-        /// <param name="color">color enum to get value of</param>
-        /// <returns>color value as Vector4</returns>
-        public static Vector4 GetColor(ImGuiCustomCol color)
+        public static Vector4 GetColor(FuguiColors color)
         {
             return CurrentTheme.Colors[(int)color];
         }
@@ -170,10 +158,10 @@ namespace Fugui.Framework
                     {
                         using (UIGrid grid = new UIGrid("FuguiThemeColorGrid", new UIGridDefinition(2, new int[] { 196 }), UIGridFlag.AutoToolTipsOnLabels | UIGridFlag.LinesBackground, 4f))
                         {
-                            for (int i = 0; i < (int)ImGuiCustomCol.COUNT; i++)
+                            for (int i = 0; i < (int)FuguiColors.COUNT; i++)
                             {
                                 Vector4 selectedColor = CurrentTheme.Colors[i];
-                                string colorName = i < (int)ImGuiCol.COUNT ? ((ImGuiCol)i).ToString() : ((ImGuiCustomCol)i).ToString();
+                                string colorName = ((FuguiColors)i).ToString();
                                 colorName = FuGui.AddSpacesBeforeUppercase(colorName);
                                 if (grid.ColorPicker(colorName, ref selectedColor))
                                 {
@@ -291,7 +279,7 @@ namespace Fugui.Framework
                 string json = File.ReadAllText(filePath);
                 // deserialize json data
                 theme = JsonUtility.FromJson<FuguiTheme>(json);
-                Vector4[] colors = new Vector4[(int)ImGuiCustomCol.COUNT];
+                Vector4[] colors = new Vector4[(int)FuguiColors.COUNT];
                 for (int i = 0; i < theme.Colors.Length; i++)
                 {
                     colors[i] = theme.Colors[i];

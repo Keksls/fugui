@@ -98,11 +98,11 @@ namespace Fugui.Framework
             {
                 if (ImGui.IsItemFocused())
                 {
-                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCustomCol.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
+                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(ThemeManager.GetColor(FuguiColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
                 }
                 else if (ImGui.IsItemHovered())
                 {
-                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCustomCol.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
+                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(ThemeManager.GetColor(FuguiColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
                 }
             }
         }
@@ -253,7 +253,7 @@ namespace Fugui.Framework
         protected void _customText(string text)
         {
             int size = 14;
-            Vector4 color = ThemeManager.GetColor(ImGuiCol.Text);
+            Vector4 color = ThemeManager.GetColor(FuguiColors.Text);
             ImGui.SameLine();
             float startCursorX = ImGui.GetCursorPosX();
             bool bold = false;
@@ -429,26 +429,26 @@ namespace Fugui.Framework
             // push colors
             if (_nextIsDisabled)
             {
-                FuGui.Push(ImGuiCol.CheckMark, ThemeManager.GetColor(ImGuiCustomCol.Knob) * 0.3f);
-                FuGui.Push(ImGuiCol.FrameBg, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.3f);
-                FuGui.Push(ImGuiCol.FrameBgHovered, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.3f);
-                FuGui.Push(ImGuiCol.FrameBgActive, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.3f);
+                FuGui.Push(ImGuiCol.CheckMark, ThemeManager.GetColor(FuguiColors.Knob) * 0.3f);
+                FuGui.Push(ImGuiCol.FrameBg, ThemeManager.GetColor(FuguiColors.CheckMark) * 0.3f);
+                FuGui.Push(ImGuiCol.FrameBgHovered, ThemeManager.GetColor(FuguiColors.CheckMark) * 0.3f);
+                FuGui.Push(ImGuiCol.FrameBgActive, ThemeManager.GetColor(FuguiColors.CheckMark) * 0.3f);
             }
             else
             {
                 if (isChecked)
                 {
-                    FuGui.Push(ImGuiCol.CheckMark, ThemeManager.GetColor(ImGuiCustomCol.Knob));
-                    FuGui.Push(ImGuiCol.FrameBg, ThemeManager.GetColor(ImGuiCol.CheckMark));
-                    FuGui.Push(ImGuiCol.FrameBgHovered, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.9f);
-                    FuGui.Push(ImGuiCol.FrameBgActive, ThemeManager.GetColor(ImGuiCol.CheckMark) * 0.8f);
+                    FuGui.Push(ImGuiCol.CheckMark, ThemeManager.GetColor(FuguiColors.Knob));
+                    FuGui.Push(ImGuiCol.FrameBg, ThemeManager.GetColor(FuguiColors.CheckMark));
+                    FuGui.Push(ImGuiCol.FrameBgHovered, ThemeManager.GetColor(FuguiColors.CheckMark) * 0.9f);
+                    FuGui.Push(ImGuiCol.FrameBgActive, ThemeManager.GetColor(FuguiColors.CheckMark) * 0.8f);
                 }
                 else
                 {
-                    FuGui.Push(ImGuiCol.CheckMark, ThemeManager.GetColor(ImGuiCustomCol.Knob));
-                    FuGui.Push(ImGuiCol.FrameBg, ThemeManager.GetColor(ImGuiCol.FrameBg));
-                    FuGui.Push(ImGuiCol.FrameBgHovered, ThemeManager.GetColor(ImGuiCol.FrameBgHovered));
-                    FuGui.Push(ImGuiCol.FrameBgActive, ThemeManager.GetColor(ImGuiCol.FrameBgActive));
+                    FuGui.Push(ImGuiCol.CheckMark, ThemeManager.GetColor(FuguiColors.Knob));
+                    FuGui.Push(ImGuiCol.FrameBg, ThemeManager.GetColor(FuguiColors.FrameBg));
+                    FuGui.Push(ImGuiCol.FrameBgHovered, ThemeManager.GetColor(FuguiColors.FrameBgHovered));
+                    FuGui.Push(ImGuiCol.FrameBgActive, ThemeManager.GetColor(FuguiColors.FrameBgActive));
                 }
             }
             if (_nextIsDisabled)
@@ -513,26 +513,26 @@ namespace Fugui.Framework
             if (_nextIsDisabled)
             {
                 BGColor = style.DisabledFrame;
-                knobColor = ThemeManager.GetColor(ImGuiCustomCol.Knob) * 0.3f;
+                knobColor = ThemeManager.GetColor(FuguiColors.Knob) * 0.3f;
             }
             else
             {
                 BGColor = style.CheckMark;
-                knobColor = ThemeManager.GetColor(ImGuiCustomCol.Knob);
+                knobColor = ThemeManager.GetColor(FuguiColors.Knob);
                 if (active)
                 {
                     BGColor = style.CheckMark * 0.8f;
-                    knobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobActive);
+                    knobColor = ThemeManager.GetColor(FuguiColors.KnobActive);
                 }
                 else if (hovered)
                 {
                     BGColor = style.CheckMark * 0.9f;
-                    knobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobHovered);
+                    knobColor = ThemeManager.GetColor(FuguiColors.KnobHovered);
                 }
             }
 
             // draw radio button
-            drawList.AddCircleFilled(CircleCenter, height / 2f, ImGui.GetColorU32(!isChecked ? ThemeManager.GetColor(ImGuiCol.FrameBg) : BGColor), 64);
+            drawList.AddCircleFilled(CircleCenter, height / 2f, ImGui.GetColorU32(!isChecked ? ThemeManager.GetColor(FuguiColors.FrameBg) : BGColor), 64);
             if (animationData.CurrentValue > 0f)
             {
                 float knobSize = Mathf.Lerp(0f, height / 5f, animationData.CurrentValue);
@@ -546,7 +546,7 @@ namespace Fugui.Framework
             //draw hover frame
             if (hovered && !_nextIsDisabled)
             {
-                drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCustomCol.FrameHoverFeedback)), 64, 1f);
+                drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(ThemeManager.GetColor(FuguiColors.FrameHoverFeedback)), 64, 1f);
             }
 
             // update animation data
@@ -659,9 +659,9 @@ namespace Fugui.Framework
                 // Check if slider is dragging
                 bool isDragging = _draggingSliders.Contains(text);
                 // Calculate colors
-                Vector4 leftLineColor = ThemeManager.GetColor(ImGuiCol.CheckMark);
-                Vector4 rightLineColor = ThemeManager.GetColor(ImGuiCol.FrameBg);
-                Vector4 knobColor = ThemeManager.GetColor(ImGuiCustomCol.Knob);
+                Vector4 leftLineColor = ThemeManager.GetColor(FuguiColors.CheckMark);
+                Vector4 rightLineColor = ThemeManager.GetColor(FuguiColors.FrameBg);
+                Vector4 knobColor = ThemeManager.GetColor(FuguiColors.Knob);
                 if (_nextIsDisabled)
                 {
                     leftLineColor *= 0.5f;
@@ -672,11 +672,11 @@ namespace Fugui.Framework
                 {
                     if (isDragging)
                     {
-                        knobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobActive);
+                        knobColor = ThemeManager.GetColor(FuguiColors.KnobActive);
                     }
                     else if (isKnobHovered)
                     {
-                        knobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobHovered);
+                        knobColor = ThemeManager.GetColor(FuguiColors.KnobHovered);
                     }
                 }
                 // Draw the left slider line
@@ -1759,7 +1759,7 @@ namespace Fugui.Framework
             }
 
             // draw frame
-            drawList.AddRect(min, max, ImGui.GetColorU32(ThemeManager.GetColor(ImGuiCol.Border)), rounding, ImDrawFlags.None, 1f);
+            drawList.AddRect(min, max, ImGui.GetColorU32(ThemeManager.GetColor(FuguiColors.Border)), rounding, ImDrawFlags.None, 1f);
             // fake draw the element
             ImGui.Dummy(max - min + Vector2.one * 2f);
             _elementHoverFramed = true;
@@ -1900,9 +1900,9 @@ namespace Fugui.Framework
             bool clicked = hovered && ImGui.IsMouseReleased(0);
             bool active = hovered && ImGui.IsMouseDown(0);
 
-            Vector4 BGColor = value ? ThemeManager.GetColor(ImGuiCustomCol.Selected) : ThemeManager.GetColor(ImGuiCol.FrameBg);
-            Vector4 KnobColor = ThemeManager.GetColor(ImGuiCustomCol.Knob);
-            Vector4 TextColor = value ? ThemeManager.GetColor(ImGuiCustomCol.SelectedText) : ThemeManager.GetColor(ImGuiCol.Text);
+            Vector4 BGColor = value ? ThemeManager.GetColor(FuguiColors.Selected) : ThemeManager.GetColor(FuguiColors.FrameBg);
+            Vector4 KnobColor = ThemeManager.GetColor(FuguiColors.Knob);
+            Vector4 TextColor = value ? ThemeManager.GetColor(FuguiColors.SelectedText) : ThemeManager.GetColor(FuguiColors.Text);
 
             if (_nextIsDisabled)
             {
@@ -1911,13 +1911,13 @@ namespace Fugui.Framework
             }
             else if (active)
             {
-                KnobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobActive);
-                BGColor = value ? ThemeManager.GetColor(ImGuiCustomCol.SelectedActive) : ThemeManager.GetColor(ImGuiCol.FrameBgActive);
+                KnobColor = ThemeManager.GetColor(FuguiColors.KnobActive);
+                BGColor = value ? ThemeManager.GetColor(FuguiColors.SelectedActive) : ThemeManager.GetColor(FuguiColors.FrameBgActive);
             }
             else if (hovered)
             {
-                KnobColor = ThemeManager.GetColor(ImGuiCustomCol.KnobHovered);
-                BGColor = value ? ThemeManager.GetColor(ImGuiCustomCol.SelectedHovered) : ThemeManager.GetColor(ImGuiCol.FrameBgHovered);
+                KnobColor = ThemeManager.GetColor(FuguiColors.KnobHovered);
+                BGColor = value ? ThemeManager.GetColor(FuguiColors.SelectedHovered) : ThemeManager.GetColor(FuguiColors.FrameBgHovered);
             }
             Vector4 BorderColor = BGColor * 0.66f;
 

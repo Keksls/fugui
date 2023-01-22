@@ -48,20 +48,20 @@ namespace Fugui.Framework
             // default container style
             _defaultContainerStyle = new UIPanelStyle()
             {
-                _bgColor = ThemeManager.GetColor(ImGuiCol.WindowBg),
-                _borderColor = ThemeManager.GetColor(ImGuiCol.Border)
+                _bgColor = ThemeManager.GetColor(FuguiColors.WindowBg),
+                _borderColor = ThemeManager.GetColor(FuguiColors.Border)
             };
             // popup container style
             _popupContainerStyle = new UIPanelStyle()
             {
-                _bgColor = ThemeManager.GetColor(ImGuiCol.PopupBg),
-                _borderColor = ThemeManager.GetColor(ImGuiCol.Border)
+                _bgColor = ThemeManager.GetColor(FuguiColors.PopupBg),
+                _borderColor = ThemeManager.GetColor(FuguiColors.Border)
             };
             // transparent container style
             _transparentContainerStyle = new UIPanelStyle()
             {
-                _bgColor = ThemeManager.GetColor(ImGuiCol.WindowBg) / 254f,
-                _borderColor = ThemeManager.GetColor(ImGuiCol.Border) / 254f
+                _bgColor = ThemeManager.GetColor(FuguiColors.WindowBg) / 254f,
+                _borderColor = ThemeManager.GetColor(FuguiColors.Border) / 254f
             };
         }
     }

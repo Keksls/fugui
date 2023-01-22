@@ -1,4 +1,7 @@
-public enum FuguiWindowsDefinition
+namespace Fugui.Core
 {
-    None
+    public enum FuguiWindowsDefinition
+    {
+        None
+    }
 }

@@ -32,7 +32,7 @@ namespace Fugui.Framework
         // The static dictionary of UI windows
         public static Dictionary<string, UIWindow> UIWindows { get; internal set; }
         // The static dictionary of UI window definitions
-        public static Dictionary<int, UIWindowDefinition> UIWindowsDefinitions { get; internal set; }
+        public static Dictionary<FuGuiWindows, UIWindowDefinition> UIWindowsDefinitions { get; internal set; }
         // A boolean value indicating whether the render thread has started
         public static bool IsRendering { get; internal set; } = false;
         // The dictionary of external windows
@@ -77,7 +77,7 @@ namespace Fugui.Framework
         {
             // instantiate UIWindows 
             UIWindows = new Dictionary<string, UIWindow>();
-            UIWindowsDefinitions = new Dictionary<int, UIWindowDefinition>();
+            UIWindowsDefinitions = new Dictionary<FuGuiWindows, UIWindowDefinition>();
             // init dic and queue
             _externalWindows = new Dictionary<string, ExternalWindowContainer>();
             _windowsToExternalize = new Queue<UIWindow>();
@@ -242,11 +242,6 @@ namespace Fugui.Framework
             return true;
         }
 
-        public static List<int> GetRegisteredWindows()
-        {
-            return UIWindowsDefinitions.Keys.ToList();
-        }
-
         /// <summary>
         /// Closes all UI windows asynchronously.
         /// </summary>
@@ -281,9 +276,9 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="windowToGet">window names to be created.</param>
         /// <param name="callback">A callback to be invoked after the windows was created, passing the instance of the created windows (null if fail).</param>
-        public static void CreateWindowAsync(int windowToGet, Action<UIWindow> callback)
+        public static void CreateWindowAsync(FuGuiWindows windowToGet, Action<UIWindow> callback)
         {
-            CreateWindowsAsync(new List<int>() { windowToGet }, (windows) =>
+            CreateWindowsAsync(new List<FuGuiWindows>() { windowToGet }, (windows) =>
             {
                 if(windows.ContainsKey(windowToGet))
                 {
@@ -301,7 +296,7 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="windowsToGet">A list of window names to be created.</param>
         /// <param name="callback">A callback to be invoked after all windows are created, passing a dictionary of the created windows.</param>
-        public static void CreateWindowsAsync(List<int> windowsToGet, Action<Dictionary<int, UIWindow>> callback)
+        public static void CreateWindowsAsync(List<FuGuiWindows> windowsToGet, Action<Dictionary<FuGuiWindows, UIWindow>> callback)
         {
             // Initialize counters for the number of windows to add and the number of windows added
             int nbWIndowToAdd = 0;
@@ -310,7 +305,7 @@ namespace Fugui.Framework
             // Initialize a list of window definitions
             List<UIWindowDefinition> winDefs = new List<UIWindowDefinition>();
             // Iterate over the window names
-            foreach (int windowID in windowsToGet)
+            foreach (FuGuiWindows windowID in windowsToGet)
             {
                 // Check if a window definition with the specified name exists
                 if (UIWindowsDefinitions.ContainsKey(windowID))
@@ -322,7 +317,7 @@ namespace Fugui.Framework
             }
 
             // Initialize a dictionary of UI windows
-            Dictionary<int, UIWindow> windows = new Dictionary<int, UIWindow>();
+            Dictionary<FuGuiWindows, UIWindow> windows = new Dictionary<FuGuiWindows, UIWindow>();
             // Iterate over the window definitions
             foreach (UIWindowDefinition winDef in winDefs)
             {

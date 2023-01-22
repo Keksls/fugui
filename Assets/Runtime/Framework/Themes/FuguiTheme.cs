@@ -390,7 +390,7 @@ namespace Fugui.Framework
             style.AntiAliasedLines = AntiAliasedLines;
             style.AntiAliasedFill = AntiAliasedFill;
             // set style colors
-            for (int i = 0; i < (int)FuguiColors.COUNT; i++)
+            for (int i = 0; i < (int)ImGuiCol.COUNT; i++)
             {
                 style.Colors[i] = Colors[i];
             }

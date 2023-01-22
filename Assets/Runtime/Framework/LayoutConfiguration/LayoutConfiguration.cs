@@ -23,8 +23,8 @@ public class LayoutConfiguration : MonoBehaviour
     private void Start()
     {
         IUIWindowContainer mainContainer = FuGui.MainContainer;
-        new UIWindowDefinition(0, "DockSpace Manager", DockSpaceManager);
-        new UIWindowDefinition(1, "Windows Definition Manager", WindowsDefinitionManager);
+        new UIWindowDefinition(FuGuiWindows.DockSpaceManager, "DockSpace Manager", DockSpaceManager);
+        new UIWindowDefinition(FuGuiWindows.WindowsDefinitionManager, "Windows Definition Manager", WindowsDefinitionManager);
 
         _fuguiWindows = EnumToDictionary(typeof(FuGuiWindows));
 

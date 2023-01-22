@@ -8,7 +8,7 @@ namespace Fugui.Core
     public class UIWindowDefinition
     {
         #region Variables
-        public UIWindowName WindowName { get; private set; }
+        public FuGuiWindows WindowID { get; private set; }
         // A unique identifier for the window
         public string Id { get; private set; }
         // A delegate for updating the window's UI
@@ -36,6 +36,7 @@ namespace Fugui.Core
         /// <summary>
         /// Initializes a new instance of the UIWindowDefinition class with the specified parameters.
         /// </summary>
+        /// <param name="windowName">The FuGui window definition</param>
         /// <param name="id">The unique identifier for the UI window.</param>
         /// <param name="ui">The action to be performed on the UI window.</param>
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
@@ -44,10 +45,10 @@ namespace Fugui.Core
         /// <param name="dockable">A boolean value indicating whether the UI window can be docked.</param>
         /// <param name="isInterractible">A boolean value indicating whether the UI window is interactible.</param>
         /// <param name="noDockingOverMe">A boolean value indicating whether docking is allowed over the UI window.</param>
-        public UIWindowDefinition(UIWindowName windowName, string id, Action<UIWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, bool externalizable = true, bool dockable = true, bool isInterractible = true, bool noDockingOverMe = false)
+        public UIWindowDefinition(FuGuiWindows windowName, string id, Action<UIWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, bool externalizable = true, bool dockable = true, bool isInterractible = true, bool noDockingOverMe = false)
         {
             // Assign the specified values to the corresponding fields
-            WindowName = windowName;
+            WindowID = windowName;
             Id = id;
             UI = ui;
             Position = pos.HasValue ? pos.Value : new Vector2Int(256, 256);

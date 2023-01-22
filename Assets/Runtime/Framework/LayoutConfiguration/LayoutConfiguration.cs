@@ -59,7 +59,7 @@ public class LayoutConfiguration : MonoBehaviour
                             }
                             else
                             {
-                                if (!IsAlphaNumeric(_windowsToAdd))
+                                if (!FuGui.IsAlphaNumericWithSpaces(_windowsToAdd))
                                 {
                                     layout.SmartText(string.Format($"<color=red>The name <b>'{_windowsToAdd}'</b> is not a valid name for a FuGui window !</color>"));
                                 }
@@ -72,7 +72,15 @@ public class LayoutConfiguration : MonoBehaviour
                                         {
                                             int newIndex = _fuguiWindows.Max(x => x.Key) + 1;
                                             _fuguiWindows.Add(_fuguiWindows.Keys.Last() + 1, _windowsToAdd);
-                                            WriteToFile(FUGUI_WINDOWS_DEFINTION_ENUM_PATH, GenerateEnum("FuGuiWindows", _fuguiWindows));
+
+                                            Dictionary<int, string> formatedFuGuiWindowsName = new Dictionary<int, string>();
+
+                                            foreach (KeyValuePair<int, string> fuguiItem in _fuguiWindows)
+                                            {
+                                                formatedFuGuiWindowsName.Add(fuguiItem.Key, FuGui.RemoveSpaceAndCapitalize(fuguiItem.Value));
+                                            }
+
+                                            WriteToFile(FUGUI_WINDOWS_DEFINTION_ENUM_PATH, GenerateEnum("FuGuiWindows", formatedFuGuiWindowsName));
                                             _windowsToAdd = string.Empty;
                                         }
                                     }
@@ -112,10 +120,6 @@ public class LayoutConfiguration : MonoBehaviour
         }
 
         DockingLayoutManager.SetLayout(UIDockingLayout.DockSpaceConfiguration);
-    }
-    private bool IsAlphaNumeric(string input)
-    {
-        return Regex.IsMatch(input, @"^[a-zA-Z0-9]+$");
     }
 
     private void WriteToFile(string filePath, string content)

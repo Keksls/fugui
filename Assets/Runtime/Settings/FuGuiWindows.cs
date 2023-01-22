@@ -9,5 +9,5 @@ public enum FuGuiWindows
     Metadata = 6,
     ToolBox = 7,
     MainCameraView = 8,
-    Theme = 9,
+    Theme = 9
 }

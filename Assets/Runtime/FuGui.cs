@@ -734,6 +734,27 @@ namespace Fugui.Framework
                 window.ForceDraw();
             }
         }
+
+        /// <summary>
+        /// Check if input string contains only alphanumeric characters and spaces.
+        /// Spaces are allowed only if they are followed by an alphanumeric character
+        /// </summary>
+        /// <param name="input">The input string</param>
+        /// <returns>True if input contains only alphanumeric characters and spaces, false otherwise</returns>
+        public static bool IsAlphaNumericWithSpaces(string input)
+        {
+            return Regex.IsMatch(input, @"^[a-zA-Z0-9]+(\s[a-zA-Z0-9]+)*$");
+        }
+
+        /// <summary>
+        /// Replaces spaces followed by an alphanumeric character with the same alphanumeric character capitalized
+        /// </summary>
+        /// <param name="input">The input string</param>
+        /// <returns>The modified string</returns>
+        public static string RemoveSpaceAndCapitalize(string input)
+        {
+            return Regex.Replace(input, @"\s([a-zA-Z0-9])", x => x.Groups[1].Value.ToUpper());
+        }
         #endregion
     }
 

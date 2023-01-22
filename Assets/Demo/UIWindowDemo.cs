@@ -54,16 +54,16 @@ public class UIWindowDemo : MonoBehaviour
         MainMenu.RegisterItem("Default", () => DockingLayoutManager.SetLayout(UIDockingLayout.Default), "Layout", "Alt + Left Arrow");
         MainMenu.RegisterItem("Console on Bottom", () => DockingLayoutManager.SetLayout(UIDockingLayout.Console), "Layout", "Alt + Right Arrow");
         MainMenu.RegisterItem("Windows", null);
-        foreach (UIWindowName windowName in Enum.GetValues(typeof(UIWindowName)))
+        foreach (FuGuiWindows windowName in Enum.GetValues(typeof(FuGuiWindows)))
         {
-            if (windowName == UIWindowName.None)
+            if (windowName == FuGuiWindows.None)
             {
                 continue;
             }
             MainMenu.RegisterItem(windowName.ToString(), () => FuGui.CreateWindowAsync(windowName, null), "Windows");
         }
 
-        new UIWindowDefinition(UIWindowName.ToolBox, "Tool Box", debugWindow_UI);
+        new UIWindowDefinition(FuGuiWindows.ToolBox, "Tool Box", debugWindow_UI);
         void debugWindow_UI(UIWindow window)
         {
             using (new UIPanel("debugContainer"))
@@ -124,7 +124,7 @@ public class UIWindowDemo : MonoBehaviour
         }
 
         // add Tree Window
-        new UIWindowDefinition(UIWindowName.Tree, "Tree", (window) =>
+        new UIWindowDefinition(FuGuiWindows.Tree, "Tree", (window) =>
             {
                 using (UILayout layout = new UILayout())
                 {
@@ -187,7 +187,7 @@ public class UIWindowDemo : MonoBehaviour
             });
 
         // add Capture Window
-        new UIWindowDefinition(UIWindowName.Captures, "Captures", (window) =>
+        new UIWindowDefinition(FuGuiWindows.Captures, "Captures", (window) =>
         {
             using (UILayout layout = new UILayout())
             {
@@ -199,7 +199,7 @@ public class UIWindowDemo : MonoBehaviour
         }, isInterractible: false);
 
         // add Metadata Window
-        new UIWindowDefinition(UIWindowName.Metadata, "Metadata", (window) =>
+        new UIWindowDefinition(FuGuiWindows.Metadata, "Metadata", (window) =>
         {
             using (new UIPanel("mdcc"))
             {
@@ -288,7 +288,7 @@ public class UIWindowDemo : MonoBehaviour
         });
 
         // add Inspector Window
-        new UIWindowDefinition(UIWindowName.Inspector, "Inspector", (window) =>
+        new UIWindowDefinition(FuGuiWindows.Inspector, "Inspector", (window) =>
         {
             using (new UIPanel("demoContainer", UIStyle.Unpadded))
             {
@@ -367,13 +367,13 @@ public class UIWindowDemo : MonoBehaviour
         });
 
         // add Theme Window
-        new UIWindowDefinition(UIWindowName.Theme, "Theme Configurator", (window) =>
+        new UIWindowDefinition(FuGuiWindows.Theme, "Theme Configurator", (window) =>
             {
                 ThemeManager.DrawThemeManagerUI();
             });
 
         // add main camera window
-        UIWindowDefinition camWinDef = new UICameraWindowDefinition(UIWindowName.MainCameraView, cam1, "3DView", null, isInterractible: false)
+        UIWindowDefinition camWinDef = new UICameraWindowDefinition(FuGuiWindows.MainCameraView, cam1, "3DView", null, isInterractible: false)
             .SetCustomWindowType<UICameraWindow>();
         camWinDef.OnUIWindowCreated += CamWinDef_OnUIWindowCreated;
 

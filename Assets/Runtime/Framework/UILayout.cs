@@ -3,6 +3,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 
@@ -1322,6 +1323,11 @@ namespace Fugui.Framework
 
             int selectedIndex = _comboSelectedIndices[text];
 
+            if (selectedIndex >= items.Count)
+            {
+                selectedIndex = items.Count - 1;
+            }
+
             FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f));
             FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
             if (ImGui.BeginCombo(text, items[selectedIndex].ToString()))
@@ -2195,6 +2201,14 @@ namespace Fugui.Framework
         public void Separator()
         {
             ImGui.Separator();
+        }
+
+        /// <summary>
+        /// Draw a space
+        /// </summary>
+        public void Spacing()
+        {
+            ImGui.Spacing();
         }
 
         /// <summary>

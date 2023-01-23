@@ -247,6 +247,16 @@ namespace Fugui.Core
             ImGui.Image(GetTextureID(texture), size);
         }
 
+        public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color)
+        {
+            ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
+        }
+
+        public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color)
+        {
+            ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
+        }
+
         public bool ImGuiImageButton(Texture2D texture, Vector2 size)
         {
             // TODO : add ID to image button

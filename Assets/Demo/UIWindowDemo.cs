@@ -135,60 +135,72 @@ public class UIWindowDemo : MonoBehaviour
             {
                 using (UILayout layout = new UILayout())
                 {
-                    for (int i = 0; i < 10; i++)
+                    if (layout.Button("Theme small"))
                     {
-                        if (layout.Button("Tree Item " + i))
+                        FuguiModal.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.Small);
+                    }
+
+                    if (layout.Button("Theme medium"))
+                    {
+                        FuguiModal.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.Medium);
+                    }
+
+                    if (layout.Button("Theme large"))
+                    {
+                        FuguiModal.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.Large);
+                    }
+
+                    if (layout.Button("Theme extra larger"))
+                    {
+                        FuguiModal.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.ExtraLarge);
+                    }
+
+                    if (layout.Button("Info modal"))
+                    {
+                        FuguiModal.ShowInfo("This is an Information", () =>
                         {
-                            FuguiModal.ShowInfoBoxModal("This is an info", () =>
+                            using (UILayout layout = new UILayout())
                             {
-                                using (UIGrid grid = new UIGrid("modalGrid"))
-                                {
-                                    grid.TextInput("some input text", ref modalText);
-                                }
-                                layout.Collapsable("Drag Tests", () =>
-                                {
-                                    using (var grid = new UIGrid("gridMD2"))
-                                    {
-                                        grid.Drag("drag int ena", ref intVal);
-                                        grid.DisableNextElement();
-                                        grid.Drag("drag int dis", ref intVal);
+                                layout.Text("This is a nomal text");
+                                layout.Text("This is an info text", UITextStyle.Info);
+                            }
+                        }, UIModalSize.Medium);
+                    }
 
-                                        grid.Drag("drag float ena", ref floatVal, "value");
-                                        grid.DisableNextElement();
-                                        grid.Drag("drag float dis", ref floatVal, "value");
+                    if (layout.Button("Success modal"))
+                    {
+                        FuguiModal.ShowSuccess("This is a Success", () =>
+                        {
+                            using (UILayout layout = new UILayout())
+                            {
+                                layout.Text("This is a nomal text");
+                                layout.Text("This is a success text", UITextStyle.Success);
+                            }
+                        }, UIModalSize.Medium);
+                    }
 
-                                        grid.Drag("drag v2 ena", ref v2Val, "x", "y");
-                                        grid.DisableNextElement();
-                                        grid.Drag("drag v2 dis", ref v2Val, "x", "y");
+                    if (layout.Button("Warning modal"))
+                    {
+                        FuguiModal.ShowWarning("This is a Warning", () =>
+                        {
+                            using (UILayout layout = new UILayout())
+                            {
+                                layout.Text("This is a nomal text");
+                                layout.Text("This is a warning text", UITextStyle.Warning);
+                            }
+                        }, UIModalSize.Medium);
+                    }
 
-                                        grid.Drag("drag v3 ena", ref v3Val, "x", "y", "z");
-                                        grid.DisableNextElement();
-                                        grid.Drag("drag v3 dis", ref v3Val, "x", "y", "z");
-
-                                        grid.Drag("drag v4 ena", ref v4Val, "x", "y", "z", "w");
-                                        grid.DisableNextElement();
-                                        grid.Drag("drag v4 dis", ref v4Val, "x", "y", "z", "w");
-
-                                        grid.Combobox("test callback combo", "click me custom", () =>
-                                        {
-                                            bool chk = true;
-                                            layout.CheckBox("chdk1", ref chk);
-                                            layout.Drag("drdag", ref floatVal);
-                                            layout.Button("big button");
-                                            layout.DisableNextElement();
-                                            layout.Button("big button", UIButtonStyle.Highlight);
-                                            layout.Slider("sdlc1", ref intVal);
-                                            layout.DisableNextElement();
-                                            layout.Slider("sdlc2", ref intVal);
-                                            layout.Slider("sdlc3", ref floatVal);
-                                        });
-
-                                        grid.Combobox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
-                                        grid.Combobox("test button box", cbButtons, (newValue) => { Debug.Log(newValue); });
-                                    }
-                                });
-                            }, UIModalSize.Medium);
-                        }
+                    if (layout.Button("Danger modal"))
+                    {
+                        FuguiModal.ShowDanger("This is a Danger", () =>
+                        {
+                            using (UILayout layout = new UILayout())
+                            {
+                                layout.Text("This is a nomal text");
+                                layout.Text("This is a danger text", UITextStyle.Danger);
+                            }
+                        }, UIModalSize.Medium);
                     }
                 }
             });

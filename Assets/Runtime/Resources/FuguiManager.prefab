@@ -125,7 +125,7 @@ MonoBehaviour:
     IdleFPS: 4
     ManipulatingFPS: 48
     ExternalManipulatingTicks: 10000
-    ExternalShowTitleBar: 0
+    ExternalWindowFlags: 0
     DrawDebugPanel: 0
     ExternalizationKey: 3301000034010000
     InternalizationKey: 0500000006000000
@@ -137,7 +137,12 @@ MonoBehaviour:
     RightIcon: {fileID: 2800000, guid: e43a48c6f5b887f4b8dc9078fe467bdf, type: 3}
     CenterIcon: {fileID: 2800000, guid: 88d6d9ba964f11e41aa111b8b482cbe5, type: 3}
     OpenGLNonReadableTexture: {fileID: 2800000, guid: 86e79ee31b0415048851a462666eea0d, type: 3}
+    InfoIcon: {fileID: 2800000, guid: 04c00c04e0f871c4fb92d618c431717a, type: 3}
+    WarningIcon: {fileID: 2800000, guid: 4d5c887232331e04b87d503925340957, type: 3}
+    DangerIcon: {fileID: 2800000, guid: 11f3a4d594ed7b244948b9cc632faffc, type: 3}
+    SuccessIcon: {fileID: 2800000, guid: 19544edab923d204cab424b77180b8a4, type: 3}
     FontConfig: {fileID: 11400000, guid: 53d60e85cd0bf4b44aa69c57edb412a8, type: 2}
+    ThemesFolder: Fugui/Themes
     DockingFlags: 0
     DisplayTabBarButton: 1
     TabBarButtonRight: 1

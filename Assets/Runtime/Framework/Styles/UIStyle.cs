@@ -101,7 +101,7 @@ namespace Fugui.Framework
             // _modal style
             _modalStyle = new UIStyle()
             {
-                _containerStyle = UIPanelStyle.Default,
+                _containerStyle = UIPanelStyle.Transparent,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
                 _framePadding = new Vector2(6f, 1f),

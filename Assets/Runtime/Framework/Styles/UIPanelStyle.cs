@@ -60,8 +60,8 @@ namespace Fugui.Framework
             // transparent container style
             _transparentContainerStyle = new UIPanelStyle()
             {
-                _bgColor = ThemeManager.GetColor(FuguiColors.WindowBg) / 254f,
-                _borderColor = ThemeManager.GetColor(FuguiColors.Border) / 254f
+                _bgColor = ThemeManager.GetColor(FuguiColors.WindowBg) * 0f,// / 254f,
+                _borderColor = ThemeManager.GetColor(FuguiColors.Border) * 0f// 254f
             };
         }
     }

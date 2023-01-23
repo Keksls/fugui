@@ -18,6 +18,14 @@ namespace Fugui.Framework
         public static UITextStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedTextStyle; } }
         static UITextStyle _highlightTextStyle;
         public static UITextStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightTextStyle; } }
+        static UITextStyle _infoTextStyle;
+        public static UITextStyle Info { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _infoTextStyle; } }
+        static UITextStyle _warningTextStyle;
+        public static UITextStyle Warning { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _warningTextStyle; } }
+        static UITextStyle _dangerTextStyle;
+        public static UITextStyle Danger { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _dangerTextStyle; } }
+        static UITextStyle _successTextStyle;
+        public static UITextStyle Success { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _successTextStyle; } }
         #endregion
 
         public UITextStyle(Color text, Color disabledText)
@@ -66,6 +74,30 @@ namespace Fugui.Framework
             {
                 Text = ThemeManager.GetColor(FuguiColors.HighlightText),
                 DisabledText = ThemeManager.GetColor(FuguiColors.HighlightTextDisabled)
+            };
+            // highlight text style
+            _successTextStyle = new UITextStyle()
+            {
+                Text = ThemeManager.GetColor(FuguiColors.TextSuccess),
+                DisabledText = ThemeManager.GetColor(FuguiColors.TextSuccess) * 0.5f
+            };
+            // highlight text style
+            _dangerTextStyle = new UITextStyle()
+            {
+                Text = ThemeManager.GetColor(FuguiColors.TextDanger),
+                DisabledText = ThemeManager.GetColor(FuguiColors.TextDanger) * 0.5f
+            };
+            // highlight text style
+            _infoTextStyle = new UITextStyle()
+            {
+                Text = ThemeManager.GetColor(FuguiColors.TextInfo),
+                DisabledText = ThemeManager.GetColor(FuguiColors.TextInfo) * 0.5f
+            };
+            // highlight text style
+            _warningTextStyle = new UITextStyle()
+            {
+                Text = ThemeManager.GetColor(FuguiColors.TextWarning),
+                DisabledText = ThemeManager.GetColor(FuguiColors.TextWarning) * 0.5f
             };
         }
     }

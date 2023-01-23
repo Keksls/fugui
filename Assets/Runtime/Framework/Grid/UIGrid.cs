@@ -26,6 +26,8 @@ namespace Fugui.Framework
         private bool _gridCreated = false;
         // The minimum line height for elements in the grid
         private float _minLineHeight = 20f;
+        // The Y padding to draw on top of the next element of the list
+        private float _nextElementYPadding = 0f;
         // The y-coordinate of the cursor position when the current group of elements began
         private float _beginElementCursorY = 0;
         // Flag to indicate if the grid is responsively resized
@@ -124,6 +126,15 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Apply a padding on top of the next element to draw
+        /// </summary>
+        /// <param name="padding">padding to apply on top of the next drawed element</param>
+        public void NextElementYPadding(float padding)
+        {
+            _nextElementYPadding = padding;
+        }
+
+        /// <summary>
         /// Set the grid according to the current grid definition
         /// </summary>
         /// <param name="linesBg">Colorise evens rows</param>
@@ -157,12 +168,22 @@ namespace Fugui.Framework
             }
             NextColumn();
 
-            // add padding to value if grid is responsively resized
-            if (_isResponsivelyResized && _currentRowIndex % 2 == 0)
+            //// add padding to value if grid is responsively resized
+            //if (_isResponsivelyResized && _currentRowIndex % 2 == 0)
+            //{
+            //    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f);
+            //}
+
+            // apply additionnal Y padding
+            if (_nextElementYPadding > 0f)
             {
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 4f);
+                Vector2 cursorPos = ImGui.GetCursorScreenPos();
+                cursorPos.y += _nextElementYPadding;
+                ImGui.SetCursorScreenPos(cursorPos);
+                _nextElementYPadding = 0f;
             }
 
+            // ready to draw next element
             _beginElementCursorY = ImGui.GetCursorPosY();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             return elementID;
@@ -247,10 +268,15 @@ namespace Fugui.Framework
                 SetNextElementToolTipWithLabel(text);
             }
 
+            // keep padding if needed
+            float wantedNextElementYpadding = _nextElementYPadding;
+            _nextElementYPadding = 0f;
+
             bool disabled = _nextIsDisabled;
             _nextIsDisabled = _nextIsDisabled && !_dontDisableLabels;
             Text(FuGui.AddSpacesBeforeUppercase(text), style);
             _nextIsDisabled = disabled;
+            _nextElementYPadding = wantedNextElementYpadding;
         }
         #endregion
     }

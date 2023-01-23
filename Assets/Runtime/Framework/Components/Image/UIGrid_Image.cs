@@ -4,21 +4,22 @@ namespace Fugui.Framework
 {
     public partial class UIGrid
     {
-
         /// <summary>
         /// Display and immage
         /// </summary>
         /// <param name="id">ID/Label of the image</param>
         /// <param name="texture">Texture to draw</param>
         /// <param name="size">Size of the image</param>
-        public override void Image(string id, Texture2D texture, Vector2 size)
+        public override void Image(string id, Texture2D texture, Vector2 size, Vector4 color)
         {
             if (!_gridCreated)
             {
                 return;
             }
             drawElementLabel(id, UITextStyle.Default);
-            base.Image(id, texture, size);
+            id = beginElement(id);
+            base.Image(id, texture, size, color);
+            endElement();
         }
 
         /// <summary>
@@ -27,14 +28,16 @@ namespace Fugui.Framework
         /// <param name="id">ID/Label of the image</param>
         /// <param name="texture">Texture to draw</param>
         /// <param name="size">Size of the image</param>
-        public override void Image(string id, RenderTexture texture, Vector2 size)
+        public override void Image(string id, RenderTexture texture, Vector2 size, Vector4 color)
         {
             if (!_gridCreated)
             {
                 return;
             }
             drawElementLabel(id, UITextStyle.Default);
-            base.Image(id, texture, size);
+            id = beginElement(id);
+            base.Image(id, texture, size, color);
+            endElement();
         }
 
         /// <summary>
@@ -51,7 +54,10 @@ namespace Fugui.Framework
                 return false;
             }
             drawElementLabel(id, UITextStyle.Default);
-            return base.ImageButton(id, texture, size);
+            id = beginElement(id);
+            bool clicked = base.ImageButton(id, texture, size);
+            endElement();
+            return clicked;
         }
 
         /// <summary>
@@ -68,7 +74,10 @@ namespace Fugui.Framework
                 return false;
             }
             drawElementLabel(id, UITextStyle.Default);
-            return base.ImageButton(id, texture, size, color);
+            id = beginElement(id);
+            bool clicked = base.ImageButton(id, texture, size);
+            endElement();
+            return clicked;
         }
     }
 }

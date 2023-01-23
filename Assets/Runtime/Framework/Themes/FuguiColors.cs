@@ -107,6 +107,11 @@
         TextWarning = 77,
         TextSuccess = 78,
 
-        COUNT = 79
+        BackgroundInfo = 79,
+        BackgroundDanger = 80,
+        BackgroundWarning = 81,
+        BackgroundSuccess = 82,
+
+        COUNT = 83
     }
 }

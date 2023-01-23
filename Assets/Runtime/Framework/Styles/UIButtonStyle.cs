@@ -23,6 +23,14 @@ namespace Fugui.Framework
         public static UIButtonStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedButtonStyle; } }
         static UIButtonStyle _highlightButtonStyle;
         public static UIButtonStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightButtonStyle; } }
+        static UIButtonStyle _infoButtonStyle;
+        public static UIButtonStyle Info { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _infoButtonStyle; } }
+        static UIButtonStyle _successButtonStyle;
+        public static UIButtonStyle Success { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _successButtonStyle; } }
+        static UIButtonStyle _warningButtonStyle;
+        public static UIButtonStyle Warning { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _warningButtonStyle; } }
+        static UIButtonStyle _dangerButtonStyle;
+        public static UIButtonStyle Danger { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _dangerButtonStyle; } }
 
         // button sizes
         static readonly Vector2 _frameAutoSize = new Vector2(0, 0);
@@ -99,6 +107,46 @@ namespace Fugui.Framework
                 _buttonActive = ThemeManager.GetColor(FuguiColors.SelectedActive),
                 _disabledButton = ThemeManager.GetColor(FuguiColors.Selected) * 0.5f,
                 TextStyle = UITextStyle.Selected
+            };
+            // danger
+            _dangerButtonStyle = new UIButtonStyle()
+            {
+                _framePadding = new Vector2(8f, 4f),
+                _button = ThemeManager.GetColor(FuguiColors.BackgroundDanger),
+                _buttonHovered = ThemeManager.GetColor(FuguiColors.BackgroundDanger) * 0.9f,
+                _buttonActive = ThemeManager.GetColor(FuguiColors.BackgroundDanger) * 0.8f,
+                _disabledButton = ThemeManager.GetColor(FuguiColors.BackgroundDanger) * 0.5f,
+                TextStyle = UITextStyle.Default
+            };
+            // info
+            _infoButtonStyle = new UIButtonStyle()
+            {
+                _framePadding = new Vector2(8f, 4f),
+                _button = ThemeManager.GetColor(FuguiColors.BackgroundInfo),
+                _buttonHovered = ThemeManager.GetColor(FuguiColors.BackgroundInfo) * 0.9f,
+                _buttonActive = ThemeManager.GetColor(FuguiColors.BackgroundInfo) * 0.8f,
+                _disabledButton = ThemeManager.GetColor(FuguiColors.BackgroundInfo) * 0.5f,
+                TextStyle = UITextStyle.Default
+            };
+            // success
+            _successButtonStyle = new UIButtonStyle()
+            {
+                _framePadding = new Vector2(8f, 4f),
+                _button = ThemeManager.GetColor(FuguiColors.BackgroundSuccess),
+                _buttonHovered = ThemeManager.GetColor(FuguiColors.BackgroundSuccess) * 0.9f,
+                _buttonActive = ThemeManager.GetColor(FuguiColors.BackgroundSuccess) * 0.8f,
+                _disabledButton = ThemeManager.GetColor(FuguiColors.BackgroundSuccess) * 0.5f,
+                TextStyle = UITextStyle.Default
+            };
+            // warning
+            _warningButtonStyle = new UIButtonStyle()
+            {
+                _framePadding = new Vector2(8f, 4f),
+                _button = ThemeManager.GetColor(FuguiColors.BackgroundWarning),
+                _buttonHovered = ThemeManager.GetColor(FuguiColors.BackgroundWarning) * 0.9f,
+                _buttonActive = ThemeManager.GetColor(FuguiColors.BackgroundWarning) * 0.8f,
+                _disabledButton = ThemeManager.GetColor(FuguiColors.BackgroundWarning) * 0.5f,
+                TextStyle = UITextStyle.Default
             };
         }
     }

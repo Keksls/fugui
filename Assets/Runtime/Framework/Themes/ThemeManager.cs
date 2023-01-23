@@ -21,15 +21,17 @@ namespace Fugui.Framework
         static ThemeManager()
         {
             // we could not bind it using reflection because some element style use others, so we need to set presset within a specific order
-            _uiElementStyleTypes = new List<Type>();
-            _uiElementStyleTypes.Add(typeof(UITextStyle));
-            _uiElementStyleTypes.Add(typeof(UIButtonStyle));
-            _uiElementStyleTypes.Add(typeof(UIFrameStyle));
-            _uiElementStyleTypes.Add(typeof(UIComboboxStyle));
-            _uiElementStyleTypes.Add(typeof(UIPanelStyle));
-            _uiElementStyleTypes.Add(typeof(UIButtonsGroupStyle));
-            _uiElementStyleTypes.Add(typeof(UIStyle));
-            _uiElementStyleTypes.Add(typeof(UICollapsableStyle));
+            _uiElementStyleTypes = new List<Type>
+            {
+                typeof(UITextStyle),
+                typeof(UIButtonStyle),
+                typeof(UIFrameStyle),
+                typeof(UIComboboxStyle),
+                typeof(UIPanelStyle),
+                typeof(UIButtonsGroupStyle),
+                typeof(UIStyle),
+                typeof(UICollapsableStyle)
+            };
         }
 
         /// <summary>

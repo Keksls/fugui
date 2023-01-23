@@ -302,7 +302,7 @@ namespace Fugui.Core
             {
                 if (!Fonts.ContainsKey(size))
                 {
-                    Fonts[size] = new FontSet();
+                    Fonts[size] = new FontSet(size);
 
                     // add regular + icon font
                     ImFontPtr fontRegular = IO.Fonts.AddFontFromFileTTF(regularFile, size);
@@ -334,8 +334,14 @@ namespace Fugui.Core
 
     internal class FontSet
     {
+        public int Size;
         public ImFontPtr Regular;
         public ImFontPtr Bold;
+
+        internal FontSet(int size)
+        {
+            Size = size;
+        }
     }
 
     public enum FuguiContextType

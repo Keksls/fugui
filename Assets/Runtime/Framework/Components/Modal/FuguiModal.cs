@@ -241,8 +241,13 @@ namespace Fugui.Framework
         /// <param name="modalSize">size of the modal</param>
         /// <param name="icon">icon of the modal box</param>
         /// <param name="color">color of the icon</param>
-        private static void showBox(string title, Action body, UIModalSize modalSize, Texture2D icon, Color color)
+        private static void showBox(string title, Action body, UIModalSize modalSize, Texture2D icon, Color color, UIButtonStyle buttonStyle)
         {
+            // set default button style if needed
+            if(!FuGui.Settings.StateModalsUseButtonColors)
+            {
+                buttonStyle = UIButtonStyle.Default;
+            }
             //call the ShowModal method with the title, body, and buttons
             ShowModal(title, () =>
             {
@@ -257,7 +262,7 @@ namespace Fugui.Framework
                     grid.NextColumn();
                     body?.Invoke();
                 };
-            }, modalSize, new UIModalButton("OK", HideModal, UIButtonStyle.Default));
+            }, modalSize, new UIModalButton("OK", HideModal, buttonStyle));
         }
 
         /// <summary>
@@ -268,7 +273,7 @@ namespace Fugui.Framework
         /// <param name="modalSize">size of the modal</param>
         /// <param name="icon">icon of the modal box</param>
         /// <param name="color">color of the icon</param>
-        private static void showBox(string title, string body, UIModalSize modalSize, Texture2D icon, Color color)
+        private static void showBox(string title, string body, UIModalSize modalSize, Texture2D icon, Color color, UIButtonStyle buttonStyle)
         {
             showBox(title, () =>
             {
@@ -276,7 +281,7 @@ namespace Fugui.Framework
                 {
                     layout.Text(body);
                 }
-            }, modalSize, icon, color);
+            }, modalSize, icon, color, buttonStyle);
         }
 
         /// <summary>
@@ -287,7 +292,7 @@ namespace Fugui.Framework
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowInfo(string title, Action body, UIModalSize modalSize)
         {
-            showBox(title, body, modalSize, FuGui.Settings.InfoIcon, UITextStyle.Info.Text);
+            showBox(title, body, modalSize, FuGui.Settings.InfoIcon, UITextStyle.Info.Text, UIButtonStyle.Info);
         }
 
         /// <summary>
@@ -298,7 +303,7 @@ namespace Fugui.Framework
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowInfo(string title, string body, UIModalSize modalSize)
         {
-            showBox(title, body, modalSize, FuGui.Settings.InfoIcon, UITextStyle.Info.Text);
+            showBox(title, body, modalSize, FuGui.Settings.InfoIcon, UITextStyle.Info.Text, UIButtonStyle.Info);
         }
 
         /// <summary>
@@ -309,7 +314,7 @@ namespace Fugui.Framework
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowDanger(string title, Action body, UIModalSize modalSize)
         {
-            showBox(title, body, modalSize, FuGui.Settings.DangerIcon, UITextStyle.Danger.Text);
+            showBox(title, body, modalSize, FuGui.Settings.DangerIcon, UITextStyle.Danger.Text, UIButtonStyle.Danger);
         }
 
         /// <summary>
@@ -320,7 +325,7 @@ namespace Fugui.Framework
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowDanger(string title, string body, UIModalSize modalSize)
         {
-            showBox(title, body, modalSize, FuGui.Settings.DangerIcon, UITextStyle.Danger.Text);
+            showBox(title, body, modalSize, FuGui.Settings.DangerIcon, UITextStyle.Danger.Text, UIButtonStyle.Danger);
         }
 
         /// <summary>
@@ -331,7 +336,7 @@ namespace Fugui.Framework
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowWarning(string title, Action body, UIModalSize modalSize)
         {
-            showBox(title, body, modalSize, FuGui.Settings.WarningIcon, UITextStyle.Warning.Text);
+            showBox(title, body, modalSize, FuGui.Settings.WarningIcon, UITextStyle.Warning.Text, UIButtonStyle.Warning);
         }
 
         /// <summary>
@@ -342,7 +347,7 @@ namespace Fugui.Framework
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowWarning(string title, string body, UIModalSize modalSize)
         {
-            showBox(title, body, modalSize, FuGui.Settings.WarningIcon, UITextStyle.Warning.Text);
+            showBox(title, body, modalSize, FuGui.Settings.WarningIcon, UITextStyle.Warning.Text, UIButtonStyle.Warning);
         }
 
         /// <summary>
@@ -353,7 +358,7 @@ namespace Fugui.Framework
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowSuccess(string title, Action body, UIModalSize modalSize)
         {
-            showBox(title, body, modalSize, FuGui.Settings.SuccessIcon, UITextStyle.Success.Text);
+            showBox(title, body, modalSize, FuGui.Settings.SuccessIcon, UITextStyle.Success.Text, UIButtonStyle.Success);
         }
 
         /// <summary>
@@ -364,7 +369,7 @@ namespace Fugui.Framework
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowSuccess(string title, string body, UIModalSize modalSize)
         {
-            showBox(title, body, modalSize, FuGui.Settings.SuccessIcon, UITextStyle.Success.Text);
+            showBox(title, body, modalSize, FuGui.Settings.SuccessIcon, UITextStyle.Success.Text, UIButtonStyle.Success);
         }
         #endregion
     }

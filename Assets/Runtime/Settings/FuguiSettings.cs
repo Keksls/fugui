@@ -104,7 +104,8 @@ namespace Fugui.Core
         /// </summary>
         [Tooltip("Fugui Themes folder (must be inside streaming assetes folder)")]
         public string ThemesFolder = "Fugui/Themes";
-
+        [Tooltip("Do the Info/Success/Warning/Danger Modals colorize their buttons")]
+        public bool StateModalsUseButtonColors = true;
         [Header("Docking")]
         [Tooltip("Docking flags for the main container dockSpace.")]
         public ImGuiDockNodeFlags DockingFlags = ImGuiDockNodeFlags.None;

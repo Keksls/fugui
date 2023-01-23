@@ -230,6 +230,11 @@ namespace Fugui.Framework
             Colors[(int)FuguiColors.TextInfo] = new Vector4(81f / 255f, 212f / 255f, 233f / 255f, 1f);
             Colors[(int)FuguiColors.TextSuccess] = new Vector4(97f / 255f, 217f / 255f, 124f / 255f, 1f);
             Colors[(int)FuguiColors.TextWarning] = new Vector4(255f / 255f, 199f / 255f, 30f / 255f, 1f);
+
+            Colors[(int)FuguiColors.BackgroundDanger] = new Vector4(223f / 255f, 70f / 255f, 85f / 255f, 1f);
+            Colors[(int)FuguiColors.BackgroundInfo] = new Vector4(81f / 255f, 212f / 255f, 233f / 255f, 1f);
+            Colors[(int)FuguiColors.BackgroundSuccess] = new Vector4(97f / 255f, 217f / 255f, 124f / 255f, 1f);
+            Colors[(int)FuguiColors.BackgroundWarning] = new Vector4(255f / 255f, 199f / 255f, 30f / 255f, 1f);
         }
 
         /// <summary>
@@ -357,6 +362,11 @@ namespace Fugui.Framework
             Colors[(int)FuguiColors.TextInfo] = new Vector4(81f / 255f, 212f / 255f, 233f / 255f, 1f);
             Colors[(int)FuguiColors.TextSuccess] = new Vector4(97f / 255f, 217f / 255f, 124f / 255f, 1f);
             Colors[(int)FuguiColors.TextWarning] = new Vector4(255f / 255f, 199f / 255f, 30f / 255f, 1f);
+
+            Colors[(int)FuguiColors.BackgroundDanger] = new Vector4(220f / 255f, 53f / 255f, 69f / 255f, 1f);
+            Colors[(int)FuguiColors.BackgroundInfo] = new Vector4(23f / 255f, 162f / 255f, 184f / 255f, 1f);
+            Colors[(int)FuguiColors.BackgroundSuccess] = new Vector4(40f / 255f, 167f / 255f, 69f / 255f, 1f);
+            Colors[(int)FuguiColors.BackgroundWarning] = new Vector4(255f / 255f, 193f / 255f, 7f / 255f, 1f);
         }
 
         /// <summary>
@@ -403,6 +413,17 @@ namespace Fugui.Framework
             for (int i = 0; i < (int)ImGuiCol.COUNT; i++)
             {
                 style.Colors[i] = Colors[i];
+            }
+
+            // set missing colors
+            FuguiTheme defaultTheme = new FuguiTheme("defaultTmp");
+            defaultTheme.SetAsDefaultDarkTheme();
+            for (int i = (int)ImGuiCol.COUNT; i < (int)FuguiColors.COUNT; i++)
+            {
+                if (Colors[i] == Vector4.zero)
+                {
+                    Colors[i] = defaultTheme.Colors[i];
+                }
             }
         }
 

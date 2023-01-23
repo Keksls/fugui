@@ -131,7 +131,7 @@ public class UIWindowDemo : MonoBehaviour
         }
 
         // add Tree Window
-        new UIWindowDefinition(FuGuiWindows.Tree, "Tree", (window) =>
+        new UIWindowDefinition(FuGuiWindows.Tree, "Modals Demo", (window) =>
             {
                 using (UILayout layout = new UILayout())
                 {
@@ -155,7 +155,7 @@ public class UIWindowDemo : MonoBehaviour
                         FuguiModal.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.ExtraLarge);
                     }
 
-                    if (layout.Button("Info modal"))
+                    if (layout.Button("Info modal", UIButtonStyle.Info))
                     {
                         FuguiModal.ShowInfo("This is an Information", () =>
                         {
@@ -167,7 +167,7 @@ public class UIWindowDemo : MonoBehaviour
                         }, UIModalSize.Medium);
                     }
 
-                    if (layout.Button("Success modal"))
+                    if (layout.Button("Success modal", UIButtonStyle.Success))
                     {
                         FuguiModal.ShowSuccess("This is a Success", () =>
                         {
@@ -179,7 +179,7 @@ public class UIWindowDemo : MonoBehaviour
                         }, UIModalSize.Medium);
                     }
 
-                    if (layout.Button("Warning modal"))
+                    if (layout.Button("Warning modal", UIButtonStyle.Warning))
                     {
                         FuguiModal.ShowWarning("This is a Warning", () =>
                         {
@@ -191,7 +191,7 @@ public class UIWindowDemo : MonoBehaviour
                         }, UIModalSize.Medium);
                     }
 
-                    if (layout.Button("Danger modal"))
+                    if (layout.Button("Danger modal", UIButtonStyle.Danger))
                     {
                         FuguiModal.ShowDanger("This is a Danger", () =>
                         {

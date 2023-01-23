@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Fugui.Core;
+using ImGuiNET;
 using System;
 using UnityEngine;
 
@@ -63,7 +64,7 @@ namespace Fugui.Framework
         /// <summary>
         /// Render the currently shown modal
         /// </summary>
-        public static void RenderModal()
+        public static void RenderModal(IUIWindowContainer container)
         {
             if (_showModal)
             {
@@ -88,12 +89,12 @@ namespace Fugui.Framework
                 {
                     _currentBodySize.y = _currentBodyHeight;
                 }
-                _currentBodySize.y = Mathf.Clamp(_currentBodySize.y, 32f, FuGui.MainContainer.Size.y - 256f);
+                _currentBodySize.y = Mathf.Clamp(_currentBodySize.y, 32f, container.Size.y - 256f);
 
                 // calculate full size and pos
                 Vector2 modalSize = new Vector2(_currentBodySize.x, _currentBodySize.y + _currentFooterheight + _currentTitleHeight);
-                _currentModalPos = new Vector2(FuGui.MainContainer.Size.x / 2f - modalSize.x / 2f, FuGui.MainContainer.Size.y / 2f - modalSize.y / 2f);
-                Vector2 modalStartPos = new Vector2(FuGui.MainContainer.Size.x / 2f - (modalSize.x * 0.01f) / 2f, 64f);
+                _currentModalPos = new Vector2(container.Size.x / 2f - modalSize.x / 2f, container.Size.y / 2f - modalSize.y / 2f);
+                Vector2 modalStartPos = new Vector2(container.Size.x / 2f - (modalSize.x * 0.01f) / 2f, 64f);
                 ImGui.SetNextWindowSize(Vector2.Lerp(modalSize * 0.01f, modalSize, _enlapsed / ANIMATION_DURATION), ImGuiCond.Always);
                 ImGui.SetNextWindowPos(Vector2.Lerp(modalStartPos, _currentModalPos, _enlapsed / ANIMATION_DURATION), ImGuiCond.Always);
 

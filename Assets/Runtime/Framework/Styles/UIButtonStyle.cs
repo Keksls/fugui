@@ -7,7 +7,7 @@ namespace Fugui.Framework
     public struct UIButtonStyle : IUIElementStyle
     {
         // enabled
-        private Color _button;
+        internal Color Button;
         private Color _buttonHovered;
         private Color _buttonActive;
         // disabled
@@ -47,7 +47,7 @@ namespace Fugui.Framework
         {
             if (enabled)
             {
-                FuGui.Push(ImGuiCol.Button, _button); // push the enabled button color onto the stack
+                FuGui.Push(ImGuiCol.Button, Button); // push the enabled button color onto the stack
                 FuGui.Push(ImGuiCol.ButtonHovered, _buttonHovered); // push the enabled button hovered color onto the stack
                 FuGui.Push(ImGuiCol.ButtonActive, _buttonActive); // push the enabled button active color onto the stack
             }
@@ -82,7 +82,7 @@ namespace Fugui.Framework
             _defaultButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(FuguiColors.Button),
+                Button = ThemeManager.GetColor(FuguiColors.Button),
                 _buttonHovered = ThemeManager.GetColor(FuguiColors.ButtonHovered),
                 _buttonActive = ThemeManager.GetColor(FuguiColors.ButtonActive),
                 _disabledButton = ThemeManager.GetColor(FuguiColors.Button) * 0.5f,
@@ -92,7 +92,7 @@ namespace Fugui.Framework
             _highlightButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(FuguiColors.Highlight),
+                Button = ThemeManager.GetColor(FuguiColors.Highlight),
                 _buttonHovered = ThemeManager.GetColor(FuguiColors.HighlightHovered),
                 _buttonActive = ThemeManager.GetColor(FuguiColors.HighlightActive),
                 _disabledButton = ThemeManager.GetColor(FuguiColors.HighlightDisabled),
@@ -102,7 +102,7 @@ namespace Fugui.Framework
             _selectedButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(FuguiColors.Selected),
+                Button = ThemeManager.GetColor(FuguiColors.Selected),
                 _buttonHovered = ThemeManager.GetColor(FuguiColors.SelectedHovered),
                 _buttonActive = ThemeManager.GetColor(FuguiColors.SelectedActive),
                 _disabledButton = ThemeManager.GetColor(FuguiColors.Selected) * 0.5f,
@@ -112,7 +112,7 @@ namespace Fugui.Framework
             _dangerButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(FuguiColors.BackgroundDanger),
+                Button = ThemeManager.GetColor(FuguiColors.BackgroundDanger),
                 _buttonHovered = ThemeManager.GetColor(FuguiColors.BackgroundDanger) * 0.9f,
                 _buttonActive = ThemeManager.GetColor(FuguiColors.BackgroundDanger) * 0.8f,
                 _disabledButton = ThemeManager.GetColor(FuguiColors.BackgroundDanger) * 0.5f,
@@ -122,7 +122,7 @@ namespace Fugui.Framework
             _infoButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(FuguiColors.BackgroundInfo),
+                Button = ThemeManager.GetColor(FuguiColors.BackgroundInfo),
                 _buttonHovered = ThemeManager.GetColor(FuguiColors.BackgroundInfo) * 0.9f,
                 _buttonActive = ThemeManager.GetColor(FuguiColors.BackgroundInfo) * 0.8f,
                 _disabledButton = ThemeManager.GetColor(FuguiColors.BackgroundInfo) * 0.5f,
@@ -132,7 +132,7 @@ namespace Fugui.Framework
             _successButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(FuguiColors.BackgroundSuccess),
+                Button = ThemeManager.GetColor(FuguiColors.BackgroundSuccess),
                 _buttonHovered = ThemeManager.GetColor(FuguiColors.BackgroundSuccess) * 0.9f,
                 _buttonActive = ThemeManager.GetColor(FuguiColors.BackgroundSuccess) * 0.8f,
                 _disabledButton = ThemeManager.GetColor(FuguiColors.BackgroundSuccess) * 0.5f,
@@ -142,7 +142,7 @@ namespace Fugui.Framework
             _warningButtonStyle = new UIButtonStyle()
             {
                 _framePadding = new Vector2(8f, 4f),
-                _button = ThemeManager.GetColor(FuguiColors.BackgroundWarning),
+                Button = ThemeManager.GetColor(FuguiColors.BackgroundWarning),
                 _buttonHovered = ThemeManager.GetColor(FuguiColors.BackgroundWarning) * 0.9f,
                 _buttonActive = ThemeManager.GetColor(FuguiColors.BackgroundWarning) * 0.8f,
                 _disabledButton = ThemeManager.GetColor(FuguiColors.BackgroundWarning) * 0.5f,

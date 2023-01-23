@@ -180,19 +180,6 @@ namespace Fugui.Core
                     _toExternalizeWindows.Enqueue(window);
                 }
             }
-
-            // reset docking layout
-            if (Input.GetKey(KeyCode.LeftAlt))
-            {
-                if (Input.GetKeyDown(KeyCode.LeftArrow))
-                {
-                    DockingLayoutManager.SetLayout(UIDockingLayout.Default);
-                }
-                else if (Input.GetKeyDown(KeyCode.RightArrow))
-                {
-                    DockingLayoutManager.SetLayout(UIDockingLayout.Console);
-                }
-            }
         }
 
         public bool TryAddWindow(UIWindow UIWindow)
@@ -305,8 +292,11 @@ namespace Fugui.Core
             }
             FuGui.PopStyle(5);
 
+            // draw notifications
+            FuguiNotify.RenderNotifications(this);
+
             // draw modal
-            FuguiModal.RenderModal();
+            FuguiModal.RenderModal(this);
         }
         #endregion
     }

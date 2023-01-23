@@ -225,6 +225,11 @@ namespace Fugui.Framework
             Colors[(int)FuguiColors.MainMenuText] = Colors[(int)FuguiColors.Text];
             Colors[(int)FuguiColors.HighlightText] = Colors[(int)FuguiColors.Text];
             Colors[(int)FuguiColors.HighlightTextDisabled] = Colors[(int)FuguiColors.TextDisabled];
+
+            Colors[(int)FuguiColors.TextDanger] = new Vector4(223f / 255f, 70f / 255f, 85f / 255f, 1f);
+            Colors[(int)FuguiColors.TextInfo] = new Vector4(81f / 255f, 212f / 255f, 233f / 255f, 1f);
+            Colors[(int)FuguiColors.TextSuccess] = new Vector4(97f / 255f, 217f / 255f, 124f / 255f, 1f);
+            Colors[(int)FuguiColors.TextWarning] = new Vector4(255f / 255f, 199f / 255f, 30f / 255f, 1f);
         }
 
         /// <summary>
@@ -347,6 +352,11 @@ namespace Fugui.Framework
             Colors[(int)FuguiColors.MainMenuText] = Colors[(int)FuguiColors.Text];
             Colors[(int)FuguiColors.HighlightText] = Colors[(int)FuguiColors.Text];
             Colors[(int)FuguiColors.HighlightTextDisabled] = Colors[(int)FuguiColors.TextDisabled];
+
+            Colors[(int)FuguiColors.TextDanger] = new Vector4(223f / 255f, 70f / 255f, 85f / 255f, 1f);
+            Colors[(int)FuguiColors.TextInfo] = new Vector4(81f / 255f, 212f / 255f, 233f / 255f, 1f);
+            Colors[(int)FuguiColors.TextSuccess] = new Vector4(97f / 255f, 217f / 255f, 124f / 255f, 1f);
+            Colors[(int)FuguiColors.TextWarning] = new Vector4(255f / 255f, 199f / 255f, 30f / 255f, 1f);
         }
 
         /// <summary>

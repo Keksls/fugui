@@ -102,6 +102,11 @@
         HighlightText = 73,
         HighlightTextDisabled = 74,
 
-        COUNT = 75
+        TextInfo = 75,
+        TextDanger = 76,
+        TextWarning = 77,
+        TextSuccess = 78,
+
+        COUNT = 79
     }
 }

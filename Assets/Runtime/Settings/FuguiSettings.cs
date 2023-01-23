@@ -80,6 +80,22 @@ namespace Fugui.Core
         /// </summary>
         public Texture2D OpenGLNonReadableTexture;
         /// <summary>
+        /// The texture to be used as icon into an Info Modal.
+        /// </summary>
+        public Texture2D InfoIcon;
+        /// <summary>
+        /// The texture to be used as icon into a Warning Modal.
+        /// </summary>
+        public Texture2D WarningIcon;
+        /// <summary>
+        /// The texture to be used as icon into a Danger Modal.
+        /// </summary>
+        public Texture2D DangerIcon;
+        /// <summary>
+        /// The texture to be used as icon into a Success Modal.
+        /// </summary>
+        public Texture2D SuccessIcon;
+        /// <summary>
         /// Fugui Font configuration
         /// </summary>
         public FontConfig FontConfig;

@@ -85,6 +85,20 @@ namespace Fugui.Core
         public void ImGuiImage(Texture2D texture, Vector2 size);
 
         /// <summary>
+        /// Draw ImGui Image regardless to GL context
+        /// </summary>
+        /// <param name="texture">renderTexture to draw</param>
+        /// <param name="size">size of the image</param>
+        public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color);
+
+        /// <summary>
+        /// Draw ImGui Image regardless to GL context
+        /// </summary>
+        /// <param name="texture">texture2D to draw</param>
+        /// <param name="size">size of the image</param>
+        public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color);
+
+        /// <summary>
         /// Draw ImGui ImageButton regardless to GL context
         /// </summary>
         /// <param name="texture">texture2D to draw</param>

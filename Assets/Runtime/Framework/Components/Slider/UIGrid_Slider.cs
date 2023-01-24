@@ -10,15 +10,16 @@
         /// <param name="min">minimum value of the slider</param>
         /// <param name="max">maximum value of the slider</param>
         /// <param name="isInt">whatever the slider is an Int slider (default is float). If true, the value will be rounded</param>
+        /// <param name="flags">Behaviour flags of the Slider</param>
         /// <returns>true if value changed</returns>
-        protected override bool _customSlider(string text, ref float value, float min, float max, bool isInt)
+        protected override bool _customSlider(string text, ref float value, float min, float max, bool isInt, SliderFlags flags)
         {
             if (!_gridCreated)
             {
                 return false;
             }
             drawElementLabel(text, UITextStyle.Default);
-            return base._customSlider(text, ref value, min, max, isInt);
+            return base._customSlider(text, ref value, min, max, isInt, flags);
         }
     }
 }

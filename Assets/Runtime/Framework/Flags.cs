@@ -2,10 +2,17 @@
 {
     public enum StateType
     {
-        Danger,
-        Success,
-        Info,
-        Warning
+        Danger = 0,
+        Success = 1,
+        Info = 2,
+        Warning = 3
+    }
+
+    public enum SliderFlags
+    {
+        Default = 0,
+        LeftDrag = 1,
+        NoDrag = 2
     }
 
     public enum ButtonsGroupFlags
@@ -31,8 +38,8 @@
 
     public enum ElementAlignement
     {
-        Left,
-        Center,
-        Right
+        Left = 0,
+        Center = 1,
+        Right = 2
     }
 }

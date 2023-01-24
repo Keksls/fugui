@@ -71,7 +71,7 @@ namespace Fugui.Framework
         protected virtual string beginElement(string elementID, IUIElementStyle style = null)
         {
             style?.Push(!_nextIsDisabled);
-            return elementID + "##" + (UIWindow.CurrentDrawingWindow?.ID ?? "");
+            return elementID + "##" + (UIWindow.CurrentDrawingWindow?.ID ?? string.Empty);
         }
 
         /// <summary>
@@ -99,6 +99,7 @@ namespace Fugui.Framework
                 }
                 else if (ImGui.IsItemHovered())
                 {
+                    // ImGui fail on inputText since version 1.88, check on new version
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(ThemeManager.GetColor(FuguiColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
                 }
             }

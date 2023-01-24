@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace Fugui.Framework
 {
-    public partial class FuGui
+    public static partial class FuGui
     {
         /// <summary>
         /// Creates a UI panel that contains the dock space manager and the layout manager

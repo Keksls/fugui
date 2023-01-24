@@ -5,6 +5,7 @@ namespace Fugui.Framework
 {
     public class FuguiTheme
     {
+        [Disabled]
         public string ThemeName = "Fugui Theme";
         [Disabled]
         [Slider(0.1f, 1f)]

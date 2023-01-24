@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using System.IO;
-using System.Linq;
 using Fugui.Core;
 
 namespace Fugui.Framework
@@ -229,6 +228,47 @@ namespace Fugui.Framework
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// delete a given theme from manager and file
+        /// </summary>
+        /// <param name="theme">theme to delete</param>
+        public static void DeleteTheme(FuguiTheme theme)
+        {
+            theme.UnregisterToThemeManager();
+            // get folder path
+            string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.ThemesFolder);
+            string filePath = Path.Combine(folderPath, theme.ThemeName + ".fskin");
+            // remove file if exists
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+            else
+            {
+                Debug.LogError("you are trying to delete a theme at " + filePath + " but the file does not exists.");
+                return;
+            }
+
+            // set default theme
+            SetDefaultTheme();
+        }
+
+        /// <summary>
+        /// set default fugui theme as current
+        /// </summary>
+        public static void SetDefaultTheme()
+        {
+            // add default Theme if needed
+            if (!Themes.ContainsKey(DEFAULT_FUGUI_THEME_NAME))
+            {
+                Themes.Add(DEFAULT_FUGUI_THEME_NAME, new FuguiTheme(DEFAULT_FUGUI_THEME_NAME));
+            }
+
+            // get and set default theme
+            GetTheme(DEFAULT_FUGUI_THEME_NAME, out FuguiTheme defaultTheme);
+            SetTheme(defaultTheme);
         }
 
         /// <summary>

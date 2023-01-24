@@ -138,7 +138,7 @@ namespace Fugui.Framework
                 ImGui.Dummy(Vector2.zero);
                 float cursorY = ImGui.GetCursorScreenPos().y;
                 // draw title
-                using (UIGrid grid = new UIGrid("notificationGrid" + i, new UIGridDefinition(3, new int[] { (int)FuGui.Settings.NotifyIconSize + 8, (int)FuGui.Settings.NotifyPanelWidth - (int)FuGui.Settings.NotifyIconSize - 82 }), UIGridFlag.NoAutoLabels, outterPadding: 8f))
+                using (UIGrid grid = new UIGrid("notificationGrid" + i, new UIGridDefinition(3, new int[] { (int)FuGui.Settings.NotifyIconSize + 8, (int)FuGui.Settings.NotifyPanelWidth - (int)FuGui.Settings.NotifyIconSize - 64 }), UIGridFlag.NoAutoLabels, outterPadding: 8f))
                 {
                     grid.Image("notificationIcon" + i, Icon, new Vector2(FuGui.Settings.NotifyIconSize, FuGui.Settings.NotifyIconSize), TextColor.Text);
                     
@@ -154,10 +154,12 @@ namespace Fugui.Framework
                     }
                     if (_animationEnlapsed == NOTIFICATION_ANIMATION_DURATION)
                     {
-                        if (grid.Button("x", UIButtonStyle.AutoSize, BGColor))
+                        FuGui.PushFont(FuGui.CurrentContext.DefaultFont.Size, FontType.Bold);
+                        if (grid.ClickableText("X", TextColor))
                         {
                             Close();
                         }
+                        FuGui.PopFont();
                     }
                 }
 

@@ -136,7 +136,7 @@ namespace Fugui.Framework
         {
             // Begin the element and apply the specified style
             id = beginElement(id, style);
-
+            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f));
             bool valueChanged = false;
             // Calculate the column width for the table
             float colWidth = ImGui.GetContentRegionAvail().x * 0.5f;
@@ -162,6 +162,7 @@ namespace Fugui.Framework
                 // End the table
                 ImGui.EndTable();
             }
+            FuGui.PopStyle();
             // Reset the flag for whether the element is hovered and framed
             _elementHoverFramed = false;
             // End the element
@@ -219,6 +220,7 @@ namespace Fugui.Framework
             id = beginElement(id, style);
             bool valueChanged = false;
             float colWidth = ImGui.GetContentRegionAvail().x / 3f;
+            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f));
             if (ImGui.BeginTable(id + "dragTable", 3))
             {
                 // Set up the three columns in the table
@@ -250,6 +252,7 @@ namespace Fugui.Framework
                 // End the table
                 ImGui.EndTable();
             }
+            FuGui.PopStyle();
 
             // Reset the hover frame flag
             _elementHoverFramed = false;
@@ -306,6 +309,7 @@ namespace Fugui.Framework
         {
             id = beginElement(id, style);
             bool valueChanged = false;
+            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f));
             float colWidth = ImGui.GetContentRegionAvail().x * 0.25f;
             if (ImGui.BeginTable(id + "dragTable", 4))
             {
@@ -330,6 +334,7 @@ namespace Fugui.Framework
                 drawHoverFrame();
                 ImGui.EndTable();
             }
+            FuGui.PopStyle();
             _elementHoverFramed = false;
             endElement(style);
             return valueChanged;

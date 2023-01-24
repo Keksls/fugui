@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Fugui.Framework
 {
@@ -17,6 +18,7 @@ namespace Fugui.Framework
         public UIDockSpaceOrientation Orientation;
 
         //A list of child dock spaces
+        [JsonProperty]
         public List<UIDockSpaceDefinition> Children;
 
         //Constructor that accepts 4 parameters: name, id, proportion and orientation
@@ -50,6 +52,18 @@ namespace Fugui.Framework
             }
 
             return count;
+        }
+        
+        //Serialization method
+        public string Serialize()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
+
+        //Deserialization method
+        public static UIDockSpaceDefinition Deserialize(string json)
+        {
+            return JsonConvert.DeserializeObject<UIDockSpaceDefinition>(json);
         }
     }
 

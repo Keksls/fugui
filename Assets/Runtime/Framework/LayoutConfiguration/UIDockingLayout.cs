@@ -1,8 +1,12 @@
 ﻿using Fugui.Core;
 using ImGuiNET;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Fugui.Framework
 {
@@ -52,9 +56,14 @@ namespace Fugui.Framework
             {
                 using (UIGrid gridInfo = new UIGrid("gridInfo" + dockSpaceDefinition.ID, UIGridDefinition.DefaultAuto))
                 {
-                    gridInfo.TextInput("Name", ref dockSpaceDefinition.Name);
+                    if (gridInfo.TextInput("Name" + dockSpaceDefinition.ID, ref dockSpaceDefinition.Name))
+                    {
+                        //Dockspace names changed, refresh other UI component
+                        DockingLayoutManager.RefreshDockSpaces();
+                    }
                     string tempID = dockSpaceDefinition.ID.ToString();
-                    gridInfo.TextInput("Dockspace Id", ref tempID, UIFrameStyle.Default);
+                    gridInfo.DisableNextElement();
+                    gridInfo.TextInput("Dockspace Id" + dockSpaceDefinition.ID, ref tempID, UIFrameStyle.Default);
                     gridInfo.Slider("Proportion" + dockSpaceDefinition.ID, ref dockSpaceDefinition.Proportion, 0f, 1f);
                 }
 
@@ -102,6 +111,9 @@ namespace Fugui.Framework
                                 }
                                 break;
                         }
+
+                        //Dockspace list has changed, refresh other UI component
+                        DockingLayoutManager.RefreshDockSpaces();
                     });
 
                     // REcursive display for children
@@ -159,7 +171,7 @@ namespace Fugui.Framework
                                                     formatedFuGuiWindowsName.Add(fuguiItem.Key, RemoveSpaceAndCapitalize(fuguiItem.Value));
                                                 }
 
-                                                DockingLayoutManager.writeToFile(DockingLayoutManager.FUGUI_WINDOWS_DEFINTION_ENUM_PATH, DockingLayoutManager.generateEnum("FuGuiWindows", formatedFuGuiWindowsName));
+                                                DockingLayoutManager.writeToFile(DockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, DockingLayoutManager.generateEnum("FuGuiWindows", formatedFuGuiWindowsName));
                                                 DockingLayoutManager._windowsToAdd = string.Empty;
                                             }
                                         }
@@ -170,7 +182,7 @@ namespace Fugui.Framework
 
                         if (!string.IsNullOrEmpty(DockingLayoutManager._selectedValue) && DockingLayoutManager._selectedValue != "None")
                         {
-                            using(UILayout buttonLayout = new UILayout())
+                            using (UILayout buttonLayout = new UILayout())
                             {
                                 if (buttonLayout.Button(string.Format($"Remove {DockingLayoutManager._selectedValue}"), UIButtonStyle.FullSize, UIButtonStyle.Danger))
                                 {
@@ -190,7 +202,7 @@ namespace Fugui.Framework
                                         if (keyToDelete != -1)
                                         {
                                             DockingLayoutManager._fuguiWindows.Remove(keyToDelete);
-                                            DockingLayoutManager.writeToFile(DockingLayoutManager.FUGUI_WINDOWS_DEFINTION_ENUM_PATH, DockingLayoutManager.generateEnum("FuGuiWindows", DockingLayoutManager._fuguiWindows));
+                                            DockingLayoutManager.writeToFile(DockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, DockingLayoutManager.generateEnum("FuGuiWindows", DockingLayoutManager._fuguiWindows));
                                             DockingLayoutManager._selectedValue = "None";
                                         }
                                     }
@@ -198,23 +210,51 @@ namespace Fugui.Framework
                             }
                         }
                     }
-                });                
+                });
             }
 
             using (UILayout bindWindowsDef_Layout = new UILayout())
             {
                 bindWindowsDef_Layout.Collapsable("Bind Windows definition to DockSpace", () =>
                 {
-                    using (UIGrid tempGrid = new UIGrid("bindWinDefToDockSpaceGrid", new UIGridDefinition(2, new int[] { 150 })))
+                    using (UIGrid tempGrid = new UIGrid("bindWinDefToDockSpace_grid", new UIGridDefinition(2, new int[] { 150 })))
                     {
                         for (int i = 0; i < DockingLayoutManager._dockSpacesToWindow.Count; i++)
                         {
                             KeyValuePair<string, string> item = DockingLayoutManager._dockSpacesToWindow.ElementAt(i);
-                            tempGrid.Combobox(item.Key, DockingLayoutManager._dockSpaces.Values.ToList(), (x) => { DockingLayoutManager._dockSpacesToWindow[item.Key] = x; });
+                            tempGrid.Combobox(item.Key, DockingLayoutManager._definedDockSpaces.Values.ToList(), (x) => { DockingLayoutManager._dockSpacesToWindow[item.Key] = x; });
                         }
                     };
                 });
+
+                using (UILayout loadSave_layout = new UILayout())
+                {
+                    loadSave_layout.Collapsable("Load & Save DockSpace configuration", () =>
+                    {
+                        loadSave_layout.TextInput("Layout file name", ref DockingLayoutManager._layoutFileName);
+                        if (!IsValidJsonFileName(DockingLayoutManager._layoutFileName))
+                        {
+                            loadSave_layout.DisableNextElement();
+                        }
+
+                        loadSave_layout.InputFolder("Save dockspace", new Action<string>((path) =>
+                        {
+                            FuGui.SaveJsonToFile(DockingLayoutManager._dockSpaceDefinitionRoot.Serialize(), path, DockingLayoutManager._layoutFileName);
+                        }), DockingLayoutManager.FUGUI_DOCKSPACE_FOLDER_PATH);
+                    });
+                }
             }
+        }
+
+        private static bool IsValidJsonFileName(string fileName)
+        {
+            Regex regex = new Regex(@"^[a-zA-Z0-9]+\.json$");
+            return !string.IsNullOrEmpty(fileName) && regex.IsMatch(fileName);
+        }
+
+        private static void SaveJsonToFile(string json, string filePath, string fileName)
+        {
+            File.WriteAllText(Path.Combine(filePath, fileName), json);
         }
     }
 }

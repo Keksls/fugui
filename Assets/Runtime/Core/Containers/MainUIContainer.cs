@@ -297,6 +297,9 @@ namespace Fugui.Core
 
             // draw modal
             FuGui.RenderModal(this);
+
+            // draw popup message
+            FuGui.RenderPopupMessage();
         }
         #endregion
     }

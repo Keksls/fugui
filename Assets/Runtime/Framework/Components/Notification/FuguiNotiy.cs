@@ -155,7 +155,7 @@ namespace Fugui.Framework
                     if (_animationEnlapsed == NOTIFICATION_ANIMATION_DURATION)
                     {
                         FuGui.PushFont(FuGui.CurrentContext.DefaultFont.Size, FontType.Bold);
-                        if (grid.ClickableText("X", TextColor))
+                        if (grid.ClickableText("X", UITextStyle.Default))
                         {
                             Close();
                         }
@@ -171,7 +171,7 @@ namespace Fugui.Framework
                     ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 4f);
                     using (UILayout grid = new UILayout())
                     {
-                        grid.TextWrapped(Message, TextColor);
+                        grid.TextWrapped(Message);
                     }
                 }
 

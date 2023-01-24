@@ -725,6 +725,21 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Get a text without tag "##xxxxxx"
+        /// </summary>
+        /// <param name="input">taged text</param>
+        /// <returns>untaged text</returns>
+        public static string GetUntagedText(string input)
+        {
+            int index = input.IndexOf("##");
+            if (index != -1)
+            {
+                return input.Substring(0, index);
+            }
+            return input;
+        }
+
+        /// <summary>
         /// Each open window will be draw next frame
         /// </summary>
         public static void ForceDrawAllWindows()

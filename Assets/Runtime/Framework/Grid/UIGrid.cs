@@ -274,7 +274,7 @@ namespace Fugui.Framework
 
             bool disabled = _nextIsDisabled;
             _nextIsDisabled = _nextIsDisabled && !_dontDisableLabels;
-            Text(FuGui.AddSpacesBeforeUppercase(text), style);
+            Text(FuGui.AddSpacesBeforeUppercase(FuGui.GetUntagedText(text)), style);
             _nextIsDisabled = disabled;
             _nextElementYPadding = wantedNextElementYpadding;
         }

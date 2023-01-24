@@ -78,7 +78,7 @@ namespace Fugui.Framework
                     {
                         using (UIGrid grid = new UIGrid("FuguiThemeVariablesGrid", UIGridFlag.LinesBackground | UIGridFlag.AutoToolTipsOnLabels))
                         {
-                            if (grid.DrawObject<FuguiTheme>(ThemeManager.CurrentTheme))
+                            if (grid.DrawObject(ThemeManager.CurrentTheme))
                             {
                                 ThemeManager.SetTheme(ThemeManager.CurrentTheme);
                                 ForceDrawAllWindows();

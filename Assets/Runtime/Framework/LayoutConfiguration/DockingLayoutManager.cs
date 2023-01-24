@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using static UnityEditor.ShaderData;
 
 namespace Fugui.Framework
 {
@@ -13,10 +14,15 @@ namespace Fugui.Framework
     public static class DockingLayoutManager
     {
         #region Variables
-        internal const string FUGUI_WINDOWS_DEFINTION_ENUM_PATH = "Assets\\Runtime\\Settings\\FuGuiWindows.cs";
+        internal const string FUGUI_WINDOWS_DEF_ENUM_PATH = "Assets\\Runtime\\Settings\\FuGuiWindows.cs";
+        internal const string FUGUI_DOCKSPACE_FOLDER_PATH = "Assets\\Runtime\\Settings\\Layout\\";
+        internal static string _layoutFileName = "default_layout.json";
         internal static Dictionary<int, string> _fuguiWindows;
         internal static string _windowsToAdd = string.Empty;
         internal static string _selectedValue = string.Empty;
+        internal static Dictionary<string, string> _dockSpacesToWindow;
+        internal static UIDockSpaceDefinition _dockSpaceDefinitionRoot;
+        internal static Dictionary<int, string> _definedDockSpaces;
         /// <summary>
         /// Whatever we already are setting Layer right now
         /// </summary>
@@ -30,6 +36,47 @@ namespace Fugui.Framework
         static DockingLayoutManager()
         {
             _fuguiWindows = enumToDictionary(typeof(FuGuiWindows));
+            _dockSpacesToWindow = new Dictionary<string, string>();
+            _dockSpaceDefinitionRoot = new UIDockSpaceDefinition("Root", 0);
+
+            RefreshDockSpaces();
+
+            foreach (KeyValuePair<int, string> fuguiWindow in _fuguiWindows)
+            {
+                if (fuguiWindow.Value != "None")
+                {
+                    _dockSpacesToWindow.Add(fuguiWindow.Value, "Center");
+                }
+            }
+        }
+
+        /// <summary>
+        /// static method for refreshing dockspace dictionary
+        /// </summary>
+        internal static void RefreshDockSpaces()
+        {
+            _definedDockSpaces = GetDictionary(_dockSpaceDefinitionRoot);
+        }
+
+        /// <summary>
+        /// This method takes in a "UIDockSpaceDefinition" object as a parameter and returns a dictionary containing the ID and name of the root object and all its children.
+        /// It calls itself recursively on each child
+        /// </summary>
+        private static Dictionary<int, string> GetDictionary(UIDockSpaceDefinition root)
+        {
+            Dictionary<int, string> dictionary = new Dictionary<int, string>();
+            dictionary.Add(root.ID, root.Name);
+
+            foreach (var child in root.Children)
+            {
+                var childDictionary = GetDictionary(child);
+                foreach (var entry in childDictionary)
+                {
+                    dictionary.Add(entry.Key, entry.Value);
+                }
+            }
+
+            return dictionary;
         }
 
         /// <summary>
@@ -184,7 +231,6 @@ namespace Fugui.Framework
                     UnityEngine.Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
                     return;
                 }
-
 
                 //breakDockingLayout();
                 uint Dockspace_id = FuGui.MainContainer.Dockspace_id;

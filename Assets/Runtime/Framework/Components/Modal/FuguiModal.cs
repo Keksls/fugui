@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Fugui.Framework
 {
-    public static class FuguiModal
+    public static partial class FuGui
     {
         #region Variables
         private static bool _showModal = false;
@@ -38,7 +38,7 @@ namespace Fugui.Framework
             {
                 buttons = new UIModalButton[]
                 {
-                    new UIModalButton("OK", HideModal, UIButtonStyle.Default)
+                    new UIModalButton("OK", CloseModal, UIButtonStyle.Default)
                 };
             }
             _modalButtons = buttons; //store the buttons
@@ -53,7 +53,7 @@ namespace Fugui.Framework
         /// <summary>
         /// Hide the currently shown modal
         /// </summary>
-        public static void HideModal()
+        public static void CloseModal()
         {
             _enlapsed = ANIMATION_DURATION;
             _showModal = false; //set showModal to false to hide the modal
@@ -175,7 +175,7 @@ namespace Fugui.Framework
             ImGui.Dummy(Vector2.zero);
             using (UILayout layout = new UILayout())
             {
-                float cursorX = ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().x - 12f;
+                float cursorX = ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().x;
                 ImGui.SetCursorPosX(cursorX);
 
                 // Draw each button
@@ -183,7 +183,7 @@ namespace Fugui.Framework
                 {
                     // Set cursor position
                     Vector2 size = button.GetButtonSize();
-                    cursorX -= size.x - 8f;
+                    cursorX -= (size.x + 8f);
                     ImGui.SetCursorPosX(cursorX);
 
                     // Draw button
@@ -224,12 +224,12 @@ namespace Fugui.Framework
             ShowModal(title, null, modalSize,
                 new UIModalButton(yesButtonText, () =>
                 {
-                    HideModal();
+                    CloseModal();
                     callback?.Invoke(true);
                 }, UIButtonStyle.Default),
                 new UIModalButton(noButtonText, () =>
                 {
-                    HideModal();
+                    CloseModal();
                     callback?.Invoke(false);
                 }, UIButtonStyle.Default));
         }
@@ -263,7 +263,7 @@ namespace Fugui.Framework
                     grid.NextColumn();
                     body?.Invoke();
                 };
-            }, modalSize, new UIModalButton("OK", HideModal, buttonStyle));
+            }, modalSize, new UIModalButton("OK", CloseModal, buttonStyle));
         }
 
         /// <summary>

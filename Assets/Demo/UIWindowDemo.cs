@@ -138,27 +138,27 @@ public class UIWindowDemo : MonoBehaviour
                 {
                     if (layout.Button("Theme small"))
                     {
-                        FuguiModal.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.Small);
+                        FuGui.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.Small);
                     }
 
                     if (layout.Button("Theme medium"))
                     {
-                        FuguiModal.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.Medium);
+                        FuGui.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.Medium);
                     }
 
                     if (layout.Button("Theme large"))
                     {
-                        FuguiModal.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.Large);
+                        FuGui.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.Large);
                     }
 
                     if (layout.Button("Theme extra larger"))
                     {
-                        FuguiModal.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.ExtraLarge);
+                        FuGui.ShowModal("Theme Manager", FuGui.DrawThemes, UIModalSize.ExtraLarge);
                     }
 
                     if (layout.Button("Info modal", UIButtonStyle.Info))
                     {
-                        FuguiModal.ShowInfo("This is an Information", () =>
+                        FuGui.ShowInfo("This is an Information", () =>
                         {
                             using (UILayout layout = new UILayout())
                             {
@@ -170,7 +170,7 @@ public class UIWindowDemo : MonoBehaviour
 
                     if (layout.Button("Success modal", UIButtonStyle.Success))
                     {
-                        FuguiModal.ShowSuccess("This is a Success", () =>
+                        FuGui.ShowSuccess("This is a Success", () =>
                         {
                             using (UILayout layout = new UILayout())
                             {
@@ -182,7 +182,7 @@ public class UIWindowDemo : MonoBehaviour
 
                     if (layout.Button("Warning modal", UIButtonStyle.Warning))
                     {
-                        FuguiModal.ShowWarning("This is a Warning", () =>
+                        FuGui.ShowWarning("This is a Warning", () =>
                         {
                             using (UILayout layout = new UILayout())
                             {
@@ -194,7 +194,7 @@ public class UIWindowDemo : MonoBehaviour
 
                     if (layout.Button("Danger modal", UIButtonStyle.Danger))
                     {
-                        FuguiModal.ShowDanger("This is a Danger", () =>
+                        FuGui.ShowDanger("This is a Danger", () =>
                         {
                             using (UILayout layout = new UILayout())
                             {
@@ -216,27 +216,35 @@ public class UIWindowDemo : MonoBehaviour
                     FuGui.Settings.NotificationAnchorPosition = anchor;
                 }, () => FuGui.Settings.NotificationAnchorPosition);
                 layout.Separator();
-                foreach (NotificationType type in Enum.GetValues(typeof(NotificationType)))
+                foreach (StateType type in Enum.GetValues(typeof(StateType)))
                 {
-                    if (layout.Button("Notify " + type))
+                    if (layout.Button("Notify " + type, UIButtonStyle.GetStyleForState(type)))
                     {
-                        FuguiNotify.Notify(type.ToString(), "This is a test " + type + " small notification.", type);
+                        FuGui.Notify(type.ToString(), "This is a test " + type + " small notification.", type);
                     }
                 }
                 layout.Separator();
-                foreach (NotificationType type in Enum.GetValues(typeof(NotificationType)))
+                foreach (StateType type in Enum.GetValues(typeof(StateType)))
                 {
-                    if (layout.Button("Notify long " + type))
+                    if (layout.Button("Notify long " + type, UIButtonStyle.GetStyleForState(type)))
                     {
-                        FuguiNotify.Notify(type.ToString(), "This is a test " + type + " notification. it's a quite long text for a notification but I have to test that the text wrapping don't mess with my notification panel height calculation.", type);
+                        FuGui.Notify(type.ToString(), "This is a test " + type + " notification. it's a quite long text for a notification but I have to test that the text wrapping don't mess with my notification panel height calculation.", type);
                     }
                 }
                 layout.Separator();
-                foreach (NotificationType type in Enum.GetValues(typeof(NotificationType)))
+                foreach (StateType type in Enum.GetValues(typeof(StateType)))
                 {
-                    if (layout.Button("Notify title " + type))
+                    if (layout.Button("Notify title " + type, UIButtonStyle.GetStyleForState(type)))
                     {
-                        FuguiNotify.Notify("this is a type " + type.ToString(), null, type);
+                        FuGui.Notify("this is a type " + type.ToString(), null, type);
+                    }
+                }
+                layout.Separator();
+                foreach (StateType type in Enum.GetValues(typeof(StateType)))
+                {
+                    if (layout.Button("Notify message " + type, UIButtonStyle.GetStyleForState(type)))
+                    {
+                        FuGui.Notify(null, "this is a type " + type.ToString(), type);
                     }
                 }
             }

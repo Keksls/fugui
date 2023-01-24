@@ -293,10 +293,10 @@ namespace Fugui.Core
             FuGui.PopStyle(5);
 
             // draw notifications
-            FuguiNotify.RenderNotifications(this);
+            FuGui.RenderNotifications(this);
 
             // draw modal
-            FuguiModal.RenderModal(this);
+            FuGui.RenderModal(this);
         }
         #endregion
     }

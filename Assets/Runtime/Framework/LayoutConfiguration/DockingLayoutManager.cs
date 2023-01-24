@@ -17,6 +17,8 @@ namespace Fugui.Framework
         internal static Dictionary<int, string> _fuguiWindows;
         internal static string _windowsToAdd = string.Empty;
         internal static string _selectedValue = string.Empty;
+        internal static Dictionary<int, string> _dockSpaces;
+        internal static Dictionary<string, string> _dockSpacesToWindow;
         /// <summary>
         /// Whatever we already are setting Layer right now
         /// </summary>
@@ -30,6 +32,23 @@ namespace Fugui.Framework
         static DockingLayoutManager()
         {
             _fuguiWindows = enumToDictionary(typeof(FuGuiWindows));
+
+            _dockSpaces = new Dictionary<int, string>();
+            _dockSpaces.Add(0, "Center");
+            _dockSpaces.Add(1, "Top");
+            _dockSpaces.Add(2, "Bottom");
+            _dockSpaces.Add(3, "Right");
+            _dockSpaces.Add(4, "Left");
+
+            _dockSpacesToWindow = new Dictionary<string, string>();
+
+            foreach (KeyValuePair<int, string> fuguiWindow in _fuguiWindows)
+            {
+                if (fuguiWindow.Value != "None")
+                {
+                    _dockSpacesToWindow.Add(fuguiWindow.Value, "Center");
+                }
+            }
         }
 
         /// <summary>
@@ -184,7 +203,6 @@ namespace Fugui.Framework
                     UnityEngine.Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
                     return;
                 }
-
 
                 //breakDockingLayout();
                 uint Dockspace_id = FuGui.MainContainer.Dockspace_id;

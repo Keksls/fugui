@@ -153,7 +153,7 @@ namespace Fugui.Framework
         }
 
         /// <summary>
-        /// Draw a space of size ItemSpacing of the curren theme
+        /// Draw a space of size ItemSpacing of the current theme
         /// </summary>
         public void Spacing()
         {

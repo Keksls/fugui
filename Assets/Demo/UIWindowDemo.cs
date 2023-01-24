@@ -3,6 +3,7 @@ using Fugui.Core;
 using Fugui.Framework;
 using System.Collections.Generic;
 using System;
+using Fugui;
 
 /// <summary>
 /// this sample show how to use UIWindow toolkit
@@ -387,9 +388,9 @@ public class UIWindowDemo : MonoBehaviour
 
         // add Theme Window
         new UIWindowDefinition(FuGuiWindows.Theme, "Theme Configurator", (window) =>
-            {
-                FuGui.DrawThemes();
-            });
+        {
+            FuGui.DrawThemes();
+        });
 
         // add main camera window
         UIWindowDefinition camWinDef = new UICameraWindowDefinition(FuGuiWindows.MainCameraView, cam1, "3DView", null, flags: UIWindowFlags.NoInterractions)

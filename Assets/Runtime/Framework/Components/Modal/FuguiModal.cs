@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Fugui.Framework
 {
-    public static class FuguiModal
+    public static partial class FuGui
     {
         #region Variables
         private static bool _showModal = false;

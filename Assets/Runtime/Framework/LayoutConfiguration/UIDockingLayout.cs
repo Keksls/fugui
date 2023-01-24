@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Fugui.Framework
 {
-    public partial class FuGui
+    public static partial class FuGui
     {
         public static void DockSpaceManager(UIWindow window)
         {

@@ -40,6 +40,28 @@ namespace Fugui.Framework
         #endregion
 
         /// <summary>
+        /// Get the instance of UIButtonStyle that match with the StateType enum value givent in parameter
+        /// </summary>
+        /// <param name="type">the StateType enum value to get Style on</param>
+        /// <returns>mathcing UIButtonStyle</returns>
+        public static UIButtonStyle GetStyleForState(StateType type)
+        {
+            switch (type)
+            {
+                case StateType.Danger:
+                    return UIButtonStyle.Danger;
+                case StateType.Success:
+                    return UIButtonStyle.Success;
+                case StateType.Info:
+                    return UIButtonStyle.Info;
+                case StateType.Warning:
+                    return UIButtonStyle.Warning;
+                default:
+                    return UIButtonStyle.Default;
+            }
+        }
+
+        /// <summary>
         /// Pushes the UIButtonStyle onto the ImGui style stack. If enabled is true, the enabled style will be used. If enabled is false, the disabled style will be used.
         /// </summary>
         /// <param name="enabled">Determines whether to use the enabled or disabled style</param>

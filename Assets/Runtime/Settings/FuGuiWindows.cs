@@ -13,5 +13,6 @@ namespace Fugui
         Theme = 9,
         DockSpaceManager = 10,
         Test1 = 11,
+        FuguiSettings = 12
     }
 }

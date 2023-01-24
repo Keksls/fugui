@@ -280,7 +280,7 @@ namespace Fugui.Framework
         {
             CreateWindowsAsync(new List<FuGuiWindows>() { windowToGet }, (windows) =>
             {
-                if(windows.ContainsKey(windowToGet))
+                if (windows.ContainsKey(windowToGet))
                 {
                     callback?.Invoke(windows[windowToGet]);
                 }
@@ -740,11 +740,31 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Align next element Horizontaly
+        /// </summary>
+        /// <param name="nextElementWidth">width of the next element</param>
+        /// <param name="alignement">alignement type</param>
+        public static void HorizontalAlignNextElement(float nextElementWidth, ElementAlignement alignement)
+        {
+            switch (alignement)
+            {
+                case ElementAlignement.Center:
+                    float pad = ImGui.GetContentRegionAvail().x / 2f - nextElementWidth / 2f;
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + pad);
+                    break;
+
+                case ElementAlignement.Right:
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().x - nextElementWidth);
+                    break;
+            }
+        }
+
+        /// <summary>
         /// Each open window will be draw next frame
         /// </summary>
         public static void ForceDrawAllWindows()
         {
-            foreach(UIWindow window in UIWindows.Values)
+            foreach (UIWindow window in UIWindows.Values)
             {
                 window.ForceDraw();
             }

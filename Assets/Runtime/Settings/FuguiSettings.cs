@@ -80,25 +80,30 @@ namespace Fugui.Core
         /// </summary>
         public Texture2D OpenGLNonReadableTexture;
         /// <summary>
-        /// The texture to be used as icon into an Info Modal.
+        /// The texture to be used as icon into an Info.
         /// </summary>
         public Texture2D InfoIcon;
         /// <summary>
-        /// The texture to be used as icon into a Warning Modal.
+        /// The texture to be used as icon into a Warning.
         /// </summary>
         public Texture2D WarningIcon;
         /// <summary>
-        /// The texture to be used as icon into a Danger Modal.
+        /// The texture to be used as icon into a Danger.
         /// </summary>
         public Texture2D DangerIcon;
         /// <summary>
-        /// The texture to be used as icon into a Success Modal.
+        /// The texture to be used as icon into a Success.
         /// </summary>
         public Texture2D SuccessIcon;
-        /// <summary>
-        /// The position anchor of the notification panel
-        /// </summary>
+        [Header("Notifications")]
+        [Tooltip("The position anchor of the notification panel")]
         public AnchorLocation NotificationAnchorPosition;
+        [Tooltip("Size of the state Icon in notifications title")]
+        public float NotifyIconSize = 16f;
+        [Tooltip("Width of the notifications Panel")]
+        public float NotifyPanelWidth = 420f;
+        [Tooltip("Default duration of a notification (in second)")]
+        public float NotificationDefaultDuration = 7f;
         /// <summary>
         /// Fugui Font configuration
         /// </summary>

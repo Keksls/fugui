@@ -1,5 +1,13 @@
 ﻿namespace Fugui.Framework
 {
+    public enum StateType
+    {
+        Danger,
+        Success,
+        Info,
+        Warning
+    }
+
     public enum ButtonsGroupFlags
     {
         Default = 0,

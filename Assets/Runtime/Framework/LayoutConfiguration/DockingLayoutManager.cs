@@ -55,21 +55,21 @@ namespace Fugui.Framework
         /// </summary>
         internal static void RefreshDockSpaces()
         {
-            _definedDockSpaces = GetDictionary(_dockSpaceDefinitionRoot);
+            _definedDockSpaces = getDictionary(_dockSpaceDefinitionRoot);
         }
 
         /// <summary>
         /// This method takes in a "UIDockSpaceDefinition" object as a parameter and returns a dictionary containing the ID and name of the root object and all its children.
         /// It calls itself recursively on each child
         /// </summary>
-        private static Dictionary<int, string> GetDictionary(UIDockSpaceDefinition root)
+        private static Dictionary<int, string> getDictionary(UIDockSpaceDefinition root)
         {
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
             dictionary.Add(root.ID, root.Name);
 
             foreach (var child in root.Children)
             {
-                var childDictionary = GetDictionary(child);
+                var childDictionary = getDictionary(child);
                 foreach (var entry in childDictionary)
                 {
                     dictionary.Add(entry.Key, entry.Value);
@@ -91,6 +91,7 @@ namespace Fugui.Framework
                 return;
             }
 
+            FuGui.ShowPopupMessage("Setting Layout...");
             IsSettingLayout = true;
 
             // break the current docking nodes data before removing windows
@@ -155,6 +156,16 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Call this whenever a new layout has just been set
+        /// </summary>
+        private static void endSettingLayout()
+        {
+            IsSettingLayout = false;
+            OnDockLayoutInitialized?.Invoke();
+            FuGui.ClosePopupMessage();
+        }
+
+        /// <summary>
         /// Sets the "console" layout for the UI windows.
         /// </summary>
         private static void setConsoleLayout()
@@ -201,8 +212,7 @@ namespace Fugui.Framework
                 ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Theme].ID, centerBottom);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
-                IsSettingLayout = false;
-                OnDockLayoutInitialized?.Invoke();
+                endSettingLayout();
             });
         }
 
@@ -251,8 +261,7 @@ namespace Fugui.Framework
                 ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.MainCameraView].ID, center);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
-                IsSettingLayout = false;
-                OnDockLayoutInitialized?.Invoke();
+                endSettingLayout();
             });
         }
 
@@ -287,8 +296,7 @@ namespace Fugui.Framework
                 ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.WindowsDefinitionManager].ID, right);
                 ImGuiDocking.DockBuilderFinish(mainDockSpace);
 
-                IsSettingLayout = true;
-                OnDockLayoutInitialized?.Invoke();
+                endSettingLayout();
             });
         }
 

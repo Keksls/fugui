@@ -17,7 +17,7 @@ namespace Fugui.Framework
         [Slider(0f, 4f)]
         public float WindowBorderSize = 1.0f;
         [Drag(1f, 100f, "width", "height")]
-        public Vector2 WindowMinSize = new Vector2(64.0f, 64.0f);
+        public Vector2 WindowMinSize = new Vector2(16.0f, 16.0f);
         [Drag(0f, 1f)]
         public Vector2 WindowTitleAlign = new Vector2(0.0f, 0.5f);
         public ImGuiDir WindowMenuButtonPosition = ImGuiDir.Right;

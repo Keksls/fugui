@@ -10,6 +10,17 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="id">A unique identifier for the text input field</param>
         /// <param name="text">A reference to the string that will be edited</param>
+        /// <param name="style">the Frame Style to use</param>
+        /// <returns>true if value has just been edited</returns>
+        public bool TextInput(string id, ref string text, UIFrameStyle style)
+        {
+            return TextInput(id, "", ref text, 2048, 0, style);
+        }
+        /// <summary>
+        /// Displays a single-line text input field
+        /// </summary>
+        /// <param name="id">A unique identifier for the text input field</param>
+        /// <param name="text">A reference to the string that will be edited</param>
         /// <returns>true if value has just been edited</returns>
         public bool TextInput(string id, ref string text)
         {

@@ -19,6 +19,7 @@ namespace Fugui.Framework
         internal static string _selectedValue = string.Empty;
         internal static Dictionary<int, string> _dockSpaces;
         internal static Dictionary<string, string> _dockSpacesToWindow;
+        internal static UIDockSpaceDefinition _dockSpaceDefinitionRoot;
         /// <summary>
         /// Whatever we already are setting Layer right now
         /// </summary>
@@ -32,6 +33,8 @@ namespace Fugui.Framework
         static DockingLayoutManager()
         {
             _fuguiWindows = enumToDictionary(typeof(FuGuiWindows));
+
+            _dockSpaceDefinitionRoot = new UIDockSpaceDefinition("Root", 0);
 
             _dockSpaces = new Dictionary<int, string>();
             _dockSpaces.Add(0, "Center");

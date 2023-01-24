@@ -1,15 +1,119 @@
 ﻿using Fugui.Core;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace Fugui.Framework
 {
     public partial class FuGui
     {
-        public static void DockSpaceManager(UIWindow window)
+        /// <summary>
+        /// Creates a UI panel that contains the dock space manager and the layout manager
+        /// </summary>
+        /// <param name="windowDockSpaceDefinition">The UI window for the dock space manager</param>
+        public static void DockSpaceManager(UIWindow windowDockSpaceDefinition)
         {
+            using (UIPanel scrollablePanel = new UIPanel("scrollablePanel"))
+            {
+                using (UILayout windowDockSpaceDefinition_layout = new UILayout())
+                {
+                    ShowTreeView(windowDockSpaceDefinition_layout, DockingLayoutManager._dockSpaceDefinitionRoot);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Clears the children of the dock space definition
+        /// </summary>
+        /// <param name="dockSpaceDefinition">The dock space definition to clear the children of</param>
+        private static void DockSpaceDefinitionClearChildren(UIDockSpaceDefinition dockSpaceDefinition)
+        {
+            // Set the orientation to None
+            dockSpaceDefinition.Orientation = UIDockSpaceOrientation.None;
+
+            // Clear the children list
+            for (int i = 0; i < dockSpaceDefinition.Children.Count; i++)
+            {
+                dockSpaceDefinition.Children.Clear();
+            }
+        }
+
+        /// <summary>
+        /// Displays the specified dock space definition in a tree view using ImGui.
+        /// The tree view allows the user to view and edit the properties of the dock space, such as its name, ID, proportion, and orientation.
+        /// The tree view also allows the user to view and edit the child dock spaces of the current dock space.
+        /// </summary>
+        /// <param name="layout">The layout to use for displaying the tree view</param>
+        /// <param name="dockSpaceDefinition">The dock space definition to show in the tree view</param>
+        private static void ShowTreeView(UILayout layout, UIDockSpaceDefinition dockSpaceDefinition)
+        {
+            if (ImGui.TreeNode("DockSpace : " + dockSpaceDefinition.ID))
+            {
+                using (UIGrid gridInfo = new UIGrid("gridInfo" + dockSpaceDefinition.ID, UIGridDefinition.DefaultAuto))
+                {
+                    gridInfo.TextInput("Name", ref dockSpaceDefinition.Name);
+                    string tempID = dockSpaceDefinition.ID.ToString();
+                    gridInfo.TextInput("Dockspace Id", ref tempID, UIFrameStyle.Default);
+                    gridInfo.Slider("Proportion" + dockSpaceDefinition.ID, ref dockSpaceDefinition.Proportion, 0f, 1f);
+                }
+
+                if (dockSpaceDefinition.Children != null)
+                {
+                    // This code checks the value of the 'orientation' enum and performs a specific action based on its value :
+                    // None : Delete all children and set orientation to None
+                    // Horizontal : Create 2 childs (left and right) and set orientation to Horizontal
+                    // Vertical : Create 2 childs (top and buttom) and set orientation to Vertical
+                    layout.ButtonsGroup<UIDockSpaceOrientation>("Orientation_" + dockSpaceDefinition.ID, (enumSelection) =>
+                    {
+                        switch (enumSelection)
+                        {
+                            default:
+                            case UIDockSpaceOrientation.None:
+                                DockSpaceDefinitionClearChildren(dockSpaceDefinition);
+                                break;
+                            case UIDockSpaceOrientation.Horizontal:
+                                if (dockSpaceDefinition.Children.Count == 0 && dockSpaceDefinition.Orientation == UIDockSpaceOrientation.None)
+                                {
+                                    DockSpaceDefinitionClearChildren(dockSpaceDefinition);
+
+                                    dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Horizontal;
+                                    int nextID = DockingLayoutManager._dockSpaceDefinitionRoot.GetTotalChildren();
+
+                                    UIDockSpaceDefinition leftPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitH_Left", nextID + 1);
+                                    UIDockSpaceDefinition rightPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitH_Right", nextID + 2);
+
+                                    dockSpaceDefinition.Children.Add(leftPart);
+                                    dockSpaceDefinition.Children.Add(rightPart);
+                                }
+                                break;
+                            case UIDockSpaceOrientation.Vertical:
+                                {
+                                    DockSpaceDefinitionClearChildren(dockSpaceDefinition);
+
+                                    dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Vertical;
+                                    int nextID = DockingLayoutManager._dockSpaceDefinitionRoot.GetTotalChildren();
+
+                                    UIDockSpaceDefinition topPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitV_Top", nextID + 1);
+                                    UIDockSpaceDefinition bottomPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitV_Bottom", nextID + 2);
+
+                                    dockSpaceDefinition.Children.Add(topPart);
+                                    dockSpaceDefinition.Children.Add(bottomPart);
+                                }
+                                break;
+                        }
+                    });
+
+                    // REcursive display for children
+                    foreach (UIDockSpaceDefinition child in dockSpaceDefinition.Children)
+                    {
+                        layout.Separator();
+                        ShowTreeView(layout, child);
+                    }
+                }
+
+                ImGui.TreePop();
+            }
         }
 
         // TODO : some of inner logic must be func/method into DockingLayoutManager

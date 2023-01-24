@@ -149,7 +149,9 @@ namespace Fugui.Framework
 
             FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f));
             FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
-            if (ImGui.BeginCombo(text, items[selectedIndex].ToString()))
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
+
+            if (ImGui.BeginCombo("##" + text, items[selectedIndex].ToString()))
             {
                 // Pop the style to use the default style for the combo dropdown
                 FuGui.PopStyle();

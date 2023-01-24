@@ -19,8 +19,8 @@ MonoBehaviour:
     serializedVersion: 2
     x: 0
     y: 30
-    width: 1920
-    height: 947
+    width: 3440
+    height: 1299
   m_MinSize: {x: 300, y: 200}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
@@ -224,9 +224,9 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: 
+      m_SelectedIDs: 98620000
       m_LastClickedID: 0
-      m_ExpandedIDs: 0afbffff
+      m_ExpandedIDs: 96faffff
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -502,9 +502,9 @@ MonoBehaviour:
   m_PlayAudio: 0
   m_AudioPlay: 0
   m_Position:
-    m_Target: {x: -22.62566, y: -10.06, z: -29.779411}
+    m_Target: {x: -22.62566, y: -12.382427, z: -29.779411}
     speed: 2
-    m_Value: {x: -22.62566, y: -10.06, z: -29.779411}
+    m_Value: {x: -22.62566, y: -12.382427, z: -29.779411}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -551,13 +551,13 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: 0.056504775, y: -0.9324446, z: 0.16708678, w: 0.31533545}
+    m_Target: {x: 0.056505024, y: -0.9324487, z: 0.16708751, w: 0.31533685}
     speed: 2
     m_Value: {x: 0.056504775, y: -0.9324446, z: 0.16708678, w: 0.31533545}
   m_Size:
-    m_Target: 5.2621565
+    m_Target: 24.418116
     speed: 2
-    m_Value: 5.2621565
+    m_Value: 24.418116
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -650,15 +650,15 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Runtime/Resources/Images
+    - Assets
     m_Globs: []
     m_OriginalText: 
   m_ViewMode: 1
-  m_StartGridSize: 64
+  m_StartGridSize: 16
   m_LastFolders:
-  - Assets/Runtime/Resources/Images
-  m_LastFoldersGridSize: -1
-  m_LastProjectPath: C:\Users\keks\Desktop\fugui
+  - Assets
+  m_LastFoldersGridSize: 16
+  m_LastProjectPath: C:\Users\jcrem\Documents\Git\Fugui
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
@@ -746,7 +746,7 @@ MonoBehaviour:
       m_ResourceFile: 
     m_NewAssetIndexInList: -1
     m_ScrollPosition: {x: 0, y: 0}
-    m_GridSize: 64
+    m_GridSize: 16
   m_SkipHiddenPackages: 0
   m_DirectoriesAreaWidth: 202
 --- !u!114 &11

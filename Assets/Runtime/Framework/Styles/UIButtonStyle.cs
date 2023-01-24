@@ -31,12 +31,6 @@ namespace Fugui.Framework
         public static UIButtonStyle Warning { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _warningButtonStyle; } }
         static UIButtonStyle _dangerButtonStyle;
         public static UIButtonStyle Danger { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _dangerButtonStyle; } }
-
-        // button sizes
-        static readonly Vector2 _frameAutoSize = new Vector2(0, 0);
-        public static Vector2 AutoSize { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _frameAutoSize; } }
-        static readonly Vector2 _frameFullSize = new Vector2(-1, 0);
-        public static Vector2 FullSize { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _frameFullSize; } }
         #endregion
 
         /// <summary>

@@ -225,11 +225,11 @@ namespace Fugui.Framework
                 if (sb.Length > 0) // display only if needed
                 {
                     // get txt width
-                    float txtWidth = ImGui.CalcTextSize(sb.ToString() + " ").x;
+                    float txtWidth = ImGui.CalcTextSize(sb.ToString()).x;
                     // assumle we always are on same line (simpler that derterminate it at this point)
                     ImGui.SameLine();
                     // check whatever wee pass throw right max
-                    if (startCursorX - ImGui.GetCursorPosX() < txtWidth + 4f)
+                    if (ImGui.GetContentRegionAvail().x < txtWidth + 4f)
                     {
                         // if true, line break
                         ImGui.Dummy(Vector2.zero);

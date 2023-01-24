@@ -157,7 +157,7 @@ namespace Fugui.Framework
                                     else
                                     {
                                         buttonLayout.Spacing();
-                                        if (buttonLayout.Button("Add new FuGui window definition", UIButtonStyle.FullSize, UIButtonStyle.Success))
+                                        if (buttonLayout.Button("Add new FuGui window definition", UIButtonStyle.Success))
                                         {
                                             if (!DockingLayoutManager._fuguiWindows.Values.Contains(DockingLayoutManager._windowsToAdd))
                                             {
@@ -184,7 +184,7 @@ namespace Fugui.Framework
                         {
                             using (UILayout buttonLayout = new UILayout())
                             {
-                                if (buttonLayout.Button(string.Format($"Remove {DockingLayoutManager._selectedValue}"), UIButtonStyle.FullSize, UIButtonStyle.Danger))
+                                if (buttonLayout.Button(string.Format($"Remove {DockingLayoutManager._selectedValue}"), UIButtonStyle.Danger))
                                 {
                                     if (DockingLayoutManager._fuguiWindows.Values.Contains(DockingLayoutManager._selectedValue))
                                     {

@@ -30,12 +30,12 @@ public class UIWindowDemo : MonoBehaviour
         Vector4 v4Val = Vector4.zero;
         List<string> cbTexts = new List<string>() { "cb1", "cb2", "cb3" };
         List<IComboboxItem> cbButtons = new List<IComboboxItem>() {
-            new ComboboxButtonItem("button 1", UIButtonStyle.FullSize),
-            new ComboboxButtonItem("button 2"),
+            new ComboboxButtonItem("button 1"),
+            new ComboboxButtonItem("button 2", UIElementSize.AutoSize),
             new ComboboxSameLineItem(),
             new ComboboxButtonItem("button 3", false),
             new ComboboxSeparatorItem(),
-            new ComboboxButtonItem("button 4"),
+            new ComboboxButtonItem("button 4", new Vector2(32f, 32f)),
             new ComboboxSameLineItem(),
             new ComboboxButtonItem("button 5"),
         };
@@ -120,12 +120,12 @@ public class UIWindowDemo : MonoBehaviour
 
                     grid.Separator();
 
-                    if (grid.Button("Mouse Pos and Down Text", UIButtonStyle.FullSize))
+                    if (grid.Button("Mouse Pos and Down Text"))
                     {
                         Debug.Log("click !");
                     }
                     grid.DisableNextElement();
-                    grid.Button("Mouse Pos and Down Text", UIButtonStyle.FullSize, UIButtonStyle.Highlight);
+                    grid.Button("Mouse Pos and Down Text", UIButtonStyle.Highlight);
                 }
                 window.Container.ImGuiImage(TmpDebugTexture, new Vector2(128, 128));
             }
@@ -270,6 +270,12 @@ public class UIWindowDemo : MonoBehaviour
                         grid.Slider("slider float ena", ref floatVal);
                         grid.DisableNextElement();
                         grid.Slider("slider float dis", ref floatVal);
+                        grid.Slider("slider float ena##NoDrag", ref floatVal, SliderFlags.NoDrag);
+                        grid.Slider("slider float ena##LeftDrag", ref floatVal, SliderFlags.LeftDrag);
+                        grid.DisableNextElement();
+                        grid.Slider("slider float dis##NoDrag", ref intVal, SliderFlags.NoDrag);
+                        grid.DisableNextElement();
+                        grid.Slider("slider float dis##LeftDrag", ref intVal, SliderFlags.LeftDrag);
 
                         grid.Toggle("Toggle nude", ref toggleVal);
                         grid.Toggle("Toggle On/Off", ref toggleVal, "OFF", "ON", ToggleFlags.AlignLeft);
@@ -440,9 +446,9 @@ public class UIWindowDemo : MonoBehaviour
             {
                 layout.ComboboxEnum<AnchorLocation>("##rgCbTest", (val) => { });
                 layout.SameLine();
-                layout.Button(Icons.Ghost, UIButtonStyle.AutoSize);
+                layout.Button(Icons.Ghost, UIElementSize.AutoSize);
                 layout.SameLine();
-                layout.Button(Icons.DataFusion, UIButtonStyle.AutoSize, UIButtonStyle.Highlight);
+                layout.Button(Icons.DataFusion, UIElementSize.AutoSize, UIButtonStyle.Highlight);
             };
         }, OverlayFlags.NoBackground | OverlayFlags.NoClose | OverlayFlags.NoMove);
         rg.AnchorWindowDefinition(camWinDef, AnchorLocation.TopLeft, Vector2.zero);

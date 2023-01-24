@@ -10,8 +10,8 @@ namespace Fugui.Framework
     {
         private string _text;
         public string Text { get => _text; set => _text = value; }
-        private Vector2 _size;
-        public Vector2 Size { get => _size; set => _size = value; }
+        private UIElementSize _size;
+        public UIElementSize Size { get => _size; set => _size = value; }
         private bool _enabled;
         public bool Enabled { get => _enabled; set => _enabled = value; }
 
@@ -24,7 +24,7 @@ namespace Fugui.Framework
         {
             _text = text;
             _enabled = enabled;
-            _size = UIButtonStyle.AutoSize;
+            _size = UIElementSize.AutoSize;
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace Fugui.Framework
         /// <param name="text">text of the button</param>
         /// <param name="size">size of the button</param>
         /// <param name="enabled">whatever the button is enabled (clickable + style)</param>
-        public ComboboxButtonItem(string text, Vector2 size, bool enabled = true)
+        public ComboboxButtonItem(string text, UIElementSize size, bool enabled = true)
         {
             _text = text;
             _enabled = enabled;
@@ -55,15 +55,7 @@ namespace Fugui.Framework
             {
                 UIButtonStyle.Default.Push(_enabled);
             }
-            if (_size.x == -1)
-            {
-                _size.x = ImGui.GetContentRegionAvail().x;
-            }
-            if (_size.y == -1)
-            {
-                _size.y = 0;
-            }
-            bool clicked = ImGui.Button(Text, _size);
+            bool clicked = ImGui.Button(Text, _size.GetSize());
             UIButtonStyle.Default.Pop();
             return clicked;
         }

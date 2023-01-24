@@ -424,6 +424,9 @@ public class UIWindowDemo : MonoBehaviour
             FuGui.DrawThemes();
         });
 
+        // add fugui Settings Window
+        new UIWindowDefinition(FuGuiWindows.FuguiSettings, "FuguiSettings", (window) => { FuGui.DrawSettings(); });
+
         // add main camera window
         UIWindowDefinition camWinDef = new UICameraWindowDefinition(FuGuiWindows.MainCameraView, cam1, "3DView", null, flags: UIWindowFlags.NoInterractions)
             .SetCustomWindowType<UICameraWindow>();

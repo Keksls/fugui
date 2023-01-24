@@ -28,4 +28,11 @@
         NoScroll = 1,
         DrawBorders = 2
     }
+
+    public enum ElementAlignement
+    {
+        Left,
+        Center,
+        Right
+    }
 }

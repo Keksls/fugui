@@ -141,6 +141,7 @@ MonoBehaviour:
     WarningIcon: {fileID: 2800000, guid: 4d5c887232331e04b87d503925340957, type: 3}
     DangerIcon: {fileID: 2800000, guid: 11f3a4d594ed7b244948b9cc632faffc, type: 3}
     SuccessIcon: {fileID: 2800000, guid: 19544edab923d204cab424b77180b8a4, type: 3}
+    FuguiLogo: {fileID: 2800000, guid: d7f0d3be02ca8a54086ef7e5b10c95b9, type: 3}
     NotificationAnchorPosition: 7
     NotifyIconSize: 16
     NotifyPanelWidth: 420

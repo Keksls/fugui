@@ -34,6 +34,33 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Displays a text string.
+        /// </summary>
+        /// <param name="text">The string to display.</param>
+        public void TextWrapped(string text)
+        {
+            TextWrapped(text, UITextStyle.Default);
+        }
+
+        /// <summary>
+        /// Displays a text string with the specified style.
+        /// </summary>
+        /// <param name="text">The string to display.</param>
+        /// <param name="style">The style to apply to the text.</param>
+        public virtual void TextWrapped(string text, UITextStyle style)
+        {
+            beginElement("", style); //apply the style to the element
+            // verticaly align text to frame padding
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextWrapped(text); //display the text
+            if (_currentToolTipsOnLabels) //if the current tooltips should be displayed on labels
+            {
+                displayToolTip(); //display the current tooltips
+            }
+            endElement(style); //remove the style from the element
+        }
+
+        /// <summary>
         /// A lot more perf cost than just display a text, use it only if truely needed.
         /// Display a RichText that take some tags. The text automaticaly line break is cursor pass throw container
         /// -<br/> or </br> to break line

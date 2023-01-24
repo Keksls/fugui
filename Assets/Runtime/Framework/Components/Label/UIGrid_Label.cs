@@ -34,6 +34,28 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Display a wrapped auto lineBreak text
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="style">Text Style</param>
+        public override void TextWrapped(string text, UITextStyle style)
+        {
+            if (!_gridCreated)
+            {
+                return;
+            }
+            beginElement("", style);
+            // draw text
+            ImGui.TextWrapped(text);
+            // handle tooltip
+            if (_currentToolTipsOnLabels)
+            {
+                displayToolTip();
+            }
+            endElement(style);
+        }
+
+        /// <summary>
         /// Display a Horizontaly centered Smart Text (tagged richtext)
         /// </summary>
         /// <param name="text">text to draw</param>

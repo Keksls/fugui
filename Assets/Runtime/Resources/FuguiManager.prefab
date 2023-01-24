@@ -141,8 +141,10 @@ MonoBehaviour:
     WarningIcon: {fileID: 2800000, guid: 4d5c887232331e04b87d503925340957, type: 3}
     DangerIcon: {fileID: 2800000, guid: 11f3a4d594ed7b244948b9cc632faffc, type: 3}
     SuccessIcon: {fileID: 2800000, guid: 19544edab923d204cab424b77180b8a4, type: 3}
+    NotificationAnchorPosition: 2
     FontConfig: {fileID: 11400000, guid: 53d60e85cd0bf4b44aa69c57edb412a8, type: 2}
     ThemesFolder: Fugui/Themes
+    StateModalsUseButtonColors: 1
     DockingFlags: 0
     DisplayTabBarButton: 1
     TabBarButtonRight: 1

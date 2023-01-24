@@ -207,16 +207,40 @@ public class UIWindowDemo : MonoBehaviour
             });
 
         // add Capture Window
-        new UIWindowDefinition(FuGuiWindows.Captures, "Captures", (window) =>
+        new UIWindowDefinition(FuGuiWindows.Captures, "Notify Demo", (window) =>
         {
             using (UILayout layout = new UILayout())
             {
-                for (int i = 0; i < 10; i++)
+                layout.ComboboxEnum<AnchorLocation>("Notify Anchor", (anchor) =>
                 {
-                    layout.Button("Capture " + i, new Vector2(128f, 128f));
+                    FuGui.Settings.NotificationAnchorPosition = anchor;
+                }, () => FuGui.Settings.NotificationAnchorPosition);
+                layout.Separator();
+                foreach (NotificationType type in Enum.GetValues(typeof(NotificationType)))
+                {
+                    if (layout.Button("Notify " + type))
+                    {
+                        FuguiNotify.Notify(type.ToString(), "This is a test " + type + " small notification.", type);
+                    }
+                }
+                layout.Separator();
+                foreach (NotificationType type in Enum.GetValues(typeof(NotificationType)))
+                {
+                    if (layout.Button("Notify long " + type))
+                    {
+                        FuguiNotify.Notify(type.ToString(), "This is a test " + type + " notification. it's a quite long text for a notification but I have to test that the text wrapping don't mess with my notification panel height calculation.", type);
+                    }
+                }
+                layout.Separator();
+                foreach (NotificationType type in Enum.GetValues(typeof(NotificationType)))
+                {
+                    if (layout.Button("Notify title " + type))
+                    {
+                        FuguiNotify.Notify("this is a type " + type.ToString(), null, type);
+                    }
                 }
             }
-        }, flags: UIWindowFlags.NoInterractions);
+        });
 
         // add Metadata Window
         new UIWindowDefinition(FuGuiWindows.Metadata, "Metadata", (window) =>

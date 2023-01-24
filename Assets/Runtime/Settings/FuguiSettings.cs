@@ -96,6 +96,10 @@ namespace Fugui.Core
         /// </summary>
         public Texture2D SuccessIcon;
         /// <summary>
+        /// The position anchor of the notification panel
+        /// </summary>
+        public AnchorLocation NotificationAnchorPosition;
+        /// <summary>
         /// Fugui Font configuration
         /// </summary>
         public FontConfig FontConfig;

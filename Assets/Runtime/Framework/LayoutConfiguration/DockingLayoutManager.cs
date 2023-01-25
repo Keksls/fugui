@@ -35,7 +35,7 @@ namespace Fugui.Framework
         /// </summary>
         static DockingLayoutManager()
         {
-            _fuguiWindows = enumToDictionary(typeof(FuGuiWindows));
+            _fuguiWindows = enumToDictionary(typeof(FuguiWindows));
             _dockSpacesToWindow = new Dictionary<string, string>();
             _dockSpaceDefinitionRoot = new UIDockSpaceDefinition("Root", 0);
 
@@ -171,15 +171,15 @@ namespace Fugui.Framework
         private static void setConsoleLayout()
         {
             // list windows to get for this layout
-            List<FuGuiWindows> windowsToGet = new List<FuGuiWindows>()
+            List<FuguiWindows> windowsToGet = new List<FuguiWindows>()
             {
-                FuGuiWindows.Tree,
-                FuGuiWindows.Captures,
-                FuGuiWindows.Inspector,
-                FuGuiWindows.Metadata,
-                FuGuiWindows.ToolBox,
-                FuGuiWindows.MainCameraView,
-                FuGuiWindows.Theme
+                FuguiWindows.Tree,
+                FuguiWindows.Captures,
+                FuguiWindows.Inspector,
+                FuguiWindows.Metadata,
+                FuguiWindows.ToolBox,
+                FuguiWindows.MainCameraView,
+                FuguiWindows.FuguiSettings
             };
 
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
@@ -203,13 +203,13 @@ namespace Fugui.Framework
                 ImGuiDocking.DockBuilderSplitNode(left, ImGuiDir.Right, 0.8f, out center, out left);
                 ImGuiDocking.DockBuilderSplitNode(center, ImGuiDir.Down, 0.2f, out centerBottom, out center);
 
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Tree].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Captures].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Inspector].ID, right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Metadata].ID, right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.ToolBox].ID, rightBottom);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.MainCameraView].ID, center);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Theme].ID, centerBottom);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Tree].ID, left);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Captures].ID, left);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Inspector].ID, right);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Metadata].ID, right);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.ToolBox].ID, rightBottom);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.MainCameraView].ID, center);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.FuguiSettings].ID, centerBottom);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
                 endSettingLayout();
@@ -222,15 +222,15 @@ namespace Fugui.Framework
         private static void setDefaultLayout()
         {
             // list windows to get for this layout
-            List<FuGuiWindows> windowsToGet = new List<FuGuiWindows>()
+            List<FuguiWindows> windowsToGet = new List<FuguiWindows>()
             {
-                FuGuiWindows.Tree,
-                FuGuiWindows.Captures,
-                FuGuiWindows.Inspector,
-                FuGuiWindows.Metadata,
-                FuGuiWindows.ToolBox,
-                FuGuiWindows.MainCameraView,
-                FuGuiWindows.Theme
+                FuguiWindows.Tree,
+                FuguiWindows.Captures,
+                FuguiWindows.Inspector,
+                FuguiWindows.Metadata,
+                FuguiWindows.ToolBox,
+                FuguiWindows.MainCameraView,
+                FuguiWindows.FuguiSettings
             };
 
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
@@ -252,13 +252,13 @@ namespace Fugui.Framework
                 ImGuiDocking.DockBuilderSplitNode(right, ImGuiDir.Down, 0.5f, out rightBottom, out right);
                 ImGuiDocking.DockBuilderSplitNode(left, ImGuiDir.Right, 0.8f, out center, out left);
 
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Tree].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Captures].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Inspector].ID, right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Metadata].ID, right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.ToolBox].ID, rightBottom);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.Theme].ID, rightBottom);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.MainCameraView].ID, center);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Tree].ID, left);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Captures].ID, left);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Inspector].ID, right);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Metadata].ID, right);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.ToolBox].ID, rightBottom);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.FuguiSettings].ID, rightBottom);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.MainCameraView].ID, center);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
                 endSettingLayout();
@@ -270,10 +270,10 @@ namespace Fugui.Framework
         /// </summary>
         private static void setDockSpaceConfigurationLayout()
         {
-            List<FuGuiWindows> windowsToGet = new List<FuGuiWindows>
+            List<FuguiWindows> windowsToGet = new List<FuguiWindows>
             {
-                FuGuiWindows.DockSpaceManager,
-                FuGuiWindows.WindowsDefinitionManager
+                FuguiWindows.DockSpaceManager,
+                FuguiWindows.WindowsDefinitionManager
             };
 
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
@@ -292,8 +292,8 @@ namespace Fugui.Framework
                 uint bottom;
                 ImGuiDocking.DockBuilderSplitNode(mainDockSpace, ImGuiDir.Up, 0.1f, out bottom, out center);
                 ImGuiDocking.DockBuilderSplitNode(center, ImGuiDir.Left, 0.5f, out left, out right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.DockSpaceManager].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuGuiWindows.WindowsDefinitionManager].ID, right);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.DockSpaceManager].ID, left);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.WindowsDefinitionManager].ID, right);
                 ImGuiDocking.DockBuilderFinish(mainDockSpace);
 
                 endSettingLayout();

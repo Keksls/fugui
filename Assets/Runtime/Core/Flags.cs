@@ -6,7 +6,8 @@
         NoExternalization = 1,
         NoDocking = 2,
         NoInterractions = 4,
-        NoDockingOverMe = 8
+        NoDockingOverMe = 8,
+        AllowMultipleWindow = 16
     }
 
     public enum UIExternalWindowFlags

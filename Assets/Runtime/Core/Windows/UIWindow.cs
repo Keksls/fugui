@@ -26,6 +26,7 @@ namespace Fugui.Core
         }
 
         // properties
+        public FuguiWindows WindowName { get; private set; }
         public string ID { get; private set; }
         public Action<UIWindow> UI { get; internal set; }
         public Action<UIWindow> Constraints { get; internal set; }
@@ -171,6 +172,7 @@ namespace Fugui.Core
             UI = windowDefinition.UI;
             IsOpened = true;
             HasFocus = false;
+            WindowName = windowDefinition.WindowName;
             IsDockable = windowDefinition.IsDockable;
             IsExternalizable = windowDefinition.IsExternalizable;
             IsInterractible = windowDefinition.IsInterractible;

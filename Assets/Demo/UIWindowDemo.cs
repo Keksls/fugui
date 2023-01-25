@@ -59,19 +59,29 @@ public class UIWindowDemo : MonoBehaviour
         }
 
         MainMenu.RegisterItem("Windows", null);
-        foreach (FuGuiWindows windowName in Enum.GetValues(typeof(FuGuiWindows)))
+        foreach (FuguiWindows windowName in Enum.GetValues(typeof(FuguiWindows)))
         {
-            if (windowName == FuGuiWindows.None)
+            if (windowName == FuguiWindows.None)
             {
                 continue;
             }
             MainMenu.RegisterItem(windowName.ToString(), () => FuGui.CreateWindowAsync(windowName, null), "Windows");
         }
 
-        new UIWindowDefinition(FuGuiWindows.DockSpaceManager, "DockSpace Manager", FuGui.DockSpaceManager);
-        new UIWindowDefinition(FuGuiWindows.WindowsDefinitionManager, "Windows Definition Manager", FuGui.WindowsDefinitionManager);
+        MainMenu.RegisterItem("3D Windows", null);
+        foreach (FuguiWindows windowName in Enum.GetValues(typeof(FuguiWindows)))
+        {
+            if (windowName == FuguiWindows.None)
+            {
+                continue;
+            }
+            MainMenu.RegisterItem("3D " + windowName.ToString(), () => FuGui.CreateWindowAsync(windowName, (window) => { FuGui.Add3DWindow(window); }, false), "3D Windows");
+        }
 
-        new UIWindowDefinition(FuGuiWindows.ToolBox, "Tool Box", debugWindow_UI);
+        new UIWindowDefinition(FuguiWindows.DockSpaceManager, "DockSpace Manager", FuGui.DockSpaceManager);
+        new UIWindowDefinition(FuguiWindows.WindowsDefinitionManager, "Windows Definition Manager", FuGui.WindowsDefinitionManager);
+
+        new UIWindowDefinition(FuguiWindows.ToolBox, "Tool Box", debugWindow_UI, flags: UIWindowFlags.AllowMultipleWindow);
         void debugWindow_UI(UIWindow window)
         {
             using (new UIPanel("debugContainer"))
@@ -132,7 +142,7 @@ public class UIWindowDemo : MonoBehaviour
         }
 
         // add Tree Window
-        new UIWindowDefinition(FuGuiWindows.Tree, "Modals Demo", (window) =>
+        new UIWindowDefinition(FuguiWindows.Tree, "Modals Demo", (window) =>
             {
                 using (UILayout layout = new UILayout())
                 {
@@ -207,7 +217,7 @@ public class UIWindowDemo : MonoBehaviour
             });
 
         // add Capture Window
-        new UIWindowDefinition(FuGuiWindows.Captures, "Notify Demo", (window) =>
+        new UIWindowDefinition(FuguiWindows.Captures, "Notify Demo", (window) =>
         {
             using (UILayout layout = new UILayout())
             {
@@ -251,7 +261,7 @@ public class UIWindowDemo : MonoBehaviour
         });
 
         // add Metadata Window
-        new UIWindowDefinition(FuGuiWindows.Metadata, "Metadata", (window) =>
+        new UIWindowDefinition(FuguiWindows.Metadata, "Metadata", (window) =>
         {
             using (new UIPanel("mdcc"))
             {
@@ -346,7 +356,7 @@ public class UIWindowDemo : MonoBehaviour
         });
 
         // add Inspector Window
-        new UIWindowDefinition(FuGuiWindows.Inspector, "Inspector", (window) =>
+        new UIWindowDefinition(FuguiWindows.Inspector, "Inspector", (window) =>
         {
             using (new UIPanel("demoContainer", UIStyle.Unpadded))
             {
@@ -424,17 +434,14 @@ public class UIWindowDemo : MonoBehaviour
             }
         });
 
-        // add Theme Window
-        new UIWindowDefinition(FuGuiWindows.Theme, "Theme Configurator", (window) =>
+        // add Fugui Settings Window
+        new UIWindowDefinition(FuguiWindows.FuguiSettings, "Fugui Settings", (window) =>
         {
-            FuGui.DrawThemes();
+            FuGui.DrawSettings();
         });
 
-        // add fugui Settings Window
-        new UIWindowDefinition(FuGuiWindows.FuguiSettings, "FuguiSettings", (window) => { FuGui.DrawSettings(); });
-
         // add main camera window
-        UIWindowDefinition camWinDef = new UICameraWindowDefinition(FuGuiWindows.MainCameraView, cam1, "3DView", null, flags: UIWindowFlags.NoInterractions)
+        UIWindowDefinition camWinDef = new UICameraWindowDefinition(FuguiWindows.MainCameraView, cam1, "3DView", null, flags: UIWindowFlags.NoInterractions)
             .SetCustomWindowType<UICameraWindow>();
         camWinDef.OnUIWindowCreated += CamWinDef_OnUIWindowCreated;
 

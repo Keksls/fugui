@@ -8,7 +8,7 @@ namespace Fugui.Core
     public class UIWindowDefinition
     {
         #region Variables
-        public FuGuiWindows WindowID { get; private set; }
+        public FuguiWindows WindowName { get; private set; }
         // A unique identifier for the window
         public string Id { get; private set; }
         // A delegate for updating the window's UI
@@ -25,6 +25,8 @@ namespace Fugui.Core
         public bool IsInterractible { get; private set; }
         // A flag indicating whether other windows can dock over this window
         public bool NoDockingOverMe { get; private set; }
+        // A flag indicating whether this window definition can instantiate more than one window at time
+        public bool AllowMultipleWindow { get; private set; }
         // A dictionary that store default overlays for this window
         public Dictionary<string, UIOverlay> Overlays { get; private set; }
         // the type of the UIWindow to instantiate
@@ -42,10 +44,10 @@ namespace Fugui.Core
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
-        public UIWindowDefinition(FuGuiWindows windowName, string id, Action<UIWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, UIWindowFlags flags = UIWindowFlags.Default)
+        public UIWindowDefinition(FuguiWindows windowName, string id, Action<UIWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, UIWindowFlags flags = UIWindowFlags.Default)
         {
             // Assign the specified values to the corresponding fields
-            WindowID = windowName;
+            WindowName = windowName;
             Id = id;
             UI = ui;
             Position = pos.HasValue ? pos.Value : new Vector2Int(256, 256);
@@ -54,6 +56,7 @@ namespace Fugui.Core
             IsDockable = !flags.HasFlag(UIWindowFlags.NoDocking);
             IsInterractible = !flags.HasFlag(UIWindowFlags.NoInterractions);
             NoDockingOverMe = !flags.HasFlag(UIWindowFlags.NoDockingOverMe);
+            AllowMultipleWindow = flags.HasFlag(UIWindowFlags.AllowMultipleWindow);
             _uiWindowType = typeof(UIWindow);
             Overlays = new Dictionary<string, UIOverlay>();
             FuGui.RegisterWindowDefinition(this);
@@ -109,12 +112,19 @@ namespace Fugui.Core
         /// Creates a new instance of the UIWindow class with the current UIWindowDefinition object as the parameter.
         /// </summary>
         /// <returns>A new instance of the UIWindow class.</returns>
-        public UIWindow CreateUIWindow()
+        public bool CreateUIWindow(out UIWindow window)
         {
+            // check whatever this winDef already has an instance and we do not want it to be ducplicated
+            if (!AllowMultipleWindow && AlreadyHasInstance())
+            {
+                window = null;
+                return false;
+            }
+
             // Use the Activator class to create a new instance of the UIWindow class with the current UIWindowDefinition object as the parameter
-            UIWindow window = (UIWindow)Activator.CreateInstance(_uiWindowType, this);
+            window = (UIWindow)Activator.CreateInstance(_uiWindowType, this);
             OnUIWindowCreated?.Invoke(window);
-            return window;
+            return true;
         }
 
         /// <summary>
@@ -122,11 +132,28 @@ namespace Fugui.Core
         /// </summary>
         /// <typeparam name="T">The type of UIWindow subclass to create.</typeparam>
         /// <returns>A new instance of the specified UIWindow subclass.</returns>
-        public T CreateUIWindow<T>() where T : UIWindow
+        public bool CreateUIWindow<T>(out T window) where T : UIWindow
         {
             // Call the CreateUIWindow method to create a new instance of the UIWindow class
-            // and cast it to the specified UIWindow subclass type
-            return (T)CreateUIWindow();
+            // and implicitly cast it to the specified UIWindow subclass type
+            return CreateUIWindow(out window);
+        }
+
+        /// <summary>
+        /// whatever an instance of this window already exists
+        /// </summary>
+        /// <returns>true if already exists</returns>
+        public bool AlreadyHasInstance()
+        {
+            // TODO : Once UIWinDef and UIWindow instances are stored nicely, we must check whatever an instance of this window already exists a better way
+            foreach (UIWindow window in FuGui.UIWindows.Values)
+            {
+                if (window.WindowName == WindowName)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
         #endregion
 

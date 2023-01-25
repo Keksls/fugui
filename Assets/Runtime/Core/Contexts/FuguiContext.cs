@@ -204,8 +204,7 @@ namespace Fugui.Core
                 // call event and stop here before creating a new frame if event return false
                 if (!OnPrepareFrame.Invoke())
                 {
-                    renderPrepared = false;
-                    return renderPrepared;
+                    return renderPrepared = false;
                 }
             }
             return true;

@@ -22,7 +22,7 @@ namespace Fugui.Core
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
-        public UICameraWindowDefinition(FuGuiWindows windowName, Camera camera, string id, Action<UIWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, UIWindowFlags flags = UIWindowFlags.Default) : base(windowName, id, ui, pos, size, flags)
+        public UICameraWindowDefinition(FuguiWindows windowName, Camera camera, string id, Action<UIWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, UIWindowFlags flags = UIWindowFlags.Default) : base(windowName, id, ui, pos, size, flags)
         {
             // Assign the specified camera to the Camera field
             Camera = camera;

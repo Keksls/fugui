@@ -68,12 +68,12 @@ namespace Fugui.Core
             _toAddWindows = new Queue<UIWindow>();
 
             // Subscribe to the Layout event of the given FuguiContext
-            _fuguiContext.OnRender += UImGuiUtility_Layout;
+            _fuguiContext.OnRender += _fuguiContext_OnRender;
             // Set the docking style color to current theme
             ThemeManager.SetTheme(ThemeManager.CurrentTheme);
         }
 
-        private void UImGuiUtility_Layout()
+        private void _fuguiContext_OnRender()
         {
             RenderUIWindows();
         }

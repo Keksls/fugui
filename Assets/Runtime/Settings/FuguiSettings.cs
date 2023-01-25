@@ -31,6 +31,12 @@ namespace Fugui.Core
         [Slider(1, 90)]
         public int ManipulatingFPS = 60;
         /// <summary>
+        /// The number of FPS to be used when the UI windows are being manipulated.
+        /// </summary>
+        [Range(1f, 100f)]
+        [Slider(1f, 100f)]
+        public float Windows3DScale = 10f;
+        /// <summary>
         /// The number of ticks to be used when the UI windows are being manipulated externally.
         /// </summary>
         [Range(1, 1000000)]

@@ -32,11 +32,13 @@ namespace Fugui.Framework
         // The static dictionary of UI windows
         public static Dictionary<string, UIWindow> UIWindows { get; internal set; }
         // The static dictionary of UI window definitions
-        public static Dictionary<FuGuiWindows, UIWindowDefinition> UIWindowsDefinitions { get; internal set; }
+        public static Dictionary<FuguiWindows, UIWindowDefinition> UIWindowsDefinitions { get; internal set; }
         // A boolean value indicating whether the render thread has started
         public static bool IsRendering { get; internal set; } = false;
         // The dictionary of external windows
         private static Dictionary<string, ExternalWindowContainer> _externalWindows;
+        // The dictionary of external windows
+        private static Dictionary<string, UI3DWindowContainer> _3DWindows;
         // The queue of windows to be externalized
         private static Queue<UIWindow> _windowsToExternalize;
         // A boolean value indicating whether a new window can be added
@@ -77,9 +79,10 @@ namespace Fugui.Framework
         {
             // instantiate UIWindows 
             UIWindows = new Dictionary<string, UIWindow>();
-            UIWindowsDefinitions = new Dictionary<FuGuiWindows, UIWindowDefinition>();
+            UIWindowsDefinitions = new Dictionary<FuguiWindows, UIWindowDefinition>();
             // init dic and queue
             _externalWindows = new Dictionary<string, ExternalWindowContainer>();
+            _3DWindows = new Dictionary<string, UI3DWindowContainer>();
             _windowsToExternalize = new Queue<UIWindow>();
             // we can now add window
             _canAddWindow = true;
@@ -226,6 +229,36 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Adds an UI window to be externalized.
+        /// </summary>
+        /// <param name="uiWindow">The UI window to be externalized.</param>
+        public static void Add3DWindow(UIWindow uiWindow)
+        {
+            if (uiWindow == null)
+            {
+                Debug.Log("You are trying to create a 3D context to draw a null window.");
+                return;
+            }
+            // Add the UIwindow to it's own 3DContainer
+            _3DWindows.Add(uiWindow.ID, new UI3DWindowContainer(uiWindow));
+        }
+
+        /// <summary>
+        /// Removes an external window with the specified ID.
+        /// </summary>
+        /// <param name="id">The ID of the external window to be removed.</param>
+        internal static void Remove3DWindow(string id)
+        {
+            // Check if an external window with the specified ID exists
+            if (!_3DWindows.ContainsKey(id))
+            {
+                return;
+            }
+            // Close the external window and remove it from the list
+            _3DWindows[id].Close();
+        }
+
+        /// <summary>
         /// Registers a window definition with the specified ID.
         /// </summary>
         /// <param name="windowDefinition">The window definition to be registered.</param>
@@ -233,12 +266,12 @@ namespace Fugui.Framework
         public static bool RegisterWindowDefinition(UIWindowDefinition windowDefinition)
         {
             // Check if a window definition with the same ID already exists
-            if (UIWindowsDefinitions.ContainsKey(windowDefinition.WindowID))
+            if (UIWindowsDefinitions.ContainsKey(windowDefinition.WindowName))
             {
                 return false;
             }
             // Add the window definition to the list
-            UIWindowsDefinitions.Add(windowDefinition.WindowID, windowDefinition);
+            UIWindowsDefinitions.Add(windowDefinition.WindowName, windowDefinition);
             return true;
         }
 
@@ -276,9 +309,10 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="windowToGet">window names to be created.</param>
         /// <param name="callback">A callback to be invoked after the windows was created, passing the instance of the created windows (null if fail).</param>
-        public static void CreateWindowAsync(FuGuiWindows windowToGet, Action<UIWindow> callback)
+        /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
+        public static void CreateWindowAsync(FuguiWindows windowToGet, Action<UIWindow> callback, bool autoAddToMainContainer = true)
         {
-            CreateWindowsAsync(new List<FuGuiWindows>() { windowToGet }, (windows) =>
+            CreateWindowsAsync(new List<FuguiWindows>() { windowToGet }, (windows) =>
             {
                 if (windows.ContainsKey(windowToGet))
                 {
@@ -288,7 +322,7 @@ namespace Fugui.Framework
                 {
                     callback?.Invoke(null);
                 }
-            });
+            }, autoAddToMainContainer);
         }
 
         /// <summary>
@@ -296,7 +330,8 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="windowsToGet">A list of window names to be created.</param>
         /// <param name="callback">A callback to be invoked after all windows are created, passing a dictionary of the created windows.</param>
-        public static void CreateWindowsAsync(List<FuGuiWindows> windowsToGet, Action<Dictionary<FuGuiWindows, UIWindow>> callback)
+        /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
+        public static void CreateWindowsAsync(List<FuguiWindows> windowsToGet, Action<Dictionary<FuguiWindows, UIWindow>> callback, bool autoAddToMainContainer = true)
         {
             // Initialize counters for the number of windows to add and the number of windows added
             int nbWIndowToAdd = 0;
@@ -305,7 +340,7 @@ namespace Fugui.Framework
             // Initialize a list of window definitions
             List<UIWindowDefinition> winDefs = new List<UIWindowDefinition>();
             // Iterate over the window names
-            foreach (FuGuiWindows windowID in windowsToGet)
+            foreach (FuguiWindows windowID in windowsToGet)
             {
                 // Check if a window definition with the specified name exists
                 if (UIWindowsDefinitions.ContainsKey(windowID))
@@ -317,7 +352,7 @@ namespace Fugui.Framework
             }
 
             // Initialize a dictionary of UI windows
-            Dictionary<FuGuiWindows, UIWindow> windows = new Dictionary<FuGuiWindows, UIWindow>();
+            Dictionary<FuguiWindows, UIWindow> windows = new Dictionary<FuguiWindows, UIWindow>();
             // Iterate over the window definitions
             foreach (UIWindowDefinition winDef in winDefs)
             {
@@ -326,7 +361,7 @@ namespace Fugui.Framework
                 onWindowReady = (window) =>
                 {
                     // Add the window to the dictionary and increment the window added counter
-                    windows.Add(winDef.WindowID, window);
+                    windows.Add(winDef.WindowName, window);
                     nbWIndowAdded++;
                     // Invoke the callback if all windows are added
                     if (nbWIndowAdded == nbWIndowToAdd)
@@ -337,11 +372,29 @@ namespace Fugui.Framework
                     window.OnReady -= onWindowReady;
                 };
                 // create the UIWindow
-                UIWindow win = winDef.CreateUIWindow();
-                // Subscribe to the OnReady event of the window
-                win.OnReady += onWindowReady;
-                // add UIWindow to main container
-                win.TryAddToContainer(MainContainer);
+                if (winDef.CreateUIWindow(out UIWindow win))
+                {
+                    if (autoAddToMainContainer)
+                    {
+                        // Subscribe to the OnReady event of the window
+                        win.OnReady += onWindowReady;
+                        // add UIWindow to main container
+                        win.TryAddToContainer(MainContainer);
+                    }
+                    else
+                    {
+                        onWindowReady?.Invoke(win);
+                    }
+                }
+                else
+                {
+                    nbWIndowAdded++;
+                    // Invoke the callback if all windows are added
+                    if (nbWIndowAdded == nbWIndowToAdd)
+                    {
+                        callback(windows);
+                    }
+                }
             }
         }
 
@@ -546,6 +599,11 @@ namespace Fugui.Framework
                     ImGui.PushFont(CurrentContext.Fonts[size].Bold);
                     break;
             }
+        }
+
+        public static void PushFont(FontType type)
+        {
+            PushFont(CurrentContext.DefaultFont.Size, type);
         }
 
         public static void PopFont()

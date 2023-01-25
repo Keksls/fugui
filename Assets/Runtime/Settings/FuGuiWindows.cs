@@ -1,6 +1,6 @@
 namespace Fugui
 {
-    public enum FuGuiWindows
+    public enum FuguiWindows
     {
         None = 0,
         WindowsDefinitionManager = 2,
@@ -10,9 +10,8 @@ namespace Fugui
         Metadata = 6,
         ToolBox = 7,
         MainCameraView = 8,
-        Theme = 9,
+        FuguiSettings = 9,
         DockSpaceManager = 10,
-        Test1 = 11,
-        FuguiSettings = 12
+        Test1 = 11
     }
 }

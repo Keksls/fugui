@@ -1,11 +1,10 @@
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using static UnityEditor.ShaderData;
+using UnityEngine;
 
 namespace Fugui.Framework
 {
@@ -17,12 +16,15 @@ namespace Fugui.Framework
         #region Variables
         internal const string FUGUI_WINDOWS_DEF_ENUM_PATH = "Assets\\Runtime\\Settings\\FuGuiWindows.cs";
         internal const string FUGUI_DOCKSPACE_FOLDER_PATH = "Assets\\Runtime\\Settings\\Layout\\";
-        internal static string _layoutFileName = "default_layout.json";
+        internal static string _layoutFileName = "default_layout.flg";
         internal static Dictionary<int, string> _fuguiWindows;
         internal static string _windowsToAdd = string.Empty;
         internal static string _selectedWindowDefinition = string.Empty;
-        internal static UIDockSpaceDefinition _dockSpaceDefinitionRoot;
+        internal static UIDockSpaceDefinition _displayedLayout;
+        internal static string _displayedLayoutName = "";
         internal static Dictionary<int, string> _definedDockSpaces;
+        internal static ExtensionFilter _flgExtensionFilter;
+        public static Dictionary<string, UIDockSpaceDefinition> Layouts { get; private set; }
         /// <summary>
         /// Whatever we already are setting Layer right now
         /// </summary>
@@ -35,10 +37,57 @@ namespace Fugui.Framework
         /// </summary>
         static DockingLayoutManager()
         {
-            _fuguiWindows = enumToDictionary(typeof(FuguiWindows));
+            //Load layouts
+            LoadLayouts();
 
-            _dockSpaceDefinitionRoot = new UIDockSpaceDefinition("Root", 0);
-            RefreshDockSpaces();
+            _flgExtensionFilter = new ExtensionFilter
+            {
+                Name = "Fugui Layout Configuration",
+                Extensions = new string[1] { "flg" }
+            };
+
+            _fuguiWindows = enumToDictionary(typeof(FuguiWindows));
+        }
+
+        private static int LoadLayouts()
+        {            
+            // get folder path
+            string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+
+            // create folder if not exists
+            if (!Directory.Exists(folderPath))
+            {
+                try
+                {
+                    // try to create directory if not exists
+                    Directory.CreateDirectory(folderPath);
+                }
+                catch (Exception ex)
+                {
+                    // something gone wrong, let's invoke Fugui Exception event
+                    FuGui.DoOnUIException(ex);
+                    return Layouts.Count;
+                }
+            }
+
+            List<string> files = Directory.GetFiles(folderPath).ToList();
+
+            Layouts = new Dictionary<string, UIDockSpaceDefinition>();
+
+            // iterate on each file into folder
+            foreach (string file in Directory.GetFiles(folderPath))
+            {
+                string fileName = Path.GetFileName(file);
+                UIDockSpaceDefinition tempLayout = UIDockSpaceDefinition.ReadFromFile(file);
+
+                if (tempLayout != null)
+                {
+                    Layouts.Add(fileName, tempLayout);
+                }
+            }
+
+            // return number of themes loaded
+            return Layouts.Count;
         }
 
         /// <summary>
@@ -46,7 +95,10 @@ namespace Fugui.Framework
         /// </summary>
         internal static void RefreshDockSpaces()
         {
-            _definedDockSpaces = getDictionary(_dockSpaceDefinitionRoot);
+            if (_displayedLayout != null)
+            {
+                _definedDockSpaces = getDictionary(_displayedLayout);
+            }
         }
 
         /// <summary>
@@ -360,17 +412,20 @@ namespace Fugui.Framework
         /// <param name="dockspaceName">The name of the dock space to bind the window definition to</param>
         internal static void bindWindowToDockspace(int windowDefID, string dockspaceName)
         {
-            _dockSpaceDefinitionRoot.RemoveWindowsDefinitionInChildren(windowDefID);
-
-            UIDockSpaceDefinition tempDockSpace = _dockSpaceDefinitionRoot.SearchInChildren(dockspaceName);
-
-            if (tempDockSpace != null)
+            if (_displayedLayout != null)
             {
-                if (!tempDockSpace.WindowsDefinition.ContainsKey(windowDefID))
+                _displayedLayout.RemoveWindowsDefinitionInChildren(windowDefID);
+
+                UIDockSpaceDefinition tempDockSpace = _displayedLayout.SearchInChildren(dockspaceName);
+
+                if (tempDockSpace != null)
                 {
-                    tempDockSpace.WindowsDefinition.Add(windowDefID, _fuguiWindows[windowDefID]);
+                    if (!tempDockSpace.WindowsDefinition.ContainsKey(windowDefID))
+                    {
+                        tempDockSpace.WindowsDefinition.Add(windowDefID, _fuguiWindows[windowDefID]);
+                    }
                 }
-            }
+            }            
         }
 
         /// <summary>
@@ -379,8 +434,158 @@ namespace Fugui.Framework
         /// <param name="windowDefID">The unique identifier of the window definition to bind<</param>
         internal static void unbindWindowToDockspace(int windowDefID)
         {
-            _dockSpaceDefinitionRoot.RemoveWindowsDefinitionInChildren(windowDefID);
+            if (_displayedLayout != null)
+            {
+                _displayedLayout.RemoveWindowsDefinitionInChildren(windowDefID);
+            }
         }
+
+        #region SAVE / DELETE LAYOUT FUNCTIONS
+
+        /// <summary>
+        /// Delete currentlky selected layout
+        /// </summary>
+        internal static void deleteSelectedLayout()
+        {
+            if (!string.IsNullOrEmpty(_displayedLayoutName))
+            {
+                // get folder path
+                string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+
+                // create folder if not exists
+                if (Directory.Exists(folderPath))
+                {
+                    try
+                    {
+                        string filePathToDelete = Path.Combine(folderPath, _displayedLayoutName);
+
+                        if (File.Exists(filePathToDelete))
+                        {
+                            FuGui.ShowYesNoModal("This action cannot be rollbacked. Are you sure you want to continue ?", confirmDeleteSelectedLayoutFile, UIModalSize.ExtraLarge);
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning(ex.GetBaseException().Message);
+                    }
+                    finally
+                    {
+                        LoadLayouts();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Callbacked used for user response after delete layout file
+        /// </summary>
+        /// <param name="result">User result</param>
+
+        private static void confirmDeleteSelectedLayoutFile(bool result)
+        {
+            try
+            {
+                string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+                File.Delete(Path.Combine(folderPath, _displayedLayoutName));
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(ex.GetBaseException().Message);
+            }
+            finally
+            {
+                LoadLayouts();
+            }
+        }
+
+        /// <summary>
+        /// Save selected layout
+        /// </summary>
+        internal static void saveSelectedLayout()
+        {
+            if (_displayedLayout != null)
+            {
+                // get folder path
+                string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+
+                // create folder if not exists
+                if (!Directory.Exists(folderPath))
+                {
+                    try
+                    {
+                        // try to create directory if not exists
+                        Directory.CreateDirectory(folderPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        // something gone wrong, let's invoke Fugui Exception event
+                        FuGui.DoOnUIException(ex);
+
+                        return;
+                    }
+                }
+
+                string fileName = Path.Combine(folderPath, _displayedLayoutName);
+
+                // If file already exists, ask question
+                if (File.Exists(fileName))
+                {
+                    FuGui.ShowYesNoModal(_displayedLayoutName + " already exits. Are you sure you want to overwrite it ?", confirmSaveLayoutFileAlreadyExists, UIModalSize.Large);
+                }
+                else
+                {
+                    //Save file
+                    saveLayoutFile();
+                }
+
+                //Reload layouts
+                LoadLayouts();
+            }
+        }
+
+        /// <summary>
+        /// Callbacked used for user response after overwrite layout file
+        /// </summary>
+        /// <param name="result">User result</param>
+        private static void confirmSaveLayoutFileAlreadyExists(bool result)
+        { 
+            if (result)
+            {
+                saveLayoutFile();
+            }
+        }
+
+        /// <summary>
+        /// Used to format selected layout to FuGui layout configuration file 
+        /// </summary>
+        private static void saveLayoutFile()
+        {
+            // get folder path
+            string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+
+            // create folder if not exists
+            if (!Directory.Exists(folderPath))
+            {
+                try
+                {
+                    // try to create directory if not exists
+                    Directory.CreateDirectory(folderPath);
+                }
+                catch (Exception ex)
+                {
+                    // something gone wrong, let's invoke Fugui Exception event
+                    FuGui.DoOnUIException(ex);
+
+                    return;
+                }
+            }
+
+            string fileName = Path.Combine(folderPath, _displayedLayoutName);
+            File.WriteAllText(fileName, UIDockSpaceDefinition.Serialize(_displayedLayout));
+        }
+
+        #endregion
     }
 
     // TODO : generate this throw DockingLayoutUI

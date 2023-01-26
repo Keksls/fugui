@@ -24,6 +24,7 @@ namespace Fugui.Framework {
         public string[] OpenFilePanel(string title, string directory, ExtensionFilter[] extensions, bool multiselect) {
             var fd = new VistaOpenFileDialog();
             fd.Title = title;
+
             if (extensions != null) {
                 fd.Filter = GetFilterFromFileExtensionList(extensions);
                 fd.FilterIndex = 1;
@@ -48,9 +49,12 @@ namespace Fugui.Framework {
         public string[] OpenFolderPanel(string title, string directory, bool multiselect) {
             var fd = new VistaFolderBrowserDialog();
             fd.Description = title;
+            fd.UseDescriptionForTitle = true;
+
             if (!string.IsNullOrEmpty(directory)) {
                 fd.SelectedPath = GetDirectoryPath(directory);
             }
+
             var res = fd.ShowDialog(new WindowWrapper(GetActiveWindow()));
             var filenames = res == DialogResult.OK ? new []{ fd.SelectedPath } : new string[0];
             fd.Dispose();

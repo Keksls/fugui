@@ -27,7 +27,7 @@ namespace Fugui.Framework
             _pathField(id, false, callback, style, defaultPath, extentions);
         }
 
-        protected virtual void _pathField(string id, bool onlyFolder, Action<string> callback, UIFrameStyle style, string defaultPath = null, params ExtensionFilter[] extentions)
+        protected virtual void _pathField(string id, bool onlyFolder, Action<string> callback, UIFrameStyle style, string defaultPath = "", params ExtensionFilter[] extentions)
         {
             // apply style and set unique ID
             id = beginElement(id, style);
@@ -64,11 +64,11 @@ namespace Fugui.Framework
                 string[] paths = null;
                 if (onlyFolder)
                 {
-                    paths = FileBrowser.OpenFolderPanel("Open Folder", "", false);
+                    paths = FileBrowser.OpenFolderPanel("Open Folder", defaultPath, false);
                 }
                 else
                 {
-                    paths = FileBrowser.OpenFilePanel("Open File", "", extentions, false);
+                    paths = FileBrowser.OpenFilePanel("Open File", defaultPath, extentions, false);
                 }
                 if (paths != null && paths.Length > 0)
                 {

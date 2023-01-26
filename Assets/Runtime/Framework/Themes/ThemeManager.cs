@@ -26,6 +26,7 @@ namespace Fugui.Framework
                 typeof(UIButtonStyle),
                 typeof(UIFrameStyle),
                 typeof(UIComboboxStyle),
+                typeof(UIListboxStyle),
                 typeof(UIPanelStyle),
                 typeof(UIButtonsGroupStyle),
                 typeof(UIStyle),

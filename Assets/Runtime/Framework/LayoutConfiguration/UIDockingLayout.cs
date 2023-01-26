@@ -1,9 +1,7 @@
 ﻿using Fugui.Core;
 using ImGuiNET;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -18,13 +16,27 @@ namespace Fugui.Framework
         /// <param name="windowDockSpaceDefinition">The UI window for the dock space manager</param>
         public static void DockSpaceManager(UIWindow windowDockSpaceDefinition)
         {
-            using (UIPanel scrollablePanel = new UIPanel("scrollablePanel"))
+            using (UILayout loadSave_layout = new UILayout())
             {
-                using (UILayout windowDockSpaceDefinition_layout = new UILayout())
+                loadSave_layout.Collapsable("Load DockSpace configuration", () =>
                 {
-                    ShowTreeView(windowDockSpaceDefinition_layout, DockingLayoutManager._dockSpaceDefinitionRoot);
-                }
-            }
+                    loadSave_layout.InputFile("Import dockspace", new Action<string>((path) =>
+                    {
+                        DockingLayoutManager._dockSpaceDefinitionRoot = DockingLayoutManager._dockSpaceDefinitionRoot.Deserialize(FuGui.ReadJsonFileName(path));
+                    }), DockingLayoutManager.FUGUI_DOCKSPACE_FOLDER_PATH);
+                });
+
+                loadSave_layout.Collapsable("Manage DockSpace", () =>
+                {
+                    using (UIPanel scrollablePanel = new UIPanel("scrollablePanel"))
+                    {
+                        using (UILayout windowDockSpaceDefinition_layout = new UILayout())
+                        {
+                            ShowTreeView(windowDockSpaceDefinition_layout, DockingLayoutManager._dockSpaceDefinitionRoot);
+                        }
+                    }
+                });
+            }            
         }
 
         /// <summary>
@@ -52,6 +64,8 @@ namespace Fugui.Framework
         /// <param name="dockSpaceDefinition">The dock space definition to show in the tree view</param>
         private static void ShowTreeView(UILayout layout, UIDockSpaceDefinition dockSpaceDefinition)
         {
+            ImGui.SetNextItemOpen(true);
+
             if (ImGui.TreeNode("DockSpace : " + dockSpaceDefinition.ID))
             {
                 using (UIGrid gridInfo = new UIGrid("gridInfo" + dockSpaceDefinition.ID, UIGridDefinition.DefaultAuto))
@@ -61,10 +75,23 @@ namespace Fugui.Framework
                         //Dockspace names changed, refresh other UI component
                         DockingLayoutManager.RefreshDockSpaces();
                     }
+
                     string tempID = dockSpaceDefinition.ID.ToString();
                     gridInfo.DisableNextElement();
                     gridInfo.TextInput("Dockspace Id" + dockSpaceDefinition.ID, ref tempID, UIFrameStyle.Default);
-                    gridInfo.Slider("Proportion" + dockSpaceDefinition.ID, ref dockSpaceDefinition.Proportion, 0f, 1f);
+
+                    if (dockSpaceDefinition.Orientation != UIDockSpaceOrientation.None)
+                    {
+                        gridInfo.Slider("Proportion" + dockSpaceDefinition.ID, ref dockSpaceDefinition.Proportion, 0f, 1f);
+                    }
+
+                    if (dockSpaceDefinition.WindowsDefinition.Count > 0)
+                    {
+                        using (UILayout listbox_layout = new UILayout())
+                        {
+                            listbox_layout.Listbox("windows", dockSpaceDefinition.WindowsDefinition.Values.ToList());
+                        }
+                    }
                 }
 
                 if (dockSpaceDefinition.Children != null)
@@ -137,7 +164,7 @@ namespace Fugui.Framework
                 {
                     using (UIGrid windowsDefinition_grid = new UIGrid("windowsDefinition_grid"))
                     {
-                        windowsDefinition_grid.Combobox("Windows definition :", DockingLayoutManager._fuguiWindows.Values.ToList(), (x) => { DockingLayoutManager._selectedValue = x; });
+                        windowsDefinition_grid.Combobox("Windows definition :", DockingLayoutManager._fuguiWindows.Values.ToList(), (x) => { DockingLayoutManager._selectedWindowDefinition = x; });
                         windowsDefinition_grid.TextInput("Window name :", ref DockingLayoutManager._windowsToAdd);
 
                         if (!string.IsNullOrEmpty(DockingLayoutManager._windowsToAdd))
@@ -171,7 +198,7 @@ namespace Fugui.Framework
                                                     formatedFuGuiWindowsName.Add(fuguiItem.Key, RemoveSpaceAndCapitalize(fuguiItem.Value));
                                                 }
 
-                                                DockingLayoutManager.writeToFile(DockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, DockingLayoutManager.generateEnum("FuGuiWindows", formatedFuGuiWindowsName));
+                                                DockingLayoutManager.writeToFile(DockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, DockingLayoutManager.generateEnum("FuguiWindows", formatedFuGuiWindowsName));
                                                 DockingLayoutManager._windowsToAdd = string.Empty;
                                             }
                                         }
@@ -180,19 +207,19 @@ namespace Fugui.Framework
                             }
                         }
 
-                        if (!string.IsNullOrEmpty(DockingLayoutManager._selectedValue) && DockingLayoutManager._selectedValue != "None")
+                        if (!string.IsNullOrEmpty(DockingLayoutManager._selectedWindowDefinition) && DockingLayoutManager._selectedWindowDefinition != "None")
                         {
                             using (UILayout buttonLayout = new UILayout())
                             {
-                                if (buttonLayout.Button(string.Format($"Remove {DockingLayoutManager._selectedValue}"), UIButtonStyle.Danger))
+                                if (buttonLayout.Button(string.Format($"Remove {DockingLayoutManager._selectedWindowDefinition}"), UIButtonStyle.Danger))
                                 {
-                                    if (DockingLayoutManager._fuguiWindows.Values.Contains(DockingLayoutManager._selectedValue))
+                                    if (DockingLayoutManager._fuguiWindows.Values.Contains(DockingLayoutManager._selectedWindowDefinition))
                                     {
                                         int keyToDelete = -1;
 
                                         foreach (KeyValuePair<int, string> item in DockingLayoutManager._fuguiWindows)
                                         {
-                                            if (item.Value == DockingLayoutManager._selectedValue)
+                                            if (item.Value == DockingLayoutManager._selectedWindowDefinition)
                                             {
                                                 keyToDelete = item.Key;
                                                 break;
@@ -202,8 +229,8 @@ namespace Fugui.Framework
                                         if (keyToDelete != -1)
                                         {
                                             DockingLayoutManager._fuguiWindows.Remove(keyToDelete);
-                                            DockingLayoutManager.writeToFile(DockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, DockingLayoutManager.generateEnum("FuGuiWindows", DockingLayoutManager._fuguiWindows));
-                                            DockingLayoutManager._selectedValue = "None";
+                                            DockingLayoutManager.writeToFile(DockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, DockingLayoutManager.generateEnum("FuguiWindows", DockingLayoutManager._fuguiWindows));
+                                            DockingLayoutManager._selectedWindowDefinition = "None";
                                         }
                                     }
                                 }
@@ -219,30 +246,49 @@ namespace Fugui.Framework
                 {
                     using (UIGrid tempGrid = new UIGrid("bindWinDefToDockSpace_grid", new UIGridDefinition(2, new int[] { 150 })))
                     {
-                        for (int i = 0; i < DockingLayoutManager._dockSpacesToWindow.Count; i++)
+                        for (int i = 0; i < DockingLayoutManager._fuguiWindows.Count; i++)
                         {
-                            KeyValuePair<string, string> item = DockingLayoutManager._dockSpacesToWindow.ElementAt(i);
-                            tempGrid.Combobox(item.Key, DockingLayoutManager._definedDockSpaces.Values.ToList(), (x) => { DockingLayoutManager._dockSpacesToWindow[item.Key] = x; });
+                            KeyValuePair<int, string> item = DockingLayoutManager._fuguiWindows.ElementAt(i);
+
+                            if (item.Value == "None")
+                            {
+                                continue;
+                            }
+
+                            tempGrid.Combobox(item.Value, DockingLayoutManager._definedDockSpaces.Values.ToList(), (x) => 
+                            {
+                                if (x != null)
+                                {
+                                    if (x == "None")
+                                    {
+                                        DockingLayoutManager.unbindWindowToDockspace(item.Key);
+                                    }
+                                    else
+                                    {
+                                        DockingLayoutManager.bindWindowToDockspace(item.Key, x);
+                                    }
+                                }
+                            });
                         }
                     };
                 });
+            }
 
-                using (UILayout loadSave_layout = new UILayout())
+            using (UILayout loadSave_layout = new UILayout())
+            {
+                loadSave_layout.Collapsable("Load & Save DockSpace configuration", () =>
                 {
-                    loadSave_layout.Collapsable("Load & Save DockSpace configuration", () =>
+                    loadSave_layout.TextInput("Layout file name", ref DockingLayoutManager._layoutFileName);
+                    if (!IsValidJsonFileName(DockingLayoutManager._layoutFileName))
                     {
-                        loadSave_layout.TextInput("Layout file name", ref DockingLayoutManager._layoutFileName);
-                        if (!IsValidJsonFileName(DockingLayoutManager._layoutFileName))
-                        {
-                            loadSave_layout.DisableNextElement();
-                        }
+                        loadSave_layout.DisableNextElement();
+                    }
 
-                        loadSave_layout.InputFolder("Save dockspace", new Action<string>((path) =>
-                        {
-                            FuGui.SaveJsonToFile(DockingLayoutManager._dockSpaceDefinitionRoot.Serialize(), path, DockingLayoutManager._layoutFileName);
-                        }), DockingLayoutManager.FUGUI_DOCKSPACE_FOLDER_PATH);
-                    });
-                }
+                    loadSave_layout.InputFolder("Save dockspace", new Action<string>((path) =>
+                    {
+                        FuGui.SaveJsonToFile(DockingLayoutManager._dockSpaceDefinitionRoot.Serialize(), path, DockingLayoutManager._layoutFileName);
+                    }), DockingLayoutManager.FUGUI_DOCKSPACE_FOLDER_PATH);
+                });
             }
         }
 
@@ -256,5 +302,25 @@ namespace Fugui.Framework
         {
             File.WriteAllText(Path.Combine(filePath, fileName), json);
         }
+
+        private static string ReadJsonFileName(string filePath)
+        {
+            string jsonString = string.Empty;
+
+            try
+            {
+                using (StreamReader sr = new StreamReader(filePath))
+                {
+                    jsonString = sr.ReadToEnd();
+                }
+            }
+            catch (Exception e)
+            {
+
+            }
+
+            return jsonString;
+        }
+
     }
 }

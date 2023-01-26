@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Newtonsoft.Json;
 
 namespace Fugui.Framework
@@ -12,7 +11,7 @@ namespace Fugui.Framework
         public string Name;
 
         //The unique identifier of the dock space
-        public int ID;
+        public uint ID;
 
         //The proportion of the dock space relative to its parent
         public float Proportion;
@@ -34,7 +33,7 @@ namespace Fugui.Framework
         }
 
         //Constructor that accepts 4 parameters: name, id, proportion and orientation
-        public UIDockSpaceDefinition(string name, int id, float proportion, UIDockSpaceOrientation orientation)
+        public UIDockSpaceDefinition(string name, uint id, float proportion, UIDockSpaceOrientation orientation)
         {
             Name = name;
             ID = id;
@@ -45,7 +44,7 @@ namespace Fugui.Framework
         }
 
         //Constructor that accepts 2 parameters: name and id, with default values for proportion and orientation
-        public UIDockSpaceDefinition(string name, int id)
+        public UIDockSpaceDefinition(string name, uint id)
         {
             Name = name;
             ID = id;
@@ -56,9 +55,9 @@ namespace Fugui.Framework
         }
 
         //Method that returns the total number of children, including all children of children
-        public int GetTotalChildren()
+        public uint GetTotalChildren()
         {
-            int count = Children.Count;
+            uint count = (uint) Children.Count;
 
             foreach (var child in Children)
             {
@@ -132,6 +131,24 @@ namespace Fugui.Framework
             {
                 child.RemoveWindowsDefinitionInChildren(windowDefID);
             }
+        }
+
+        internal List<FuguiWindows> GetAllWindowsDefinitions()
+        {
+            List<FuguiWindows> windows = new List<FuguiWindows>();
+
+            foreach (var window in WindowsDefinition)
+            {
+                windows.Add((FuguiWindows) window.Key);
+            }
+
+            foreach (var child in Children)
+            {
+                windows.AddRange(child.GetAllWindowsDefinitions());
+            }
+
+            return windows;
+
         }
     }
 

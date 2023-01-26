@@ -147,7 +147,7 @@ namespace Fugui.Framework
                                     DockSpaceDefinitionClearChildren(dockSpaceDefinition);
 
                                     dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Horizontal;
-                                    int nextID = dockSpaceDefinition.GetTotalChildren();
+                                    uint nextID = DockingLayoutManager._displayedLayout.GetTotalChildren();
 
                                     UIDockSpaceDefinition leftPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitH_Left", nextID + 1);
                                     UIDockSpaceDefinition rightPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitH_Right", nextID + 2);
@@ -161,7 +161,7 @@ namespace Fugui.Framework
                                     DockSpaceDefinitionClearChildren(dockSpaceDefinition);
 
                                     dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Vertical;
-                                    int nextID = dockSpaceDefinition.GetTotalChildren();
+                                    uint nextID = DockingLayoutManager._displayedLayout.GetTotalChildren();
 
                                     UIDockSpaceDefinition topPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitV_Top", nextID + 1);
                                     UIDockSpaceDefinition bottomPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitV_Bottom", nextID + 2);

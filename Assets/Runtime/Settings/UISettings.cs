@@ -18,6 +18,7 @@ namespace Fugui.Framework
                 HorizontalAlignNextElement(ImGui.CalcTextSize(titleText).x, ElementAlignement.Center);
                 layout.Text(titleText);
                 PopFont();
+
                 // Fugui Logo
                 HorizontalAlignNextElement(128f, ElementAlignement.Center);
                 layout.Image("FuguiLogo", Settings.FuguiLogo, new Vector2(128f, 128f));
@@ -26,9 +27,9 @@ namespace Fugui.Framework
                 UIStyle.Unpadded.Push(true);
                 using (UIGrid grid = new UIGrid("fuguiSettingActionGrid", new UIGridDefinition(1, new float[] { 1f / 1f })))
                 {
-                    if(grid.Button("Docking Layout", UIButtonStyle.Highlight))
+                    if (grid.Button("Docking Layout", UIButtonStyle.Highlight))
                     {
-                        DockingLayoutManager.SetLayout(UIDockingLayout.DockSpaceConfiguration);
+                        DockingLayoutManager.SetConfigurationLayout();
                     }
                 }
                 UIStyle.Unpadded.Pop();

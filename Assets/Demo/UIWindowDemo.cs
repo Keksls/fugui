@@ -4,6 +4,7 @@ using Fugui.Framework;
 using System.Collections.Generic;
 using System;
 using Fugui;
+using System.Linq;
 
 /// <summary>
 /// this sample show how to use UIWindow toolkit
@@ -622,7 +623,12 @@ public class UIWindowDemo : MonoBehaviour
         }
 
         // set default layout (will create UIWindows)
-        DockingLayoutManager.SetConfigurationLayout();
+        if (DockingLayoutManager.Layouts.Count > 0)
+        {
+            string firstKey = DockingLayoutManager.Layouts.Keys.ToList()[0];
+            DockingLayoutManager.SetLayout(DockingLayoutManager.Layouts[firstKey]);
+        }
+
     }
 
     private void CamWinDef_OnUIWindowCreated(UIWindow camWindow)

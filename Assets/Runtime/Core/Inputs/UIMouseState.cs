@@ -71,6 +71,10 @@ namespace Fugui.Core
         /// <returns>true if down</returns>
         public bool IsDown(int index)
         {
+            if (index >= ButtonStates.Length || index < 0)
+            {
+                return false;
+            }
             return ButtonStates[index].IsDown;
         }
 

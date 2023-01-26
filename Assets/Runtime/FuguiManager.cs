@@ -94,6 +94,9 @@ namespace Fugui.Core
 
         private void Update()
         {
+            // Update Input Manager
+            InputManager.Update();
+
             // Update Fugui Data
             FuGui.Update();
 

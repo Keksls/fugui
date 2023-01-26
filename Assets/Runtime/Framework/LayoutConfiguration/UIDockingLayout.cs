@@ -36,7 +36,7 @@ namespace Fugui.Framework
                         }
                     }
                 });
-            }            
+            }
         }
 
         /// <summary>
@@ -255,7 +255,7 @@ namespace Fugui.Framework
                                 continue;
                             }
 
-                            tempGrid.Combobox(item.Value, DockingLayoutManager._definedDockSpaces.Values.ToList(), (x) => 
+                            tempGrid.Combobox(item.Value, DockingLayoutManager._definedDockSpaces.Values.ToList(), (x) =>
                             {
                                 if (x != null)
                                 {
@@ -314,7 +314,7 @@ namespace Fugui.Framework
                     jsonString = sr.ReadToEnd();
                 }
             }
-            catch (Exception e)
+            catch
             {
 
             }

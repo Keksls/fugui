@@ -37,6 +37,7 @@ namespace Fugui.Core
         private float _targetCameraDeltaTimeMs;
         private float _lastCameraRenderTime;
         private RenderTexture _rTexture;
+        private FuguiRaycaster _raycaster;
 
         public UICameraWindow(UICameraWindowDefinition windowDefinition) : base(windowDefinition)
         {
@@ -53,6 +54,7 @@ namespace Fugui.Core
             Camera.targetTexture = _rTexture;
             OnResized += ImGuiCameraWindow_OnResize;
             OnDock += ImGuiCameraWindow_OnDock;
+            OnClosed += UICameraWindow_OnClosed;
             ImGuiCameraWindow_OnResize(this);
             _windowFlags |= ImGuiWindowFlags.NoScrollbar;
             _windowFlags |= ImGuiWindowFlags.NoScrollWithMouse;
@@ -69,6 +71,16 @@ namespace Fugui.Core
                 //ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this);
             };
+
+            // register raycaster
+            _raycaster = new FuguiRaycaster(ID, GetCameraRay, () => Mouse.IsDown(0), () => Mouse.IsDown(1), () => Mouse.IsDown(2), () => Mouse.Wheel.y, () => true);// IsHovered && !Mouse.IsHoverPopup && !Mouse.IsHoverPopup);
+            InputManager.RegisterRaycaster(_raycaster);
+        }
+
+        private void UICameraWindow_OnClosed(UIWindow window)
+        {
+            InputManager.UnRegisterRaycaster(window.ID);
+            window.OnClosed -= UICameraWindow_OnClosed;
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿using Fugui.Framework;
 using ImGuiNET;
+using OpenTK.Input;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +9,7 @@ namespace Fugui.Core
 {
     public class UI3DWindowContainer : IUIWindowContainer
     {
+        public string ID { get; private set; }
         public UIWindow Window { get; private set; }
         public Vector2Int LocalMousePos => _localMousePos;
         public Vector2Int Position => Vector2Int.zero;
@@ -15,8 +17,8 @@ namespace Fugui.Core
         public RectTransform ImageTransform { get; private set; }
         public RenderTexture RenderTexture { get; private set; }
         public Camera Camera { get; private set; }
-        public float SuperSampling { get { return _superSampling; } set { _superSampling = value; Window_OnResized(Window); } }
-        private float _superSampling = 1f;
+        public BoxCollider Collider { get; private set; }
+        public int FuguiContextID { get { return _fuguiContext.ID; } }
         private Vector2Int _localMousePos;
         private Vector2Int _size;
         private UnityContext _fuguiContext;
@@ -24,6 +26,11 @@ namespace Fugui.Core
 
         public UI3DWindowContainer(UIWindow window)
         {
+            _3DContextindex++;
+            ID = "3DContext_" + _3DContextindex;
+
+            _localMousePos = new Vector2Int(-1, -1);
+
             // remove the window from it's old container if has one
             window.TryRemoveFromContainer();
             // add the window to this container
@@ -34,10 +41,11 @@ namespace Fugui.Core
                 return;
             }
 
-            _3DContextindex++;
+            // Get UI Layer Mask
+            int layerMask = LayerMask.NameToLayer(FuGui.Settings.UILayer);
 
             // Create Camera GameObject
-            GameObject cameraGameObject = new GameObject("3DContext_" + _3DContextindex + "_Camera");
+            GameObject cameraGameObject = new GameObject(ID + "_Camera");
             cameraGameObject.transform.position = Vector3.zero;
             cameraGameObject.transform.rotation = Quaternion.identity;
             Camera = cameraGameObject.AddComponent<Camera>();
@@ -57,23 +65,23 @@ namespace Fugui.Core
             Camera.targetTexture = RenderTexture;
 
             // Create Canvas GameObject
-            GameObject canvasGameObject = new GameObject("3DContext_" + _3DContextindex + "_Canvas");
+            GameObject canvasGameObject = new GameObject(ID + "_Canvas");
             canvasGameObject.transform.SetParent(cameraGameObject.transform);
             canvasGameObject.transform.position = Vector3.zero;
             canvasGameObject.transform.rotation = Quaternion.identity;
             Canvas canvas = canvasGameObject.AddComponent<Canvas>();
 
             // Create RawImage GameObject
-            GameObject imageGameObject = new GameObject("3DComtext_" + _3DContextindex + "_Image");
+            GameObject imageGameObject = new GameObject(ID + "_Image");
             imageGameObject.transform.SetParent(canvasGameObject.transform);
             imageGameObject.transform.position = Vector3.zero;
             imageGameObject.transform.rotation = Quaternion.identity;
             RawImage image = imageGameObject.AddComponent<RawImage>();
             ImageTransform = imageGameObject.GetComponent<RectTransform>();
             ImageTransform.sizeDelta = Window.Size;
-
-            // set supersampling render to x2
-            SuperSampling = 2f;
+            Collider = imageGameObject.AddComponent<BoxCollider>();
+            Collider.size = new Vector3(Window.Size.x, Window.Size.y, 0.1f);
+            imageGameObject.layer = layerMask;
 
             // apply image scale
             ImageTransform.transform.localScale = Vector3.one * (1f / 1000f) * FuGui.Settings.Windows3DScale;
@@ -83,16 +91,74 @@ namespace Fugui.Core
 
             // create the fugui 3d context
             _fuguiContext = FuGui.CreateUnityContext(Camera);
-            _fuguiContext.OnRender += _fuguiContext_OnRender;
+            _fuguiContext.OnRender += _context_OnRender;
+            _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
 
             // apply the theme to this context
             ThemeManager.SetTheme(ThemeManager.CurrentTheme);
+
+            // set default position
+            SetPosition(new Vector3(0f, 1f, 0f));
+
+            // resize the window
+            Window.Size = new Vector2Int(512, 256);
 
             // release window
             window.IsBusy = false;
         }
 
-        private void _fuguiContext_OnRender()
+        public void SetPosition(Vector3 position)
+        {
+            Camera.transform.position = position;
+        }
+
+        public void SetRotation(Quaternion rotation)
+        {
+            Camera.transform.rotation = rotation;
+        }
+
+        private bool context_OnPrepareFrame()
+        {
+            if (Window == null)
+            {
+                return false;
+            }
+
+            // get input state for this container
+            InputState inputState = InputManager.GetInputState(ID, ImageTransform.gameObject);
+            // Get UI IO
+            ImGuiIOPtr io = ImGui.GetIO();
+
+            // send mouse buttons state to UI IO
+            io.MouseDown[0] = inputState.MouseDown[0];
+            io.MouseDown[1] = inputState.MouseDown[1];
+            io.MouseDown[2] = inputState.MouseDown[2];
+
+            _localMousePos = new Vector2Int((int)inputState.MousePosition.x, (int)inputState.MousePosition.y);
+            _localMousePos.x += _size.x / 2;
+            _localMousePos.y = Size.y - (_localMousePos.y + (Size.y / 2));
+
+            // set UI IO mouse pos
+            io.MousePos = _localMousePos;
+            // set UI IO mouse scroll wheel
+            io.MouseWheel = inputState.MouseWheel;
+            io.MouseWheelH = 0f;
+
+            if (inputState.Hovered)
+            {
+                Debug.Log(_localMousePos);
+            }
+
+            // force to draw if hover in
+            if (inputState.Hovered && !Window.IsHovered)
+            {
+                Window.ForceDraw();
+            }
+
+            return Window.MustBeDraw();
+        }
+
+        private void _context_OnRender()
         {
             RenderUIWindows();
         }
@@ -163,16 +229,9 @@ namespace Fugui.Core
         {
             if (Window != null)
             {
-                // handle Inputs
-                injectImguiInputs();
                 // draw the window
                 RenderUIWindow(Window);
             }
-        }
-
-        private void injectImguiInputs()
-        {
-
         }
 
         public bool TryAddWindow(UIWindow UIWindow)
@@ -192,15 +251,17 @@ namespace Fugui.Core
         private void Window_OnResized(UIWindow window)
         {
             _size = window.Size;
-            Camera.pixelRect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
             RenderTexture.Release();
             RenderTexture.width = _size.x;
             RenderTexture.height = _size.y;
             Camera.targetTexture = RenderTexture;
+            Camera.pixelRect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
             // resize image size
             ImageTransform.sizeDelta = new Vector2(_size.x, _size.y);
             // apply image scale
             ImageTransform.transform.localScale = Vector3.one * (1f / 1000f) * FuGui.Settings.Windows3DScale;
+            // resize collider
+            Collider.size = new Vector3(Window.Size.x, Window.Size.y, 1f);
         }
 
         private void Window_OnClosed(UIWindow window)

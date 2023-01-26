@@ -53,9 +53,9 @@ public class UIWindowDemo : MonoBehaviour
         MainMenu.RegisterItem(Icons.DragonflyLogo + " Files", null);
 
         MainMenu.RegisterItem("Layout", null);
-        foreach (UIDockingLayout layout in Enum.GetValues(typeof(UIDockingLayout)))
+        foreach (KeyValuePair<string, UIDockSpaceDefinition> layoutDefinition in DockingLayoutManager.Layouts)
         {
-            MainMenu.RegisterItem(FuGui.AddSpacesBeforeUppercase(layout.ToString()), () => DockingLayoutManager.SetLayout(layout), "Layout");
+            MainMenu.RegisterItem(FuGui.AddSpacesBeforeUppercase(layoutDefinition.Key), () => DockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
         }
 
         MainMenu.RegisterItem("Windows", null);
@@ -622,7 +622,7 @@ public class UIWindowDemo : MonoBehaviour
         }
 
         // set default layout (will create UIWindows)
-        DockingLayoutManager.SetLayout(UIDockingLayout.Default);
+        DockingLayoutManager.SetConfigurationLayout();
     }
 
     private void CamWinDef_OnUIWindowCreated(UIWindow camWindow)

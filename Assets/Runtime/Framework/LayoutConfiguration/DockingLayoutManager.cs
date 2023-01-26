@@ -109,7 +109,7 @@ namespace Fugui.Framework
         {
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
             dictionary.Add(-1, "None");
-            dictionary.Add(root.ID, root.Name);
+            dictionary.Add((int) root.ID, root.Name);
 
             foreach (var child in root.Children)
             {
@@ -128,10 +128,18 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Sets the layout of the DockingLayout manager.
+        /// </summary>
+        public static void SetConfigurationLayout()
+        {
+            SetLayout(null);
+        }
+
+        /// <summary>
         /// Sets the layout of the UI windows to the specified layout.
         /// </summary>
         /// <param name="layout">The layout to be set.</param>
-        public static void SetLayout(UIDockingLayout layout)
+        public static void SetLayout(UIDockSpaceDefinition layout)
         {
             // check whatever we car set Layer
             if (!canSetLayer())
@@ -148,24 +156,78 @@ namespace Fugui.Framework
             // close all opened UI Window
             FuGui.CloseAllWindowsAsync(() =>
             {
-                // Switch on the layout
-                switch (layout)
+                if (layout == null)
                 {
-                    // If the layout is not recognized, fall back to the default layout
-                    default:
-                    case UIDockingLayout.Default:
-                        setDefaultLayout();
-                        break;
-
-                    case UIDockingLayout.Console:
-                        setConsoleLayout();
-                        break;
-
-                    case UIDockingLayout.DockSpaceConfiguration:
-                        setDockSpaceConfigurationLayout();
-                        break;
+                    //setDefaultLayout();
+                    setDockSpaceConfigurationLayout();
+                }
+                else
+                {
+                    createDynamicLayout(layout);
                 }
             });
+        }
+
+        /// <summary>
+        /// Method that creates a dynamic layout based on the specified UIDockSpaceDefinition. It first retrieves a list of all the windows definitions associated with the dock space and its children recursively, then creates those windows asynchronously, and finally invokes a callback function to complete the layout creation process.
+        /// </summary>
+        /// <param name="layout">The UIDockSpaceDefinition to use for creating the layout</param>
+        private static void createDynamicLayout(UIDockSpaceDefinition layout)
+        {
+            List<FuguiWindows> windowsToGet = layout.GetAllWindowsDefinitions();
+
+            // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
+            FuGui.CreateWindowsAsync(windowsToGet, (windows) =>
+            {
+                if (windows.Count != windowsToGet.Count)
+                {
+                    Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
+                    return;
+                }
+
+                uint MainID = FuGui.MainContainer.Dockspace_id;
+                layout.ID = MainID;
+
+                createDocking(windows, layout);
+
+                ImGuiDocking.DockBuilderFinish(MainID);
+
+                endSettingLayout();
+            });
+        }
+
+        /// <summary>
+        /// Method that creates a dock layout based on a UIDockSpaceDefinition object, recursively creating child dock spaces and setting their orientation and proportion.
+        /// </summary>
+        /// <param name="windows">The windows created</param>
+        /// <param name="layout">The UIDockSpaceDefinition object representing the layout to create</param>
+        private static void createDocking(Dictionary<FuguiWindows, Core.UIWindow> windows, UIDockSpaceDefinition layout)
+        {
+            switch (layout.Orientation)
+            {
+                default:
+                case UIDockSpaceOrientation.None:
+                    break;
+                case UIDockSpaceOrientation.Horizontal:
+                    ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Left, layout.Proportion, out layout.Children[0].ID, out layout.Children[1].ID);
+                    break;
+                case UIDockSpaceOrientation.Vertical:
+                    ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Up, layout.Proportion, out layout.Children[0].ID, out layout.Children[1].ID);
+                    break;
+            }
+
+            if (layout.WindowsDefinition.Count > 0)
+            {
+                foreach (KeyValuePair<int, string> winDef in layout.WindowsDefinition)
+                {
+                    ImGuiDocking.DockBuilderDockWindow(windows[(FuguiWindows)winDef.Key].ID, layout.ID);
+                }
+            }
+
+            foreach (UIDockSpaceDefinition child in layout.Children)
+            {
+                createDocking(windows, child);
+            }
         }
 
         /// <summary>
@@ -292,13 +354,15 @@ namespace Fugui.Framework
 
                 //breakDockingLayout();
                 uint Dockspace_id = FuGui.MainContainer.Dockspace_id;
+                uint tempLeft;
+                uint tempRight;
                 uint left;
                 uint right;
                 uint rightBottom;
                 uint center;
-                ImGuiDocking.DockBuilderSplitNode(Dockspace_id, ImGuiDir.Left, 0.8f, out left, out right);
-                ImGuiDocking.DockBuilderSplitNode(right, ImGuiDir.Down, 0.5f, out rightBottom, out right);
-                ImGuiDocking.DockBuilderSplitNode(left, ImGuiDir.Right, 0.8f, out center, out left);
+                ImGuiDocking.DockBuilderSplitNode(Dockspace_id, ImGuiDir.Left, 0.8f, out tempLeft, out tempRight);
+                ImGuiDocking.DockBuilderSplitNode(tempRight, ImGuiDir.Up, 0.5f, out right, out rightBottom);
+                ImGuiDocking.DockBuilderSplitNode(tempLeft, ImGuiDir.Left, 0.2f, out left, out center);
 
                 ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Tree].ID, left);
                 ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Captures].ID, left);
@@ -321,7 +385,8 @@ namespace Fugui.Framework
             List<FuguiWindows> windowsToGet = new List<FuguiWindows>
             {
                 FuguiWindows.DockSpaceManager,
-                FuguiWindows.WindowsDefinitionManager
+                FuguiWindows.WindowsDefinitionManager,
+                FuguiWindows.MainCameraView
             };
 
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
@@ -333,13 +398,14 @@ namespace Fugui.Framework
                     return;
                 }
 
-                uint mainDockSpace = FuGui.MainContainer.Dockspace_id;
+                uint Dockspace_id = FuGui.MainContainer.Dockspace_id;
                 uint left;
                 uint right;
-                ImGuiDocking.DockBuilderSplitNode(mainDockSpace, ImGuiDir.Left, 0.7f, out left, out right);
+                ImGuiDocking.DockBuilderSplitNode(Dockspace_id, ImGuiDir.Left, 0.7f, out left, out right);
                 ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.DockSpaceManager].ID, left);
                 ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.WindowsDefinitionManager].ID, right);
-                ImGuiDocking.DockBuilderFinish(mainDockSpace);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.MainCameraView].ID, right);
+                ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
                 endSettingLayout();
             });
@@ -586,25 +652,5 @@ namespace Fugui.Framework
         }
 
         #endregion
-    }
-
-    // TODO : generate this throw DockingLayoutUI
-    /// <summary>
-    /// An enumeration of possible UI layouts.
-    /// </summary>
-    public enum UIDockingLayout
-    {
-        /// <summary>
-        /// The default layout.
-        /// </summary>
-        Default,
-        /// <summary>
-        /// The "Console" layout.
-        /// </summary>
-        Console,
-        /// <summary>
-        /// The "DockSpace Configuration" layout.
-        /// </summary>
-        DockSpaceConfiguration
     }
 }

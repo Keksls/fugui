@@ -1,4 +1,3 @@
-using Fugui.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -17,14 +16,14 @@ namespace Fugui.Framework
 
         #region Pressets
         // default button style
-        static UIComboboxStyle defaultButtonStyle;
-        public static UIComboboxStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return defaultButtonStyle; } }
+        static UIComboboxStyle _defaultStyle;
+        public static UIComboboxStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultStyle; } }
 
         // blue button style
-        static UIComboboxStyle blueButtonStyle;
-        public static UIComboboxStyle Blue { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return blueButtonStyle; } }
+        static UIComboboxStyle _highlightStyle;
+        public static UIComboboxStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightStyle; } }
         #endregion
-       
+
         /// <summary>
         /// Pushes the style for the combobox element.
         /// </summary>
@@ -60,7 +59,7 @@ namespace Fugui.Framework
         private static void OnThemeSet()
         {
             // default button style
-            defaultButtonStyle = new UIComboboxStyle()
+            _defaultStyle = new UIComboboxStyle()
             {
                 ButtonStyle = UIButtonStyle.Default,
                 _frame = ImGui.GetStyle().Colors[(int)ImGuiCol.Button],
@@ -69,15 +68,15 @@ namespace Fugui.Framework
                 _frameDisabled = ImGui.GetStyle().Colors[(int)ImGuiCol.Button] / 2f,
             };
 
-        // blue button style
-        blueButtonStyle = new UIComboboxStyle()
-        {
-            ButtonStyle = UIButtonStyle.Highlight,
-            _frame = ThemeManager.GetColor(FuguiColors.Highlight),
-            _frameHovered = ThemeManager.GetColor(FuguiColors.HighlightHovered),
-            _frameActive = ThemeManager.GetColor(FuguiColors.HighlightActive),
-            _frameDisabled = ThemeManager.GetColor(FuguiColors.HighlightDisabled)
-        };
-    }
+            // blue button style
+            _highlightStyle = new UIComboboxStyle()
+            {
+                ButtonStyle = UIButtonStyle.Highlight,
+                _frame = ThemeManager.GetColor(FuguiColors.Highlight),
+                _frameHovered = ThemeManager.GetColor(FuguiColors.HighlightHovered),
+                _frameActive = ThemeManager.GetColor(FuguiColors.HighlightActive),
+                _frameDisabled = ThemeManager.GetColor(FuguiColors.HighlightDisabled)
+            };
+        }
     }
 }

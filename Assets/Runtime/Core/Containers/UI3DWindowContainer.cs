@@ -15,6 +15,8 @@ namespace Fugui.Core
         public RectTransform ImageTransform { get; private set; }
         public RenderTexture RenderTexture { get; private set; }
         public Camera Camera { get; private set; }
+        public float SuperSampling { get { return _superSampling; } set { _superSampling = value; Window_OnResized(Window); } }
+        private float _superSampling = 1f;
         private Vector2Int _localMousePos;
         private Vector2Int _size;
         private UnityContext _fuguiContext;
@@ -39,6 +41,7 @@ namespace Fugui.Core
             cameraGameObject.transform.position = Vector3.zero;
             cameraGameObject.transform.rotation = Quaternion.identity;
             Camera = cameraGameObject.AddComponent<Camera>();
+            Camera.pixelRect = new Rect(0f, 0f, Window.Size.x, Window.Size.y);
             Camera.clearFlags = CameraClearFlags.SolidColor;
             Camera.backgroundColor = Color.black;
             Camera.cullingMask = 0;
@@ -68,6 +71,9 @@ namespace Fugui.Core
             RawImage image = imageGameObject.AddComponent<RawImage>();
             ImageTransform = imageGameObject.GetComponent<RectTransform>();
             ImageTransform.sizeDelta = Window.Size;
+
+            // set supersampling render to x2
+            SuperSampling = 2f;
 
             // apply image scale
             ImageTransform.transform.localScale = Vector3.one * (1f / 1000f) * FuGui.Settings.Windows3DScale;
@@ -177,6 +183,7 @@ namespace Fugui.Core
                 Window.Container = this;
                 Window.OnClosed += Window_OnClosed;
                 Window.OnResized += Window_OnResized;
+                Window.LocalPosition = Vector2Int.zero;
                 return true;
             }
             return false;
@@ -185,11 +192,11 @@ namespace Fugui.Core
         private void Window_OnResized(UIWindow window)
         {
             _size = window.Size;
-            //RenderTexture.Release();
-            //RenderTexture.width = _size.x;
-            //RenderTexture.height = _size.y;
-            //Camera.targetTexture = RenderTexture;
-            //Camera.pixelRect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
+            Camera.pixelRect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
+            RenderTexture.Release();
+            RenderTexture.width = _size.x;
+            RenderTexture.height = _size.y;
+            Camera.targetTexture = RenderTexture;
             // resize image size
             ImageTransform.sizeDelta = new Vector2(_size.x, _size.y);
             // apply image scale

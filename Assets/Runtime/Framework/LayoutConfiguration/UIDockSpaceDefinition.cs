@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 
@@ -26,6 +27,11 @@ namespace Fugui.Framework
         //A lost of binded windowsdefintion
         [JsonProperty]
         public Dictionary<int, string> WindowsDefinition;
+
+        public UIDockSpaceDefinition()
+        {
+
+        }
 
         //Constructor that accepts 4 parameters: name, id, proportion and orientation
         public UIDockSpaceDefinition(string name, int id, float proportion, UIDockSpaceOrientation orientation)
@@ -63,15 +69,29 @@ namespace Fugui.Framework
         }
         
         //Serialization method
-        public string Serialize()
+        public static string Serialize(UIDockSpaceDefinition dockspaceDefinition)
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonConvert.SerializeObject(dockspaceDefinition);
         }
 
         //Deserialization method
-        public UIDockSpaceDefinition Deserialize(string json)
+        public static UIDockSpaceDefinition ReadFromFile(string pathFile)
         {
-            return JsonConvert.DeserializeObject<UIDockSpaceDefinition>(json);
+            UIDockSpaceDefinition result = null;
+
+            try
+            {
+                using (StreamReader sr = new StreamReader(pathFile))
+                {
+                    result = JsonConvert.DeserializeObject<UIDockSpaceDefinition>(sr.ReadToEnd());
+                }
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogWarning(ex.GetBaseException().Message);
+            }
+
+            return result;
         }
 
         /// <summary>

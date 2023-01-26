@@ -40,6 +40,8 @@ namespace Fugui.Framework
         private static Dictionary<string, string> _dragStringFormats = new Dictionary<string, string>();
         // A dictionary of integers representing the combo selected indices.
         private static Dictionary<string, int> _comboSelectedIndices = new Dictionary<string, int>();
+        // A dictionary of integers representing the listbox selected indices.
+        private static Dictionary<string, int> _listboxSelectedItem = new Dictionary<string, int>();
         // A dictionary that store displaying toggle data.
         private static Dictionary<string, UIElementAnimationData> _uiElementAnimationDatas = new Dictionary<string, UIElementAnimationData>();
         // A dictionary that store displaying toggle data.

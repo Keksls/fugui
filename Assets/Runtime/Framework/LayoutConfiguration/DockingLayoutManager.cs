@@ -1,6 +1,7 @@
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,8 +20,7 @@ namespace Fugui.Framework
         internal static string _layoutFileName = "default_layout.json";
         internal static Dictionary<int, string> _fuguiWindows;
         internal static string _windowsToAdd = string.Empty;
-        internal static string _selectedValue = string.Empty;
-        internal static Dictionary<string, string> _dockSpacesToWindow;
+        internal static string _selectedWindowDefinition = string.Empty;
         internal static UIDockSpaceDefinition _dockSpaceDefinitionRoot;
         internal static Dictionary<int, string> _definedDockSpaces;
         /// <summary>
@@ -36,18 +36,9 @@ namespace Fugui.Framework
         static DockingLayoutManager()
         {
             _fuguiWindows = enumToDictionary(typeof(FuguiWindows));
-            _dockSpacesToWindow = new Dictionary<string, string>();
+
             _dockSpaceDefinitionRoot = new UIDockSpaceDefinition("Root", 0);
-
             RefreshDockSpaces();
-
-            foreach (KeyValuePair<int, string> fuguiWindow in _fuguiWindows)
-            {
-                if (fuguiWindow.Value != "None")
-                {
-                    _dockSpacesToWindow.Add(fuguiWindow.Value, "Center");
-                }
-            }
         }
 
         /// <summary>
@@ -65,14 +56,19 @@ namespace Fugui.Framework
         private static Dictionary<int, string> getDictionary(UIDockSpaceDefinition root)
         {
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
+            dictionary.Add(-1, "None");
             dictionary.Add(root.ID, root.Name);
 
             foreach (var child in root.Children)
             {
                 var childDictionary = getDictionary(child);
-                foreach (var entry in childDictionary)
+
+                foreach (KeyValuePair<int, string> entry in childDictionary)
                 {
-                    dictionary.Add(entry.Key, entry.Value);
+                    if (!dictionary.ContainsKey(entry.Key))
+                    {
+                        dictionary.Add(entry.Key, entry.Value);
+                    }
                 }
             }
 
@@ -288,10 +284,7 @@ namespace Fugui.Framework
                 uint mainDockSpace = FuGui.MainContainer.Dockspace_id;
                 uint left;
                 uint right;
-                uint center;
-                uint bottom;
-                ImGuiDocking.DockBuilderSplitNode(mainDockSpace, ImGuiDir.Up, 0.1f, out bottom, out center);
-                ImGuiDocking.DockBuilderSplitNode(center, ImGuiDir.Left, 0.5f, out left, out right);
+                ImGuiDocking.DockBuilderSplitNode(mainDockSpace, ImGuiDir.Left, 0.7f, out left, out right);
                 ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.DockSpaceManager].ID, left);
                 ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.WindowsDefinitionManager].ID, right);
                 ImGuiDocking.DockBuilderFinish(mainDockSpace);
@@ -358,6 +351,35 @@ namespace Fugui.Framework
             return Enum.GetValues(enumType)
                 .Cast<int>()
                 .ToDictionary(x => x, x => Enum.GetName(enumType, x));
+        }
+
+        /// <summary>
+        /// Method that binds a window definition to a dock space by its name 
+        /// </summary>
+        /// <param name="windowDefID">The unique identifier of the window definition to bind</param>
+        /// <param name="dockspaceName">The name of the dock space to bind the window definition to</param>
+        internal static void bindWindowToDockspace(int windowDefID, string dockspaceName)
+        {
+            _dockSpaceDefinitionRoot.RemoveWindowsDefinitionInChildren(windowDefID);
+
+            UIDockSpaceDefinition tempDockSpace = _dockSpaceDefinitionRoot.SearchInChildren(dockspaceName);
+
+            if (tempDockSpace != null)
+            {
+                if (!tempDockSpace.WindowsDefinition.ContainsKey(windowDefID))
+                {
+                    tempDockSpace.WindowsDefinition.Add(windowDefID, _fuguiWindows[windowDefID]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// This function removes the entry in the WindowsDefinition dictionary that corresponds to the given windowDefID from all children of the _dockSpaceDefinitionRoot object recursively.
+        /// </summary>
+        /// <param name="windowDefID">The unique identifier of the window definition to bind<</param>
+        internal static void unbindWindowToDockspace(int windowDefID)
+        {
+            _dockSpaceDefinitionRoot.RemoveWindowsDefinitionInChildren(windowDefID);
         }
     }
 

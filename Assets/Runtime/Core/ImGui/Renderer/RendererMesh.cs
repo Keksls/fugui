@@ -192,7 +192,7 @@ namespace UImGui.Renderer
                     ImDrawCmd drawCmd = drawList.CmdBuffer[i];
                     if (drawCmd.UserCallback != IntPtr.Zero)
                     {
-                        Debug.Log("unhaldled user callback");
+                        Debug.Log("unhandled user callback");
                         //UserDrawCallback userDrawCallback = Marshal.GetDelegateForFunctionPointer<UserDrawCallback>(drawCmd.UserCallback);
                         //userDrawCallback(drawList, drawCmd);
                     }

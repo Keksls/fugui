@@ -63,9 +63,10 @@ namespace Fugui.Core
 
             UI = (window) =>
             {
-                Vector2 cursorPos = ImGui.GetCursorPos();
-                Container.ImGuiImage(_rTexture, WorkingAreaSize);
-                ImGui.SetCursorPos(cursorPos);
+                Vector2 cursorPos = ImGui.GetCursorScreenPos();
+                ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + window.WorkingAreaSize);
+                //Container.ImGuiImage(_rTexture, WorkingAreaSize);
+                ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this);
             };
         }

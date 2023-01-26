@@ -44,7 +44,7 @@ namespace Fugui.Core
             Camera = windowDefinition.Camera;
 
             // create the render texture
-            _rTexture = new RenderTexture(Size.x, Size.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
+            _rTexture = new RenderTexture(Size.x, Size.y, 32, RenderTextureFormat.RGB111110Float);
             _rTexture.antiAliasing = 8;
             _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
             _rTexture.useDynamicScale = true;
@@ -66,7 +66,7 @@ namespace Fugui.Core
                 Vector2 cursorPos = ImGui.GetCursorScreenPos();
                 ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + window.WorkingAreaSize);
                 //Container.ImGuiImage(_rTexture, WorkingAreaSize);
-                ImGui.SetCursorScreenPos(cursorPos);
+                //ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this);
             };
         }

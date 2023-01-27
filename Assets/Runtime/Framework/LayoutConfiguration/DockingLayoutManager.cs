@@ -31,6 +31,7 @@ namespace Fugui.Framework
         /// </summary>
         public static bool IsSettingLayout { get; private set; }
         public static event Action OnDockLayoutInitialized;
+        public static event Action OnDockLayoutReloaded;
         #endregion
 
         /// <summary>
@@ -99,6 +100,8 @@ namespace Fugui.Framework
                 DisplayedLayout = null;
                 DisplayLayoutName = string.Empty;
             }
+
+            OnDockLayoutReloaded?.Invoke();
 
             // return number of themes loaded
             return Layouts.Count;
@@ -553,10 +556,10 @@ namespace Fugui.Framework
                 {
                     //Save file
                     saveLayoutFile();
-                }
 
-                //Reload layouts
-                LoadLayouts();
+                    //Reload layouts
+                    LoadLayouts();
+                }
             }
         }
 
@@ -569,6 +572,9 @@ namespace Fugui.Framework
             if (result)
             {
                 saveLayoutFile();
+
+                //Reload layouts
+                LoadLayouts();
             }
         }
 

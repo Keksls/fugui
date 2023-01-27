@@ -53,10 +53,16 @@ public class UIWindowDemo : MonoBehaviour
         // set demo Main menu
         MainMenu.RegisterItem(Icons.DragonflyLogo + " Files", null);
 
+        DockingLayoutManager.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
+
         MainMenu.RegisterItem("Layout", null);
         foreach (KeyValuePair<string, UIDockSpaceDefinition> layoutDefinition in DockingLayoutManager.Layouts)
         {
-            MainMenu.RegisterItem(FuGui.AddSpacesBeforeUppercase(layoutDefinition.Key), () => DockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+            string menuName = FuGui.AddSpacesBeforeUppercase(layoutDefinition.Key);
+            if (!MainMenu.IsRegisteredItem(menuName))
+            {
+                MainMenu.RegisterItem(menuName, () => DockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+            }
         }
 
         MainMenu.RegisterItem("Windows", null);
@@ -629,6 +635,18 @@ public class UIWindowDemo : MonoBehaviour
             DockingLayoutManager.SetLayout(DockingLayoutManager.Layouts[firstKey]);
         }
 
+    }
+
+    private void DockingLayoutManager_OnDockLayoutReloaded()
+    {
+        foreach (KeyValuePair<string, UIDockSpaceDefinition> layoutDefinition in DockingLayoutManager.Layouts)
+        {
+            string menuName = FuGui.AddSpacesBeforeUppercase(layoutDefinition.Key);
+            if (!MainMenu.IsRegisteredItem(menuName))
+            {
+                MainMenu.RegisterItem(menuName, () => DockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+            }
+        }
     }
 
     private void CamWinDef_OnUIWindowCreated(UIWindow camWindow)

@@ -1,6 +1,7 @@
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Fugui.Framework
@@ -47,6 +48,16 @@ namespace Fugui.Framework
 
             // Add the menu item to the collection of registered menu items
             _menuItems.Add(name, menuItem);
+        }
+
+        /// <summary>
+        /// Check if a name is already registered
+        /// </summary>
+        /// <param name="name">Name to check</param>
+        /// <returns>TRUE if registered, FALSE either</returns>
+        public static bool IsRegisteredItem(string name)
+        {
+            return _menuItems.ContainsKey(name);
         }
 
         /// <summary>

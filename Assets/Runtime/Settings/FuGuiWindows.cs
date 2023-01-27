@@ -12,6 +12,5 @@ namespace Fugui
         MainCameraView = 8,
         FuguiSettings = 9,
         DockSpaceManager = 10,
-        Test1 = 11
     }
 }

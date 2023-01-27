@@ -1,11 +1,11 @@
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using static UnityEditor.ShaderData;
+using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace Fugui.Framework
 {
@@ -17,17 +17,21 @@ namespace Fugui.Framework
         #region Variables
         internal const string FUGUI_WINDOWS_DEF_ENUM_PATH = "Assets\\Runtime\\Settings\\FuGuiWindows.cs";
         internal const string FUGUI_DOCKSPACE_FOLDER_PATH = "Assets\\Runtime\\Settings\\Layout\\";
-        internal static string _layoutFileName = "default_layout.json";
+        internal static string _layoutFileName = "default_layout.flg";
         internal static Dictionary<int, string> _fuguiWindows;
         internal static string _windowsToAdd = string.Empty;
         internal static string _selectedWindowDefinition = string.Empty;
-        internal static UIDockSpaceDefinition _dockSpaceDefinitionRoot;
+        internal static UIDockSpaceDefinition DisplayedLayout;
+        internal static string DisplayLayoutName = "";
         internal static Dictionary<int, string> _definedDockSpaces;
+        internal static ExtensionFilter _flgExtensionFilter;
+        public static Dictionary<string, UIDockSpaceDefinition> Layouts { get; private set; }
         /// <summary>
         /// Whatever we already are setting Layer right now
         /// </summary>
         public static bool IsSettingLayout { get; private set; }
         public static event Action OnDockLayoutInitialized;
+        public static event Action OnDockLayoutReloaded;
         #endregion
 
         /// <summary>
@@ -35,10 +39,72 @@ namespace Fugui.Framework
         /// </summary>
         static DockingLayoutManager()
         {
-            _fuguiWindows = enumToDictionary(typeof(FuguiWindows));
+            //Load layouts
+            LoadLayouts();
 
-            _dockSpaceDefinitionRoot = new UIDockSpaceDefinition("Root", 0);
-            RefreshDockSpaces();
+            _flgExtensionFilter = new ExtensionFilter
+            {
+                Name = "Fugui Layout Configuration",
+                Extensions = new string[1] { "flg" }
+            };
+
+            _fuguiWindows = enumToDictionary(typeof(FuguiWindows));
+        }
+
+        private static int LoadLayouts()
+        {
+            // get folder path
+            string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+
+            // create folder if not exists
+            if (!Directory.Exists(folderPath))
+            {
+                try
+                {
+                    // try to create directory if not exists
+                    Directory.CreateDirectory(folderPath);
+                }
+                catch (Exception ex)
+                {
+                    // something gone wrong, let's invoke Fugui Exception event
+                    FuGui.DoOnUIException(ex);
+                    return Layouts.Count;
+                }
+            }
+
+            List<string> files = Directory.GetFiles(folderPath).ToList();
+
+            Layouts = new Dictionary<string, UIDockSpaceDefinition>();
+
+            // iterate on each file into folder
+            foreach (string file in Directory.GetFiles(folderPath))
+            {
+                string fileName = Path.GetFileName(file);
+                UIDockSpaceDefinition tempLayout = UIDockSpaceDefinition.ReadFromFile(file);
+
+                if (tempLayout != null)
+                {
+                    Layouts.Add(fileName, tempLayout);
+                }
+            }
+
+            // Select first layout
+            if (Layouts.Count > 0)
+            {
+                KeyValuePair<string, UIDockSpaceDefinition> firstLayoutInfo = Layouts.ElementAt(0);
+                DisplayedLayout = firstLayoutInfo.Value;
+                DisplayLayoutName = firstLayoutInfo.Key;
+            }
+            else
+            {
+                DisplayedLayout = null;
+                DisplayLayoutName = string.Empty;
+            }
+
+            OnDockLayoutReloaded?.Invoke();
+
+            // return number of themes loaded
+            return Layouts.Count;
         }
 
         /// <summary>
@@ -46,7 +112,10 @@ namespace Fugui.Framework
         /// </summary>
         internal static void RefreshDockSpaces()
         {
-            _definedDockSpaces = getDictionary(_dockSpaceDefinitionRoot);
+            if (DisplayedLayout != null)
+            {
+                _definedDockSpaces = getDictionary(DisplayedLayout);
+            }
         }
 
         /// <summary>
@@ -57,7 +126,7 @@ namespace Fugui.Framework
         {
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
             dictionary.Add(-1, "None");
-            dictionary.Add(root.ID, root.Name);
+            dictionary.Add((int)root.ID, root.Name);
 
             foreach (var child in root.Children)
             {
@@ -76,10 +145,18 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Sets the layout of the DockingLayout manager.
+        /// </summary>
+        public static void SetConfigurationLayout()
+        {
+            SetLayout(null);
+        }
+
+        /// <summary>
         /// Sets the layout of the UI windows to the specified layout.
         /// </summary>
         /// <param name="layout">The layout to be set.</param>
-        public static void SetLayout(UIDockingLayout layout)
+        public static void SetLayout(UIDockSpaceDefinition layout)
         {
             // check whatever we car set Layer
             if (!canSetLayer())
@@ -96,24 +173,78 @@ namespace Fugui.Framework
             // close all opened UI Window
             FuGui.CloseAllWindowsAsync(() =>
             {
-                // Switch on the layout
-                switch (layout)
+                if (layout == null)
                 {
-                    // If the layout is not recognized, fall back to the default layout
-                    default:
-                    case UIDockingLayout.Default:
-                        setDefaultLayout();
-                        break;
-
-                    case UIDockingLayout.Console:
-                        setConsoleLayout();
-                        break;
-
-                    case UIDockingLayout.DockSpaceConfiguration:
-                        setDockSpaceConfigurationLayout();
-                        break;
+                    //setDefaultLayout();
+                    setDockSpaceConfigurationLayout();
+                }
+                else
+                {
+                    createDynamicLayout(layout);
                 }
             });
+        }
+
+        /// <summary>
+        /// Method that creates a dynamic layout based on the specified UIDockSpaceDefinition. It first retrieves a list of all the windows definitions associated with the dock space and its children recursively, then creates those windows asynchronously, and finally invokes a callback function to complete the layout creation process.
+        /// </summary>
+        /// <param name="layout">The UIDockSpaceDefinition to use for creating the layout</param>
+        private static void createDynamicLayout(UIDockSpaceDefinition layout)
+        {
+            List<FuguiWindows> windowsToGet = layout.GetAllWindowsDefinitions();
+
+            // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
+            FuGui.CreateWindowsAsync(windowsToGet, (windows) =>
+            {
+                if (windows.Count != windowsToGet.Count)
+                {
+                    Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
+                    return;
+                }
+
+                uint MainID = FuGui.MainContainer.Dockspace_id;
+                layout.ID = MainID;
+
+                createDocking(windows, layout);
+
+                ImGuiDocking.DockBuilderFinish(MainID);
+
+                endSettingLayout();
+            });
+        }
+
+        /// <summary>
+        /// Method that creates a dock layout based on a UIDockSpaceDefinition object, recursively creating child dock spaces and setting their orientation and proportion.
+        /// </summary>
+        /// <param name="windows">The windows created</param>
+        /// <param name="layout">The UIDockSpaceDefinition object representing the layout to create</param>
+        private static void createDocking(Dictionary<FuguiWindows, Core.UIWindow> windows, UIDockSpaceDefinition layout)
+        {
+            switch (layout.Orientation)
+            {
+                default:
+                case UIDockSpaceOrientation.None:
+                    break;
+                case UIDockSpaceOrientation.Horizontal:
+                    ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Left, layout.Proportion, out layout.Children[0].ID, out layout.Children[1].ID);
+                    break;
+                case UIDockSpaceOrientation.Vertical:
+                    ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Up, layout.Proportion, out layout.Children[0].ID, out layout.Children[1].ID);
+                    break;
+            }
+
+            if (layout.WindowsDefinition.Count > 0)
+            {
+                foreach (KeyValuePair<int, string> winDef in layout.WindowsDefinition)
+                {
+                    ImGuiDocking.DockBuilderDockWindow(windows[(FuguiWindows)winDef.Key].ID, layout.ID);
+                }
+            }
+
+            foreach (UIDockSpaceDefinition child in layout.Children)
+            {
+                createDocking(windows, child);
+            }
         }
 
         /// <summary>
@@ -162,106 +293,6 @@ namespace Fugui.Framework
         }
 
         /// <summary>
-        /// Sets the "console" layout for the UI windows.
-        /// </summary>
-        private static void setConsoleLayout()
-        {
-            // list windows to get for this layout
-            List<FuguiWindows> windowsToGet = new List<FuguiWindows>()
-            {
-                FuguiWindows.Tree,
-                FuguiWindows.Captures,
-                FuguiWindows.Inspector,
-                FuguiWindows.Metadata,
-                FuguiWindows.ToolBox,
-                FuguiWindows.MainCameraView,
-                FuguiWindows.FuguiSettings
-            };
-
-            // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
-            FuGui.CreateWindowsAsync(windowsToGet, (windows) =>
-            {
-                if (windows.Count != windowsToGet.Count)
-                {
-                    UnityEngine.Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
-                    return;
-                }
-
-                //breakDockingLayout();
-                uint Dockspace_id = FuGui.MainContainer.Dockspace_id;
-                uint left;
-                uint right;
-                uint rightBottom;
-                uint center;
-                uint centerBottom;
-                ImGuiDocking.DockBuilderSplitNode(Dockspace_id, ImGuiDir.Left, 0.8f, out left, out right);
-                ImGuiDocking.DockBuilderSplitNode(right, ImGuiDir.Down, 0.5f, out rightBottom, out right);
-                ImGuiDocking.DockBuilderSplitNode(left, ImGuiDir.Right, 0.8f, out center, out left);
-                ImGuiDocking.DockBuilderSplitNode(center, ImGuiDir.Down, 0.2f, out centerBottom, out center);
-
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Tree].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Captures].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Inspector].ID, right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Metadata].ID, right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.ToolBox].ID, rightBottom);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.MainCameraView].ID, center);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.FuguiSettings].ID, centerBottom);
-                ImGuiDocking.DockBuilderFinish(Dockspace_id);
-
-                endSettingLayout();
-            });
-        }
-
-        /// <summary>
-        /// Sets the "default" layout for the UI windows.
-        /// </summary>
-        private static void setDefaultLayout()
-        {
-            // list windows to get for this layout
-            List<FuguiWindows> windowsToGet = new List<FuguiWindows>()
-            {
-                FuguiWindows.Tree,
-                FuguiWindows.Captures,
-                FuguiWindows.Inspector,
-                FuguiWindows.Metadata,
-                FuguiWindows.ToolBox,
-                FuguiWindows.MainCameraView,
-                FuguiWindows.FuguiSettings
-            };
-
-            // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
-            FuGui.CreateWindowsAsync(windowsToGet, (windows) =>
-            {
-                if (windows.Count != windowsToGet.Count)
-                {
-                    UnityEngine.Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
-                    return;
-                }
-
-                //breakDockingLayout();
-                uint Dockspace_id = FuGui.MainContainer.Dockspace_id;
-                uint left;
-                uint right;
-                uint rightBottom;
-                uint center;
-                ImGuiDocking.DockBuilderSplitNode(Dockspace_id, ImGuiDir.Left, 0.8f, out left, out right);
-                ImGuiDocking.DockBuilderSplitNode(right, ImGuiDir.Down, 0.5f, out rightBottom, out right);
-                ImGuiDocking.DockBuilderSplitNode(left, ImGuiDir.Right, 0.8f, out center, out left);
-
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Tree].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Captures].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Inspector].ID, right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.Metadata].ID, right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.ToolBox].ID, rightBottom);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.FuguiSettings].ID, rightBottom);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.MainCameraView].ID, center);
-                ImGuiDocking.DockBuilderFinish(Dockspace_id);
-
-                endSettingLayout();
-            });
-        }
-
-        /// <summary>
         /// Sets the "dockspace configuration" layout for the UI windows.
         /// </summary>
         private static void setDockSpaceConfigurationLayout()
@@ -269,7 +300,8 @@ namespace Fugui.Framework
             List<FuguiWindows> windowsToGet = new List<FuguiWindows>
             {
                 FuguiWindows.DockSpaceManager,
-                FuguiWindows.WindowsDefinitionManager
+                FuguiWindows.WindowsDefinitionManager,
+                FuguiWindows.MainCameraView
             };
 
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
@@ -277,17 +309,18 @@ namespace Fugui.Framework
             {
                 if (windows.Count != windowsToGet.Count)
                 {
-                    UnityEngine.Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
+                    Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
                     return;
                 }
 
-                uint mainDockSpace = FuGui.MainContainer.Dockspace_id;
+                uint Dockspace_id = FuGui.MainContainer.Dockspace_id;
                 uint left;
                 uint right;
-                ImGuiDocking.DockBuilderSplitNode(mainDockSpace, ImGuiDir.Left, 0.7f, out left, out right);
+                ImGuiDocking.DockBuilderSplitNode(Dockspace_id, ImGuiDir.Left, 0.7f, out left, out right);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.MainCameraView].ID, left);
                 ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.DockSpaceManager].ID, left);
                 ImGuiDocking.DockBuilderDockWindow(windows[FuguiWindows.WindowsDefinitionManager].ID, right);
-                ImGuiDocking.DockBuilderFinish(mainDockSpace);
+                ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
                 endSettingLayout();
             });
@@ -360,17 +393,44 @@ namespace Fugui.Framework
         /// <param name="dockspaceName">The name of the dock space to bind the window definition to</param>
         internal static void bindWindowToDockspace(int windowDefID, string dockspaceName)
         {
-            _dockSpaceDefinitionRoot.RemoveWindowsDefinitionInChildren(windowDefID);
-
-            UIDockSpaceDefinition tempDockSpace = _dockSpaceDefinitionRoot.SearchInChildren(dockspaceName);
-
-            if (tempDockSpace != null)
+            if (DisplayedLayout != null)
             {
-                if (!tempDockSpace.WindowsDefinition.ContainsKey(windowDefID))
+                DisplayedLayout.RemoveWindowsDefinitionInChildren(windowDefID);
+
+                UIDockSpaceDefinition tempDockSpace = DisplayedLayout.SearchInChildren(dockspaceName);
+
+                if (tempDockSpace != null)
                 {
-                    tempDockSpace.WindowsDefinition.Add(windowDefID, _fuguiWindows[windowDefID]);
+                    if (!tempDockSpace.WindowsDefinition.ContainsKey(windowDefID))
+                    {
+                        tempDockSpace.WindowsDefinition.Add(windowDefID, _fuguiWindows[windowDefID]);
+                    }
                 }
             }
+        }
+
+        /// <summary>
+        /// Method that gets the name of the dock space that a specific window definition is currently binded to
+        /// </summary>
+        /// <param name="windowDefID">The unique identifier of the window definition to check for binding</param>
+        /// <returns>The name of the dock space that the window definition is currently binded to, or an empty string if the window definition is not currently binded to any dock space</returns>
+        internal static string getBindedLayout(int windowDefID)
+        {
+            // Initialize a variable to store the name of the binded dock space
+            string bindedDockspaceName = "None";
+
+            // Search for the dock space that the window definition is binded to
+            UIDockSpaceDefinition bindedDockspace = DisplayedLayout.SearchInChildren(windowDefID);
+
+            // If the dock space is found
+            if (bindedDockspace != null)
+            {
+                // Get the name of the dock space
+                bindedDockspaceName = bindedDockspace.Name;
+            }
+
+            // Return the name of the binded dock space
+            return bindedDockspaceName;
         }
 
         /// <summary>
@@ -379,27 +439,181 @@ namespace Fugui.Framework
         /// <param name="windowDefID">The unique identifier of the window definition to bind<</param>
         internal static void unbindWindowToDockspace(int windowDefID)
         {
-            _dockSpaceDefinitionRoot.RemoveWindowsDefinitionInChildren(windowDefID);
+            if (DisplayedLayout != null)
+            {
+                DisplayedLayout.RemoveWindowsDefinitionInChildren(windowDefID);
+            }
         }
-    }
 
-    // TODO : generate this throw DockingLayoutUI
-    /// <summary>
-    /// An enumeration of possible UI layouts.
-    /// </summary>
-    public enum UIDockingLayout
-    {
+        #region SAVE / DELETE LAYOUT FUNCTIONS
         /// <summary>
-        /// The default layout.
+        /// Create a new layout and select if
         /// </summary>
-        Default,
+        internal static void createNewLayout()
+        {
+            int count = Layouts.Where(file => file.Key.StartsWith("New layout")).Count();
+            string newFileName = "New_layout_" + count + ".flg";
+
+            if (!Layouts.ContainsKey(newFileName))
+            {
+                Layouts.Add(newFileName, new UIDockSpaceDefinition(newFileName, 0));
+
+                UIDockSpaceDefinition newLayout = Layouts[newFileName];
+                DisplayedLayout = newLayout;
+                DisplayLayoutName = newFileName;
+            }
+        }
+
         /// <summary>
-        /// The "Console" layout.
+        /// Delete currentlky selected layout
         /// </summary>
-        Console,
+        internal static void deleteSelectedLayout()
+        {
+            if (!string.IsNullOrEmpty(DisplayLayoutName))
+            {
+                // get folder path
+                string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+
+                // create folder if not exists
+                if (Directory.Exists(folderPath))
+                {
+                    try
+                    {
+                        string filePathToDelete = Path.Combine(folderPath, DisplayLayoutName);
+
+                        if (File.Exists(filePathToDelete))
+                        {
+                            FuGui.ShowYesNoModal("This action cannot be rollbacked. Are you sure you want to continue ?", confirmDeleteSelectedLayoutFile, UIModalSize.ExtraLarge);
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning(ex.GetBaseException().Message);
+                        FuGui.Notify("Error", ex.GetBaseException().Message, StateType.Danger);
+                    }
+                }
+            }
+        }
+
         /// <summary>
-        /// The "DockSpace Configuration" layout.
+        /// Callbacked used for user response after delete layout file
         /// </summary>
-        DockSpaceConfiguration
+        /// <param name="result">User result</param>
+
+        private static void confirmDeleteSelectedLayoutFile(bool result)
+        {
+            try
+            {
+                string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+                File.Delete(Path.Combine(folderPath, DisplayLayoutName));
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(ex.GetBaseException().Message);
+                FuGui.Notify("Error", ex.GetBaseException().Message, StateType.Danger);
+            }
+            finally
+            {
+                LoadLayouts();
+            }
+        }
+
+        /// <summary>
+        /// Save selected layout
+        /// </summary>
+        internal static void saveSelectedLayout()
+        {
+            if (DisplayedLayout != null)
+            {
+                // get folder path
+                string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+
+                // create folder if not exists
+                if (!Directory.Exists(folderPath))
+                {
+                    try
+                    {
+                        // try to create directory if not exists
+                        Directory.CreateDirectory(folderPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        FuGui.Notify("Error", ex.GetBaseException().Message, StateType.Danger);
+
+                        return;
+                    }
+                }
+
+                string fileName = Path.Combine(folderPath, DisplayLayoutName);
+
+                // If file already exists, ask question
+                if (File.Exists(fileName))
+                {
+                    FuGui.ShowYesNoModal(DisplayLayoutName + " already exits. Are you sure you want to overwrite it ?", confirmSaveLayoutFileAlreadyExists, UIModalSize.Large);
+                }
+                else
+                {
+                    //Save file
+                    saveLayoutFile();
+
+                    //Reload layouts
+                    LoadLayouts();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Callbacked used for user response after overwrite layout file
+        /// </summary>
+        /// <param name="result">User result</param>
+        private static void confirmSaveLayoutFileAlreadyExists(bool result)
+        {
+            if (result)
+            {
+                saveLayoutFile();
+
+                //Reload layouts
+                LoadLayouts();
+            }
+        }
+
+        /// <summary>
+        /// Used to format selected layout to FuGui layout configuration file 
+        /// </summary>
+        private static void saveLayoutFile()
+        {
+            // get folder path
+            string folderPath = Path.Combine(Application.streamingAssetsPath, FuGui.Settings.LayoutsFolder);
+
+            // create folder if not exists
+            if (!Directory.Exists(folderPath))
+            {
+                try
+                {
+                    // try to create directory if not exists
+                    Directory.CreateDirectory(folderPath);
+                }
+                catch (Exception ex)
+                {
+                    // something gone wrong, let's invoke Fugui Exception event
+                    FuGui.DoOnUIException(ex);
+
+                    return;
+                }
+            }
+
+            string fileName = Path.Combine(folderPath, DisplayLayoutName);
+            File.WriteAllText(fileName, UIDockSpaceDefinition.Serialize(DisplayedLayout));
+        }
+
+        internal static bool checkSelectedName()
+        {
+            string pattern = @"^[a-zA-Z0-9_-]+\.flg$";
+
+            return (!string.IsNullOrEmpty(DisplayLayoutName) && Regex.IsMatch(DisplayLayoutName, pattern));
+        }
+
+        #endregion
     }
 }

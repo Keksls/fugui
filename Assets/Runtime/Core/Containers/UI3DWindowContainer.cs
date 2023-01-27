@@ -1,6 +1,5 @@
 ﻿using Fugui.Framework;
 using ImGuiNET;
-using OpenTK.Input;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -41,9 +40,6 @@ namespace Fugui.Core
                 return;
             }
 
-            // Get UI Layer Mask
-            int layerMask = LayerMask.NameToLayer(FuGui.Settings.UILayer);
-
             // Create Camera GameObject
             GameObject cameraGameObject = new GameObject(ID + "_Camera");
             cameraGameObject.transform.position = Vector3.zero;
@@ -81,7 +77,7 @@ namespace Fugui.Core
             ImageTransform.sizeDelta = Window.Size;
             Collider = imageGameObject.AddComponent<BoxCollider>();
             Collider.size = new Vector3(Window.Size.x, Window.Size.y, 0.1f);
-            imageGameObject.layer = layerMask;
+            imageGameObject.layer = (int)Mathf.Log(FuGui.Settings.UILayer.value, 2);
 
             // apply image scale
             ImageTransform.transform.localScale = Vector3.one * (1f / 1000f) * FuGui.Settings.Windows3DScale;
@@ -143,11 +139,6 @@ namespace Fugui.Core
             // set UI IO mouse scroll wheel
             io.MouseWheel = inputState.MouseWheel;
             io.MouseWheelH = 0f;
-
-            if (inputState.Hovered)
-            {
-                Debug.Log(_localMousePos);
-            }
 
             // force to draw if hover in
             if (inputState.Hovered && !Window.IsHovered)

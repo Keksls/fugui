@@ -7,54 +7,40 @@ namespace Fugui.Core
 {
     public static class InputManager
     {
-        private static int _raycastLayer;
+        private static Dictionary<string, Stack<FuguiRaycaster>> _raycasterStack = new Dictionary<string, Stack<FuguiRaycaster>>();
         private static Dictionary<string, FuguiRaycaster> _raycasters = new Dictionary<string, FuguiRaycaster>();
-        private static Dictionary<string, containerRaycasters> _containersRaycasters = new Dictionary<string, containerRaycasters>();
-
-        public static void Initialize()
-        {
-            _raycastLayer = LayerMask.NameToLayer(FuGui.Settings.UILayer);
-        }
-
+        
         public static InputState GetInputState(string containerID, GameObject raycastableGameObject)
         {
-            if (!_containersRaycasters.ContainsKey(containerID))
+            if (!_raycasterStack.ContainsKey(containerID))
             {
-                _containersRaycasters.Add(containerID, new containerRaycasters());
+                _raycasterStack.Add(containerID, new Stack<FuguiRaycaster>());
             }
-
-            // determinate which raycaster has the hand
-            containerRaycasters lastFrameRaycasters = new containerRaycasters(_containersRaycasters[containerID]);
-            _containersRaycasters[containerID].Clear();
 
             foreach (FuguiRaycaster raycaster in _raycasters.Values)
             {
-                // the raycaster just hit the 3D UI Container GameObject
-                if (raycaster.RaycastThisFrame && raycaster.Hit.collider.gameObject == raycastableGameObject)
+                if (raycaster.RaycastThisFrame && raycaster.Hit.collider.gameObject.Equals(raycastableGameObject))
                 {
-                    _containersRaycasters[containerID].Add(raycaster.ID);
-                    if (!lastFrameRaycasters.Contains(raycaster.ID))
+                    // Pop any raycasters that are no longer hovering the collider
+                    while (_raycasterStack[containerID].Count > 0 && _raycasterStack[containerID].Peek() != raycaster)
                     {
-                        _containersRaycasters[containerID].CurrentRaycaster = raycaster.ID;
+                        _raycasterStack[containerID].Pop();
                     }
+                    // Push the current raycaster onto the stack
+                    _raycasterStack[containerID].Push(raycaster);
                 }
             }
 
-            if (_containersRaycasters[containerID].Count == 0)
-            {
-                _containersRaycasters[containerID].CurrentRaycaster = string.Empty;
-            }
-
-            if (string.IsNullOrEmpty(_containersRaycasters[containerID].CurrentRaycaster))
+            if (_raycasterStack[containerID].Count == 0)
             {
                 return new InputState(string.Empty, false, false, false, false, 0f, new Vector2(-1f, -1f));
             }
             else
             {
-                FuguiRaycaster raycaster = _raycasters[_containersRaycasters[containerID].CurrentRaycaster];
+                FuguiRaycaster raycaster = _raycasterStack[containerID].Peek();
                 Vector3 localHitPoint = raycastableGameObject.transform.InverseTransformPoint(raycaster.Hit.point);
                 Vector2 localPosition = new Vector2(localHitPoint.x, localHitPoint.y);
-                return new InputState(_containersRaycasters[containerID].CurrentRaycaster, true, raycaster.MouseButton0(), raycaster.MouseButton1(), raycaster.MouseButton2(), raycaster.MouseWheel(), localPosition);
+                return new InputState(raycaster.ID, true, raycaster.MouseButton0(), raycaster.MouseButton1(), raycaster.MouseButton2(), raycaster.MouseWheel(), localPosition);
             }
         }
 
@@ -62,7 +48,7 @@ namespace Fugui.Core
         {
             foreach (FuguiRaycaster raycaster in _raycasters.Values)
             {
-                raycaster.Raycast(_raycastLayer);
+                raycaster.Raycast();
             }
         }
 
@@ -82,19 +68,9 @@ namespace Fugui.Core
             return _raycasters.Remove(raycasterName);
         }
 
-        private class containerRaycasters : HashSet<string>
+        public static IEnumerable<FuguiRaycaster> GetAllRaycasters()
         {
-            public string CurrentRaycaster = string.Empty;
-
-            public containerRaycasters(containerRaycasters container) : base(container)
-            {
-                CurrentRaycaster = container.CurrentRaycaster;
-            }
-
-            public containerRaycasters() : base()
-            {
-                CurrentRaycaster = string.Empty;
-            }
+            return _raycasters.Values;
         }
     }
 
@@ -144,12 +120,12 @@ namespace Fugui.Core
             GetRay = rayGetter;
         }
 
-        internal void Raycast(int raycastLayer)
+        internal void Raycast()
         {
             RaycastThisFrame = false;
             if (IsActif())
             {
-                if (Physics.Raycast(GetRay(), out RaycastHit hit, raycastLayer))
+                if (Physics.Raycast(GetRay(), out RaycastHit hit, FuGui.Settings.UIRaycastDistance, FuGui.Settings.UILayer.value))
                 {
                     Debug.Log("raycast");
                     Hit = hit;

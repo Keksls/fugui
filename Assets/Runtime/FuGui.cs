@@ -89,9 +89,6 @@ namespace Fugui.Framework
             // assume that render thread is not already started
             _renderThreadStarted = false;
 
-            // initialize input manager
-            InputManager.Initialize();
-
             // create Default Fugui Context and initialize themeManager
             DefaultContext = CreateUnityContext(mainContainerUICamera, ThemeManager.Initialize);
             DefaultContext.PrepareRender();

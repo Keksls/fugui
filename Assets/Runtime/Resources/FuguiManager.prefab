@@ -124,6 +124,7 @@ MonoBehaviour:
     InternalizeOnMouseRelease: 0
     IdleFPS: 4
     ManipulatingFPS: 48
+    Windows3DScale: 10
     ExternalManipulatingTicks: 10000
     ExternalWindowFlags: 0
     DrawDebugPanel: 0
@@ -147,11 +148,16 @@ MonoBehaviour:
     NotifyPanelWidth: 420
     NotificationDefaultDuration: 7
     FontConfig: {fileID: 11400000, guid: 53d60e85cd0bf4b44aa69c57edb412a8, type: 2}
+    UILayer:
+      serializedVersion: 2
+      m_Bits: 32
+    UIRaycastDistance: 50
     ThemesFolder: Fugui/Themes
     StateModalsUseButtonColors: 1
     DockingFlags: 0
     DisplayTabBarButton: 1
     TabBarButtonRight: 1
+    LayoutsFolder: Fugui/Layouts
   _uiCamera: {fileID: 963194227}
   FontIconsSizeOffset: 2
   FontIconsOffset: {x: 0, y: -1.2}

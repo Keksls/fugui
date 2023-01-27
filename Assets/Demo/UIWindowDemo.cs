@@ -15,6 +15,8 @@ public class UIWindowDemo : MonoBehaviour
     public Texture2D TmpDebugTexture;
     public GameObject LastPointObject;
     public bool ShowImGuiDemoWindow = false;
+    public bool ShowRaycastersDebug = false;
+    public test3DRaycaster Raycaster;
     private UICameraWindow _mainCam;
 
     void Start()
@@ -374,25 +376,25 @@ public class UIWindowDemo : MonoBehaviour
                         using (UIGrid grid = new UIGrid("transformGrid", rowsPadding: 1f, outterPadding: 8f))
                         {
                             grid.SetMinimumLineHeight(20f);
-                            pos = cam1.transform.position;
+                            pos = Raycaster.transform.position;
                             grid.SetNextElementToolTip("x parameter of the position", "y parameter of the position", "z parameter of the position");
                             if (grid.Drag(Icons.Position + " Position", ref pos, "X", "Y", "Z", -100f, 100f))
                             {
-                                cam1.transform.position = pos;
+                                Raycaster.transform.position = pos;
                             }
 
                             grid.SetNextElementToolTip("x parameter of the rotation", "y parameter of the rotation", "z parameter of the rotation");
-                            rot = cam1.transform.localEulerAngles;
+                            rot = Raycaster.transform.localEulerAngles;
                             if (grid.Drag(Icons.Rotate + " Rotation", ref rot, "X", "Y", "Z", -360f, 360f))
                             {
-                                cam1.transform.localEulerAngles = rot;
+                                Raycaster.transform.localEulerAngles = rot;
                             }
 
                             grid.SetNextElementToolTip("x parameter of the scale", "y parameter of the scale", "z parameter of the scale");
-                            scale = cam1.transform.localScale;
+                            scale = Raycaster.transform.localScale;
                             if (grid.Drag("Scale", ref scale, "X", "Y", "Z", 0.1f, 2f))
                             {
-                                cam1.transform.localScale = scale;
+                                Raycaster.transform.localScale = scale;
                             }
                         }
                     }, 8f);
@@ -686,5 +688,19 @@ public class UIWindowDemo : MonoBehaviour
         if (rb == null)
             return;
         rb.AddExplosionForce(hitForce, hit.point, 5f, 0f, ForceMode.Impulse);
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (!ShowRaycastersDebug)
+        {
+            return;
+        }
+
+        foreach (FuguiRaycaster ray in InputManager.GetAllRaycasters())
+        {
+            Ray r = ray.GetRay();
+            Gizmos.DrawRay(r);
+        }
     }
 }

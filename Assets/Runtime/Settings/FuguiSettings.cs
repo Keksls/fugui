@@ -146,7 +146,10 @@ namespace Fugui.Core
         /// <summary>
         /// Layer name used for the UI
         /// </summary>
-        public string UILayer = "UI";
+        [Tooltip("Layer that Fugui will use to raycast 3D UI")]
+        public LayerMask UILayer = 0;
+        [Tooltip("Maximum distance for Fugui to manipulate a 3D window")]
+        public float UIRaycastDistance = 50f;
         /// <summary>
         /// Fugui Themes folder (must be inside streaming assetes folder)
         /// </summary>

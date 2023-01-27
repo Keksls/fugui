@@ -641,8 +641,15 @@ public class UIWindowDemo : MonoBehaviour
 
     private void DockingLayoutManager_OnDockLayoutReloaded()
     {
+        //Unregistered menu and all children
+        MainMenu.UnregisterItem("Layout");
+
+        //Register the layout menu empty
+        MainMenu.RegisterItem("Layout", null);
+
         foreach (KeyValuePair<string, UIDockSpaceDefinition> layoutDefinition in DockingLayoutManager.Layouts)
         {
+            //Add new children
             string menuName = FuGui.AddSpacesBeforeUppercase(layoutDefinition.Key);
             if (!MainMenu.IsRegisteredItem(menuName))
             {

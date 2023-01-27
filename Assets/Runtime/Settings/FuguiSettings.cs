@@ -144,6 +144,10 @@ namespace Fugui.Core
         [Hidden]
         public FontConfig FontConfig;
         /// <summary>
+        /// Layer name used for the UI
+        /// </summary>
+        public string UILayer = "UI";
+        /// <summary>
         /// Fugui Themes folder (must be inside streaming assetes folder)
         /// </summary>
         [Tooltip("Fugui Themes folder (must be inside streaming assetes folder)")]

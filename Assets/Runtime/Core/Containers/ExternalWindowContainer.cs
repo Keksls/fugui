@@ -210,9 +210,6 @@ namespace Fugui.Core
             io.DisplayFramebufferScale = UnityEngine.Vector2.one;
             //io.DeltaTime = UIWindow.DeltaTime;
 
-            // update UI Inputs
-            InjectImGuiInput();
-
             // render UI window
             RenderUIWindow(UIWindow);
         }
@@ -846,6 +843,8 @@ namespace Fugui.Core
                 return false;
             }
 
+            // update UI Inputs
+            InjectImGuiInput();
             // do fixed update (that will register inputs)
             RegisterInputs();
 

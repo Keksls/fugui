@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using Newtonsoft.Json;
 
 namespace Fugui.Framework
@@ -11,7 +11,7 @@ namespace Fugui.Framework
         public string Name;
 
         //The unique identifier of the dock space
-        public int ID;
+        public uint ID;
 
         //The proportion of the dock space relative to its parent
         public float Proportion;
@@ -27,8 +27,13 @@ namespace Fugui.Framework
         [JsonProperty]
         public Dictionary<int, string> WindowsDefinition;
 
+        public UIDockSpaceDefinition()
+        {
+
+        }
+
         //Constructor that accepts 4 parameters: name, id, proportion and orientation
-        public UIDockSpaceDefinition(string name, int id, float proportion, UIDockSpaceOrientation orientation)
+        public UIDockSpaceDefinition(string name, uint id, float proportion, UIDockSpaceOrientation orientation)
         {
             Name = name;
             ID = id;
@@ -39,7 +44,7 @@ namespace Fugui.Framework
         }
 
         //Constructor that accepts 2 parameters: name and id, with default values for proportion and orientation
-        public UIDockSpaceDefinition(string name, int id)
+        public UIDockSpaceDefinition(string name, uint id)
         {
             Name = name;
             ID = id;
@@ -50,9 +55,9 @@ namespace Fugui.Framework
         }
 
         //Method that returns the total number of children, including all children of children
-        public int GetTotalChildren()
+        public uint GetTotalChildren()
         {
-            int count = Children.Count;
+            uint count = (uint) Children.Count;
 
             foreach (var child in Children)
             {
@@ -63,15 +68,29 @@ namespace Fugui.Framework
         }
         
         //Serialization method
-        public string Serialize()
+        public static string Serialize(UIDockSpaceDefinition dockspaceDefinition)
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonConvert.SerializeObject(dockspaceDefinition);
         }
 
         //Deserialization method
-        public UIDockSpaceDefinition Deserialize(string json)
+        public static UIDockSpaceDefinition ReadFromFile(string pathFile)
         {
-            return JsonConvert.DeserializeObject<UIDockSpaceDefinition>(json);
+            UIDockSpaceDefinition result = null;
+
+            try
+            {
+                using (StreamReader sr = new StreamReader(pathFile))
+                {
+                    result = JsonConvert.DeserializeObject<UIDockSpaceDefinition>(sr.ReadToEnd());
+                }
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogWarning(ex.GetBaseException().Message);
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -101,6 +120,32 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Method that search for a child dock space with the specified window def ID in the current dock space and its children recursively
+        /// </summary>
+        /// <param name="windowDefID">The ID of the window definition</param>
+        /// <returns>The dock space with the specified name, or null if not found</returns>
+        internal UIDockSpaceDefinition SearchInChildren(int windowDefID)
+        {
+            if (WindowsDefinition.ContainsKey(windowDefID))
+            {
+                return this;
+            }
+            else
+            {
+                foreach (var child in Children)
+                {
+                    var found = child.SearchInChildren(windowDefID);
+
+                    if (found != null)
+                    {
+                        return found;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Method that removes all entries from the WindowsDefinition dictionary that have the specified window definition ID in the current dock space and its children recursively
         /// </summary>
         /// <param name="windowDefID">The ID of the window definition to remove</param>
@@ -112,6 +157,24 @@ namespace Fugui.Framework
             {
                 child.RemoveWindowsDefinitionInChildren(windowDefID);
             }
+        }
+
+        internal List<FuguiWindows> GetAllWindowsDefinitions()
+        {
+            List<FuguiWindows> windows = new List<FuguiWindows>();
+
+            foreach (var window in WindowsDefinition)
+            {
+                windows.Add((FuguiWindows) window.Key);
+            }
+
+            foreach (var child in Children)
+            {
+                windows.AddRange(child.GetAllWindowsDefinitions());
+            }
+
+            return windows;
+
         }
     }
 

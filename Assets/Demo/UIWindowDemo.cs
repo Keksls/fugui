@@ -4,6 +4,7 @@ using Fugui.Framework;
 using System.Collections.Generic;
 using System;
 using Fugui;
+using System.Linq;
 
 /// <summary>
 /// this sample show how to use UIWindow toolkit
@@ -52,10 +53,16 @@ public class UIWindowDemo : MonoBehaviour
         // set demo Main menu
         MainMenu.RegisterItem(Icons.DragonflyLogo + " Files", null);
 
+        DockingLayoutManager.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
+
         MainMenu.RegisterItem("Layout", null);
-        foreach (UIDockingLayout layout in Enum.GetValues(typeof(UIDockingLayout)))
+        foreach (KeyValuePair<string, UIDockSpaceDefinition> layoutDefinition in DockingLayoutManager.Layouts)
         {
-            MainMenu.RegisterItem(FuGui.AddSpacesBeforeUppercase(layout.ToString()), () => DockingLayoutManager.SetLayout(layout), "Layout");
+            string menuName = FuGui.AddSpacesBeforeUppercase(layoutDefinition.Key);
+            if (!MainMenu.IsRegisteredItem(menuName))
+            {
+                MainMenu.RegisterItem(menuName, () => DockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+            }
         }
 
         MainMenu.RegisterItem("Windows", null);
@@ -622,7 +629,24 @@ public class UIWindowDemo : MonoBehaviour
         }
 
         // set default layout (will create UIWindows)
-        DockingLayoutManager.SetLayout(UIDockingLayout.Default);
+        if (DockingLayoutManager.Layouts.Count > 0)
+        {
+            string firstKey = DockingLayoutManager.Layouts.Keys.ToList()[0];
+            DockingLayoutManager.SetLayout(DockingLayoutManager.Layouts[firstKey]);
+        }
+
+    }
+
+    private void DockingLayoutManager_OnDockLayoutReloaded()
+    {
+        foreach (KeyValuePair<string, UIDockSpaceDefinition> layoutDefinition in DockingLayoutManager.Layouts)
+        {
+            string menuName = FuGui.AddSpacesBeforeUppercase(layoutDefinition.Key);
+            if (!MainMenu.IsRegisteredItem(menuName))
+            {
+                MainMenu.RegisterItem(menuName, () => DockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+            }
+        }
     }
 
     private void CamWinDef_OnUIWindowCreated(UIWindow camWindow)

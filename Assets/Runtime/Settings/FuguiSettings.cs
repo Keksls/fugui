@@ -164,5 +164,10 @@ namespace Fugui.Core
         [Tooltip("Display the Tab bar button to the right of the tab bar.")]
         [Toggle]
         public bool TabBarButtonRight = true;
+        /// <summary>
+        /// Fugui Layout folder (must be inside streaming assetes folder)
+        /// </summary>
+        [Tooltip("Fugui Themes folder (must be inside streaming assetes folder)")]
+        public string LayoutsFolder = "Fugui/Layouts";
     }
 }

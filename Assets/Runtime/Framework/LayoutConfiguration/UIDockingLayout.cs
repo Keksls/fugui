@@ -22,7 +22,7 @@ namespace Fugui.Framework
                 {
                     bool saveAvailable = true;
 
-                    using(UIGrid _layoutManagement_grid = new UIGrid("_layoutManagement_grid"))
+                    using (UIGrid _layoutManagement_grid = new UIGrid("_layoutManagement_grid"))
                     {
                         _layoutManagement_grid.NextColumn();
                         _layoutManagement_grid.Text("Select a FuGui Layout Configuration in the list to edit. You can also create a new one and associate windows defination to layout and dockspaces. If you create a new one or edit an existing FuGui Layout, please clic on 'Save layout' button to save changes.");
@@ -90,9 +90,8 @@ namespace Fugui.Framework
                                 DockingLayoutManager.RefreshDockSpaces();
                             }
                         }
-
-                    }
-                });
+                    });
+                }
             }
         }
 
@@ -207,7 +206,7 @@ namespace Fugui.Framework
 
                         //Dockspace list has changed, refresh other UI component
                         DockingLayoutManager.RefreshDockSpaces();
-                    }, (int) dockSpaceDefinition.Orientation);
+                    }, (int)dockSpaceDefinition.Orientation);
 
                     // REcursive display for children
                     foreach (UIDockSpaceDefinition child in dockSpaceDefinition.Children)
@@ -316,9 +315,8 @@ namespace Fugui.Framework
                             for (int i = 0; i < DockingLayoutManager._fuguiWindows.Count; i++)
                             {
                                 KeyValuePair<int, string> item = DockingLayoutManager._fuguiWindows.ElementAt(i);
-                            tempGrid.Combobox(item.Value, DockingLayoutManager._definedDockSpaces.Values.ToList(), (x) =>
-                            {
-                                if (x != null)
+
+                                if (item.Value == "None")
                                 {
                                     continue;
                                 }
@@ -349,12 +347,6 @@ namespace Fugui.Framework
                     });
                 }
             }
-            catch
-            {
-
-            }
-
-            return jsonString;
         }
     }
 }

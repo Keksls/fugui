@@ -3,14 +3,13 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace Fugui.Framework
 {
     public static partial class FuGui
     {
+
         /// <summary>
         /// Creates a UI panel that contains the dock space manager and the layout manager
         /// </summary>
@@ -21,30 +20,54 @@ namespace Fugui.Framework
             {
                 loadSave_layout.Collapsable("Dockspace management", () =>
                 {
+                    bool saveAvailable = true;
+
                     using(UIGrid _layoutManagement_grid = new UIGrid("_layoutManagement_grid"))
                     {
                         _layoutManagement_grid.NextColumn();
                         _layoutManagement_grid.Text("Select a FuGui Layout Configuration in the list to edit. You can also create a new one and associate windows defination to layout and dockspaces. If you create a new one or edit an existing FuGui Layout, please clic on 'Save layout' button to save changes.");
                         _layoutManagement_grid.Combobox("Available layouts", DockingLayoutManager.Layouts.Keys.ToList(), (key) =>
                         {
-                            DockingLayoutManager._displayedLayout = DockingLayoutManager.Layouts[key];
-                            DockingLayoutManager._displayedLayoutName = key;
+                            DockingLayoutManager.DisplayedLayout = DockingLayoutManager.Layouts[key];
+                            DockingLayoutManager.DisplayLayoutName = key;
+                        },
+                        () =>
+                        {
+                            return DockingLayoutManager.DisplayLayoutName;
                         });
 
-                        _layoutManagement_grid.TextInput("Edit layout name", ref DockingLayoutManager._displayedLayoutName);
+                        _layoutManagement_grid.TextInput("Edit layout name", ref DockingLayoutManager.DisplayLayoutName);
+                        saveAvailable = DockingLayoutManager.checkSelectedName();
 
-                        using(UIGrid _buttonsAction_grid = new UIGrid("_buttonsAction_grid", new UIGridDefinition(3), UIGridFlag.Default))
+                        if (!saveAvailable)
                         {
+                            _layoutManagement_grid.NextColumn();
+                            _layoutManagement_grid.SmartText("<color=red>Current layout name is not allowed. Please enter a valid and unused file name, using only alphanumeric characters and underscores or dashes. The file name must end with <b>.flg</b>.</color>");
+                        }
+
+                        using (UIGrid _buttonsAction_grid = new UIGrid("_buttonsAction_grid", new UIGridDefinition(3), UIGridFlag.Default))
+                        {
+                            // create button
                             if (_buttonsAction_grid.Button("Create a new FuGui layout", UIButtonStyle.Highlight))
                             {
-                                int count = DockingLayoutManager.Layouts.Where(file => file.Key.StartsWith("New layout")).Count();
-                                string newFileName = "New layout " + count + ".flg";
-                                DockingLayoutManager.Layouts.Add(newFileName, new UIDockSpaceDefinition(newFileName, 0));
+                                DockingLayoutManager.createNewLayout();
+                            }
+
+                            // save button and behaviors
+                            if (!saveAvailable)
+                            {
+                                _buttonsAction_grid.DisableNextElement();
                             }
 
                             if (_buttonsAction_grid.Button("Save selected layout", UIButtonStyle.Info))
                             {
                                 DockingLayoutManager.saveSelectedLayout();
+                            }
+
+                            // delete button and behaviors
+                            if (string.IsNullOrEmpty(DockingLayoutManager.DisplayLayoutName))
+                            {
+                                _buttonsAction_grid.DisableNextElement();
                             }
 
                             if (_buttonsAction_grid.Button("Delete selected layout", UIButtonStyle.Danger))
@@ -55,7 +78,7 @@ namespace Fugui.Framework
                     }
                 });
 
-                if (DockingLayoutManager._displayedLayout != null)
+                if (DockingLayoutManager.DisplayedLayout != null)
                 {
                     loadSave_layout.Collapsable("Dockspace configuration", () =>
                     {
@@ -63,7 +86,7 @@ namespace Fugui.Framework
                         {
                             using (UILayout dockSpaceList_layout = new UILayout())
                             {
-                                ShowTreeView(dockSpaceList_layout, DockingLayoutManager._displayedLayout);
+                                ShowTreeView(dockSpaceList_layout, DockingLayoutManager.DisplayedLayout, true);
                                 DockingLayoutManager.RefreshDockSpaces();
                             }
                         }
@@ -95,14 +118,23 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="layout">The layout to use for displaying the tree view</param>
         /// <param name="dockSpaceDefinition">The dock space definition to show in the tree view</param>
-        private static void ShowTreeView(UILayout layout, UIDockSpaceDefinition dockSpaceDefinition)
+        /// <param name="root">Flag to set the root node</param>
+        private static void ShowTreeView(UILayout layout, UIDockSpaceDefinition dockSpaceDefinition, bool root = false)
         {
-            ImGui.SetNextItemOpen(true);
+            if (root)
+            {
+                ImGui.SetNextItemOpen(true);
+            }
 
             if (ImGui.TreeNode("DockSpace : " + dockSpaceDefinition.ID))
             {
                 using (UIGrid gridInfo = new UIGrid("gridInfo" + dockSpaceDefinition.ID, UIGridDefinition.DefaultAuto))
                 {
+                    if (dockSpaceDefinition.Name == "None")
+                    {
+                        dockSpaceDefinition.Name = "Dockspace";
+                    }
+
                     if (gridInfo.TextInput("Name" + dockSpaceDefinition.ID, ref dockSpaceDefinition.Name))
                     {
                         //Dockspace names changed, refresh other UI component
@@ -147,7 +179,7 @@ namespace Fugui.Framework
                                     DockSpaceDefinitionClearChildren(dockSpaceDefinition);
 
                                     dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Horizontal;
-                                    uint nextID = DockingLayoutManager._displayedLayout.GetTotalChildren();
+                                    uint nextID = DockingLayoutManager.DisplayedLayout.GetTotalChildren();
 
                                     UIDockSpaceDefinition leftPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitH_Left", nextID + 1);
                                     UIDockSpaceDefinition rightPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitH_Right", nextID + 2);
@@ -161,7 +193,7 @@ namespace Fugui.Framework
                                     DockSpaceDefinitionClearChildren(dockSpaceDefinition);
 
                                     dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Vertical;
-                                    uint nextID = DockingLayoutManager._displayedLayout.GetTotalChildren();
+                                    uint nextID = DockingLayoutManager.DisplayedLayout.GetTotalChildren();
 
                                     UIDockSpaceDefinition topPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitV_Top", nextID + 1);
                                     UIDockSpaceDefinition bottomPart = new UIDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitV_Bottom", nextID + 2);
@@ -174,7 +206,7 @@ namespace Fugui.Framework
 
                         //Dockspace list has changed, refresh other UI component
                         DockingLayoutManager.RefreshDockSpaces();
-                    });
+                    }, (int) dockSpaceDefinition.Orientation);
 
                     // REcursive display for children
                     foreach (UIDockSpaceDefinition child in dockSpaceDefinition.Children)
@@ -188,7 +220,6 @@ namespace Fugui.Framework
             }
         }
 
-        // TODO : some of inner logic must be func/method into DockingLayoutManager
         public static void WindowsDefinitionManager(UIWindow window)
         {
             using (UILayout windowsDefinition_layout = new UILayout())
@@ -197,7 +228,7 @@ namespace Fugui.Framework
                 {
                     using (UIGrid windowsDefinition_grid = new UIGrid("windowsDefinition_grid"))
                     {
-                        windowsDefinition_grid.Combobox("Windows definition", DockingLayoutManager._fuguiWindows.Values.ToList(), (x) => { DockingLayoutManager._selectedWindowDefinition = x; });
+                        windowsDefinition_grid.Combobox("Windows definition", DockingLayoutManager._fuguiWindows.Values.ToList(), (x) => { DockingLayoutManager._selectedWindowDefinition = x; }, () => { return DockingLayoutManager._selectedWindowDefinition; });
                         windowsDefinition_grid.TextInput("Window name", ref DockingLayoutManager._windowsToAdd);
 
                         if (!string.IsNullOrEmpty(DockingLayoutManager._windowsToAdd))
@@ -273,7 +304,7 @@ namespace Fugui.Framework
                 });
             }
 
-            if (DockingLayoutManager._displayedLayout != null)
+            if (DockingLayoutManager.DisplayedLayout != null)
             {
                 using (UILayout bindWindowsDef_Layout = new UILayout())
                 {
@@ -290,20 +321,27 @@ namespace Fugui.Framework
                                     continue;
                                 }
 
-                                tempGrid.Combobox(item.Value, DockingLayoutManager._definedDockSpaces.Values.ToList(), (x) =>
+                                if (DockingLayoutManager._definedDockSpaces != null)
                                 {
-                                    if (x != null)
+                                    tempGrid.Combobox(item.Value, DockingLayoutManager._definedDockSpaces.Values.ToList(), (x) =>
                                     {
-                                        if (x == "None")
+                                        if (x != null)
                                         {
-                                            DockingLayoutManager.unbindWindowToDockspace(item.Key);
+                                            if (x == "None")
+                                            {
+                                                DockingLayoutManager.unbindWindowToDockspace(item.Key);
+                                            }
+                                            else
+                                            {
+                                                DockingLayoutManager.bindWindowToDockspace(item.Key, x);
+                                            }
                                         }
-                                        else
-                                        {
-                                            DockingLayoutManager.bindWindowToDockspace(item.Key, x);
-                                        }
-                                    }
-                                });
+                                    },
+                                    () =>
+                                    {
+                                        return DockingLayoutManager.getBindedLayout(item.Key);
+                                    });
+                                }
                             }
                         };
                     });

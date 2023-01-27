@@ -120,6 +120,32 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Method that search for a child dock space with the specified window def ID in the current dock space and its children recursively
+        /// </summary>
+        /// <param name="windowDefID">The ID of the window definition</param>
+        /// <returns>The dock space with the specified name, or null if not found</returns>
+        internal UIDockSpaceDefinition SearchInChildren(int windowDefID)
+        {
+            if (WindowsDefinition.ContainsKey(windowDefID))
+            {
+                return this;
+            }
+            else
+            {
+                foreach (var child in Children)
+                {
+                    var found = child.SearchInChildren(windowDefID);
+
+                    if (found != null)
+                    {
+                        return found;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Method that removes all entries from the WindowsDefinition dictionary that have the specified window definition ID in the current dock space and its children recursively
         /// </summary>
         /// <param name="windowDefID">The ID of the window definition to remove</param>

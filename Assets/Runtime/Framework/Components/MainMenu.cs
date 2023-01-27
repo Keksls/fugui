@@ -51,6 +51,30 @@ namespace Fugui.Framework
         }
 
         /// <summary>
+        /// Unregistered an existing menu. Il menu has children, children will be unregistered too
+        /// </summary>
+        /// <param name="name">Menu to unregistered</param>
+        public static void UnregisterItem(string name)
+        {
+            // Check if a menu item with the same name has already been registered
+            if (_menuItems.ContainsKey(name))
+            {
+                MenuItem menuToRemove = _menuItems[name];
+
+                //If menu item to remove has children
+                if (menuToRemove.Children != null)
+                {
+                    for (int i = 0; i < menuToRemove.Children.Count; i++)
+                    {
+                        UnregisterItem(menuToRemove.Children[i].Name);
+                    }
+                }
+
+                _menuItems.Remove(name);
+            }
+        }
+
+        /// <summary>
         /// Check if a name is already registered
         /// </summary>
         /// <param name="name">Name to check</param>

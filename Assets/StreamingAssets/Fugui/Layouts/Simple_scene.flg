@@ -1,1 +1,0 @@
-{"Name":"Root","ID":483327408,"Proportion":0.5,"Orientation":1,"Children":[{"Name":"Left","ID":10,"Proportion":0.5,"Orientation":0,"Children":[],"WindowsDefinition":{"8":"MainCameraView"}},{"Name":"Right","ID":11,"Proportion":0.5,"Orientation":0,"Children":[],"WindowsDefinition":{"9":"FuguiSettings"}}],"WindowsDefinition":{}}

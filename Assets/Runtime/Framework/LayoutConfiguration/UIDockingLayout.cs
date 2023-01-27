@@ -152,10 +152,7 @@ namespace Fugui.Framework
 
                     if (dockSpaceDefinition.WindowsDefinition.Count > 0)
                     {
-                        using (UILayout listbox_layout = new UILayout())
-                        {
-                            listbox_layout.Listbox("windows", dockSpaceDefinition.WindowsDefinition.Values.ToList());
-                        }
+                        gridInfo.Listbox("Binded windows", dockSpaceDefinition.WindowsDefinition.Values.ToList());
                     }
                 }
 

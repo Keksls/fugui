@@ -226,10 +226,24 @@ namespace Fugui.Framework
                 case UIDockSpaceOrientation.None:
                     break;
                 case UIDockSpaceOrientation.Horizontal:
-                    ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Left, layout.Proportion, out layout.Children[0].ID, out layout.Children[1].ID);
+                    if (layout.Proportion > 0.5)
+                    {
+                        ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Right, 1 - layout.Proportion, out layout.Children[1].ID, out layout.Children[0].ID);
+                    }
+                    else
+                    {
+                        ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Left, layout.Proportion, out layout.Children[0].ID, out layout.Children[1].ID);
+                    }
                     break;
                 case UIDockSpaceOrientation.Vertical:
-                    ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Up, layout.Proportion, out layout.Children[0].ID, out layout.Children[1].ID);
+                    if (layout.Proportion > 0.5)
+                    {
+                        ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Down, 1 - layout.Proportion, out layout.Children[1].ID, out layout.Children[0].ID);
+                    }
+                    else
+                    {
+                        ImGuiDocking.DockBuilderSplitNode(layout.ID, ImGuiDir.Up, layout.Proportion, out layout.Children[0].ID, out layout.Children[1].ID);
+                    }
                     break;
             }
 

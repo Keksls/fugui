@@ -90,8 +90,9 @@ namespace Fugui.Framework
                                 DockingLayoutManager.RefreshDockSpaces();
                             }
                         }
-                    });
-                }
+
+                    }
+                });
             }
         }
 
@@ -315,8 +316,9 @@ namespace Fugui.Framework
                             for (int i = 0; i < DockingLayoutManager._fuguiWindows.Count; i++)
                             {
                                 KeyValuePair<int, string> item = DockingLayoutManager._fuguiWindows.ElementAt(i);
-
-                                if (item.Value == "None")
+                            tempGrid.Combobox(item.Value, DockingLayoutManager._definedDockSpaces.Values.ToList(), (x) =>
+                            {
+                                if (x != null)
                                 {
                                     continue;
                                 }
@@ -347,6 +349,12 @@ namespace Fugui.Framework
                     });
                 }
             }
+            catch
+            {
+
+            }
+
+            return jsonString;
         }
     }
 }

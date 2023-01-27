@@ -489,10 +489,6 @@ namespace Fugui.Framework
                         Debug.LogWarning(ex.GetBaseException().Message);
                         FuGui.Notify("Error", ex.GetBaseException().Message, StateType.Danger);
                     }
-                    finally
-                    {
-                        LoadLayouts();
-                    }
                 }
             }
         }

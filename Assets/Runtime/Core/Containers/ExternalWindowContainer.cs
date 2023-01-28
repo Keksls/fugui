@@ -28,6 +28,8 @@ namespace Fugui.Core
         UnityEngine.Vector2Int IUIWindowContainer.LocalMousePos { get => _mousePos; }
         UnityEngine.Vector2Int IUIWindowContainer.Position { get => _worldPosition; }
         UnityEngine.Vector2Int IUIWindowContainer.Size { get => _size; }
+        public float Scale => 1f;
+
         private bool _contextInitialized;
         private MouseState _mouseState;
         private KeyboardState _keyboardState;
@@ -261,7 +263,7 @@ namespace Fugui.Core
         /// <param name="size">size of the texture</param>
         public void ImGuiImage(UnityEngine.Texture2D texture, UnityEngine.Vector2 size)
         {
-            ImGui.Image(GetTextureID(texture), size, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f));
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f));
         }
 
         /// <summary>
@@ -271,7 +273,7 @@ namespace Fugui.Core
         /// <param name="size">size of the texture</param>
         public void ImGuiImage(UnityEngine.RenderTexture texture, UnityEngine.Vector2 size)
         {
-            ImGui.Image(GetTextureID(texture), size, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f));
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f));
         }
 
         /// <summary>
@@ -282,7 +284,7 @@ namespace Fugui.Core
         /// <param name="color">tint color of the texture</param>
         public void ImGuiImage(UnityEngine.Texture2D texture, UnityEngine.Vector2 size, UnityEngine.Vector4 color)
         {
-            ImGui.Image(GetTextureID(texture), size, UnityEngine.Vector2.zero, UnityEngine.Vector2.one, color);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale, UnityEngine.Vector2.zero, UnityEngine.Vector2.one, color);
         }
 
         /// <summary>
@@ -293,7 +295,7 @@ namespace Fugui.Core
         /// <param name="color">tint color of the texture</param>
         public void ImGuiImage(UnityEngine.RenderTexture texture, UnityEngine.Vector2 size, UnityEngine.Vector4 color)
         {
-            ImGui.Image(GetTextureID(texture), size, UnityEngine.Vector2.zero, UnityEngine.Vector2.one, color);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale, UnityEngine.Vector2.zero, UnityEngine.Vector2.one, color);
         }
 
         /// <summary>
@@ -304,7 +306,7 @@ namespace Fugui.Core
         public bool ImGuiImageButton(UnityEngine.Texture2D texture, UnityEngine.Vector2 size)
         {
             // TODO : add ID to image button
-            return ImGui.ImageButton("", GetTextureID(texture), size, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f));
+            return ImGui.ImageButton("", GetTextureID(texture), size * FuGui.CurrentContext.Scale, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f));
         }
 
         /// <summary>
@@ -316,7 +318,7 @@ namespace Fugui.Core
         public bool ImGuiImageButton(UnityEngine.Texture2D texture, UnityEngine.Vector2 size, UnityEngine.Vector4 color)
         {
             // TODO : add ID to image button
-            return ImGui.ImageButton("", GetTextureID(texture), size, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f), ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
+            return ImGui.ImageButton("", GetTextureID(texture), size * FuGui.CurrentContext.Scale, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f), ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
         }
         #endregion
 

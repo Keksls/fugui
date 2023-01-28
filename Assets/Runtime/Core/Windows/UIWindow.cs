@@ -106,7 +106,7 @@ namespace Fugui.Core
             get { return _size; }
             set
             {
-                _size = value;
+                _size = new Vector2Int((int)(value.x * Container?.Scale ?? 1f), (int)(value.y * Container?.Scale ?? 1f));
                 _localRect = new Rect(_localPosition, _size);
                 _forceLocationNextFrame = true;
             }
@@ -246,17 +246,6 @@ namespace Fugui.Core
                 return;
             }
 
-            // handle ImGui window resize
-            if (_lastFrameSize != newFrameSize)
-            {
-                if (!_forceLocationNextFrame || IsDocked)
-                {
-                    Size = newFrameSize;
-                }
-                Fire_OnResize();
-            }
-
-
             // handle ImGui window local move
             if (_lastFramePos != newFramePos)
             {
@@ -267,6 +256,17 @@ namespace Fugui.Core
                 {
                     IsDragging = true;
                 }
+            }
+
+            // handle ImGui window resize
+            if (_lastFrameSize != newFrameSize)
+            {
+                if (!_forceLocationNextFrame || IsDocked)
+                {
+                    _size = newFrameSize;
+                    _localRect = new Rect(_localPosition, _size);
+                }
+                Fire_OnResize();
             }
 
             // drag state

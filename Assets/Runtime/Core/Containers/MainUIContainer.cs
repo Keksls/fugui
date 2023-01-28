@@ -32,6 +32,8 @@ namespace Fugui.Core
         /// The ID of the dockspace.
         /// </summary>
         public uint Dockspace_id { get; private set; } = uint.MaxValue;
+        public float Scale => 1f;
+
         // The world position of the container.
         private Vector2Int _worldPosition;
         // A queue of windows to be externalized.
@@ -226,34 +228,34 @@ namespace Fugui.Core
 
         public void ImGuiImage(RenderTexture texture, Vector2 size)
         {
-            ImGui.Image(GetTextureID(texture), size);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale);
         }
 
         public void ImGuiImage(Texture2D texture, Vector2 size)
         {
-            ImGui.Image(GetTextureID(texture), size);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale);
         }
 
         public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color)
         {
-            ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale, Vector2.zero, Vector2.one, color);
         }
 
         public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color)
         {
-            ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale, Vector2.zero, Vector2.one, color);
         }
 
         public bool ImGuiImageButton(Texture2D texture, Vector2 size)
         {
             // TODO : add ID to image button
-            return ImGui.ImageButton("", GetTextureID(texture), size);
+            return ImGui.ImageButton("", GetTextureID(texture), size * FuGui.CurrentContext.Scale);
         }
 
         public bool ImGuiImageButton(Texture2D texture, Vector2 size, Vector4 color)
         {
             // TODO : add ID to image button
-            return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
+            return ImGui.ImageButton("", GetTextureID(texture), size * FuGui.CurrentContext.Scale, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
         }
         #endregion
 

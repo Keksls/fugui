@@ -124,7 +124,10 @@ MonoBehaviour:
     InternalizeOnMouseRelease: 0
     IdleFPS: 4
     ManipulatingFPS: 48
-    Windows3DScale: 10
+    Windows3DScale: 5
+    Windows3DSuperSampling: 2
+    Windows3DFontScale: 3
+    UIPanelWidth: 0.066
     ExternalManipulatingTicks: 10000
     ExternalWindowFlags: 0
     DrawDebugPanel: 0

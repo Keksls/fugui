@@ -13,7 +13,6 @@ public class UIWindowDemo : MonoBehaviour
 {
     public Camera cam1;
     public Texture2D TmpDebugTexture;
-    public GameObject LastPointObject;
     public bool ShowImGuiDemoWindow = false;
     public bool ShowRaycastersDebug = false;
     public test3DRaycaster Raycaster;
@@ -689,7 +688,6 @@ public class UIWindowDemo : MonoBehaviour
     float hitForce = 50f;
     private void clickOnSphere(RaycastHit hit, Ray ray)
     {
-        LastPointObject.transform.position = hit.point;
         Rigidbody rb = hit.collider.GetComponent<Rigidbody>();
         if (rb == null)
             return;

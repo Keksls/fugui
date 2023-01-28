@@ -31,6 +31,14 @@ namespace Fugui.Framework
             {
                 size.x = ImGui.GetContentRegionAvail().x;
             }
+            else if (_size.x > 0)
+            {
+                _size.x *= FuGui.CurrentContext.Scale;
+            }
+            if (_size.y > 0)
+            {
+                _size.y *= FuGui.CurrentContext.Scale;
+            }
             return size;
         }
 

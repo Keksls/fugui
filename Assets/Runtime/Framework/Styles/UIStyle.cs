@@ -64,8 +64,8 @@ namespace Fugui.Framework
                 _containerStyle = UIPanelStyle.Default,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
-                _framePadding = new Vector2(6f, 1f),
-                WindowPadding = new Vector2(2f, 2f)
+                _framePadding = new Vector2(6f, 1f) * FuGui.CurrentContext.Scale,
+                WindowPadding = new Vector2(2f, 2f) * FuGui.CurrentContext.Scale
             };
 
             // unpadded layout style
@@ -74,8 +74,8 @@ namespace Fugui.Framework
                 _containerStyle = UIPanelStyle.Default,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
-                _framePadding = new Vector2(6f, 1f),
-                WindowPadding = new Vector2(0f, 0f)
+                _framePadding = new Vector2(6f, 1f) * FuGui.CurrentContext.Scale,
+                WindowPadding = new Vector2(0f, 0f) * FuGui.CurrentContext.Scale
             };
 
             // overlay layout style
@@ -84,8 +84,8 @@ namespace Fugui.Framework
                 _containerStyle = UIPanelStyle.Default,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
-                _framePadding = new Vector2(6f, 4f),
-                WindowPadding = new Vector2(8f, 8f)
+                _framePadding = new Vector2(6f, 4f) * FuGui.CurrentContext.Scale,
+                WindowPadding = new Vector2(8f, 8f) * FuGui.CurrentContext.Scale
             };
 
             // no background overlay style
@@ -94,8 +94,8 @@ namespace Fugui.Framework
                 _containerStyle = UIPanelStyle.Transparent,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
-                _framePadding = new Vector2(6f, 4f),
-                WindowPadding = new Vector2(8f, 8f)
+                _framePadding = new Vector2(6f, 4f) * FuGui.CurrentContext.Scale,
+                WindowPadding = new Vector2(8f, 8f) * FuGui.CurrentContext.Scale
             };
 
             // _modal style
@@ -104,8 +104,8 @@ namespace Fugui.Framework
                 _containerStyle = UIPanelStyle.Transparent,
                 _frameStyle = UIFrameStyle.Default,
                 _textStyle = UITextStyle.Default,
-                _framePadding = new Vector2(6f, 1f),
-                WindowPadding = new Vector2(0f, 0f)
+                _framePadding = new Vector2(6f, 1f) * FuGui.CurrentContext.Scale,
+                WindowPadding = new Vector2(0f, 0f) * FuGui.CurrentContext.Scale
             };
         }
     }

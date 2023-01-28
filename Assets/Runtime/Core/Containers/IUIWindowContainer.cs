@@ -14,6 +14,7 @@ namespace Fugui.Core
         public Vector2Int LocalMousePos { get; }
         public Vector2Int Position { get; }
         public Vector2Int Size { get; }
+        public float Scale { get; }
 
         /// <summary>
         /// Try to add an UI window to this container

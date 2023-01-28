@@ -73,7 +73,7 @@ namespace Fugui.Core
             };
 
             // register raycaster
-            _raycaster = new FuguiRaycaster(ID, GetCameraRay, () => Mouse.IsDown(0), () => Mouse.IsDown(1), () => Mouse.IsDown(2), () => Mouse.Wheel.y, () => true);// IsHovered && !Mouse.IsHoverPopup && !Mouse.IsHoverPopup);
+            _raycaster = new FuguiRaycaster(ID, GetCameraRay, () => Mouse.IsDown(0), () => Mouse.IsDown(1), () => Mouse.IsDown(2), () => Mouse.Wheel.y, () => IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup);
             InputManager.RegisterRaycaster(_raycaster);
         }
 
@@ -158,7 +158,10 @@ namespace Fugui.Core
 
             NeedToUpdateCamera = false;
             // resize render texture
-
+            if(WorkingAreaSize.x <= 10 || WorkingAreaSize.y <= 10 || _superSampling <= 0.1f)
+            {
+                return;
+            }
             _rTexture.Release();
             _rTexture.width = (int)(WorkingAreaSize.x * _superSampling);
             _rTexture.height = (int)(WorkingAreaSize.y * _superSampling);

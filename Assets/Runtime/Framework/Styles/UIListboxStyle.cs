@@ -1,4 +1,3 @@
-using Fugui.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -43,6 +42,7 @@ namespace Fugui.Framework
             }
             TextStyle.Push(enabled); // push the text style onto the stack
         }
+
         /// <summary>
         /// Pops the style for the combobox element.
         /// </summary>

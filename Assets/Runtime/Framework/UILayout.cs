@@ -178,7 +178,7 @@ namespace Fugui.Framework
         /// <param name="y">height of the dummy</param>
         public void Dummy(float x = 0f, float y = 0f)
         {
-            ImGui.Dummy(new Vector2(x, y));
+            ImGui.Dummy(new Vector2(x, y) * FuGui.CurrentContext.Scale);
         }
 
         /// <summary>
@@ -187,7 +187,7 @@ namespace Fugui.Framework
         /// <param name="size">size of the dummy</param>
         public void Dummy(Vector2 size)
         {
-            ImGui.Dummy(size);
+            ImGui.Dummy(size * FuGui.CurrentContext.Scale);
         }
 
         #region private utils

@@ -81,15 +81,15 @@ namespace Fugui.Framework
 
             // Calculate the position and size of the slider
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
-            float knobRadius = 5f;
-            float hoverPaddingY = 4f;
-            float height = 20f;
-            float lineHeight = 2f;
-            float dragWidth = 52f;
-            float width = ImGui.GetContentRegionAvail().x - dragWidth - 8f;
+            float knobRadius = 5f * FuGui.CurrentContext.Scale;
+            float hoverPaddingY = 4f * FuGui.CurrentContext.Scale;
+            float height = 20f * FuGui.CurrentContext.Scale;
+            float lineHeight = 2f * FuGui.CurrentContext.Scale;
+            float dragWidth = 52f * FuGui.CurrentContext.Scale;
+            float width = ImGui.GetContentRegionAvail().x - dragWidth - (8f * FuGui.CurrentContext.Scale);
             if (flags.HasFlag(SliderFlags.NoDrag))
             {
-                width += dragWidth + 8f;
+                width += dragWidth + (8f * FuGui.CurrentContext.Scale);
             }
             float x = cursorPos.x;
             float y = cursorPos.y + height / 2f;
@@ -101,7 +101,7 @@ namespace Fugui.Framework
                 case SliderFlags.Default:
                     if (drawSlider(text, ref value, min, max, isInt, knobRadius, hoverPaddingY, lineHeight, width, x, y))
                     {
-                        ImGui.Dummy(new Vector2(width + 4f, 0f));
+                        ImGui.Dummy(new Vector2(width + (4f * FuGui.CurrentContext.Scale), 0f));
                         ImGui.SameLine();
                     }
                     drawDrag(text, ref value, min, max, isInt);
@@ -109,7 +109,7 @@ namespace Fugui.Framework
 
                 case SliderFlags.LeftDrag:
                     drawDrag(text, ref value, min, max, isInt);
-                    x += dragWidth + 8f;
+                    x += dragWidth + (8f * FuGui.CurrentContext.Scale);
                     drawSlider(text, ref value, min, max, isInt, knobRadius, hoverPaddingY, lineHeight, width, x, y);
                     break;
 
@@ -125,7 +125,7 @@ namespace Fugui.Framework
             void drawDrag(string text, ref float value, float min, float max, bool isInt)
             {
                 string formatString = getFloatString("##sliderInput" + text, value);
-                ImGui.PushItemWidth(52f);
+                ImGui.PushItemWidth(dragWidth);
                 if (ImGui.InputFloat("##sliderInput" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, _nextIsDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
                 {
                     // Clamp the value to the min and max range

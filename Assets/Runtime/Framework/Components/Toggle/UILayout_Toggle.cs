@@ -52,23 +52,23 @@ namespace Fugui.Framework
             }
 
             // draw states
-            float height = string.IsNullOrEmpty(currentText) ? 16f : textSize.y + 4f;
+            float height = string.IsNullOrEmpty(currentText) ? 16f * FuGui.CurrentContext.Scale : textSize.y + 4f * FuGui.CurrentContext.Scale;
             bool valueChanged = false;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             Vector2 size = new Vector2(string.IsNullOrEmpty(currentText) ? height * 2f : height * 2f + textSize.x, height);
             if (!flags.HasFlag(ToggleFlags.AlignLeft))
             {
-                ImGui.Dummy(new Vector2(ImGui.GetContentRegionAvail().x - size.x - 4f, 0f));
+                ImGui.Dummy(new Vector2(ImGui.GetContentRegionAvail().x - size.x - 4f * FuGui.CurrentContext.Scale, 0f));
                 ImGui.SameLine();
             }
             Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 center = pos + new Vector2(size.x / 2, size.y / 2);
-            float radius = size.y / 2f - 3f;
+            float radius = size.y / 2f - 3f * FuGui.CurrentContext.Scale;
             Vector2 startCursorPos = ImGui.GetCursorPos();
 
             // handle knob position animation
-            Vector2 knobLeftPos = new Vector2(pos.x + 3f, center.y - radius);
-            Vector2 knobRightPos = new Vector2(pos.x + size.x - (radius * 2f) - 3f, center.y - radius);
+            Vector2 knobLeftPos = new Vector2(pos.x + 3f * FuGui.CurrentContext.Scale, center.y - radius);
+            Vector2 knobRightPos = new Vector2(pos.x + size.x - (radius * 2f) - 3f * FuGui.CurrentContext.Scale, center.y - radius);
             Vector2 knobPos = Vector2.Lerp(knobLeftPos, knobRightPos, data.CurrentValue);
 
             // input states
@@ -109,13 +109,13 @@ namespace Fugui.Framework
             {
                 if (!value)
                 {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + radius * 2f + 12f);
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + radius * 2f + 12f * FuGui.CurrentContext.Scale);
                 }
                 else
                 {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 8f);
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 8f * FuGui.CurrentContext.Scale);
                 }
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2f);
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2f * FuGui.CurrentContext.Scale);
                 FuGui.Push(ImGuiCol.Text, TextColor);
                 ImGui.Text(currentText);
                 FuGui.PopColor();

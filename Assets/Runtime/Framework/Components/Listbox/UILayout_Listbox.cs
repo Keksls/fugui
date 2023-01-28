@@ -119,8 +119,8 @@ namespace Fugui.Framework
                 selectedIndex = items.Count - 1;
             }
 
-            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f));
-            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
+            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f) * FuGui.CurrentContext.Scale);
+            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * FuGui.CurrentContext.Scale);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
 
             if (ImGui.BeginListBox("##" + text))
@@ -193,10 +193,10 @@ namespace Fugui.Framework
         public virtual void Listbox(string text, string selectedItemText, Action callback, UIListboxStyle style, int height = 0)
         {
             text = beginElement(text, style);
-
+            height =(int)(height * FuGui.CurrentContext.Scale);
             // Adjust the padding for the frame and window
-            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f));
-            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
+            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f) * FuGui.CurrentContext.Scale);
+            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * FuGui.CurrentContext.Scale);
 
             // Begin the listbox
             if (ImGui.BeginListBox(text))

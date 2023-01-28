@@ -73,32 +73,32 @@ namespace Fugui.Framework
             id = beginElement(id, style);
 
             // set padding
-            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
+            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f * FuGui.CurrentContext.Scale, 8f * FuGui.CurrentContext.Scale));
 
-            float height = 18f;
+            float height = 18f * FuGui.CurrentContext.Scale;
             float width = ImGui.GetContentRegionAvail().x;
             float rounding = 0f;
             var drawList = ImGui.GetWindowDrawList();
 
             Vector2 min = ImGui.GetCursorScreenPos();
-            min.x += 2;
-            min.y += 2;
+            min.x += 2 * FuGui.CurrentContext.Scale;
+            min.y += 2 * FuGui.CurrentContext.Scale;
             Vector2 max = min + new Vector2(width, height);
-            max.x -= 2;
-            max.y -= 2;
+            max.x -= 2 * FuGui.CurrentContext.Scale;
+            max.y -= 2 * FuGui.CurrentContext.Scale;
             // draw color part
             Vector4 alphalessColor = color;
             alphalessColor.w = 1f;
-            drawList.AddRectFilled(min, new Vector2(max.x, max.y - (alpha ? 4 : 0)), ImGui.GetColorU32(alphalessColor), rounding);
+            drawList.AddRectFilled(min, new Vector2(max.x, max.y - (alpha ? 4 * FuGui.CurrentContext.Scale : 0)), ImGui.GetColorU32(alphalessColor), rounding);
             if (alpha)
             {
                 // draw alpha 1
                 float alphaWidth = color.w * (max.x - min.x);
-                drawList.AddRectFilled(new Vector2(min.x, max.y - 4), new Vector2(min.x + alphaWidth, max.y), ImGui.GetColorU32(Vector4.one), rounding);
+                drawList.AddRectFilled(new Vector2(min.x, max.y - 4 * FuGui.CurrentContext.Scale), new Vector2(min.x + alphaWidth, max.y), ImGui.GetColorU32(Vector4.one), rounding);
                 if (color.w < 1.0f)
                 {
                     // draw alpha 0
-                    drawList.AddRectFilled(new Vector2(min.x + alphaWidth, max.y - 4), new Vector2(max.x, max.y), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), rounding);
+                    drawList.AddRectFilled(new Vector2(min.x + alphaWidth, max.y - 4 * FuGui.CurrentContext.Scale), new Vector2(max.x, max.y), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), rounding);
                 }
             }
 
@@ -119,16 +119,16 @@ namespace Fugui.Framework
 
             if (alpha)
             {
-                ImGui.SetNextWindowSize(new Vector2(256f, 202f));
+                ImGui.SetNextWindowSize(new Vector2(256f * FuGui.CurrentContext.Scale, 202f * FuGui.CurrentContext.Scale));
             }
             else
             {
-                ImGui.SetNextWindowSize(new Vector2(256f, 224f));
+                ImGui.SetNextWindowSize(new Vector2(256f * FuGui.CurrentContext.Scale, 224f * FuGui.CurrentContext.Scale));
             }
             if (ImGui.BeginPopup("ColorPicker" + id))
             {
                 // Draw the color picker
-                ImGui.SetNextItemWidth(184f);
+                ImGui.SetNextItemWidth(184f * FuGui.CurrentContext.Scale);
                 edited = ImGui.ColorPicker4("##picker" + id, ref color, ImGuiColorEditFlags.DefaultOptions | ImGuiColorEditFlags.DisplayHex | (alpha ? ImGuiColorEditFlags.AlphaBar : ImGuiColorEditFlags.NoAlpha));
                 if (CurrentPopUpID != "ColorPicker" + id)
                 {

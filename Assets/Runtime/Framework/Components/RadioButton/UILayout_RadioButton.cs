@@ -35,12 +35,12 @@ namespace Fugui.Framework
             UIElementAnimationData animationData = _uiElementAnimationDatas[id];
 
             // layout states
-            float height = 18f;
+            float height = 18f * FuGui.CurrentContext.Scale;
             Vector2 pos = ImGui.GetCursorScreenPos();
-            Vector2 CircleCenter = new Vector2(pos.x + height / 2f + 2f, pos.y + height / 2f + 2f);
+            Vector2 CircleCenter = new Vector2(pos.x + height / 2f + 2f * FuGui.CurrentContext.Scale, pos.y + height / 2f + 2f * FuGui.CurrentContext.Scale);
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             // input stats
-            bool hovered = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(height + 4f, height));
+            bool hovered = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(height + 4f * FuGui.CurrentContext.Scale, height));
             bool active = hovered && ImGui.IsMouseDown(0);
             bool clicked = hovered && ImGui.IsMouseReleased(0);
             // frame colors
@@ -89,7 +89,7 @@ namespace Fugui.Framework
             animationData.Update(isChecked, _animationEnabled);
 
             // dummy display button
-            ImGui.Dummy(new Vector2(height + 4f, height));
+            ImGui.Dummy(new Vector2(height + 4f * FuGui.CurrentContext.Scale, height));
             ImGui.SameLine();
             // align and draw text
             ImGui.AlignTextToFramePadding();

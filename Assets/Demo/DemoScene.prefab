@@ -10801,7 +10801,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cam1: {fileID: 5027617570534833868}
   TmpDebugTexture: {fileID: 2800000, guid: d7f0d3be02ca8a54086ef7e5b10c95b9, type: 3}
-  LastPointObject: {fileID: 0}
   ShowImGuiDemoWindow: 0
   ShowRaycastersDebug: 0
   Raycaster: {fileID: 3334510347609701449}
@@ -10832,7 +10831,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6858132336863804837}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 1, z: -2}
   m_LocalScale: {x: 0.2, y: 0.2, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children:

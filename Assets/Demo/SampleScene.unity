@@ -231,29 +231,9 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5027617568821574553, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5027617569182750668, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5027617569530411785, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5190680658197817161, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_Name
       value: DemoScene
-      objectReference: {fileID: 0}
-    - target: {fileID: 5190680658197817161, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6858132336863804837, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}

@@ -147,8 +147,8 @@ namespace Fugui.Framework
                 selectedIndex = items.Count - 1;
             }
 
-            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f));
-            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
+            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f) * FuGui.CurrentContext.Scale);
+            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * FuGui.CurrentContext.Scale);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
 
             if (ImGui.BeginCombo("##" + text, items[selectedIndex].ToString()))
@@ -222,8 +222,8 @@ namespace Fugui.Framework
             text = beginElement(text, style);
 
             // Adjust the padding for the frame and window
-            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f));
-            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
+            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f) * FuGui.CurrentContext.Scale);
+            FuGui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * FuGui.CurrentContext.Scale);
 
             // Begin the combobox
             if (ImGui.BeginCombo(text, selectedItemText))

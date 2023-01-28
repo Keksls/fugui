@@ -2,7 +2,6 @@
 using ImGuiNET;
 using System;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Fugui.Core
 {
@@ -17,6 +16,8 @@ namespace Fugui.Core
         public Camera Camera { get; private set; }
         private GameObject _panelGameObject;
         public int FuguiContextID { get { return _fuguiContext.ID; } }
+        public float Scale => _scale;
+        private float _scale;
         private Vector2Int _localMousePos;
         private Vector2Int _size;
         private UnityContext _fuguiContext;
@@ -29,6 +30,7 @@ namespace Fugui.Core
             ID = "3DContext_" + _3DContextindex;
 
             _localMousePos = new Vector2Int(-1, -1);
+            _scale = FuGui.Settings.Windows3DSuperSampling;
 
             // remove the window from it's old container if has one
             window.TryRemoveFromContainer();
@@ -71,7 +73,7 @@ namespace Fugui.Core
             createPanel();
 
             // create the fugui 3d context
-            _fuguiContext = FuGui.CreateUnityContext(Camera);
+            _fuguiContext = FuGui.CreateUnityContext(Camera, FuGui.Settings.Windows3DSuperSampling, FuGui.Settings.Windows3DFontScale);
             _fuguiContext.OnRender += _context_OnRender;
             _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
             _fuguiContext.AutoUpdateMouse = false;
@@ -99,7 +101,7 @@ namespace Fugui.Core
             RoundedRectangleMesh rectangleMesh = _panelGameObject.AddComponent<RoundedRectangleMesh>();
             float round = ThemeManager.CurrentTheme.WindowRounding;
             MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
-            collider.sharedMesh = rectangleMesh.CreateMesh(Window.Size.x, Window.Size.y, 1f / 1000f * FuGui.Settings.Windows3DScale, round, round, round, round, FuGui.Settings.UIPanelWidth, 32, _uiMaterial, FuGui.Settings.UIPanelMaterial);
+            collider.sharedMesh = rectangleMesh.CreateMesh(Window.Size.x / _scale, Window.Size.y / _scale, 1f / 1000f * FuGui.Settings.Windows3DScale, round, round, round, round, FuGui.Settings.UIPanelWidth, 32, _uiMaterial, FuGui.Settings.UIPanelMaterial);
             int layer = (int)Mathf.Log(FuGui.Settings.UILayer.value, 2);
             _panelGameObject.layer = layer;
             foreach (Transform child in Camera.transform)
@@ -134,13 +136,14 @@ namespace Fugui.Core
                 Window.ForceDraw();
             }
 
+            Vector2 scaledMousePosition = inputState.MousePosition * (1000f / FuGui.Settings.Windows3DScale) * Scale;
             // calculate IO mouse pos
-            _localMousePos = new Vector2Int((int)inputState.MousePosition.x, (int)inputState.MousePosition.y);
+            _localMousePos = new Vector2Int((int)scaledMousePosition.x, (int)scaledMousePosition.y);
             if (inputState.Hovered)
             {
                 _localMousePos.x += _size.x / 2;
-                _localMousePos.y = Size.y - (_localMousePos.y + (Size.y / 2));
-            }
+                _localMousePos.y = Size.y - _localMousePos.y;
+            }   
 
             // update context mouse position
             _fuguiContext.UpdateMouse(_localMousePos, new Vector2(0f, inputState.MouseWheel), inputState.MouseDown[0], inputState.MouseDown[1], inputState.MouseDown[2]);
@@ -177,34 +180,34 @@ namespace Fugui.Core
 
         public void ImGuiImage(RenderTexture texture, Vector2 size)
         {
-            ImGui.Image(GetTextureID(texture), size);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale);
         }
 
         public void ImGuiImage(Texture2D texture, Vector2 size)
         {
-            ImGui.Image(GetTextureID(texture), size);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale);
         }
 
         public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color)
         {
-            ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale, Vector2.zero, Vector2.one, color);
         }
 
         public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color)
         {
-            ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
+            ImGui.Image(GetTextureID(texture), size * FuGui.CurrentContext.Scale, Vector2.zero, Vector2.one, color);
         }
 
         public bool ImGuiImageButton(Texture2D texture, Vector2 size)
         {
             // TODO : add ID to image button
-            return ImGui.ImageButton("", GetTextureID(texture), size);
+            return ImGui.ImageButton("", GetTextureID(texture), size * FuGui.CurrentContext.Scale);
         }
 
         public bool ImGuiImageButton(Texture2D texture, Vector2 size, Vector4 color)
         {
             // TODO : add ID to image button
-            return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
+            return ImGui.ImageButton("", GetTextureID(texture), size * FuGui.CurrentContext.Scale, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
         }
         #endregion
 
@@ -212,6 +215,7 @@ namespace Fugui.Core
         {
             // call UIWindow.DrawWindow
             UIWindow.DrawWindow();
+            UIWindow.UpdateState(_fuguiContext.IO.MouseDown[0]);
         }
 
         public void RenderUIWindows()

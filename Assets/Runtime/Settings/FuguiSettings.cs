@@ -36,6 +36,18 @@ namespace Fugui.Core
         [Range(1f, 100f)]
         [Slider(1f, 100f)]
         public float Windows3DScale = 10f;
+        /// <summary>
+        /// The number of FPS to be used when the UI windows are being manipulated.
+        /// </summary>
+        [Range(0.5f, 4f)]
+        [Slider(0.5f, 4f)]
+        public float Windows3DSuperSampling = 2f;
+        /// <summary>
+        /// The number of FPS to be used when the UI windows are being manipulated.
+        /// </summary>
+        [Range(1f, 10f)]
+        [Slider(1f, 10f)]
+        public float Windows3DFontScale = 2f;
         [Range(0.0001f, 0.25f)]
         [Slider(0.0001f, 0.25f)]
         public float UIPanelWidth = 0.066f;

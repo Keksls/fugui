@@ -90,7 +90,7 @@ namespace Fugui.Framework
             _renderThreadStarted = false;
 
             // create Default Fugui Context and initialize themeManager
-            DefaultContext = CreateUnityContext(mainContainerUICamera, ThemeManager.Initialize);
+            DefaultContext = CreateUnityContext(mainContainerUICamera, 1f, 1f, ThemeManager.Initialize);
             DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
@@ -632,9 +632,9 @@ namespace Fugui.Framework
         /// <param name="camera">Camera that will render the context</param>
         /// <param name="onInitialize">invoked on context initialization</param>
         /// <returns>the context created</returns>
-        public static unsafe UnityContext CreateUnityContext(Camera camera, Action onInitialize = null)
+        public static unsafe UnityContext CreateUnityContext(Camera camera, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
         {
-            return CreateUnityContext(_contextID++, camera, onInitialize);
+            return CreateUnityContext(_contextID++, camera, scale, fontScale, onInitialize);
         }
 
         /// <summary>
@@ -644,13 +644,13 @@ namespace Fugui.Framework
         /// <param name="camera">Camera that will render the context</param>
         /// <param name="onInitialize">invoked on context initialization</param>
         /// <returns>the context created</returns>
-        private static unsafe UnityContext CreateUnityContext(int index, Camera camera, Action onInitialize = null)
+        private static unsafe UnityContext CreateUnityContext(int index, Camera camera, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
         {
             if (Contexts.ContainsKey(index))
                 return null;
 
             // create and add context
-            UnityContext context = new UnityContext(index, onInitialize, camera, Manager.Render);
+            UnityContext context = new UnityContext(index, scale, fontScale, onInitialize, camera, Manager.Render);
             Contexts.Add(index, context);
 
             return context;
@@ -661,9 +661,9 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="onInitialize">invoked on context initialization</param>
         /// <returns>the context created</returns>
-        public static unsafe ExternalContext CreateExternalContext(Action onInitialize = null)
+        public static unsafe ExternalContext CreateExternalContext(float scale = 1f, float fontScale = 1f, Action onInitialize = null)
         {
-            return CreateExternalContext(_contextID++);
+            return CreateExternalContext(_contextID++, scale, fontScale, onInitialize);
         }
 
         /// <summary>
@@ -672,13 +672,13 @@ namespace Fugui.Framework
         /// <param name="index">index of the context</param>
         /// <param name="onInitialize">invoked on context initialization</param>
         /// <returns>the context created</returns>
-        private static unsafe ExternalContext CreateExternalContext(int index, Action onInitialize = null)
+        private static unsafe ExternalContext CreateExternalContext(int index, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
         {
             if (Contexts.ContainsKey(index))
                 return null;
 
             // create and add context
-            ExternalContext context = new ExternalContext(index, onInitialize);
+            ExternalContext context = new ExternalContext(index, scale, fontScale, onInitialize);
             Contexts.Add(index, context);
 
             return context;

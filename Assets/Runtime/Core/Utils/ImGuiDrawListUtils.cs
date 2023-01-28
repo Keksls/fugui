@@ -94,7 +94,7 @@ namespace Fugui.Core
                 }
             }
 
-            cmd.FramebufferScale = Vector2.one;
+            cmd.FramebufferScale = imDrawDataPtr.FramebufferScale;
             cmd.DisplayPos = imDrawDataPtr.DisplayPos;
             cmd.DisplaySize = imDrawDataPtr.DisplaySize;
             return cmd;
@@ -283,7 +283,7 @@ namespace Fugui.Core
             {
                 AddDrawList(new DrawList(imDrawData.CmdListsRange[i]));
             }
-            FramebufferScale = Vector2.one;
+            FramebufferScale = imDrawData.FramebufferScale;
             DisplayPos = imDrawData.DisplayPos;
             DisplaySize = imDrawData.DisplaySize;
         }

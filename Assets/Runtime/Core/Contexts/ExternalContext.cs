@@ -10,17 +10,17 @@ namespace Fugui.Core
     /// </summary>
     public class ExternalContext : FuguiContext
     {
-        public ExternalContext(int index, Action onInitialize = null) : base(index, onInitialize)
+        public ExternalContext(int index, float scale, float fontScale, Action onInitialize = null) : base(index, scale, fontScale, onInitialize)
         {
-            initialize(index, onInitialize);
+            initialize(fontScale, onInitialize);
         }
 
         /// <summary>
         /// Initialize this context for specific sub class. Don't call it, Fugui layout handle it for you
         /// </summary>
-        protected override void sub_initialize()
+        protected override void sub_initialize(float fontScale)
         {
-            LoadFonts();
+            LoadFonts(fontScale);
             ThemeManager.SetTheme(ThemeManager.CurrentTheme);
             SetDefaultImGuiIniFilePath(null);
         }

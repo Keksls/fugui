@@ -64,14 +64,14 @@ namespace Fugui.Framework
                 foreach (FuguiContext context in FuGui.Contexts.Values)
                 {
                     context.SetAsCurrent();
-                    theme.Apply();
+                    theme.Apply(context.Scale);
                 }
                 // set current last context
                 FuGui.GetContext(currentContextID)?.SetAsCurrent();
             }
             else
             {
-                theme.Apply();
+                theme.Apply(FuGui.CurrentContext.Scale);
             }
 
             CurrentTheme = theme;

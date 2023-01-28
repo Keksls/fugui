@@ -42,8 +42,8 @@ namespace Fugui.Core.DearImGui.Platform
             if (updateMouse)
             {
                 UpdateMouse(io);
+                UpdateCursor(io, ImGui.GetMouseCursor());
             }
-            UpdateCursor(io, ImGui.GetMouseCursor());
         }
 
         private void SetupKeyboard(ImGuiIOPtr io)

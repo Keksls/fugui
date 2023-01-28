@@ -373,36 +373,36 @@ namespace Fugui.Framework
         /// <summary>
         /// Apply this theme to the current ImGui context
         /// </summary>
-        internal void Apply()
+        internal void Apply(float scale)
         {
             var style = ImGui.GetStyle();
             // set style var
             style.Alpha = Alpha;
-            style.WindowPadding = WindowPadding;
-            style.WindowRounding = WindowRounding;
-            style.WindowBorderSize = WindowBorderSize;
-            style.WindowMinSize = WindowMinSize;
+            style.WindowPadding = WindowPadding * scale;
+            style.WindowRounding = WindowRounding * scale;
+            style.WindowBorderSize = WindowBorderSize * scale;
+            style.WindowMinSize = WindowMinSize * scale;
             style.WindowTitleAlign = WindowTitleAlign;
             style.WindowMenuButtonPosition = ImGuiDir.Right;
-            style.ChildRounding = ChildRounding;
-            style.ChildBorderSize = ChildBorderSize;
-            style.PopupRounding = PopupRounding;
-            style.PopupBorderSize = PopupBorderSize;
-            style.FramePadding = FramePadding;
-            style.FrameRounding = FrameRounding;
-            style.FrameBorderSize = FrameBorderSize;
-            style.ItemSpacing = ItemSpacing;
-            style.ItemInnerSpacing = ItemInnerSpacing;
-            style.CellPadding = CellPadding;
-            style.IndentSpacing = IndentSpacing;
-            style.ColumnsMinSpacing = ColumnsMinSpacing;
-            style.ScrollbarSize = ScrollbarSize;
-            style.ScrollbarRounding = ScrollbarRounding;
-            style.GrabMinSize = GrabMinSize;
-            style.GrabRounding = GrabRounding;
-            style.TabRounding = TabRounding;
-            style.TabBorderSize = TabBorderSize;
-            style.TabMinWidthForCloseButton = TabMinWidthForCloseButton;
+            style.ChildRounding = ChildRounding * scale;
+            style.ChildBorderSize = ChildBorderSize * scale;
+            style.PopupRounding = PopupRounding * scale;
+            style.PopupBorderSize = PopupBorderSize * scale;
+            style.FramePadding = FramePadding * scale;
+            style.FrameRounding = FrameRounding * scale;
+            style.FrameBorderSize = FrameBorderSize * scale;
+            style.ItemSpacing = ItemSpacing * scale;
+            style.ItemInnerSpacing = ItemInnerSpacing * scale;
+            style.CellPadding = CellPadding * scale;
+            style.IndentSpacing = IndentSpacing * scale;
+            style.ColumnsMinSpacing = ColumnsMinSpacing * scale;
+            style.ScrollbarSize = ScrollbarSize * scale;
+            style.ScrollbarRounding = ScrollbarRounding * scale;
+            style.GrabMinSize = GrabMinSize * scale;
+            style.GrabRounding = GrabRounding * scale;
+            style.TabRounding = TabRounding * scale;
+            style.TabBorderSize = TabBorderSize * scale;
+            style.TabMinWidthForCloseButton = TabMinWidthForCloseButton * scale;
             style.ColorButtonPosition = ColorButtonPosition;
             style.ButtonTextAlign = ButtonTextAlign;
             style.SelectableTextAlign = SelectableTextAlign;

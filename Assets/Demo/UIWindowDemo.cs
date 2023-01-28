@@ -49,7 +49,6 @@ public class UIWindowDemo : MonoBehaviour
         Vector3 coloralphaless = new Vector3(.5f, 1f, .8f);
         bool physicalCamera = false;
         string title = "";
-        string modalText = "plop";
         string description = "A <color=red>red</color> <b>Bold TEXT</b>";
 
         // set demo Main menu

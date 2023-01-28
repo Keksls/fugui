@@ -7,37 +7,55 @@ namespace Fugui.Core
 {
     public static class InputManager
     {
-        private static Dictionary<string, Stack<FuguiRaycaster>> _raycasterStack = new Dictionary<string, Stack<FuguiRaycaster>>();
+        //private static Dictionary<string, Stack<FuguiRaycaster>> _raycasterStack = new Dictionary<string, Stack<FuguiRaycaster>>();
+        static Dictionary<string, FuguiRaycaster> latestRaycasters = new Dictionary<string, FuguiRaycaster>();
         private static Dictionary<string, FuguiRaycaster> _raycasters = new Dictionary<string, FuguiRaycaster>();
-        
+
         public static InputState GetInputState(string containerID, GameObject raycastableGameObject)
         {
-            if (!_raycasterStack.ContainsKey(containerID))
-            {
-                _raycasterStack.Add(containerID, new Stack<FuguiRaycaster>());
-            }
+            //if (!_raycasterStack.ContainsKey(containerID))
+            //{
+            //    _raycasterStack.Add(containerID, new Stack<FuguiRaycaster>());
+            //}
+
+            //foreach (FuguiRaycaster raycaster in _raycasters.Values)
+            //{
+            //    if (raycaster.RaycastThisFrame && raycaster.Hit.collider.gameObject == raycastableGameObject)
+            //    {
+            //        // Pop any raycasters that are no longer hovering the collider
+            //        while (_raycasterStack[containerID].Count > 0 && _raycasterStack[containerID].Peek() != raycaster)
+            //        {
+            //            _raycasterStack[containerID].Pop();
+            //        }
+            //        // Push the current raycaster onto the stack
+            //        _raycasterStack[containerID].Push(raycaster);
+            //    }
+            //}
 
             foreach (FuguiRaycaster raycaster in _raycasters.Values)
             {
-                if (raycaster.RaycastThisFrame && raycaster.Hit.collider.gameObject.Equals(raycastableGameObject))
+                if (raycaster.RaycastThisFrame && raycaster.Hit.collider.gameObject == raycastableGameObject)
                 {
-                    // Pop any raycasters that are no longer hovering the collider
-                    while (_raycasterStack[containerID].Count > 0 && _raycasterStack[containerID].Peek() != raycaster)
+                    if (!latestRaycasters.ContainsKey(containerID) || latestRaycasters[containerID] != raycaster)
                     {
-                        _raycasterStack[containerID].Pop();
+                        latestRaycasters[containerID] = raycaster;
+                        // do something with the latest raycaster
                     }
-                    // Push the current raycaster onto the stack
-                    _raycasterStack[containerID].Push(raycaster);
+                }
+                else if (latestRaycasters.ContainsKey(containerID) && latestRaycasters[containerID] == raycaster)
+                {
+                    latestRaycasters.Remove(containerID);
+                    // do something with the previous latest raycaster
                 }
             }
 
-            if (_raycasterStack[containerID].Count == 0)
+            if (!latestRaycasters.ContainsKey(containerID))
             {
                 return new InputState(string.Empty, false, false, false, false, 0f, new Vector2(-1f, -1f));
             }
             else
             {
-                FuguiRaycaster raycaster = _raycasterStack[containerID].Peek();
+                FuguiRaycaster raycaster = latestRaycasters[containerID];
                 Vector3 localHitPoint = raycastableGameObject.transform.InverseTransformPoint(raycaster.Hit.point);
                 Vector2 localPosition = new Vector2(localHitPoint.x, localHitPoint.y);
                 return new InputState(raycaster.ID, true, raycaster.MouseButton0(), raycaster.MouseButton1(), raycaster.MouseButton2(), raycaster.MouseWheel(), localPosition);
@@ -127,7 +145,6 @@ namespace Fugui.Core
             {
                 if (Physics.Raycast(GetRay(), out RaycastHit hit, FuGui.Settings.UIRaycastDistance, FuGui.Settings.UILayer.value))
                 {
-                    Debug.Log("raycast");
                     Hit = hit;
                     RaycastThisFrame = true;
                 }

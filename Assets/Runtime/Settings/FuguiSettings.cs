@@ -36,6 +36,9 @@ namespace Fugui.Core
         [Range(1f, 100f)]
         [Slider(1f, 100f)]
         public float Windows3DScale = 10f;
+        [Range(0.0001f, 0.25f)]
+        [Slider(0.0001f, 0.25f)]
+        public float UIPanelWidth = 0.066f;
         /// <summary>
         /// The number of ticks to be used when the UI windows are being manipulated externally.
         /// </summary>
@@ -126,6 +129,10 @@ namespace Fugui.Core
         /// </summary>
         [Hidden]
         public Texture2D FuguiLogo;
+        [Hidden]
+        public Material UIPanelMaterial;
+        [Hidden]
+        public Material UIMaterial;
         [Header("Notifications")]
         [Tooltip("The position anchor of the notification panel")]
         public AnchorLocation NotificationAnchorPosition;

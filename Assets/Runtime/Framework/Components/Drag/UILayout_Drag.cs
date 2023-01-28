@@ -136,7 +136,7 @@ namespace Fugui.Framework
         {
             // Begin the element and apply the specified style
             id = beginElement(id, style);
-            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f));
+            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f) * FuGui.CurrentContext.Scale);
             bool valueChanged = false;
             // Calculate the column width for the table
             float colWidth = ImGui.GetContentRegionAvail().x * 0.5f;
@@ -220,7 +220,7 @@ namespace Fugui.Framework
             id = beginElement(id, style);
             bool valueChanged = false;
             float colWidth = ImGui.GetContentRegionAvail().x / 3f;
-            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f));
+            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f) * FuGui.CurrentContext.Scale);
             if (ImGui.BeginTable(id + "dragTable", 3))
             {
                 // Set up the three columns in the table
@@ -309,7 +309,7 @@ namespace Fugui.Framework
         {
             id = beginElement(id, style);
             bool valueChanged = false;
-            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f));
+            FuGui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f) * FuGui.CurrentContext.Scale);
             float colWidth = ImGui.GetContentRegionAvail().x * 0.25f;
             if (ImGui.BeginTable(id + "dragTable", 4))
             {

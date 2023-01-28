@@ -69,7 +69,7 @@ namespace Fugui.Framework
             if (_showModal)
             {
                 ImGui.OpenPopup(_modalTitle); //open the modal with the stored title
-
+                 
                 // claculate y padding
                 float yPadding = ThemeManager.CurrentTheme.FramePadding.y * 2f + ThemeManager.CurrentTheme.WindowPadding.y * 2f;
                 // calculate footer height

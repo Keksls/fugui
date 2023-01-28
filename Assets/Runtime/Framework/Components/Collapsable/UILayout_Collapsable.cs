@@ -28,7 +28,7 @@ namespace Fugui.Framework
             // Begin the element and apply the specified style
             id = beginElement(id, style);
             // Adjust the padding and spacing for the frame and the items within it
-            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 4f));
+            FuGui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 4f) * FuGui.CurrentContext.Scale);
             FuGui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
 
             // Set the font for the header to be bold and size 14
@@ -55,9 +55,9 @@ namespace Fugui.Framework
             {
                 // dummy for natural frame padding after lines
                 ImGui.Dummy(new Vector2(0f, 0f));
-                ImGui.Indent(indent);
+                ImGui.Indent(indent * FuGui.CurrentContext.Scale);
                 innerUI();
-                ImGui.Indent(-indent);
+                ImGui.Indent(-indent * FuGui.CurrentContext.Scale);
             }
         }
     }

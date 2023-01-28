@@ -42,7 +42,7 @@ namespace Fugui.Framework
             // display values
             float cursorPos = ImGui.GetCursorScreenPos().x;
             float width = ImGui.GetContentRegionAvail().x;
-            float buttonWidth = ImGui.CalcTextSize("...").x + 8f;
+            float buttonWidth = ImGui.CalcTextSize("...").x + 8f * FuGui.CurrentContext.Scale;
 
             // draw input text
             ImGui.SetNextItemWidth(width - buttonWidth);

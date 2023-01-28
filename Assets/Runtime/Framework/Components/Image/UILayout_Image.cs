@@ -38,11 +38,11 @@ namespace Fugui.Framework
         {
             if(UIWindow.CurrentDrawingWindow == null)
             {
-                FuGui.MainContainer.ImGuiImage(texture, size, color);
+                FuGui.MainContainer.ImGuiImage(texture, size * FuGui.CurrentContext.Scale, color);
             }
             else
             {
-                UIWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size, color);
+                UIWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size * FuGui.CurrentContext.Scale, color);
             }
             displayToolTip();
         }
@@ -58,11 +58,11 @@ namespace Fugui.Framework
         {
             if (UIWindow.CurrentDrawingWindow == null)
             {
-                FuGui.MainContainer.ImGuiImage(texture, size, color);
+                FuGui.MainContainer.ImGuiImage(texture, size * FuGui.CurrentContext.Scale, color);
             }
             else
             {
-                UIWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size, color);
+                UIWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size * FuGui.CurrentContext.Scale, color);
             }
             displayToolTip();
         }
@@ -76,7 +76,7 @@ namespace Fugui.Framework
         /// <returns>true if clicked</returns>
         public virtual bool ImageButton(string id, Texture2D texture, Vector2 size)
         {
-            bool clicked = UIWindow.CurrentDrawingWindow?.Container.ImGuiImageButton(texture, size) ?? false;
+            bool clicked = UIWindow.CurrentDrawingWindow?.Container.ImGuiImageButton(texture, size * FuGui.CurrentContext.Scale) ?? false;
             displayToolTip();
             return clicked;
         }
@@ -91,7 +91,7 @@ namespace Fugui.Framework
         /// <returns>true if clicked</returns>
         public virtual bool ImageButton(string id, Texture2D texture, Vector2 size, Vector4 color)
         {
-            bool clicked = UIWindow.CurrentDrawingWindow?.Container.ImGuiImageButton(texture, size, color) ?? false;
+            bool clicked = UIWindow.CurrentDrawingWindow?.Container.ImGuiImageButton(texture, size * FuGui.CurrentContext.Scale, color) ?? false;
             displayToolTip();
             return clicked;
         }

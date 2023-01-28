@@ -69,7 +69,7 @@ namespace Fugui.Framework
                 for (int i = 0; i < nbItems; i++)
                 {
                     Vector2 txtSize = ImGui.CalcTextSize(items[i].ToString());
-                    naturalSize += 8f + Mathf.Max(txtSize.x, txtSize.y + 4f);
+                    naturalSize += 8f + Mathf.Max(txtSize.x, txtSize.y + 4f * FuGui.CurrentContext.Scale);
                 }
                 naturalSize += nbItems;
                 cursorPos = cursorPos + ImGui.GetContentRegionAvail().x - naturalSize;
@@ -92,10 +92,10 @@ namespace Fugui.Framework
                 if (autoSize)
                 {
                     Vector2 txtSize = ImGui.CalcTextSize(items[i].ToString());
-                    itemWidth = 8f + Mathf.Max(txtSize.x, txtSize.y + 4f);
+                    itemWidth = 8f * FuGui.CurrentContext.Scale + Mathf.Max(txtSize.x, txtSize.y + 4f * FuGui.CurrentContext.Scale);
                 }
                 cursorPos += itemWidth - 1f;
-                FuGui.Push(ImGuiStyleVar.FramePadding, new Vector4(4f, 4f));
+                FuGui.Push(ImGuiStyleVar.FramePadding, new Vector4(4f, 4f) * FuGui.CurrentContext.Scale);
                 if (ImGui.Button(items[i].ToString() + "##" + id, new Vector2(itemWidth, 0)) && !_nextIsDisabled)
                 {
                     _buttonsGroupIndex[id] = i;

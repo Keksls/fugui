@@ -54,6 +54,7 @@ public class UIWindowDemo : MonoBehaviour
         MainMenu.RegisterItem(Icons.DragonflyLogo + " Files", null);
 
         DockingLayoutManager.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
+        DockingLayoutManager.OnDockLayoutInitialized += DockingLayoutManager_OnDockLayoutInitialized;
 
         MainMenu.RegisterItem("Layout", null);
         foreach (KeyValuePair<string, UIDockSpaceDefinition> layoutDefinition in DockingLayoutManager.Layouts)
@@ -221,7 +222,7 @@ public class UIWindowDemo : MonoBehaviour
                         }, UIModalSize.Medium);
                     }
                 }
-            });
+            }, flags: UIWindowFlags.AllowMultipleWindow);
 
         // add Capture Window
         new UIWindowDefinition(FuguiWindows.Captures, "Notify Demo", (window) =>
@@ -265,7 +266,7 @@ public class UIWindowDemo : MonoBehaviour
                     }
                 }
             }
-        });
+        }, flags: UIWindowFlags.AllowMultipleWindow);
 
         // add Metadata Window
         new UIWindowDefinition(FuguiWindows.Metadata, "Metadata", (window) =>
@@ -360,7 +361,7 @@ public class UIWindowDemo : MonoBehaviour
                     });
                 }
             }
-        });
+        }, flags: UIWindowFlags.AllowMultipleWindow);
 
         // add Inspector Window
         new UIWindowDefinition(FuguiWindows.Inspector, "Inspector", (window) =>
@@ -439,13 +440,13 @@ public class UIWindowDemo : MonoBehaviour
                     }, 8f);
                 }
             }
-        });
+        }, flags: UIWindowFlags.AllowMultipleWindow);
 
         // add Fugui Settings Window
         new UIWindowDefinition(FuguiWindows.FuguiSettings, "Fugui Settings", (window) =>
         {
             FuGui.DrawSettings();
-        });
+        }, flags: UIWindowFlags.AllowMultipleWindow);
 
         // add main camera window
         UIWindowDefinition camWinDef = new UICameraWindowDefinition(FuguiWindows.MainCameraView, cam1, "3DView", null, flags: UIWindowFlags.NoInterractions)
@@ -631,10 +632,20 @@ public class UIWindowDemo : MonoBehaviour
         // set default layout (will create UIWindows)
         if (DockingLayoutManager.Layouts.Count > 0)
         {
+            // TODO : save layout into enum and set theme by enum (easyer by code)
             string firstKey = DockingLayoutManager.Layouts.Keys.ToList()[0];
             DockingLayoutManager.SetLayout(DockingLayoutManager.Layouts[firstKey]);
         }
+    }
 
+    private void DockingLayoutManager_OnDockLayoutInitialized()
+    {
+        // instantiate test 3D window
+        FuGui.CreateWindowAsync(FuguiWindows.FuguiSettings, (window) =>
+        {
+            FuGui.Add3DWindow(window);
+            ((UI3DWindowContainer)window.Container).SetPosition(new Vector3(0f, -2f, 0f));
+        }, false);
     }
 
     private void DockingLayoutManager_OnDockLayoutReloaded()

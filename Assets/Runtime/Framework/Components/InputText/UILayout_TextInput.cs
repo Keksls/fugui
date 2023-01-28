@@ -86,7 +86,7 @@ namespace Fugui.Framework
             // If a height was specified, create a multiline text input
             if (height > 0)
             {
-                edited = ImGui.InputTextMultiline(id, ref text, size, new Vector2(ImGui.GetContentRegionAvail().x, height), ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.CtrlEnterForNewLine);
+                edited = ImGui.InputTextMultiline(id, ref text, size, new Vector2(ImGui.GetContentRegionAvail().x, height * FuGui.CurrentContext.Scale), ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.CtrlEnterForNewLine);
             }
             // Otherwise, create a single line text input with a hint
             else

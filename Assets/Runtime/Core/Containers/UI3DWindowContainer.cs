@@ -13,15 +13,15 @@ namespace Fugui.Core
         public Vector2Int LocalMousePos => _localMousePos;
         public Vector2Int Position => Vector2Int.zero;
         public Vector2Int Size => _size;
-        public RectTransform ImageTransform { get; private set; }
         public RenderTexture RenderTexture { get; private set; }
         public Camera Camera { get; private set; }
-        public BoxCollider Collider { get; private set; }
+        private GameObject _panelGameObject;
         public int FuguiContextID { get { return _fuguiContext.ID; } }
         private Vector2Int _localMousePos;
         private Vector2Int _size;
         private UnityContext _fuguiContext;
         private static int _3DContextindex = 0;
+        private Material _uiMaterial;
 
         public UI3DWindowContainer(UIWindow window)
         {
@@ -39,6 +39,9 @@ namespace Fugui.Core
                 Close();
                 return;
             }
+
+            // resize the window
+            Window.Size = new Vector2Int(512, 512);
 
             // Create Camera GameObject
             GameObject cameraGameObject = new GameObject(ID + "_Camera");
@@ -60,47 +63,49 @@ namespace Fugui.Core
             // Assignate RenderTexture to Camera
             Camera.targetTexture = RenderTexture;
 
-            // Create Canvas GameObject
-            GameObject canvasGameObject = new GameObject(ID + "_Canvas");
-            canvasGameObject.transform.SetParent(cameraGameObject.transform);
-            canvasGameObject.transform.position = Vector3.zero;
-            canvasGameObject.transform.rotation = Quaternion.identity;
-            Canvas canvas = canvasGameObject.AddComponent<Canvas>();
+            // create ui material
+            _uiMaterial = GameObject.Instantiate(FuGui.Settings.UIMaterial);
+            _uiMaterial.SetTexture("_MainTex", RenderTexture);
 
-            // Create RawImage GameObject
-            GameObject imageGameObject = new GameObject(ID + "_Image");
-            imageGameObject.transform.SetParent(canvasGameObject.transform);
-            imageGameObject.transform.position = Vector3.zero;
-            imageGameObject.transform.rotation = Quaternion.identity;
-            RawImage image = imageGameObject.AddComponent<RawImage>();
-            ImageTransform = imageGameObject.GetComponent<RectTransform>();
-            ImageTransform.sizeDelta = Window.Size;
-            Collider = imageGameObject.AddComponent<BoxCollider>();
-            Collider.size = new Vector3(Window.Size.x, Window.Size.y, 0.1f);
-            imageGameObject.layer = (int)Mathf.Log(FuGui.Settings.UILayer.value, 2);
-
-            // apply image scale
-            ImageTransform.transform.localScale = Vector3.one * (1f / 1000f) * FuGui.Settings.Windows3DScale;
-
-            // Assignate RenderTexture to RawImage
-            image.texture = RenderTexture;
+            // create panel game object
+            createPanel();
 
             // create the fugui 3d context
             _fuguiContext = FuGui.CreateUnityContext(Camera);
             _fuguiContext.OnRender += _context_OnRender;
             _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
+            _fuguiContext.AutoUpdateMouse = false;
 
             // apply the theme to this context
             ThemeManager.SetTheme(ThemeManager.CurrentTheme);
 
             // set default position
-            SetPosition(new Vector3(0f, 1f, 0f));
-
-            // resize the window
-            Window.Size = new Vector2Int(512, 256);
+            SetPosition(new Vector3(0f, 0f, 0f));
+            SetRotation(Quaternion.Euler(Vector3.up * 180f));
 
             // release window
             window.IsBusy = false;
+        }
+
+        private void createPanel()
+        {
+            if (_panelGameObject != null)
+            {
+                GameObject.Destroy(_panelGameObject);
+            }
+
+            _panelGameObject = new GameObject(ID + "_Panel");
+            _panelGameObject.transform.SetParent(Camera.transform);
+            RoundedRectangleMesh rectangleMesh = _panelGameObject.AddComponent<RoundedRectangleMesh>();
+            float round = ThemeManager.CurrentTheme.WindowRounding;
+            MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
+            collider.sharedMesh = rectangleMesh.CreateMesh(Window.Size.x, Window.Size.y, 1f / 1000f * FuGui.Settings.Windows3DScale, round, round, round, round, FuGui.Settings.UIPanelWidth, 32, _uiMaterial, FuGui.Settings.UIPanelMaterial);
+            int layer = (int)Mathf.Log(FuGui.Settings.UILayer.value, 2);
+            _panelGameObject.layer = layer;
+            foreach (Transform child in Camera.transform)
+            {
+                child.gameObject.layer = layer;
+            }
         }
 
         public void SetPosition(Vector3 position)
@@ -121,24 +126,7 @@ namespace Fugui.Core
             }
 
             // get input state for this container
-            InputState inputState = InputManager.GetInputState(ID, ImageTransform.gameObject);
-            // Get UI IO
-            ImGuiIOPtr io = ImGui.GetIO();
-
-            // send mouse buttons state to UI IO
-            io.MouseDown[0] = inputState.MouseDown[0];
-            io.MouseDown[1] = inputState.MouseDown[1];
-            io.MouseDown[2] = inputState.MouseDown[2];
-
-            _localMousePos = new Vector2Int((int)inputState.MousePosition.x, (int)inputState.MousePosition.y);
-            _localMousePos.x += _size.x / 2;
-            _localMousePos.y = Size.y - (_localMousePos.y + (Size.y / 2));
-
-            // set UI IO mouse pos
-            io.MousePos = _localMousePos;
-            // set UI IO mouse scroll wheel
-            io.MouseWheel = inputState.MouseWheel;
-            io.MouseWheelH = 0f;
+            InputState inputState = InputManager.GetInputState(ID, _panelGameObject);
 
             // force to draw if hover in
             if (inputState.Hovered && !Window.IsHovered)
@@ -146,6 +134,18 @@ namespace Fugui.Core
                 Window.ForceDraw();
             }
 
+            // calculate IO mouse pos
+            _localMousePos = new Vector2Int((int)inputState.MousePosition.x, (int)inputState.MousePosition.y);
+            if (inputState.Hovered)
+            {
+                _localMousePos.x += _size.x / 2;
+                _localMousePos.y = Size.y - (_localMousePos.y + (Size.y / 2));
+            }
+
+            // update context mouse position
+            _fuguiContext.UpdateMouse(_localMousePos, new Vector2(0f, inputState.MouseWheel), inputState.MouseDown[0], inputState.MouseDown[1], inputState.MouseDown[2]);
+
+            // return whatever the mouse need to be drawn
             return Window.MustBeDraw();
         }
 
@@ -210,8 +210,6 @@ namespace Fugui.Core
 
         public void RenderUIWindow(UIWindow UIWindow)
         {
-            // force set UI pos on appear (don't need to any frame because ForcePos() return true, it's checked into UIWindow src)
-            ImGui.SetNextWindowPos(Vector2.zero, ImGuiCond.Always);
             // call UIWindow.DrawWindow
             UIWindow.DrawWindow();
         }
@@ -230,9 +228,10 @@ namespace Fugui.Core
             if (Window == null)
             {
                 Window = UIWindow;
-                Window.Container = this;
                 Window.OnClosed += Window_OnClosed;
                 Window.OnResized += Window_OnResized;
+                Window.LocalPosition = Vector2Int.zero;
+                Window.Container = this;
                 Window.LocalPosition = Vector2Int.zero;
                 return true;
             }
@@ -247,12 +246,7 @@ namespace Fugui.Core
             RenderTexture.height = _size.y;
             Camera.targetTexture = RenderTexture;
             Camera.pixelRect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
-            // resize image size
-            ImageTransform.sizeDelta = new Vector2(_size.x, _size.y);
-            // apply image scale
-            ImageTransform.transform.localScale = Vector3.one * (1f / 1000f) * FuGui.Settings.Windows3DScale;
-            // resize collider
-            Collider.size = new Vector3(Window.Size.x, Window.Size.y, 1f);
+            createPanel();
         }
 
         private void Window_OnClosed(UIWindow window)
@@ -281,6 +275,8 @@ namespace Fugui.Core
             }
             if (_fuguiContext != null)
             {
+                _fuguiContext.OnRender -= _context_OnRender;
+                _fuguiContext.OnPrepareFrame -= context_OnPrepareFrame;
                 FuGui.DestroyContext(_fuguiContext);
             }
             if (Camera != null)

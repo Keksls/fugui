@@ -21,7 +21,7 @@ namespace Fugui.Core
             internal set
             {
                 _container = value;
-                IsInMainContainer = value is MainUIContainer;
+                IsInMainContainer = !(value is ExternalWindowContainer);
             }
         }
 
@@ -356,7 +356,7 @@ namespace Fugui.Core
                 newFramePos = new Vector2Int((int)pos.x, (int)pos.y);
                 HasFocus = ImGui.IsWindowFocused();
                 // whatever window is hovered
-                IsHovered = (WorldRect.Contains(FuGui.WorldMousePosition) &&
+                IsHovered = (LocalRect.Contains(Container.LocalMousePos) &&
                     ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup)) ||
                     UILayout.CurrentPopUpWindowID == ID;
 
@@ -472,7 +472,7 @@ namespace Fugui.Core
                 case false:
                     return FuGui.Time > _lastRenderTime + _targetDeltaTimeMs
                         || _forceRedraw
-                        || WorldRect.Contains(FuGui.WorldMousePosition);
+                        || LocalRect.Contains(Container.LocalMousePos);
             }
         }
 

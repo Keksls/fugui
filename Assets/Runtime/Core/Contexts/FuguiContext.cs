@@ -183,7 +183,7 @@ namespace Fugui.Core
         /// <param name="clickbtn2">Mouse button 2 state</param>
         public void UpdateMouse(Vector2 mousePos, Vector2 mouseWheel, bool clickbtn0, bool clickbtn1, bool clickbtn2)
         {
-            IO.MousePos = mousePos;// Utils.ScreenToImGui(mousePos);
+            IO.MousePos = mousePos;
 
             IO.MouseWheelH = mouseWheel.x;
             IO.MouseWheel = mouseWheel.y;

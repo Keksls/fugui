@@ -51,7 +51,11 @@ namespace Fugui.Core
         /// <param name="window">window to set mouse position on</param>
         internal void SetPosition(UIWindow window)
         {
-            Vector2Int position = FuGui.WorldMousePosition - window.WorldPosition;
+            if(window.Container == null)
+            {
+                return;
+            }
+            Vector2Int position = window.Container.LocalMousePos - window.LocalPosition;
             _movement = new Vector2(position.x, position.y) - new Vector2(Position.x, Position.y);
             _movement.y = -_movement.y;
             _position = position;

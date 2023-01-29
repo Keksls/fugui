@@ -81,12 +81,20 @@ namespace Fugui.Core
             // apply the theme to this context
             ThemeManager.SetTheme(ThemeManager.CurrentTheme);
 
+            // register on theme change
+            ThemeManager.OnThemeSet += ThemeManager_OnThemeSet;
+
             // set default position
             SetPosition(new Vector3(0f, 0f, 0f));
             SetRotation(Quaternion.Euler(Vector3.up * 180f));
 
             // release window
             window.IsBusy = false;
+        }
+
+        private void ThemeManager_OnThemeSet(FuguiTheme theme)
+        {
+            createPanel();
         }
 
         private void createPanel()
@@ -99,7 +107,7 @@ namespace Fugui.Core
             _panelGameObject = new GameObject(ID + "_Panel");
             _panelGameObject.transform.SetParent(Camera.transform);
             RoundedRectangleMesh rectangleMesh = _panelGameObject.AddComponent<RoundedRectangleMesh>();
-            float round = ThemeManager.CurrentTheme.WindowRounding;
+            float round = ThemeManager.CurrentTheme.WindowRounding * _scale;
             MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
             collider.sharedMesh = rectangleMesh.CreateMesh(Window.Size.x / _scale, Window.Size.y / _scale, 1f / 1000f * FuGui.Settings.Windows3DScale, round, round, round, round, FuGui.Settings.UIPanelWidth, 32, _uiMaterial, FuGui.Settings.UIPanelMaterial);
             int layer = (int)Mathf.Log(FuGui.Settings.UILayer.value, 2);
@@ -143,7 +151,7 @@ namespace Fugui.Core
             {
                 _localMousePos.x += _size.x / 2;
                 _localMousePos.y = Size.y - _localMousePos.y;
-            }   
+            }
 
             // update context mouse position
             _fuguiContext.UpdateMouse(_localMousePos, new Vector2(0f, inputState.MouseWheel), inputState.MouseDown[0], inputState.MouseDown[1], inputState.MouseDown[2]);
@@ -272,10 +280,10 @@ namespace Fugui.Core
         {
             if (Window != null)
             {
-                Window.Fire_OnRemovedFromContainer();
                 Window.OnClosed -= Window_OnClosed;
                 Window.OnResized -= Window_OnResized;
                 Window.Container = null;
+                Window.Fire_OnRemovedFromContainer();
             }
             if (_fuguiContext != null)
             {
@@ -283,6 +291,7 @@ namespace Fugui.Core
                 _fuguiContext.OnPrepareFrame -= context_OnPrepareFrame;
                 FuGui.DestroyContext(_fuguiContext);
             }
+            ThemeManager.OnThemeSet -= ThemeManager_OnThemeSet;
             if (Camera != null)
             {
                 UnityEngine.Object.Destroy(Camera.gameObject);

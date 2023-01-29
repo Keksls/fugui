@@ -1,7 +1,7 @@
 ﻿using ImGuiNET;
 using UnityEngine.Rendering;
 
-namespace Fugui.Core.DearImGui.Renderer
+namespace Fu.Core.DearImGui.Renderer
 {
 	/// <summary>
 	/// TODO: Write

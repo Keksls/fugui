@@ -1,10 +1,10 @@
 using System;
-using Fugui.Framework;
+using Fu.Framework;
 using OpenTK.Graphics.OpenGL;
 using Unity.Collections;
 using UnityEngine.Rendering;
 
-namespace Fugui.Core
+namespace Fu.Core
 {
     public static class OpenGLTextureFactory
     {
@@ -19,7 +19,7 @@ namespace Fugui.Core
             // if not, display defaut error message texture
             if (!texture.isReadable)
             {
-                texture = FuGui.Settings.OpenGLNonReadableTexture;
+                texture = Fugui.Settings.OpenGLNonReadableTexture;
             }
 
             // generate OpenGLTexture for RenderTexture and Texture2D

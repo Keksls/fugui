@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Fugui.Core.DearImGui
+namespace Fu.Core.DearImGui
 {
 	internal static unsafe partial class ImFreetypeNative
 	{

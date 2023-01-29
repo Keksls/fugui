@@ -1,4 +1,4 @@
-namespace Fugui.Framework
+namespace Fu.Framework
 {
     /// <summary>
     /// Interface that represent UIElements that can be displayed into a combobox

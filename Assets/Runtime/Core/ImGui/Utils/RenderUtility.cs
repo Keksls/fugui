@@ -1,6 +1,6 @@
-﻿using Fugui.Core.DearImGui.Assets;
-using Fugui.Core.DearImGui.Renderer;
-using Fugui.Core.DearImGui.Texture;
+﻿using Fu.Core.DearImGui.Assets;
+using Fu.Core.DearImGui.Renderer;
+using Fu.Core.DearImGui.Texture;
 using UImGui.Renderer;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
@@ -10,7 +10,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering.HighDefinition;
 #endif
 
-namespace Fugui.Core.DearImGui
+namespace Fu.Core.DearImGui
 {
 	public static class RenderUtility
 	{

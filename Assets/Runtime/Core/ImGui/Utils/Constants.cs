@@ -1,6 +1,6 @@
 ﻿using Unity.Profiling;
 
-namespace Fugui.Core.DearImGui
+namespace Fu.Core.DearImGui
 {
 	internal static class Constants
 	{

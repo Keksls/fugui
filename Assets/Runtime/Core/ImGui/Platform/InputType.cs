@@ -1,4 +1,4 @@
-﻿namespace Fugui.Core.DearImGui.Platform
+﻿namespace Fu.Core.DearImGui.Platform
 {
 	public enum InputType
 	{

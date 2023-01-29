@@ -1,4 +1,4 @@
-﻿namespace Fugui.Core.DearImGui.Renderer
+﻿namespace Fu.Core.DearImGui.Renderer
 {
 	public enum RenderType
 	{

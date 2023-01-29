@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Fugui.Core.DearImGui.Assets
+namespace Fu.Core.DearImGui.Assets
 {
 	[CreateAssetMenu(menuName = "Dear ImGui/Shader Resources")]
 	public sealed class ShaderResourcesAsset : ScriptableObject

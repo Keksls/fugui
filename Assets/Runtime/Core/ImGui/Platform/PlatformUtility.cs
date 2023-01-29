@@ -1,7 +1,7 @@
-﻿using Fugui.Core.DearImGui.Assets;
+﻿using Fu.Core.DearImGui.Assets;
 using UnityEngine;
 
-namespace Fugui.Core.DearImGui.Platform
+namespace Fu.Core.DearImGui.Platform
 {
 	public static class PlatformUtility
 	{

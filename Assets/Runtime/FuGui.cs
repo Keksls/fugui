@@ -1,7 +1,7 @@
 ﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
 //#define IMDEBUG 
-using Fugui.Core;
+using Fu.Core;
 using ImGuiNET;
 using System;
 using System.Collections;
@@ -12,41 +12,41 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
 
-namespace Fugui.Framework
+namespace Fu.Framework
 {
-    public static partial class FuGui
+    public static partial class Fugui
     {
-        public static FuguiContext CurrentContext { get; internal set; }
-        public static Dictionary<int, FuguiContext> Contexts { get; internal set; } = new Dictionary<int, FuguiContext>();
+        public static FuContext CurrentContext { get; internal set; }
+        public static Dictionary<int, FuContext> Contexts { get; internal set; } = new Dictionary<int, FuContext>();
         public static Queue<int> ToDeleteContexts { get; internal set; } = new Queue<int>();
         // The settings for the Fugui Manager
-        public static FuguiSettings Settings { get; internal set; }
+        public static FuSettings Settings { get; internal set; }
         // The public property for the current world mouse position
         public static Vector2Int WorldMousePosition { get; internal set; }
         // The current time
         public static float Time { get; internal set; }
         // The static main UI container
-        public static MainUIContainer MainContainer { get; internal set; }
+        public static FuMainWindowContainer MainContainer { get; internal set; }
         // Default Fugui Context
-        public static UnityContext DefaultContext { get; internal set; }
+        public static FuUnityContext DefaultContext { get; internal set; }
         // The static dictionary of UI windows
-        public static Dictionary<string, UIWindow> UIWindows { get; internal set; }
+        public static Dictionary<string, FuWindow> UIWindows { get; internal set; }
         // The static dictionary of UI window definitions
-        public static Dictionary<FuguiWindows, UIWindowDefinition> UIWindowsDefinitions { get; internal set; }
+        public static Dictionary<FuWindowsNames, FuWindowDefinition> UIWindowsDefinitions { get; internal set; }
         // A boolean value indicating whether the render thread has started
         public static bool IsRendering { get; internal set; } = false;
         // The dictionary of external windows
-        private static Dictionary<string, ExternalWindowContainer> _externalWindows;
+        private static Dictionary<string, FuExternalWindowContainer> _externalWindows;
         // The dictionary of external windows
-        private static Dictionary<string, UI3DWindowContainer> _3DWindows;
+        private static Dictionary<string, Fu3DWindowContainer> _3DWindows;
         // The queue of windows to be externalized
-        private static Queue<UIWindow> _windowsToExternalize;
+        private static Queue<FuWindow> _windowsToExternalize;
         // A boolean value indicating whether a new window can be added
         private static bool _canAddWindow = false;
         // A boolean value indicating whether the render thread has started
         private static bool _renderThreadStarted = false;
         // FuGui Manager instance
-        internal static FuguiManager Manager;
+        internal static FuController Manager;
         // counter of Fugui Contexts
         private static int _contextID = 0;
 
@@ -63,7 +63,7 @@ namespace Fugui.Framework
         internal static void DoOnUIException(Exception ex) => OnUIException?.Invoke(ex);
         #endregion
 
-        static FuGui()
+        static Fugui()
         {
 #if IMDEBUG
             NewFrame();
@@ -78,23 +78,23 @@ namespace Fugui.Framework
         public static void Initialize(Camera mainContainerUICamera)
         {
             // instantiate UIWindows 
-            UIWindows = new Dictionary<string, UIWindow>();
-            UIWindowsDefinitions = new Dictionary<FuguiWindows, UIWindowDefinition>();
+            UIWindows = new Dictionary<string, FuWindow>();
+            UIWindowsDefinitions = new Dictionary<FuWindowsNames, FuWindowDefinition>();
             // init dic and queue
-            _externalWindows = new Dictionary<string, ExternalWindowContainer>();
-            _3DWindows = new Dictionary<string, UI3DWindowContainer>();
-            _windowsToExternalize = new Queue<UIWindow>();
+            _externalWindows = new Dictionary<string, FuExternalWindowContainer>();
+            _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
+            _windowsToExternalize = new Queue<FuWindow>();
             // we can now add window
             _canAddWindow = true;
             // assume that render thread is not already started
             _renderThreadStarted = false;
 
             // create Default Fugui Context and initialize themeManager
-            DefaultContext = CreateUnityContext(mainContainerUICamera, 1f, 1f, ThemeManager.Initialize);
+            DefaultContext = CreateUnityContext(mainContainerUICamera, 1f, 1f, FuThemeManager.Initialize);
             DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
-            MainContainer = new MainUIContainer(DefaultContext);
+            MainContainer = new FuMainWindowContainer(DefaultContext);
         }
 
         /// <summary>
@@ -124,10 +124,10 @@ namespace Fugui.Framework
                 }
 
                 _canAddWindow = false;
-                UIWindow imguiWindow = _windowsToExternalize.Dequeue();
+                FuWindow imguiWindow = _windowsToExternalize.Dequeue();
 
                 // create new window
-                ExternalWindowContainer window = new ExternalWindowContainer(imguiWindow, Settings.ExternalWindowFlags);
+                FuExternalWindowContainer window = new FuExternalWindowContainer(imguiWindow, Settings.ExternalWindowFlags);
                 window.Closed += (sender, args) =>
                 {
                     lock (_externalWindows)
@@ -152,7 +152,7 @@ namespace Fugui.Framework
         public static void Dispose()
         {
             // Close all external windows
-            foreach (ExternalWindowContainer window in _externalWindows.Values)
+            foreach (FuExternalWindowContainer window in _externalWindows.Values)
             {
                 window.Close();
             }
@@ -207,7 +207,7 @@ namespace Fugui.Framework
         /// Adds an UI window to be externalized.
         /// </summary>
         /// <param name="uiWindow">The UI window to be externalized.</param>
-        public static void AddExternalWindow(UIWindow uiWindow)
+        public static void AddExternalWindow(FuWindow uiWindow)
         {
             // Add the IMGUI window to the queue of windows to be externalized
             _windowsToExternalize.Enqueue(uiWindow);
@@ -232,7 +232,7 @@ namespace Fugui.Framework
         /// Adds an UI window to be externalized.
         /// </summary>
         /// <param name="uiWindow">The UI window to be externalized.</param>
-        public static void Add3DWindow(UIWindow uiWindow)
+        public static void Add3DWindow(FuWindow uiWindow, Vector3? position = null, Quaternion? rotation = null)
         {
             if (uiWindow == null)
             {
@@ -240,7 +240,7 @@ namespace Fugui.Framework
                 return;
             }
             // Add the UIwindow to it's own 3DContainer
-            _3DWindows.Add(uiWindow.ID, new UI3DWindowContainer(uiWindow));
+            _3DWindows.Add(uiWindow.ID, new Fu3DWindowContainer(uiWindow, position, rotation));
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="windowDefinition">The window definition to be registered.</param>
         /// <returns>True if the window definition was successfully registered, false otherwise.</returns>
-        public static bool RegisterWindowDefinition(UIWindowDefinition windowDefinition)
+        public static bool RegisterWindowDefinition(FuWindowDefinition windowDefinition)
         {
             // Check if a window definition with the same ID already exists
             if (UIWindowsDefinitions.ContainsKey(windowDefinition.WindowName))
@@ -282,7 +282,7 @@ namespace Fugui.Framework
         public static void CloseAllWindowsAsync(Action callback)
         {
             // Get a list of all UI windows
-            List<UIWindow> windows = UIWindows.Values.ToList();
+            List<FuWindow> windows = UIWindows.Values.ToList();
             if (windows.Count == 0)
             {
                 callback?.Invoke();
@@ -290,7 +290,7 @@ namespace Fugui.Framework
             else
             {
                 // Iterate over the windows
-                foreach (UIWindow window in windows)
+                foreach (FuWindow window in windows)
                 {
                     // Close this window
                     window.Close(() =>
@@ -310,9 +310,9 @@ namespace Fugui.Framework
         /// <param name="windowToGet">window names to be created.</param>
         /// <param name="callback">A callback to be invoked after the windows was created, passing the instance of the created windows (null if fail).</param>
         /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
-        public static void CreateWindowAsync(FuguiWindows windowToGet, Action<UIWindow> callback, bool autoAddToMainContainer = true)
+        public static void CreateWindowAsync(FuWindowsNames windowToGet, Action<FuWindow> callback, bool autoAddToMainContainer = true)
         {
-            CreateWindowsAsync(new List<FuguiWindows>() { windowToGet }, (windows) =>
+            CreateWindowsAsync(new List<FuWindowsNames>() { windowToGet }, (windows) =>
             {
                 if (windows.ContainsKey(windowToGet))
                 {
@@ -331,16 +331,16 @@ namespace Fugui.Framework
         /// <param name="windowsToGet">A list of window names to be created.</param>
         /// <param name="callback">A callback to be invoked after all windows are created, passing a dictionary of the created windows.</param>
         /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
-        public static void CreateWindowsAsync(List<FuguiWindows> windowsToGet, Action<Dictionary<FuguiWindows, UIWindow>> callback, bool autoAddToMainContainer = true)
+        public static void CreateWindowsAsync(List<FuWindowsNames> windowsToGet, Action<Dictionary<FuWindowsNames, FuWindow>> callback, bool autoAddToMainContainer = true)
         {
             // Initialize counters for the number of windows to add and the number of windows added
             int nbWIndowToAdd = 0;
             int nbWIndowAdded = 0;
 
             // Initialize a list of window definitions
-            List<UIWindowDefinition> winDefs = new List<UIWindowDefinition>();
+            List<FuWindowDefinition> winDefs = new List<FuWindowDefinition>();
             // Iterate over the window names
-            foreach (FuguiWindows windowID in windowsToGet)
+            foreach (FuWindowsNames windowID in windowsToGet)
             {
                 // Check if a window definition with the specified name exists
                 if (UIWindowsDefinitions.ContainsKey(windowID))
@@ -352,12 +352,12 @@ namespace Fugui.Framework
             }
 
             // Initialize a dictionary of UI windows
-            Dictionary<FuguiWindows, UIWindow> windows = new Dictionary<FuguiWindows, UIWindow>();
+            Dictionary<FuWindowsNames, FuWindow> windows = new Dictionary<FuWindowsNames, FuWindow>();
             // Iterate over the window definitions
-            foreach (UIWindowDefinition winDef in winDefs)
+            foreach (FuWindowDefinition winDef in winDefs)
             {
                 // Create an event handler for the OnReady event of the window
-                Action<UIWindow> onWindowReady = null;
+                Action<FuWindow> onWindowReady = null;
                 onWindowReady = (window) =>
                 {
                     // Add the window to the dictionary and increment the window added counter
@@ -372,7 +372,7 @@ namespace Fugui.Framework
                     window.OnReady -= onWindowReady;
                 };
                 // create the UIWindow
-                if (winDef.CreateUIWindow(out UIWindow win))
+                if (winDef.CreateUIWindow(out FuWindow win))
                 {
                     if (autoAddToMainContainer)
                     {
@@ -404,7 +404,7 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="window">the window to add</param>
         /// <returns>true if success</returns>
-        internal static bool TryAddUIWindow(UIWindow window)
+        internal static bool TryAddUIWindow(FuWindow window)
         {
             // check whatever a window is already open with the same ID
             if (UIWindows.ContainsKey(window.ID))
@@ -423,7 +423,7 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="window">window to remove from the list</param>
         /// <returns>true if success</returns>
-        internal static bool TryRemoveUIWindow(UIWindow window)
+        internal static bool TryRemoveUIWindow(FuWindow window)
         {
             return UIWindows.Remove(window.ID);
         }
@@ -465,7 +465,7 @@ namespace Fugui.Framework
                 lock (_externalWindows)
                 {
                     // Iterate through all external windows
-                    foreach (ExternalWindowContainer window in _externalWindows.Values)
+                    foreach (FuExternalWindowContainer window in _externalWindows.Values)
                     {
                         try
                         {
@@ -632,7 +632,7 @@ namespace Fugui.Framework
         /// <param name="camera">Camera that will render the context</param>
         /// <param name="onInitialize">invoked on context initialization</param>
         /// <returns>the context created</returns>
-        public static unsafe UnityContext CreateUnityContext(Camera camera, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
+        public static unsafe FuUnityContext CreateUnityContext(Camera camera, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
         {
             return CreateUnityContext(_contextID++, camera, scale, fontScale, onInitialize);
         }
@@ -644,13 +644,13 @@ namespace Fugui.Framework
         /// <param name="camera">Camera that will render the context</param>
         /// <param name="onInitialize">invoked on context initialization</param>
         /// <returns>the context created</returns>
-        private static unsafe UnityContext CreateUnityContext(int index, Camera camera, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
+        private static unsafe FuUnityContext CreateUnityContext(int index, Camera camera, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
         {
             if (Contexts.ContainsKey(index))
                 return null;
 
             // create and add context
-            UnityContext context = new UnityContext(index, scale, fontScale, onInitialize, camera, Manager.Render);
+            FuUnityContext context = new FuUnityContext(index, scale, fontScale, onInitialize, camera, Manager.Render);
             Contexts.Add(index, context);
 
             return context;
@@ -661,7 +661,7 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="onInitialize">invoked on context initialization</param>
         /// <returns>the context created</returns>
-        public static unsafe ExternalContext CreateExternalContext(float scale = 1f, float fontScale = 1f, Action onInitialize = null)
+        public static unsafe FuExternalContext CreateExternalContext(float scale = 1f, float fontScale = 1f, Action onInitialize = null)
         {
             return CreateExternalContext(_contextID++, scale, fontScale, onInitialize);
         }
@@ -672,13 +672,13 @@ namespace Fugui.Framework
         /// <param name="index">index of the context</param>
         /// <param name="onInitialize">invoked on context initialization</param>
         /// <returns>the context created</returns>
-        private static unsafe ExternalContext CreateExternalContext(int index, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
+        private static unsafe FuExternalContext CreateExternalContext(int index, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
         {
             if (Contexts.ContainsKey(index))
                 return null;
 
             // create and add context
-            ExternalContext context = new ExternalContext(index, scale, fontScale, onInitialize);
+            FuExternalContext context = new FuExternalContext(index, scale, fontScale, onInitialize);
             Contexts.Add(index, context);
 
             return context;
@@ -701,7 +701,7 @@ namespace Fugui.Framework
         /// Destroy a fugui context by it's context instance
         /// </summary>
         /// <param name="context">the fugui context to destroy</param>
-        public static void DestroyContext(FuguiContext context)
+        public static void DestroyContext(FuContext context)
         {
             ToDeleteContexts.Enqueue(context.ID);
         }
@@ -711,7 +711,7 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="contextID">ID of the context to get</param>
         /// <returns>null if context's ID does not exists</returns>
-        public static FuguiContext GetContext(int contextID)
+        public static FuContext GetContext(int contextID)
         {
             if (Contexts.ContainsKey(contextID))
             {
@@ -746,7 +746,7 @@ namespace Fugui.Framework
         /// set the current fugui context
         /// </summary>
         /// <param name="context">instance of the fugui context</param>
-        public static void SetCurrentContext(FuguiContext context)
+        public static void SetCurrentContext(FuContext context)
         {
             if (context != null)
             {
@@ -802,16 +802,16 @@ namespace Fugui.Framework
         /// </summary>
         /// <param name="nextElementWidth">width of the next element</param>
         /// <param name="alignement">alignement type</param>
-        public static void HorizontalAlignNextElement(float nextElementWidth, ElementAlignement alignement)
+        public static void HorizontalAlignNextElement(float nextElementWidth, FuElementAlignement alignement)
         {
             switch (alignement)
             {
-                case ElementAlignement.Center:
+                case FuElementAlignement.Center:
                     float pad = ImGui.GetContentRegionAvail().x / 2f - nextElementWidth / 2f;
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + pad);
                     break;
 
-                case ElementAlignement.Right:
+                case FuElementAlignement.Right:
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().x - nextElementWidth);
                     break;
             }
@@ -822,7 +822,7 @@ namespace Fugui.Framework
         /// </summary>
         public static void ForceDrawAllWindows()
         {
-            foreach (UIWindow window in UIWindows.Values)
+            foreach (FuWindow window in UIWindows.Values)
             {
                 window.ForceDraw();
             }

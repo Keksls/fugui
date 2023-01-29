@@ -3,7 +3,7 @@
 ** WARNING! All changes made in this file will be lost when regenerating!
 *************************************************************************/
 
-namespace Fugui.Framework
+namespace Fu.Framework
 {
 	public static class Icons
 	{

@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
-namespace Fugui.Core.DearImGui
+namespace Fu.Core.DearImGui
 {
 	internal static unsafe class Utils
 	{

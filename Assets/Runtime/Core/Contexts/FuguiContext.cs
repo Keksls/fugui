@@ -3,6 +3,7 @@ using Fugui.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -24,6 +25,7 @@ namespace Fugui.Core
         public bool AutoUpdateKeyboard = true;
         public bool Started { get; private set; }
         public float Scale { get; private set; }
+        public float FontScale { get; private set; }
         protected bool renderPrepared = false;
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
         internal FontSet DefaultFont { get; private set; }
@@ -35,6 +37,7 @@ namespace Fugui.Core
         public FuguiContext(int index, float scale, float fontScale, Action onInitialize)
         {
             Scale = scale;
+            FontScale = fontScale;
             ID = index;
         }
 
@@ -42,7 +45,7 @@ namespace Fugui.Core
         /// Initialize this context
         /// </summary>
         /// <param name="index"></param>
-        protected void initialize(float fontScale, Action onInitialize)
+        protected void initialize(Action onInitialize)
         {
             ImGuiContext = ImGui.CreateContext();
 #if !UIMGUI_REMOVE_IMPLOT
@@ -57,7 +60,7 @@ namespace Fugui.Core
             ImGuiNative.igSetCurrentContext(ImGuiContext);
             IO = ImGui.GetIO();
             onInitialize?.Invoke();
-            sub_initialize(fontScale);
+            sub_initialize();
             if (lastDFContext != null)
             {
                 FuGui.SetCurrentContext(lastDFContext);
@@ -72,7 +75,7 @@ namespace Fugui.Core
         /// <summary>
         /// Initialize this context for specific sub class. Don't call it, Fugui layout handle it for you
         /// </summary>
-        protected abstract void sub_initialize(float fontScale);
+        protected abstract void sub_initialize();
 
         /// <summary>
         /// set the default path to save imgui.ini file
@@ -215,7 +218,7 @@ namespace Fugui.Core
         /// <summary>
         /// Load fonts for this context according to FontConfig into FuGui.Settings.FontConfig
         /// </summary>
-        protected unsafe void LoadFonts(float fontScale)
+        protected unsafe void LoadFonts()
         {
             // get font config from FuguiManager Settings
             FontConfig fontConf = FuGui.Settings.FontConfig;
@@ -306,20 +309,20 @@ namespace Fugui.Core
                     Fonts[size] = new FontSet(size);
 
                     // add regular + icon font
-                    ImFontPtr fontRegular = IO.Fonts.AddFontFromFileTTF(regularFile, size * fontScale);
+                    ImFontPtr fontRegular = IO.Fonts.AddFontFromFileTTF(regularFile, size * FontScale);
                     if (addIcons)
                     {
-                        IO.Fonts.AddFontFromFileTTF(iconFile, (size - FuGui.Manager.FontIconsSizeOffset) * fontScale, iconConfigPtr, glyphRangePtr);
+                        IO.Fonts.AddFontFromFileTTF(iconFile, (size - FuGui.Manager.FontIconsSizeOffset) * FontScale, iconConfigPtr, glyphRangePtr);
                     }
                     Fonts[size].Regular = fontRegular;
 
                     // add bold font
                     if (fontConf.AddBold)
                     {
-                        ImFontPtr fontBold = IO.Fonts.AddFontFromFileTTF(boldFile, size * fontScale);
+                        ImFontPtr fontBold = IO.Fonts.AddFontFromFileTTF(boldFile, size * FontScale);
                         if (addIcons && fontConf.AddIconsToBold)
                         {
-                            IO.Fonts.AddFontFromFileTTF(iconFile, (size - FuGui.Manager.FontIconsSizeOffset) * fontScale, iconConfigPtr, glyphRangePtr);
+                            IO.Fonts.AddFontFromFileTTF(iconFile, (size - FuGui.Manager.FontIconsSizeOffset) * FontScale, iconConfigPtr, glyphRangePtr);
                         }
                         Fonts[size].Bold = fontBold;
                     }

@@ -42,6 +42,7 @@
             Name "DEARIMGUI BUILTIN"
 
             CGPROGRAM
+            #pragma require 2darray
             #pragma vertex ImGuiPassVertex
             #pragma fragment ImGuiPassFrag
             #include "./PassesBuiltin.hlsl"

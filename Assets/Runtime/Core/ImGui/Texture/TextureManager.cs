@@ -1,27 +1,136 @@
-﻿using ImGuiNET;
+﻿//#define FUGUI_USE_TEXTUREARRAY
+using Fugui.Framework;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Collections;
+#if !FUGUI_USE_TEXTUREARRAY
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+#endif
 using UnityEngine;
 using UTexture = UnityEngine.Texture;
+using System.Runtime.InteropServices;
 
 namespace Fugui.Core.DearImGui.Texture
 {
     public class TextureManager
     {
-        private Texture2D _atlasTexture;
         private readonly Dictionary<IntPtr, UTexture> _textures = new Dictionary<IntPtr, UTexture>();
         private readonly Dictionary<UTexture, IntPtr> _textureIds = new Dictionary<UTexture, IntPtr>();
         private readonly Dictionary<Sprite, SpriteInfo> _spriteData = new Dictionary<Sprite, SpriteInfo>();
         private ImFontAtlasPtr _fontAtlas;
 
+#if FUGUI_USE_TEXTUREARRAY
+        private static Dictionary<float, Texture2DArray> _atlasTexture = new Dictionary<float, Texture2DArray>();
         public unsafe void InitializeFontAtlas(ImGuiIOPtr io)
         {
+            // dol not create texture if already exists (context will share). raw textures are very heavy
+            if (_atlasTexture.ContainsKey(FuGui.CurrentContext.FontScale))
+            {
+                return;
+            }
+            _fontAtlas = io.Fonts;
+            _fontAtlas.GetTexDataAsRGBA32(out byte* pixels, out int width, out int height, out int bytesPerPixel);
+            // Create a new Texture2DArray with the maximum size and RGBA32 format
+            Texture2DArray texture = createTextureArray(pixels, width, height, bytesPerPixel, SystemInfo.maxTextureSize, SystemInfo.maxTextureSize);
+            _atlasTexture.Add(FuGui.CurrentContext.FontScale, texture);
+        }
+
+        private unsafe Texture2DArray createTextureArray(byte* pixels, int width, int height, int bytesPerPixel, int maxWidth = 4096, int maxHeight = 4096)
+        {
+            maxWidth = Mathf.Min(maxWidth, width);
+            maxHeight = Mathf.Min(maxHeight, height);
+            int numTextures = Mathf.CeilToInt(width * height * bytesPerPixel / (float)(maxWidth * maxHeight * bytesPerPixel));
+            Texture2DArray textureArray = new Texture2DArray(maxWidth, maxHeight, numTextures, TextureFormat.RGBA32, true);
+
+            for (int i = 0; i < numTextures; i++)
+            {
+                int subWidth = Mathf.Min(maxWidth, width - (maxWidth * i));
+                int subHeight = Mathf.Min(maxHeight, height - (maxHeight * i));
+                int lenght = subWidth * subHeight * bytesPerPixel;
+                Color32[] colorArray = new Color32[subWidth * subHeight];
+
+                fixed (Color32* colorPointer = colorArray)
+                {
+                    byte* colorPtr = (byte*)colorPointer;
+                    Buffer.MemoryCopy(pixels, colorPtr, (long)lenght, (long)lenght);
+                }
+
+                //GCHandle handle = GCHandle.Alloc(colorArray, GCHandleType.Pinned);
+                //byte* pixelsDataPtr = (byte*)handle.AddrOfPinnedObject();
+
+                //Debug.Log((pixels == null).ToString() + " " + (pixelsDataPtr == null).ToString());
+                //for (int ind = 0; ind < subWidth * subHeight; ind++)
+                //    {
+                //        Debug.Log((pixels == null).ToString() + " " + ind);
+                //        colorArray[ind] = new Color32(*pixels++, *pixels++, *pixels++, *pixels++);
+                //        //Debug.Log((*pixelsDataPtr).ToString() + " " + (*pixels).ToString());
+                //        //*pixelsDataPtr = *pixels;
+                //        //pixelsDataPtr += ind;
+                //        //pixels += ind;
+                //    }
+                //Buffer.MemoryCopy(pixels, pixelsDataPtr, lenght, lenght);
+
+                //Texture2D subTexture = new Texture2D(subWidth, subHeight, TextureFormat.RGBA32, false, false)
+                //{
+                //    filterMode = FilterMode.Point
+                //};
+
+                //                    // create native byte array to store pixels data
+                //                    NativeArray<byte> srcData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(pixels, lenght, Allocator.None);
+                //#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                //                    NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref srcData, AtomicSafetyHandle.GetTempMemoryHandle());
+                //#endif
+                //                    // Invert y while copying the atlas texture.
+                //                    NativeArray<byte> dstData = subTexture.GetRawTextureData<byte>();
+                //                    int stride = subWidth * bytesPerPixel;
+                //                    for (int y = 0; y < subHeight; ++y)
+                //                    {
+                //                        NativeArray<byte>.Copy(srcData, y * stride, dstData, (subHeight - y - 1) * stride, stride);
+                //                    }
+                //                    // apply sub texture data
+                //                    subTexture.Apply();
+
+                //Texture2D subTexture = new Texture2D(subWidth, subHeight, TextureFormat.RGBA32, false);
+                //subTexture.LoadRawTextureData((IntPtr)pixels, lenght);
+                //Debug.Log("lenght : " + lenght + " " + subWidth + " " + subHeight + " " + width + " " + height);
+                //subTexture.Apply();
+
+                // set color data to texture array
+                textureArray.SetPixels32(/*subTexture.GetPixels()*/colorArray, i);
+
+                // increment pixels pointer
+                pixels += lenght;
+            }
+
+            textureArray.Apply();
+            return textureArray;
+        }
+#else
+        private static Dictionary<float, Texture2D> _atlasTexture = new Dictionary<float, Texture2D>();
+        public unsafe void InitializeFontAtlas(ImGuiIOPtr io)
+        {
+            // ignore this font atlas if already exists
+            if(_atlasTexture.ContainsKey(FuGui.CurrentContext.FontScale))
+            {
+                return;
+            }
+
             _fontAtlas = io.Fonts;
             _fontAtlas.GetTexDataAsRGBA32(out byte* pixels, out int width, out int height, out int bytesPerPixel);
 
-            _atlasTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, false)
+            if (width > SystemInfo.maxTextureSize || height > SystemInfo.maxTextureSize)
+            {
+                Debug.LogError("The font atlas you are trying to created is too big and exced the unity max texture size.\nconsidere reducing the size of the font, the number of different font sizes or the quantity of icons.");
+            }
+            if (width > SystemInfo.maxTextureSize)
+                width = SystemInfo.maxTextureSize;
+            if (height > SystemInfo.maxTextureSize)
+                height = SystemInfo.maxTextureSize;
+
+            Texture2D atlas = new Texture2D(width, height, TextureFormat.RGBA32, false, false)
             {
                 filterMode = FilterMode.Point
             };
@@ -32,26 +141,42 @@ namespace Fugui.Core.DearImGui.Texture
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref srcData, AtomicSafetyHandle.GetTempMemoryHandle());
 #endif
             // Invert y while copying the atlas texture.
-            NativeArray<byte> dstData = _atlasTexture.GetRawTextureData<byte>();
+            NativeArray<byte> dstData = atlas.GetRawTextureData<byte>();
             int stride = width * bytesPerPixel;
             for (int y = 0; y < height; ++y)
             {
                 NativeArray<byte>.Copy(srcData, y * stride, dstData, (height - y - 1) * stride, stride);
             }
+            atlas.Apply();
 
-            _atlasTexture.Apply();
+            _atlasTexture.Add(FuGui.CurrentContext.FontScale, atlas);
         }
-
+#endif
         public unsafe void Shutdown()
         {
             _textures.Clear();
             _textureIds.Clear();
             _spriteData.Clear();
 
-            if (_atlasTexture != null)
+            float scale = FuGui.CurrentContext.FontScale;
+            if (_atlasTexture != null && _atlasTexture.ContainsKey(FuGui.CurrentContext.FontScale))
             {
-                UnityEngine.Object.Destroy(_atlasTexture);
-                _atlasTexture = null;
+                // check whatever no remaning context need the font atlas texture
+                bool destroyFontAtlas = true;
+                foreach (FuguiContext context in FuGui.Contexts.Values)
+                {
+                    if (context.FontScale == scale)
+                    {
+                        destroyFontAtlas = false;
+                        break;
+                    }
+                }
+                if (destroyFontAtlas)
+                {
+                    UnityEngine.Object.Destroy(_atlasTexture[scale]);
+                    _atlasTexture[scale] = null;
+                    _atlasTexture.Remove(scale);
+                }
             }
             ImGui.GetIO().Fonts.Clear(); // Previous FontDefault reference no longer valid.
             ImGui.GetIO().NativePtr->FontDefault = default; // NULL uses Fonts[0].
@@ -59,7 +184,7 @@ namespace Fugui.Core.DearImGui.Texture
 
         public void PrepareFrame(ImGuiIOPtr io)
         {
-            IntPtr id = RegisterTexture(_atlasTexture);
+            IntPtr id = RegisterTexture(_atlasTexture[FuGui.CurrentContext.FontScale]);
             io.Fonts.SetTexID(id);
         }
 

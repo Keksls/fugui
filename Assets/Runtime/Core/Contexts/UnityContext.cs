@@ -24,7 +24,7 @@ namespace Fugui.Core
             _renderFeature = renderFeature;
             TextureManager = new TextureManager();
             Camera = camera;
-            initialize(fontScale, onInitialize);
+            initialize(onInitialize);
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace Fugui.Core
         /// <summary>
         /// Initialize this context. Don't call it, Fugui layout handle it for you
         /// </summary>
-        protected override void sub_initialize(float fontScale)
+        protected override void sub_initialize()
         {
             if (_renderFeature == null && RenderUtility.IsUsingURP())
             {
@@ -154,7 +154,7 @@ namespace Fugui.Core
                 throw new Exception("imgui renderer is null");
             }
 
-            LoadFonts(fontScale);
+            LoadFonts();
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
             ThemeManager.SetTheme(ThemeManager.CurrentTheme);

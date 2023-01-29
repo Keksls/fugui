@@ -294,8 +294,11 @@ namespace Fugui.Core
             ThemeManager.OnThemeSet -= ThemeManager_OnThemeSet;
             if (Camera != null)
             {
+                Camera.targetTexture.Release();
+                Camera.targetTexture = null;
                 UnityEngine.Object.Destroy(Camera.gameObject);
             }
+            UnityEngine.Object.Destroy(RenderTexture);
         }
     }
 }

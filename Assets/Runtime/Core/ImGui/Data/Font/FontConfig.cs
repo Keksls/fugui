@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Fugui.Core.DearImGui
+namespace Fu.Core.DearImGui
 {
     [CreateAssetMenu(fileName = "FontConfig", menuName = "Fugui/FontConfig", order = 1)]
     public class FontConfig : ScriptableObject

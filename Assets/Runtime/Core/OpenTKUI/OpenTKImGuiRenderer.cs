@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using ImGuiNET;
 using System.Collections.Generic;
 
-namespace Fugui.Core
+namespace Fu.Core
 {
     public class OpenTKImGuiRenderer : IDisposable
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Fugui.Core.DearImGui
+namespace Fu.Core.DearImGui
 {
 	[Serializable]
 	public class ShaderData

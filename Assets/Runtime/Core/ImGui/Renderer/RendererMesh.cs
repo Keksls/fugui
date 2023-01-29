@@ -9,11 +9,11 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
-using Fugui.Core.DearImGui.Renderer;
-using Fugui.Core.DearImGui.Texture;
-using Fugui.Core.DearImGui.Assets;
-using Fugui.Core.DearImGui;
-using Fugui.Core;
+using Fu.Core.DearImGui.Renderer;
+using Fu.Core.DearImGui.Texture;
+using Fu.Core.DearImGui.Assets;
+using Fu.Core.DearImGui;
+using Fu.Core;
 
 namespace UImGui.Renderer
 {

@@ -1,8 +1,8 @@
 ﻿using ImGuiNET;
-using Fugui.Core.DearImGui.Assets;
+using Fu.Core.DearImGui.Assets;
 using UnityEngine;
 
-namespace Fugui.Core.DearImGui.Platform
+namespace Fu.Core.DearImGui.Platform
 {
     // TODO: Check this feature and remove from here when checked and done.
     // Implemented features:

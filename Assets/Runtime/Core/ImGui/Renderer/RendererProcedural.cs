@@ -1,8 +1,8 @@
 ﻿using ImGuiNET;
 using System;
 using System.Runtime.InteropServices;
-using Fugui.Core.DearImGui.Assets;
-using Fugui.Core.DearImGui.Texture;
+using Fu.Core.DearImGui.Assets;
+using Fu.Core.DearImGui.Texture;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
@@ -14,7 +14,7 @@ using Object = UnityEngine.Object;
 // starting from 2020.1 API that takes ComputeBuffer can also take GraphicsBuffer
 // https://docs.unity3d.com/2020.1/Documentation/ScriptReference/GraphicsBuffer.Target.html
 
-namespace Fugui.Core.DearImGui.Renderer
+namespace Fu.Core.DearImGui.Renderer
 {
 	/// <summary>
 	/// Renderer bindings in charge of producing instructions for rendering ImGui draw data.

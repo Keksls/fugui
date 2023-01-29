@@ -1,45 +1,170 @@
-﻿namespace Fugui.Framework
+﻿namespace Fu.Framework
 {
+    /// <summary>
+    /// Flags for configuring the grid
+    /// </summary>
+    public enum FuGridFlag
+    {
+        /// <summary>
+        /// Default flag
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Draws background lines in the grid
+        /// </summary>
+        LinesBackground = 1,
+        /// <summary>
+        /// Does not automatically label the grid
+        /// </summary>
+        NoAutoLabels = 2,
+        /// <summary>
+        /// Does not disable labels on the grid
+        /// </summary>
+        DoNotDisableLabels = 4,
+        /// <summary>
+        /// Automatically displays tooltips on labels
+        /// </summary>
+        AutoToolTipsOnLabels = 8
+    }
+
+    /// <summary>
+    /// The type of grid to display
+    /// </summary>
+    public enum FuGridType
+    {
+        /// <summary>
+        /// Automatically adjust the grid
+        /// </summary>
+        Auto,
+        /// <summary>
+        /// Grid with fixed width columns
+        /// </summary>
+        FixedWidth,
+        /// <summary>
+        /// Grid with columns with width determined by a ratio
+        /// </summary>
+        RatioWidth,
+        /// <summary>
+        /// Grid with flexible columns
+        /// </summary>
+        FlexibleCols
+    }
+
+    /// <summary>
+    /// The type of state to display
+    /// </summary>
     public enum StateType
     {
+        /// <summary>
+        /// Display a danger state
+        /// </summary>
         Danger = 0,
+        /// <summary>
+        /// Display a success state
+        /// </summary>
         Success = 1,
+        /// <summary>
+        /// Display an informational state
+        /// </summary>
         Info = 2,
+        /// <summary>
+        /// Display a warning state
+        /// </summary>
         Warning = 3
     }
 
-    public enum SliderFlags
+    /// <summary>
+    /// Flags for configuring the slider
+    /// </summary>
+    public enum FuSliderFlags
     {
+        /// <summary>
+        /// Default flag
+        /// </summary>
         Default = 0,
+        /// <summary>
+        /// Slider can be dragged from the left
+        /// </summary>
         LeftDrag = 1,
+        /// <summary>
+        /// Slider cannot be dragged
+        /// </summary>
         NoDrag = 2
     }
 
-    public enum ButtonsGroupFlags
+    /// <summary>
+    /// Flags for configuring the button group
+    /// </summary>
+    public enum FuButtonsGroupFlags
     {
+        /// <summary>
+        /// Default flag
+        /// </summary>
         Default = 0,
+        /// <summary>
+        /// Automatically size buttons in the group
+        /// </summary>
         AutoSizeButtons = 1,
+        /// <summary>
+        /// Align buttons to the left
+        /// </summary>
         AlignLeft = 2
     }
 
-    public enum ToggleFlags
+    /// <summary>
+    /// Flags for configuring the toggle
+    /// </summary>
+    public enum FuToggleFlags
     {
+        /// <summary>
+        /// Default toggle flag
+        /// </summary>
         Default = 0,
+        /// <summary>
+        /// Maximum text size for toggle
+        /// </summary>
         MaximumTextSize = 1,
+        /// <summary>
+        /// Align toggle text to the left
+        /// </summary>
         AlignLeft = 2
     }
 
-    public enum PanelFlags
+    /// <summary>
+    /// Flag to behave Fugui Panel
+    /// </summary>
+    public enum FuPanelFlags
     {
+        /// <summary>
+        /// Default panel flag
+        /// </summary>
         Default = 0,
+        /// <summary>
+        /// No Scrollbar
+        /// </summary>
         NoScroll = 1,
+        /// <summary>
+        /// Draw Borders
+        /// </summary>
         DrawBorders = 2
     }
 
-    public enum ElementAlignement
+    /// <summary>
+    /// Flag that represent an aligmenent position
+    /// </summary>
+    public enum FuElementAlignement
     {
+        /// <summary>
+        /// Align element to the left
+        /// </summary>
         Left = 0,
+        /// <summary>
+        /// Align element to the center
+        /// </summary>
         Center = 1,
+        /// <summary>
+        /// Align element to the right
+        /// </summary>
         Right = 2
     }
 }

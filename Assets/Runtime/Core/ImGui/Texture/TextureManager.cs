@@ -1,5 +1,5 @@
 ﻿//#define FUGUI_USE_TEXTUREARRAY
-using Fugui.Framework;
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ using UnityEngine;
 using UTexture = UnityEngine.Texture;
 using System.Runtime.InteropServices;
 
-namespace Fugui.Core.DearImGui.Texture
+namespace Fu.Core.DearImGui.Texture
 {
     public class TextureManager
     {
@@ -113,7 +113,7 @@ namespace Fugui.Core.DearImGui.Texture
         public unsafe void InitializeFontAtlas(ImGuiIOPtr io)
         {
             // ignore this font atlas if already exists
-            if(_atlasTexture.ContainsKey(FuGui.CurrentContext.FontScale))
+            if(_atlasTexture.ContainsKey(Fugui.CurrentContext.FontScale))
             {
                 return;
             }
@@ -149,7 +149,7 @@ namespace Fugui.Core.DearImGui.Texture
             }
             atlas.Apply();
 
-            _atlasTexture.Add(FuGui.CurrentContext.FontScale, atlas);
+            _atlasTexture.Add(Fugui.CurrentContext.FontScale, atlas);
         }
 #endif
         public unsafe void Shutdown()
@@ -158,12 +158,12 @@ namespace Fugui.Core.DearImGui.Texture
             _textureIds.Clear();
             _spriteData.Clear();
 
-            float scale = FuGui.CurrentContext.FontScale;
-            if (_atlasTexture != null && _atlasTexture.ContainsKey(FuGui.CurrentContext.FontScale))
+            float scale = Fugui.CurrentContext.FontScale;
+            if (_atlasTexture != null && _atlasTexture.ContainsKey(Fugui.CurrentContext.FontScale))
             {
                 // check whatever no remaning context need the font atlas texture
                 bool destroyFontAtlas = true;
-                foreach (FuguiContext context in FuGui.Contexts.Values)
+                foreach (FuContext context in Fugui.Contexts.Values)
                 {
                     if (context.FontScale == scale)
                     {
@@ -184,7 +184,7 @@ namespace Fugui.Core.DearImGui.Texture
 
         public void PrepareFrame(ImGuiIOPtr io)
         {
-            IntPtr id = RegisterTexture(_atlasTexture[FuGui.CurrentContext.FontScale]);
+            IntPtr id = RegisterTexture(_atlasTexture[Fugui.CurrentContext.FontScale]);
             io.Fonts.SetTexID(id);
         }
 

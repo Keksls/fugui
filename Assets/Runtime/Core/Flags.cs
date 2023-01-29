@@ -1,6 +1,6 @@
-﻿namespace Fugui.Core
+﻿namespace Fu.Core
 {
-    public enum UIWindowFlags
+    public enum FuWindowFlags
     {
         Default = 0,
         NoExternalization = 1,
@@ -10,13 +10,13 @@
         AllowMultipleWindow = 16
     }
 
-    public enum UIExternalWindowFlags
+    public enum FuExternalWindowFlags
     {
         Default = 0,
-        ShhowWindowTitle = 1
+        ShowWindowTitle = 1
     }
 
-    public enum OverlayFlags
+    public enum FuOverlayFlags
     {
         Default = 0,
         /// <summary>
@@ -37,7 +37,7 @@
         NoEditAnchor = 8
     }
 
-    public enum OverlayDragPosition
+    public enum FuOverlayDragPosition
     {
         Auto,
         Top,

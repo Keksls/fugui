@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Fugui.Core.DearImGui
+namespace Fu.Core.DearImGui
 {
 	internal static unsafe class ImGuiExtension
 	{

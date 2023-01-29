@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Fugui.Core.DearImGui
+namespace Fu.Core.DearImGui
 {
 	[Serializable]
 	public class ShaderProperties

@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UTexture = UnityEngine.Texture;
 
-namespace Fugui.Core.DearImGui.Texture
+namespace Fu.Core.DearImGui.Texture
 {
 	internal sealed class SpriteInfo
 	{

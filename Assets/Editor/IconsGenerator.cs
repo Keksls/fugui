@@ -1,7 +1,7 @@
 ﻿#if UNITY_EDITOR
 using UnityEditor;
 
-namespace Fugui.Editor
+namespace Fu.Editor
 {
     internal class IconsGenerator
     {

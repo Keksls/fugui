@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
-namespace Fugui.Core
+namespace Fu.Core
 {
     public static class ImGuiDrawListUtils
     {
@@ -20,7 +20,7 @@ namespace Fugui.Core
 
         }
 
-        public static DrawData GetDrawCmd(Dictionary<string, UIWindow> windows, ImDrawDataPtr imDrawDataPtr)
+        public static DrawData GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr)
         {
             cmd.Clear();
 

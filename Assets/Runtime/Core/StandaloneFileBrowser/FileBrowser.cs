@@ -1,6 +1,6 @@
 using System;
 
-namespace Fugui.Framework {
+namespace Fu.Framework {
     public struct ExtensionFilter {
         public string Name;
         public string[] Extensions;

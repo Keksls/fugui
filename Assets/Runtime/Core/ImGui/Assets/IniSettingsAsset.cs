@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Fugui.Core.DearImGui.Assets
+namespace Fu.Core.DearImGui.Assets
 {
 	// TODO: Ability to save to asset, in player prefs with custom key, custom ini file, etc
 	/// <summary>

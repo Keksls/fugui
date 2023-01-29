@@ -1,9 +1,9 @@
 using UnityEngine;
-using Fugui.Core;
+using Fu.Core;
 
 public class MouseOrbitImproved : MonoBehaviour
 {
-    public UICameraWindow Camera;
+    public FuCameraWindow Camera;
     public Transform target;
     public float distance = 5.0f;
     public float xSpeed = 120.0f;

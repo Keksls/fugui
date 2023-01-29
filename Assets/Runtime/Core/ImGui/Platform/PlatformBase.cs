@@ -1,10 +1,10 @@
 ﻿using ImGuiNET;
 using System;
-using Fugui.Core.DearImGui.Assets;
+using Fu.Core.DearImGui.Assets;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace Fugui.Core.DearImGui.Platform
+namespace Fu.Core.DearImGui.Platform
 {
     /// <summary>
     /// TODO: Write all methods a this base class usage.

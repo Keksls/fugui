@@ -4,7 +4,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine;
 #endif
 
-namespace Fugui.Core.DearImGui.Renderer
+namespace Fu.Core.DearImGui.Renderer
 {
 #if HAS_URP
 	public class RenderImGui : ScriptableRendererFeature

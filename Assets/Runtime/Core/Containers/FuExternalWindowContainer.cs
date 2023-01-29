@@ -195,7 +195,7 @@ namespace Fu.Core
         /// <summary>
         /// Render any IUIWindows that contains this container
         /// </summary>
-        public void RenderUIWindows()
+        public void RenderFuWindows()
         {
             ImGuiIOPtr io = ImGui.GetIO();
 
@@ -213,14 +213,14 @@ namespace Fu.Core
             //io.DeltaTime = UIWindow.DeltaTime;
 
             // render UI window
-            RenderUIWindow(UIWindow);
+            RenderFuWindow(UIWindow);
         }
 
         /// <summary>
         /// Render a single UIWindow into this container
         /// </summary>
         /// <param name="UIWindow">UIWindow to render</param>
-        public void RenderUIWindow(FuWindow UIWindow)
+        public void RenderFuWindow(FuWindow UIWindow)
         {
             // force set UI pos on appear (don't need to any frame because ForcePos() return true, it's checked into UIWindow src)
             ImGui.SetNextWindowPos(UnityEngine.Vector2.zero, ImGuiCond.Appearing);
@@ -813,7 +813,7 @@ namespace Fu.Core
             // prevent UI to render until next frame is draw
             _readyToNewFrame = false;
             // do UI render callback into main thread
-            RenderUIWindows();
+            RenderFuWindows();
             // notify that UI is ready to render in GL thread
             _readyToRender = true;
 

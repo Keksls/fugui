@@ -86,7 +86,7 @@ GameObject:
   - component: {fileID: 2932005272966750019}
   - component: {fileID: 2932005272966750016}
   m_Layer: 0
-  m_Name: FuguiManager
+  m_Name: FuguiController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

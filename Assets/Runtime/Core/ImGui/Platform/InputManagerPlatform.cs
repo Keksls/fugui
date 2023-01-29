@@ -106,7 +106,7 @@ namespace Fu.Core.DearImGui.Platform
             }
         }
 
-        private static void UpdateMouse(ImGuiIOPtr io)
+        private void UpdateMouse(ImGuiIOPtr io)
         {
             io.MousePos = Utils.ScreenToImGui(Input.mousePosition);
 

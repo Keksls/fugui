@@ -41,13 +41,13 @@ namespace Fu.Core
         /// Method that render every UI windows hosted by this container
         /// Must call RenderUIWindo(UIWindow UIWindow) for each hoster windows
         /// </summary>
-        public void RenderUIWindows();
+        public void RenderFuWindows();
 
         /// <summary>
         /// Methos that render a single UIWindow object
         /// </summary>
         /// <param name="UIWindow">UIWindow object to render</param>
-        public void RenderUIWindow(FuWindow UIWindow);
+        public void RenderFuWindow(FuWindow UIWindow);
 
         /// <summary>
         /// Did the container must force UI window position to it self context ?

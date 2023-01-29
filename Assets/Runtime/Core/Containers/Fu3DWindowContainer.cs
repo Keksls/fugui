@@ -5,8 +5,12 @@ using UnityEngine;
 
 namespace Fu.Core
 {
+    /// <summary>
+    /// A class that represent a 3D UI Container
+    /// </summary>
     public class Fu3DWindowContainer : IFuWindowContainer
     {
+        #region Variables
         public string ID { get; private set; }
         public FuWindow Window { get; private set; }
         public Vector2Int LocalMousePos => _localMousePos;
@@ -23,7 +27,14 @@ namespace Fu.Core
         private FuUnityContext _fuguiContext;
         private static int _3DContextindex = 0;
         private Material _uiMaterial;
+        #endregion
 
+        /// <summary>
+        /// Instantiate a new 3D Container
+        /// </summary>
+        /// <param name="window">Window to add to this container</param>
+        /// <param name="position">world 3D position of this container</param>
+        /// <param name="rotation">world 3D rotation of this container</param>
         public Fu3DWindowContainer(FuWindow window, Vector3? position = null, Quaternion? rotation = null)
         {
             _3DContextindex++;
@@ -92,11 +103,18 @@ namespace Fu.Core
             window.IsBusy = false;
         }
 
+        /// <summary>
+        /// Whenever a theme is set
+        /// </summary>
+        /// <param name="theme">setted theme</param>
         private void ThemeManager_OnThemeSet(FuTheme theme)
         {
             createPanel();
         }
 
+        /// <summary>
+        /// Create the 3D UI Panel GameObject of this container
+        /// </summary>
         private void createPanel()
         {
             if (_panelGameObject != null)
@@ -118,16 +136,28 @@ namespace Fu.Core
             }
         }
 
+        /// <summary>
+        /// Set the world position of the UI Panel
+        /// </summary>
+        /// <param name="position">Position of the UI Panel</param>
         public void SetPosition(Vector3 position)
         {
             Camera.transform.position = position;
         }
 
+        /// <summary>
+        /// Set the world rotation of the UI Panel
+        /// </summary>
+        /// <param name="rotation">Rotation of the UI Panel</param>
         public void SetRotation(Quaternion rotation)
         {
             Camera.transform.rotation = rotation;
         }
 
+        /// <summary>
+        /// Try to prepare the Fugui Context rendering (time to inject inputs)
+        /// </summary>
+        /// <returns>must return false if the window will not be draw this frame</returns>
         private bool context_OnPrepareFrame()
         {
             if (Window == null)
@@ -155,21 +185,33 @@ namespace Fu.Core
 
             // update context mouse position
             _fuguiContext.UpdateMouse(_localMousePos, new Vector2(0f, inputState.MouseWheel), inputState.MouseDown[0], inputState.MouseDown[1], inputState.MouseDown[2]);
-
+            
             // return whatever the mouse need to be drawn
             return Window.MustBeDraw();
         }
 
+        /// <summary>
+        /// whenever the fugui context render the frame
+        /// </summary>
         private void _context_OnRender()
         {
-            RenderUIWindows();
+            RenderFuWindows();
         }
 
+        /// <summary>
+        /// Whatever this container must force the local position of it's windows
+        /// </summary>
+        /// <returns></returns>
         public bool ForcePos()
         {
             return true;
         }
 
+        /// <summary>
+        /// Whatever this container own a window
+        /// </summary>
+        /// <param name="id">name of the window to check</param>
+        /// <returns></returns>
         public bool HasWindow(string id)
         {
             return Window != null && Window.ID == id;
@@ -219,27 +261,40 @@ namespace Fu.Core
         }
         #endregion
 
-        public void RenderUIWindow(FuWindow UIWindow)
+        /// <summary>
+        /// Render a window into this container
+        /// </summary>
+        /// <param name="UIWindow">the window to draw</param>
+        public void RenderFuWindow(FuWindow UIWindow)
         {
             // call UIWindow.DrawWindow
             UIWindow.DrawWindow();
+            // update the window state (Idle / Manipulating etc)
             UIWindow.UpdateState(_fuguiContext.IO.MouseDown[0]);
         }
 
-        public void RenderUIWindows()
+        /// <summary>
+        /// Render each Windows of this container
+        /// </summary>
+        public void RenderFuWindows()
         {
             if (Window != null)
             {
                 // draw the window
-                RenderUIWindow(Window);
+                RenderFuWindow(Window);
             }
         }
 
-        public bool TryAddWindow(FuWindow UIWindow)
+        /// <summary>
+        /// Try to add a window into this container
+        /// </summary>
+        /// <param name="FuWindow">The window to add</param>
+        /// <returns></returns>
+        public bool TryAddWindow(FuWindow FuWindow)
         {
             if (Window == null)
             {
-                Window = UIWindow;
+                Window = FuWindow;
                 Window.OnClosed += Window_OnClosed;
                 Window.OnResized += Window_OnResized;
                 Window.LocalPosition = Vector2Int.zero;
@@ -250,6 +305,10 @@ namespace Fu.Core
             return false;
         }
 
+        /// <summary>
+        /// Whenever a window is resized
+        /// </summary>
+        /// <param name="window">the resized window</param>
         private void Window_OnResized(FuWindow window)
         {
             _size = window.Size;
@@ -261,11 +320,20 @@ namespace Fu.Core
             createPanel();
         }
 
+        /// <summary>
+        /// Whenever a window is closed
+        /// </summary>
+        /// <param name="window">the closed window</param>
         private void Window_OnClosed(FuWindow window)
         {
             Close();
         }
 
+        /// <summary>
+        /// Try to remove a window from this container
+        /// </summary>
+        /// <param name="id">ID of the window to remove</param>
+        /// <returns></returns>
         public bool TryRemoveWindow(string id)
         {
             if (Window != null && Window.ID == id)
@@ -276,6 +344,9 @@ namespace Fu.Core
             return false;
         }
 
+        /// <summary>
+        /// Close this container
+        /// </summary>
         public void Close()
         {
             if (Window != null)

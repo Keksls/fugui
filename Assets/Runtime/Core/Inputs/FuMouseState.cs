@@ -89,6 +89,10 @@ namespace Fu.Core
         /// <returns>true if up</returns>
         public bool IsUp(int index)
         {
+            if (index >= ButtonStates.Length || index < 0)
+            {
+                return false;
+            }
             return ButtonStates[index].IsUp;
         }
 
@@ -99,6 +103,10 @@ namespace Fu.Core
         /// <returns>true if pressed</returns>
         public bool IsPressed(int index)
         {
+            if (index >= ButtonStates.Length || index < 0)
+            {
+                return false;
+            }
             return ButtonStates[index].IsPressed;
         }
     }

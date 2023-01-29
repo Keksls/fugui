@@ -92,6 +92,10 @@ namespace Fu.Core
         /// </summary>
         internal override bool PrepareRender()
         {
+            if(!MustDraw())
+            {
+                return false;
+            }
             // set this contextr as current
             Fugui.SetCurrentContext(this);
 

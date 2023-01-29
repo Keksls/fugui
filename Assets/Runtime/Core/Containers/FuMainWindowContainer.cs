@@ -77,7 +77,7 @@ namespace Fu.Core
 
         private void _fuguiContext_OnRender()
         {
-            RenderUIWindows();
+            RenderFuWindows();
         }
 
         public void Update()
@@ -148,13 +148,13 @@ namespace Fu.Core
             return Windows.ContainsKey(id);
         }
 
-        public void RenderUIWindow(FuWindow UIWindow)
+        public void RenderFuWindow(FuWindow UIWindow)
         {
             // Do draw window
             UIWindow.DrawWindow();
         }
 
-        public void RenderUIWindows()
+        public void RenderFuWindows()
         {
             DrawMainContainer();
 
@@ -173,7 +173,7 @@ namespace Fu.Core
             foreach (FuWindow window in Windows.Values)
             {
                 // check whatever window must be draw
-                RenderUIWindow(window);
+                RenderFuWindow(window);
                 // update window state
                 window.UpdateState(leftButtonState);
                 // add to externalize list

@@ -3,8 +3,6 @@ using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using Unity.Collections.LowLevel.Unsafe;
-using Unity.Collections;
 #if !FUGUI_USE_TEXTUREARRAY
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;

@@ -73,7 +73,7 @@ namespace Fu.Core
             };
 
             // register raycaster
-            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsDown(0), () => Mouse.IsDown(1), () => Mouse.IsDown(2), () => Mouse.Wheel.y, () => IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup);
+            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsPressed(0), () => Mouse.IsPressed(1), () => Mouse.IsPressed(2), () => Mouse.Wheel.y, () => IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup);
             FuRaycasting.RegisterRaycaster(_raycaster);
         }
 

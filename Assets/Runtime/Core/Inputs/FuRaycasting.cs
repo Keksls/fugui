@@ -19,13 +19,11 @@ namespace Fu.Core
                     if (!latestRaycasters.ContainsKey(containerID) || latestRaycasters[containerID] != raycaster)
                     {
                         latestRaycasters[containerID] = raycaster;
-                        // do something with the latest raycaster
                     }
                 }
                 else if (latestRaycasters.ContainsKey(containerID) && latestRaycasters[containerID] == raycaster)
                 {
                     latestRaycasters.Remove(containerID);
-                    // do something with the previous latest raycaster
                 }
             }
 

@@ -10803,7 +10803,7 @@ MonoBehaviour:
   TmpDebugTexture: {fileID: 2800000, guid: d7f0d3be02ca8a54086ef7e5b10c95b9, type: 3}
   ShowImGuiDemoWindow: 0
   ShowRaycastersDebug: 0
-  Raycaster: {fileID: 3334510347609701449}
+  Raycaster: {fileID: 184572714933081265}
 --- !u!1 &6858132336863804837
 GameObject:
   m_ObjectHideFlags: 0
@@ -10815,7 +10815,7 @@ GameObject:
   - component: {fileID: 6830960728300181111}
   - component: {fileID: 2032791551254246611}
   - component: {fileID: 8577439549086045483}
-  - component: {fileID: 3334510347609701449}
+  - component: {fileID: 184572714933081265}
   m_Layer: 0
   m_Name: Raycaster
   m_TagString: Untagged
@@ -10889,7 +10889,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &3334510347609701449
+--- !u!114 &184572714933081265
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -10901,3 +10901,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c7de93cccd22ff488cce0bce788cd2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  MouseButton0Key: 99
+  MouseButton1Key: 118
+  MouseButton2Key: 98
+  MouseScrollUpKey: 270
+  MouseScrollDownKey: 269
+  ScrollForce: 1

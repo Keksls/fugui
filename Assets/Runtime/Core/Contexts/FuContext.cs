@@ -25,8 +25,6 @@ namespace Fu.Core
         public bool Started { get; private set; }
         public float Scale { get; private set; }
         public float FontScale { get; private set; }
-        protected float _lastRenderTime;
-        protected float _targetDeltaTime;
         protected bool renderPrepared = false;
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
         internal FontSet DefaultFont { get; private set; }
@@ -37,8 +35,6 @@ namespace Fu.Core
         /// <param name="index">ID of the context</param>
         public FuContext(int index, float scale, float fontScale, Action onInitialize)
         {
-            _targetDeltaTime = 1f / Fugui.Settings.ManipulatingFPS;
-            _lastRenderTime = float.MinValue;
             Scale = scale;
             FontScale = fontScale;
             ID = index;
@@ -129,20 +125,6 @@ namespace Fu.Core
                 ImGui.Render();
             }
             OnPostRender?.Invoke();
-        }
-
-        /// <summary>
-        /// Whatever the context must draw this frame
-        /// </summary>
-        /// <returns></returns>
-        public bool MustDraw()
-        {
-            if(Fugui.Time >= _lastRenderTime + _targetDeltaTime)
-            {
-                _lastRenderTime = Fugui.Time;
-                return true;
-            }
-            return false;
         }
 
         /// <summary>

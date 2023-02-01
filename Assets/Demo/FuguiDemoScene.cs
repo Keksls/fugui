@@ -455,11 +455,11 @@ public class FuguiDemoScene : MonoBehaviour
 
         #region Overlays
         // render graph panel
-        FuOverlay rg = new FuOverlay("RenderGraphPanel", new Vector2(224f, 36f), (overlay) =>
+        FuOverlay rg = new FuOverlay("oRG", new Vector2(224f, 36f), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {
-                layout.ComboboxEnum<AnchorLocation>("##rgCbTest", (val) => { });
+                layout.ComboboxEnum<AnchorLocation>("##rgCB", (val) => { });
                 layout.SameLine();
                 layout.Button(Icons.Ghost, FuElementSize.AutoSize);
                 layout.SameLine();
@@ -469,7 +469,7 @@ public class FuguiDemoScene : MonoBehaviour
         rg.AnchorWindowDefinition(camWinDef, AnchorLocation.TopLeft, Vector2.zero);
 
         // gizmos panel
-        FuOverlay gz = new FuOverlay("GizmoPanel", new Vector2(46f, 36f), (overlay) =>
+        FuOverlay gz = new FuOverlay("oGP", new Vector2(46f, 36f), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {
@@ -479,7 +479,7 @@ public class FuguiDemoScene : MonoBehaviour
         gz.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, Vector2.zero);
 
         // legend
-        FuOverlay bc = new FuOverlay("LegendPanel", new Vector2(128f, 128f), (overlay) =>
+        FuOverlay bc = new FuOverlay("oLP", new Vector2(128f, 128f), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {
@@ -493,7 +493,7 @@ public class FuguiDemoScene : MonoBehaviour
         bc.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomLeft, Vector2.zero);
 
         // legend
-        FuOverlay tb = new FuOverlay("ToolBarOverlay", new Vector2(312f, 48f), (overlay) =>
+        FuOverlay tb = new FuOverlay("oTB", new Vector2(312f, 48f), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {
@@ -526,14 +526,14 @@ public class FuguiDemoScene : MonoBehaviour
         tb.AnchorWindowDefinition(camWinDef, AnchorLocation.TopCenter, Vector2.zero);
 
         // FPS display Cam 1
-        FuOverlay fps1 = new FuOverlay("FPSOverlayCam1", new Vector2(102f, 52f), (overlay) =>
+        FuOverlay fps1 = new FuOverlay("oCamFPS", new Vector2(102f, 52f), (overlay) =>
         {
             drawCameraFPSOverlay(_mainCam);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);
         fps1.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, new Vector2(0f, 64f));
 
         // cam 1 SS
-        FuOverlay ss1 = new FuOverlay("Cam1SS", new Vector2(224f, 36f), (overlay) =>
+        FuOverlay ss1 = new FuOverlay("oCamSS", new Vector2(224f, 36f), (overlay) =>
         {
             drawCameraOverlay(_mainCam);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);

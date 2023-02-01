@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
-    public partial class FuGrid : FuLayout
+    public unsafe partial class FuGrid : FuLayout
     {
         #region Variables
         // comment : The current column index being used in the grid
@@ -44,7 +44,7 @@ namespace Fu.Framework
         /// <param name="rowsPadding">spaces in pixel between rows</param>
         /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public FuGrid(string gridName, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f)
+        public FuGrid(string gridName, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f) : base()
         {
             _autoDrawLabel = !flags.HasFlag(FuGridFlag.NoAutoLabels);
             _dontDisableLabels = flags.HasFlag(FuGridFlag.DoNotDisableLabels);
@@ -63,7 +63,7 @@ namespace Fu.Framework
         /// <param name="rowsPadding">spaces in pixel between rows</param>
         /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public FuGrid(string gridName, FuGridDefinition gridDef, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f)
+        public FuGrid(string gridName, FuGridDefinition gridDef, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f) : base()
         {
             _autoDrawLabel = !flags.HasFlag(FuGridFlag.NoAutoLabels);
             _dontDisableLabels = flags.HasFlag(FuGridFlag.DoNotDisableLabels);
@@ -84,7 +84,7 @@ namespace Fu.Framework
             {
                 return;
             }
-            ImGui.TableNextColumn();
+            ImGuiNative.igTableNextColumn();
             if (_isResponsivelyResized)
             {
                 _currentRowIndex++;
@@ -111,7 +111,7 @@ namespace Fu.Framework
             {
                 return;
             }
-            ImGui.TableNextRow();
+            ImGuiNative.igTableNextRow(ImGuiTableRowFlags.None, 0f);
             _currentRowIndex++;
             _currentColIndex = 0;
         }
@@ -145,11 +145,12 @@ namespace Fu.Framework
             {
                 Debug.LogError("You are trying to create a grid inside a PopUp, wich is not a good idee. Please check your code and remove it.");
             }
+
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
             _gridCreated = _currentGridDef.SetupTable(_gridName, outterPadding, linesBg, ref _isResponsivelyResized);
             if (!_gridCreated)
             {
-                return;
+                Debug.LogError("Fail to create grid " + _gridName + " at frame " + Time.frameCount);
             }
         }
         #endregion
@@ -159,9 +160,9 @@ namespace Fu.Framework
         /// call this right before drawing an element. this will apply style and handle the grid layout for you
         /// </summary>
         /// <param name="style">Element Style to apply</param>
-        protected override string beginElement(string elementID, IFuElementStyle style = null)
+        protected override string beginElement(string elementID, IFuElementStyle style = null, bool noReturn = false)
         {
-            elementID = base.beginElement(elementID, style);
+            elementID = base.beginElement(elementID, style, noReturn);
             if (!_gridCreated)
             {
                 return elementID;
@@ -177,14 +178,15 @@ namespace Fu.Framework
             // apply additionnal Y padding
             if (_nextElementYPadding > 0f)
             {
-                Vector2 cursorPos = ImGui.GetCursorScreenPos();
+                Vector2 cursorPos = default;
+                ImGuiNative.igGetCursorScreenPos(&cursorPos);
                 cursorPos.y += _nextElementYPadding;
-                ImGui.SetCursorScreenPos(cursorPos);
+                ImGuiNative.igSetCursorScreenPos(cursorPos);
                 _nextElementYPadding = 0f;
             }
 
             // ready to draw next element
-            _beginElementCursorY = ImGui.GetCursorPosY();
+            _beginElementCursorY = ImGuiNative.igGetCursorPosY();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             return elementID;
         }
@@ -201,10 +203,10 @@ namespace Fu.Framework
             }
             base.endElement(style);
 
-            float lineHeight = ImGui.GetCursorPosY() - _beginElementCursorY;
+            float lineHeight = ImGuiNative.igGetCursorPosY() - _beginElementCursorY;
             if (lineHeight < _minLineHeight)
             {
-                ImGui.Dummy(new Vector2(0f, _minLineHeight - lineHeight));
+                ImGuiNative.igDummy(new Vector2(0f, _minLineHeight - lineHeight));
             }
         }
 
@@ -217,7 +219,7 @@ namespace Fu.Framework
         {
             if (_gridCreated)
             {
-                ImGui.EndTable();
+                ImGuiNative.igEndTable();
             }
             Fugui.PopStyle();
         }

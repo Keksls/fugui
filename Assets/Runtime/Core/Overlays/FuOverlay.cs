@@ -195,7 +195,7 @@ namespace Fu.Core
         internal void Draw()
         {
             // stop dragging if mouse release
-            if (!ImGui.GetIO().MouseDown[0])
+            if (!Fugui.CurrentContext.IO.MouseDown[0])
             {
                 _draging = false;
                 _drawSnapGrid = false;

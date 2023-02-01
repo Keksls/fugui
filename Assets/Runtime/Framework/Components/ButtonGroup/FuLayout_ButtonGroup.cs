@@ -47,7 +47,7 @@ namespace Fu.Framework
 
         protected virtual void _buttonsGroup<T>(string id, List<T> items, Action<int> callback, int defaultSelected, FuButtonsGroupFlags flags, FuButtonsGroupStyle style)
         {
-            beginElement(id, style);
+            beginElement(id, style, true);
             // get selected
             if (!_buttonsGroupIndex.ContainsKey(id))
             {

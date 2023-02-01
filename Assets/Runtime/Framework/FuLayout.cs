@@ -9,9 +9,11 @@ namespace Fu.Framework
     /// <summary>
     /// Represents the base class for creating user interface layouts.
     /// </summary>
-    public partial class FuLayout : IDisposable
+    public unsafe partial class FuLayout : IDisposable
     {
         #region Variables
+        // draw list Ptr of the current window
+        //protected ImDrawListPtr drawList { get; private set; }
         // The current pop-up window ID.
         public static string CurrentPopUpWindowID { get; private set; } = null;
         // The current pop-up ID.
@@ -31,13 +33,13 @@ namespace Fu.Framework
         // whatever tooltip must be display hover Labels
         protected bool _currentToolTipsOnLabels = false;
         protected bool _animationEnabled = true;
+        // a temporary vector 2 user to speak directly with native Imgui Ptr
+        //protected Vector2* _tempV2;
         #endregion
 
         #region Elements Data
         // A set of strings representing the dragging sliders.
         private static HashSet<string> _draggingSliders = new HashSet<string>();
-        // A dictionary of strings representing the drag string formats.
-        private static Dictionary<string, string> _dragStringFormats = new Dictionary<string, string>();
         // A dictionary of integers representing the combo selected indices.
         private static Dictionary<string, int> _comboSelectedIndices = new Dictionary<string, int>();
         // A dictionary of integers representing the listbox selected indices.
@@ -48,9 +50,22 @@ namespace Fu.Framework
         private static Dictionary<string, int> _buttonsGroupIndex = new Dictionary<string, int>();
         // A dictionary of strings representing the current PathFields string value.
         private static Dictionary<string, string> _pathFieldValues = new Dictionary<string, string>();
+        // A dictionary to store enum values according to the type of the enum
+        private static Dictionary<Type, List<IConvertible>> _enumValues = new Dictionary<Type, List<IConvertible>>();
+        // A dictionary to store enum values as string according to the type of the enum
+        private static Dictionary<Type, List<string>> _enumValuesString = new Dictionary<Type, List<string>>();
         #endregion
 
         #region Layout
+        public FuLayout()
+        {
+            //// get the current draw list
+            //drawList = ImGui.GetWindowDrawList();
+            //// get the pointer of the temp vector2
+            //Vector2 toto = default;
+            //_tempV2 = &toto;
+        }
+
         /// <summary>
         /// Disposes this object.
         /// </summary>
@@ -70,10 +85,14 @@ namespace Fu.Framework
         /// Begins an element in this layout with the specified style.
         /// </summary>
         /// <param name="style">The style to use for this element.</param>
-        protected virtual string beginElement(string elementID, IFuElementStyle style = null)
+        protected virtual string beginElement(string elementID, IFuElementStyle style = null, bool noReturn = false)
         {
             style?.Push(!_nextIsDisabled);
-            return elementID + "##" + (FuWindow.CurrentDrawingWindow?.ID ?? string.Empty);
+            if (!noReturn && FuWindow.CurrentDrawingWindow != null)
+            {
+                return elementID + "##" + FuWindow.CurrentDrawingWindow.ID;
+            }
+            return elementID;
         }
 
         /// <summary>
@@ -95,11 +114,11 @@ namespace Fu.Framework
         {
             if (_elementHoverFramed && !_nextIsDisabled)
             {
-                if (ImGui.IsItemFocused())
+                if (ImGuiNative.igIsItemFocused() != 0)
                 {
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
                 }
-                else if (ImGui.IsItemHovered())
+                else if (ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0)
                 {
                     // ImGui fail on inputText since version 1.88, check on new version
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
@@ -152,7 +171,7 @@ namespace Fu.Framework
         /// </summary>
         public void Separator()
         {
-            ImGui.Separator();
+            ImGuiNative.igSeparator();
         }
 
         /// <summary>
@@ -160,7 +179,7 @@ namespace Fu.Framework
         /// </summary>
         public void Spacing()
         {
-            ImGui.Spacing();
+            ImGuiNative.igSpacing();
         }
 
         /// <summary>
@@ -168,7 +187,7 @@ namespace Fu.Framework
         /// </summary>
         public void SameLine()
         {
-            ImGui.SameLine();
+            ImGuiNative.igSameLine(0f, -1f);
         }
 
         /// <summary>
@@ -178,7 +197,7 @@ namespace Fu.Framework
         /// <param name="y">height of the dummy</param>
         public void Dummy(float x = 0f, float y = 0f)
         {
-            ImGui.Dummy(new Vector2(x, y) * Fugui.CurrentContext.Scale);
+            ImGuiNative.igDummy(new Vector2(x * Fugui.CurrentContext.Scale, y * Fugui.CurrentContext.Scale));
         }
 
         /// <summary>
@@ -187,7 +206,7 @@ namespace Fu.Framework
         /// <param name="size">size of the dummy</param>
         public void Dummy(Vector2 size)
         {
-            ImGui.Dummy(size * Fugui.CurrentContext.Scale);
+            ImGuiNative.igDummy(size * Fugui.CurrentContext.Scale);
         }
 
         #region private utils
@@ -198,36 +217,14 @@ namespace Fu.Framework
         /// <param name="id">ID of the UIElement</param>
         /// <param name="value">float Value</param>
         /// <returns></returns>
-        private string getFloatString(string id, float value)
+        private string getFloatString(float value)
         {
-            // If the string format doesn't exist for this id, create it
-            if (!_dragStringFormats.ContainsKey(id))
-            {
-                updateFloatString(id, value);
-            }
-            // Return the string format for this id
-            return _dragStringFormats[id];
-        }
-
-        /// <summary>
-        /// Update the string format for the given id and value
-        /// </summary>
-        /// <param name="id">ID of the UIElement</param>
-        /// <param name="value">float Value</param>
-        private void updateFloatString(string id, float value)
-        {
-            // If the string format doesn't exist for this id, add it with a default value
-            if (!_dragStringFormats.ContainsKey(id))
-            {
-                _dragStringFormats.Add(id, "%.2f");
-            }
-
             // If the element is focused, set the string format to 4 decimal places
-            if (ImGui.IsItemFocused())
+            if (ImGuiNative.igIsItemFocused() != 0)
             {
-                _dragStringFormats[id] = $"%.4f";
-                return;
+                return "%.4f";
             }
+
             // Split the value by the decimal point
             string v = value.ToString();
             string[] spl = v.Split(',');
@@ -235,11 +232,10 @@ namespace Fu.Framework
             if (spl.Length > 1)
             {
                 int nbDec = Math.Min(8, spl[1].TrimEnd('0').Length);
-                _dragStringFormats[id] = $"%.{nbDec}f";
-                return;
+                return "%." + nbDec.ToString() + "f";
             }
             // Otherwise, set the string format to 0 decimal places
-            _dragStringFormats[id] = "%.0f";
+            return "%.0f";
         }
         #endregion
 
@@ -254,7 +250,7 @@ namespace Fu.Framework
             if (_currentToolTips != null && _currentToolTipsIndex < _currentToolTips.Length)
             {
                 // If the element is hovered over or force is set to true
-                if (force || ImGui.IsItemHovered())
+                if (force || ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0)
                 {
                     // set padding and font
                     Fugui.PushDefaultFont();
@@ -285,6 +281,43 @@ namespace Fu.Framework
                     _currentToolTips = null;
                 }
             }
+        }
+        #endregion
+
+        #region enum utils
+        protected bool tryGetEnumValues<TEnum>(Type type, out List<IConvertible> values, out List<string> strValues)
+        {
+            values = null;
+            strValues = null;
+            if (!type.IsEnum)
+            {
+                Debug.LogError("TEnum must be an enumerated type.");
+                return false;
+            }
+
+            // check whatever the enum type is already knew
+            if (!_enumValues.ContainsKey(type))
+            {
+                // list to store the enum values
+                values = new List<IConvertible>();
+                // list to store the combobox items
+                strValues = new List<string>();
+                // iterate over the enum values and add them to the lists
+                foreach (IConvertible enumValue in Enum.GetValues(typeof(TEnum)))
+                {
+                    values.Add(enumValue);
+                    strValues.Add(Fugui.AddSpacesBeforeUppercase(enumValue.ToString()));
+                }
+                // store enum values and string into dict
+                _enumValues.Add(type, values);
+                _enumValuesString.Add(type, strValues);
+            }
+
+            // set lists values from dict
+            values = _enumValues[type];
+            strValues = _enumValuesString[type];
+
+            return true;
         }
         #endregion
         #endregion

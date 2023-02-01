@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -558,25 +559,30 @@ namespace Fu.Framework
             }
         }
 #else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Push(ImGuiCol imCol, Vector4 color)
         {
-            ImGui.PushStyleColor(imCol, color);
+            ImGuiNative.igPushStyleColor_Vec4(imCol, color);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Push(ImGuiStyleVar imVar, Vector2 value)
         {
-            ImGui.PushStyleVar(imVar, value);
+            ImGuiNative.igPushStyleVar_Vec2(imVar, value);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Push(ImGuiStyleVar imVar, float value)
         {
-            ImGui.PushStyleVar(imVar, value);
+            ImGuiNative.igPushStyleVar_Float(imVar, value);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void PopColor(int nb = 1)
         {
-            ImGui.PopStyleColor(nb);
+            ImGuiNative.igPopStyleColor(nb);
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void PopStyle(int nb = 1)
         {
-            ImGui.PopStyleVar(nb);
+            ImGuiNative.igPopStyleVar(nb);
         }
 #endif
         #endregion
@@ -776,9 +782,24 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="input">The input string.</param>
         /// <returns>The input string with spaces added before uppercase letters.</returns>
+        static Dictionary<string, string> _niceStrings = new Dictionary<string, string>();
         public static string AddSpacesBeforeUppercase(string input)
         {
-            // Use a regular expression to add spaces before uppercase letters, but ignore the first letter of the string and avoid adding a space if it is preceded by whitespace
+            if (!_niceStrings.ContainsKey(input))
+            {
+                // Use a regular expression to add spaces before uppercase letters, but ignore the first letter of the string and avoid adding a space if it is preceded by whitespace
+                _niceStrings.Add(input, AddSpacesBeforeUppercaseDirect(input));
+            }
+            return _niceStrings[input];
+        }
+
+        /// <summary>
+        /// Adds spaces before uppercase letters in the input string. return the value directly without saving it
+        /// </summary>
+        /// <param name="input">The input string.</param>
+        /// <returns>The input string with spaces added before uppercase letters.</returns>
+        public static string AddSpacesBeforeUppercaseDirect(string input)
+        {
             return Regex.Replace(input, "(?<!^)(?<!\\s)([A-Z])", " $1");
         }
 
@@ -787,14 +808,14 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="input">taged text</param>
         /// <returns>untaged text</returns>
+        static Dictionary<string, string> _untagedStrings = new Dictionary<string, string>();
         public static string GetUntagedText(string input)
         {
-            int index = input.IndexOf("##");
-            if (index != -1)
+            if (!_untagedStrings.ContainsKey(input))
             {
-                return input.Substring(0, index);
+                _untagedStrings.Add(input, input.Split(new char[] { '#', '#' })[0]);
             }
-            return input;
+            return _untagedStrings[input];
         }
 
         /// <summary>

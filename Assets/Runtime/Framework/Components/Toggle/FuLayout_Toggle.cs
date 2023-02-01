@@ -18,7 +18,7 @@ namespace Fu.Framework
 
         protected virtual bool _customToggle(string id, ref bool value, string textLeft, string textRight, FuToggleFlags flags)
         {
-            beginElement(id, null);
+            beginElement(id, null, true);
 
             // and and get toggle data struct
             if (!_uiElementAnimationDatas.ContainsKey(id))

@@ -94,6 +94,7 @@ namespace Fu.Core
         internal float _targetDeltaTimeMs = 1;
         internal float _lastRenderTime = 0;
         private bool _open = true;
+        private static int _windowIndex = 0;
 
         // static fields
         public static FuWindow CurrentDrawingWindow { get; private set; }
@@ -158,7 +159,8 @@ namespace Fu.Core
         /// <param name="windowDefinition">UI Window Definition</param>
         public FuWindow(FuWindowDefinition windowDefinition)
         {
-            ID = windowDefinition.Id + "##" + Guid.NewGuid().ToString();
+            ID = windowDefinition.Id + "##" + _windowIndex;
+            _windowIndex++;
 
             if (!Fugui.TryAddUIWindow(this))
             {
@@ -330,7 +332,7 @@ namespace Fu.Core
                 {
                     Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
                     Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0.0039216f
-                    ImGui.BeginChild(ID + "container", Vector2.zero, false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+                    ImGui.BeginChild(ID + "ctnr", Vector2.zero, false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
                     {
                         tryDrawUI();
                     }
@@ -414,7 +416,7 @@ namespace Fu.Core
             ImGui.Dummy(Vector2.one);
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
             Fugui.Push(ImGuiCol.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
-            ImGui.BeginChild(ID + "debug", new Vector2(196f, 282f));
+            ImGui.BeginChild(ID + "d", new Vector2(196f, 282f));
             {
                 // states
                 ImGui.Text("State : " + WindowPerformanceState);

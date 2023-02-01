@@ -1063,7 +1063,7 @@ namespace Fu.Core
             ImGui.SetNextWindowPos(new UnityEngine.Vector2(0f, 0f), ImGuiCond.Always);
             ImGui.SetNextWindowSize(new UnityEngine.Vector2(_size.x, -1f), ImGuiCond.Always);
             ImGui.SetNextWindowBgAlpha(0f);
-            ImGui.Begin(UIWindow.ID + "statePanel", ImGuiWindowFlags.NoDecoration);
+            ImGui.Begin(UIWindow.ID + "sp", ImGuiWindowFlags.NoDecoration);
 
             // calc sizes
             float width = Math.Min(_size.x, _size.y);

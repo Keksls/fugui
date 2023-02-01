@@ -15,7 +15,7 @@ namespace Fu.Framework
             {
                 return;
             }
-            beginElement("", style);
+            beginElement(string.Empty, style, true);
             // horizontaly center Label
             float textHeight = ImGui.CalcTextSize(text).y;
             if (textHeight < _minLineHeight)

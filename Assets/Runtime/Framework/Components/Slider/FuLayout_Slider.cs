@@ -124,9 +124,9 @@ namespace Fu.Framework
             // function that draw the slider drag
             void drawDrag(string text, ref float value, float min, float max, bool isInt)
             {
-                string formatString = getFloatString("##sliderInput" + text, value);
+                string formatString = getFloatString(value);
                 ImGui.PushItemWidth(dragWidth);
-                if (ImGui.InputFloat("##sliderInput" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, _nextIsDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
+                if (ImGui.InputFloat("##" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, _nextIsDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
                 {
                     // Clamp the value to the min and max range
                     value = Math.Clamp(value, min, max);
@@ -136,7 +136,7 @@ namespace Fu.Framework
                     }
                 }
                 ImGui.PopItemWidth();
-                updateFloatString("##sliderInput" + text, value);
+                //updateFloatString("##sliderInput" + text, value);
                 displayToolTip();
                 _elementHoverFramed = true;
                 drawHoverFrame();

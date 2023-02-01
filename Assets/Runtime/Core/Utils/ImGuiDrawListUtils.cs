@@ -38,7 +38,7 @@ namespace Fu.Core
                         {
                             if (name.Split('/').Length <= 2) // it's a direct window's child (so it may be the forced child used to store vtx)
                             {
-                                isChild = name.Split('/')[1].StartsWith(name.Split('/')[0] + "container"); // is it the forced child ?
+                                isChild = name.Split('/')[1].StartsWith(name.Split('/')[0] + "ctnr"); // is it the forced child ?
                                 name = isChild ? name.Split('/')[0] : "";
                             }
                             else // it's a child lvl 2+, so child of child, we need to store it too

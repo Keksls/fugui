@@ -77,7 +77,12 @@ namespace Fu.Framework
         /// <returns>true if value changed</returns>
         protected virtual bool _customSlider(string text, ref float value, float min, float max, bool isInt, FuSliderFlags flags)
         {
-            text = beginElement(text, FuFrameStyle.Default);
+            beginElement(ref text, FuFrameStyle.Default);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
 
             // Calculate the position and size of the slider
             Vector2 cursorPos = ImGui.GetCursorScreenPos();

@@ -12,8 +12,6 @@ namespace Fu.Framework
     public unsafe partial class FuLayout : IDisposable
     {
         #region Variables
-        // draw list Ptr of the current window
-        //protected ImDrawListPtr drawList { get; private set; }
         // The current pop-up window ID.
         public static string CurrentPopUpWindowID { get; private set; } = null;
         // The current pop-up ID.
@@ -32,9 +30,8 @@ namespace Fu.Framework
         protected int _currentToolTipsIndex = 0;
         // whatever tooltip must be display hover Labels
         protected bool _currentToolTipsOnLabels = false;
+        // has animations enabled
         protected bool _animationEnabled = true;
-        // a temporary vector 2 user to speak directly with native Imgui Ptr
-        //protected Vector2* _tempV2;
         #endregion
 
         #region Elements Data
@@ -54,18 +51,10 @@ namespace Fu.Framework
         private static Dictionary<Type, List<IConvertible>> _enumValues = new Dictionary<Type, List<IConvertible>>();
         // A dictionary to store enum values as string according to the type of the enum
         private static Dictionary<Type, List<string>> _enumValuesString = new Dictionary<Type, List<string>>();
+        protected bool _drawItem = true;
         #endregion
 
         #region Layout
-        public FuLayout()
-        {
-            //// get the current draw list
-            //drawList = ImGui.GetWindowDrawList();
-            //// get the pointer of the temp vector2
-            //Vector2 toto = default;
-            //_tempV2 = &toto;
-        }
-
         /// <summary>
         /// Disposes this object.
         /// </summary>
@@ -85,14 +74,28 @@ namespace Fu.Framework
         /// Begins an element in this layout with the specified style.
         /// </summary>
         /// <param name="style">The style to use for this element.</param>
-        protected virtual string beginElement(string elementID, IFuElementStyle style = null, bool noReturn = false)
+        protected virtual void beginElement(ref string elementID, IFuElementStyle style = null, bool noEditID = false)
         {
-            style?.Push(!_nextIsDisabled);
-            if (!noReturn && FuWindow.CurrentDrawingWindow != null)
+            // whatever we must draw the next item
+            _drawItem = true;
+            if(FuPanel.IsInsidePanel && FuPanel.Clipper != null)
             {
-                return elementID + "##" + FuWindow.CurrentDrawingWindow.ID;
+                _drawItem = FuPanel.Clipper.BeginDrawElement();
             }
-            return elementID;
+            if (_drawItem)
+            {
+                // we must prepare next item
+                style?.Push(!_nextIsDisabled);
+                if (!noEditID && FuWindow.CurrentDrawingWindow != null)
+                {
+                    elementID = elementID + "##" + FuWindow.CurrentDrawingWindow.ID;
+                }
+            }
+            // if out of scroll bounds, we must dummy the element rect
+            else
+            {
+                endElement(style);
+            }
         }
 
         /// <summary>
@@ -101,10 +104,18 @@ namespace Fu.Framework
         /// <param name="style">The style to use for this element.</param>
         protected virtual void endElement(IFuElementStyle style = null)
         {
-            style?.Pop();
-            drawHoverFrame();
+            // whatever the item has just been draw
+            if (_drawItem)
+            {
+                style?.Pop();
+                drawHoverFrame();
+            }
             _nextIsDisabled = false;
             _elementHoverFramed = false;
+            if (FuPanel.IsInsidePanel && FuPanel.Clipper != null)
+            {
+                FuPanel.Clipper.EndDrawElement();
+            }
         }
 
         /// <summary>
@@ -198,6 +209,15 @@ namespace Fu.Framework
         public void Dummy(float x = 0f, float y = 0f)
         {
             ImGuiNative.igDummy(new Vector2(x * Fugui.CurrentContext.Scale, y * Fugui.CurrentContext.Scale));
+        }
+
+        /// <summary>
+        /// Draw an empty dummy element of size 'size'
+        /// </summary>
+        /// <param name="size">size of the dummy</param>
+        private void Dummy(Rect size)
+        {
+            ImGuiNative.igDummy(size.size);
         }
 
         /// <summary>

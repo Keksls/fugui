@@ -26,7 +26,13 @@ namespace Fu.Framework
         public void Collapsable(string id, Action innerUI, FuCollapsableStyle style, float indent = 16f)
         {
             // Begin the element and apply the specified style
-            id = beginElement(id, style);
+            beginElement(ref id, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+
             // Adjust the padding and spacing for the frame and the items within it
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 4f) * Fugui.CurrentContext.Scale);
             Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));

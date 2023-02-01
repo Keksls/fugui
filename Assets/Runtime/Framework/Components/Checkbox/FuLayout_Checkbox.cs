@@ -14,7 +14,13 @@ namespace Fu.Framework
         public virtual bool CheckBox(string text, ref bool isChecked)
         {
             bool clicked = false;
-            text = beginElement(text, null); // Push the style for the checkbox element
+            beginElement(ref text, null); // Push the style for the checkbox element
+
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
 
             // push colors
             if (_nextIsDisabled)

@@ -30,7 +30,12 @@ namespace Fu.Framework
         protected virtual void _pathField(string id, bool onlyFolder, Action<string> callback, FuFrameStyle style, string defaultPath = "", params ExtensionFilter[] extentions)
         {
             // apply style and set unique ID
-            id = beginElement(id, style);
+            beginElement(ref id, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
 
             // set path if not exist in dic
             if (!_pathFieldValues.ContainsKey(id))

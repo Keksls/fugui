@@ -218,9 +218,9 @@ namespace Fu.Framework
         /// </summary>
         public static void DrawWindowsDefinitionManager()
         {
-            using (FuLayout windowsDefinition_layout = new FuLayout())
+            using (FuLayout layout = new FuLayout())
             {
-                windowsDefinition_layout.Collapsable("Manage Windows definitions", () =>
+                layout.Collapsable("Manage Windows definitions", () =>
                 {
                     using (FuGrid windowsDefinition_grid = new FuGrid("windowsDefinition_grid"))
                     {
@@ -229,38 +229,35 @@ namespace Fu.Framework
 
                         if (!string.IsNullOrEmpty(FuDockingLayoutManager._windowsToAdd))
                         {
-                            using (FuLayout buttonLayout = new FuLayout())
+                            if (FuDockingLayoutManager._fuguiWindows.Values.Contains(FuDockingLayoutManager._windowsToAdd))
                             {
-                                if (FuDockingLayoutManager._fuguiWindows.Values.Contains(FuDockingLayoutManager._windowsToAdd))
+                                layout.SmartText(string.Format($"<color=red>The name <b>'{FuDockingLayoutManager._windowsToAdd}'</b> is already present in the current FuGui windows definition !</color>"));
+                            }
+                            else
+                            {
+                                if (!Fugui.IsAlphaNumericWithSpaces(FuDockingLayoutManager._windowsToAdd))
                                 {
-                                    buttonLayout.SmartText(string.Format($"<color=red>The name <b>'{FuDockingLayoutManager._windowsToAdd}'</b> is already present in the current FuGui windows definition !</color>"));
+                                    layout.SmartText(string.Format($"<color=red>The name <b>'{FuDockingLayoutManager._windowsToAdd}'</b> is not a valid name for a FuGui window !</color>"));
                                 }
                                 else
                                 {
-                                    if (!Fugui.IsAlphaNumericWithSpaces(FuDockingLayoutManager._windowsToAdd))
+                                    layout.Spacing();
+                                    if (layout.Button("Add new FuGui window definition", FuButtonStyle.Success))
                                     {
-                                        buttonLayout.SmartText(string.Format($"<color=red>The name <b>'{FuDockingLayoutManager._windowsToAdd}'</b> is not a valid name for a FuGui window !</color>"));
-                                    }
-                                    else
-                                    {
-                                        buttonLayout.Spacing();
-                                        if (buttonLayout.Button("Add new FuGui window definition", FuButtonStyle.Success))
+                                        if (!FuDockingLayoutManager._fuguiWindows.Values.Contains(FuDockingLayoutManager._windowsToAdd))
                                         {
-                                            if (!FuDockingLayoutManager._fuguiWindows.Values.Contains(FuDockingLayoutManager._windowsToAdd))
+                                            int newIndex = FuDockingLayoutManager._fuguiWindows.Max(x => x.Key) + 1;
+                                            FuDockingLayoutManager._fuguiWindows.Add(FuDockingLayoutManager._fuguiWindows.Keys.Last() + 1, FuDockingLayoutManager._windowsToAdd);
+
+                                            Dictionary<int, string> formatedFuguiWindowsName = new Dictionary<int, string>();
+
+                                            foreach (KeyValuePair<int, string> fuguiItem in FuDockingLayoutManager._fuguiWindows)
                                             {
-                                                int newIndex = FuDockingLayoutManager._fuguiWindows.Max(x => x.Key) + 1;
-                                                FuDockingLayoutManager._fuguiWindows.Add(FuDockingLayoutManager._fuguiWindows.Keys.Last() + 1, FuDockingLayoutManager._windowsToAdd);
-
-                                                Dictionary<int, string> formatedFuguiWindowsName = new Dictionary<int, string>();
-
-                                                foreach (KeyValuePair<int, string> fuguiItem in FuDockingLayoutManager._fuguiWindows)
-                                                {
-                                                    formatedFuguiWindowsName.Add(fuguiItem.Key, RemoveSpaceAndCapitalize(fuguiItem.Value));
-                                                }
-
-                                                FuDockingLayoutManager.writeToFile(FuDockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", formatedFuguiWindowsName));
-                                                FuDockingLayoutManager._windowsToAdd = string.Empty;
+                                                formatedFuguiWindowsName.Add(fuguiItem.Key, RemoveSpaceAndCapitalize(fuguiItem.Value));
                                             }
+
+                                            FuDockingLayoutManager.writeToFile(FuDockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", formatedFuguiWindowsName));
+                                            FuDockingLayoutManager._windowsToAdd = string.Empty;
                                         }
                                     }
                                 }
@@ -269,42 +266,36 @@ namespace Fu.Framework
 
                         if (!string.IsNullOrEmpty(FuDockingLayoutManager._selectedWindowDefinition) && FuDockingLayoutManager._selectedWindowDefinition != "None")
                         {
-                            using (FuLayout buttonLayout = new FuLayout())
+                            if (layout.Button(string.Format($"Remove {FuDockingLayoutManager._selectedWindowDefinition}"), FuButtonStyle.Danger))
                             {
-                                if (buttonLayout.Button(string.Format($"Remove {FuDockingLayoutManager._selectedWindowDefinition}"), FuButtonStyle.Danger))
+                                if (FuDockingLayoutManager._fuguiWindows.Values.Contains(FuDockingLayoutManager._selectedWindowDefinition))
                                 {
-                                    if (FuDockingLayoutManager._fuguiWindows.Values.Contains(FuDockingLayoutManager._selectedWindowDefinition))
+                                    int keyToDelete = -1;
+
+                                    foreach (KeyValuePair<int, string> item in FuDockingLayoutManager._fuguiWindows)
                                     {
-                                        int keyToDelete = -1;
-
-                                        foreach (KeyValuePair<int, string> item in FuDockingLayoutManager._fuguiWindows)
+                                        if (item.Value == FuDockingLayoutManager._selectedWindowDefinition)
                                         {
-                                            if (item.Value == FuDockingLayoutManager._selectedWindowDefinition)
-                                            {
-                                                keyToDelete = item.Key;
-                                                break;
-                                            }
+                                            keyToDelete = item.Key;
+                                            break;
                                         }
+                                    }
 
-                                        if (keyToDelete != -1)
-                                        {
-                                            FuDockingLayoutManager._fuguiWindows.Remove(keyToDelete);
-                                            FuDockingLayoutManager.writeToFile(FuDockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager._fuguiWindows));
-                                            FuDockingLayoutManager._selectedWindowDefinition = "None";
-                                        }
+                                    if (keyToDelete != -1)
+                                    {
+                                        FuDockingLayoutManager._fuguiWindows.Remove(keyToDelete);
+                                        FuDockingLayoutManager.writeToFile(FuDockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager._fuguiWindows));
+                                        FuDockingLayoutManager._selectedWindowDefinition = "None";
                                     }
                                 }
                             }
                         }
                     }
                 });
-            }
 
-            if (FuDockingLayoutManager.DisplayedLayout != null)
-            {
-                using (FuLayout bindWindowsDef_Layout = new FuLayout())
+                if (FuDockingLayoutManager.DisplayedLayout != null)
                 {
-                    bindWindowsDef_Layout.Collapsable("Bind Windows definition to DockSpace", () =>
+                    layout.Collapsable("Bind Windows definition to DockSpace", () =>
                     {
                         using (FuGrid tempGrid = new FuGrid("bindWinDefToDockSpace_grid", new FuGridDefinition(2, new int[] { 150 })))
                         {

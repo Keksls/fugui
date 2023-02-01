@@ -18,7 +18,12 @@ namespace Fu.Framework
 
         protected virtual bool _customToggle(string id, ref bool value, string textLeft, string textRight, FuToggleFlags flags)
         {
-            beginElement(id, null, true);
+            beginElement(ref id, null, true);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
 
             // and and get toggle data struct
             if (!_uiElementAnimationDatas.ContainsKey(id))

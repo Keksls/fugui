@@ -46,7 +46,13 @@ namespace Fu.Framework
         /// <returns>True if the button was clicked, false otherwise.</returns>
         public virtual bool Button(string text, FuElementSize size, FuButtonStyle style)
         {
-            beginElement(text, style, true); // apply style and check if the element should be disabled
+            beginElement(ref text, style, true); // apply style and check if the element should be disabled
+            // return if item must no be draw
+            if(!_drawItem)
+            {
+                return false;
+            }
+
             bool clicked = ImGui.Button(text, size.GetSize()) & !_nextIsDisabled; // render the button and return true if it was clicked, false otherwise
             displayToolTip(); // display the tooltip if necessary
             endElement(style); // remove the style and draw the hover frame if necessary

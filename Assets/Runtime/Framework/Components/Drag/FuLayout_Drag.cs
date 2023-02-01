@@ -44,7 +44,12 @@ namespace Fu.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public virtual bool Drag(string id, ref float value, string vString, float min, float max, FuFrameStyle style)
         {
-            id = beginElement(id, style);
+            beginElement(ref id, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
             bool valueChanged = dragFloat(id, ref value, vString, min, max);
             endElement(style);
             return valueChanged;
@@ -135,7 +140,13 @@ namespace Fu.Framework
         public virtual bool Drag(string id, ref Vector2 value, string v1String, string v2String, float min, float max, FuFrameStyle style)
         {
             // Begin the element and apply the specified style
-            id = beginElement(id, style);
+            beginElement(ref id, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
+
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f) * Fugui.CurrentContext.Scale);
             bool valueChanged = false;
             // Calculate the column width for the table
@@ -169,7 +180,6 @@ namespace Fu.Framework
             endElement(style);
             return valueChanged;
         }
-
         #endregion
 
         #region Drag Vector3
@@ -217,7 +227,13 @@ namespace Fu.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public virtual bool Drag(string id, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, FuFrameStyle style)
         {
-            id = beginElement(id, style);
+            beginElement(ref id, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
+
             bool valueChanged = false;
             float colWidth = ImGui.GetContentRegionAvail().x / 3f;
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f) * Fugui.CurrentContext.Scale);
@@ -307,7 +323,13 @@ namespace Fu.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public virtual bool Drag(string id, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, FuFrameStyle style)
         {
-            id = beginElement(id, style);
+            beginElement(ref id, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
+
             bool valueChanged = false;
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f) * Fugui.CurrentContext.Scale);
             float colWidth = ImGui.GetContentRegionAvail().x * 0.25f;
@@ -339,7 +361,6 @@ namespace Fu.Framework
             endElement(style);
             return valueChanged;
         }
-
         #endregion
 
         #region Drag Int
@@ -408,7 +429,13 @@ namespace Fu.Framework
         public virtual bool Drag(string id, string vString, ref int value, int min, int max, FuFrameStyle style)
         {
             // start drawing the element
-            id = beginElement(id, style);
+            beginElement(ref id, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
+
             // display the label, if there is one
             if (!string.IsNullOrEmpty(vString))
             {

@@ -1,11 +1,16 @@
 ﻿using ImGuiNET;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
     public class FuPanel : IDisposable
     {
+        /// <summary>
+        /// A static flag indicating whether the current thread is inside a panel or not.
+        /// </summary>
+        public static bool IsInsidePanel = false;
         /// <summary>
         /// The current layout style for the panel.
         /// </summary>
@@ -14,10 +19,9 @@ namespace Fu.Framework
         /// A flag indicating whether the panel has been created or not.
         /// </summary>
         private bool _panelCreated = false;
-        /// <summary>
-        /// A static flag indicating whether the current thread is inside a panel or not.
-        /// </summary>
-        private static bool _isInsidePanel = false;
+        private string _ID;
+        internal static FuPanelClipper Clipper = null;
+        private static Dictionary<string, FuPanelClipper> _clippingDict = new Dictionary<string, FuPanelClipper>();
 
         /// <summary>
         /// Creates a new panel with the provided ID, height, width, scrollable flag,
@@ -29,8 +33,9 @@ namespace Fu.Framework
         /// <param name="flags">Behaviour flags of this panel.</param>
         public FuPanel(string id, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
         {
+            _ID = id;
             _currentStyle = FuStyle.Default;
-            beginPanel(id, height, width, !flags.HasFlag(FuPanelFlags.NoScroll), flags.HasFlag(FuPanelFlags.DrawBorders));
+            beginPanel(height, width, !flags.HasFlag(FuPanelFlags.NoScroll), flags.HasFlag(FuPanelFlags.DrawBorders));
         }
 
         /// <summary>
@@ -44,22 +49,22 @@ namespace Fu.Framework
         /// <param name="flags">Behaviour flags of this panel.</param>
         public FuPanel(string id, FuStyle style, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
         {
+            _ID = id;
             _currentStyle = style;
-            beginPanel(id, height, width, !flags.HasFlag(FuPanelFlags.NoScroll), flags.HasFlag(FuPanelFlags.DrawBorders));
+            beginPanel(height, width, !flags.HasFlag(FuPanelFlags.NoScroll), flags.HasFlag(FuPanelFlags.DrawBorders));
         }
 
         /// <summary>
         /// Initializes a new panel with the provided ID, height, width, scrollable flag, and border flag.
         /// </summary>
-        /// <param name="id">The ID of the panel.</param>
         /// <param name="height">The optional height of the panel. Defaults to 0.</param>
         /// <param name="width">The optional width of the panel. Defaults to 0.</param>
         /// <param name="scrollable">A flag indicating whether the panel is scrollable or not. Defaults to true.</param>
         /// <param name="border">A flag indicating whether the panel has a border or not. Defaults to false.</param>
-        private void beginPanel(string id, float height, float width, bool scrollable, bool border)
+        private void beginPanel(float height, float width, bool scrollable, bool border)
         {
             // Check if the current thread is already inside a panel.
-            if (_isInsidePanel)
+            if (IsInsidePanel)
             {
                 Debug.LogWarning("Cannot create panel inside another panel. Switched for you, but please check your code and remove it.");
                 return;
@@ -103,14 +108,22 @@ namespace Fu.Framework
             // push style if created
             _currentStyle.Push(true);
             // draw imgui child panel
-            _panelCreated = ImGui.BeginChild(id, new Vector2(width, height), border, flag);
+            _panelCreated = ImGui.BeginChild(_ID, new Vector2(width, height), border, flag);
             if (!_panelCreated)
             {
                 // push style if created
                 _currentStyle.Pop();
             }
             // assume we now are inside a panel
-            _isInsidePanel = _panelCreated;
+            IsInsidePanel = _panelCreated;
+
+            // set clipping data
+            if (!_clippingDict.ContainsKey(_ID))
+            {
+                _clippingDict.Add(_ID, new FuPanelClipper());
+            }
+            Clipper = _clippingDict[_ID];
+            Clipper.NewFrame(true);
         }
 
         /// <summary>
@@ -121,8 +134,11 @@ namespace Fu.Framework
             if (_panelCreated)
             {
                 ImGui.EndChild();
-                _isInsidePanel = false;
+                IsInsidePanel = false;
                 _currentStyle.Pop();
+                Clipper.EndFrame();
+                _clippingDict[_ID] = Clipper;
+                Clipper = null;
             }
         }
     }

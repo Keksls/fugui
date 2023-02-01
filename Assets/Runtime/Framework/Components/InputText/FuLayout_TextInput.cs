@@ -80,7 +80,13 @@ namespace Fu.Framework
         {
             bool edited;
             // Begin the element and apply the specified style
-            id = beginElement(id, style);
+            beginElement(ref id, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
+
             // Set the width of the next item to the width of the available content region
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             // If a height was specified, create a multiline text input

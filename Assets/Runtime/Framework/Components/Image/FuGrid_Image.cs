@@ -17,7 +17,6 @@ namespace Fu.Framework
                 return;
             }
             drawElementLabel(id, FuTextStyle.Default);
-            id = beginElement(id);
             base.Image(id, texture, size, color);
             endElement();
         }
@@ -35,7 +34,6 @@ namespace Fu.Framework
                 return;
             }
             drawElementLabel(id, FuTextStyle.Default);
-            id = beginElement(id);
             base.Image(id, texture, size, color);
             endElement();
         }
@@ -54,7 +52,6 @@ namespace Fu.Framework
                 return false;
             }
             drawElementLabel(id, FuTextStyle.Default);
-            id = beginElement(id);
             bool clicked = base.ImageButton(id, texture, size);
             endElement();
             return clicked;
@@ -74,7 +71,6 @@ namespace Fu.Framework
                 return false;
             }
             drawElementLabel(id, FuTextStyle.Default);
-            id = beginElement(id);
             bool clicked = base.ImageButton(id, texture, size);
             endElement();
             return clicked;

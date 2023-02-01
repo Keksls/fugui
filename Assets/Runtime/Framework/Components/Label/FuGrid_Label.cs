@@ -15,7 +15,13 @@ namespace Fu.Framework
             {
                 return;
             }
-            beginElement(string.Empty, style, true);
+            beginElement(ref text, style, true);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+
             // horizontaly center Label
             float textHeight = ImGui.CalcTextSize(text).y;
             if (textHeight < _minLineHeight)
@@ -44,7 +50,13 @@ namespace Fu.Framework
             {
                 return;
             }
-            beginElement("", style);
+            beginElement(ref text, style, true);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+
             // draw text
             ImGui.TextWrapped(text);
             // handle tooltip
@@ -66,7 +78,13 @@ namespace Fu.Framework
             {
                 return;
             }
-            beginElement("", style);
+            beginElement(ref text, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+
             // horizontaly center Label
             float textHeight = ImGui.CalcTextSize(text).y;
             if (textHeight < _minLineHeight)

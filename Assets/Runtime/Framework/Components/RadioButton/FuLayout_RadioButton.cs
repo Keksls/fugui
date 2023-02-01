@@ -25,7 +25,14 @@ namespace Fu.Framework
         /// <returns>True if the checkbox was clicked, false otherwise</returns>
         public virtual bool RadioButton(string text, bool isChecked, FuFrameStyle style)
         {
-            string id = beginElement(text, style); // Push the style for the checkbox element
+            string id = text;
+            beginElement(ref id, style); // Push the style for the checkbox element
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
+
             text = Fugui.GetUntagedText(text);
             // get or create animation data
             if (!_uiElementAnimationDatas.ContainsKey(id))

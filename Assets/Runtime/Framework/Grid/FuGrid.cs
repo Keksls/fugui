@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -20,8 +21,6 @@ namespace Fu.Framework
         private bool _dontDisableLabels = true;
         // Flag to indicate if labels should always have tooltip
         private bool _alwaysAutoTooltipsOnLabels = false;
-        // The name of the grid
-        private string _gridName;
         // Flag to indicate if the grid has been created
         private bool _gridCreated = false;
         // The minimum line height for elements in the grid
@@ -34,42 +33,43 @@ namespace Fu.Framework
         private bool _isResponsivelyResized = false;
         // A dictionary to store grid descriptions for different types
         private static Dictionary<Type, FuObjectDescription> _objectsDescriptions = new Dictionary<Type, FuObjectDescription>();
+        protected string _ID;
         #endregion
 
         /// <summary>
         /// Create a new UI Grid
         /// </summary>
-        /// <param name="gridName">Unique Name of the Grid</param>
+        /// <param name="ID">Unique Name of the Grid</param>
         /// <param name="flags">Bitmask that constraint specific grid behaviour</param>
         /// <param name="rowsPadding">spaces in pixel between rows</param>
         /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public FuGrid(string gridName, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f) : base()
+        public FuGrid(string ID, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f)
         {
+            _ID = ID;
             _autoDrawLabel = !flags.HasFlag(FuGridFlag.NoAutoLabels);
             _dontDisableLabels = flags.HasFlag(FuGridFlag.DoNotDisableLabels);
             _alwaysAutoTooltipsOnLabels = flags.HasFlag(FuGridFlag.AutoToolTipsOnLabels);
             _currentGridDef = FuGridDefinition.DefaultFixed;
-            _gridName = gridName;
             setGrid(flags.HasFlag(FuGridFlag.LinesBackground), cellPadding, rowsPadding, outterPadding);
         }
 
         /// <summary>
         /// Create a new UI Grid
         /// </summary>
-        /// <param name="gridName">Unique Name of the Grid</param>
+        /// <param name="ID">Unique Name of the Grid</param>
         /// <param name="gridDef">Definition of the Grid. Assume grid behaviour and style. Can be fully custom or use a presset (UIGridDefinition.XXX)</param>
         /// <param name="flags">Bitmask that constraint specific grid behaviour</param>
         /// <param name="rowsPadding">spaces in pixel between rows</param>
         /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public FuGrid(string gridName, FuGridDefinition gridDef, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f) : base()
+        public FuGrid(string ID, FuGridDefinition gridDef, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f)
         {
+            _ID = ID;
             _autoDrawLabel = !flags.HasFlag(FuGridFlag.NoAutoLabels);
             _dontDisableLabels = flags.HasFlag(FuGridFlag.DoNotDisableLabels);
             _alwaysAutoTooltipsOnLabels = flags.HasFlag(FuGridFlag.AutoToolTipsOnLabels);
             _currentGridDef = gridDef;
-            _gridName = gridName;
             setGrid(flags.HasFlag(FuGridFlag.LinesBackground), cellPadding, rowsPadding, outterPadding);
         }
 
@@ -147,10 +147,10 @@ namespace Fu.Framework
             }
 
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
-            _gridCreated = _currentGridDef.SetupTable(_gridName, outterPadding, linesBg, ref _isResponsivelyResized);
+            _gridCreated = _currentGridDef.SetupTable(_ID, outterPadding, linesBg, ref _isResponsivelyResized);
             if (!_gridCreated)
             {
-                Debug.LogError("Fail to create grid '" + _gridName + "' at frame " + Time.frameCount);
+                Debug.LogError("Fail to create grid '" + _ID + "' at frame " + Time.frameCount);
             }
         }
         #endregion
@@ -160,12 +160,12 @@ namespace Fu.Framework
         /// call this right before drawing an element. this will apply style and handle the grid layout for you
         /// </summary>
         /// <param name="style">Element Style to apply</param>
-        protected override string beginElement(string elementID, IFuElementStyle style = null, bool noReturn = false)
+        protected override void beginElement(ref string elementID, IFuElementStyle style = null, bool noReturn = false)
         {
-            elementID = base.beginElement(elementID, style, noReturn);
+            base.beginElement(ref elementID, style, noReturn);
             if (!_gridCreated)
             {
-                return elementID;
+                return;
             }
             NextColumn();
 
@@ -188,7 +188,6 @@ namespace Fu.Framework
             // ready to draw next element
             _beginElementCursorY = ImGuiNative.igGetCursorPosY();
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-            return elementID;
         }
 
         /// <summary>
@@ -217,6 +216,7 @@ namespace Fu.Framework
         /// </summary>
         public override void Dispose()
         {
+            base.Dispose();
             if (_gridCreated)
             {
                 ImGuiNative.igEndTable();

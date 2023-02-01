@@ -70,7 +70,12 @@ namespace Fu.Framework
         private bool _customColorPicker(string id, bool alpha, ref Vector4 color, FuFrameStyle style)
         {
             bool edited = false;
-            id = beginElement(id, style);
+            beginElement(ref id, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
 
             // set padding
             Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f * Fugui.CurrentContext.Scale, 8f * Fugui.CurrentContext.Scale));

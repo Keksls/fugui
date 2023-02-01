@@ -112,7 +112,12 @@ namespace Fu.Framework
         ///<param name="style">The style for the combobox element.</param>
         protected virtual void _customCombobox(string text, List<IComboboxItem> items, Action<int> itemChange, Func<string> itemGetter, FuComboboxStyle style)
         {
-            text = beginElement(text, style);
+            beginElement(ref text, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
 
             if (!_comboSelectedIndices.ContainsKey(text))
             {
@@ -219,7 +224,12 @@ namespace Fu.Framework
         /// <param name="height">The height of the list of items</param>
         public virtual void Combobox(string text, string selectedItemText, Action callback, FuComboboxStyle style, int height = 0)
         {
-            text = beginElement(text, style);
+            beginElement(ref text, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
 
             // Adjust the padding for the frame and window
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f) * Fugui.CurrentContext.Scale);

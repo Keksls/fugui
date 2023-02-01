@@ -567,7 +567,7 @@ public class FuguiDemoScene : MonoBehaviour
 
         // cam 1 SS
         int qualityIndex = 3;
-        FuOverlay fastest = new FuOverlay("FastestF", new Vector2(278f, 36f), (overlay) =>
+        FuOverlay fastest = new FuOverlay("oFF", new Vector2(278f, 36f), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {

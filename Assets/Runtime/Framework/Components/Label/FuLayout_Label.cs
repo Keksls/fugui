@@ -22,7 +22,13 @@ namespace Fu.Framework
         /// <param name="style">The style to apply to the text.</param>
         public virtual void Text(string text, FuTextStyle style)
         {
-            beginElement(string.Empty, style, true); //apply the style to the element
+            beginElement(ref text, style, true); //apply the style to the element
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+
             // verticaly align text to frame padding
             ImGui.AlignTextToFramePadding();
             ImGui.Text(text); //display the text
@@ -49,7 +55,13 @@ namespace Fu.Framework
         /// <param name="style">The style to apply to the text.</param>
         public virtual void TextWrapped(string text, FuTextStyle style)
         {
-            beginElement(string.Empty, style, true); //apply the style to the element
+            beginElement(ref text, style, true); //apply the style to the element
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+
             // verticaly align text to frame padding
             ImGui.AlignTextToFramePadding();
             ImGui.TextWrapped(text); //display the text
@@ -86,7 +98,13 @@ namespace Fu.Framework
         /// <param name="style">default style to use</param>
         public virtual void SmartText(string text, FuTextStyle style)
         {
-            beginElement("", style);
+            beginElement(ref text, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+
             _customText(text);
             if (_currentToolTipsOnLabels)
             {

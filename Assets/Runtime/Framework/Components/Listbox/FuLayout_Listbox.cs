@@ -85,7 +85,13 @@ namespace Fu.Framework
         /// <param name="style">The style for the listbox.</param>
         protected virtual void _customListbox(string text, List<IListboxItem> items, Action<int> itemChange, Func<string> itemGetter, FuListboxStyle style)
         {
-            text = beginElement(text, style);
+            beginElement(ref text, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+
 
             if (!_listboxSelectedItem.ContainsKey(text))
             {
@@ -192,8 +198,14 @@ namespace Fu.Framework
         /// <param name="height">The height of the list of items</param>
         public virtual void Listbox(string text, string selectedItemText, Action callback, FuListboxStyle style, int height = 0)
         {
-            text = beginElement(text, style);
-            height =(int)(height * Fugui.CurrentContext.Scale);
+            beginElement(ref text, style);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+
+            height = (int)(height * Fugui.CurrentContext.Scale);
             // Adjust the padding for the frame and window
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f) * Fugui.CurrentContext.Scale);
             Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * Fugui.CurrentContext.Scale);

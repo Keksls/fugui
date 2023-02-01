@@ -13,7 +13,12 @@ namespace Fu.Framework
         /// <returns>whatever the text is clicked</returns>
         public virtual bool ClickableText(string text, FuTextStyle style)
         {
-            beginElement(text, style, true);
+            beginElement(ref text, style, true);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
 
             Vector2 rectMin = ImGui.GetCursorScreenPos() - new Vector2(4f, 0f);
             Vector2 rectMax = rectMin + ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding;

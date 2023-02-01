@@ -9,18 +9,13 @@ public class MouseOrbitImproved : MonoBehaviour
     public float xSpeed = 120.0f;
     public float ySpeed = 120.0f;
     public float zSpeed = 2f;
-
     public float yMinLimit = -20f;
     public float yMaxLimit = 80f;
-
     public float distanceMin = .5f;
     public float distanceMax = 15f;
-
     public float smoothTime = 2f;
-
     float rotationYAxis = 0.0f;
     float rotationXAxis = 0.0f;
-
     float velocityX = 0.0f;
     float velocityY = 0.0f;
 

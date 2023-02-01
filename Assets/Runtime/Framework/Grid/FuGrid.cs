@@ -150,7 +150,7 @@ namespace Fu.Framework
             _gridCreated = _currentGridDef.SetupTable(_gridName, outterPadding, linesBg, ref _isResponsivelyResized);
             if (!_gridCreated)
             {
-                Debug.LogError("Fail to create grid " + _gridName + " at frame " + Time.frameCount);
+                Debug.LogError("Fail to create grid '" + _gridName + "' at frame " + Time.frameCount);
             }
         }
         #endregion

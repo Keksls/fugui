@@ -24,11 +24,13 @@ namespace Fu.Framework
         /// </summary>
         private static void bindFieldTypeDictionary()
         {
-            _uiFieldBinding = new Dictionary<HashSet<Type>, Func<FieldInfo, FuField>>();
-
-            // bool
-            _uiFieldBinding.Add(new HashSet<Type>() {
-                    typeof(bool) }, (fi) =>
+            _uiFieldBinding = new Dictionary<HashSet<Type>, Func<FieldInfo, FuField>>
+            {
+                // bool
+                {
+                    new HashSet<Type>() {
+                    typeof(bool) },
+                    (fi) =>
                     {
                         if (fi.IsDefined(typeof(Toggle)))
                         {
@@ -38,10 +40,12 @@ namespace Fu.Framework
                         {
                             return new CheckboxField(fi);
                         }
-                    });
+                    }
+                },
 
-            // numbers
-            _uiFieldBinding.Add(new HashSet<Type>() {
+                // numbers
+                {
+                    new HashSet<Type>() {
                     typeof(byte),
                     typeof(short),
                     typeof(ushort),
@@ -51,7 +55,8 @@ namespace Fu.Framework
                     typeof(ulong),
                     typeof(float),
                     typeof(double),
-                    typeof(decimal)}, (fi) =>
+                    typeof(decimal)},
+                    (fi) =>
                     {
                         if (fi.IsDefined(typeof(Slider)))
                         {
@@ -61,26 +66,35 @@ namespace Fu.Framework
                         {
                             return new DragField(fi);
                         }
-                    });
+                    }
+                },
 
-            // enum
-            _uiFieldBinding.Add(new HashSet<Type>() {
-                    typeof(Enum) }, (fi) =>
+                // enum
+                {
+                    new HashSet<Type>() {
+                    typeof(Enum) },
+                    (fi) =>
                     {
                         return new ComboboxField(fi);
-                    });
+                    }
+                },
 
-            // Vector2
-            _uiFieldBinding.Add(new HashSet<Type>() {
-                    typeof(Vector2) }, (fi) =>
+                // Vector2
+                {
+                    new HashSet<Type>() {
+                    typeof(Vector2) },
+                    (fi) =>
                     {
                         return new DragField(fi);
-                    });
+                    }
+                },
 
-            // Vector3 and 4
-            _uiFieldBinding.Add(new HashSet<Type>() {
+                // Vector3 and 4
+                {
+                    new HashSet<Type>() {
                     typeof(Vector3),
-                    typeof(Vector4) }, (fi) =>
+                    typeof(Vector4) },
+                    (fi) =>
                     {
                         if (fi.IsDefined(typeof(ColorPicker)))
                         {
@@ -90,21 +104,29 @@ namespace Fu.Framework
                         {
                             return new DragField(fi);
                         }
-                    });
+                    }
+                },
 
-            // Color
-            _uiFieldBinding.Add(new HashSet<Type>() {
-                    typeof(Color) }, (fi) =>
+                // Color
+                {
+                    new HashSet<Type>() {
+                    typeof(Color) },
+                    (fi) =>
                     {
                         return new ColorPickerField(fi);
-                    });
+                    }
+                },
 
-            // Text
-            _uiFieldBinding.Add(new HashSet<Type>() {
-                    typeof(string) }, (fi) =>
+                // Text
+                {
+                    new HashSet<Type>() {
+                    typeof(string) },
+                    (fi) =>
                     {
                         return new TextField(fi);
-                    });
+                    }
+                }
+            };
         }
 
         /// <summary>

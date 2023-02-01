@@ -213,7 +213,7 @@ namespace Fu.Framework
             }
 
             // try to create the table
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + outterPadding);
+            ImGuiNative.igSetCursorPosX(ImGuiNative.igGetCursorPosX() + outterPadding);
             bool tableCreated = ImGui.BeginTable(gridName, nbCols, linesBg ? ImGuiTableFlags.RowBg : ImGuiTableFlags.None, new UnityEngine.Vector2(availWidth, 0f));
             if (!tableCreated)
             {

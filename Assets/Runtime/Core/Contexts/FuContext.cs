@@ -122,7 +122,7 @@ namespace Fu.Core
             }
             finally
             {
-                ImGui.Render();
+                ImGuiNative.igRender();
             }
             OnPostRender?.Invoke();
         }

@@ -72,10 +72,10 @@ namespace Fu.Framework
             // Set the width of the input field and create it
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             var oldVal = value; // Store the old value in case the input field is disabled
-            bool valueChanged = ImGui.DragFloat("##" + id, ref value, 0.1f, min, max, getFloatString("##" + id, value), _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+            bool valueChanged = ImGui.DragFloat("##" + id, ref value, 0.1f, min, max, getFloatString(value), _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
 
             // Update the format string for the input field based on its current value
-            updateFloatString("##" + id, value);
+            //updateFloatString("##" + id, value);
 
             // If the input field is disabled, reset its value and return false for the valueChanged flag
             if (_nextIsDisabled)

@@ -21,11 +21,11 @@ namespace Fu.Framework
 
                 // Fugui Logo
                 HorizontalAlignNextElement(128f, FuElementAlignement.Center);
-                layout.Image("FuguiLogo", Settings.FuguiLogo, new Vector2(128f, 128f));
+                layout.Image("fLogo", Settings.FuguiLogo, new Vector2(128f, 128f));
 
                 // buttons
                 FuStyle.Unpadded.Push(true);
-                using (FuGrid grid = new FuGrid("fuguiSettingActionGrid", new FuGridDefinition(1, new float[] { 1f / 1f })))
+                using (FuGrid grid = new FuGrid("fsAG", new FuGridDefinition(1, new float[] { 1f / 1f })))
                 {
                     if (grid.Button("Docking Layout", FuButtonStyle.Highlight))
                     {
@@ -35,12 +35,12 @@ namespace Fu.Framework
                 FuStyle.Unpadded.Pop();
 
                 // Settings Panel
-                using (FuPanel panel = new FuPanel("FuguiSettingsPanel", FuStyle.Unpadded))
+                using (FuPanel panel = new FuPanel("fsP", FuStyle.Unpadded))
                 {
                     // Settings
                     layout.Collapsable("Settings", () =>
                     {
-                        using (FuGrid grid = new FuGrid("FuguiSettingGrid", FuGridFlag.AutoToolTipsOnLabels))
+                        using (FuGrid grid = new FuGrid("fsG", FuGridFlag.AutoToolTipsOnLabels))
                         {
                             grid.DrawObject(Settings);
                         }

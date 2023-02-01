@@ -26,7 +26,7 @@ namespace Fu.Framework
         public virtual bool RadioButton(string text, bool isChecked, FuFrameStyle style)
         {
             string id = beginElement(text, style); // Push the style for the checkbox element
-            text = text.Split(new char[] { '#', '#' })[0];
+            text = Fugui.GetUntagedText(text);
             // get or create animation data
             if (!_uiElementAnimationDatas.ContainsKey(id))
             {

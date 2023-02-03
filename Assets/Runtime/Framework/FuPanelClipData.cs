@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Fu.Core;
+using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,25 +7,52 @@ namespace Fu.Framework
 {
     internal class FuPanelClipper
     {
-        internal List<Vector2> itemRects = new List<Vector2>();
-        internal List<Vector2> lastItemRects = new List<Vector2>();
-        internal Rect scrollRect;
+        internal List<Rect> itemRects = new List<Rect>();
+        internal List<Rect> lastItemRects = new List<Rect>();
+        internal Vector2 scrollRectY;
         internal static int itemIndex = 0;
-        internal float _currentCursorY = 0f;
         internal bool _clipOutOfBounds = false;
-        internal string _currentParentLayoutID = string.Empty;
         private bool _drawItem = true;
+        private Vector2 _screenToLocalOffset = default;
+        internal bool ForceUpdateNextFrame = false;
+
+        internal FuPanelClipper()
+        {
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                FuWindow.CurrentDrawingWindow.OnResized += CurrentDrawingWindow_OnResized;
+                FuWindow.CurrentDrawingWindow.OnClosed += CurrentDrawingWindow_OnClosed;
+            }
+        }
+
+        private void CurrentDrawingWindow_OnClosed(FuWindow window)
+        {
+            window.OnResized -= CurrentDrawingWindow_OnResized;
+        }
+
+        private void CurrentDrawingWindow_OnResized(FuWindow window)
+        {
+            ForceUpdateNextFrame = true;
+        }
 
         internal void NewFrame(bool autoClipOutOfView)
         {
             // whatever we want to clip OutOfBounds content
-            _clipOutOfBounds = (autoClipOutOfView && FuPanel.IsInsidePanel) || !string.IsNullOrEmpty(_currentParentLayoutID);
+            _clipOutOfBounds = autoClipOutOfView && FuPanel.IsInsidePanel && itemRects.Count == lastItemRects.Count && !ForceUpdateNextFrame;
+            itemRects.Clear();
+            ForceUpdateNextFrame = false;
+            itemIndex = -1;
+            Vector2 scrollRectSize = ImGui.GetContentRegionAvail();
             if (_clipOutOfBounds)
             {
-                itemIndex = -1;
-                itemRects.Clear();
-                scrollRect = GetCurrentScrollBounds();
-                _currentCursorY = ImGui.GetCursorPosY();
+                _screenToLocalOffset = ImGui.GetCursorScreenPos() - ImGui.GetCursorPos();
+                scrollRectY = new Vector2(ImGuiNative.igGetScrollY(), ImGuiNative.igGetScrollY() + scrollRectSize.y);
+                scrollRectY.x -= Fugui.Settings.ClipperSafeRangePx * Fugui.CurrentContext.Scale;
+                scrollRectY.y += Fugui.Settings.ClipperSafeRangePx * Fugui.CurrentContext.Scale;
+            }
+            else
+            {
+                lastItemRects.Clear();
             }
         }
 
@@ -32,31 +60,28 @@ namespace Fu.Framework
         {
             if (itemRects.Count > 0)
             {
-                lastItemRects = new List<Vector2>(itemRects);
+                lastItemRects = new List<Rect>(itemRects);
             }
         }
 
-        internal bool BeginDrawElement()
+        internal bool BeginDrawElement(bool canBeHidden)
         {
             _drawItem = true;
-            _currentCursorY = ImGui.GetCursorPosY();
+            itemIndex++;
             // check item rect
-            if (_clipOutOfBounds)
+            if (_clipOutOfBounds && canBeHidden)
             {
-                itemIndex++;
                 if (lastItemRects.Count > itemIndex)
                 {
-                    Vector2 itemYBounds = lastItemRects[itemIndex];
+                    Rect itemBounds = lastItemRects[itemIndex];
+                    float cursorY = ImGuiNative.igGetCursorPosY();
                     // return whatever the next item was in the scroll rect at last frame
-                    _drawItem = itemYBounds.y >= scrollRect.min.y + 32f && itemYBounds.x <= scrollRect.max.y - 32f;
-                }
-                // if out of scroll bounds, we must dummy the element rect
-                if (!_drawItem)
-                {
-                    float height = lastItemRects[itemIndex].y - lastItemRects[itemIndex].x;
-                    if (height != 0)
+                    _drawItem = (cursorY + itemBounds.size.y) > scrollRectY.x && cursorY < scrollRectY.y;
+
+                    // if out of scroll bounds but null size, let's draw it again to get size for next frame
+                    if (!_drawItem && (itemBounds.size.x == 0 || itemBounds.size.y == 0))
                     {
-                        ImGui.Button(itemIndex.ToString(), new Vector2(64f, height));
+                        _drawItem = true;
                     }
                 }
             }
@@ -65,30 +90,18 @@ namespace Fu.Framework
 
         internal void EndDrawElement()
         {
+            // the item has just been draw
             if (_drawItem)
             {
                 // save item rect
-                itemRects.Add(new Vector2(_currentCursorY, ImGui.GetCursorPosY()));
+                itemRects.Add(new Rect(ImGui.GetItemRectMin() - _screenToLocalOffset, ImGui.GetItemRectSize()));
             }
             else
             {
+                // item not draw this frame, let's dummy it
+                ImGuiNative.igDummy(lastItemRects[itemIndex].size);
                 itemRects.Add(lastItemRects[itemIndex]);
             }
-        }
-
-        private Rect GetCurrentScrollBounds()
-        {
-            Vector2 scrollSize = ImGui.GetContentRegionAvail();
-            float scrollMaxY = ImGuiNative.igGetScrollMaxY();
-            if (scrollSize.y < 1 || float.IsNaN(scrollMaxY) || scrollMaxY == 0)
-            {
-                _clipOutOfBounds = false;
-                return default;
-            }
-            float scrollAmount = ImGuiNative.igGetScrollY() / scrollMaxY;
-            Vector2 scrollPos = new Vector2(0f, scrollSize.y * scrollAmount);
-            Rect scrollBounds = new Rect(scrollPos, scrollSize);
-            return scrollBounds;
         }
     }
 }

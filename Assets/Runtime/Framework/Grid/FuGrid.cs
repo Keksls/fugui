@@ -160,15 +160,19 @@ namespace Fu.Framework
         /// call this right before drawing an element. this will apply style and handle the grid layout for you
         /// </summary>
         /// <param name="style">Element Style to apply</param>
-        protected override void beginElement(ref string elementID, IFuElementStyle style = null, bool noReturn = false)
+        protected override void beginElement(ref string elementID, IFuElementStyle style = null, bool noReturn = false, bool canBeHidden = true)
         {
-            base.beginElement(ref elementID, style, noReturn);
             if (!_gridCreated)
             {
                 return;
             }
             NextColumn();
+            base.beginElement(ref elementID, style, noReturn, canBeHidden);
 
+            if (!_drawItem)
+            {
+                return;
+            }
             //// add padding to value if grid is responsively resized
             //if (_isResponsivelyResized && _currentRowIndex % 2 == 0)
             //{
@@ -202,6 +206,10 @@ namespace Fu.Framework
             }
             base.endElement(style);
 
+            if (!_drawItem)
+            {
+
+            }
             float lineHeight = ImGuiNative.igGetCursorPosY() - _beginElementCursorY;
             if (lineHeight < _minLineHeight)
             {

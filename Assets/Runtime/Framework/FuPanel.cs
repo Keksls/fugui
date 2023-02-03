@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Fu.Core;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -118,11 +119,12 @@ namespace Fu.Framework
             IsInsidePanel = _panelCreated;
 
             // set clipping data
-            if (!_clippingDict.ContainsKey(_ID))
+            string clippingID = _ID + FuWindow.CurrentDrawingWindow?.ID;
+            if (!_clippingDict.ContainsKey(clippingID))
             {
-                _clippingDict.Add(_ID, new FuPanelClipper());
+                _clippingDict.Add(clippingID, new FuPanelClipper());
             }
-            Clipper = _clippingDict[_ID];
+            Clipper = _clippingDict[clippingID];
             Clipper.NewFrame(true);
         }
 
@@ -137,7 +139,7 @@ namespace Fu.Framework
                 IsInsidePanel = false;
                 _currentStyle.Pop();
                 Clipper.EndFrame();
-                _clippingDict[_ID] = Clipper;
+                _clippingDict[_ID + FuWindow.CurrentDrawingWindow?.ID] = Clipper;
                 Clipper = null;
             }
         }

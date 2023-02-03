@@ -26,7 +26,7 @@ namespace Fu.Framework
         public void Collapsable(string id, Action innerUI, FuCollapsableStyle style, float indent = 16f)
         {
             // Begin the element and apply the specified style
-            beginElement(ref id, style);
+            beginElement(ref id, style, false, false);
             // return if item must no be draw
             if (!_drawItem)
             {

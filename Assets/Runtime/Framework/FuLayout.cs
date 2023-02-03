@@ -74,13 +74,13 @@ namespace Fu.Framework
         /// Begins an element in this layout with the specified style.
         /// </summary>
         /// <param name="style">The style to use for this element.</param>
-        protected virtual void beginElement(ref string elementID, IFuElementStyle style = null, bool noEditID = false)
+        protected virtual void beginElement(ref string elementID, IFuElementStyle style = null, bool noEditID = false, bool canBeHidden = true)
         {
             // whatever we must draw the next item
             _drawItem = true;
             if(FuPanel.IsInsidePanel && FuPanel.Clipper != null)
             {
-                _drawItem = FuPanel.Clipper.BeginDrawElement();
+                _drawItem = FuPanel.Clipper.BeginDrawElement(canBeHidden);
             }
             if (_drawItem)
             {

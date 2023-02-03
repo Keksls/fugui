@@ -58,6 +58,12 @@ namespace Fu.Core
         [Slider(1, 1000000)]
         public int ExternalManipulatingTicks = 1000;
         /// <summary>
+        /// FuPanelClipper safe range (offset to draw clipped elements outside of scrollRect bounds)
+        /// </summary>
+        [Range(-64, 64)]
+        [Slider(-64, 64)]
+        public int ClipperSafeRangePx = 8;
+        /// <summary>
         /// A boolean value indicating whether the title bar should be shown for externally manipulated UI windows.
         /// </summary>
         public FuExternalWindowFlags ExternalWindowFlags = FuExternalWindowFlags.Default;

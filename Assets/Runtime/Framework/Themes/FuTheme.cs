@@ -5,75 +5,75 @@ namespace Fu.Framework
 {
     public class FuTheme
     {
-        [Disabled]
+        [FuDisabled]
         public string ThemeName = "Fugui Theme";
-        [Disabled]
-        [Slider(0.1f, 1f)]
+        [FuDisabled]
+        [FuSlider(0.1f, 1f)]
         public float Alpha = 1.0f;
-        [Drag(0f, 10f)]
+        [FuDrag(0f, 10f)]
         public Vector2 WindowPadding = new Vector2(1.0f, 0.0f);
-        [Slider(0f, 8f)]
+        [FuSlider(0f, 8f)]
         public float WindowRounding = 2.0f;
-        [Slider(0f, 4f)]
+        [FuSlider(0f, 4f)]
         public float WindowBorderSize = 1.0f;
-        [Drag(1f, 100f, "width", "height")]
+        [FuDrag(1f, 100f, "width", "height")]
         public Vector2 WindowMinSize = new Vector2(16.0f, 16.0f);
-        [Drag(0f, 1f)]
+        [FuDrag(0f, 1f)]
         public Vector2 WindowTitleAlign = new Vector2(0.0f, 0.5f);
         public ImGuiDir WindowMenuButtonPosition = ImGuiDir.Right;
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float ChildRounding = 2.0f;
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float ChildBorderSize = 1.0f;
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float PopupRounding = 2.0f;
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float PopupBorderSize = 1.0f;
-        [Drag(0f, 10f)]
+        [FuDrag(0f, 10f)]
         public Vector2 FramePadding = new Vector2(8f, 4f);
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float FrameRounding = 2.0f;
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float FrameBorderSize = 1.1f;
-        [Drag(0f, 20f)]
+        [FuDrag(0f, 20f)]
         public Vector2 ItemSpacing = new Vector2(4.0f, 6.0f);
-        [Drag(0f, 20f)]
+        [FuDrag(0f, 20f)]
         public Vector2 ItemInnerSpacing = new Vector2(4.0f, 6.0f);
-        [Drag(0f, 20f)]
+        [FuDrag(0f, 20f)]
         public Vector2 CellPadding = new Vector2(6.0f, 1.0f);
-        [Slider(0f, 50f)]
+        [FuSlider(0f, 50f)]
         public float IndentSpacing = 24.0f;
-        [Slider(0f, 50f)]
+        [FuSlider(0f, 50f)]
         public float ColumnsMinSpacing = 6.0f;
-        [Slider(0f, 50f)]
+        [FuSlider(0f, 50f)]
         public float ScrollbarSize = 14.0f;
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float ScrollbarRounding = 2.0f;
-        [Slider(0f, 50f)]
+        [FuSlider(0f, 50f)]
         public float GrabMinSize = 10.0f;
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float GrabRounding = 2.0f;
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float TabRounding = 2.0f;
-        [Slider(0f, 10f)]
+        [FuSlider(0f, 10f)]
         public float TabBorderSize = 1.0f;
-        [Slider(0f, 64f)]
+        [FuSlider(0f, 64f)]
         public float TabMinWidthForCloseButton = 16f;
         public ImGuiDir ColorButtonPosition = ImGuiDir.Right;
-        [Drag(0f, 1f)]
+        [FuDrag(0f, 1f)]
         public Vector2 ButtonTextAlign = new Vector2(0.5f, 0.5f);
-        [Drag(0f, 1f)]
+        [FuDrag(0f, 1f)]
         public Vector2 SelectableTextAlign = new Vector2(0.0f, 0.0f);
-        [Slider(0.001f, 2f)]
+        [FuSlider(0.001f, 2f)]
         public float CircleTessellationMaxError = 0.01f;
-        [Toggle]
+        [FuToggle]
         public bool AntiAliasedLinesUseTex = false;
-        [Toggle]
+        [FuToggle]
         public bool AntiAliasedLines = true;
-        [Toggle]
+        [FuToggle]
         public bool AntiAliasedFill = true;
         // colors
-        [Hidden]
+        [FuHidden]
         public Vector4[] Colors;
 
         /// <summary>

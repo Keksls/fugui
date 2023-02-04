@@ -1,5 +1,6 @@
 using Fu.Framework;
 using ImGuiNET;
+using OpenTK.Input;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -49,10 +50,11 @@ namespace Fu.Core
         public float DeltaTime { get; internal set; }
         public float CurrentFPS { get; internal set; }
         public uint CurrentDockID { get; private set; }
-        public FuWindowState WindowPerformanceState { get; private set; }
+        public FuWindowState State { get; private set; }
         public DrawList DrawList { get; private set; }
         public Dictionary<string, DrawList> ChildrenDrawLists { get; private set; }
         public FuMouseState Mouse { get; private set; }
+        public FuKeyboardState Keyboard { get; private set; }
         public Dictionary<string, FuOverlay> Overlays { get; private set; }
 
         // states flags
@@ -179,6 +181,7 @@ namespace Fu.Core
             IsExternalizable = windowDefinition.IsExternalizable;
             IsInterractible = windowDefinition.IsInterractible;
             Mouse = new FuMouseState();
+            Keyboard = new FuKeyboardState(this);
             DrawList = new DrawList();
             ChildrenDrawLists = new Dictionary<string, DrawList>();
             Size = windowDefinition.Size;
@@ -189,7 +192,7 @@ namespace Fu.Core
             _forceLocationNextFrame = true;
             _windowFlags = ImGuiWindowFlags.NoCollapse;
             // assume that we are Idle
-            WindowPerformanceState = FuWindowState.Idle;
+            State = FuWindowState.Idle;
             TargetFPS = Fugui.Settings.IdleFPS;
             // compute last render time
             _lastRenderTime = Fugui.Time;
@@ -419,7 +422,7 @@ namespace Fu.Core
             ImGui.BeginChild(ID + "d", new Vector2(196f, 282f));
             {
                 // states
-                ImGui.Text("State : " + WindowPerformanceState);
+                ImGui.Text("State : " + State);
                 ImGui.Text("FPS : " + (int)CurrentFPS + " (" + (DeltaTime * 1000f).ToString("f2") + " ms)");
                 ImGui.Text("Target : " + TargetFPS + "  (" + ((int)(_targetDeltaTimeMs * 1000)).ToString() + " ms)"); ImGui.Dummy(new Vector2(4f, 0f));
                 // pos and size
@@ -469,7 +472,7 @@ namespace Fu.Core
                 case true:
                     return Fugui.Time > _lastRenderTime + _targetDeltaTimeMs
                         || _forceRedraw
-                        || (IsInterractible && (IsHovered || WantCaptureKeyboard || WindowPerformanceState == FuWindowState.Manipulating));
+                        || (IsInterractible && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
 
                 case false:
                     return Fugui.Time > _lastRenderTime + _targetDeltaTimeMs
@@ -752,18 +755,36 @@ namespace Fu.Core
             // check for manipulating
             if (IsDragging || IsResizing || IsHovered)
             {
-                if (WindowPerformanceState != FuWindowState.Manipulating)
+                if (State != FuWindowState.Manipulating)
                 {
                     SetPerformanceState(FuWindowState.Manipulating);
                 }
             }
             else
             {
-                if (WindowPerformanceState != FuWindowState.Idle)
+                if (State != FuWindowState.Idle)
                 {
                     SetPerformanceState(FuWindowState.Idle);
                 }
             }
+        }
+
+        /// <summary>
+        /// Add a window flag to this windows
+        /// </summary>
+        /// <param name="flag">flag to add</param>
+        internal void AddWindowFlag(ImGuiWindowFlags flag)
+        {
+            _windowFlags |= flag;
+        }
+
+        /// <summary>
+        /// Remove a window flag from this window
+        /// </summary>
+        /// <param name="flag">flag to remove</param>
+        internal void RemoveWindowFlag(ImGuiWindowFlags flag)
+        {
+            _windowFlags &= ~flag;
         }
 
         /// <summary>
@@ -773,13 +794,13 @@ namespace Fu.Core
         /// <param name="state">state to set</param>
         internal virtual void SetPerformanceState(FuWindowState state)
         {
-            WindowPerformanceState = state;
+            State = state;
             ForceDraw();
-            if (WindowPerformanceState == FuWindowState.Manipulating)
+            if (State == FuWindowState.Manipulating)
             {
                 TargetFPS = Fugui.Settings.ManipulatingFPS;
             }
-            else if (WindowPerformanceState == FuWindowState.Idle)
+            else if (State == FuWindowState.Idle)
             {
                 TargetFPS = Fugui.Settings.IdleFPS;
             }

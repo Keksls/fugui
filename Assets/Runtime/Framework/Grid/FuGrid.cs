@@ -150,7 +150,7 @@ namespace Fu.Framework
             _gridCreated = _currentGridDef.SetupTable(_ID, outterPadding, linesBg, ref _isResponsivelyResized);
             if (!_gridCreated)
             {
-                Debug.LogError("Fail to create grid '" + _ID + "' at frame " + Time.frameCount);
+                Debug.LogWarning("Fail to create grid '" + _ID + "' at frame " + Time.frameCount + Environment.NewLine + "This can append if the main container of this grid has not been draw yet. Ignore this warning if it's the first and only time you see it. If this message display every frames, you should check your code.");
             }
         }
         #endregion

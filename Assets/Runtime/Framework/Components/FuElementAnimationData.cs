@@ -1,13 +1,10 @@
 using Fu.Core;
+using Fu.Framework;
 using ImGuiNET;
 using UnityEngine;
 
 public class FuElementAnimationData
 {
-    ///<summary>
-    /// The duration of the animation in seconds
-    ///</summary>
-    public const float ANIMATION_DURATION = 0.1f;
     ///<summary>
     /// Property that returns the current value of the animation
     ///</summary>
@@ -66,7 +63,7 @@ public class FuElementAnimationData
         // This line forces the current window to redraw
         FuWindow.CurrentDrawingWindow?.ForceDraw();
         // This line updates the current value of the animation based on the time elapsed
-        _currentValue = Mathf.Lerp(_startValue, _targetValue, _enlapsed / ANIMATION_DURATION);
+        _currentValue = Mathf.Lerp(_startValue, _targetValue, _enlapsed / Fugui.Settings.ElementsAnimationDuration);
         if (FuWindow.CurrentDrawingWindow != null)
         {
             // This line updates the elapsed time based on the time since the last frame
@@ -78,7 +75,7 @@ public class FuElementAnimationData
             _enlapsed += ImGui.GetIO().DeltaTime;
         }
         // This line checks if the animation has reached its target value
-        if (_enlapsed > ANIMATION_DURATION)
+        if (_enlapsed > Fugui.Settings.ElementsAnimationDuration)
         {
             _animating = false;
             _currentValue = _targetValue;

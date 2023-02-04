@@ -13,6 +13,7 @@ namespace Fu.Core
         #region Variables
         public string ID { get; private set; }
         public FuWindow Window { get; private set; }
+        public FuContext Context => _fuguiContext;
         public Vector2Int LocalMousePos => _localMousePos;
         public Vector2Int Position => Vector2Int.zero;
         public Vector2Int Size => _size;
@@ -185,7 +186,7 @@ namespace Fu.Core
 
             // update context mouse position
             _fuguiContext.UpdateMouse(_localMousePos, new Vector2(0f, inputState.MouseWheel), inputState.MouseDown[0], inputState.MouseDown[1], inputState.MouseDown[2]);
-            
+
             // return whatever the mouse need to be drawn
             return Window.MustBeDraw();
         }
@@ -264,13 +265,18 @@ namespace Fu.Core
         /// <summary>
         /// Render a window into this container
         /// </summary>
-        /// <param name="UIWindow">the window to draw</param>
-        public void RenderFuWindow(FuWindow UIWindow)
+        /// <param name="FuWindow">the window to draw</param>
+        public void RenderFuWindow(FuWindow FuWindow)
         {
+            // force to place window to local container position zero
+            if (FuWindow.LocalPosition.x != 0 || FuWindow.LocalPosition.y != 0)
+            {
+                FuWindow.LocalPosition = Vector2Int.zero;
+            }
             // call UIWindow.DrawWindow
-            UIWindow.DrawWindow();
+            FuWindow.DrawWindow();
             // update the window state (Idle / Manipulating etc)
-            UIWindow.UpdateState(_fuguiContext.IO.MouseDown[0]);
+            FuWindow.UpdateState(_fuguiContext.IO.MouseDown[0]);
         }
 
         /// <summary>
@@ -296,10 +302,12 @@ namespace Fu.Core
             {
                 Window = FuWindow;
                 Window.OnClosed += Window_OnClosed;
-                Window.OnResized += Window_OnResized;
+                Window.OnResize += Window_OnResized;
                 Window.LocalPosition = Vector2Int.zero;
                 Window.Container = this;
                 Window.LocalPosition = Vector2Int.zero;
+                Window.AddWindowFlag(ImGuiWindowFlags.NoMove);
+                Window.AddWindowFlag(ImGuiWindowFlags.NoResize);
                 return true;
             }
             return false;
@@ -355,6 +363,8 @@ namespace Fu.Core
                 Window.OnResized -= Window_OnResized;
                 Window.Container = null;
                 Window.Fire_OnRemovedFromContainer();
+                Window.RemoveWindowFlag(ImGuiWindowFlags.NoMove);
+                Window.RemoveWindowFlag(ImGuiWindowFlags.NoResize);
             }
             if (_fuguiContext != null)
             {

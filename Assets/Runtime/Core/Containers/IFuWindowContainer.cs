@@ -12,6 +12,7 @@ namespace Fu.Core
     public interface IFuWindowContainer
     {
         public Vector2Int LocalMousePos { get; }
+        public FuContext Context { get; }
         public Vector2Int Position { get; }
         public Vector2Int Size { get; }
         public float Scale { get; }

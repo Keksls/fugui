@@ -90,7 +90,7 @@ namespace Fu.Core
         {
             base.drawDebugPanel();
 
-            if (!ShowDebugPanel && !Fugui.Settings.DrawDebugPanel)
+            if (!Fugui.Settings.DrawDebugPanel)
             {
                 return;
             }

@@ -370,7 +370,7 @@ namespace Fu.Framework
                         callback(windows);
                     }
                     // Unsubscribe from the OnReady event
-                    window.OnReady -= onWindowReady;
+                    window.OnInitialized -= onWindowReady;
                 };
                 // create the UIWindow
                 if (winDef.CreateUIWindow(out FuWindow win))
@@ -378,7 +378,7 @@ namespace Fu.Framework
                     if (autoAddToMainContainer)
                     {
                         // Subscribe to the OnReady event of the window
-                        win.OnReady += onWindowReady;
+                        win.OnInitialized += onWindowReady;
                         // add UIWindow to main container
                         win.TryAddToContainer(MainContainer);
                     }

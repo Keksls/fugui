@@ -22,6 +22,10 @@ namespace Fu.Core
         private GameObject _panelGameObject;
         public int FuguiContextID { get { return _fuguiContext.ID; } }
         public float Scale => _scale;
+        public FuMouseState Mouse => _mouseState;
+        public FuKeyboardState Keyboard => _keyboardState;
+        private FuMouseState _mouseState;
+        private FuKeyboardState _keyboardState;
         private float _scale;
         private Vector2Int _localMousePos;
         private Vector2Int _size;
@@ -90,6 +94,10 @@ namespace Fu.Core
             _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
             _fuguiContext.AutoUpdateMouse = false;
 
+            // instantiate inputs states
+            _mouseState = new FuMouseState();
+            _keyboardState = new FuKeyboardState(_fuguiContext.IO);
+
             // apply the theme to this context
             FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
 
@@ -100,8 +108,8 @@ namespace Fu.Core
             SetPosition(position.HasValue ? position.Value : Vector3.zero);
             SetRotation(rotation.HasValue ? rotation.Value : Quaternion.identity);
 
-            // release window
-            window.IsBusy = false;
+            // initialize the window
+            window.InitializeOnContainer();
         }
 
         /// <summary>
@@ -166,6 +174,9 @@ namespace Fu.Core
                 return false;
             }
 
+            // update mouse states
+            _mouseState.UpdateState(this);
+
             // get input state for this container
             InputState inputState = FuRaycasting.GetInputState(ID, _panelGameObject);
 
@@ -216,6 +227,15 @@ namespace Fu.Core
         public bool HasWindow(string id)
         {
             return Window != null && Window.ID == id;
+        }
+
+        /// <summary>
+        /// Execute a callback on each windows on this container
+        /// </summary>
+        /// <param name="callback">callback to execute on each windows</param>
+        public void OnEachWindow(Action<FuWindow> callback)
+        {
+            callback?.Invoke(Window);
         }
 
         #region Image & ImageButton

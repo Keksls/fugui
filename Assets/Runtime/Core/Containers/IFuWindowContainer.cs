@@ -16,6 +16,14 @@ namespace Fu.Core
         public Vector2Int Position { get; }
         public Vector2Int Size { get; }
         public float Scale { get; }
+        public FuKeyboardState Keyboard { get; }
+        public FuMouseState Mouse { get; }
+
+        /// <summary>
+        /// Execute a callback on each windows on this container
+        /// </summary>
+        /// <param name="callback">callback to execute on each windows</param>
+        public void OnEachWindow(Action<FuWindow> callback);
 
         /// <summary>
         /// Try to add an UI window to this container
@@ -91,6 +99,7 @@ namespace Fu.Core
         /// </summary>
         /// <param name="texture">renderTexture to draw</param>
         /// <param name="size">size of the image</param>
+        /// <param name="color">tint color of the image</param>
         public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color);
 
         /// <summary>
@@ -98,6 +107,7 @@ namespace Fu.Core
         /// </summary>
         /// <param name="texture">texture2D to draw</param>
         /// <param name="size">size of the image</param>
+        /// <param name="color">tint color of the image</param>
         public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color);
 
         /// <summary>

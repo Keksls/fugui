@@ -1,5 +1,6 @@
 using Fu.Framework;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Fu.Core
 {
@@ -51,7 +52,7 @@ namespace Fu.Core
         /// <param name="window">window to set mouse position on</param>
         internal void SetPosition(FuWindow window)
         {
-            if(window.Container == null)
+            if (window.Container == null)
             {
                 return;
             }
@@ -66,6 +67,25 @@ namespace Fu.Core
                 _isHoverOverlay |= overlay.LocalRect.Contains(position);
             }
             _isHoverPupUp = !string.IsNullOrEmpty(FuLayout.CurrentPopUpID) ? FuLayout.CurrentPopUpRect.Contains(window.Container.LocalMousePos) : false;
+        }
+
+        /// <summary>
+        /// set current mouse position
+        /// </summary>
+        /// <param name="container">container to set mouse position on</param>
+        internal void UpdateState(IFuWindowContainer container)
+        {
+            _movement = new Vector2(container.LocalMousePos.x, container.LocalMousePos.y) - new Vector2(Position.x, Position.y);
+            _movement.y = -_movement.y;
+            _position = container.LocalMousePos;
+            _isHoverOverlay = false;
+            _isHoverPupUp = false;
+            // check whatever mouse is hover any overlay
+            container.OnEachWindow((window) =>
+            {
+                _isHoverOverlay |= window.Mouse.IsHoverOverlay;
+                _isHoverPupUp |= window.Mouse.IsHoverPopup;
+            });
         }
 
         /// <summary>

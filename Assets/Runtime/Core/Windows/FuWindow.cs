@@ -1,6 +1,5 @@
 using Fu.Framework;
 using ImGuiNET;
-using OpenTK.Input;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -22,7 +21,7 @@ namespace Fu.Core
             internal set
             {
                 _container = value;
-                IsInMainContainer = !(value is FuExternalWindowContainer);
+                IsUnityContext = !(value is FuExternalWindowContainer);
             }
         }
 
@@ -33,7 +32,6 @@ namespace Fu.Core
         public Action<FuWindow> Constraints { get; internal set; }
         public bool HasMovedThisFrame { get; private set; }
         public bool HasJustBeenDraw { get; set; }
-        public bool ShowDebugPanel { get; set; }
         public bool WantCaptureKeyboard { get; private set; }
         public bool CanInternalize { get; internal set; }
         public int TargetFPS
@@ -66,7 +64,7 @@ namespace Fu.Core
         public bool IsInitialized { get; private set; }
         public bool IsExternal { get; internal set; }
         public bool IsResizing { get; private set; }
-        public bool IsInMainContainer { get; private set; }
+        public bool IsUnityContext { get; private set; }
         public bool IsDragging { get; internal set; }
         public bool IsHovered { get; internal set; }
         public bool IsDocked { get; internal set; }
@@ -80,7 +78,7 @@ namespace Fu.Core
         public event Action<FuWindow> OnClosed;
         public event Action<FuWindow> OnDock;
         public event Action<FuWindow> OnUnDock;
-        public event Action<FuWindow> OnReady;
+        public event Action<FuWindow> OnInitialized;
         public event Action<FuWindow> OnRemovedFromContainer;
 
         // private fields
@@ -169,8 +167,6 @@ namespace Fu.Core
                 return;
             }
 
-            // debug
-            ShowDebugPanel = false;
             IsBusy = true;
             IsInitialized = false;
             UI = windowDefinition.UI;
@@ -180,22 +176,8 @@ namespace Fu.Core
             IsDockable = windowDefinition.IsDockable;
             IsExternalizable = windowDefinition.IsExternalizable;
             IsInterractible = windowDefinition.IsInterractible;
-            Mouse = new FuMouseState();
-            Keyboard = new FuKeyboardState(this);
-            DrawList = new DrawList();
-            ChildrenDrawLists = new Dictionary<string, DrawList>();
             Size = windowDefinition.Size;
             LocalPosition = windowDefinition.Position;
-            _lastFrameSize = Size;
-            _lastFramePos = LocalPosition;
-            IsInitialized = true;
-            _forceLocationNextFrame = true;
-            _windowFlags = ImGuiWindowFlags.NoCollapse;
-            // assume that we are Idle
-            State = FuWindowState.Idle;
-            TargetFPS = Fugui.Settings.IdleFPS;
-            // compute last render time
-            _lastRenderTime = Fugui.Time;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
             // add default overlays
             Overlays = new Dictionary<string, FuOverlay>();
@@ -203,6 +185,30 @@ namespace Fu.Core
             {
                 overlay.AnchorWindow(this);
             }
+        }
+
+        /// <summary>
+        /// Initialize the window inide a container.
+        /// This must be called whenever the container of this window is set and ready.
+        /// </summary>
+        public void InitializeOnContainer()
+        {
+            Keyboard = new FuKeyboardState(Container.Context.IO, this);
+            _forceLocationNextFrame = true;
+            Mouse = new FuMouseState();
+            DrawList = new DrawList();
+            ChildrenDrawLists = new Dictionary<string, DrawList>();
+            _lastFrameSize = Size;
+            _lastFramePos = LocalPosition;
+            _windowFlags = ImGuiWindowFlags.NoCollapse;
+            // assume that we are Idle
+            State = FuWindowState.Idle;
+            TargetFPS = Fugui.Settings.IdleFPS;
+            // compute last render time
+            _lastRenderTime = Fugui.Time;
+            IsInitialized = true;
+            IsBusy = false;
+            _sendReadyNextFrame = true;
         }
 
         #region Drawing
@@ -294,7 +300,7 @@ namespace Fu.Core
         {
             // if we are in main window container and this window is docked, we must surround UI by ImGuiChild
             // Child will have name that will be used by DrawCmd to store idx and vtx without recompute DrawList
-            bool createChild = IsDocked && IsInMainContainer;
+            bool createChild = IsDocked && IsUnityContext;
             // invoke user custom constraints
             Constraints?.Invoke(this);
             // set current theme frame padding
@@ -393,7 +399,7 @@ namespace Fu.Core
                 if (_sendReadyNextFrame)
                 {
                     _sendReadyNextFrame = false;
-                    OnReady?.Invoke(this);
+                    OnInitialized?.Invoke(this);
                 }
 
                 // update FPS and deltaTime
@@ -410,7 +416,7 @@ namespace Fu.Core
         /// </summary>
         internal virtual void drawDebugPanel()
         {
-            if (!ShowDebugPanel && !Fugui.Settings.DrawDebugPanel)
+            if (!Fugui.Settings.DrawDebugPanel)
             {
                 return;
             }
@@ -467,7 +473,7 @@ namespace Fu.Core
         /// <returns>true if we must draw this UI this frame</returns>
         public bool MustBeDraw()
         {
-            switch (IsInMainContainer)
+            switch (IsUnityContext)
             {
                 case true:
                     return Fugui.Time > _lastRenderTime + _targetDeltaTimeMs
@@ -546,14 +552,6 @@ namespace Fu.Core
             OnUnDock?.Invoke(this);
             OnResize?.Invoke(this);
             OnDrag?.Invoke(this);
-        }
-
-        /// <summary>
-        ///  Fire event whenever the UIWindow is ready to be used (added to a container and initialized)
-        /// </summary>
-        public void Fire_OnReady()
-        {
-            _sendReadyNextFrame = true;
         }
 
         /// <summary>

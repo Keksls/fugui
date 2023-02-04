@@ -36,8 +36,13 @@ namespace Fu.Core
         /// The ID of the dockspace.
         /// </summary>
         public uint Dockspace_id { get; private set; } = uint.MaxValue;
+        // get the scale of this container (fixed to 100% for now, must be DPi aware => just get DPI using context.IO and divide by 96 : not tested)
         public float Scale => 1f;
+        public FuMouseState Mouse => _fuMouseState;
+        public FuKeyboardState Keyboard => _fuKeyboardState;
 
+        private FuMouseState _fuMouseState;
+        private FuKeyboardState _fuKeyboardState;
         // The world position of the container.
         private Vector2Int _worldPosition;
         // A queue of windows to be externalized.
@@ -73,6 +78,10 @@ namespace Fu.Core
             _toRemoveWindows = new Queue<FuWindow>();
             _toAddWindows = new Queue<FuWindow>();
 
+            // instantiate inputs states
+            _fuMouseState = new FuMouseState();
+            _fuKeyboardState = new FuKeyboardState(_fuguiContext.IO);
+
             // Subscribe to the Layout event of the given FuguiContext
             _fuguiContext.OnRender += _fuguiContext_OnRender;
             // Set the docking style color to current theme
@@ -86,6 +95,9 @@ namespace Fu.Core
 
         public void Update()
         {
+            // update mouse state
+            _fuMouseState.UpdateState(this);
+
             // externalize windows
             while (_toExternalizeWindows.Count > 0)
             {
@@ -123,8 +135,7 @@ namespace Fu.Core
                 window.IsExternal = false;
                 // register window events
                 window.OnClosed += UIWindow_OnClose;
-                window.IsBusy = false;
-                window.Fire_OnReady();
+                window.InitializeOnContainer();
             }
 
             // set size and pos for this frame
@@ -147,21 +158,46 @@ namespace Fu.Core
         }
 
         #region Container
+        /// <summary>
+        /// Execute a callback on each windows on this container
+        /// </summary>
+        /// <param name="callback">callback to execute on each windows</param>
+        public void OnEachWindow(Action<FuWindow> callback)
+        {
+            foreach (FuWindow window in Windows.Values)
+            {
+                callback?.Invoke(window);
+            }
+        }
+
+        /// <summary>
+        /// Whatever this container own a specific window
+        /// </summary>
+        /// <param name="id">ID of the window</param>
+        /// <returns>whatever the window is in this container</returns>
         public bool HasWindow(string id)
         {
             return Windows.ContainsKey(id);
         }
 
+        /// <summary>
+        /// Render a specific FuWindow
+        /// </summary>
+        /// <param name="UIWindow"></param>
         public void RenderFuWindow(FuWindow UIWindow)
         {
             // Do draw window
             UIWindow.DrawWindow();
         }
 
+        /// <summary>
+        /// Render any Windows in this container
+        /// </summary>
         public void RenderFuWindows()
         {
-            DrawMainContainer();
+            DrawMainDockSpace();
 
+            // whatever the user want to externalize a window this frame
             _canExternalizeThisFrame = false;
             foreach (KeyCode key in Fugui.Settings.ExternalizationKey)
             {
@@ -186,8 +222,22 @@ namespace Fu.Core
                     _toExternalizeWindows.Enqueue(window);
                 }
             }
+
+            // render notifications
+            Fugui.RenderNotifications(this);
+
+            // render modal
+            Fugui.RenderModal(this);
+
+            // render popup message
+            Fugui.RenderPopupMessage();
         }
 
+        /// <summary>
+        /// Try to add a window in this container
+        /// </summary>
+        /// <param name="UIWindow">the window to add</param>
+        /// <returns>true if success (not already in it)</returns>
         public bool TryAddWindow(FuWindow UIWindow)
         {
             if (Windows.ContainsKey(UIWindow.ID))
@@ -199,12 +249,21 @@ namespace Fu.Core
         }
 
         #region UIWindow Events
+        /// <summary>
+        /// Whenever a window is closed
+        /// </summary>
+        /// <param name="UIWindow"></param>
         private void UIWindow_OnClose(FuWindow UIWindow)
         {
             TryRemoveWindow(UIWindow.ID);
         }
         #endregion
 
+        /// <summary>
+        /// Try to remove a window from this container
+        /// </summary>
+        /// <param name="id">ID of the window to remove</param>
+        /// <returns>true if success (contained)</returns>
         public bool TryRemoveWindow(string id)
         {
             if (!Windows.ContainsKey(id))
@@ -215,56 +274,106 @@ namespace Fu.Core
             return true;
         }
 
+        /// <summary>
+        /// Whatever this container must force the position of it's windows
+        /// </summary>
+        /// <returns>true if force</returns>
         public bool ForcePos()
         {
             return false;
         }
 
+        /// <summary>
+        /// get texture ID for current graphic context
+        /// </summary>
+        /// <param name="texture">texture to get id</param>
+        /// <returns>graphic ID of the texture</returns>
         public IntPtr GetTextureID(Texture2D texture)
         {
             return _fuguiContext.TextureManager.GetTextureId(texture);
         }
 
+        /// <summary>
+        /// get texture ID for current graphic context
+        /// </summary>
+        /// <param name="texture">texture to get id</param>
+        /// <returns>graphic ID of the texture</returns>
         public IntPtr GetTextureID(RenderTexture texture)
         {
             return _fuguiContext.TextureManager.GetTextureId(texture);
         }
 
+        /// <summary>
+        /// Draw ImGui Image regardless to GL context
+        /// </summary>
+        /// <param name="texture">renderTexture to draw</param>
+        /// <param name="size">size of the image</param>
         public void ImGuiImage(RenderTexture texture, Vector2 size)
         {
             ImGui.Image(GetTextureID(texture), size);
         }
 
+        /// <summary>
+        /// Draw ImGui Image regardless to GL context
+        /// </summary>
+        /// <param name="texture">renderTexture to draw</param>
+        /// <param name="size">size of the image</param>
         public void ImGuiImage(Texture2D texture, Vector2 size)
         {
             ImGui.Image(GetTextureID(texture), size);
         }
 
+        /// <summary>
+        /// Draw ImGui Image regardless to GL context
+        /// </summary>
+        /// <param name="texture">texture2D to draw</param>
+        /// <param name="size">size of the image</param>
+        /// <param name="color">tint color of the image</param>
         public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color)
         {
             ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
         }
 
+        /// <summary>
+        /// Draw ImGui Image regardless to GL context
+        /// </summary>
+        /// <param name="texture">texture2D to draw</param>
+        /// <param name="size">size of the image</param>
+        /// <param name="color">tint color of the image</param>
         public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color)
         {
             ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
         }
 
+        /// <summary>
+        /// Draw ImGui ImageButton regardless to GL context
+        /// </summary>
+        /// <param name="texture">texture2D to draw</param>
+        /// <param name="size">size of the image</param>
+        /// <returns>true if clicked</returns>
         public bool ImGuiImageButton(Texture2D texture, Vector2 size)
         {
-            // TODO : add ID to image button
             return ImGui.ImageButton("", GetTextureID(texture), size);
         }
 
+        /// <summary>
+        /// Draw ImGui ImageButton regardless to GL context
+        /// </summary>
+        /// <param name="texture">texture2D to draw</param>
+        /// <param name="size">size of the image</param>
+        /// <param name="color">tint additive color of the image</param>
+        /// <returns>true if clicked</returns>
         public bool ImGuiImageButton(Texture2D texture, Vector2 size, Vector4 color)
         {
-            // TODO : add ID to image button
             return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
         }
         #endregion
 
         #region Docking
-        private void DrawMainContainer()
+        /// <summary>
+        /// Draw the Main Container DockSpace
+        /// </summary>
+        private void DrawMainDockSpace()
         {
             // draw main menu
             FuMainMenu.Draw();
@@ -297,15 +406,6 @@ namespace Fu.Core
                 ImGui.End();
             }
             Fugui.PopStyle(5);
-
-            // draw notifications
-            Fugui.RenderNotifications(this);
-
-            // draw modal
-            Fugui.RenderModal(this);
-
-            // draw popup message
-            Fugui.RenderPopupMessage();
         }
         #endregion
     }

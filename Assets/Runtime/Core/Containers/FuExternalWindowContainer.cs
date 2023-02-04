@@ -19,10 +19,10 @@ namespace Fu.Core
         {
             get
             {
-                return UIWindow != null;
+                return FuWindow != null;
             }
         }
-        public FuWindow UIWindow { get; private set; }
+        public FuWindow FuWindow { get; private set; }
         public MonitorWindowState MonitorWindowState { get; private set; }
         public bool Dragging { get; private set; }
         UnityEngine.Vector2Int IFuWindowContainer.LocalMousePos { get => _mousePos; }
@@ -30,7 +30,11 @@ namespace Fu.Core
         UnityEngine.Vector2Int IFuWindowContainer.Size { get => _size; }
         public FuContext Context => _fuguiContext;
         public float Scale => 1f;
+        public FuMouseState Mouse => _fuMouseState;
+        public FuKeyboardState Keyboard => _fuKeyboardState;
 
+        private FuMouseState _fuMouseState;
+        private FuKeyboardState _fuKeyboardState;
         private bool _contextInitialized;
         private MouseState _mouseState;
         private KeyboardState _keyboardState;
@@ -118,6 +122,10 @@ namespace Fu.Core
             // get back to old fugui context
             lastImGuiContext.SetAsCurrent();
 
+            // instantiate inputs states
+            _fuMouseState = new FuMouseState();
+            _fuKeyboardState = new FuKeyboardState(_fuguiContext.IO);
+
             // register Fugui render to main thread after main ImGui context render
             _fuguiContext.OnRender += FuguiContext_OnRender;
             // register Fugui post render to main thread after fuguiContext render
@@ -134,23 +142,32 @@ namespace Fu.Core
         /// <returns>true if succes</returns>
         public bool TryAddWindow(FuWindow uiWindow)
         {
-            if (UIWindow != null)
+            if (FuWindow != null)
             {
                 return false;
             }
             // store UIWindow variable
-            UIWindow = uiWindow;
+            FuWindow = uiWindow;
             // set world pos before setting container
-            SetPosition((int)UIWindow.WorldPosition.x, (int)UIWindow.WorldPosition.y + 36);
-            UIWindow.Container = this;
+            SetPosition((int)FuWindow.WorldPosition.x, (int)FuWindow.WorldPosition.y + 36);
+            FuWindow.Container = this;
             // register window events
-            UIWindow.OnResize += UIWindow_OnResize;
-            UIWindow.OnDrag += UIWindow_OnMove;
+            FuWindow.OnResize += UIWindow_OnResize;
+            FuWindow.OnDrag += UIWindow_OnMove;
             // set pos and size
-            UIWindow.LocalPosition = UnityEngine.Vector2Int.zero;
-            SetSize(UIWindow.Size.x, UIWindow.Size.y);
+            FuWindow.LocalPosition = UnityEngine.Vector2Int.zero;
+            SetSize(FuWindow.Size.x, FuWindow.Size.y);
 
             return true;
+        }
+
+        /// <summary>
+        /// Execute a callback on each windows on this container
+        /// </summary>
+        /// <param name="callback">callback to execute on each windows</param>
+        public void OnEachWindow(Action<FuWindow> callback)
+        {
+            callback?.Invoke(FuWindow);
         }
 
         /// <summary>
@@ -164,7 +181,10 @@ namespace Fu.Core
             if (HasWindow(id))
             {
                 // let's close this container, it will remove UIWindow
-                Close();
+                if (_started)
+                {
+                    Close();
+                }
                 return true;
             }
             return false;
@@ -186,7 +206,7 @@ namespace Fu.Core
         /// <returns>true if contains</returns>
         public bool HasWindow(string id)
         {
-            if (HasUIWindow && UIWindow.ID == id)
+            if (HasUIWindow && FuWindow.ID == id)
             {
                 return true;
             }
@@ -214,7 +234,7 @@ namespace Fu.Core
             //io.DeltaTime = UIWindow.DeltaTime;
 
             // render UI window
-            RenderFuWindow(UIWindow);
+            RenderFuWindow(FuWindow);
         }
 
         /// <summary>
@@ -376,9 +396,9 @@ namespace Fu.Core
                 _needDisposeContexts = true;
 
                 // unregister UIWindow events if exists
-                if (UIWindow != null)
+                if (FuWindow != null)
                 {
-                    UIWindow.OnResize -= UIWindow_OnResize;
+                    FuWindow.OnResize -= UIWindow_OnResize;
                 }
             }
 
@@ -397,7 +417,7 @@ namespace Fu.Core
             _fuguiContext.OnRender -= FuguiContext_OnRender;
             // dispose this window
             Dispose();
-            UIWindow.Fire_OnRemovedFromContainer();
+            FuWindow.Fire_OnRemovedFromContainer();
         }
 
         /// <summary>
@@ -454,7 +474,7 @@ namespace Fu.Core
             {
                 if (e.Key == key)
                 {
-                    UIWindow.CanInternalize = true;
+                    FuWindow.CanInternalize = true;
                     break;
                 }
             }
@@ -479,7 +499,7 @@ namespace Fu.Core
             {
                 if (e.Key == key)
                 {
-                    UIWindow.CanInternalize = false;
+                    FuWindow.CanInternalize = false;
                     break;
                 }
             }
@@ -501,7 +521,7 @@ namespace Fu.Core
                     // assume we are dragging now
                     _startDragOffset = Fugui.WorldMousePosition - new UnityEngine.Vector2Int(X, Y);
                     Dragging = true;
-                    UIWindow.IsDragging = true;
+                    FuWindow.IsDragging = true;
                 }
             }
         }
@@ -526,7 +546,7 @@ namespace Fu.Core
             }
             // we are not dragging anymore
             Dragging = false;
-            UIWindow.IsDragging = true;
+            FuWindow.IsDragging = true;
         }
 
         /// <summary>
@@ -537,7 +557,7 @@ namespace Fu.Core
         {
             base.OnMouseEnter(e);
             // force draw on next frame to be reactive on state update when mouse enter window rect
-            UIWindow.ForceDraw();
+            FuWindow.ForceDraw();
         }
         #endregion
 
@@ -683,7 +703,7 @@ namespace Fu.Core
             if (_isFirstTimeDragging && !isLeftMouseButtonPressed())
             {
                 Dragging = false;
-                UIWindow.IsDragging = false;
+                FuWindow.IsDragging = false;
                 _isFirstTimeDragging = false;
             }
 
@@ -698,7 +718,7 @@ namespace Fu.Core
                     SetPosition((int)Fugui.WorldMousePosition.x - _size.x / 2, (int)Fugui.WorldMousePosition.y - 20, true);
                     _startDragOffset = Fugui.WorldMousePosition - new UnityEngine.Vector2Int(_worldPosition.x, _worldPosition.y);
                     Dragging = true;
-                    UIWindow.IsDragging = true;
+                    FuWindow.IsDragging = true;
                     _isFirstTimeDragging = true;
                 }
             }
@@ -707,8 +727,8 @@ namespace Fu.Core
             ProcessEvents();
 
             // get current mouse & keyboard state (fail as fuck => do it ourself)
-            _mouseState = Mouse.GetState();
-            _keyboardState = Keyboard.GetState();
+            _mouseState = OpenTK.Input.Mouse.GetState();
+            _keyboardState = OpenTK.Input.Keyboard.GetState();
 
             UnityEngine.Vector2Int absMousePos = new UnityEngine.Vector2Int(Fugui.WorldMousePosition.x, Fugui.WorldMousePosition.y);
             // map cursor pos to window pos. first is IntPtr.Zero for relative desktop context
@@ -717,7 +737,7 @@ namespace Fu.Core
             _mousePos = new UnityEngine.Vector2Int(absMousePos.x, absMousePos.y);
 
             // Update Window State
-            UIWindow.UpdateState(_mouseState[MouseButton.Left]);
+            FuWindow.UpdateState(_mouseState[MouseButton.Left]);
         }
         #endregion
 
@@ -821,7 +841,7 @@ namespace Fu.Core
             // notify OnReady if needed
             if (_fireOnReadyNextFrame)
             {
-                UIWindow.Fire_OnReady();
+                FuWindow.InitializeOnContainer();
                 _fireOnReadyNextFrame = false;
             }
         }
@@ -840,8 +860,11 @@ namespace Fu.Core
         /// </summary>
         private bool FuguiContext_OnPrepareFrame()
         {
+            // update the mouse state
+            _fuMouseState.UpdateState(this);
+
             // return we are not started or no context is initialized
-            if (!_started || !_contextInitialized || !_readyToNewFrame || !UIWindow.MustBeDraw())
+            if (!_started || !_contextInitialized || !_readyToNewFrame || !FuWindow.MustBeDraw())
             {
                 return false;
             }
@@ -891,10 +914,9 @@ namespace Fu.Core
             if (_waitingForFirstCompletLoop)
             {
                 OnInitialized?.Invoke();
-                UIWindow.IsBusy = false;
                 _waitingForFirstCompletLoop = false;
-                UIWindow_OnResize(UIWindow);
-                UIWindow_OnMove(UIWindow);
+                UIWindow_OnResize(FuWindow);
+                UIWindow_OnMove(FuWindow);
                 _fireOnReadyNextFrame = true;
             }
 
@@ -925,7 +947,7 @@ namespace Fu.Core
             Y = _worldPosition.y;
 
             // ensure we take back Idle size if we drag as we was monitor docked
-            if (!force && !UIWindow.IsBusy && Dragging)
+            if (!force && !FuWindow.IsBusy && Dragging)
             {
                 switch (MonitorWindowState)
                 {
@@ -956,7 +978,7 @@ namespace Fu.Core
             {
                 _size = new UnityEngine.Vector2Int(width, height);
             }
-            UIWindow.Size = _size;
+            FuWindow.Size = _size;
             Width = _size.x;
             Height = _size.y;
         }
@@ -1044,11 +1066,11 @@ namespace Fu.Core
                 SetPosition((int)Fugui.WorldMousePosition.x - _size.x / 2, (int)Fugui.WorldMousePosition.y - 20, true);
                 _startDragOffset = Fugui.WorldMousePosition - new UnityEngine.Vector2Int(_worldPosition.x, _worldPosition.y);
                 Dragging = true;
-                UIWindow.IsDragging = true;
+                FuWindow.IsDragging = true;
             }
 
-            UIWindow.Fire_OnResize();
-            UIWindow.Fire_OnDrag();
+            FuWindow.Fire_OnResize();
+            FuWindow.Fire_OnDrag();
         }
 
         /// <summary>
@@ -1064,7 +1086,7 @@ namespace Fu.Core
             ImGui.SetNextWindowPos(new UnityEngine.Vector2(0f, 0f), ImGuiCond.Always);
             ImGui.SetNextWindowSize(new UnityEngine.Vector2(_size.x, -1f), ImGuiCond.Always);
             ImGui.SetNextWindowBgAlpha(0f);
-            ImGui.Begin(UIWindow.ID + "sp", ImGuiWindowFlags.NoDecoration);
+            ImGui.Begin(FuWindow.ID + "sp", ImGuiWindowFlags.NoDecoration);
 
             // calc sizes
             float width = Math.Min(_size.x, _size.y);
@@ -1090,9 +1112,9 @@ namespace Fu.Core
                 Fugui.Push(ImGuiCol.Button, new UnityEngine.Vector4(0.1f, 0.1f, 0.1f, 0.1f));
                 if (ImGuiImageButton(Fugui.Settings.TopIcon, buttonSize, buttonIconColor))
                 {
-                    UIWindow.IsBusy = true;
+                    FuWindow.IsBusy = true;
                     SetMonitorState(MonitorWindowState.HalfTop);
-                    UIWindow.IsBusy = false;
+                    FuWindow.IsBusy = false;
                 }
                 if (ImGui.IsItemHovered())
                 {
@@ -1103,9 +1125,9 @@ namespace Fu.Core
                 // maximize icon
                 if (ImGuiImageButton(Fugui.Settings.MaximizeIcon, buttonSize, buttonIconColor))
                 {
-                    UIWindow.IsBusy = true;
+                    FuWindow.IsBusy = true;
                     SetMonitorState(MonitorWindowState.Maximized);
-                    UIWindow.IsBusy = false;
+                    FuWindow.IsBusy = false;
                 }
                 if (ImGui.IsItemHovered())
                 {
@@ -1116,9 +1138,9 @@ namespace Fu.Core
                 // left icon
                 if (ImGuiImageButton(Fugui.Settings.LeftIcon, buttonSize, buttonIconColor))
                 {
-                    UIWindow.IsBusy = true;
+                    FuWindow.IsBusy = true;
                     SetMonitorState(MonitorWindowState.HalfLeft);
-                    UIWindow.IsBusy = false;
+                    FuWindow.IsBusy = false;
                 }
                 if (ImGui.IsItemHovered())
                 {
@@ -1129,9 +1151,9 @@ namespace Fu.Core
                 // center icon
                 if (ImGuiImageButton(Fugui.Settings.CenterIcon, buttonSize, buttonIconColor))
                 {
-                    UIWindow.IsBusy = true;
+                    FuWindow.IsBusy = true;
                     SetMonitorState(MonitorWindowState.Center);
-                    UIWindow.IsBusy = false;
+                    FuWindow.IsBusy = false;
                 }
                 if (ImGui.IsItemHovered())
                 {
@@ -1142,9 +1164,9 @@ namespace Fu.Core
                 // right icon
                 if (ImGuiImageButton(Fugui.Settings.RightIcon, buttonSize, buttonIconColor))
                 {
-                    UIWindow.IsBusy = true;
+                    FuWindow.IsBusy = true;
                     SetMonitorState(MonitorWindowState.HalfRight);
-                    UIWindow.IsBusy = false;
+                    FuWindow.IsBusy = false;
                 }
                 if (ImGui.IsItemHovered())
                 {
@@ -1155,9 +1177,9 @@ namespace Fu.Core
                 // minimized icon
                 if (ImGuiImageButton(Fugui.Settings.MinimizeIcon, buttonSize, buttonIconColor))
                 {
-                    UIWindow.IsBusy = true;
+                    FuWindow.IsBusy = true;
                     SetMonitorState(MonitorWindowState.Minimized);
-                    UIWindow.IsBusy = false;
+                    FuWindow.IsBusy = false;
                 }
                 if (ImGui.IsItemHovered())
                 {
@@ -1168,9 +1190,9 @@ namespace Fu.Core
                 // bottom icon
                 if (ImGuiImageButton(Fugui.Settings.BottomIcon, buttonSize, buttonIconColor))
                 {
-                    UIWindow.IsBusy = true;
+                    FuWindow.IsBusy = true;
                     SetMonitorState(MonitorWindowState.HalfBottom);
-                    UIWindow.IsBusy = false;
+                    FuWindow.IsBusy = false;
                 }
                 if (ImGui.IsItemHovered())
                 {

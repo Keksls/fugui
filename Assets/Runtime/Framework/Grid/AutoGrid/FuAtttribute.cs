@@ -6,7 +6,7 @@ namespace Fu.Framework
     /// Force Figui Object mapping to ignore this field and do not draw it
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public class Hidden : Attribute
+    public class FuHidden : Attribute
     {
     }
 
@@ -14,8 +14,23 @@ namespace Fu.Framework
     /// Force Figui Object mapping to disable this field (draw, but not editable)
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public class Disabled : Attribute
+    public class FuDisabled : Attribute
     {
+    }
+
+    /// <summary>
+    /// TOOLTIP¨: ANY Field
+    /// Force Figui Object mapping to add a custom tooltip on the FuElement
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public class FuTooltip : Attribute
+    {
+        public string Text;
+
+        public FuTooltip(string text)
+        {
+            Text = text;
+        }
     }
 
     /// <summary>
@@ -23,7 +38,7 @@ namespace Fu.Framework
     /// Force Figui Object mapping to draw this field as a toggle
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public class Toggle : Attribute
+    public class FuToggle : Attribute
     {
     }
 
@@ -33,7 +48,7 @@ namespace Fu.Framework
     /// If it'a Vector3, Alpha will not be displayed
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public class ColorPicker : Attribute
+    public class FuColorPicker : Attribute
     {
     }
 
@@ -42,12 +57,12 @@ namespace Fu.Framework
     /// Force Figui Object mapping to draw this field as a text input area
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public class Text : Attribute
+    public class FuText : Attribute
     {
         public string Hint = string.Empty;
         public float Height = -1f;
         public int Lenght = 4096;
-        public Text(string hint, float height, int lenght)
+        public FuText(string hint, float height, int lenght)
         {
             Hint = hint;
             Height = height;
@@ -60,48 +75,48 @@ namespace Fu.Framework
     /// Force Figui Object mapping to draw this field as a Slider
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public class Slider : Attribute
+    public class FuSlider : Attribute
     {
         public float Min;
         public float Max;
         public string[] Labels;
 
-        public Slider(byte min, byte max)
+        public FuSlider(byte min, byte max)
         {
             Min = min;
             Max = max;
         }
-        public Slider(short min, short max)
+        public FuSlider(short min, short max)
         {
             Min = min;
             Max = max;
         }
-        public Slider(ushort min, ushort max)
+        public FuSlider(ushort min, ushort max)
         {
             Min = min;
             Max = max;
         }
-        public Slider(int min, int max)
+        public FuSlider(int min, int max)
         {
             Min = min;
             Max = max;
         }
-        public Slider(uint min, uint max)
+        public FuSlider(uint min, uint max)
         {
             Min = min;
             Max = max;
         }
-        public Slider(long min, long max)
+        public FuSlider(long min, long max)
         {
             Min = min;
             Max = max;
         }
-        public Slider(ulong min, ulong max)
+        public FuSlider(ulong min, ulong max)
         {
             Min = min;
             Max = max;
         }
-        public Slider(float min, float max)
+        public FuSlider(float min, float max)
         {
             Min = min;
             Max = max;
@@ -113,55 +128,55 @@ namespace Fu.Framework
     /// Force Figui Object mapping to draw this field as an integer Draggable input
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public class Drag : Attribute
+    public class FuDrag : Attribute
     {
         public float Min;
         public float Max;
         public string[] Labels;
 
-        public Drag(byte min, byte max, params string[] labels)
+        public FuDrag(byte min, byte max, params string[] labels)
         {
             Min = min;
             Max = max;
             Labels = labels;
         }
-        public Drag(short min, short max, params string[] labels)
+        public FuDrag(short min, short max, params string[] labels)
         {
             Min = min;
             Max = max;
             Labels = labels;
         }
-        public Drag(ushort min, ushort max, params string[] labels)
+        public FuDrag(ushort min, ushort max, params string[] labels)
         {
             Min = min;
             Max = max;
             Labels = labels;
         }
-        public Drag(int min, int max, params string[] labels)
+        public FuDrag(int min, int max, params string[] labels)
         {
             Min = min;
             Max = max;
             Labels = labels;
         }
-        public Drag(uint min, uint max, params string[] labels)
+        public FuDrag(uint min, uint max, params string[] labels)
         {
             Min = min;
             Max = max;
             Labels = labels;
         }
-        public Drag(long min, long max, params string[] labels)
+        public FuDrag(long min, long max, params string[] labels)
         {
             Min = min;
             Max = max;
             Labels = labels;
         }
-        public Drag(ulong min, ulong max, params string[] labels)
+        public FuDrag(ulong min, ulong max, params string[] labels)
         {
             Min = min;
             Max = max;
             Labels = labels;
         }
-        public Drag(float min, float max, params string[] labels)
+        public FuDrag(float min, float max, params string[] labels)
         {
             Min = min;
             Max = max;

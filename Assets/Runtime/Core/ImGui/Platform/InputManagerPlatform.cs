@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using Fu.Core.DearImGui.Assets;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace Fu.Core.DearImGui.Platform
 {
@@ -15,6 +16,8 @@ namespace Fu.Core.DearImGui.Platform
     internal sealed class InputManagerPlatform : PlatformBase
     {
         private readonly Event _textInputEvent = new Event();
+        private static int _lastTextInputFrame = -1;
+        private static List<uint> _frameTextInput = new List<uint>();
 
         private int[] _mainKeys;
 
@@ -88,21 +91,33 @@ namespace Fu.Core.DearImGui.Platform
                 io.KeysDown[key] = Input.GetKey((KeyCode)key);
             }
 
-            // Keyboard modifiers.
+            // Keyboard modifiers
             io.KeyShift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
             io.KeyCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             io.KeyAlt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
             io.KeySuper = Input.GetKey(KeyCode.LeftCommand) || Input.GetKey(KeyCode.RightCommand) ||
                 Input.GetKey(KeyCode.LeftWindows) || Input.GetKey(KeyCode.RightWindows);
 
-            // Text input.
-            while (Event.PopEvent(_textInputEvent))
+
+            // Text Input get, do it once per frame and store it to share between contexts
+            if (Time.frameCount != _lastTextInputFrame)
             {
-                if (_textInputEvent.rawType == EventType.KeyDown &&
-                    _textInputEvent.character != 0 && _textInputEvent.character != '\n')
+                _frameTextInput.Clear();
+                while (Event.PopEvent(_textInputEvent))
                 {
-                    io.AddInputCharacter(_textInputEvent.character);
+                    if (_textInputEvent.rawType == EventType.KeyDown &&
+                        _textInputEvent.character != 0 && _textInputEvent.character != '\n')
+                    {
+                        _frameTextInput.Add(_textInputEvent.character);
+                    }
                 }
+                _lastTextInputFrame = Time.frameCount;
+            }
+
+            // Text input set
+            foreach (uint keycode in _frameTextInput)
+            {
+                io.AddInputCharacter(keycode);
             }
         }
 

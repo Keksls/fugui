@@ -18,7 +18,6 @@ namespace Fu.Framework
         private static float _currentTitleHeight = 0f;
         private static float _currentFooterheight = 0f;
         private static Vector2 _currentModalPos;
-        private const float ANIMATION_DURATION = 0.2f;
         private static float _enlapsed = 0f;
         #endregion
 
@@ -55,7 +54,7 @@ namespace Fu.Framework
         /// </summary>
         public static void CloseModal()
         {
-            _enlapsed = ANIMATION_DURATION;
+            _enlapsed = Settings.ModalAnimationDuration;
             _showModal = false; //set showModal to false to hide the modal
         }
         #endregion
@@ -95,8 +94,8 @@ namespace Fu.Framework
                 Vector2 modalSize = new Vector2(_currentBodySize.x, _currentBodySize.y + _currentFooterheight + _currentTitleHeight);
                 _currentModalPos = new Vector2(container.Size.x / 2f - modalSize.x / 2f, container.Size.y / 2f - modalSize.y / 2f);
                 Vector2 modalStartPos = new Vector2(container.Size.x / 2f - (modalSize.x * 0.01f) / 2f, 64f);
-                ImGui.SetNextWindowSize(Vector2.Lerp(modalSize * 0.01f, modalSize, _enlapsed / ANIMATION_DURATION), ImGuiCond.Always);
-                ImGui.SetNextWindowPos(Vector2.Lerp(modalStartPos, _currentModalPos, _enlapsed / ANIMATION_DURATION), ImGuiCond.Always);
+                ImGui.SetNextWindowSize(Vector2.Lerp(modalSize * 0.01f, modalSize, _enlapsed / Settings.ModalAnimationDuration), ImGuiCond.Always);
+                ImGui.SetNextWindowPos(Vector2.Lerp(modalStartPos, _currentModalPos, _enlapsed / Settings.ModalAnimationDuration), ImGuiCond.Always);
 
                 // beggin modal
                 if (ImGui.BeginPopupModal(_modalTitle, ref _showModal, ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
@@ -202,7 +201,7 @@ namespace Fu.Framework
         /// </summary>
         private static void animateModal()
         {
-            if (_enlapsed > ANIMATION_DURATION)
+            if (_enlapsed > Settings.ModalAnimationDuration)
             {
                 return;
             }

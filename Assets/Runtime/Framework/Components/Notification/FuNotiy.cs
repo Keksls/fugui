@@ -18,7 +18,6 @@ namespace Fu.Framework
         internal Texture2D Icon;
         internal FuTextStyle TextColor;
         internal FuButtonStyle BGColor;
-        private const float NOTIFICATION_ANIMATION_DURATION = 0.15f;
         private float _animationEnlapsed = 0f;
         private bool _removing = false;
         private bool _hasSpawn = false;
@@ -40,7 +39,7 @@ namespace Fu.Framework
             Icon = null;
             TextColor = FuTextStyle.Default;
             BGColor = FuButtonStyle.Default;
-            _animationEnlapsed = NOTIFICATION_ANIMATION_DURATION;
+            _animationEnlapsed = Fugui.Settings.NotidyAnimlationDuration;
 
             switch (type)
             {
@@ -82,7 +81,7 @@ namespace Fu.Framework
             {
                 if (_animationEnlapsed > 0f)
                 {
-                    _animationEnlapsed = Mathf.Clamp(_animationEnlapsed - deltaTime, 0f, NOTIFICATION_ANIMATION_DURATION);
+                    _animationEnlapsed = Mathf.Clamp(_animationEnlapsed - deltaTime, 0f, Fugui.Settings.NotidyAnimlationDuration);
                 }
                 if (_animationEnlapsed == 0f)
                 {
@@ -91,9 +90,9 @@ namespace Fu.Framework
             }
             else
             {
-                if (_animationEnlapsed < NOTIFICATION_ANIMATION_DURATION)
+                if (_animationEnlapsed < Fugui.Settings.NotidyAnimlationDuration)
                 {
-                    _animationEnlapsed = Mathf.Clamp(_animationEnlapsed + deltaTime, 0f, NOTIFICATION_ANIMATION_DURATION);
+                    _animationEnlapsed = Mathf.Clamp(_animationEnlapsed + deltaTime, 0f, Fugui.Settings.NotidyAnimlationDuration);
                 }
                 else
                 {
@@ -114,7 +113,7 @@ namespace Fu.Framework
         public void Close()
         {
             _removing = true;
-            _animationEnlapsed = NOTIFICATION_ANIMATION_DURATION;
+            _animationEnlapsed = Fugui.Settings.NotidyAnimlationDuration;
         }
 
         /// <summary>
@@ -133,7 +132,7 @@ namespace Fu.Framework
             // draw notify
             Vector2 fullSize = new Vector2(Fugui.Settings.NotifyPanelWidth, Height);
             Vector2 collapsedSize = _removing ? new Vector2(Fugui.Settings.NotifyPanelWidth, 1f) : new Vector2(32f, Height);
-            ImGui.BeginChild("notificationPanel" + i, Vector2.Lerp(collapsedSize, fullSize, _animationEnlapsed / NOTIFICATION_ANIMATION_DURATION), false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+            ImGui.BeginChild("notificationPanel" + i, Vector2.Lerp(collapsedSize, fullSize, _animationEnlapsed / Fugui.Settings.NotidyAnimlationDuration), false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
             {
                 ImGui.Dummy(Vector2.zero);
                 float cursorY = ImGui.GetCursorScreenPos().y;
@@ -152,7 +151,7 @@ namespace Fu.Framework
                         grid.Text(Title, TextColor);
                         Fugui.PopFont();
                     }
-                    if (_animationEnlapsed == NOTIFICATION_ANIMATION_DURATION)
+                    if (_animationEnlapsed == Fugui.Settings.NotidyAnimlationDuration)
                     {
                         Fugui.PushFont(Fugui.CurrentContext.DefaultFont.Size, FontType.Bold);
                         if (grid.ClickableText("X", FuTextStyle.Default))
@@ -175,7 +174,7 @@ namespace Fu.Framework
                     }
                 }
 
-                if (!_hasSpawn || _animationEnlapsed == NOTIFICATION_ANIMATION_DURATION)
+                if (!_hasSpawn || _animationEnlapsed == Fugui.Settings.NotidyAnimlationDuration)
                 {
                     Height = ImGui.GetCursorScreenPos().y - cursorY + 4f;
                 }
@@ -193,7 +192,7 @@ namespace Fu.Framework
             // draw left line
             if (_removing)
             {
-                drawList.AddLine(new Vector2(panelPos.x - lineWidth / 2f, panelPos.y), new Vector2(panelPos.x - lineWidth / 2f, panelPos.y + Mathf.Lerp(1f, Height, _animationEnlapsed / NOTIFICATION_ANIMATION_DURATION)), ImGui.GetColorU32(BGColor.Button), lineWidth);
+                drawList.AddLine(new Vector2(panelPos.x - lineWidth / 2f, panelPos.y), new Vector2(panelPos.x - lineWidth / 2f, panelPos.y + Mathf.Lerp(1f, Height, _animationEnlapsed / Fugui.Settings.NotidyAnimlationDuration)), ImGui.GetColorU32(BGColor.Button), lineWidth);
             }
             else
             {

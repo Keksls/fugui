@@ -28,6 +28,7 @@ namespace Fu.Core
         UnityEngine.Vector2Int IFuWindowContainer.LocalMousePos { get => _mousePos; }
         UnityEngine.Vector2Int IFuWindowContainer.Position { get => _worldPosition; }
         UnityEngine.Vector2Int IFuWindowContainer.Size { get => _size; }
+        public FuContext Context => _fuguiContext;
         public float Scale => 1f;
 
         private bool _contextInitialized;

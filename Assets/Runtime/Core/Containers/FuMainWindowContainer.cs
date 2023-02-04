@@ -17,6 +17,10 @@ namespace Fu.Core
         /// </summary>
         public Vector2Int LocalMousePos => _mousePos;
         /// <summary>
+        /// The related FuContext of this Container.
+        /// </summary>
+        public FuContext Context => _fuguiContext;
+        /// <summary>
         /// The position of the container in world space.
         /// </summary>
         public Vector2Int Position => _worldPosition;

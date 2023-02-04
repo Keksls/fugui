@@ -120,7 +120,7 @@ namespace Fu.Core
                 SuperSampling = 2f;
             }
             // states
-            ImGui.Text("State : " + WindowPerformanceState);
+            ImGui.Text("State : " + State);
             ImGui.Text("FPS : " + (int)CurrentCameraFPS + " (" + (CameraDeltaTime * 1000f).ToString("f2") + " ms)");
             ImGui.Text("Target : " + TargetCameraFPS + "  (" + ((int)(_targetCameraDeltaTimeMs * 1000)).ToString() + " ms)"); ImGui.Dummy(new Vector2(4f, 0f));
             ImGui.EndChild();

@@ -125,7 +125,7 @@ public class FuguiDemoScene : MonoBehaviour
                         grid.Text(window.CurrentFPS.ToString("f2"));
 
                         grid.Text("State");
-                        grid.Text(window.WindowPerformanceState.ToString());
+                        grid.Text(window.State.ToString());
 
                         bool chkVal = window.IsDragging;
                         grid.DisableNextElement();
@@ -682,6 +682,20 @@ public class FuguiDemoScene : MonoBehaviour
         if (_mainCam == null || !_mainCam.IsInitialized)
         {
             return;
+        }
+
+        // debug keyboard state
+        if (_mainCam.Keyboard.GetKeyDown(FuKeysCode.A))
+        {
+            Debug.Log("A Down in camera view");
+        }
+        if (_mainCam.Keyboard.GetKeyPressed(FuKeysCode.A))
+        {
+            Debug.Log("A Pressed in camera view");
+        }
+        if (_mainCam.Keyboard.GetKeyUp(FuKeysCode.A))
+        {
+            Debug.Log("A Up in camera view");
         }
 
         if (_mainCam.Mouse.IsDown(0) && !_mainCam.Mouse.IsHoverOverlay && !_mainCam.Mouse.IsHoverPopup)

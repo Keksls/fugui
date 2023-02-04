@@ -32,13 +32,13 @@ namespace Fu.Framework
                     typeof(bool) },
                     (fi) =>
                     {
-                        if (fi.IsDefined(typeof(Toggle)))
+                        if (fi.IsDefined(typeof(FuToggle)))
                         {
-                            return new ToggleField(fi);
+                            return new FuToggleField(fi);
                         }
                         else
                         {
-                            return new CheckboxField(fi);
+                            return new FuCheckboxField(fi);
                         }
                     }
                 },
@@ -58,13 +58,13 @@ namespace Fu.Framework
                     typeof(decimal)},
                     (fi) =>
                     {
-                        if (fi.IsDefined(typeof(Slider)))
+                        if (fi.IsDefined(typeof(FuSlider)))
                         {
-                            return new SliderField(fi);
+                            return new FuSliderField(fi);
                         }
                         else
                         {
-                            return new DragField(fi);
+                            return new FuDragField(fi);
                         }
                     }
                 },
@@ -75,7 +75,7 @@ namespace Fu.Framework
                     typeof(Enum) },
                     (fi) =>
                     {
-                        return new ComboboxField(fi);
+                        return new FuComboboxField(fi);
                     }
                 },
 
@@ -85,7 +85,7 @@ namespace Fu.Framework
                     typeof(Vector2) },
                     (fi) =>
                     {
-                        return new DragField(fi);
+                        return new FuDragField(fi);
                     }
                 },
 
@@ -96,13 +96,13 @@ namespace Fu.Framework
                     typeof(Vector4) },
                     (fi) =>
                     {
-                        if (fi.IsDefined(typeof(ColorPicker)))
+                        if (fi.IsDefined(typeof(FuColorPicker)))
                         {
-                            return new ColorPickerField(fi);
+                            return new FuColorPickerField(fi);
                         }
                         else
                         {
-                            return new DragField(fi);
+                            return new FuDragField(fi);
                         }
                     }
                 },
@@ -113,7 +113,7 @@ namespace Fu.Framework
                     typeof(Color) },
                     (fi) =>
                     {
-                        return new ColorPickerField(fi);
+                        return new FuColorPickerField(fi);
                     }
                 },
 
@@ -123,7 +123,7 @@ namespace Fu.Framework
                     typeof(string) },
                     (fi) =>
                     {
-                        return new TextField(fi);
+                        return new FuTextField(fi);
                     }
                 }
             };
@@ -153,7 +153,7 @@ namespace Fu.Framework
                 Type fieldType = field.FieldType;
 
                 // check whatever the field need to be switched (hiden => not displayed)
-                if (field.IsDefined(typeof(Hidden)))
+                if (field.IsDefined(typeof(FuHidden)))
                 {
                     continue;
                 }
@@ -172,7 +172,7 @@ namespace Fu.Framework
                 // owether, that mean the type of the fiels can't be edited so we just dislay value as string
                 if (uiField == null)
                 {
-                    uiField = new NonEditableField(field);
+                    uiField = new FuNonEditableField(field);
                 }
 
                 // add field to dic

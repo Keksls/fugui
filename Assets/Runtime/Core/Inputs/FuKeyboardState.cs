@@ -8,6 +8,7 @@ namespace Fu.Core
     public class FuKeyboardState
     {
         private FuWindow _window;
+        // TODO : false if window state Idle
         public bool KeyAlt { get { return _window.Container?.Context.IO.KeyAlt ?? false; } }
         public bool KeyCtrl { get { return _window.Container?.Context.IO.KeyCtrl ?? false; } }
         public bool KeyShift { get { return _window.Container?.Context.IO.KeyShift ?? false; } }

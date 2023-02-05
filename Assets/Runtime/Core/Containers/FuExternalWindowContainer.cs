@@ -305,7 +305,7 @@ namespace Fu.Core
         /// <param name="color">tint color of the texture</param>
         public void ImGuiImage(UnityEngine.Texture2D texture, UnityEngine.Vector2 size, UnityEngine.Vector4 color)
         {
-            ImGui.Image(GetTextureID(texture), size, UnityEngine.Vector2.zero, UnityEngine.Vector2.one, color);
+            ImGui.Image(GetTextureID(texture), size, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f), color);
         }
 
         /// <summary>

@@ -60,6 +60,7 @@ namespace Fu.Framework
         {
             if (itemRects.Count > 0)
             {
+                // TODO : use swap bugffer pattern to avoid copying 
                 lastItemRects = new List<Rect>(itemRects);
             }
         }
@@ -85,6 +86,15 @@ namespace Fu.Framework
                     }
                 }
             }
+
+            if (!_drawItem)
+            {
+                // item not draw this frame, let's dummy it
+                ImGuiNative.igDummy(lastItemRects[itemIndex].size);
+
+                // Debug, draw a rect a dummy place. Comment this after debugging
+                //ImGui.Button("", lastItemRects[itemIndex].size);
+            }
             return _drawItem;
         }
 
@@ -98,8 +108,6 @@ namespace Fu.Framework
             }
             else
             {
-                // item not draw this frame, let's dummy it
-                ImGuiNative.igDummy(lastItemRects[itemIndex].size);
                 itemRects.Add(lastItemRects[itemIndex]);
             }
         }

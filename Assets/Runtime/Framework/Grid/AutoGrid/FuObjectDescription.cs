@@ -117,6 +117,16 @@ namespace Fu.Framework
                     }
                 },
 
+                // Texture2D
+                {
+                    new HashSet<Type>() {
+                    typeof(Texture2D) },
+                    (fi) =>
+                    {
+                        return new FuImageField(fi);
+                    }
+                },
+
                 // Text
                 {
                     new HashSet<Type>() {

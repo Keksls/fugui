@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Drawing;
+using System.Numerics;
 
 namespace Fu.Framework
 {
@@ -30,6 +32,22 @@ namespace Fu.Framework
         public FuTooltip(string text)
         {
             Text = text;
+        }
+    }
+
+    /// <summary>
+    /// Force Figui Object mapping to use FuImage data according to this attribute
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public class FuImage : Attribute
+    {
+        public UnityEngine.Vector2 Size;
+        public UnityEngine.Vector4 Color;
+
+        public FuImage(float width = 32f, float height = 32f, float r = 1f, float g = 1f, float b = 1f, float a = 1f)
+        {
+            Size = new UnityEngine.Vector2(width, height);
+            Color = new UnityEngine.Vector4(r, g, b, a);
         }
     }
 

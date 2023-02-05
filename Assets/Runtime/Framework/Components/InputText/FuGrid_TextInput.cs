@@ -18,8 +18,8 @@
             {
                 return false;
             }
-            label = "##" + label;
             drawElementLabel(label, style.TextStyle);
+            label = "##" + label;
             return base.TextInput(label, hint, ref text, size, height, style);
         }
     }

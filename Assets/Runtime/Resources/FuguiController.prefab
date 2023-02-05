@@ -129,8 +129,12 @@ MonoBehaviour:
     Windows3DFontScale: 3
     UIPanelWidth: 0.066
     ExternalManipulatingTicks: 10000
+    ClipperSafeRangePx: 8
     ExternalWindowFlags: 0
     DrawDebugPanel: 0
+    ModalAnimationDuration: 0.2
+    ElementsAnimationDuration: 0.1
+    NotidyAnimlationDuration: 0.15
     ExternalizationKey: 3301000034010000
     InternalizationKey: 0500000006000000
     MaximizeIcon: {fileID: 2800000, guid: 29b96c3657f037d479544d03c83b829d, type: 3}
@@ -163,12 +167,10 @@ MonoBehaviour:
     DisplayTabBarButton: 1
     TabBarButtonRight: 1
     LayoutsFolder: Fugui/Layouts
-  _uiCamera: {fileID: 963194227}
-  FontIconsSizeOffset: 2
-  FontIconsOffset: {x: 0, y: -1.2}
-  RendererType: 0
-  PlatformType: 0
-  InitialConfiguration:
+    FontIconsSizeOffset: 4
+    FontIconsOffset: {x: 0, y: 0}
+    RendererType: 0
+    PlatformType: 0
     ImGuiConfig: 65
     DoubleClickTime: 0.3
     DoubleClickMaxDist: 6
@@ -176,7 +178,7 @@ MonoBehaviour:
     KeyRepeatDelay: 0.25
     KeyRepeatRate: 0.05
     FontGlobalScale: 1
-    FontAllowUserScaling: 1
+    FontAllowUserScaling: 0
     DisplayFramebufferScale: {x: 1, y: 1}
     MouseDrawCursor: 0
     TextCursorBlink: 1
@@ -186,6 +188,8 @@ MonoBehaviour:
     ConfigDockingNoSplit: 0
     ConfigDockingAlwaysTabBar: 1
     ConfigDockingTransparentPayload: 0
-  Shaders: {fileID: 11400000, guid: 16d5b609d19632f418f94c335a29d67d, type: 2}
-  CursorShapes: {fileID: 11400000, guid: 544ebd31157cfd842871f087e10eb417, type: 2}
+    Shaders: {fileID: 11400000, guid: 16d5b609d19632f418f94c335a29d67d, type: 2}
+    CursorShapes: {fileID: 11400000, guid: 544ebd31157cfd842871f087e10eb417, type: 2}
+    Render: {fileID: 0}
+  _uiCamera: {fileID: 963194227}
   _logErrors: 1

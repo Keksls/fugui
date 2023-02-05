@@ -497,7 +497,7 @@ public class FuguiDemoScene : MonoBehaviour
         {
             using (FuLayout layout = new FuLayout())
             {
-                Fugui.PushFont(18, Fu.Framework.FontType.Regular);
+                Fugui.PushFont(18, FontType.Regular);
                 layout.SetNextElementToolTip("Measures", "Notes", "Sections", "Shapes", "MLI", "Manikins", "Environments");
                 layout.Button(Icons.Measure, new Vector2(32f, 32f));
                 layout.SameLine();

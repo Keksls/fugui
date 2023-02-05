@@ -2,6 +2,7 @@
 using Fu.Core.DearImGui.Assets;
 using UnityEngine;
 using System.Collections.Generic;
+using Fu.Framework;
 
 namespace Fu.Core.DearImGui.Platform
 {
@@ -25,10 +26,10 @@ namespace Fu.Core.DearImGui.Platform
             base(cursorShapes, iniSettings)
         { }
 
-        public override bool Initialize(ImGuiIOPtr io, UIOConfig config, string platformName)
+        public override bool Initialize(ImGuiIOPtr io, string platformName)
         {
-            base.Initialize(io, config, platformName);
-            config.ApplyTo(io);
+            base.Initialize(io, platformName);
+            Fugui.Settings.ApplyTo(io);
             SetupKeyboard(io);
 
             return true;

@@ -13,7 +13,7 @@ namespace Fu.Core.DearImGui.Platform
 		/// </summary>
 		/// <param name="io"></param>
 		/// <returns></returns>
-		bool Initialize(ImGuiIOPtr io, UIOConfig config, string platformName);
+		bool Initialize(ImGuiIOPtr io, string platformName);
 
 		/// <summary>
 		/// 

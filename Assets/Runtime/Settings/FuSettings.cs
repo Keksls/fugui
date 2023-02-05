@@ -1,4 +1,7 @@
 ﻿using Fu.Core.DearImGui;
+using Fu.Core.DearImGui.Assets;
+using Fu.Core.DearImGui.Platform;
+using Fu.Core.DearImGui.Renderer;
 using Fu.Framework;
 using ImGuiNET;
 using System;
@@ -238,5 +241,174 @@ namespace Fu.Core
         [Tooltip("Fugui Themes folder (must be inside streaming assetes folder)")]
         [FuTooltip("Fugui Themes folder (must be inside streaming assetes folder)")]
         public string LayoutsFolder = "Fugui/Layouts";
+
+        [Tooltip("size offset of icons glyphs in font. Be carefull, it this value exceed font size, it may crash on awake")]
+        [FuTooltip("size offset of icons glyphs in font. \nBe carefull, it this value exceed font size, it may crash on awake")]
+        [FuSlider(-16f, 16f)]
+        public float FontIconsSizeOffset = 4;
+
+        [Tooltip("pos offset of icons glyphs in font.")]
+        [FuTooltip("pos offset of icons glyphs in font.")]
+        public Vector2 FontIconsOffset = Vector2.zero;
+
+        [Tooltip("renderType to use to render imgui DrawLists (for main container).")]
+        [FuTooltip("renderType to use to render imgui DrawLists (for main container).")]
+        public RenderType RendererType = RenderType.Mesh;
+
+        [Tooltip("platform (input type) to use for main container.")]
+        [FuTooltip("platform (input type) to use for main container.")]
+        public InputType PlatformType = InputType.InputManager;
+
+        [Tooltip("For more info look the imgui.h:1380(~). (default=NavEnableKeyboard | DockingEnable)")]
+        [FuTooltip("For more info look the imgui.h:1380(~). (default=NavEnableKeyboard | DockingEnable)")]
+        public ImGuiConfigFlags ImGuiConfig = ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DockingEnable;
+
+        [Tooltip("Time for a double-click, in seconds. (default=0.30f)")]
+        [FuTooltip("Time for a double-click, in seconds. (default=0.30f)")]
+        [Range(0.01f, 1f)]
+        [FuSlider(0.01f, 1f)]
+        public float DoubleClickTime = 0.3f;
+
+        [Tooltip("Distance threshold to stay in to validate a double-click, in pixels. (default=6.0f)")]
+        [FuTooltip("Distance threshold to stay in to validate a double-click, in pixels. (default=6.0f)")]
+        [Range(0.01f, 64f)]
+        [FuSlider(0.1f, 64f)]
+        public float DoubleClickMaxDist = 6.0f;
+
+        [Tooltip("Distance threshold before considering we are dragging. (default=6.0f)")]
+        [FuTooltip("Distance threshold before considering we are dragging. (default=6.0f)")]
+        [Range(0.01f, 64f)]
+        [FuSlider(0.1f, 64f)]
+        public float DragThreshold = 6.0f;
+
+        [Tooltip("When holding a key/button, time before it starts repeating, in seconds. (default=0.250f)")]
+        [FuTooltip("When holding a key/button, time before it starts repeating, in seconds. (default=0.250f)")]
+        [Range(0.01f, 1f)]
+        [FuSlider(0.1f, 1f)]
+        public float KeyRepeatDelay = 0.25f;
+
+        [Tooltip("When holding a key/button, rate at which it repeats, in seconds. (default=0.050f)")]
+        [FuTooltip("When holding a key/button, rate at which it repeats, in seconds. (default=0.050f)")]
+        [Range(0.01f, 1f)]
+        [FuSlider(0.1f, 1f)]
+        public float KeyRepeatRate = 0.05f;
+
+        [Tooltip("Global scale all fonts. (default=1.0f)")]
+        [FuTooltip("Global scale all fonts. (default=1.0f)")]
+        [Range(0.1f, 4f)]
+        [FuSlider(0.1f, 4f)]
+        public float FontGlobalScale = 1.0f;
+
+        [Tooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
+        [FuTooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
+        [FuToggle]
+        public bool FontAllowUserScaling = false;
+
+        [Tooltip("[TEST] For retina display or other situations where window coordinates are different from framebuffer coordinates. " +
+            "This generally ends up in ImDrawData::FramebufferScale. (default=1, 1)")]
+        [FuTooltip("[TEST] For retina display or other situations where window coordinates are different from framebuffer coordinates. \n" +
+            "This generally ends up in ImDrawData::FramebufferScale. (default=1, 1)")]
+        public Vector2 DisplayFramebufferScale = Vector2.one;
+
+        [Tooltip("Request ImGui to draw a mouse cursor for you (if you are on a platform without a mouse cursor). " +
+            "Cannot be easily renamed to 'io.ConfigXXX' because this is frequently used by backend implementations. " +
+            "(default=false)")]
+        [FuTooltip("Request ImGui to draw a mouse cursor for you (if you are on a platform without a mouse cursor). \n" +
+            "Cannot be easily renamed to 'io.ConfigXXX' because this is frequently used by backend implementations. \n" +
+            "(default=false)")]
+        [FuToggle]
+        public bool MouseDrawCursor = false;
+
+        [Tooltip("Set to false to disable blinking cursor.")]
+        [FuTooltip("Set to false to disable blinking cursor.")]
+        [FuToggle]
+        public bool TextCursorBlink = false;
+
+        [Tooltip("Enable resizing from the edges and from the lower-left corner.")]
+        [FuTooltip("Enable resizing from the edges and from the lower-left corner.")]
+        [FuToggle]
+        public bool ResizeFromEdges = true;
+
+        [Tooltip("Set to true to only allow moving windows when clicked+dragged from the title bar. Windows without a title bar are not affected.")]
+        [FuTooltip("Set to true to only allow moving windows when clicked+dragged from the title bar. \nWindows without a title bar are not affected.")]
+        [FuToggle]
+        public bool MoveFromTitleOnly = true;
+
+        [Tooltip("Compact window memory usage when unused. Set to -1.0f to disable.")]
+        [FuTooltip("Compact window memory usage when unused. Set to -1.0f to disable.")]
+        [Range(-1f, 10f)]
+        [FuSlider(-1f, 10f)]
+        public float ConfigMemoryCompactTimer = 1f;
+
+        [Tooltip("Simplified docking mode: disable window splitting, so docking is limited to merging multiple windows together into tab-bars.")]
+        [FuTooltip("Simplified docking mode: disable window splitting, so docking is limited to merging multiple windows together into tab-bars.")]
+        [FuToggle]
+        public bool ConfigDockingNoSplit = false;
+
+        [Tooltip("[BETA] [FIXME: This currently creates regression with auto-sizing and general overhead] " +
+            "Make every single floating window display within a docking node.")]
+        [FuTooltip("[BETA] [FIXME: This currently creates regression with auto-sizing and general overhead] \n" +
+            "Make every single floating window display within a docking node.")]
+        [FuToggle]
+        public bool ConfigDockingAlwaysTabBar = true;
+
+        [Tooltip("[BETA] Make window or viewport transparent when docking and only display docking boxes on the target viewport. " +
+            "Useful if rendering of multiple viewport cannot be synced. Best used with ConfigViewportsNoAutoMerge.")]
+        [FuTooltip("[BETA] Make window or viewport transparent when docking and only display docking boxes on the target viewport. \n" +
+            "Useful if rendering of multiple viewport cannot be synced. Best used with ConfigViewportsNoAutoMerge.")]
+        [FuToggle]
+        public bool ConfigDockingTransparentPayload = false;
+
+        // Store your own data for retrieval by callbacks
+        [FuHidden]
+        [NonSerialized]
+        public IntPtr UserData;
+
+        // shaders to use to render imgui (main container)
+        [FuHidden]
+        public ShaderResourcesAsset Shaders = null;
+
+        // cursors pack to use
+        [FuHidden]
+        public CursorShapesAsset CursorShapes = null;
+
+        // URP renderer, not used for now. Keep it for URP eventualy
+        // unHide this is using URP
+        [HideInInspector]
+        [FuHidden]
+        public RenderImGui Render;
+
+        /// <summary>
+        /// Apply Imgui IO config variables to the given Imgui IO
+        /// </summary>
+        /// <param name="io">current Imgui IO</param>
+        public void ApplyTo(ImGuiIOPtr io)
+        {
+            io.ConfigFlags = ImGuiConfig;
+
+            io.MouseDoubleClickTime = DoubleClickTime;
+            io.MouseDoubleClickMaxDist = DoubleClickMaxDist;
+            io.MouseDragThreshold = DragThreshold;
+
+            io.KeyRepeatDelay = KeyRepeatDelay;
+            io.KeyRepeatRate = KeyRepeatRate;
+
+            io.FontGlobalScale = FontGlobalScale;
+            io.FontAllowUserScaling = FontAllowUserScaling;
+
+            io.DisplayFramebufferScale = DisplayFramebufferScale;
+            io.MouseDrawCursor = MouseDrawCursor;
+
+            io.ConfigDockingNoSplit = ConfigDockingNoSplit;
+            io.ConfigDockingAlwaysTabBar = ConfigDockingAlwaysTabBar;
+            io.ConfigDockingTransparentPayload = ConfigDockingTransparentPayload;
+
+            io.ConfigInputTextCursorBlink = TextCursorBlink;
+            io.ConfigWindowsResizeFromEdges = ResizeFromEdges;
+            io.ConfigWindowsMoveFromTitleBarOnly = MoveFromTitleOnly;
+            io.ConfigMemoryCompactTimer = ConfigMemoryCompactTimer;
+
+            io.UserData = UserData;
+        }
     }
 }

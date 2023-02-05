@@ -141,14 +141,14 @@ namespace Fu.Core
 
             Fugui.SetCurrentContext(this);
 
-            IPlatform platform = PlatformUtility.Create(Fugui.Manager.PlatformType, Fugui.Manager.CursorShapes, null);
+            IPlatform platform = PlatformUtility.Create(Fugui.Settings.PlatformType, Fugui.Settings.CursorShapes, null);
             SetPlatform(platform, IO);
             if (_platform == null)
             {
                 throw new Exception("imgui platform is null");
             }
 
-            SetRenderer(RenderUtility.Create(Fugui.Manager.RendererType, Fugui.Manager.Shaders, TextureManager), IO);
+            SetRenderer(RenderUtility.Create(Fugui.Settings.RendererType, Fugui.Settings.Shaders, TextureManager), IO);
             if (_renderer == null)
             {
                 throw new Exception("imgui renderer is null");
@@ -183,7 +183,7 @@ namespace Fu.Core
         {
             _platform?.Shutdown(io);
             _platform = platform;
-            _platform?.Initialize(io, Fugui.Manager.InitialConfiguration, "Unity " + Fugui.Manager.PlatformType.ToString());
+            _platform?.Initialize(io, "Unity " + Fugui.Settings.PlatformType.ToString());
         }
     }
 }

@@ -1,9 +1,10 @@
-﻿using ImGuiNET;
+﻿using Fu.Framework;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Fu.Framework
+namespace Fu
 {
     public static partial class Fugui
     {

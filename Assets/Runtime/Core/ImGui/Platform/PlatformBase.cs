@@ -24,12 +24,12 @@ namespace Fu.Core.DearImGui.Platform
             _iniSettings = iniSettings;
         }
 
-        public virtual bool Initialize(ImGuiIOPtr io, UIOConfig config, string platformName)
+        public virtual bool Initialize(ImGuiIOPtr io, string platformName)
         {
             io.SetBackendPlatformName("Unity Input System");
             io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 
-            if ((config.ImGuiConfig & ImGuiConfigFlags.NavEnableSetMousePos) != 0)
+            if ((Fugui.Settings.ImGuiConfig & ImGuiConfigFlags.NavEnableSetMousePos) != 0)
             {
                 io.BackendFlags |= ImGuiBackendFlags.HasSetMousePos;
                 io.WantSetMousePos = true;

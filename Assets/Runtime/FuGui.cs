@@ -800,7 +800,7 @@ namespace Fu.Framework
         /// <returns>The input string with spaces added before uppercase letters.</returns>
         public static string AddSpacesBeforeUppercaseDirect(string input)
         {
-            return Regex.Replace(input, "(?<!^)(?<!\\s)([A-Z])", " $1");
+            return Regex.Replace(input, @"(?<=[a-z])(?=[A-Z])", " ");
         }
 
         /// <summary>

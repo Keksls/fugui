@@ -36,7 +36,13 @@ namespace Fu.Framework
         /// <param name="color">color of the image</param>
         public virtual void Image(string id, Texture2D texture, Vector2 size, Vector4 color)
         {
-            if(FuWindow.CurrentDrawingWindow == null)
+            beginElement(ref id);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
+            if (FuWindow.CurrentDrawingWindow == null)
             {
                 Fugui.MainContainer.ImGuiImage(texture, size * Fugui.CurrentContext.Scale, color);
             }
@@ -45,6 +51,7 @@ namespace Fu.Framework
                 FuWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size * Fugui.CurrentContext.Scale, color);
             }
             displayToolTip();
+            endElement();
         }
 
         /// <summary>
@@ -56,6 +63,12 @@ namespace Fu.Framework
         /// <param name="color">color of the image</param>
         public virtual void Image(string id, RenderTexture texture, Vector2 size, Vector4 color)
         {
+            beginElement(ref id);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return;
+            }
             if (FuWindow.CurrentDrawingWindow == null)
             {
                 Fugui.MainContainer.ImGuiImage(texture, size * Fugui.CurrentContext.Scale, color);
@@ -65,6 +78,7 @@ namespace Fu.Framework
                 FuWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size * Fugui.CurrentContext.Scale, color);
             }
             displayToolTip();
+            endElement();
         }
 
         /// <summary>
@@ -76,8 +90,23 @@ namespace Fu.Framework
         /// <returns>true if clicked</returns>
         public virtual bool ImageButton(string id, Texture2D texture, Vector2 size)
         {
-            bool clicked = FuWindow.CurrentDrawingWindow?.Container.ImGuiImageButton(texture, size * Fugui.CurrentContext.Scale) ?? false;
+            beginElement(ref id);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
+            bool clicked = default;
+            if (FuWindow.CurrentDrawingWindow == null)
+            {
+                clicked = Fugui.MainContainer.ImGuiImageButton(texture, size * Fugui.CurrentContext.Scale);
+            }
+            else
+            {
+                clicked = FuWindow.CurrentDrawingWindow.Container.ImGuiImageButton(texture, size * Fugui.CurrentContext.Scale);
+            }
             displayToolTip();
+            endElement();
             return clicked;
         }
 
@@ -91,8 +120,23 @@ namespace Fu.Framework
         /// <returns>true if clicked</returns>
         public virtual bool ImageButton(string id, Texture2D texture, Vector2 size, Vector4 color)
         {
-            bool clicked = FuWindow.CurrentDrawingWindow?.Container.ImGuiImageButton(texture, size * Fugui.CurrentContext.Scale, color) ?? false;
+            beginElement(ref id);
+            // return if item must no be draw
+            if (!_drawItem)
+            {
+                return false;
+            }
+            bool clicked = default;
+            if (FuWindow.CurrentDrawingWindow == null)
+            {
+                clicked = Fugui.MainContainer.ImGuiImageButton(texture, size * Fugui.CurrentContext.Scale, color);
+            }
+            else
+            {
+                clicked = FuWindow.CurrentDrawingWindow.Container.ImGuiImageButton(texture, size * Fugui.CurrentContext.Scale, color);
+            }
             displayToolTip();
+            endElement();
             return clicked;
         }
     }

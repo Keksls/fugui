@@ -30,6 +30,41 @@ namespace Fu.Framework
         public abstract bool Draw(FuGrid grid, object objectInstance);
     }
 
+    public class FuImageField : FuField
+    {
+        private Texture2D _texture;
+        private Vector2 _size;
+        private Vector4 _color;
+
+        public FuImageField(FieldInfo fieldInfo) : base(fieldInfo)
+        {
+            _size = Vector2.zero;
+            _color = Vector4.one;
+            if (fieldInfo.IsDefined(typeof(FuImage)))
+            {
+                _size = fieldInfo.GetCustomAttribute<FuImage>().Size;
+                _color = fieldInfo.GetCustomAttribute<FuImage>().Color;
+            }
+        }
+
+        public override bool Draw(FuGrid grid, object objectInstance)
+        {
+            if (_texture == null)
+            {
+                _texture = (Texture2D)_fieldInfo.GetValue(objectInstance);
+                if (_size.x == 0f || _size.y == 0f)
+                {
+                    _size = new Vector2(_texture.width, _texture.height);
+                }
+            }
+            if (!string.IsNullOrEmpty(ToolTipText))
+            {
+                grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
+            }
+            grid.Image(FieldName, _texture, _size, _color);
+            return false;
+        }
+    }
     public class FuComboboxField : FuField
     {
         public FuComboboxField(FieldInfo fieldInfo) : base(fieldInfo)
@@ -42,9 +77,9 @@ namespace Fu.Framework
             {
                 grid.DisableNextElement();
             }
-            if (string.IsNullOrEmpty(ToolTipText))
+            if (!string.IsNullOrEmpty(ToolTipText))
             {
-                grid.SetNextElementToolTip(ToolTipText);
+                grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             int value = (int)_fieldInfo.GetValue(objectInstance);
             List<string> Values = new List<string>();
@@ -75,9 +110,9 @@ namespace Fu.Framework
             {
                 grid.DisableNextElement();
             }
-            if (string.IsNullOrEmpty(ToolTipText))
+            if (!string.IsNullOrEmpty(ToolTipText))
             {
-                grid.SetNextElementToolTip(ToolTipText);
+                grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             bool isChecked = (bool)_fieldInfo.GetValue(objectInstance);
             bool updated = grid.CheckBox(FieldName, ref isChecked);
@@ -101,9 +136,9 @@ namespace Fu.Framework
             {
                 grid.DisableNextElement();
             }
-            if (string.IsNullOrEmpty(ToolTipText))
+            if (!string.IsNullOrEmpty(ToolTipText))
             {
-                grid.SetNextElementToolTip(ToolTipText);
+                grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             bool isChecked = (bool)_fieldInfo.GetValue(objectInstance);
             bool updated = grid.Toggle(FieldName, ref isChecked);
@@ -127,9 +162,9 @@ namespace Fu.Framework
             {
                 grid.DisableNextElement();
             }
-            if (string.IsNullOrEmpty(ToolTipText))
+            if (!string.IsNullOrEmpty(ToolTipText))
             {
-                grid.SetNextElementToolTip(ToolTipText);
+                grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             grid.Text(FieldName);
             object value = _fieldInfo.GetValue(objectInstance);
@@ -160,9 +195,9 @@ namespace Fu.Framework
             {
                 grid.DisableNextElement();
             }
-            if (string.IsNullOrEmpty(ToolTipText))
+            if (!string.IsNullOrEmpty(ToolTipText))
             {
-                grid.SetNextElementToolTip(ToolTipText);
+                grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             string value = (string)_fieldInfo.GetValue(objectInstance);
             bool updated = grid.TextInput(FieldName, _hint, ref value, _lenght, _height);
@@ -206,9 +241,9 @@ namespace Fu.Framework
             {
                 grid.DisableNextElement();
             }
-            if (string.IsNullOrEmpty(ToolTipText))
+            if (!string.IsNullOrEmpty(ToolTipText))
             {
-                grid.SetNextElementToolTip(ToolTipText);
+                grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             bool updated = false;
             switch (_fieldType)
@@ -259,7 +294,7 @@ namespace Fu.Framework
                     break;
 
                 default:
-                    grid.SetNextElementToolTip("can't draw an object of type " + _fieldInfo.FieldType.ToString() + " using a slider.");
+                    grid.SetNextElementToolTipWithLabel("can't draw an object of type " + _fieldInfo.FieldType.ToString() + " using a slider.");
                     grid.Text(_fieldInfo.FieldType.ToString());
                     return false;
             }
@@ -312,9 +347,9 @@ namespace Fu.Framework
             {
                 grid.DisableNextElement();
             }
-            if (string.IsNullOrEmpty(ToolTipText))
+            if (!string.IsNullOrEmpty(ToolTipText))
             {
-                grid.SetNextElementToolTip(ToolTipText);
+                grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             bool updated = false;
             switch (_fieldType)
@@ -393,7 +428,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.None:
                 default:
-                    grid.SetNextElementToolTip("can't draw an object of type " + _fieldInfo.FieldType.ToString() + " using a drag.");
+                    grid.SetNextElementToolTipWithLabel("can't draw an object of type " + _fieldInfo.FieldType.ToString() + " using a drag.");
                     grid.Text(_fieldInfo.FieldType.ToString());
                     return false;
             }
@@ -419,9 +454,9 @@ namespace Fu.Framework
             {
                 grid.DisableNextElement();
             }
-            if (string.IsNullOrEmpty(ToolTipText))
+            if (!string.IsNullOrEmpty(ToolTipText))
             {
-                grid.SetNextElementToolTip(ToolTipText);
+                grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             bool updated = false;
             if (alpha)

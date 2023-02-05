@@ -262,11 +262,7 @@ namespace Fu.Framework
         /// <param name="style">the UITextStyle of the label (Text color whatever it's enabled or disabled)</param>
         private void drawElementLabel(string text, FuTextStyle style)
         {
-            if (!_gridCreated)
-            {
-                return;
-            }
-            if (!_autoDrawLabel)
+            if (!_gridCreated || !_autoDrawLabel)
             {
                 return;
             }

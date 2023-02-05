@@ -105,67 +105,67 @@ namespace Fu.Core
 
         [Tooltip("The icon to be used for the maximize button.")]
         [FuTooltip("The icon to be used for the maximize button.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D MaximizeIcon;
 
         [Tooltip("The icon to be used for the minimize button.")]
         [FuTooltip("The icon to be used for the minimize button.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D MinimizeIcon;
 
         [Tooltip("The icon to be used for the top docking button.")]
         [FuTooltip("The icon to be used for the top docking button.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D TopIcon;
 
         [Tooltip("The icon to be used for the bottom docking button.")]
         [FuTooltip("The icon to be used for the bottom docking button.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D BottomIcon;
 
         [Tooltip("The icon to be used for the left docking button.")]
         [FuTooltip("The icon to be used for the left docking button.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D LeftIcon;
 
         [Tooltip("The icon to be used for the right docking button.")]
         [FuTooltip("The icon to be used for the right docking button.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D RightIcon;
 
         [Tooltip("The icon to be used for the center docking button.")]
         [FuTooltip("The icon to be used for the center docking button.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D CenterIcon;
 
         [Tooltip("The texture to be used when an OpenGL non-readable texture is loaded.")]
         [FuTooltip("The texture to be used when an OpenGL non-readable texture is loaded.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D OpenGLNonReadableTexture;
 
         [Tooltip("The texture to be used as icon into an Info.")]
         [FuTooltip("The texture to be used as icon into an Info.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D InfoIcon;
 
         [Tooltip("The texture to be used as icon into a Warning.")]
         [FuTooltip("The texture to be used as icon into a Warning.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D WarningIcon;
 
         [Tooltip("The texture to be used as icon into a Danger.")]
         [FuTooltip("The texture to be used as icon into a Danger.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D DangerIcon;
 
         [Tooltip("The texture to be used as icon into a Success.")]
         [FuTooltip("The texture to be used as icon into a Success.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D SuccessIcon;
 
         [Tooltip("The texture of the FuguiLogo.")]
         [FuTooltip("The texture of the FuguiLogo.")]
-        [FuHidden]
+        [FuImage]
         public Texture2D FuguiLogo;
 
         [Tooltip("Material of the UI Panel")]

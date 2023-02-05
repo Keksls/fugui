@@ -138,7 +138,7 @@ namespace Fu.Framework
             }
 
             data.Update(value, _animationEnabled);
-
+            displayToolTip(hovered);
             endElement(null);
             return valueChanged;
         }

@@ -255,7 +255,7 @@ namespace Fu.Core
             ImFontConfigPtr iconConfigPtr = new ImFontConfigPtr(conf);
             // merge icon with last added font
             iconConfigPtr.MergeMode = true;
-            iconConfigPtr.GlyphOffset = Fugui.Manager.FontIconsOffset;
+            iconConfigPtr.GlyphOffset = Fugui.Settings.FontIconsOffset;
 
             // get and process Folder and Files Paths
             string fontPath = Path.Combine(Application.streamingAssetsPath, fontConf.FontsFolder);
@@ -311,7 +311,7 @@ namespace Fu.Core
                     ImFontPtr fontRegular = IO.Fonts.AddFontFromFileTTF(regularFile, size * FontScale);
                     if (addIcons)
                     {
-                        IO.Fonts.AddFontFromFileTTF(iconFile, (size - Fugui.Manager.FontIconsSizeOffset) * FontScale, iconConfigPtr, glyphRangePtr);
+                        IO.Fonts.AddFontFromFileTTF(iconFile, (size - Fugui.Settings.FontIconsSizeOffset) * FontScale, iconConfigPtr, glyphRangePtr);
                     }
                     Fonts[size].Regular = fontRegular;
 
@@ -321,7 +321,7 @@ namespace Fu.Core
                         ImFontPtr fontBold = IO.Fonts.AddFontFromFileTTF(boldFile, size * FontScale);
                         if (addIcons && fontConf.AddIconsToBold)
                         {
-                            IO.Fonts.AddFontFromFileTTF(iconFile, (size - Fugui.Manager.FontIconsSizeOffset) * FontScale, iconConfigPtr, glyphRangePtr);
+                            IO.Fonts.AddFontFromFileTTF(iconFile, (size - Fugui.Settings.FontIconsSizeOffset) * FontScale, iconConfigPtr, glyphRangePtr);
                         }
                         Fonts[size].Bold = fontBold;
                     }

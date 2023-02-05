@@ -1,9 +1,8 @@
 ﻿using Fu.Core;
 using ImGuiNET;
-using System;
 using UnityEngine;
 
-namespace Fu.Framework
+namespace Fu
 {
     public static partial class Fugui
     {

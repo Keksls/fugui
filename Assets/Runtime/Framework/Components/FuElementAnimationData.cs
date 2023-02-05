@@ -1,3 +1,4 @@
+using Fu;
 using Fu.Core;
 using Fu.Framework;
 using ImGuiNET;

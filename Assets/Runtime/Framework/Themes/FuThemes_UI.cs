@@ -1,7 +1,8 @@
-﻿using System.Linq;
+﻿using Fu.Framework;
+using System.Linq;
 using UnityEngine;
 
-namespace Fu.Framework
+namespace Fu
 {
     public static partial class Fugui
     {

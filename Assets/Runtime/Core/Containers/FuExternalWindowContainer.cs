@@ -101,7 +101,7 @@ namespace Fu.Core
             // get imgui IO for nex context
             ImGuiIOPtr io = ImGui.GetIO();
             // set default config to FuGui context
-            Fugui.Manager.InitialConfiguration.ApplyTo(io);
+            Fugui.Settings.ApplyTo(io);
             // force not to be Always tabBar for external windows
             io.ConfigDockingAlwaysTabBar = false;
             // get GL background color

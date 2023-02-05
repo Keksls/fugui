@@ -2,6 +2,7 @@
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
 //#define IMDEBUG 
 using Fu.Core;
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections;
@@ -13,7 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
 
-namespace Fu.Framework
+namespace Fu
 {
     public static partial class Fugui
     {
@@ -656,7 +657,7 @@ namespace Fu.Framework
                 return null;
 
             // create and add context
-            FuUnityContext context = new FuUnityContext(index, scale, fontScale, onInitialize, camera, Manager.Render);
+            FuUnityContext context = new FuUnityContext(index, scale, fontScale, onInitialize, camera, Settings.Render);
             Contexts.Add(index, context);
 
             return context;

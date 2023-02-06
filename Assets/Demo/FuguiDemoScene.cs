@@ -343,7 +343,7 @@ public class FuguiDemoScene : MonoBehaviour
                             grid.DisableNextElement();
                             grid.Drag("drag v4 dis", ref v4Val, "x", "y", "z", "w");
 
-                            grid.Combobox("test callback combo", "click me custom", () =>
+                            grid.ListBox("test callback combo", /*"click me custom",*/ () =>
                             {
                                 bool chk = true;
                                 layout.CheckBox("chdk1", ref chk);
@@ -356,9 +356,8 @@ public class FuguiDemoScene : MonoBehaviour
                                 layout.Slider("sdlc2", ref intVal);
                                 layout.Slider("sdlc3", ref floatVal);
                             });
-
-                            grid.Combobox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
-                            grid.Combobox("test button box", cbButtons, (newValue) => { Debug.Log(newValue); });
+                            grid.ListBox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
+                            grid.ListBox("test button box", cbButtons, (newValue) => { Debug.Log(newValue); });
                         }
                     });
                 }

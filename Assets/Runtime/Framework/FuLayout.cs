@@ -40,8 +40,6 @@ namespace Fu.Framework
         #region Elements Data
         // A set of strings representing the dragging sliders.
         private static HashSet<string> _draggingSliders = new HashSet<string>();
-        // A dictionary of integers representing the combo selected indices.
-        private static Dictionary<string, int> _selectableSelectedIndices = new Dictionary<string, int>();
         // A dictionary that store displaying toggle data.
         private static Dictionary<string, FuElementAnimationData> _uiElementAnimationDatas = new Dictionary<string, FuElementAnimationData>();
         // A dictionary that store displaying toggle data.
@@ -85,7 +83,7 @@ namespace Fu.Framework
         {
             // whatever we must draw the next item
             _drawItem = true;
-            if(FuPanel.IsInsidePanel && FuPanel.Clipper != null)
+            if (!IsInsidePopUp && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
             {
                 _drawItem = FuPanel.Clipper.BeginDrawElement(canBeHidden);
             }
@@ -119,7 +117,7 @@ namespace Fu.Framework
             }
             _nextIsDisabled = false;
             _elementHoverFramed = false;
-            if (FuPanel.IsInsidePanel && FuPanel.Clipper != null)
+            if (!IsInsidePopUp && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
             {
                 FuPanel.Clipper.EndDrawElement();
             }
@@ -289,7 +287,7 @@ namespace Fu.Framework
                 if (force || ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0)
                 {
                     // push tooltip styles
-                    if(_currentToolTipsStyles != null && _currentToolTipsIndex < _currentToolTipsStyles.Length)
+                    if (_currentToolTipsStyles != null && _currentToolTipsIndex < _currentToolTipsStyles.Length)
                     {
                         _currentToolTipsStyles[_currentToolTipsIndex].Push(!_nextIsDisabled);
                     }

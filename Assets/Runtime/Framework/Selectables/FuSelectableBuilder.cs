@@ -11,6 +11,8 @@ namespace Fu.Framework
         private static Dictionary<Type, List<IFuSelectable>> _selectablesObjects = new Dictionary<Type, List<IFuSelectable>>();
         private static Dictionary<string, List<IFuSelectable>> _selectablesList = new Dictionary<string, List<IFuSelectable>>();
         private static Dictionary<Type, bool> _typeImplementSelectable = new Dictionary<Type, bool>();
+        // A dictionary of integers representing the combo selected indices.
+        private static Dictionary<string, int> _selectableSelectedIndices = new Dictionary<string, int>();
 
         /// <summary>
         /// Get Selectables Data from a enum
@@ -96,6 +98,61 @@ namespace Fu.Framework
             }
 
             return _selectablesList[listID];
+        }
+
+        /// <summary>
+        /// Get the selected index of a selectable list
+        /// </summary>
+        /// <param name="id">ID of the selectable list</param>
+        /// <param name="items">list of selectable items</param>
+        /// <param name="itemGetter">how to get the current selecte value string</param>
+        /// <returns>the index of the selected index</returns>
+        public static int GetSelectedIndex(string id, List<IFuSelectable> items, Func<string> itemGetter)
+        {
+            // Initialize the selected index for the list
+            if (!_selectableSelectedIndices.ContainsKey(id))
+            {
+                _selectableSelectedIndices.Add(id, 0);
+            }
+
+            // Set current item as setted by getter
+            if (itemGetter != null)
+            {
+                int i = 0;
+                string selectedItemString = itemGetter.Invoke();
+                if (!string.IsNullOrEmpty(selectedItemString))
+                {
+                    selectedItemString = Fugui.AddSpacesBeforeUppercase(selectedItemString);
+                    foreach (var item in items)
+                    {
+                        if (item.ToString() == selectedItemString)
+                        {
+                            SetSelectedIndex(id, i);
+                            break;
+                        }
+                        i++;
+                    }
+                }
+            }
+
+            // get and clamp current selectable index
+            int selectedIndex = _selectableSelectedIndices[id];
+            if (selectedIndex >= items.Count)
+            {
+                selectedIndex = items.Count - 1;
+            }
+
+            return selectedIndex;
+        }
+
+        /// <summary>
+        /// Set the selected index of a selectable list
+        /// </summary>
+        /// <param name="id">ID of the selectable list</param>
+        /// <param name="index">index of the selected item in the list</param>
+        public static void SetSelectedIndex(string id, int index)
+        {
+            _selectableSelectedIndices[id] = index;
         }
     }
 }

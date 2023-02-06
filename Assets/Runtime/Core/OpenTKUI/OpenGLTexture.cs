@@ -2,6 +2,7 @@ using System;
 using Fu.Framework;
 using OpenTK.Graphics.OpenGL;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Rendering;
 
 namespace Fu.Core
@@ -46,11 +47,8 @@ namespace Fu.Core
         public IntPtr TextureDataPtr;
         public int Width; // width of the texture
         public int Height; // height of the texture
-        // Is this texture Dynamic ? true for render texture
-        // if true, means that this texture will be updated any frames
         public bool IsRegistered; // is this texture registred into GL context
         public UnityEngine.Texture Texture; // related Unity Texture
-        protected UnityEngine.Color[] _pixels = new UnityEngine.Color[0];
 
         protected OpenGLTexture(UnityEngine.Texture texture)
         {
@@ -90,6 +88,8 @@ namespace Fu.Core
     // Subclass for static textures (e.g. Texture2D)
     public class StaticOpenGLTexture : OpenGLTexture
     {
+        private UnityEngine.Color[] _pixels = new UnityEngine.Color[0];
+
         public StaticOpenGLTexture(UnityEngine.Texture2D texture) : base(texture)
         {
             GetTextureData();
@@ -169,7 +169,8 @@ namespace Fu.Core
         private int _framebufferObjectPtr;
         private bool _requestingGPU = false;
         private bool _updatingTexture = false;
-        private NativeArray<UnityEngine.Color> _gpuPixelsBuffer;
+        private NativeArray<byte> _gpuPixelsBuffer;
+        private byte[] _pixels = new byte[0];
 
         public unsafe DynamicOpenGLTexture(UnityEngine.RenderTexture texture) : base(texture)
         {
@@ -178,7 +179,7 @@ namespace Fu.Core
             Width = texture.width;
             Height = texture.height;
             TextureDataPtr = IntPtr.Zero;
-            _gpuPixelsBuffer = new NativeArray<UnityEngine.Color>(Width * Height, Allocator.Persistent);
+            _gpuPixelsBuffer = new NativeArray<byte>(Width * Height * 4, Allocator.Persistent);
             GetTextureData();
         }
 
@@ -200,7 +201,7 @@ namespace Fu.Core
         public unsafe override void GetTextureData()
         {
             // immediate return if we are already requesting GPU data
-            if(_requestingGPU || _updatingTexture)
+            if (_requestingGPU || _updatingTexture)
             {
                 return;
             }
@@ -215,11 +216,11 @@ namespace Fu.Core
                 Width = Texture.width;
                 Height = Texture.height;
                 _gpuPixelsBuffer.Dispose();
-                _gpuPixelsBuffer = new NativeArray<UnityEngine.Color>(Width * Height, Allocator.Persistent);
+                _gpuPixelsBuffer = new NativeArray<byte>(Width * Height * 4, Allocator.Persistent);
             }
 
             // async gpu request for renderTexture Data
-            AsyncGPUReadback.RequestIntoNativeArray(ref _gpuPixelsBuffer, Texture, 0, UnityEngine.TextureFormat.RGBAFloat, (req) =>
+            AsyncGPUReadback.RequestIntoNativeArray(ref _gpuPixelsBuffer, Texture, 0, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB, (req) =>
             {
                 // GPU request ended
                 _requestingGPU = false;
@@ -233,13 +234,15 @@ namespace Fu.Core
                 }
 
                 // check whatever pixel data match texture size
-                if(_gpuPixelsBuffer.Length != Width * Height)
+                if (_gpuPixelsBuffer.Length != Width * Height * 4)
                 {
                     // pixel size missmatch, texture has been resized during async operation
                     // we must abort updating pixels buffer Ptr
                     return;
                 }
 
+                //TextureDataPtr = (IntPtr)_gpuPixelsBuffer.GetUnsafePtr<float>();
+                //return;
                 // copy pixels to ptr buffer (_gpuPixelsBuffer will be destroyed too soon before updating Tex2D into render thread)
                 _pixels = _gpuPixelsBuffer.ToArray();
                 // get pointer of the ram copy to send it to GC FBO
@@ -289,7 +292,7 @@ namespace Fu.Core
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
 
             // Allocate storage for the texture
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, Width, Height, 0, PixelFormat.Rgba, PixelType.Float, TextureDataPtr);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, Width, Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, TextureDataPtr);
 
             // Attach the texture to the FBO
             GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, TexturePtr, 0);
@@ -322,7 +325,7 @@ namespace Fu.Core
 
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, _framebufferObjectPtr);
             GL.BindTexture(TextureTarget.Texture2D, TexturePtr);
-            GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, Width, Height, PixelFormat.Rgba, PixelType.Float, TextureDataPtr);
+            GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, Width, Height, PixelFormat.Rgba, PixelType.UnsignedByte, TextureDataPtr);
 
             // Restore state
             GL.BindTexture(TextureTarget.Texture2D, prevTexture2D);

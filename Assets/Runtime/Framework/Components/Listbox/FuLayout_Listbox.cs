@@ -8,94 +8,95 @@ namespace Fu.Framework
 {
     public partial class FuLayout
     {
+        #region Enum Types List
+        /// <summary>
+        /// Draw a List box binded on an Enum
+        /// </summary>
+        /// <typeparam name="TEnum">Enum type to bind</typeparam>
+        /// <param name="text">ID/Label if the Listbox</param>
+        /// <param name="itemChange">whenever the selected value change (int is enum value)</param>
+        /// <param name="itemGetter">must return the current selected value as text</param>
+        public void Listbox<TEnum>(string text, Action<int> itemChange, Func<string> itemGetter) where TEnum : struct, IConvertible
+        {
+            Listbox<TEnum>(text, itemChange, itemGetter, FuElementSize.FullSize);
+        }
+
+        /// <summary>
+        /// Draw a List box binded on an Enum
+        /// </summary>
+        /// <typeparam name="TEnum">Enum type to bind</typeparam>
+        /// <param name="text">ID/Label if the Listbox</param>
+        /// <param name="itemChange">whenever the selected value change (int is enum value)</param>
+        /// <param name="itemGetter">must return the current selected value as text</param>
+        /// <param name="size">size of the listbox</param>
+        public void Listbox<TEnum>(string text, Action<int> itemChange, Func<string> itemGetter, FuElementSize size) where TEnum : struct, IConvertible
+        {
+            FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<IFuSelectable> enumSelectables);
+
+            // call the custom combobox function, passing in the lists and the itemChange
+            _customListbox(text, enumSelectables, (index) =>
+            {
+                itemChange?.Invoke(enumValues[index]);
+            }, itemGetter, size);
+        }
+        #endregion
+
         #region Generic Types List
         /// <summary>
-        /// This method creates a Listbox with the given text and items.
-        /// </summary>
-        /// <param name="text">The text to be displayed above the listbox.</param>
-        /// <param name="items">The list of items to be displayed in the listbox.</param>
-        public void Listbox<T>(string text, List<T> items)
-        {
-            Listbox<T>(text, items, null, null, FuListboxStyle.Default);
-        }
-
-        /// <summary>
-        /// This method creates a Listbox with the given text and items, with specific height, and allows for actions to be performed when an item is selected and when the current item is retrieved.
-        /// </summary>
-        /// <param name="text">The text to be displayed above the listbox.</param>
-        /// <param name="items">The list of items to be displayed in the listbox.</param>
-        /// <param name="itemChange">The action to be performed when an item is selected.</param>
-        /// <param name="height">The height of the listbox component.</param>
-        /// <param name="itemGetter">A function that returns the current item.</param>
-        public void Listbox<T>(string text, List<T> items, Action<T> itemChange, int height, Func<T> itemGetter = null)
-        {
-            Listbox<T>(text, items, itemChange, itemGetter, FuListboxStyle.Default);
-        }
-
-        /// <summary>
-        /// This method creates a Listbox with the given text and items, and allows for actions to be performed when an item is selected and when the current item is retrieved
+        /// Draw a Listbox with the given text and items, and allows for actions to be performed when an item is selected and when the current item is retrieved, with a specified style.
         /// </summary>
         /// <param name="text">The text to be displayed above the listbox.</param>
         /// <param name="items">The list of items to be displayed in the listbox.</param>
         /// <param name="itemChange">The action to be performed when an item is selected.</param>
         /// <param name="itemGetter">A function that returns the current item.</param>
-        public void Listbox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter = null)
+        /// <param name="listUpdated">whatever the list has been updated since last call (list or values inside. it's for performances on large. You can handle it using ObservableCollections)
+        /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
+        public void Listbox<T>(string text, List<T> items, Action<T> itemChange = null, Func<T> itemGetter = null, Func<bool> listUpdated = null)
         {
-            Listbox<T>(text, items, itemChange, itemGetter, FuListboxStyle.Default);
+            Listbox(text, items, itemChange, itemGetter, FuElementSize.FullSize, listUpdated);
         }
 
         /// <summary>
-        /// This method creates a Listbox with the given text and items, and allows for actions to be performed when an item is selected and when the current item is retrieved, with a specified style.
+        /// Draw a Listbox with the given text and items, and allows for actions to be performed when an item is selected and when the current item is retrieved, with a specified style.
         /// </summary>
         /// <param name="text">The text to be displayed above the listbox.</param>
         /// <param name="items">The list of items to be displayed in the listbox.</param>
         /// <param name="itemChange">The action to be performed when an item is selected.</param>
         /// <param name="itemGetter">A function that returns the current item.</param>
-        /// <param name="style">The style of the listbox.</param>
-        public void Listbox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter, FuListboxStyle style)
+        /// <param name="size">The size of the list of items</param>
+        /// <param name="listUpdated">whatever the list has been updated since last call (list or values inside. it's for performances on large. You can handle it using ObservableCollections)
+        /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
+        public void Listbox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter, FuElementSize size, Func<bool> listUpdated = null)
         {
-            List<IListboxItem> cItems = new List<IListboxItem>();
-            foreach (T item in items)
-            {
-                if (item is IListboxItem)
-                {
-                    cItems.Add((IListboxItem)item);
-                }
-                else
-                {
-                    cItems.Add(new FuListboxTextItem(Fugui.AddSpacesBeforeUppercase(item.ToString()), true));
-                }
-            }
-
+            List<IFuSelectable> cItems = FuSelectableBuilder.BuildFromList<T>(text, items, listUpdated?.Invoke() ?? true);
             _customListbox(text, cItems, (index) =>
             {
                 itemChange?.Invoke(items[index]);
-            }, () => { return itemGetter?.Invoke()?.ToString(); }, style);
+            }, () => { return itemGetter?.Invoke()?.ToString(); }, size);
         }
         #endregion
 
         #region IListboxItems
         /// <summary>
-        /// This method creates a custom listbox with the given parameters.
+        /// Draw a custom listbox with the given parameters.
         /// </summary>
         /// <param name="text">The label text for the listbox.</param>
         /// <param name="items">A list of items to be displayed in the listbox.</param>
         /// <param name="itemChange">An action that is invoked when the selected item in the listbox changes.</param>
         /// <param name="itemGetter">A function that returns the currently selected item in the listbox as a string.</param>
-        /// <param name="style">The style for the listbox.</param>
-        protected virtual void _customListbox(string text, List<IListboxItem> items, Action<int> itemChange, Func<string> itemGetter, FuListboxStyle style)
+        /// <param name="size">The size of the list of items</param>
+        protected virtual void _customListbox(string text, List<IFuSelectable> items, Action<int> itemChange, Func<string> itemGetter, FuElementSize size)
         {
-            beginElement(ref text, style);
+            beginElement(ref text);
             // return if item must no be draw
             if (!_drawItem)
             {
                 return;
             }
 
-
-            if (!_listboxSelectedItem.ContainsKey(text))
+            if (!_selectableSelectedIndices.ContainsKey(text))
             {
-                _listboxSelectedItem.Add(text, 0);
+                _selectableSelectedIndices.Add(text, 0);
             }
 
             // Set current item as setted by getter
@@ -110,7 +111,7 @@ namespace Fu.Framework
                     {
                         if (item.ToString() == selectedItemString)
                         {
-                            _listboxSelectedItem[text] = i;
+                            _selectableSelectedIndices[text] = i;
                             break;
                         }
                         i++;
@@ -118,8 +119,7 @@ namespace Fu.Framework
                 }
             }
 
-            int selectedIndex = _listboxSelectedItem[text];
-
+            int selectedIndex = _selectableSelectedIndices[text];
             if (selectedIndex >= items.Count)
             {
                 selectedIndex = items.Count - 1;
@@ -129,7 +129,7 @@ namespace Fu.Framework
             Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * Fugui.CurrentContext.Scale);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
 
-            if (ImGui.BeginListBox("##" + text))
+            if (ImGui.BeginListBox("##" + text, size))
             {
                 // Pop the style to use the default style for the listbox
                 Fugui.PopStyle();
@@ -140,7 +140,7 @@ namespace Fu.Framework
                     {
                         // Update the selected index and perform the item change action
                         selectedIndex = i;
-                        _listboxSelectedItem[text] = selectedIndex;
+                        _selectableSelectedIndices[text] = selectedIndex;
                         itemChange?.Invoke(i);
                     }
                 }
@@ -169,7 +169,7 @@ namespace Fu.Framework
             }
             Fugui.PopStyle();
             displayToolTip();
-            endElement(style);
+            endElement();
         }
         #endregion
 
@@ -181,10 +181,9 @@ namespace Fu.Framework
         /// <param name="text">The label displayed next to the listbox</param>
         /// <param name="selectedItemText">The currently selected item</param>
         /// <param name="callback">The callback function that is called when an item is selected</param>
-        /// <param name="height">The height of the list of items</param>
-        public void Listbox(string text, string selectedItemText, Action callback, int height = 0)
+        public virtual void Listbox(string text, string selectedItemText, Action callback)
         {
-            Listbox(text, selectedItemText, callback, FuListboxStyle.Default, height);
+            Listbox(text, selectedItemText, callback, FuElementSize.FullSize);
         }
 
         /// <summary>
@@ -194,39 +193,28 @@ namespace Fu.Framework
         /// <param name="text">The label displayed next to the listbox</param>
         /// <param name="selectedItemText">The currently selected item</param>
         /// <param name="callback">The callback function that is called when an item is selected</param>
-        /// <param name="style">The style of the listbox</param>
-        /// <param name="height">The height of the list of items</param>
-        public virtual void Listbox(string text, string selectedItemText, Action callback, FuListboxStyle style, int height = 0)
+        /// <param name="size">The size of the list of items</param>
+        public virtual void Listbox(string text, string selectedItemText, Action callback, FuElementSize size)
         {
-            beginElement(ref text, style);
+            beginElement(ref text);
             // return if item must no be draw
             if (!_drawItem)
             {
                 return;
             }
 
-            height = (int)(height * Fugui.CurrentContext.Scale);
             // Adjust the padding for the frame and window
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f) * Fugui.CurrentContext.Scale);
             Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * Fugui.CurrentContext.Scale);
 
             // Begin the listbox
-            if (ImGui.BeginListBox(text))
+            if (ImGui.BeginListBox(text, size))
             {
                 // Pop the padding styles
                 Fugui.PopStyle();
                 IsInsidePopUp = true;
-                // Check if a height has been specified
-                if (height > 0)
-                {
-                    // Invoke the callback with a fixed height for the combobox
-                    callback?.Invoke();
-                }
-                else
-                {
-                    // Invoke the callback without a fixed height for the combobox
-                    callback?.Invoke();
-                }
+                // Invoke the callback
+                callback?.Invoke();
                 // Set the IsInsidePopUp flag to false
                 IsInsidePopUp = false;
 
@@ -261,7 +249,7 @@ namespace Fu.Framework
             // Display the tooltip
             displayToolTip();
             // End the element with the current combobox style
-            endElement(style);
+            endElement();
         }
         #endregion
     }

@@ -161,7 +161,7 @@ namespace Fu
                     // Vertical : Create 2 childs (top and buttom) and set orientation to Vertical
                     layout.ButtonsGroup<UIDockSpaceOrientation>("Orientation_" + dockSpaceDefinition.ID, (enumSelection) =>
                     {
-                        switch (enumSelection)
+                        switch ((UIDockSpaceOrientation)enumSelection)
                         {
                             default:
                             case UIDockSpaceOrientation.None:

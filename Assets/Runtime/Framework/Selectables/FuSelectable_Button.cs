@@ -1,12 +1,11 @@
 using ImGuiNET;
-using UnityEngine;
 
 namespace Fu.Framework
 {
     /// <summary>
-    /// A ComboboxItem that draw a Button
+    /// A Selectable Item that draw a Button
     /// </summary>
-    public struct FuComboboxButtonItem : IComboboxItem
+    public struct FuSelectable_Button : IFuSelectable
     {
         private string _text;
         public string Text { get => _text; set => _text = value; }
@@ -16,11 +15,11 @@ namespace Fu.Framework
         public bool Enabled { get => _enabled; set => _enabled = value; }
 
         /// <summary>
-        /// A ComboboxItem that draw a Button
+        /// A Selectable Item that draw a Button
         /// </summary>
         /// <param name="text">text of the button</param>
         /// <param name="enabled">whatever the button is enabled (clickable + style)</param>
-        public FuComboboxButtonItem(string text, bool enabled = true)
+        public FuSelectable_Button(string text, bool enabled = true)
         {
             _text = text;
             _enabled = enabled;
@@ -28,12 +27,12 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// A ComboboxItem that draw a Button
+        /// A Selectable Item that draw a Button
         /// </summary>
         /// <param name="text">text of the button</param>
         /// <param name="size">size of the button</param>
         /// <param name="enabled">whatever the button is enabled (clickable + style)</param>
-        public FuComboboxButtonItem(string text, FuElementSize size, bool enabled = true)
+        public FuSelectable_Button(string text, FuElementSize size, bool enabled = true)
         {
             _text = text;
             _enabled = enabled;

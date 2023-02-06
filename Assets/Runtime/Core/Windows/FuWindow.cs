@@ -22,6 +22,14 @@ namespace Fu.Core
             {
                 _container = value;
                 IsUnityContext = !(value is FuExternalWindowContainer);
+                if(value == null)
+                {
+                    OnRemovedFromContainer?.Invoke(this);
+                }
+                else
+                {
+                    OnAddToContainer?.Invoke(this);
+                }
             }
         }
 
@@ -80,6 +88,7 @@ namespace Fu.Core
         public event Action<FuWindow> OnUnDock;
         public event Action<FuWindow> OnInitialized;
         public event Action<FuWindow> OnRemovedFromContainer;
+        public event Action<FuWindow> OnAddToContainer;
 
         // private fields
         internal ImGuiWindowFlags _windowFlags;
@@ -552,14 +561,6 @@ namespace Fu.Core
             OnUnDock?.Invoke(this);
             OnResize?.Invoke(this);
             OnDrag?.Invoke(this);
-        }
-
-        /// <summary>
-        ///  Fire event whenever the UIWindow is ready to be used (added to a container and initialized)
-        /// </summary>
-        public void Fire_OnRemovedFromContainer()
-        {
-            OnRemovedFromContainer?.Invoke(this);
         }
         #endregion
 

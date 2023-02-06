@@ -8,7 +8,7 @@ namespace Fu.Framework
 {
     public partial class FuLayout
     {
-        #region Enums
+        #region Enum Types List
         /// <summary>
         /// Displays a combobox with all the enum values of type TEnum. The selected item can be changed by the user, and the change will be reported through the itemChange action.
         /// </summary>
@@ -16,7 +16,7 @@ namespace Fu.Framework
         /// <param name="text">The label text to be displayed next to the combobox</param>
         /// <param name="itemChange">The action that will be called when the selected item changes</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
-        public void ComboboxEnum<TEnum>(string text, Action<TEnum> itemChange, Func<TEnum> itemGetter = null) where TEnum : struct, IConvertible
+        public void ComboboxEnum<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter = null) where TEnum : struct, IConvertible
         {
             ComboboxEnum<TEnum>(text, itemChange, itemGetter, FuComboboxStyle.Default);
         }
@@ -29,24 +29,11 @@ namespace Fu.Framework
         /// <param name="itemChange">The action that will be called when the selected item changes</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
         /// <param name="style">The style to be applied to the combobox</param>
-        public void ComboboxEnum<TEnum>(string text, Action<TEnum> itemChange, Func<TEnum> itemGetter, FuComboboxStyle style) where TEnum : struct, IConvertible
+        public void ComboboxEnum<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter, FuComboboxStyle style) where TEnum : struct, IConvertible
         {
-            if (!typeof(TEnum).IsEnum)
-            {
-                throw new ArgumentException("TEnum must be an enumerated type");
-            }
-            // list to store the enum values
-            List<TEnum> enumValues = new List<TEnum>();
-            // list to store the combobox items
-            List<IComboboxItem> cItems = new List<IComboboxItem>();
-            // iterate over the enum values and add them to the lists
-            foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
-            {
-                enumValues.Add(enumValue);
-                cItems.Add(new FuComboboxTextItem(Fugui.AddSpacesBeforeUppercase(enumValue.ToString()), true));
-            }
+            FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<IFuSelectable> enumSelectables);
             // call the custom combobox function, passing in the lists and the itemChange
-            _customCombobox(text, cItems, (index) =>
+            _customCombobox(text, enumSelectables, (index) =>
             {
                 itemChange?.Invoke(enumValues[index]);
             }, () => { return itemGetter?.Invoke().ToString(); }, style);
@@ -62,7 +49,9 @@ namespace Fu.Framework
         /// <param name="items">The list of items to display in the dropdown box.</param>
         /// <param name="itemChange">The action to call when the selected item changes.</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
-        public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter = null)
+        /// <param name="listUpdated">whatever the list has been updated since last call (list or values inside. it's for performances on large. You can handle it using ObservableCollections)
+        /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
+        public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter = null, Func<bool> listUpdated = null)
         {
             Combobox<T>(text, items, itemChange, itemGetter, FuComboboxStyle.Default);
         }
@@ -75,24 +64,12 @@ namespace Fu.Framework
         /// <param name="items">The list of items to display in the dropdown box.</param>
         /// <param name="itemChange">The action to call when the selected item changes.</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        /// <param name="listUpdated">whatever the list has been updated since last call (list or values inside. it's for performances on large. You can handle it using ObservableCollections)
+        /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
         /// <param name="style">The style to use for the dropdown box.</param>
-        public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter, FuComboboxStyle style)
+        public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter, FuComboboxStyle style, Func<bool> listUpdated = null)
         {
-            // Create a list of combobox items from the list of items
-            List<IComboboxItem> cItems = new List<IComboboxItem>();
-            foreach (T item in items)
-            {
-                // the item is already a combobox item
-                if (item is IComboboxItem)
-                {
-                    cItems.Add((IComboboxItem)item);
-                }
-                else
-                {
-                    // Add the item to the list of combobox items
-                    cItems.Add(new FuComboboxTextItem(Fugui.AddSpacesBeforeUppercase(item.ToString()), true));
-                }
-            }
+            List<IFuSelectable> cItems = FuSelectableBuilder.BuildFromList<T>(text, items, listUpdated?.Invoke() ?? true);
             // Display the custom combobox and call the specified action when the selected item changes
             _customCombobox(text, cItems, (index) =>
             {
@@ -110,7 +87,7 @@ namespace Fu.Framework
         ///<param name="itemChange">The action to be performed when an item is selected.</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
         ///<param name="style">The style for the combobox element.</param>
-        protected virtual void _customCombobox(string text, List<IComboboxItem> items, Action<int> itemChange, Func<string> itemGetter, FuComboboxStyle style)
+        protected virtual void _customCombobox(string text, List<IFuSelectable> items, Action<int> itemChange, Func<string> itemGetter, FuComboboxStyle style)
         {
             beginElement(ref text, style);
             // return if item must no be draw
@@ -119,10 +96,10 @@ namespace Fu.Framework
                 return;
             }
 
-            if (!_comboSelectedIndices.ContainsKey(text))
+            if (!_selectableSelectedIndices.ContainsKey(text))
             {
                 // Initialize the selected index for the combobox
-                _comboSelectedIndices.Add(text, 0);
+                _selectableSelectedIndices.Add(text, 0);
             }
 
             // Set current item as setted by getter
@@ -137,7 +114,7 @@ namespace Fu.Framework
                     {
                         if (item.ToString() == selectedItemString)
                         {
-                            _comboSelectedIndices[text] = i;
+                            _selectableSelectedIndices[text] = i;
                             break;
                         }
                         i++;
@@ -145,7 +122,7 @@ namespace Fu.Framework
                 }
             }
 
-            int selectedIndex = _comboSelectedIndices[text];
+            int selectedIndex = _selectableSelectedIndices[text];
 
             if (selectedIndex >= items.Count)
             {
@@ -167,7 +144,7 @@ namespace Fu.Framework
                     {
                         // Update the selected index and perform the item change action
                         selectedIndex = i;
-                        _comboSelectedIndices[text] = selectedIndex;
+                        _selectableSelectedIndices[text] = selectedIndex;
                         itemChange?.Invoke(i);
                     }
                 }

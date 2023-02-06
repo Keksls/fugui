@@ -382,7 +382,6 @@ namespace Fu.Core
                 Window.OnClosed -= Window_OnClosed;
                 Window.OnResized -= Window_OnResized;
                 Window.Container = null;
-                Window.Fire_OnRemovedFromContainer();
                 Window.RemoveWindowFlag(ImGuiWindowFlags.NoMove);
                 Window.RemoveWindowFlag(ImGuiWindowFlags.NoResize);
             }

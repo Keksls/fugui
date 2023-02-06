@@ -1,9 +1,9 @@
 namespace Fu.Framework
 {
     /// <summary>
-    /// Interface that represent UIElements that can be displayed into a combobox
+    /// Interface that represent FuElements that can be displayed and selected
     /// </summary>
-    public interface IComboboxItem
+    public interface IFuSelectable
     {
         public bool Enabled { get; set; }
         public string Text { get; set; }

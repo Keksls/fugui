@@ -1,4 +1,5 @@
-﻿using OpenTK;
+﻿#define FUGUI_CHECK_OPENGL_ERRORS
+using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Runtime.CompilerServices;
@@ -369,10 +370,14 @@ void main()
             GL.UseProgram(_shader);
             GL.UniformMatrix4(_shaderProjectionMatrixLocation, false, ref mvp);
             GL.Uniform1(_shaderFontTextureLocation, 0);
+#if FUGUI_CHECK_OPENGL_ERRORS
             CheckGLError("Projection");
+#endif
 
             GL.BindVertexArray(_vertexArray);
+#if FUGUI_CHECK_OPENGL_ERRORS
             CheckGLError("VAO");
+#endif
 
             //draw_data.ScaleClipRects(io.DisplayFramebufferScale);
 
@@ -389,11 +394,13 @@ void main()
                 DrawList cmd_list = draw_data.DrawLists[n];
 
                 GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, cmd_list.VtxBuffer.Length * Unsafe.SizeOf<ImDrawVert>(), cmd_list.VtxPtr);
+#if FUGUI_CHECK_OPENGL_ERRORS
                 CheckGLError($"Data Vert {n}");
-
+#endif
                 GL.BufferSubData(BufferTarget.ElementArrayBuffer, IntPtr.Zero, cmd_list.IdxBuffer.Length * sizeof(ushort), cmd_list.IdxPtr);
+#if FUGUI_CHECK_OPENGL_ERRORS
                 CheckGLError($"Data Idx {n}");
-
+#endif
                 for (int cmd_i = 0; cmd_i < cmd_list.CmdBuffer.Length; cmd_i++)
                 {
                     ImDrawCmd pcmd = cmd_list.CmdBuffer[cmd_i];
@@ -405,12 +412,22 @@ void main()
                     {
                         GL.ActiveTexture(TextureUnit.Texture0);
                         GL.BindTexture(TextureTarget.Texture2D, (int)pcmd.TextureId);
+#if FUGUI_CHECK_OPENGL_ERRORS
                         CheckGLError("Texture");
+#endif
 
-                        // We do _windowHeight - (int)clip.W instead of (int)clip.Y because gl has flipped Y when it comes to these coordinates
+                        // We do (int)renderSize.y - (int)clip.W instead of (int)clip.Y because gl has flipped Y when it comes to these coordinates
                         var clip = pcmd.ClipRect;
                         GL.Scissor((int)clip.x, (int)renderSize.y - (int)clip.w, (int)(clip.z - clip.x), (int)(clip.w - clip.y));
+#if FUGUI_CHECK_OPENGL_ERRORS
                         CheckGLError("Scissor");
+#endif
+
+                        // abort rendering this elemet if outside of the scissor rect
+                        if (clip.x >= renderSize.x || clip.y >= renderSize.y || clip.z < 0f || clip.w < 0f)
+                        {
+                            continue;
+                        }
 
                         if ((backendFlags & ImGuiBackendFlags.RendererHasVtxOffset) != 0)
                         {
@@ -420,7 +437,9 @@ void main()
                         {
                             GL.DrawElements(BeginMode.Triangles, (int)pcmd.ElemCount, DrawElementsType.UnsignedShort, (int)pcmd.IdxOffset * sizeof(ushort));
                         }
+#if FUGUI_CHECK_OPENGL_ERRORS
                         CheckGLError("Draw");
+#endif
                     }
                 }
             }

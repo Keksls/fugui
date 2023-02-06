@@ -1,7 +1,7 @@
-using Fu.Framework;
 using ImGuiNET;
 using System;
 using UnityEngine;
+using UnityEngine.Rendering.PostProcessing;
 
 namespace Fu.Core
 {
@@ -38,14 +38,33 @@ namespace Fu.Core
         private float _lastCameraRenderTime;
         private RenderTexture _rTexture;
         private FuRaycaster _raycaster;
+        private UnityEngine.Experimental.Rendering.GraphicsFormat _currentTextureFormat;
+        private int _currentTextureDepth = 24;
+        private PostProcessLayer _postProcessLayer;
+        private PostProcessLayer.Antialiasing _defaultAntiAliasing;
+        private bool _defaultCameraMSAA;
+        private Vector2 _currentImageUV;
 
         public FuCameraWindow(FuCameraWindowDefinition windowDefinition) : base(windowDefinition)
         {
             SuperSampling = 1f;
             Camera = windowDefinition.Camera;
 
+            // get post process data
+            _postProcessLayer = Camera.GetComponent<PostProcessLayer>();
+            if (_postProcessLayer != null)
+            {
+                _defaultAntiAliasing = _postProcessLayer.antialiasingMode;
+            }
+            Camera.allowMSAA = _defaultCameraMSAA;
+            // set default MSAA friendly texture format
+            _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
+            _currentTextureDepth = 24;
+            // set default image UV
+            _currentImageUV = Vector2.one;
+
             // create the render texture
-            _rTexture = new RenderTexture(Size.x, Size.y, 32, RenderTextureFormat.RGB111110Float);
+            _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);
             _rTexture.antiAliasing = 8;
             _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
             _rTexture.useDynamicScale = true;
@@ -63,10 +82,12 @@ namespace Fu.Core
             IsInterractible = true;
             Camera.enabled = false;
 
+            OnAddToContainer += FuCameraWindow_OnAddToContainer;
+
             UI = (window) =>
             {
                 Vector2 cursorPos = ImGui.GetCursorScreenPos();
-                ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + window.WorkingAreaSize);
+                ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + window.WorkingAreaSize, Vector2.zero, _currentImageUV);
                 //Container.ImGuiImage(_rTexture, WorkingAreaSize);
                 //ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this);
@@ -77,10 +98,61 @@ namespace Fu.Core
             FuRaycasting.RegisterRaycaster(_raycaster);
         }
 
+        private void FuCameraWindow_OnAddToContainer(FuWindow window)
+        {
+            if (window.IsUnityContext)
+            {
+                // set default post process data
+                if (_postProcessLayer != null)
+                {
+                    _postProcessLayer.antialiasingMode = _defaultAntiAliasing;
+                }
+                Camera.allowMSAA = _defaultCameraMSAA;
+                // set default MSAA friendly texture format
+                _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
+                _currentTextureDepth = 24;
+                _currentImageUV = Vector2.one;
+            }
+            else
+            {
+                // set default post process data
+                if (_postProcessLayer != null)
+                {
+                    _postProcessLayer.antialiasingMode = PostProcessLayer.Antialiasing.SubpixelMorphologicalAntialiasing;
+                }
+                Camera.allowMSAA = false;
+                // set OpenTK Friendly texture format
+                _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB;
+                _currentTextureDepth = 0;
+                _currentImageUV = new Vector2(1f, -1f);
+            }
+
+            // recreate render texture
+            _rTexture.Release();
+
+            _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);
+            _rTexture.antiAliasing = 8;
+            _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+            _rTexture.useDynamicScale = true;
+            _rTexture.Create();
+            Camera.targetTexture = _rTexture;
+            // resize cam target
+            Camera.pixelRect = new Rect(0, 0, (int)(WorkingAreaSize.x * _superSampling), (int)(WorkingAreaSize.y * _superSampling));
+
+            // force update camera
+            NeedToUpdateCamera = true;
+        }
+
         private void UICameraWindow_OnClosed(FuWindow window)
         {
             FuRaycasting.UnRegisterRaycaster(window.ID);
             window.OnClosed -= UICameraWindow_OnClosed;
+            // set default post process data
+            if (_postProcessLayer != null)
+            {
+                _postProcessLayer.antialiasingMode = _defaultAntiAliasing;
+            }
+            Camera.allowMSAA = _defaultCameraMSAA;
         }
 
         /// <summary>
@@ -158,7 +230,7 @@ namespace Fu.Core
 
             NeedToUpdateCamera = false;
             // resize render texture
-            if(WorkingAreaSize.x <= 10 || WorkingAreaSize.y <= 10 || _superSampling <= 0.1f)
+            if (WorkingAreaSize.x <= 10 || WorkingAreaSize.y <= 10 || _superSampling <= 0.1f)
             {
                 return;
             }

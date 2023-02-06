@@ -26,7 +26,6 @@ namespace Fu.Framework
                 typeof(FuButtonStyle),
                 typeof(FuFrameStyle),
                 typeof(FuComboboxStyle),
-                typeof(FuListboxStyle),
                 typeof(FuPanelStyle),
                 typeof(FuButtonsGroupStyle),
                 typeof(FuStyle),

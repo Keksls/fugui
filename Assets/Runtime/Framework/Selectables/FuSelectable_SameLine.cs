@@ -3,9 +3,9 @@ using ImGuiNET;
 namespace Fu.Framework
 {
     /// <summary>
-    /// A ComboboxItem that add a Separator
+    /// A Selectable Item that add an ImGui.SameLine()
     /// </summary>
-    public struct ComboboxSeparatorItem : IComboboxItem
+    public struct FuSelectable_SameLine : IFuSelectable
     {
         private string _text;
         private bool _enabled;
@@ -13,13 +13,13 @@ namespace Fu.Framework
         public string Text { get => _text; set => _text = value; }
 
         /// <summary>
-        /// Draw a Separator (just execute a SameLine statement, ignore selection and click)
+        /// Draw the item (just execute a SameLine statement, ignore selection and click)
         /// </summary>
         /// <param name="selected">ignored</param>
         /// <returns>ignored</returns>
         public bool DrawItem(bool selected)
         {
-            ImGui.Separator();
+            ImGui.SameLine();
             return false;
         }
 

@@ -3,9 +3,9 @@ using ImGuiNET;
 namespace Fu.Framework
 {
     /// <summary>
-    /// A ComboboxItem that add a Selectable Text item (Default Item)
+    /// A Selectable Item that add a Selectable Text item (Default Item)
     /// </summary>
-    public struct FuComboboxTextItem : IComboboxItem
+    public struct FuSelectable_Text : IFuSelectable
     {
         private string _text;
         private bool _enabled;
@@ -13,18 +13,18 @@ namespace Fu.Framework
         public string Text { get => _text; set => _text = value; }
 
         /// <summary>
-        /// A ComboboxItem that add a Selectable Text item (Default Item)
+        /// A Selectable Item that add a Selectable Text item (Default Item)
         /// </summary>
         /// <param name="text">text value of the selectable text</param>
         /// <param name="enabled">whatever the text is enabled (clickable + style)</param>
-        public FuComboboxTextItem(string text, bool enabled)
+        public FuSelectable_Text(string text, bool enabled)
         {
             _enabled = enabled;
             _text = text;
         }
 
         /// <summary>
-        /// A ComboboxItem that add a Selectable Text item (Default Item)
+        /// A Selectable Item that add a Selectable Text item (Default Item)
         /// </summary>
         /// <param name="selected">whatever the text is selected</param>
         /// <returns>true if clicked</returns>

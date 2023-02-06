@@ -11,20 +11,22 @@ namespace Fu.Framework
         /// <param name="id">A unique identifier for the text input field</param>
         /// <param name="text">A reference to the string that will be edited</param>
         /// <param name="style">the Frame Style to use</param>
+        /// <param name="flags">Flag for custom InputText Behaviour</param>
         /// <returns>true if value has just been edited</returns>
-        public bool TextInput(string id, ref string text, FuFrameStyle style)
+        public bool TextInput(string id, ref string text, FuFrameStyle style, FuInputTextFlags flags = FuInputTextFlags.Default)
         {
-            return TextInput(id, "", ref text, 2048, 0, style);
+            return TextInput(id, "", ref text, 2048, 0, style, flags);
         }
         /// <summary>
         /// Displays a single-line text input field
         /// </summary>
         /// <param name="id">A unique identifier for the text input field</param>
         /// <param name="text">A reference to the string that will be edited</param>
+        /// <param name="flags">Flag for custom InputText Behaviour</param>
         /// <returns>true if value has just been edited</returns>
-        public bool TextInput(string id, ref string text)
+        public bool TextInput(string id, ref string text, FuInputTextFlags flags = FuInputTextFlags.Default)
         {
-            return TextInput(id, "", ref text, 2048, 0, FuFrameStyle.Default);
+            return TextInput(id, "", ref text, 2048, 0, FuFrameStyle.Default, flags);
         }
 
         /// <summary>
@@ -33,10 +35,11 @@ namespace Fu.Framework
         /// <param name="id">A unique identifier for the text input field</param>
         /// <param name="hint">The hint that will be displayed when the field is empty</param>
         /// <param name="text">A reference to the string that will be edited</param>
+        /// <param name="flags">Flag for custom InputText Behaviour</param>
         /// <returns>true if value has just been edited</returns>
-        public bool TextInput(string id, string hint, ref string text)
+        public bool TextInput(string id, string hint, ref string text, FuInputTextFlags flags = FuInputTextFlags.Default)
         {
-            return TextInput(id, hint, ref text, 2048, 0, FuFrameStyle.Default);
+            return TextInput(id, hint, ref text, 2048, 0, FuFrameStyle.Default, flags);
         }
 
         /// <summary>
@@ -46,10 +49,11 @@ namespace Fu.Framework
         /// <param name="hint">The hint that will be displayed when the field is empty</param>
         /// <param name="text">A reference to the string that will be edited</param>
         /// <param name="size">the maximum size of the text buffer</param>
+        /// <param name="flags">Flag for custom InputText Behaviour</param>
         /// <returns>true if value has just been edited</returns>
-        public bool TextInput(string id, string hint, ref string text, uint size)
+        public bool TextInput(string id, string hint, ref string text, uint size, FuInputTextFlags flags = FuInputTextFlags.Default)
         {
-            return TextInput(id, hint, ref text, size, 0, FuFrameStyle.Default);
+            return TextInput(id, hint, ref text, size, 0, FuFrameStyle.Default, flags);
         }
 
         /// <summary>
@@ -60,10 +64,11 @@ namespace Fu.Framework
         /// <param name="text">A reference to the string that will be edited</param>
         /// <param name="size">the maximum size of the text buffer</param>
         /// <param name="height">The height of the input field</param>
+        /// <param name="flags">Flag for custom InputText Behaviour</param>
         /// <returns>true if value has just been edited</returns>
-        public bool TextInput(string id, string hint, ref string text, uint size, float height)
+        public bool TextInput(string id, string hint, ref string text, uint size, float height, FuInputTextFlags flags = FuInputTextFlags.Default)
         {
-            return TextInput(id, hint, ref text, size, height, FuFrameStyle.Default);
+            return TextInput(id, hint, ref text, size, height, FuFrameStyle.Default, flags);
         }
 
         /// <summary>
@@ -76,7 +81,9 @@ namespace Fu.Framework
         /// <param name="height">The height of the input field</param>
         /// <returns>true if value has just been edited</returns>
         /// <param name="style">the Frame Style to use</param>
-        public virtual bool TextInput(string id, string hint, ref string text, uint size, float height, FuFrameStyle style)
+        /// <param name="flags">Flag for custom InputText Behaviour</param>
+        /// <returns>true if value has just been edited</returns>
+        public virtual bool TextInput(string id, string hint, ref string text, uint size, float height, FuFrameStyle style, FuInputTextFlags flags)
         {
             bool edited;
             // Begin the element and apply the specified style
@@ -92,12 +99,12 @@ namespace Fu.Framework
             // If a height was specified, create a multiline text input
             if (height > 0)
             {
-                edited = ImGui.InputTextMultiline(id, ref text, size, new Vector2(ImGui.GetContentRegionAvail().x, height * Fugui.CurrentContext.Scale), ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.CtrlEnterForNewLine);
+                edited = ImGui.InputTextMultiline(id, ref text, size, new Vector2(ImGui.GetContentRegionAvail().x, height * Fugui.CurrentContext.Scale), (ImGuiInputTextFlags)flags);
             }
             // Otherwise, create a single line text input with a hint
             else
             {
-                edited = ImGui.InputTextWithHint(id, hint, ref text, size, ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.CtrlEnterForNewLine);
+                edited = ImGui.InputTextWithHint(id, hint, ref text, size, (ImGuiInputTextFlags)flags);
             }
             // Display a tool tip if one has been set
             displayToolTip();

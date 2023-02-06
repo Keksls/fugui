@@ -31,15 +31,15 @@ public class FuguiDemoScene : MonoBehaviour
         Vector3 v3Val = Vector3.zero;
         Vector4 v4Val = Vector4.zero;
         List<string> cbTexts = new List<string>() { "cb1", "cb2", "cb3" };
-        List<IComboboxItem> cbButtons = new List<IComboboxItem>() {
-            new FuComboboxButtonItem("button 1"),
-            new FuComboboxButtonItem("button 2", FuElementSize.AutoSize),
-            new FuComboboxSameLineItem(),
-            new FuComboboxButtonItem("button 3", false),
-            new ComboboxSeparatorItem(),
-            new FuComboboxButtonItem("button 4", new Vector2(32f, 32f)),
-            new FuComboboxSameLineItem(),
-            new FuComboboxButtonItem("button 5"),
+        List<IFuSelectable> cbButtons = new List<IFuSelectable>() {
+            new FuSelectable_Button("button 1"),
+            new FuSelectable_Button("button 2", FuElementSize.AutoSize),
+            new FuSelectable_SameLine(),
+            new FuSelectable_Button("button 3", false),
+            new FuSelectable_Separator(),
+            new FuSelectable_Button("button 4", new Vector2(32f, 32f)),
+            new FuSelectable_SameLine(),
+            new FuSelectable_Button("button 5"),
         };
         Vector3 pos = Vector3.zero;
         Vector3 rot = Vector3.zero;
@@ -174,6 +174,8 @@ public class FuguiDemoScene : MonoBehaviour
                         Fugui.ShowModal("Theme Manager", Fugui.DrawThemes, FuModalSize.ExtraLarge);
                     }
 
+                    layout.SetNextElementToolTip("Info style tooltip", "Success style tooltip", "Warning style tooltip", "Danger style tooltip");
+                    layout.SetNextElementToolTipStyles(FuTextStyle.Info, FuTextStyle.Success, FuTextStyle.Warning, FuTextStyle.Danger);
                     if (layout.Button("Info modal", FuButtonStyle.Info))
                     {
                         Fugui.ShowInfo("This is an Information", () =>
@@ -231,7 +233,7 @@ public class FuguiDemoScene : MonoBehaviour
             {
                 layout.ComboboxEnum<AnchorLocation>("Notify Anchor", (anchor) =>
                 {
-                    Fugui.Settings.NotificationAnchorPosition = anchor;
+                    Fugui.Settings.NotificationAnchorPosition = (AnchorLocation)anchor;
                 }, () => Fugui.Settings.NotificationAnchorPosition);
                 layout.Separator();
                 foreach (StateType type in Enum.GetValues(typeof(StateType)))
@@ -406,7 +408,7 @@ public class FuguiDemoScene : MonoBehaviour
                             grid.SetNextElementToolTip("Clear flag of the main camera");
                             grid.ComboboxEnum<CameraClearFlags>("Clear Flags", (CameraClearFlags) =>
                             {
-                                cam1.clearFlags = CameraClearFlags;
+                                cam1.clearFlags = (CameraClearFlags)CameraClearFlags;
                             }, () => { return cam1.clearFlags; });
 
                             float FOV = cam1.fieldOfView;

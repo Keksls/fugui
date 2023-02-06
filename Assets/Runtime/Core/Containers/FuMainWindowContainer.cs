@@ -111,7 +111,7 @@ namespace Fu.Core
                 FuWindow window = _toRemoveWindows.Dequeue();
                 window.OnClosed -= UIWindow_OnClose;
                 Windows.Remove(window.ID);
-                window.Fire_OnRemovedFromContainer();
+                window.Container = null;
             }
 
             // add windows

@@ -20,12 +20,15 @@ namespace Fu.Framework
         public static Rect CurrentPopUpRect { get; private set; } = default;
         // A flag indicating whether the layout is inside a pop-up.
         public static bool IsInsidePopUp { get; private set; } = false;
+        public static FuLayout CurrentDrawer { get; protected set; } = null;
         // A flag indicating whether the element is hover framed.
         private bool _elementHoverFramed = false;
         // A flag indicating whether the next element should be disabled.
         protected bool _nextIsDisabled;
         // An array of strings representing the current tool tips.
         protected string[] _currentToolTips = null;
+        // An array of styles representing the current tool tips styles.
+        protected FuTextStyle[] _currentToolTipsStyles = null;
         // An integer representing the current tool tips index.
         protected int _currentToolTipsIndex = 0;
         // whatever tooltip must be display hover Labels
@@ -38,9 +41,7 @@ namespace Fu.Framework
         // A set of strings representing the dragging sliders.
         private static HashSet<string> _draggingSliders = new HashSet<string>();
         // A dictionary of integers representing the combo selected indices.
-        private static Dictionary<string, int> _comboSelectedIndices = new Dictionary<string, int>();
-        // A dictionary of integers representing the listbox selected indices.
-        private static Dictionary<string, int> _listboxSelectedItem = new Dictionary<string, int>();
+        private static Dictionary<string, int> _selectableSelectedIndices = new Dictionary<string, int>();
         // A dictionary that store displaying toggle data.
         private static Dictionary<string, FuElementAnimationData> _uiElementAnimationDatas = new Dictionary<string, FuElementAnimationData>();
         // A dictionary that store displaying toggle data.
@@ -55,11 +56,17 @@ namespace Fu.Framework
         #endregion
 
         #region Layout
+        public FuLayout()
+        {
+            CurrentDrawer = this;
+        }
+
         /// <summary>
         /// Disposes this object.
         /// </summary>
         public virtual void Dispose()
         {
+            CurrentDrawer = null;
         }
 
         /// <summary>
@@ -175,6 +182,15 @@ namespace Fu.Framework
             _currentToolTipsIndex = 0;
             _currentToolTipsOnLabels = true;
         }
+
+        /// <summary>
+        /// Set tooltips styles for the x next elements
+        /// </summary>
+        /// <param name="styles">array of styles to set</param>
+        public void SetNextElementToolTipStyles(params FuTextStyle[] styles)
+        {
+            _currentToolTipsStyles = styles;
+        }
         #endregion
 
         /// <summary>
@@ -272,6 +288,12 @@ namespace Fu.Framework
                 // If the element is hovered over or force is set to true
                 if (force || ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0)
                 {
+                    // push tooltip styles
+                    if(_currentToolTipsStyles != null && _currentToolTipsIndex < _currentToolTipsStyles.Length)
+                    {
+                        _currentToolTipsStyles[_currentToolTipsIndex].Push(!_nextIsDisabled);
+                    }
+
                     // set padding and font
                     Fugui.PushDefaultFont();
                     Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
@@ -284,6 +306,7 @@ namespace Fu.Framework
                     {
                         ImGui.SetTooltip(_currentToolTips[_currentToolTipsIndex]);
                     }
+                    FuTextStyle.Default.Pop();
                     Fugui.PopFont();
                     Fugui.PopStyle();
                 }

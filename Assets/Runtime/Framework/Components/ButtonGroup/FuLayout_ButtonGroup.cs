@@ -7,34 +7,25 @@ namespace Fu.Framework
 {
     public partial class FuLayout
     {
-        public void ButtonsGroup<TEnum>(string text, Action<TEnum> itemChange, int defaultSelected = 0, FuButtonsGroupFlags flags = FuButtonsGroupFlags.Default) where TEnum : struct, IConvertible
+        #region Enum Types List
+        public void ButtonsGroup<TEnum>(string text, Action<int> itemChange, int defaultSelected = 0, FuButtonsGroupFlags flags = FuButtonsGroupFlags.Default) where TEnum : struct, IConvertible
         {
             ButtonsGroup<TEnum>(text, itemChange, defaultSelected, flags, FuButtonsGroupStyle.Default);
         }
 
-        public void ButtonsGroup<TEnum>(string text, Action<TEnum> itemChange, int defaultSelected, FuButtonsGroupFlags flags, FuButtonsGroupStyle style) where TEnum : struct, IConvertible
+        public void ButtonsGroup<TEnum>(string text, Action<int> itemChange, int defaultSelected, FuButtonsGroupFlags flags, FuButtonsGroupStyle style) where TEnum : struct, IConvertible
         {
-            if (!typeof(TEnum).IsEnum)
-            {
-                throw new ArgumentException("TEnum must be an enumerated type");
-            }
-            // list to store the enum values
-            List<TEnum> enumValues = new List<TEnum>();
-            // list to store the combobox items
-            List<string> cItems = new List<string>();
-            // iterate over the enum values and add them to the lists
-            foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
-            {
-                enumValues.Add(enumValue);
-                cItems.Add(Fugui.AddSpacesBeforeUppercase(enumValue.ToString()));
-            }
+            FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<IFuSelectable> enumSelectables);
+
             // call the custom combobox function, passing in the lists and the itemChange
-            _buttonsGroup(text, cItems, (index) =>
+            _buttonsGroup(text, enumSelectables, (index) =>
             {
                 itemChange?.Invoke(enumValues[index]);
             }, defaultSelected, flags, style);
         }
+        #endregion
 
+        #region Generic Types List
         public void ButtonsGroup<T>(string id, List<T> items, Action<T> callback, int defaultSelected, FuButtonsGroupFlags flags = FuButtonsGroupFlags.Default)
         {
             _buttonsGroup<T>(id, items, (index) => { callback?.Invoke(items[index]); }, defaultSelected, flags, FuButtonsGroupStyle.Default);
@@ -44,6 +35,7 @@ namespace Fu.Framework
         {
             _buttonsGroup<T>(id, items, (index) => { callback?.Invoke(items[index]); }, defaultSelected, flags, style);
         }
+        #endregion
 
         protected virtual void _buttonsGroup<T>(string id, List<T> items, Action<int> callback, int defaultSelected, FuButtonsGroupFlags flags, FuButtonsGroupStyle style)
         {

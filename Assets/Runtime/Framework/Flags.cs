@@ -1,5 +1,46 @@
-﻿namespace Fu.Framework
+﻿using ImGuiNET;
+
+namespace Fu.Framework
 {
+    /// <summary>
+    /// Flag for custom InputText Behaviour.
+    /// </summary>
+    public enum FuInputTextFlags
+    {
+        /// <summary>
+        /// The default input text flag.
+        /// </summary>
+        Default = ImGuiInputTextFlags.CtrlEnterForNewLine | ImGuiInputTextFlags.AutoSelectAll,
+        /// <summary>
+        /// Allow decimal characters.
+        /// </summary>
+        CharsDecimal = 0x1,
+        /// <summary>
+        /// Allow hexadecimal characters.
+        /// </summary>
+        CharsHexadecimal = 0x2,
+        /// <summary>
+        /// Force uppercase characters.
+        /// </summary>
+        CharsUppercase = 0x4,
+        /// <summary>
+        /// Disallow blank characters.
+        /// </summary>
+        CharsNoBlank = 0x8,
+        /// <summary>
+        /// Mask the input as a password.
+        /// </summary>
+        Password = 0x8000,
+        /// <summary>
+        /// Allow scientific notation characters.
+        /// </summary>
+        CharsScientific = 0x20000,
+        /// <summary>
+        /// Escape key will clear all input.
+        /// </summary>
+        EscapeClearsAll = 0x100000
+    }
+
     /// <summary>
     /// Flags for configuring the grid
     /// </summary>

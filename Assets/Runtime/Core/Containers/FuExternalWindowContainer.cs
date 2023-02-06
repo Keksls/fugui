@@ -417,7 +417,7 @@ namespace Fu.Core
             _fuguiContext.OnRender -= FuguiContext_OnRender;
             // dispose this window
             Dispose();
-            FuWindow.Fire_OnRemovedFromContainer();
+            FuWindow.Container = null;
         }
 
         /// <summary>

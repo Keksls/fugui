@@ -149,7 +149,7 @@ namespace Fu
 
                     if (dockSpaceDefinition.WindowsDefinition.Count > 0)
                     {
-                        gridInfo.Listbox("Binded windows", dockSpaceDefinition.WindowsDefinition.Values.ToList());
+                        gridInfo.ListBox("Binded windows", dockSpaceDefinition.WindowsDefinition.Values.ToList());
                     }
                 }
 

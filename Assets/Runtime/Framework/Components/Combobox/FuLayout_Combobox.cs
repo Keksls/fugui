@@ -64,9 +64,9 @@ namespace Fu.Framework
         /// <param name="items">The list of items to display in the dropdown box.</param>
         /// <param name="itemChange">The action to call when the selected item changes.</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        /// <param name="style">The style to use for the dropdown box.</param>
         /// <param name="listUpdated">whatever the list has been updated since last call (list or values inside. it's for performances on large. You can handle it using ObservableCollections)
         /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
-        /// <param name="style">The style to use for the dropdown box.</param>
         public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter, FuComboboxStyle style, Func<bool> listUpdated = null)
         {
             List<IFuSelectable> cItems = FuSelectableBuilder.BuildFromList<T>(text, items, listUpdated?.Invoke() ?? true);
@@ -87,92 +87,31 @@ namespace Fu.Framework
         ///<param name="itemChange">The action to be performed when an item is selected.</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
         ///<param name="style">The style for the combobox element.</param>
-        protected virtual void _customCombobox(string text, List<IFuSelectable> items, Action<int> itemChange, Func<string> itemGetter, FuComboboxStyle style)
+        private void _customCombobox(string text, List<IFuSelectable> items, Action<int> itemChange, Func<string> itemGetter, FuComboboxStyle style)
         {
-            beginElement(ref text, style);
             // return if item must no be draw
             if (!_drawItem)
             {
                 return;
             }
 
-            if (!_selectableSelectedIndices.ContainsKey(text))
+            // get the current selected index
+            int selectedIndex = FuSelectableBuilder.GetSelectedIndex(text, items, itemGetter);
+
+            // draw the combobox
+            Combobox(text, items[selectedIndex].Text, () =>
             {
-                // Initialize the selected index for the combobox
-                _selectableSelectedIndices.Add(text, 0);
-            }
-
-            // Set current item as setted by getter
-            if (itemGetter != null)
-            {
-                int i = 0;
-                string selectedItemString = itemGetter.Invoke();
-                if (!string.IsNullOrEmpty(selectedItemString))
-                {
-                    selectedItemString = Fugui.AddSpacesBeforeUppercase(selectedItemString);
-                    foreach (var item in items)
-                    {
-                        if (item.ToString() == selectedItemString)
-                        {
-                            _selectableSelectedIndices[text] = i;
-                            break;
-                        }
-                        i++;
-                    }
-                }
-            }
-
-            int selectedIndex = _selectableSelectedIndices[text];
-
-            if (selectedIndex >= items.Count)
-            {
-                selectedIndex = items.Count - 1;
-            }
-
-            Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 2f) * Fugui.CurrentContext.Scale);
-            Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * Fugui.CurrentContext.Scale);
-            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-
-            if (ImGui.BeginCombo("##" + text, items[selectedIndex].ToString()))
-            {
-                // Pop the style to use the default style for the combo dropdown
-                Fugui.PopStyle();
-                IsInsidePopUp = true;
                 for (int i = 0; i < items.Count; i++)
                 {
-                    if (items[i].DrawItem(i == selectedIndex) && items[i].Enabled)
+                    if (items[i]?.DrawItem(i == selectedIndex) ?? false && items[i].Enabled)
                     {
-                        // Update the selected index and perform the item change action
+                        // Update the selected index and invoke the item change action
                         selectedIndex = i;
-                        _selectableSelectedIndices[text] = selectedIndex;
+                        FuSelectableBuilder.SetSelectedIndex(text, selectedIndex);
                         itemChange?.Invoke(i);
                     }
                 }
-                IsInsidePopUp = false;
-
-                // Update the current pop-up window and ID
-                if (CurrentPopUpID != text)
-                {
-                    CurrentPopUpWindowID = FuWindow.CurrentDrawingWindow?.ID;
-                    CurrentPopUpID = text;
-                }
-                // Set CurrentPopUpRect to ImGui item rect
-                CurrentPopUpRect = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
-                ImGui.EndCombo();
-            }
-            else
-            {
-                // Pop the style to use the default style for the combo dropdown
-                Fugui.PopStyle();
-                if (CurrentPopUpID == text)
-                {
-                    CurrentPopUpWindowID = null;
-                    CurrentPopUpID = null;
-                }
-            }
-            Fugui.PopStyle();
-            displayToolTip();
-            endElement(style);
+            });
         }
         #endregion
 
@@ -184,10 +123,9 @@ namespace Fu.Framework
         /// <param name="text">The label displayed next to the combobox</param>
         /// <param name="selectedItemText">The currently selected item</param>
         /// <param name="callback">The callback function that is called when an item is selected</param>
-        /// <param name="height">The height of the list of items</param>
-        public void Combobox(string text, string selectedItemText, Action callback, int height = 0)
+        public void Combobox(string text, string selectedItemText, Action callback)
         {
-            Combobox(text, selectedItemText, callback, FuComboboxStyle.Default, height);
+            Combobox(text, selectedItemText, callback, FuComboboxStyle.Default);
         }
 
         /// <summary>
@@ -198,8 +136,7 @@ namespace Fu.Framework
         /// <param name="selectedItemText">The currently selected item</param>
         /// <param name="callback">The callback function that is called when an item is selected</param>
         /// <param name="style">The style of the combobox</param>
-        /// <param name="height">The height of the list of items</param>
-        public virtual void Combobox(string text, string selectedItemText, Action callback, FuComboboxStyle style, int height = 0)
+        public virtual void Combobox(string text, string selectedItemText, Action callback, FuComboboxStyle style)
         {
             beginElement(ref text, style);
             // return if item must no be draw
@@ -218,17 +155,8 @@ namespace Fu.Framework
                 // Pop the padding styles
                 Fugui.PopStyle();
                 IsInsidePopUp = true;
-                // Check if a height has been specified
-                if (height > 0)
-                {
-                    // Invoke the callback with a fixed height for the combobox
-                    callback?.Invoke();
-                }
-                else
-                {
-                    // Invoke the callback without a fixed height for the combobox
-                    callback?.Invoke();
-                }
+                // execute the callback
+                callback?.Invoke();
                 // Set the IsInsidePopUp flag to false
                 IsInsidePopUp = false;
 

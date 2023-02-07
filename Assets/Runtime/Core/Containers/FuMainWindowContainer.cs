@@ -224,6 +224,9 @@ namespace Fu.Core
             }
 
             // render notifications
+            Fugui.RenderContextMenu();
+
+            // render notifications
             Fugui.RenderNotifications(this);
 
             // render modal

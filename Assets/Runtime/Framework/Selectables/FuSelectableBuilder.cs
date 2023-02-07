@@ -107,7 +107,7 @@ namespace Fu.Framework
         /// <param name="items">list of selectable items</param>
         /// <param name="itemGetter">how to get the current selecte value string</param>
         /// <returns>the index of the selected index</returns>
-        public static int GetSelectedIndex(string id, List<IFuSelectable> items, Func<string> itemGetter)
+        public static int GetSelectedIndex<T>(string id, List<T> items, Func<string> itemGetter)
         {
             // Initialize the selected index for the list
             if (!_selectableSelectedIndices.ContainsKey(id))

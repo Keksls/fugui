@@ -68,6 +68,8 @@ namespace Fu
 
         static Fugui()
         {
+            // prepare context menu
+            ResetContextMenu(true);
 #if IMDEBUG
             NewFrame();
 #endif
@@ -786,8 +788,8 @@ namespace Fu
         /// <returns>The input string with spaces added before uppercase letters.</returns>
         static Dictionary<string, string> _niceStrings = new Dictionary<string, string>();
         public static string AddSpacesBeforeUppercase(string input)
-        { 
-            if(string.IsNullOrEmpty(input))
+        {
+            if (string.IsNullOrEmpty(input))
             {
                 return input;
             }

@@ -35,6 +35,7 @@ namespace Fu.Framework
         protected bool _currentToolTipsOnLabels = false;
         // has animations enabled
         protected bool _animationEnabled = true;
+        private Vector2 _currentItemStartPos;
         #endregion
 
         #region Elements Data
@@ -42,8 +43,6 @@ namespace Fu.Framework
         private static HashSet<string> _draggingSliders = new HashSet<string>();
         // A dictionary that store displaying toggle data.
         private static Dictionary<string, FuElementAnimationData> _uiElementAnimationDatas = new Dictionary<string, FuElementAnimationData>();
-        // A dictionary that store displaying toggle data.
-        private static Dictionary<string, int> _buttonsGroupIndex = new Dictionary<string, int>();
         // A dictionary of strings representing the current PathFields string value.
         private static Dictionary<string, string> _pathFieldValues = new Dictionary<string, string>();
         // A dictionary to store enum values according to the type of the enum
@@ -89,6 +88,7 @@ namespace Fu.Framework
             }
             if (_drawItem)
             {
+                _currentItemStartPos = ImGui.GetCursorScreenPos();
                 // we must prepare next item
                 style?.Push(!_nextIsDisabled);
                 if (!noEditID && FuWindow.CurrentDrawingWindow != null)
@@ -114,6 +114,7 @@ namespace Fu.Framework
             {
                 style?.Pop();
                 drawHoverFrame();
+                Fugui.TryOpenContextMenuOnRectClick(_currentItemStartPos, ImGui.GetItemRectMax());
             }
             _nextIsDisabled = false;
             _elementHoverFramed = false;

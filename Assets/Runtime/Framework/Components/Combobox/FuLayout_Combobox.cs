@@ -15,7 +15,7 @@ namespace Fu.Framework
         /// <typeparam name="TEnum">The type of the enum that will be displayed in the combobox. It must be an enumerated type.</typeparam>
         /// <param name="text">The label text to be displayed next to the combobox</param>
         /// <param name="itemChange">The action that will be called when the selected item changes</param>
-        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not linked to an object's field</param>
         public void ComboboxEnum<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter = null) where TEnum : struct, IConvertible
         {
             ComboboxEnum<TEnum>(text, itemChange, itemGetter, FuComboboxStyle.Default);
@@ -27,7 +27,7 @@ namespace Fu.Framework
         /// <typeparam name="TEnum">The type of the enum that will be displayed in the combobox. It must be an enumerated type.</typeparam>
         /// <param name="text">The label text to be displayed next to the combobox</param>
         /// <param name="itemChange">The action that will be called when the selected item changes</param>
-        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not linked to an object's field</param>
         /// <param name="style">The style to be applied to the combobox</param>
         public void ComboboxEnum<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter, FuComboboxStyle style) where TEnum : struct, IConvertible
         {
@@ -48,12 +48,12 @@ namespace Fu.Framework
         /// <param name="text">The label of the dropdown box.</param>
         /// <param name="items">The list of items to display in the dropdown box.</param>
         /// <param name="itemChange">The action to call when the selected item changes.</param>
-        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not linked to an object's field</param>
         /// <param name="listUpdated">whatever the list has been updated since last call (list or values inside. it's for performances on large. You can handle it using ObservableCollections)
         /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
         public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter = null, Func<bool> listUpdated = null)
         {
-            Combobox<T>(text, items, itemChange, itemGetter, FuComboboxStyle.Default);
+            Combobox<T>(text, items, itemChange, itemGetter, FuComboboxStyle.Default, listUpdated);
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace Fu.Framework
         /// <param name="text">The label of the dropdown box.</param>
         /// <param name="items">The list of items to display in the dropdown box.</param>
         /// <param name="itemChange">The action to call when the selected item changes.</param>
-        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not linked to an object's field</param>
         /// <param name="style">The style to use for the dropdown box.</param>
         /// <param name="listUpdated">whatever the list has been updated since last call (list or values inside. it's for performances on large. You can handle it using ObservableCollections)
         /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
@@ -85,7 +85,7 @@ namespace Fu.Framework
         ///<param name="text">The label for the combobox.</param>
         ///<param name="items">The list of custom items to be displayed in the combobox.</param>
         ///<param name="itemChange">The action to be performed when an item is selected.</param>
-        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not linked to an object's field</param>
         ///<param name="style">The style for the combobox element.</param>
         private void _customCombobox(string text, List<IFuSelectable> items, Action<int> itemChange, Func<string> itemGetter, FuComboboxStyle style)
         {

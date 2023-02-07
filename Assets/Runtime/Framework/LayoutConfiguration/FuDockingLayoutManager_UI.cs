@@ -200,7 +200,7 @@ namespace Fu
 
                         //Dockspace list has changed, refresh other UI component
                         FuDockingLayoutManager.RefreshDockSpaces();
-                    }, (int)dockSpaceDefinition.Orientation);
+                    }, () => dockSpaceDefinition.Orientation);
 
                     // REcursive display for children
                     foreach (FuDockSpaceDefinition child in dockSpaceDefinition.Children)

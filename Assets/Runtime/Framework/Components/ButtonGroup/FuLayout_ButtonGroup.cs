@@ -8,12 +8,29 @@ namespace Fu.Framework
     public partial class FuLayout
     {
         #region Enum Types List
-        public void ButtonsGroup<TEnum>(string text, Action<int> itemChange, int defaultSelected = 0, FuButtonsGroupFlags flags = FuButtonsGroupFlags.Default) where TEnum : struct, IConvertible
+        /// <summary>
+        /// Displays a ButtonGroup with all the enum values of type TEnum. The selected item can be changed by the user, and the change will be reported through the itemChange action.
+        /// </summary>
+        /// <typeparam name="TEnum">The type of the enum that will be displayed in the combobox. It must be an enumerated type.</typeparam>
+        /// <param name="text">The label text to be displayed next to the combobox</param>
+        /// <param name="itemChange">The action that will be called when the selected item changes</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        /// <param name="flags">behaviour flags of the button group</param>
+        public void ButtonsGroup<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter = null, FuButtonsGroupFlags flags = FuButtonsGroupFlags.Default) where TEnum : struct, IConvertible
         {
-            ButtonsGroup<TEnum>(text, itemChange, defaultSelected, flags, FuButtonsGroupStyle.Default);
+            ButtonsGroup<TEnum>(text, itemChange, itemGetter, flags, FuButtonsGroupStyle.Default);
         }
 
-        public void ButtonsGroup<TEnum>(string text, Action<int> itemChange, int defaultSelected, FuButtonsGroupFlags flags, FuButtonsGroupStyle style) where TEnum : struct, IConvertible
+        /// <summary>
+        /// Displays a ButtonGroup with all the enum values of type TEnum. The selected item can be changed by the user, and the change will be reported through the itemChange action.
+        /// </summary>
+        /// <typeparam name="TEnum">The type of the enum that will be displayed in the combobox. It must be an enumerated type.</typeparam>
+        /// <param name="text">The label text to be displayed next to the combobox</param>
+        /// <param name="itemChange">The action that will be called when the selected item changes</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not lined to an object's field</param>
+        /// <param name="flags">behaviour flags of the button group</param>
+        /// <param name="style">style of the element</param>
+        public void ButtonsGroup<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter, FuButtonsGroupFlags flags, FuButtonsGroupStyle style) where TEnum : struct, IConvertible
         {
             FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<IFuSelectable> enumSelectables);
 
@@ -21,37 +38,52 @@ namespace Fu.Framework
             _buttonsGroup(text, enumSelectables, (index) =>
             {
                 itemChange?.Invoke(enumValues[index]);
-            }, defaultSelected, flags, style);
+            }, () => { return itemGetter?.Invoke().ToString(); }, flags, style);
         }
         #endregion
 
         #region Generic Types List
-        public void ButtonsGroup<T>(string id, List<T> items, Action<T> callback, int defaultSelected, FuButtonsGroupFlags flags = FuButtonsGroupFlags.Default)
+        /// <summary>
+        /// Displays a ButtonGroup with a list of items of type T and calls the specified action with the selected item when changed.
+        /// </summary>
+        /// <typeparam name="T">The type of the items in the list.</typeparam>
+        /// <param name="text">The label of the element.</param>
+        /// <param name="items">The list of items to display in the buttonGroup.</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the buttonGroup. can be null if buttonGroup il not linked to an object's field
+        /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
+        /// <param name="flags">behaviour flags of the button group</param>
+        public void ButtonsGroup<T>(string text, List<T> items, Action<T> callback, Func<string> itemGetter, FuButtonsGroupFlags flags = FuButtonsGroupFlags.Default)
         {
-            _buttonsGroup<T>(id, items, (index) => { callback?.Invoke(items[index]); }, defaultSelected, flags, FuButtonsGroupStyle.Default);
+            _buttonsGroup<T>(text, items, (index) => { callback?.Invoke(items[index]); }, itemGetter, flags, FuButtonsGroupStyle.Default);
         }
 
-        public void ButtonsGroup<T>(string id, List<T> items, Action<T> callback, int defaultSelected, FuButtonsGroupFlags flags, FuButtonsGroupStyle style)
+        /// <summary>
+        /// Displays a ButtonGroup with a list of items of type T and calls the specified action with the selected item when changed.
+        /// </summary>
+        /// <typeparam name="T">The type of the items in the list.</typeparam>
+        /// <param name="text">The label of the element.</param>
+        /// <param name="items">The list of items to display in the buttonGroup.</param>
+        /// <param name="itemGetter">A func that return a way to get current stored value for the buttonGroup. can be null if buttonGroup il not linked to an object's field
+        /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
+        /// <param name="flags">behaviour flags of the button group</param>
+        /// <param name="style">style of the element</param>
+        public void ButtonsGroup<T>(string text, List<T> items, Action<T> callback, Func<string> itemGetter, FuButtonsGroupFlags flags, FuButtonsGroupStyle style)
         {
-            _buttonsGroup<T>(id, items, (index) => { callback?.Invoke(items[index]); }, defaultSelected, flags, style);
+            _buttonsGroup<T>(text, items, (index) => { callback?.Invoke(items[index]); }, itemGetter, flags, style);
         }
         #endregion
 
-        protected virtual void _buttonsGroup<T>(string id, List<T> items, Action<int> callback, int defaultSelected, FuButtonsGroupFlags flags, FuButtonsGroupStyle style)
+        protected virtual void _buttonsGroup<T>(string text, List<T> items, Action<int> callback, Func<string> itemGetter, FuButtonsGroupFlags flags, FuButtonsGroupStyle style)
         {
-            beginElement(ref id, style, true);
+            beginElement(ref text, style, true);
             // return if item must no be draw
             if (!_drawItem)
             {
                 return;
             }
 
-            // get selected
-            if (!_buttonsGroupIndex.ContainsKey(id))
-            {
-                _buttonsGroupIndex.Add(id, defaultSelected);
-            }
-            int selected = _buttonsGroupIndex[id];
+            // get the current selected index
+            int selectedIndex = FuSelectableBuilder.GetSelectedIndex(text, items, itemGetter);
 
             // draw data
             int nbItems = items.Count;
@@ -77,7 +109,7 @@ namespace Fu.Framework
             // draw buttons
             for (int i = 0; i < nbItems; i++)
             {
-                if (selected == i)
+                if (selectedIndex == i)
                 {
                     style.SelectedButtonStyle.Push(!_nextIsDisabled);
                 }
@@ -94,9 +126,9 @@ namespace Fu.Framework
                 }
                 cursorPos += itemWidth - 1f;
                 Fugui.Push(ImGuiStyleVar.FramePadding, new Vector4(4f, 4f) * Fugui.CurrentContext.Scale);
-                if (ImGui.Button(items[i].ToString() + "##" + id, new Vector2(itemWidth, 0)) && !_nextIsDisabled)
+                if (ImGui.Button(items[i].ToString() + "##" + text, new Vector2(itemWidth, 0)) && !_nextIsDisabled)
                 {
-                    _buttonsGroupIndex[id] = i;
+                    FuSelectableBuilder.SetSelectedIndex(text, i);
                     callback?.Invoke(i);
                 }
                 if (i < nbItems - 1)

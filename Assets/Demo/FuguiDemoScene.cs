@@ -271,8 +271,31 @@ public class FuguiDemoScene : MonoBehaviour
         }, flags: FuWindowFlags.AllowMultipleWindow);
 
         // add Metadata Window
+        // create common metadata context menu items
+        ContextMenuItemBuilder.AddItem("Action 0 Lvl 0", () => { Debug.Log("Action 0 Lvl 0"); });
+        ContextMenuItemBuilder.AddItem("Action 1 Lvl 0", () => { Debug.Log("Action 1 Lvl 0"); });
+        ContextMenuItemBuilder.AddSeparator();
+        ContextMenuItemBuilder.BeginChild("Parent 0 LVl 0");
+        ContextMenuItemBuilder.AddItem("Action 0 Lvl 1", () => { Debug.Log("Action 0 Lvl 1"); });
+        ContextMenuItemBuilder.AddItem("Action 1 Lvl 1", () => { Debug.Log("Action 1 Lvl 1"); });
+        ContextMenuItemBuilder.EndChild();
+        var metadataContextMenuItems = ContextMenuItemBuilder.Build();
+
+        // create extra list box context menu items
+        ContextMenuItemBuilder.AddItem("Action 0 Lvl 0 : extra", () => { Debug.Log("Action 0 Lvl 0 : extra"); });
+        ContextMenuItemBuilder.AddSeparator();
+        ContextMenuItemBuilder.BeginChild("Parent 0 LVl 0");
+        ContextMenuItemBuilder.AddItem("Action 0 Lvl 1 : extra", () => { Debug.Log("Action 0 Lvl 1 : extra"); });
+        ContextMenuItemBuilder.EndChild();
+        var listboxContextMenuItems = ContextMenuItemBuilder.Build();
+
+        // create extra list box 2 context menu items
+        ContextMenuItemBuilder.AddItem("This is a very special listbox", "some shortcut", () => { Debug.Log("click on my very special listbox !"); });
+        var listbox2ContextMenuItems = ContextMenuItemBuilder.Build();
+
         new FuWindowDefinition(FuWindowsNames.Metadata, "Metadata", (window) =>
         {
+            Fugui.PushContextMenuItems(metadataContextMenuItems);
             using (new FuPanel("mdcc"))
             {
                 using (var layout = new FuLayout())
@@ -312,11 +335,11 @@ public class FuguiDemoScene : MonoBehaviour
                         grid.ButtonsGroup<FuToggleFlags>("Btn Grp disabled", (flag) => { Debug.Log(flag + " selected"); });
 
                         grid.SetNextElementToolTip("About", "Accelerate", "Arch", "Arrow Down");
-                        grid.ButtonsGroup("Default", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, FuButtonsGroupFlags.Default);
+                        grid.ButtonsGroup("Default", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.Default);
 
-                        grid.ButtonsGroup("Left", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, FuButtonsGroupFlags.AlignLeft);
-                        grid.ButtonsGroup("Auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, FuButtonsGroupFlags.AutoSizeButtons);
-                        grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, 0, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
+                        grid.ButtonsGroup("Left", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft);
+                        grid.ButtonsGroup("Auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AutoSizeButtons);
+                        grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
                     }
 
                     layout.Collapsable("Drag Tests", () =>
@@ -343,6 +366,7 @@ public class FuguiDemoScene : MonoBehaviour
                             grid.DisableNextElement();
                             grid.Drag("drag v4 dis", ref v4Val, "x", "y", "z", "w");
 
+                            Fugui.PushContextMenuItems(listboxContextMenuItems);
                             grid.ListBox("test callback combo", /*"click me custom",*/ () =>
                             {
                                 bool chk = true;
@@ -356,12 +380,17 @@ public class FuguiDemoScene : MonoBehaviour
                                 layout.Slider("sdlc2", ref intVal);
                                 layout.Slider("sdlc3", ref floatVal);
                             });
+                            Fugui.PushContextMenuItems(listbox2ContextMenuItems);
                             grid.ListBox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
+                            Fugui.PopContextMenuItems();
                             grid.ListBox("test button box", cbButtons, (newValue) => { Debug.Log(newValue); });
+                            Fugui.PopContextMenuItems();
                         }
                     });
                 }
             }
+            Fugui.TryOpenContextMenuOnWindowClick();
+            Fugui.PopContextMenuItems();
         }, flags: FuWindowFlags.AllowMultipleWindow);
 
         // add Inspector Window

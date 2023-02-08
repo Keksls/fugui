@@ -119,6 +119,7 @@ namespace Fu.Framework
             // Set various style options for the main menu bar and its items
             Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 8f));
+            Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 8f));
             Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
             Fugui.Push(ImGuiCol.Header, FuThemeManager.GetColor(FuColors.HeaderHovered));
             Fugui.Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.MainMenuText));
@@ -141,7 +142,7 @@ namespace Fu.Framework
 
             // Pop the set style options
             Fugui.PopColor(2);
-            Fugui.PopStyle(3);
+            Fugui.PopStyle(4);
         }
 
         /// <summary>

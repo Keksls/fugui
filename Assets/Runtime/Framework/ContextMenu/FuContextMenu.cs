@@ -1,5 +1,4 @@
-﻿using Fu.Core;
-using Fu.Framework;
+﻿using Fu.Framework;
 using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
@@ -64,7 +63,7 @@ namespace Fu
             if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
             {
                 // Open the context menu
-                OpenContextMenu();
+                TryOpenContextMenu();
             }
         }
 
@@ -79,7 +78,7 @@ namespace Fu
             if (ImGui.IsMouseHoveringRect(min, max) && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
             {
                 // Open the context menu
-                OpenContextMenu();
+                TryOpenContextMenu();
             }
         }
 
@@ -92,7 +91,7 @@ namespace Fu
             if (ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup) && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
             {
                 // open the context menu
-                OpenContextMenu();
+                TryOpenContextMenu();
             }
         }
         #endregion
@@ -102,7 +101,7 @@ namespace Fu
         /// Open the context menu now.
         /// If the context menu if not already open to a higher level, open it. owether, do nothing
         /// </summary>
-        public static void OpenContextMenu()
+        public static void TryOpenContextMenu()
         {
             // Code updates the current context menu items if a new level has been opened
             if (_openThisFrameLevel < _currentContextMenuStackIndex)
@@ -150,6 +149,8 @@ namespace Fu
                 _openThisFrameLevel = -1;
             }
 
+            Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
+            Push(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 8f));
             // draw the context menu
             if (ImGui.BeginPopupContextWindow(CONTEXT_MENU_NAME))
             {
@@ -162,6 +163,7 @@ namespace Fu
             {
                 IsContextMenuOpen = false;
             }
+            PopStyle(2);
         }
 
         /// <summary>

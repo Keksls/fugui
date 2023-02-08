@@ -308,6 +308,9 @@ namespace Fu.Core
             {
                 // draw the window
                 RenderFuWindow(Window);
+
+                // draw the context menu
+                Fugui.RenderContextMenu();
             }
         }
 

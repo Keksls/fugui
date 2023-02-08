@@ -235,6 +235,9 @@ namespace Fu.Core
 
             // render UI window
             RenderFuWindow(FuWindow);
+
+            // render context menu
+            Fugui.RenderContextMenu();
         }
 
         /// <summary>

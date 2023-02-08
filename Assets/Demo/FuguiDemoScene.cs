@@ -272,26 +272,29 @@ public class FuguiDemoScene : MonoBehaviour
 
         // add Metadata Window
         // create common metadata context menu items
-        ContextMenuItemBuilder.AddItem("Action 0 Lvl 0", () => { Debug.Log("Action 0 Lvl 0"); });
-        ContextMenuItemBuilder.AddItem("Action 1 Lvl 0", () => { Debug.Log("Action 1 Lvl 0"); });
-        ContextMenuItemBuilder.AddSeparator();
-        ContextMenuItemBuilder.BeginChild("Parent 0 LVl 0");
-        ContextMenuItemBuilder.AddItem("Action 0 Lvl 1", () => { Debug.Log("Action 0 Lvl 1"); });
-        ContextMenuItemBuilder.AddItem("Action 1 Lvl 1", () => { Debug.Log("Action 1 Lvl 1"); });
-        ContextMenuItemBuilder.EndChild();
-        var metadataContextMenuItems = ContextMenuItemBuilder.Build();
+        var metadataContextMenuItems = FuContextMenuBuilder.Start()
+            .AddItem("Action 0 Lvl 0", () => { Debug.Log("Action 0 Lvl 0"); })
+            .AddItem("Action 1 Lvl 0", () => { Debug.Log("Action 1 Lvl 0"); })
+            .AddSeparator()
+            .BeginChild("Parent 0 LVl 0")
+            .AddItem("Action 0 Lvl 1", () => { Debug.Log("Action 0 Lvl 1"); })
+            .AddItem("Action 1 Lvl 1", () => { Debug.Log("Action 1 Lvl 1"); })
+            .EndChild()
+            .Build();
 
         // create extra list box context menu items
-        ContextMenuItemBuilder.AddItem("Action 0 Lvl 0 : extra", () => { Debug.Log("Action 0 Lvl 0 : extra"); });
-        ContextMenuItemBuilder.AddSeparator();
-        ContextMenuItemBuilder.BeginChild("Parent 0 LVl 0");
-        ContextMenuItemBuilder.AddItem("Action 0 Lvl 1 : extra", () => { Debug.Log("Action 0 Lvl 1 : extra"); });
-        ContextMenuItemBuilder.EndChild();
-        var listboxContextMenuItems = ContextMenuItemBuilder.Build();
+        var listboxContextMenuItems = FuContextMenuBuilder.Start()
+            .AddItem("Action 0 Lvl 0 : extra", () => { Debug.Log("Action 0 Lvl 0 : extra"); })
+            .AddSeparator()
+            .BeginChild("Parent 0 LVl 0")
+            .AddItem("Action 0 Lvl 1 : extra", () => { Debug.Log("Action 0 Lvl 1 : extra"); })
+            .EndChild()
+            .Build();
 
         // create extra list box 2 context menu items
-        ContextMenuItemBuilder.AddItem("This is a very special listbox", "some shortcut", () => { Debug.Log("click on my very special listbox !"); });
-        var listbox2ContextMenuItems = ContextMenuItemBuilder.Build();
+        var listbox2ContextMenuItems = FuContextMenuBuilder.Start()
+            .AddItem("This is a very special listbox", "some shortcut", () => { Debug.Log("click on my very special listbox !"); })
+            .Build();
 
         new FuWindowDefinition(FuWindowsNames.Metadata, "Metadata", (window) =>
         {

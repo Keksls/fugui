@@ -342,6 +342,36 @@ namespace Fu.Core
                 {
                     _collapsed = !_collapsed;
                 }
+                // open context menu if right clicked
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                {
+                    // build context menu items
+                    var builder = FuContextMenuBuilder.Start()
+                        .BeginChild("Overlay Anchor");
+                    foreach (AnchorLocation location in Enum.GetValues(typeof(AnchorLocation)))
+                    {
+                        builder.AddItem(Fugui.AddSpacesBeforeUppercaseDirect(location.ToString()), () =>
+                        {
+                            _anchorLocation = location;
+                        });
+                    }
+                    builder.EndChild().BeginChild("Overlay Drag");
+                    foreach (FuOverlayDragPosition pos in Enum.GetValues(typeof(FuOverlayDragPosition)))
+                    {
+                        builder.AddItem(Fugui.AddSpacesBeforeUppercaseDirect(pos.ToString()), () =>
+                        {
+                            _dragButtonPosition = pos;
+                        });
+                    }
+                    builder.EndChild();
+
+                    // push items to context menu
+                    Fugui.PushContextMenuItems(builder.Build());
+                    // open context menu
+                    Fugui.TryOpenContextMenu();
+                    // pop items to context menu
+                    Fugui.PopContextMenuItems();
+                }
             }
             else
             {

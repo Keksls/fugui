@@ -5,6 +5,10 @@ using System.Collections.Generic;
 using System;
 using Fu;
 using System.Linq;
+using Codice.Client.Common.GameUI;
+using System.Reflection.Emit;
+using ImGuiNET;
+using log4net.Core;
 
 /// <summary>
 /// this sample show how to use Fugui API
@@ -17,6 +21,51 @@ public class FuguiDemoScene : MonoBehaviour
     public bool ShowRaycastersDebug = false;
     public Test3DRaycaster Raycaster;
     private FuCameraWindow _mainCam;
+
+    // tree
+    private class treeTestItem
+    {
+        public string Text;
+        public byte IsOpen = 0;
+        public int Level = 0;
+        public treeTestItem Parent;
+        public List<treeTestItem> Children;
+
+        public treeTestItem(string text, int level, List<treeTestItem> children = null)
+        {
+            Level = level;
+            Text = text;
+            Children = children;
+        }
+
+        public void AddChild(treeTestItem child)
+        {
+            child.Parent = this;
+            Children.Add(child);
+        }
+
+        public static List<treeTestItem> GetRandomHierarchie()
+        {
+            List<treeTestItem> items = new List<treeTestItem>();
+
+            for (int i = 0; i < 10; i++)
+            {
+                treeTestItem parent = new treeTestItem("Parent " + i, 0, new List<treeTestItem>());
+                for (int j = 0; j < 10; j++)
+                {
+                    treeTestItem child = new treeTestItem("Child " + j, 1, new List<treeTestItem>());
+                    for (int k = 0; k < 5; k++)
+                    {
+                        treeTestItem child2 = new treeTestItem("Child 2_" + k, 2);
+                        child.AddChild(child2);
+                    }
+                    parent.AddChild(child);
+                }
+                items.Add(parent);
+            }
+            return items;
+        }
+    }
 
     void Start()
     {
@@ -51,39 +100,39 @@ public class FuguiDemoScene : MonoBehaviour
         string description = "A <color=red>red</color> <b>Bold TEXT</b>";
 
         // set demo Main menu
-        FuMainMenu.RegisterItem(Icons.DragonflyLogo + " Files", null);
+        Fugui.RegisterMainMenuItem(Icons.DragonflyLogo + " Files", null);
 
         FuDockingLayoutManager.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
         FuDockingLayoutManager.OnDockLayoutInitialized += DockingLayoutManager_OnDockLayoutInitialized;
 
-        FuMainMenu.RegisterItem("Layout", null);
+        Fugui.RegisterMainMenuItem("Layout", null);
         foreach (KeyValuePair<string, FuDockSpaceDefinition> layoutDefinition in FuDockingLayoutManager.Layouts)
         {
             string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
-            if (!FuMainMenu.IsRegisteredItem(menuName))
+            if (!Fugui.IsMainMenuRegisteredItem(menuName))
             {
-                FuMainMenu.RegisterItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+                Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
             }
         }
 
-        FuMainMenu.RegisterItem("Windows", null);
+        Fugui.RegisterMainMenuItem("Windows", null);
         foreach (FuWindowsNames windowName in Enum.GetValues(typeof(FuWindowsNames)))
         {
             if (windowName == FuWindowsNames.None)
             {
                 continue;
             }
-            FuMainMenu.RegisterItem(windowName.ToString(), () => Fugui.CreateWindowAsync(windowName, null), "Windows");
+            Fugui.RegisterMainMenuItem(windowName.ToString(), () => Fugui.CreateWindowAsync(windowName, null), "Windows");
         }
 
-        FuMainMenu.RegisterItem("3D Windows", null);
+        Fugui.RegisterMainMenuItem("3D Windows", null);
         foreach (FuWindowsNames windowName in Enum.GetValues(typeof(FuWindowsNames)))
         {
             if (windowName == FuWindowsNames.None)
             {
                 continue;
             }
-            FuMainMenu.RegisterItem("3D " + windowName.ToString(), () => Fugui.CreateWindowAsync(windowName, (window) => { Fugui.Add3DWindow(window, new Vector3(0f, -2f, 0f), Quaternion.Euler(Vector3.up * 180f)); }, false), "3D Windows");
+            Fugui.RegisterMainMenuItem("3D " + windowName.ToString(), () => Fugui.CreateWindowAsync(windowName, (window) => { Fugui.Add3DWindow(window, new Vector3(0f, -2f, 0f), Quaternion.Euler(Vector3.up * 180f)); }, false), "3D Windows");
         }
 
         new FuWindowDefinition(FuWindowsNames.DockSpaceManager, "DockSpace Manager", (window) => Fugui.DrawDockSpaceManager());
@@ -149,8 +198,8 @@ public class FuguiDemoScene : MonoBehaviour
             }
         }
 
-        // add Tree Window
-        new FuWindowDefinition(FuWindowsNames.Tree, "Modals Demo", (window) =>
+        // add Modals Window
+        new FuWindowDefinition(FuWindowsNames.Modals, "Modals Demo", (window) =>
             {
                 using (FuLayout layout = new FuLayout())
                 {
@@ -225,6 +274,64 @@ public class FuguiDemoScene : MonoBehaviour
                     }
                 }
             }, flags: FuWindowFlags.AllowMultipleWindow);
+
+        // add tree Window
+        List<treeTestItem> treeItems = treeTestItem.GetRandomHierarchie();
+        FuTree<treeTestItem> tree = null;
+        tree = new FuTree<treeTestItem>("testTree",
+            treeItems,
+            FuTextStyle.Info,
+            // how to draw an item
+            (item, layout) =>
+            {
+                layout.Text(item.Text);
+                layout.SameLine();
+                layout.Dummy(ImGui.GetContentRegionAvail().x - 12f);
+                layout.SameLine();
+                FuButtonStyle.Info.Push(true);
+                if (layout.ClickableText(Icons.Delete, FuTextStyle.Danger))
+                {
+                    Fugui.ShowModal("Remove tree element", () => layout.Text("Are you sure you want to remove this tree element ? (" + item.Text + ")"), FuModalSize.Medium,
+                        new FuModalButton("No", Fugui.CloseModal, FuButtonStyle.Default),
+                        new FuModalButton("Yes", () =>
+                        {
+                            if (item.Parent != null)
+                            {
+                                item.Parent.Children.Remove(item);
+                            }
+                            else
+                            {
+                                treeItems.Remove(item);
+                            }
+                            tree.UpdateTree(treeItems);
+                            Fugui.CloseModal();
+                        }, FuButtonStyle.Danger));
+                }
+                FuButtonStyle.Info.Pop();
+            },
+            // when an item just open
+            (item) => { item.IsOpen = 1; },
+            // when an item just close
+            (item) => { item.IsOpen = 0; },
+            // get the level of an item
+            (item) => item.Level,
+            // are two items equals ?
+            (a, b) => a == b,
+            // how to get direct children
+            (item) => item.Children,
+            // whatever an item is open
+            (item) => item.IsOpen == 1,
+            14f);
+
+        new FuWindowDefinition(FuWindowsNames.Tree, "Tree", (window) =>
+        {
+            using (FuPanel panel = new FuPanel("testTreePanel", false))
+            {
+                Fugui.Push(ImGuiStyleVar.ItemSpacing, Vector2.zero);
+                tree.DrawTree();
+                Fugui.PopStyle();
+            }
+        }, flags: FuWindowFlags.AllowMultipleWindow);
 
         // add Capture Window
         new FuWindowDefinition(FuWindowsNames.Captures, "Notify Demo", (window) =>
@@ -451,7 +558,7 @@ public class FuguiDemoScene : MonoBehaviour
 
                             grid.CheckBox("Physical Camera", ref physicalCamera);
                             grid.TextInput("Title", "Enter title", ref title);
-                            grid.TextInput("Description", "Enter description", ref description, 4096, 64f);
+                            grid.TextInput("Description", "Enter description", ref description, 4096, 64f, 0f);
 
                             grid.NextColumn();
                             grid.SmartText(description);
@@ -683,18 +790,18 @@ public class FuguiDemoScene : MonoBehaviour
     private void DockingLayoutManager_OnDockLayoutReloaded()
     {
         //Unregistered menu and all children
-        FuMainMenu.UnregisterItem("Layout");
+        Fugui.UnregisterMainMenuItem("Layout");
 
         //Register the layout menu empty
-        FuMainMenu.RegisterItem("Layout", null);
+        Fugui.RegisterMainMenuItem("Layout", null);
 
         foreach (KeyValuePair<string, FuDockSpaceDefinition> layoutDefinition in FuDockingLayoutManager.Layouts)
         {
             //Add new children
             string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
-            if (!FuMainMenu.IsRegisteredItem(menuName))
+            if (!Fugui.IsMainMenuRegisteredItem(menuName))
             {
-                FuMainMenu.RegisterItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+                Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
             }
         }
     }

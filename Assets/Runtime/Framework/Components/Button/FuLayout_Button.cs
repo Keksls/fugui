@@ -53,7 +53,7 @@ namespace Fu.Framework
                 return false;
             }
 
-            bool clicked = ImGui.Button(text, size.GetSize()) & !_nextIsDisabled; // render the button and return true if it was clicked, false otherwise
+            bool clicked = ImGui.Button(text, size) & !_nextIsDisabled; // render the button and return true if it was clicked, false otherwise
             displayToolTip(); // display the tooltip if necessary
             endElement(style); // remove the style and draw the hover frame if necessary
             return clicked;

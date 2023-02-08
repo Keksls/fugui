@@ -13,7 +13,7 @@
         /// <param name="style">UIFrameStyle of the UI element</param>
         /// <param name="flags">Flag for custom InputText Behaviour</param>
         /// <returns>true if value change</returns>
-        public override bool TextInput(string label, string hint, ref string text, uint size, float height, FuFrameStyle style, FuInputTextFlags flags)
+        public override bool TextInput(string label, string hint, ref string text, uint size, float height, FuFrameStyle style, float width, FuInputTextFlags flags)
         {
             if (!_gridCreated)
             {
@@ -21,7 +21,7 @@
             }
             drawElementLabel(label, style.TextStyle);
             label = "##" + label;
-            return base.TextInput(label, hint, ref text, size, height, style, flags);
+            return base.TextInput(label, hint, ref text, size, height, style, width, flags);
         }
     }
 }

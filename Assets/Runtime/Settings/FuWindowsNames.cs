@@ -12,5 +12,6 @@ namespace Fu.Core
         MainCameraView = 8,
         FuguiSettings = 9,
         DockSpaceManager = 10,
+        Modals = 11,
     }
 }

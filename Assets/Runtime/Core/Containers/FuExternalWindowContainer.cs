@@ -200,7 +200,7 @@ namespace Fu.Core
         }
 
         /// <summary>
-        /// did this container has a window according to a it's id
+        /// Did this container has a window according to a it's id
         /// </summary>
         /// <param name="id">id of the window to check</param>
         /// <returns>true if contains</returns>

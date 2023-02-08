@@ -21,6 +21,7 @@ namespace Fu.Framework
         /// </summary>
         private bool _panelCreated = false;
         private string _ID;
+        private bool _useClipper = true;
         internal static FuPanelClipper Clipper = null;
         private static Dictionary<string, FuPanelClipper> _clippingDict = new Dictionary<string, FuPanelClipper>();
 
@@ -32,9 +33,10 @@ namespace Fu.Framework
         /// <param name="height">The optional height of the panel. Defaults to 0.</param>
         /// <param name="width">The optional width of the panel. Defaults to 0.</param>
         /// <param name="flags">Behaviour flags of this panel.</param>
-        public FuPanel(string id, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
+        public FuPanel(string id, bool useClipper = true, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
         {
             _ID = id;
+            _useClipper = useClipper;
             _currentStyle = FuStyle.Default;
             beginPanel(height, width, !flags.HasFlag(FuPanelFlags.NoScroll), flags.HasFlag(FuPanelFlags.DrawBorders));
         }
@@ -48,9 +50,10 @@ namespace Fu.Framework
         /// <param name="height">The optional height of the panel. Defaults to 0.</param>
         /// <param name="width">The optional width of the panel. Defaults to 0.</param>
         /// <param name="flags">Behaviour flags of this panel.</param>
-        public FuPanel(string id, FuStyle style, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
+        public FuPanel(string id, FuStyle style, bool useClipper = true, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
         {
             _ID = id;
+            _useClipper = useClipper;
             _currentStyle = style;
             beginPanel(height, width, !flags.HasFlag(FuPanelFlags.NoScroll), flags.HasFlag(FuPanelFlags.DrawBorders));
         }
@@ -125,7 +128,7 @@ namespace Fu.Framework
                 _clippingDict.Add(clippingID, new FuPanelClipper());
             }
             Clipper = _clippingDict[clippingID];
-            Clipper.NewFrame(true);
+            Clipper.NewFrame(_useClipper);
         }
 
         /// <summary>

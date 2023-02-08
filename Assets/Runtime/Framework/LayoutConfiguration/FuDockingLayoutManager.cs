@@ -371,7 +371,7 @@ namespace Fu.Framework
         {
             var sb = new StringBuilder();
             // enum namespace and declaration
-            sb.AppendLine("namespace Fugui.Core")
+            sb.AppendLine("namespace Fu.Core")
                 .AppendLine("{")
                 .AppendLine("    public enum " + enumName)
                 .AppendLine("    {");

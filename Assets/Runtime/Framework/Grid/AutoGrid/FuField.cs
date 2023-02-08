@@ -200,7 +200,7 @@ namespace Fu.Framework
                 grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             string value = (string)_fieldInfo.GetValue(objectInstance);
-            bool updated = grid.TextInput(FieldName, _hint, ref value, _lenght, _height);
+            bool updated = grid.TextInput(FieldName, _hint, ref value, _lenght, _height, 0f);
             if (updated)
             {
                 _fieldInfo.SetValue(objectInstance, value);

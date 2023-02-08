@@ -1,17 +1,17 @@
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
-namespace Fu.Framework
+namespace Fu
 {
-    public static class FuMainMenu
+    public static partial class Fugui
     {
         /// <summary>
         /// menu items of the main menu
         /// </summary>
-        private static readonly Dictionary<string, MenuItem> _menuItems = new Dictionary<string, MenuItem>();
+        private static readonly Dictionary<string, MainMenuItem> _mainMenuItems = new Dictionary<string, MainMenuItem>();
 
         /// <summary>
         /// Registers a new menu item with the provided name, callback action, and optional parent menu item,
@@ -25,52 +25,52 @@ namespace Fu.Framework
         /// <param name="shortcut">The optional shortcut key for the menu item.</param>
         /// <param name="enabled">The optional enabled/disabled status of the menu item. Defaults to true.</param>
         /// <param name="selected">The optional selected/unselected status of the menu item. Defaults to false.</param>
-        public static void RegisterItem(string name, Action callback, string parentName = null, string shortcut = null, bool enabled = true, bool selected = false)
+        public static void RegisterMainMenuItem(string name, Action callback, string parentName = null, string shortcut = null, bool enabled = true, bool selected = false)
         {
             // Check if a menu item with the same name has already been registered
-            if (_menuItems.ContainsKey(name))
+            if (_mainMenuItems.ContainsKey(name))
             {
                 throw new Exception($"Menu item with name '{name}' is already registered");
             }
 
             // Try to get the parent menu item, if one was specified
-            MenuItem parent = null;
+            MainMenuItem parent = null;
             if (parentName != null)
             {
-                if (!_menuItems.TryGetValue(parentName, out parent))
+                if (!_mainMenuItems.TryGetValue(parentName, out parent))
                 {
                     throw new Exception($"Parent menu item with name '{parentName}' was not found");
                 }
             }
 
             // Create a new MenuItem object with the provided parameters
-            var menuItem = new MenuItem(name, shortcut, enabled, selected, callback, parent);
+            var menuItem = new MainMenuItem(name, shortcut, enabled, selected, callback, parent);
 
             // Add the menu item to the collection of registered menu items
-            _menuItems.Add(name, menuItem);
+            _mainMenuItems.Add(name, menuItem);
         }
 
         /// <summary>
         /// Unregistered an existing menu. Il menu has children, children will be unregistered too
         /// </summary>
         /// <param name="name">Menu to unregistered</param>
-        public static void UnregisterItem(string name)
+        public static void UnregisterMainMenuItem(string name)
         {
             // Check if a menu item with the same name has already been registered
-            if (_menuItems.ContainsKey(name))
+            if (_mainMenuItems.ContainsKey(name))
             {
-                MenuItem menuToRemove = _menuItems[name];
+                MainMenuItem menuToRemove = _mainMenuItems[name];
 
                 //If menu item to remove has children
                 if (menuToRemove.Children != null)
                 {
                     for (int i = 0; i < menuToRemove.Children.Count; i++)
                     {
-                        UnregisterItem(menuToRemove.Children[i].Name);
+                        UnregisterMainMenuItem(menuToRemove.Children[i].Name);
                     }
                 }
 
-                _menuItems.Remove(name);
+                _mainMenuItems.Remove(name);
             }
         }
 
@@ -79,9 +79,9 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="name">Name to check</param>
         /// <returns>TRUE if registered, FALSE either</returns>
-        public static bool IsRegisteredItem(string name)
+        public static bool IsMainMenuRegisteredItem(string name)
         {
-            return _menuItems.ContainsKey(name);
+            return _mainMenuItems.ContainsKey(name);
         }
 
         /// <summary>
@@ -89,50 +89,50 @@ namespace Fu.Framework
         /// is not found, an exception is thrown.
         /// </summary>
         /// <param name="parentName">The name of the parent menu item.</param>
-        public static void RegisterSeparator(string parentName)
+        public static void RegisterMainMenuSeparator(string parentName)
         {
             // Try to get the parent menu item
-            MenuItem parent = null;
+            MainMenuItem parent = null;
             if (parentName != null)
             {
-                if (!_menuItems.TryGetValue(parentName, out parent))
+                if (!_mainMenuItems.TryGetValue(parentName, out parent))
                 {
                     throw new Exception($"Parent menu item with name '{parentName}' was not found");
                 }
             }
 
             // Create a new separator menu item under the parent menu item
-            new MenuItem(parent);
+            new MainMenuItem(parent);
         }
 
         /// <summary>
         /// Draws the main menu bar and all top-level menu items.
         /// </summary>
-        public static void Draw()
+        public static void RenderMainMenu()
         {
             // Return early if no menu items are registered
-            if (_menuItems.Count == 0)
+            if (_mainMenuItems.Count == 0)
             {
                 return;
             }
 
             // Set various style options for the main menu bar and its items
-            Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
-            Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 8f));
-            Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 8f));
-            Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
-            Fugui.Push(ImGuiCol.Header, FuThemeManager.GetColor(FuColors.HeaderHovered));
-            Fugui.Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.MainMenuText));
+            Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
+            Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 8f));
+            Push(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 8f));
+            Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
+            Push(ImGuiCol.Header, FuThemeManager.GetColor(FuColors.HeaderHovered));
+            Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.MainMenuText));
 
             // Begin the main menu bar
             if (ImGui.BeginMainMenuBar())
             {
                 // Draw all top-level menu items
-                foreach (var item in _menuItems.Values)
+                foreach (var item in _mainMenuItems.Values)
                 {
                     if (item.Parent == null)
                     {
-                        DrawItem(item);
+                        drawMainMenuItem(item);
                     }
                 }
 
@@ -141,8 +141,8 @@ namespace Fu.Framework
             }
 
             // Pop the set style options
-            Fugui.PopColor(2);
-            Fugui.PopStyle(4);
+            PopColor(2);
+            PopStyle(4);
         }
 
         /// <summary>
@@ -152,11 +152,11 @@ namespace Fu.Framework
         /// If the menu item is clicked and has a callback action registered, the action is executed.
         /// </summary>
         /// <param name="item">The menu item to be drawn.</param>
-        private static void DrawItem(MenuItem item)
+        private static void drawMainMenuItem(MainMenuItem item)
         {
             if (item.Parent != null)
             {
-                Fugui.Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.Text));
+                Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.Text));
             }
             if (item.Children != null && item.Children.Count > 0)
             {
@@ -166,7 +166,7 @@ namespace Fu.Framework
                     // Draw all children of the menu item
                     foreach (var child in item.Children)
                     {
-                        DrawItem(child);
+                        drawMainMenuItem(child);
                     }
                     ImGui.EndMenu();
                 }
@@ -186,87 +186,7 @@ namespace Fu.Framework
             }
             if (item.Parent != null)
             {
-                Fugui.PopColor();
-            }
-        }
-
-        /// <summary>
-        /// Class that will store menu items data
-        /// </summary>
-        private class MenuItem
-        {
-            /// <summary>
-            /// The name of the menu item.
-            /// </summary>
-            public string Name { get; set; }
-            /// <summary>
-            /// The optional shortcut key for the menu item.
-            /// </summary>
-            public string Shortcut { get; private set; }
-            /// <summary>
-            /// A flag indicating whether the menu item is enabled or disabled.
-            /// </summary>
-            public bool Enabled { get; private set; }
-            /// <summary>
-            /// A flag indicating whether the menu item is selected or not.
-            /// </summary>
-            public bool Selected { get; private set; }
-            /// <summary>
-            /// A flag indicating whether the menu item is a separator or not.
-            /// </summary>
-            public bool Separator { get; private set; }
-            /// <summary>
-            /// The callback action to be executed when the menu item is selected.
-            /// </summary>
-            public Action Callback { get; private set; }
-            /// <summary>
-            /// The parent menu item, if any.
-            /// </summary>
-            public MenuItem Parent { get; private set; }
-            /// <summary>
-            /// The list of child menu items, if any.
-            /// </summary>
-            public List<MenuItem> Children { get; }
-
-            /// <summary>
-            /// Creates a new menu item with the provided name, shortcut key, enabled/disabled status,
-            /// selected/unselected status, callback action, and parent menu item. If a parent menu item is
-            /// specified, the new menu item is added to the parent's list of children.
-            /// </summary>
-            /// <param name="name">The name of the menu item.</param>
-            /// <param name="shortcut">The optional shortcut key for the menu item.</param>
-            /// <param name="enabled">The optional enabled/disabled status of the menu item. Defaults to true.</param>
-            /// <param name="selected">The optional selected/unselected status of the menu item. Defaults to false.</param>
-            /// <param name="callback">The callback action to be executed when the menu item is selected.</param>
-            /// <param name="parent">The optional parent menu item.</param>
-            public MenuItem(string name, string shortcut, bool enabled, bool selected, Action callback, MenuItem parent)
-            {
-                Name = name;
-                Shortcut = shortcut;
-                Enabled = enabled;
-                Selected = selected;
-                Callback = callback;
-                Parent = parent;
-                Children = new List<MenuItem>();
-                if (parent != null)
-                {
-                    parent.Children.Add(this);
-                }
-            }
-
-            /// <summary>
-            /// Creates a new separator menu item with the provided parent menu item. If a parent menu item is
-            /// specified, the new menu item is added to the parent's list of children.
-            /// </summary>
-            /// <param name="parent">The optional parent menu item.</param>
-            public MenuItem(MenuItem parent)
-            {
-                Separator = true;
-                Parent = parent;
-                if (parent != null)
-                {
-                    parent.Children.Add(this);
-                }
+                PopColor();
             }
         }
     }

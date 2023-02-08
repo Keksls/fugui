@@ -881,6 +881,34 @@ namespace Fu
         {
             return Regex.Replace(input, @"\s([a-zA-Z0-9])", x => x.Groups[1].Value.ToUpper());
         }
+
+        // Clipper
+        private static unsafe readonly ImGuiListClipper* _clipper = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
+
+        public static unsafe void ListClipperBegin(int count = -1, float itemHeight = -1f)
+        {
+            ImGuiNative.ImGuiListClipper_Begin(_clipper, count, itemHeight);
+        }
+
+        public static unsafe void ListClipperEnd()
+        {
+            ImGuiNative.ImGuiListClipper_End(_clipper);
+        }
+
+        public static unsafe bool ListClipperStep()
+        {
+            return ImGuiNative.ImGuiListClipper_Step(_clipper) == 1;
+        }
+
+        public static unsafe int ListClipperDisplayStart()
+        {
+            return _clipper->DisplayStart;
+        }
+
+        public static unsafe int ListClipperDisplayEnd()
+        {
+            return _clipper->DisplayEnd;
+        }
         #endregion
     }
 

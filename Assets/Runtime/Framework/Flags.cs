@@ -3,6 +3,29 @@
 namespace Fu.Framework
 {
     /// <summary>
+    /// Flag that represent the position of the text of a Progressbar
+    /// </summary>
+    public enum ProgressBarTextPosition
+    {
+        /// <summary>
+        /// Text a the left of the progressbar
+        /// </summary>
+        Left,
+        /// <summary>
+        /// Text at the right of the progressbar
+        /// </summary>
+        Right,
+        /// <summary>
+        /// Text at the middle of the filler part
+        /// </summary>
+        Inside,
+        /// <summary>
+        /// No text
+        /// </summary>
+        None
+    }
+
+    /// <summary>
     /// Flag for custom InputText Behaviour.
     /// </summary>
     public enum FuInputTextFlags

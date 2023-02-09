@@ -20,6 +20,11 @@ namespace Fu.Framework
             _size = size;
         }
 
+        public FuElementSize(float x, float y)
+        {
+            _size = new Vector2(x, y);
+        }
+
         /// <summary>
         /// Get calculated size according to given size
         /// </summary>
@@ -27,7 +32,7 @@ namespace Fu.Framework
         public Vector2 GetSize()
         {
             Vector2 size = _size;
-            if (_size.x == -1)
+            if (_size.x <= 0)
             {
                 size.x = ImGui.GetContentRegionAvail().x;
             }

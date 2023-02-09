@@ -78,21 +78,31 @@ namespace Fu.Framework
             }
 
             int level = _getLevel(element);
+            int maxIndex = index;
             for (int i = index; i < _elements.Count; i++)
             {
                 // we reach the same level that we want to close
                 if (_getLevel(_elements[i]) == level)
                 {
-                    int count = i - index;
-                    _onPostRenderAction = () =>
-                    {
-                        _elements.RemoveRange(index, count);
-                        _onPostRenderAction = null;
-                        _onClose(element);
-                    };
-                    return;
+                    maxIndex = i;
+                    break;
                 }
             }
+
+            // we reach the end before finding an element at the same level, so it's the end of the tree
+            if (maxIndex == index)
+            {
+                maxIndex = _elements.Count;
+            }
+
+            // register the post render action
+            int count = maxIndex - index;
+            _onPostRenderAction = () =>
+            {
+                _elements.RemoveRange(index, count);
+                _onPostRenderAction = null;
+                _onClose(element);
+            };
         }
 
         private void getOpenChildren(IEnumerable<T> elements, out List<T> fullList)

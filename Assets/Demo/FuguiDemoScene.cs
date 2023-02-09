@@ -74,6 +74,8 @@ public class FuguiDemoScene : MonoBehaviour
         // add debug window
         bool toggleVal = false;
         bool boolVal = false;
+        float min = 10f;
+        float max = 20;
         int intVal = 5;
         float floatVal = 5f;
         Vector2 v2Val = Vector2.zero;
@@ -277,6 +279,7 @@ public class FuguiDemoScene : MonoBehaviour
 
         // add tree Window
         List<treeTestItem> treeItems = treeTestItem.GetRandomHierarchie();
+
         FuTree<treeTestItem> tree = null;
         tree = new FuTree<treeTestItem>("testTree",
             treeItems,
@@ -284,6 +287,12 @@ public class FuguiDemoScene : MonoBehaviour
             // how to draw an item
             (item, layout) =>
             {
+                layout.SetNextElementToolTipWithLabel("Warning");
+                layout.SetNextElementToolTipStyles(FuTextStyle.Warning);
+                ImGui.AlignTextToFramePadding();
+                layout.Text(Icons.Warning + " ", FuTextStyle.Warning);
+                layout.SameLine();
+                ImGui.AlignTextToFramePadding();
                 layout.Text(item.Text);
                 layout.SameLine();
                 layout.Dummy(ImGui.GetContentRegionAvail().x - 12f);
@@ -291,21 +300,22 @@ public class FuguiDemoScene : MonoBehaviour
                 FuButtonStyle.Info.Push(true);
                 if (layout.ClickableText(Icons.Delete, FuTextStyle.Danger))
                 {
-                    Fugui.ShowModal("Remove tree element", () => layout.Text("Are you sure you want to remove this tree element ? (" + item.Text + ")"), FuModalSize.Medium,
-                        new FuModalButton("No", Fugui.CloseModal, FuButtonStyle.Default),
-                        new FuModalButton("Yes", () =>
+                    Fugui.ShowYesNoModal("Are you sure you want to remove this tree element ? (" + item.Text + ")",
+                        (yes) =>
                         {
-                            if (item.Parent != null)
+                            if (yes)
                             {
-                                item.Parent.Children.Remove(item);
+                                if (item.Parent != null)
+                                {
+                                    item.Parent.Children.Remove(item);
+                                }
+                                else
+                                {
+                                    treeItems.Remove(item);
+                                }
+                                tree.UpdateTree(treeItems);
                             }
-                            else
-                            {
-                                treeItems.Remove(item);
-                            }
-                            tree.UpdateTree(treeItems);
-                            Fugui.CloseModal();
-                        }, FuButtonStyle.Danger));
+                        }, FuModalSize.Medium);
                 }
                 FuButtonStyle.Info.Pop();
             },
@@ -321,6 +331,7 @@ public class FuguiDemoScene : MonoBehaviour
             (item) => item.Children,
             // whatever an item is open
             (item) => item.IsOpen == 1,
+            // items height
             14f);
 
         new FuWindowDefinition(FuWindowsNames.Tree, "Tree", (window) =>
@@ -412,6 +423,49 @@ public class FuguiDemoScene : MonoBehaviour
                 {
                     using (var grid = new FuGrid("gridMD"))
                     {
+                        grid.ProgressBar("pb in", floatVal / 100f, ProgressBarTextPosition.Inside);
+                        grid.ProgressBar("pb left", floatVal / 100f, ProgressBarTextPosition.Left);
+                        grid.ProgressBar("pb right", floatVal / 100f, ProgressBarTextPosition.Right);
+                        grid.ProgressBar("pb none", floatVal / 100f, ProgressBarTextPosition.None);
+                        grid.ProgressBar("pb in small", floatVal / 100f, true, new Vector2(-1f, 8f), ProgressBarTextPosition.Inside);
+                        grid.ProgressBar("pb no small", floatVal / 100f, true, new Vector2(-1f, 8f), ProgressBarTextPosition.None);
+                        grid.ProgressBar("pb idle", new Vector2(-1f, 8f));
+
+                        grid.Loader_Spinner();
+                        grid.Loader_Spinner(20f, 6, 2f, true);
+                        grid.Loader_Spinner(20f, 6, 3f, true);
+                        grid.Loader_Spinner(20f, 3, 2f, false);
+                        grid.Loader_Spinner(20f, 3, 1f, false);
+
+                        grid.Loader_ElipseSpinner(20f, 6, 2f, true);
+                        grid.Loader_ElipseSpinner(20f, 3, 2f, false);
+
+                        grid.Loader_Wheel(20f);
+                        grid.Loader_Wheel(64f);
+
+                        grid.Loader_WavyLine(new Vector2(64f, 20f), 4f);
+                        grid.Loader_WavyLine(new Vector2(128f, 32f), 8f);
+                        grid.Loader_WavyLine(new Vector2(256f, 64f), 16f, false);
+                        grid.Loader_WavyLine(new Vector2(ImGui.GetContentRegionAvail().x, 20f), ImGui.GetContentRegionAvail().x / 20f, false);
+
+                        grid.Loader_Square(20f);
+                        grid.Loader_Square(64f);
+
+                        grid.Loader_SquareCircleDance(20f);
+                        grid.Loader_SquareCircleDance(64f);
+
+                        grid.Loader_PulsingLines(new Vector2(20f, 20f));
+                        grid.Loader_PulsingLines(new Vector2(64f, 64f));
+
+                        grid.Loader_Clocker(20f);
+                        grid.Loader_Clocker(64f);
+
+                        grid.Loader_Pulsar(20f);
+                        grid.Loader_Pulsar(64f);
+
+                        grid.Loader_SpikedWheel(new Vector2(20f, 20f));
+                        grid.Loader_SpikedWheel(new Vector2(64f, 64f));
+
                         grid.CheckBox("checkbox ena", ref boolVal);
                         grid.DisableNextElement();
                         grid.CheckBox("checkbox dis", ref boolVal);
@@ -423,8 +477,8 @@ public class FuguiDemoScene : MonoBehaviour
                         grid.Slider("slider float ena", ref floatVal);
                         grid.DisableNextElement();
                         grid.Slider("slider float dis", ref floatVal);
-                        grid.Slider("slider float ena##NoDrag", ref floatVal, FuSliderFlags.NoDrag);
-                        grid.Slider("slider float ena##LeftDrag", ref floatVal, FuSliderFlags.LeftDrag);
+                        grid.Slider("slider float ena##NoDrag", ref floatVal, 0.5f, FuSliderFlags.NoDrag);
+                        grid.Slider("slider float ena##LeftDrag", ref floatVal, 0.5f, FuSliderFlags.LeftDrag);
                         grid.DisableNextElement();
                         grid.Slider("slider float dis##NoDrag", ref intVal, FuSliderFlags.NoDrag);
                         grid.DisableNextElement();
@@ -450,10 +504,15 @@ public class FuguiDemoScene : MonoBehaviour
                         grid.ButtonsGroup("Left", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft);
                         grid.ButtonsGroup("Auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AutoSizeButtons);
                         grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
+
+                        grid.Range("Range test", ref min, ref max, 0f, 30f, 0.25f);
+                        grid.Range("Range no drag", ref min, ref max, 0f, 30f, 0.1f, FuSliderFlags.NoDrag);
                     }
 
                     layout.Collapsable("Drag Tests", () =>
                     {
+                        layout.Range("layout Range test", ref min, ref max, 0f, 30f, 0.8f);
+                        layout.Range("layout Range no drag", ref min, ref max, 0f, 30f, 0.5f, FuSliderFlags.NoDrag);
                         using (var grid = new FuGrid("gridMD2"))
                         {
                             grid.Drag("drag int ena", ref intVal);

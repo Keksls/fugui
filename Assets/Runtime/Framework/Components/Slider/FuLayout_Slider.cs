@@ -31,7 +31,7 @@ namespace Fu.Framework
         public bool Slider(string text, ref int value, int min, int max, FuSliderFlags flags = FuSliderFlags.Default)
         {
             float val = value;
-            bool valueChange = _customSlider(text, ref val, min, max, true, flags);
+            bool valueChange = _customSlider(text, ref val, min, max, true, 1f, flags);
             value = (int)val;
             return valueChange;
         }
@@ -43,11 +43,12 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="text">The label for the slider.</param>
         /// <param name="value">The current value of the slider, which will be updated if the user interacts with the slider.</param>
+        /// <param name="step">step of the slider value change</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Slider(string text, ref float value, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Slider(string text, ref float value, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default)
         {
-            return Slider(text, ref value, 0f, 100f, flags);
+            return Slider(text, ref value, 0f, 100f, step, flags);
         }
 
         /// <summary>
@@ -57,11 +58,12 @@ namespace Fu.Framework
         /// <param name="value">The current value of the slider, which will be updated if the user interacts with the slider.</param>
         /// <param name="min">The minimum value that the user can select.</param>
         /// <param name="max">The maximum value that the user can select.</param>
+        /// <param name="step">step of the slider value change</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Slider(string text, ref float value, float min, float max, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Slider(string text, ref float value, float min, float max, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default)
         {
-            return _customSlider(text, ref value, min, max, false, flags);
+            return _customSlider(text, ref value, min, max, false, step, flags);
         }
         #endregion
 
@@ -73,9 +75,10 @@ namespace Fu.Framework
         /// <param name="min">minimum value of the slider</param>
         /// <param name="max">maximum value of the slider</param>
         /// <param name="isInt">whatever the slider is an Int slider (default is float). If true, the value will be rounded</param>
+        /// <param name="step">step of the slider value change</param>
         /// <param name="flags">behaviour flag of the slider</param>
         /// <returns>true if value changed</returns>
-        protected virtual bool _customSlider(string text, ref float value, float min, float max, bool isInt, FuSliderFlags flags)
+        protected virtual bool _customSlider(string text, ref float value, float min, float max, bool isInt, float step, FuSliderFlags flags)
         {
             beginElement(ref text, FuFrameStyle.Default);
             // return if item must no be draw
@@ -122,6 +125,11 @@ namespace Fu.Framework
                     drawSlider(text, ref value, min, max, isInt, knobRadius, hoverPaddingY, lineHeight, width, x, y);
                     break;
             }
+
+            // clamp step
+            float tmp = value / step;
+            tmp = Mathf.Round(tmp);
+            value = tmp * step;
 
             endElement(FuFrameStyle.Default);
             return value != oldValue;

@@ -32,7 +32,7 @@ namespace Fu.Framework
             // apply style and set unique ID
             beginElement(ref id, style);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return;
             }

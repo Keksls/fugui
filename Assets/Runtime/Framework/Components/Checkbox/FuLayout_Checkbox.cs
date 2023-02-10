@@ -17,7 +17,7 @@ namespace Fu.Framework
             beginElement(ref text, null); // Push the style for the checkbox element
 
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return false;
             }

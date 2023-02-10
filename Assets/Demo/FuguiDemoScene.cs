@@ -295,10 +295,10 @@ public class FuguiDemoScene : MonoBehaviour
                 ImGui.AlignTextToFramePadding();
                 layout.Text(item.Text);
                 layout.SameLine();
-                layout.Dummy(ImGui.GetContentRegionAvail().x - 12f);
+                layout.Dummy(ImGui.GetContentRegionAvail().x - 20f);
                 layout.SameLine();
                 FuButtonStyle.Info.Push(true);
-                if (layout.ClickableText(Icons.Delete, FuTextStyle.Danger))
+                if (layout.UnpaddedButton(Icons.Delete, new Vector2(1f, 0f), new Vector2(0.7f, -2.2f), FuButtonStyle.Danger))
                 {
                     Fugui.ShowYesNoModal("Are you sure you want to remove this tree element ? (" + item.Text + ")",
                         (yes) =>
@@ -414,6 +414,14 @@ public class FuguiDemoScene : MonoBehaviour
             .AddItem("This is a very special listbox", "some shortcut", () => { Debug.Log("click on my very special listbox !"); })
             .Build();
 
+        // default spinner
+        float spinnerSize = 20f;
+        int spinnerNbDots = 6;
+        float spinnerDotsSize = 2f;
+        bool spinnerDoubleColor = false;
+        Vector2 spinnerV2Size = new Vector2(64f, 20f);
+        float spinnerFrequency = 6f;
+
         new FuWindowDefinition(FuWindowsNames.Metadata, "Metadata", (window) =>
         {
             Fugui.PushContextMenuItems(metadataContextMenuItems);
@@ -421,93 +429,115 @@ public class FuguiDemoScene : MonoBehaviour
             {
                 using (var layout = new FuLayout())
                 {
-                    using (var grid = new FuGrid("gridMD"))
+                    layout.Collapsable("Widgets", () =>
                     {
-                        grid.ProgressBar("pb in", floatVal / 100f, ProgressBarTextPosition.Inside);
-                        grid.ProgressBar("pb left", floatVal / 100f, ProgressBarTextPosition.Left);
-                        grid.ProgressBar("pb right", floatVal / 100f, ProgressBarTextPosition.Right);
-                        grid.ProgressBar("pb none", floatVal / 100f, ProgressBarTextPosition.None);
-                        grid.ProgressBar("pb in small", floatVal / 100f, true, new Vector2(-1f, 8f), ProgressBarTextPosition.Inside);
-                        grid.ProgressBar("pb no small", floatVal / 100f, true, new Vector2(-1f, 8f), ProgressBarTextPosition.None);
-                        grid.ProgressBar("pb idle", new Vector2(-1f, 8f));
+                        using (var grid = new FuGrid("gridMD"))
+                        {
+                            grid.ProgressBar("pb in", floatVal / 100f, ProgressBarTextPosition.Inside);
+                            grid.ProgressBar("pb left", floatVal / 100f, ProgressBarTextPosition.Left);
+                            grid.ProgressBar("pb right", floatVal / 100f, ProgressBarTextPosition.Right);
+                            grid.ProgressBar("pb none", floatVal / 100f, ProgressBarTextPosition.None);
+                            grid.ProgressBar("pb in small", floatVal / 100f, new Vector2(-1f, 8f), ProgressBarTextPosition.Inside);
+                            grid.ProgressBar("pb no small", floatVal / 100f, new Vector2(-1f, 8f), ProgressBarTextPosition.None);
+                            grid.ProgressBar("pb idle", new Vector2(-1f, 8f));
 
-                        grid.Loader_Spinner();
-                        grid.Loader_Spinner(20f, 6, 2f, true);
-                        grid.Loader_Spinner(20f, 6, 3f, true);
-                        grid.Loader_Spinner(20f, 3, 2f, false);
-                        grid.Loader_Spinner(20f, 3, 1f, false);
+                            grid.CheckBox("checkbox ena", ref boolVal);
+                            grid.DisableNextElement();
+                            grid.CheckBox("checkbox dis", ref boolVal);
 
-                        grid.Loader_ElipseSpinner(20f, 6, 2f, true);
-                        grid.Loader_ElipseSpinner(20f, 3, 2f, false);
+                            grid.Slider("slider int ena ", ref intVal);
+                            grid.DisableNextElement();
+                            grid.Slider("slider int dis ", ref intVal);
 
-                        grid.Loader_Wheel(20f);
-                        grid.Loader_Wheel(64f);
+                            grid.Slider("slider float ena", ref floatVal);
+                            grid.DisableNextElement();
+                            grid.Slider("slider float dis", ref floatVal);
+                            grid.Slider("slider float ena##NoDrag", ref floatVal, 0.5f, FuSliderFlags.NoDrag);
+                            grid.Slider("slider float ena##LeftDrag", ref floatVal, 0.5f, FuSliderFlags.LeftDrag);
+                            grid.DisableNextElement();
+                            grid.Slider("slider float dis##NoDrag", ref intVal, FuSliderFlags.NoDrag);
+                            grid.DisableNextElement();
+                            grid.Slider("slider float dis##LeftDrag", ref intVal, FuSliderFlags.LeftDrag);
 
-                        grid.Loader_WavyLine(new Vector2(64f, 20f), 4f);
-                        grid.Loader_WavyLine(new Vector2(128f, 32f), 8f);
-                        grid.Loader_WavyLine(new Vector2(256f, 64f), 16f, false);
-                        grid.Loader_WavyLine(new Vector2(ImGui.GetContentRegionAvail().x, 20f), ImGui.GetContentRegionAvail().x / 20f, false);
+                            grid.Toggle("Toggle nude", ref toggleVal);
+                            grid.Toggle("Toggle On/Off", ref toggleVal, "OFF", "ON", FuToggleFlags.AlignLeft);
+                            grid.Toggle("Auto text size", ref toggleVal, "sm txt", "this is large text", FuToggleFlags.AlignLeft);
+                            grid.Toggle("Max text size", ref toggleVal, "sm txt", "this is large text", FuToggleFlags.MaximumTextSize);
+                            grid.DisableAnimationsFromNow();
+                            grid.Toggle("No Animation", ref toggleVal, "No", "Anim");
+                            grid.EnableAnimationsFromNow();
+                            grid.DisableNextElement();
+                            grid.Toggle("Disabled", ref toggleVal, "OFF", "ON", FuToggleFlags.MaximumTextSize);
 
-                        grid.Loader_Square(20f);
-                        grid.Loader_Square(64f);
+                            grid.ButtonsGroup<FuToggleFlags>("Buttons Group", (flag) => { Debug.Log(flag + " selected"); });
+                            grid.DisableNextElement();
+                            grid.ButtonsGroup<FuToggleFlags>("Btn Grp disabled", (flag) => { Debug.Log(flag + " selected"); });
 
-                        grid.Loader_SquareCircleDance(20f);
-                        grid.Loader_SquareCircleDance(64f);
+                            grid.SetNextElementToolTip("About", "Accelerate", "Arch", "Arrow Down");
+                            grid.ButtonsGroup("Default", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.Default);
 
-                        grid.Loader_PulsingLines(new Vector2(20f, 20f));
-                        grid.Loader_PulsingLines(new Vector2(64f, 64f));
+                            grid.ButtonsGroup("Left", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft);
+                            grid.ButtonsGroup("Auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AutoSizeButtons);
+                            grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
 
-                        grid.Loader_Clocker(20f);
-                        grid.Loader_Clocker(64f);
+                            grid.Range("Range test", ref min, ref max, 0f, 30f, 0.25f);
+                            grid.Range("Range no drag", ref min, ref max, 0f, 30f, 0.1f, FuSliderFlags.NoDrag);
+                        }
+                    });
 
-                        grid.Loader_Pulsar(20f);
-                        grid.Loader_Pulsar(64f);
+                    layout.Collapsable("Spinners", () =>
+                    {
+                        using (var grid = new FuGrid("gSPN"))
+                        {
+                            grid.Loader_Spinner(spinnerSize, spinnerNbDots, spinnerDotsSize, spinnerDoubleColor);
+                            grid.Text("Spinner");
+                            layout.Slider("size##spinner", ref spinnerSize, 4f, 128f);
+                            layout.Slider("dots##spinner", ref spinnerNbDots, 1, 64);
+                            layout.Slider("dot size##spinner", ref spinnerDotsSize, 1f, 16f);
+                            layout.Toggle("double colors##spinner", ref spinnerDoubleColor);
 
-                        grid.Loader_SpikedWheel(new Vector2(20f, 20f));
-                        grid.Loader_SpikedWheel(new Vector2(64f, 64f));
 
-                        grid.CheckBox("checkbox ena", ref boolVal);
-                        grid.DisableNextElement();
-                        grid.CheckBox("checkbox dis", ref boolVal);
+                            grid.Loader_ElipseSpinner(spinnerSize, spinnerNbDots, spinnerDotsSize, spinnerDoubleColor);
+                            grid.Text("Elipse Spinner");
+                            layout.Slider("size##spinner2", ref spinnerSize, 4f, 128f);
+                            layout.Slider("dots##spinner2", ref spinnerNbDots, 1, 64);
+                            layout.Slider("dot size##spinner2", ref spinnerDotsSize, 1f, 16f);
+                            layout.Toggle("double colors##spinner2", ref spinnerDoubleColor);
 
-                        grid.Slider("slider int ena ", ref intVal);
-                        grid.DisableNextElement();
-                        grid.Slider("slider int dis ", ref intVal);
+                            grid.Loader_Wheel(spinnerSize);
+                            grid.Text("Wheel");
+                            layout.Slider("size##spinner3", ref spinnerSize, 4f, 128f);
 
-                        grid.Slider("slider float ena", ref floatVal);
-                        grid.DisableNextElement();
-                        grid.Slider("slider float dis", ref floatVal);
-                        grid.Slider("slider float ena##NoDrag", ref floatVal, 0.5f, FuSliderFlags.NoDrag);
-                        grid.Slider("slider float ena##LeftDrag", ref floatVal, 0.5f, FuSliderFlags.LeftDrag);
-                        grid.DisableNextElement();
-                        grid.Slider("slider float dis##NoDrag", ref intVal, FuSliderFlags.NoDrag);
-                        grid.DisableNextElement();
-                        grid.Slider("slider float dis##LeftDrag", ref intVal, FuSliderFlags.LeftDrag);
+                            grid.Loader_WavyLine(spinnerV2Size, spinnerFrequency, spinnerDoubleColor);
+                            grid.Text("Wavy Line");
+                            layout.Drag("size##spinner4", ref spinnerV2Size, "", "", 4f, 128f);
+                            layout.Slider("frequency##spinner4", ref spinnerFrequency, 0.01f, 128f);
 
-                        grid.Toggle("Toggle nude", ref toggleVal);
-                        grid.Toggle("Toggle On/Off", ref toggleVal, "OFF", "ON", FuToggleFlags.AlignLeft);
-                        grid.Toggle("Auto text size", ref toggleVal, "sm txt", "this is large text", FuToggleFlags.AlignLeft);
-                        grid.Toggle("Max text size", ref toggleVal, "sm txt", "this is large text", FuToggleFlags.MaximumTextSize);
-                        grid.DisableAnimationsFromNow();
-                        grid.Toggle("No Animation", ref toggleVal, "No", "Anim");
-                        grid.EnableAnimationsFromNow();
-                        grid.DisableNextElement();
-                        grid.Toggle("Disabled", ref toggleVal, "OFF", "ON", FuToggleFlags.MaximumTextSize);
+                            grid.Loader_Squares(spinnerSize);
+                            grid.Text("Squares");
+                            layout.Slider("size##spinner5", ref spinnerSize, 4f, 128f);
 
-                        grid.ButtonsGroup<FuToggleFlags>("Buttons Group", (flag) => { Debug.Log(flag + " selected"); });
-                        grid.DisableNextElement();
-                        grid.ButtonsGroup<FuToggleFlags>("Btn Grp disabled", (flag) => { Debug.Log(flag + " selected"); });
+                            grid.Loader_SquareCircleDance(spinnerSize);
+                            grid.Text("SquareCircleDance");
+                            layout.Slider("size##spinner6", ref spinnerSize, 4f, 128f);
 
-                        grid.SetNextElementToolTip("About", "Accelerate", "Arch", "Arrow Down");
-                        grid.ButtonsGroup("Default", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.Default);
+                            grid.Loader_PulsingLines(spinnerV2Size);
+                            grid.Text("Pulsing Lines");
+                            layout.Drag("size##spinner7", ref spinnerV2Size, "", "", 4f, 128f);
 
-                        grid.ButtonsGroup("Left", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft);
-                        grid.ButtonsGroup("Auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AutoSizeButtons);
-                        grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About, Icons.Accelerate, Icons.Arch, Icons.ArrowDown }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
+                            grid.Loader_Clocker(spinnerSize);
+                            grid.Text("Clocker");
+                            layout.Slider("size##spinner8", ref spinnerSize, 4f, 128f);
 
-                        grid.Range("Range test", ref min, ref max, 0f, 30f, 0.25f);
-                        grid.Range("Range no drag", ref min, ref max, 0f, 30f, 0.1f, FuSliderFlags.NoDrag);
-                    }
+                            grid.Loader_Pulsar(spinnerSize);
+                            grid.Text("Pulsar");
+                            layout.Slider("size##spinner9", ref spinnerSize, 4f, 128f);
+
+                            grid.Loader_SpikedWheel(spinnerV2Size);
+                            grid.Text("Spiked Wheel");
+                            layout.Drag("size##spinner10", ref spinnerV2Size, "", "", 4f, 128f);
+                        }
+                    });
 
                     layout.Collapsable("Drag Tests", () =>
                     {

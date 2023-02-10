@@ -49,7 +49,7 @@ namespace Fu.Framework
         private static Dictionary<Type, List<IConvertible>> _enumValues = new Dictionary<Type, List<IConvertible>>();
         // A dictionary to store enum values as string according to the type of the enum
         private static Dictionary<Type, List<string>> _enumValuesString = new Dictionary<Type, List<string>>();
-        protected bool _drawItem = true;
+        protected bool _drawElement = true;
         #endregion
 
         #region Layout
@@ -81,12 +81,12 @@ namespace Fu.Framework
         protected virtual void beginElement(ref string elementID, IFuElementStyle style = null, bool noEditID = false, bool canBeHidden = true)
         {
             // whatever we must draw the next item
-            _drawItem = true;
+            _drawElement = true;
             if (!IsInsidePopUp && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
             {
-                _drawItem = FuPanel.Clipper.BeginDrawElement(canBeHidden);
+                _drawElement = FuPanel.Clipper.BeginDrawElement(canBeHidden);
             }
-            if (_drawItem)
+            if (_drawElement)
             {
                 _currentItemStartPos = ImGui.GetCursorScreenPos();
                 // we must prepare next item
@@ -110,7 +110,7 @@ namespace Fu.Framework
         protected virtual void endElement(IFuElementStyle style = null)
         {
             // whatever the item has just been draw
-            if (_drawItem)
+            if (_drawElement)
             {
                 style?.Pop();
                 drawHoverFrame();

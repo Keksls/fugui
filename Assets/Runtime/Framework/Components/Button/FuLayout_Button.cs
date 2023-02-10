@@ -6,6 +6,108 @@ namespace Fu.Framework
     public partial class FuLayout
     {
         /// <summary>
+        /// Draw a custom pixel perfect padding button
+        /// </summary>
+        /// <param name="text">text of the button</param>
+        /// <returns>whatever the button is clicked</returns>
+        public bool UnpaddedButton(string text)
+        {
+            return UnpaddedButton(text, Vector2.zero, Vector2.zero, FuButtonStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw a custom pixel perfect padding button
+        /// </summary>
+        /// <param name="text">text of the button</param>
+        /// <param name="padding">inner padding of the button</param>
+        /// <returns>whatever the button is clicked</returns>
+        public bool UnpaddedButton(string text, Vector2 padding)
+        {
+            return UnpaddedButton(text, padding, Vector2.zero, FuButtonStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw a custom pixel perfect padding button
+        /// </summary>
+        /// <param name="text">text of the button</param>
+        /// <param name="padding">inner padding of the button</param>
+        /// <param name="textOffset">Offset of the text inside the button rect</param>
+        /// <returns>whatever the button is clicked</returns>
+        public bool UnpaddedButton(string text, Vector2 padding, Vector2 textOffset)
+        {
+            return UnpaddedButton(text, padding, textOffset, FuButtonStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw a custom pixel perfect padding button
+        /// </summary>
+        /// <param name="text">text of the button</param>
+        /// <param name="style">style of the button</param>
+        /// <returns>whatever the button is clicked</returns>
+        public bool UnpaddedButton(string text, FuButtonStyle style)
+        {
+            return UnpaddedButton(text, Vector2.zero, Vector2.zero, style);
+        }
+
+        /// <summary>
+        /// Draw a custom pixel perfect padding button
+        /// </summary>
+        /// <param name="text">text of the button</param>
+        /// <param name="padding">inner padding of the button</param>
+        /// <param name="textOffset">Offset of the text inside the button rect</param>
+        /// <param name="style">style of the button</param>
+        /// <returns>whatever the button is clicked</returns>
+        public bool UnpaddedButton(string text, Vector2 padding, Vector2 textOffset, FuButtonStyle style)
+        {
+            beginElement(ref text, null, true);
+            if (!_drawElement)
+            {
+                return false;
+            }
+
+            Vector2 pos = ImGui.GetCursorScreenPos();
+            Vector2 textSize = ImGui.CalcTextSize(text);
+            Vector2 btnSize = textSize + new Vector2(2f + (padding.x * 2f), 2f + (padding.y * 2f));
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            bool hovered = ImGui.IsMouseHoveringRect(pos, pos + btnSize);
+            bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
+            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+
+            Vector4 btnColor = style.Button;
+            if (_nextIsDisabled)
+            {
+                btnColor = style.DisabledButton;
+            }
+            else
+            {
+                if (active)
+                {
+                    btnColor = style.ButtonActive;
+                }
+                else if (hovered)
+                {
+                    btnColor = style.ButtonHovered;
+                }
+            }
+            uint btnColorUInt = ImGui.GetColorU32(btnColor);
+            uint textColorUInt = ImGui.GetColorU32(_nextIsDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+            uint borderColorUInt = ImGui.GetColorU32(ImGuiCol.Border);
+            float rounding = FuThemeManager.CurrentTheme.FrameRounding;
+
+            // draw button
+            drawList.AddRectFilled(pos + Vector2.one, pos + btnSize - Vector2.one, btnColorUInt, rounding);
+            // draw border
+            drawList.AddRect(pos, pos + btnSize, borderColorUInt, rounding);
+            // draw text
+            drawList.AddText(pos + padding + Vector2.one + textOffset, textColorUInt, text);
+
+            Dummy(btnSize);
+            endElement();
+
+            return clicked;
+        }
+
+        /// <summary>
         /// Renders a button with the given text. The button will have the default size and style.
         /// </summary>
         /// <param name="text">The text to display on the button.</param>
@@ -48,7 +150,7 @@ namespace Fu.Framework
         {
             beginElement(ref text, style, true); // apply style and check if the element should be disabled
             // return if item must no be draw
-            if(!_drawItem)
+            if (!_drawElement)
             {
                 return false;
             }

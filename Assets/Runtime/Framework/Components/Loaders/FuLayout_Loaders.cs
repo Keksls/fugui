@@ -7,6 +7,8 @@ namespace Fu.Framework
 {
     public partial class FuLayout
     {
+        private string _loaderFakeID = string.Empty;
+
         /// <summary>
         /// draw a simple default loading spinner
         /// </summary>
@@ -25,6 +27,12 @@ namespace Fu.Framework
         /// <param name="doubleColor">if true, evens dots are text color, others are checkmark color</param>
         public void Loader_Spinner(float size, int numDots, float dotSize, bool doubleColor = true)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if(!_drawElement)
+            {
+                return;
+            }
+
             Vector2 padding = FuThemeManager.CurrentTheme.FramePadding;
             float centerX = ImGui.GetCursorScreenPos().x + size / 2 + padding.x;
             float centerY = ImGui.GetCursorScreenPos().y + size / 2 + padding.y;
@@ -45,6 +53,8 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
 
         /// <summary>
@@ -53,6 +63,12 @@ namespace Fu.Framework
         /// <param name="size">size of the loader</param>
         public void Loader_Clocker(float size)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = .10f;
@@ -86,6 +102,8 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
 
         /// <summary>
@@ -94,6 +112,12 @@ namespace Fu.Framework
         /// <param name="size">size of the loader</param>
         public void Loader_Pulsar(float size)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = 1.5f;
@@ -109,6 +133,8 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
 
         /// <summary>
@@ -117,6 +143,12 @@ namespace Fu.Framework
         /// <param name="size">size of the loader</param>
         public void Loader_PulsingLines(Vector2 size)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
             var drawList = ImGui.GetWindowDrawList();
 
             float animationTime = (float)ImGui.GetTime();
@@ -151,6 +183,8 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
 
         /// <summary>
@@ -159,6 +193,12 @@ namespace Fu.Framework
         /// <param name="size">size of the loader</param>
         public void Loader_SquareCircleDance(float size)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = .5f;
@@ -183,6 +223,8 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
 
         /// <summary>
@@ -192,6 +234,12 @@ namespace Fu.Framework
         /// <param name="frequency">frequency of the wave</param>
         public void Loader_WavyLine(Vector2 size, float frequency, bool doubleColor = true)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             Vector2 startPos = ImGui.GetCursorScreenPos();
@@ -217,14 +265,22 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
 
         /// <summary>
         /// Two dancing squares
         /// </summary>
         /// <param name="size">size of the loader</param>
-        public void Loader_Square(float size)
+        public void Loader_Squares(float size)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = 1f;
@@ -240,6 +296,8 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
 
         /// <summary>
@@ -250,6 +308,12 @@ namespace Fu.Framework
         /// <param name="doubleColor">if true, evens dots are text color, others are checkmark color</param>
         public void Loader_SpikedWheel(Vector2 size, int slides = 10, bool doubleColor = true)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
             float time = (float)ImGui.GetTime();
             time *= 2f;
 
@@ -279,6 +343,8 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
 
         /// <summary>
@@ -288,6 +354,12 @@ namespace Fu.Framework
         /// <param name="doubleColor">if true, evens dots are text color, others are checkmark color</param>
         public void Loader_Wheel(float size, bool doubleColor = true)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = 3.0f;
@@ -312,6 +384,8 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
 
         /// <summary>
@@ -323,6 +397,12 @@ namespace Fu.Framework
         /// <param name="doubleColor">if true, evens dots are text color, others are checkmark color</param>
         public void Loader_ElipseSpinner(float size, int numDots, float dotSize = 2f, bool doubleColor = true)
         {
+            beginElement(ref _loaderFakeID, noEditID: true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = 0.5f;
             float animationPosition = (float)Math.Sin(animationTime * animationSpeed * Math.PI * 2.0f);
@@ -342,6 +422,8 @@ namespace Fu.Framework
 
             // force the current window to draw each frame to keep animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
+
+            endElement();
         }
     }
 }

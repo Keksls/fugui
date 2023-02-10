@@ -10,6 +10,45 @@ namespace Fu.Framework
         private string _loaderFakeID = string.Empty;
 
         /// <summary>
+        /// Drraw a dots spinner that fade around a circle
+        /// </summary>
+        /// <param name="size">size of the spinner</param>
+        /// <param name="circle_count">number of dots</param>
+        public void Loader_CircleSpinner(float size, int circle_count)
+        {
+            beginElement(ref _loaderFakeID, null, true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            size /= 2f;
+            Vector2 pos = ImGui.GetCursorScreenPos();
+            float circle_radius = size / 10.0f;
+            float speed = 4f;
+            Vector4 main_color = FuThemeManager.GetColor(FuColors.CheckMark);
+            Vector4 backdrop_color = FuThemeManager.GetColor(FuColors.FrameBg);
+            float t = (float)ImGui.GetTime();
+            float degree_offset = 2.0f * Mathf.PI / circle_count;
+            for (int i = 0; i < circle_count; ++i)
+            {
+                float x = size * Mathf.Sin(degree_offset * i);
+                float y = size * Mathf.Cos(degree_offset * i);
+                float growth = Mathf.Max(0.0f, Mathf.Sin(t * speed - i * degree_offset));
+                Vector4 color;
+                color.x = main_color.x * growth + backdrop_color.x * (1.0f - growth);
+                color.y = main_color.y * growth + backdrop_color.y * (1.0f - growth);
+                color.z = main_color.z * growth + backdrop_color.z * (1.0f - growth);
+                color.w = 1.0f;
+                drawList.AddCircleFilled(new Vector2(pos.x + size + x, pos.y + size - y), circle_radius + growth * circle_radius, ImGui.GetColorU32(color));
+            }
+
+            Dummy(new Vector2(size * 2f, size * 2f));
+            endElement();
+        }
+
+        /// <summary>
         /// draw a simple default loading spinner
         /// </summary>
         public void Loader_Spinner()
@@ -28,7 +67,7 @@ namespace Fu.Framework
         public void Loader_Spinner(float size, int numDots, float dotSize, bool doubleColor = true)
         {
             beginElement(ref _loaderFakeID, noEditID: true);
-            if(!_drawElement)
+            if (!_drawElement)
             {
                 return;
             }

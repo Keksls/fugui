@@ -5,10 +5,7 @@ using System.Collections.Generic;
 using System;
 using Fu;
 using System.Linq;
-using Codice.Client.Common.GameUI;
-using System.Reflection.Emit;
 using ImGuiNET;
-using log4net.Core;
 
 /// <summary>
 /// this sample show how to use Fugui API
@@ -429,6 +426,19 @@ public class FuguiDemoScene : MonoBehaviour
             {
                 using (var layout = new FuLayout())
                 {
+                    layout.Collapsable("Knobs", () =>
+                    {
+                        using (var grid = new FuGrid("gridKnobs"))
+                        {
+                            grid.Knob("knob Dot", ref floatVal, 0f, 100f, ImGuiKnobVariant.Dot);
+                            grid.Knob("knob Space", ref floatVal, 0f, 100f, ImGuiKnobVariant.Space);
+                            grid.Knob("knob WiperOnly", ref floatVal, 0f, 100f, ImGuiKnobVariant.WiperOnly);
+                            grid.Knob("knob Space", ref floatVal, 0f, 100f, ImGuiKnobVariant.Tick);
+                            grid.Knob("knob Wiper", ref floatVal, 0f, 100f, ImGuiKnobVariant.Wiper);
+                            grid.Knob("knob Stepped", ref floatVal, 0f, 100f, ImGuiKnobVariant.Stepped, 10, 10f, "%1.f");
+                        }
+                    });
+
                     layout.Collapsable("Widgets", () =>
                     {
                         using (var grid = new FuGrid("gridMD"))
@@ -487,7 +497,7 @@ public class FuguiDemoScene : MonoBehaviour
 
                     layout.Collapsable("Spinners", () =>
                     {
-                        using (var grid = new FuGrid("gSPN"))
+                        using (var grid = new FuGrid("gSPN", FuGridFlag.LinesBackground))
                         {
                             grid.Loader_Spinner(spinnerSize, spinnerNbDots, spinnerDotsSize, spinnerDoubleColor);
                             grid.Text("Spinner");
@@ -496,6 +506,10 @@ public class FuguiDemoScene : MonoBehaviour
                             layout.Slider("dot size##spinner", ref spinnerDotsSize, 1f, 16f);
                             layout.Toggle("double colors##spinner", ref spinnerDoubleColor);
 
+                            grid.Loader_CircleSpinner(spinnerSize, spinnerNbDots);
+                            grid.Text("Circle spinner");
+                            layout.Slider("size##spinner1", ref spinnerSize, 4f, 128f);
+                            layout.Slider("dots##spinner2", ref spinnerNbDots, 1, 64);
 
                             grid.Loader_ElipseSpinner(spinnerSize, spinnerNbDots, spinnerDotsSize, spinnerDoubleColor);
                             grid.Text("Elipse Spinner");

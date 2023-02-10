@@ -42,12 +42,25 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="text">The text to display on the progress bar.</param>
         /// <param name="value">The value of the progress bar (between 0f and 1f)</param>
+        /// <param name="progressbarSize">size of the progressbar</param>
+        /// <param name="textPosition">Position of the text value inside the progressbar</param>
+        public void ProgressBar(string text, float value, FuElementSize progressbarSize, ProgressBarTextPosition textPosition = ProgressBarTextPosition.Inside)
+        {
+            ProgressBar(text, value, true, progressbarSize, textPosition);
+        }
+
+        /// <summary>
+        /// Renders a progress bar with the given text. The progress bar will have the default size and style.
+        /// </summary>
+        /// <param name="text">The text to display on the progress bar.</param>
+        /// <param name="value">The value of the progress bar (between 0f and 1f)</param>
         /// <param name="isContinuous">Whatever the progressbar is continuous or idle</param>
+        /// <param name="progressbarSize">size of the progressbar</param>
         /// <param name="textPosition">Position of the text value inside the progressbar</param>
         protected virtual void ProgressBar(string text, float value, bool isContinuous, FuElementSize progressbarSize, ProgressBarTextPosition textPosition = ProgressBarTextPosition.Inside)
         {
             beginElement(ref text);
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return;
             }

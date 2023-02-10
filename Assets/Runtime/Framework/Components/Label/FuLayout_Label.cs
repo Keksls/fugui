@@ -24,7 +24,7 @@ namespace Fu.Framework
         {
             beginElement(ref text, style, true); //apply the style to the element
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return;
             }
@@ -57,7 +57,7 @@ namespace Fu.Framework
         {
             beginElement(ref text, style, true); //apply the style to the element
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return;
             }
@@ -100,7 +100,7 @@ namespace Fu.Framework
         {
             beginElement(ref text, style);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return;
             }

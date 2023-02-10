@@ -72,7 +72,7 @@ namespace Fu.Framework
             bool edited = false;
             beginElement(ref id, style);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return false;
             }

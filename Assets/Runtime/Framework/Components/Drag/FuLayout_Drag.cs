@@ -46,7 +46,7 @@ namespace Fu.Framework
         {
             beginElement(ref id, style);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return false;
             }
@@ -142,7 +142,7 @@ namespace Fu.Framework
             // Begin the element and apply the specified style
             beginElement(ref id, style);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return false;
             }
@@ -229,7 +229,7 @@ namespace Fu.Framework
         {
             beginElement(ref id, style);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return false;
             }
@@ -325,7 +325,7 @@ namespace Fu.Framework
         {
             beginElement(ref id, style);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return false;
             }
@@ -431,7 +431,7 @@ namespace Fu.Framework
             // start drawing the element
             beginElement(ref id, style);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return false;
             }

@@ -82,7 +82,7 @@ namespace Fu.Framework
         {
             beginElement(ref text, FuFrameStyle.Default);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return false;
             }

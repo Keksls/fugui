@@ -90,7 +90,7 @@ namespace Fu.Framework
         private void _customCombobox(string text, List<IFuSelectable> items, Action<int> itemChange, Func<string> itemGetter, FuComboboxStyle style)
         {
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return;
             }
@@ -140,7 +140,7 @@ namespace Fu.Framework
         {
             beginElement(ref text, style);
             // return if item must no be draw
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return;
             }

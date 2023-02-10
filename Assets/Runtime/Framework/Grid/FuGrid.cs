@@ -169,7 +169,7 @@ namespace Fu.Framework
             NextColumn();
             base.beginElement(ref elementID, style, noReturn, canBeHidden);
 
-            if (!_drawItem)
+            if (!_drawElement)
             {
                 return;
             }
@@ -206,7 +206,7 @@ namespace Fu.Framework
             }
             base.endElement(style);
 
-            if (!_drawItem)
+            if (!_drawElement)
             {
 
             }

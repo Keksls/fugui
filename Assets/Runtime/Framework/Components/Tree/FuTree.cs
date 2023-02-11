@@ -181,44 +181,16 @@ namespace Fu.Framework
             }
         }
 
-        //public void DrawTree(IEnumerable<T> rootNodes)
-        //{
-        //    ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-        //    using (FuLayout layout = new FuLayout())
-        //    {
-        //        int count = _elements.Count;
-        //        Fugui.ListClipperBegin(Math.Max(1, count), _itemHeight);
-        //        while (Fugui.ListClipperStep())
-        //        {
-        //            int start = Fugui.ListClipperDisplayStart();
-        //            int end = Fugui.ListClipperDisplayEnd();
-        //            for (int i = start; i < end; i++)
-        //            {
-        //                int level = _getLevel(_elements[i]);
-        //                if (level > 0)
-        //                {
-        //                    ImGui.Indent(16f * level);
-        //                    drawElement(_elements[i], layout, drawList);
-        //                    ImGui.Indent(-16f * level);
-        //                }
-        //                else
-        //                {
-        //                    drawElement(_elements[i], layout, drawList);
-        //                }
-        //            }
-        //        }
-        //        Fugui.ListClipperEnd();
-        //    }
-        //    _onPostRenderAction?.Invoke();
-        //}
         public void DrawTree()
         {
+            float height = Fugui.CurrentContext.Scale * _itemHeight;
+            float indent = 16f * Fugui.CurrentContext.Scale;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             uint col = ImGui.GetColorU32(new Vector4(_carretStyle.Text.r, _carretStyle.Text.g, _carretStyle.Text.b, 0.1f));
             using (FuLayout layout = new FuLayout())
             {
                 int count = _elements.Count;
-                Fugui.ListClipperBegin(Math.Max(1, count), _itemHeight);
+                Fugui.ListClipperBegin(Math.Max(1, count), height);
                 while (Fugui.ListClipperStep())
                 {
                     int start = Fugui.ListClipperDisplayStart();
@@ -229,14 +201,14 @@ namespace Fu.Framework
                         Vector2 startPos = ImGui.GetCursorScreenPos();
                         if (level > 0)
                         {
-                            ImGui.Indent(16f * level);
+                            ImGui.Indent(indent * level);
                             for (int j = 0; j < level; j++)
                             {
-                                drawList.AddLine(new Vector2(startPos.x + (16f * j), startPos.y - 2f),
-                                    new Vector2(startPos.x + (16f * j), startPos.y + _itemHeight), col, 1f);
+                                drawList.AddLine(new Vector2(startPos.x + (indent * j), startPos.y - 2f * Fugui.CurrentContext.Scale),
+                                    new Vector2(startPos.x + (indent * j), startPos.y + height), col, 1f);
                             }
                             drawElement(_elements[i], layout, drawList);
-                            ImGui.Indent(-16f * level);
+                            ImGui.Indent(-indent * level);
                         }
                         else
                         {
@@ -252,23 +224,24 @@ namespace Fu.Framework
 
         private void drawElement(T element, FuLayout layout, ImDrawListPtr drawList)
         {
+            float height = Fugui.CurrentContext.Scale * _itemHeight;
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
             Vector4 color = _carretStyle.Text;
             uint col = ImGui.GetColorU32(color);
-            float carretSize = 6f;
+            float carretSize = 6f * Fugui.CurrentContext.Scale;
             // draw a leaf
             var child = _getDirectChildren(element);
             if (child == null || child.Count() == 0)
             {
-                carretSize = 4f;
-                drawList.AddCircleFilled(cursorPos + new Vector2(2f, _itemHeight / 2f - carretSize / 2f), carretSize / 2f, col);
-                ImGui.Dummy(new Vector2(carretSize + 4f, carretSize));
+                carretSize = 4f * Fugui.CurrentContext.Scale;
+                drawList.AddCircleFilled(cursorPos + new Vector2(2f * Fugui.CurrentContext.Scale, height / 2f - carretSize / 2f), carretSize / 2f, col);
+                ImGui.Dummy(new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, carretSize));
             }
             // draw a carret
             else
             {
-                ImGui.Dummy(new Vector2(carretSize + 4f, carretSize));
-                bool hover = ImGui.IsMouseHoveringRect(cursorPos, cursorPos + new Vector2(carretSize + 4f, _itemHeight));
+                ImGui.Dummy(new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, carretSize));
+                bool hover = ImGui.IsMouseHoveringRect(cursorPos, cursorPos + new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, height));
                 // get 
                 if (hover && ImGui.IsMouseDown(ImGuiMouseButton.Left))
                 {
@@ -284,17 +257,17 @@ namespace Fu.Framework
                 if (open)
                 {
                     drawList.AddTriangleFilled(
-                        new Vector2(cursorPos.x, cursorPos.y + (_itemHeight / 2f) - (carretSize / 2f)),
-                        new Vector2(cursorPos.x + carretSize, cursorPos.y + (_itemHeight / 2f) - (carretSize / 2f)),
-                        new Vector2(cursorPos.x + carretSize / 2f, cursorPos.y + (_itemHeight / 2f) + (carretSize / 2f)),
+                        new Vector2(cursorPos.x, cursorPos.y + (height / 2f) - (carretSize / 2f)),
+                        new Vector2(cursorPos.x + carretSize, cursorPos.y + (height / 2f) - (carretSize / 2f)),
+                        new Vector2(cursorPos.x + carretSize / 2f, cursorPos.y + (height / 2f) + (carretSize / 2f)),
                         col);
                 }
                 else
                 {
                     drawList.AddTriangleFilled(
-                        new Vector2(cursorPos.x, cursorPos.y + (_itemHeight / 2f) - (carretSize / 2f)),
-                        new Vector2(cursorPos.x + carretSize, cursorPos.y + (_itemHeight / 2f)),
-                        new Vector2(cursorPos.x, cursorPos.y + (_itemHeight / 2f) + (carretSize / 2f)),
+                        new Vector2(cursorPos.x, cursorPos.y + (height / 2f) - (carretSize / 2f)),
+                        new Vector2(cursorPos.x + carretSize, cursorPos.y + (height / 2f)),
+                        new Vector2(cursorPos.x, cursorPos.y + (height / 2f) + (carretSize / 2f)),
                         col);
                 }
 

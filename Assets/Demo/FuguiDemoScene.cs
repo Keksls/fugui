@@ -295,7 +295,7 @@ public class FuguiDemoScene : MonoBehaviour
                 layout.Dummy(ImGui.GetContentRegionAvail().x - 20f);
                 layout.SameLine();
                 FuButtonStyle.Info.Push(true);
-                if (layout.UnpaddedButton(Icons.Delete, new Vector2(1f, 0f), new Vector2(0.7f, -2.2f), FuButtonStyle.Danger))
+                if (layout.Button(Icons.Delete, FuElementSize.AutoSize, new Vector2(2f, 2f), new Vector2(0.7f, -2.2f), FuButtonStyle.Danger))
                 {
                     Fugui.ShowYesNoModal("Are you sure you want to remove this tree element ? (" + item.Text + ")",
                         (yes) =>

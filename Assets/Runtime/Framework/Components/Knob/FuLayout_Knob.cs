@@ -68,8 +68,16 @@ namespace Fu.Framework
 
             // Handle dragging
             ImGui.InvisibleButton(_label, new Vector2(radius * 2.0f, radius * 2.0f));
-            ImGuiSliderFlags drag_flags = 0;
-            value_changed = ImGui.DragFloat("##drag" + _label, ref p_value, speed, v_min, v_max, format, drag_flags);
+            if (ImGui.IsItemActive() && ImGui.GetIO().MouseDelta.x != 0.0f)
+            {
+                float step = (v_max - v_min) / 200.0f;
+                p_value += ImGui.GetIO().MouseDelta.x * step;
+                if (p_value < v_min) p_value = v_min;
+                if (p_value > v_max) p_value = v_max;
+                value_changed = true;
+            }
+
+            value_changed = ImGui.DragFloat("##drag" + _label, ref p_value, speed, v_min, v_max, format);
 
             angle_min = Mathf.PI * 0.75f;
             angle_max = Mathf.PI * 2.25f;

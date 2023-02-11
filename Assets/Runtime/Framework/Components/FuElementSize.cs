@@ -1,12 +1,14 @@
 ﻿using UnityEngine;
 using System.Runtime.CompilerServices;
 using ImGuiNET;
+using System.Windows.Forms;
 
 namespace Fu.Framework
 {
     public struct FuElementSize
     {
         private Vector2 _size;
+        public Vector2 BrutSize => _size;
 
         #region Presset
         static FuElementSize _autoSize = new FuElementSize(Vector2.zero);
@@ -32,7 +34,8 @@ namespace Fu.Framework
         public Vector2 GetSize()
         {
             Vector2 size = _size;
-            if (_size.x <= 0)
+            
+            if (_size.x < 0)
             {
                 size.x = ImGui.GetContentRegionAvail().x;
             }

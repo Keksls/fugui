@@ -338,7 +338,7 @@ namespace Fu.Core
                     ImGuiDockNodePtr node = ImGuiDocking.DockBuilderGetNode(CurrentDockID);
                     ImRect rect = node.Rect();
                     var size = rect.Max - rect.Min;
-                    newFrameSize = new Vector2Int((int)size.X, (int)size.Y);
+                    newFrameSize = new Vector2Int((int)size.x, (int)size.y);
                 }
                 else
                 {

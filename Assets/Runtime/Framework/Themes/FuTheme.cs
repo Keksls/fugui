@@ -29,6 +29,8 @@ namespace Fu.Framework
         public float PopupRounding = 2.0f;
         [FuSlider(0f, 10f)]
         public float PopupBorderSize = 1.0f;
+        [FuSlider(0f, 1f)]
+        public float ButtonsGradientStrenght = 0.0f;
         [FuDrag(0f, 10f)]
         public Vector2 FramePadding = new Vector2(8f, 4f);
         [FuSlider(0f, 10f)]

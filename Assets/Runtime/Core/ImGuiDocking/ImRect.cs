@@ -1,6 +1,6 @@
 using System;
-using System.Numerics;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace ImGuiNET
 {
@@ -8,6 +8,17 @@ namespace ImGuiNET
     {
         public Vector2 Min;
         public Vector2 Max;
+
+        public Vector2 GetBL()
+        {
+            return new Vector2(Min.x, Max.y);
+        }
+
+        public ImRect(Vector2 min, Vector2 max)
+        {
+            Min = min;
+            Max = max;
+        }
     }
     public unsafe partial struct ImRectPtr
     {

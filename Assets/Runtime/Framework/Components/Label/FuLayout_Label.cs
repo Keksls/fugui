@@ -278,5 +278,111 @@ namespace Fu.Framework
                 nbFontPush--;
             }
         }
+
+        /// <summary>
+        /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
+        /// The text will not displace cursor, so please do it yourself if needed
+        /// </summary>
+        /// <param name="maxSize">maximum size of the text</param>
+        /// <param name="label">text to draw</param>
+        public static unsafe void TextClipped(Vector2 maxSize, string label)
+        {
+            TextClipped(maxSize, label, ImGui.GetCursorScreenPos(), Vector2.zero, ImGui.CalcTextSize(label, true), new Vector2(0f, 0.5f));
+        }
+
+        /// <summary>
+        /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
+        /// The text will not displace cursor, so please do it yourself if needed
+        /// </summary>
+        /// <param name="maxSize">maximum size of the text</param>
+        /// <param name="label">text to draw</param>
+        /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
+        public static unsafe void TextClipped(Vector2 maxSize, string label, Vector2 padding)
+        {
+            TextClipped(maxSize, label, ImGui.GetCursorScreenPos(), padding, ImGui.CalcTextSize(label, true), new Vector2(0f, 0.5f));
+        }
+
+        /// <summary>
+        /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
+        /// The text will not displace cursor, so please do it yourself if needed
+        /// </summary>
+        /// <param name="maxSize">maximum size of the text</param>
+        /// <param name="label">text to draw</param>
+        /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
+        /// <param name="text_size">size of the text</param>
+        public static unsafe void TextClipped(Vector2 maxSize, string label, Vector2 padding, Vector2 text_size)
+        {
+            TextClipped(maxSize, label, ImGui.GetCursorScreenPos(), padding, text_size, new Vector2(0f, 0.5f));
+        }
+
+        /// <summary>
+        /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
+        /// The text will not displace cursor, so please do it yourself if needed
+        /// </summary>
+        /// <param name="maxSize">maximum size of the text</param>
+        /// <param name="label">text to draw</param>
+        /// <param name="pos">position of the text (screen space)</param>
+        /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
+        /// <param name="text_size">size of the text</param>
+        public static unsafe void TextClipped(Vector2 maxSize, string label, Vector2 padding, Vector2 text_size, Vector2 pos)
+        {
+            TextClipped(maxSize, label, pos, padding, text_size, new Vector2(0f, 0.5f));
+        }
+
+        /// <summary>
+        /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
+        /// The text will not displace cursor, so please do it yourself if needed
+        /// </summary>
+        /// <param name="maxSize">maximum size of the text</param>
+        /// <param name="label">text to draw</param>
+        /// <param name="pos">position of the text (screen space)</param>
+        /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
+        /// <param name="text_size">size of the text</param>
+        /// <param name="alignment">text alignement (between 0f and 1f)</param>
+        public static unsafe void TextClipped(Vector2 maxSize, string label, Vector2 pos, Vector2 padding, Vector2 text_size, Vector2 alignment)
+        {
+            // we need to crop the text, so let's reduce the size so we draw dots at the end
+            if (text_size.x > maxSize.x - padding.x * 2f)
+            {
+                // get dots size
+                Vector2 dotsSize = ImGui.CalcTextSize("...");
+                dotsSize.y = 0f;
+                dotsSize.x += 2f;
+                // reduce max size
+                maxSize -= dotsSize;
+                // draw the clipped text
+                TextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize));
+                // draw dots
+                maxSize.y = 4f;
+                ImGui.GetWindowDrawList().AddText(pos + maxSize, ImGui.GetColorU32(ImGuiCol.Text), "...");
+            }
+            else
+            {
+                // draw the clipped text
+                TextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize));
+            }
+        }
+
+        private static unsafe void TextClipped(Vector2 pos_min, Vector2 pos_max, string label, Vector2 text_size_if_known, Vector2 align, ImRect clip_rect)
+        {
+            // get str ptr
+            int num = 0;
+            byte* ptr = null;
+            if (label != null)
+            {
+                num = Encoding.UTF8.GetByteCount(label);
+                ptr = Util.Allocate(num + 1);
+                int utf = Util.GetUtf8(label, ptr, num);
+                ptr[utf] = 0;
+            }
+
+            // render cliped text
+            ImGuiInternal.igRenderTextClipped(pos_min, pos_max, ptr, null, &text_size_if_known, align, &clip_rect);
+
+            if (num > 2048)
+            {
+                Util.Free(ptr);
+            }
+        }
     }
 }

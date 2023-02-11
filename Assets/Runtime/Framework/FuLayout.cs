@@ -144,6 +144,17 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Add a line under the last drawed element
+        /// </summary>
+        public void AddUnderLine()
+        {
+            Vector2 min = ImGui.GetItemRectMin();
+            Vector2 max = ImGui.GetItemRectMax();
+            min.y = max.y;
+            ImGui.GetWindowDrawList().AddLine(min, max, ImGui.GetColorU32(ImGuiCol.Text), 1.0f);
+        }
+
+        /// <summary>
         ///  From this point, animations in this layout are enabled
         /// </summary>
         public void EnableAnimationsFromNow()
@@ -287,27 +298,14 @@ namespace Fu.Framework
                 // If the element is hovered over or force is set to true
                 if (force || ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0)
                 {
+                    FuTextStyle style = FuTextStyle.Default;
                     // push tooltip styles
                     if (_currentToolTipsStyles != null && _currentToolTipsIndex < _currentToolTipsStyles.Length)
                     {
-                        _currentToolTipsStyles[_currentToolTipsIndex].Push(!_nextIsDisabled);
+                        style = _currentToolTipsStyles[_currentToolTipsIndex];
                     }
 
-                    // set padding and font
-                    Fugui.PushDefaultFont();
-                    Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
-                    // Display the current tooltip
-                    if (_nextIsDisabled)
-                    {
-                        ImGui.SetTooltip("(Disabled) : " + _currentToolTips[_currentToolTipsIndex]);
-                    }
-                    else
-                    {
-                        ImGui.SetTooltip(_currentToolTips[_currentToolTipsIndex]);
-                    }
-                    FuTextStyle.Default.Pop();
-                    Fugui.PopFont();
-                    Fugui.PopStyle();
+                    SetToolTip(_currentToolTips[_currentToolTipsIndex], style);
                 }
 
                 // is we want to ignore tooltip avancement, let's return without increment the index
@@ -323,6 +321,31 @@ namespace Fu.Framework
                     _currentToolTips = null;
                 }
             }
+        }
+
+        /// <summary>
+        /// Imediate Display a tooltip
+        /// </summary>
+        /// <param name="text">text of the tooltip</param>
+        /// <param name="style">style on the tooltip</param>
+        public void SetToolTip(string text, FuTextStyle style)
+        {
+            style.Push(!_nextIsDisabled);
+            // set padding and font
+            Fugui.PushDefaultFont();
+            Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
+            // Display the current tooltip
+            if (_nextIsDisabled)
+            {
+                ImGui.SetTooltip("(Disabled) : " + text);
+            }
+            else
+            {
+                ImGui.SetTooltip(text);
+            }
+            Fugui.PopStyle();
+            Fugui.PopFont();
+            style.Pop();
         }
         #endregion
 

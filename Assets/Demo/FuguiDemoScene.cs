@@ -426,6 +426,10 @@ public class FuguiDemoScene : MonoBehaviour
             {
                 using (var layout = new FuLayout())
                 {
+                    layout.Text("Check Fugui ");
+                    layout.SameLine();
+                    layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui", FuTextStyle.Info);
+
                     layout.Collapsable("Knobs", () =>
                     {
                         using (var grid = new FuGrid("gridKnobs"))

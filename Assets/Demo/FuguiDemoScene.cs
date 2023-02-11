@@ -434,12 +434,12 @@ public class FuguiDemoScene : MonoBehaviour
                     {
                         using (var grid = new FuGrid("gridKnobs"))
                         {
-                            grid.Knob("knob Dot", ref floatVal, 0f, 100f, ImGuiKnobVariant.Dot);
-                            grid.Knob("knob Space", ref floatVal, 0f, 100f, ImGuiKnobVariant.Space);
-                            grid.Knob("knob WiperOnly", ref floatVal, 0f, 100f, ImGuiKnobVariant.WiperOnly);
-                            grid.Knob("knob Space", ref floatVal, 0f, 100f, ImGuiKnobVariant.Tick);
-                            grid.Knob("knob Wiper", ref floatVal, 0f, 100f, ImGuiKnobVariant.Wiper);
-                            grid.Knob("knob Stepped", ref floatVal, 0f, 100f, ImGuiKnobVariant.Stepped, 10, 10f, "%1.f");
+                            grid.Knob("knob Dot", ref floatVal, 0f, 100f, FuKnobVariant.Dot);
+                            grid.Knob("knob Space", ref floatVal, 0f, 100f, FuKnobVariant.Space);
+                            grid.Knob("knob WiperOnly", ref floatVal, 0f, 100f, FuKnobVariant.WiperOnly);
+                            grid.Knob("knob Space", ref floatVal, 0f, 100f, FuKnobVariant.Tick);
+                            grid.Knob("knob Wiper", ref floatVal, 0f, 100f, FuKnobVariant.Wiper);
+                            grid.Knob("knob Stepped", ref floatVal, 0f, 100f, FuKnobVariant.Stepped, 10, 10f, "%1.f");
                         }
                     });
 

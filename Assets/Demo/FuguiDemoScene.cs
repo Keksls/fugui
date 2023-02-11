@@ -24,6 +24,7 @@ public class FuguiDemoScene : MonoBehaviour
     {
         public string Text;
         public byte IsOpen = 0;
+        public byte IsSelected = 0;
         public int Level = 0;
         public treeTestItem Parent;
         public List<treeTestItem> Children;
@@ -61,6 +62,31 @@ public class FuguiDemoScene : MonoBehaviour
                 items.Add(parent);
             }
             return items;
+        }
+
+        public static List<treeTestItem> getAll(List<treeTestItem> items)
+        {
+            List<treeTestItem> all = new List<treeTestItem>();
+            if (items != null)
+            {
+                foreach (var item in items)
+                {
+                    getAll(item, all);
+                }
+            }
+            return all;
+        }
+
+        private static void getAll(treeTestItem item, List<treeTestItem> items)
+        {
+            items.Add(item);
+            if (item.Children != null)
+            {
+                foreach (var it in item.Children)
+                {
+                    getAll(it, items);
+                }
+            }
         }
     }
 
@@ -276,10 +302,10 @@ public class FuguiDemoScene : MonoBehaviour
 
         // add tree Window
         List<treeTestItem> treeItems = treeTestItem.GetRandomHierarchie();
-
         FuTree<treeTestItem> tree = null;
+        float treeItemHeight = 16f;
         tree = new FuTree<treeTestItem>("testTree",
-            treeItems,
+            () => treeTestItem.getAll(treeItems),
             FuTextStyle.Info,
             // how to draw an item
             (item, layout) =>
@@ -292,7 +318,7 @@ public class FuguiDemoScene : MonoBehaviour
                 ImGui.AlignTextToFramePadding();
                 layout.Text(item.Text);
                 layout.SameLine();
-                layout.Dummy(ImGui.GetContentRegionAvail().x - 20f);
+                layout.Dummy(ImGui.GetContentRegionAvail().x - (20f * Fugui.CurrentContext.Scale));
                 layout.SameLine();
                 FuButtonStyle.Info.Push(true);
                 if (layout.Button(Icons.Delete, FuElementSize.AutoSize, new Vector2(2f, 2f), new Vector2(0.7f, -2.2f), FuButtonStyle.Danger))
@@ -316,10 +342,28 @@ public class FuguiDemoScene : MonoBehaviour
                 }
                 FuButtonStyle.Info.Pop();
             },
+            // get selectable size
+            (item, availWidth) => new Vector2(availWidth - (20f * Fugui.CurrentContext.Scale), treeItemHeight * Fugui.CurrentContext.Scale),
             // when an item just open
             (item) => { item.IsOpen = 1; },
             // when an item just close
             (item) => { item.IsOpen = 0; },
+            // when some item just selected
+            (items) =>
+            {
+                foreach (var item in items)
+                {
+                    item.IsSelected = 1;
+                }
+            },
+            // when some item just deselected
+            (items) =>
+            {
+                foreach (var item in items)
+                {
+                    item.IsSelected = 0;
+                }
+            },
             // get the level of an item
             (item) => item.Level,
             // are two items equals ?
@@ -328,8 +372,11 @@ public class FuguiDemoScene : MonoBehaviour
             (item) => item.Children,
             // whatever an item is open
             (item) => item.IsOpen == 1,
-            // items height
-            14f);
+            // whatever an item is selected
+            (item) => item.IsSelected == 1,
+            // items heigh
+            treeItemHeight);
+        tree.UpdateTree(treeItems);
 
         new FuWindowDefinition(FuWindowsNames.Tree, "Tree", (window) =>
         {

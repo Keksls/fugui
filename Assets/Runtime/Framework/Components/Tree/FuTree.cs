@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Fu.Core;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,42 +9,45 @@ namespace Fu.Framework
 {
     public class FuTree<T>
     {
-        public delegate void DisplayDelegate(T element, FuLayout layout);
-        private DisplayDelegate _display;
-        public delegate bool IsOpenDelegate(T element);
-        private IsOpenDelegate _isOpen;
-        public delegate void OnOpenDelegate(T element);
-        private OnOpenDelegate _onOpen;
-        public delegate void OnCloseDelegate(T element);
-        private OnCloseDelegate _onClose;
-        public delegate int GetLevelDelegate(T element);
-        private GetLevelDelegate _getLevel;
-        public delegate bool EqualsDelegate(T elementA, T elementB);
-        private EqualsDelegate _equals;
-        public delegate IEnumerable<T> GetChildrenDelegate(T element);
-        private GetChildrenDelegate _getDirectChildren;
+        private Action<T, FuLayout> _display;
+        private Func<T, bool> _isOpen;
+        private Func<T, bool> _isSelected;
+        private Func<T, float, Vector2> _getSelectableSize;
+        private Action<T> _onOpen;
+        private Action<T> _onClose;
+        private Action<List<T>> _onSelect;
+        private Action<List<T>> _onDeSelect;
+        private Func<T, int> _getLevel;
+        private Func<T, T, bool> _equals;
+        private Func<T, IEnumerable<T>> _getDirectChildren;
+        private Func<IEnumerable<T>> _getAll;
         private string _id;
         private float _itemHeight;
         private List<T> _elements = new List<T>();
         private Action _onPostRenderAction = null;
         private FuTextStyle _carretStyle;
 
-        public FuTree(string id, IEnumerable<T> elements, FuTextStyle carretStyle, DisplayDelegate display, OnOpenDelegate onOpen, OnCloseDelegate onClose, GetLevelDelegate getLevel, EqualsDelegate equals, GetChildrenDelegate getDirectChildren, IsOpenDelegate isOpen, float itemHeight)
+        public FuTree(string id, Func<IEnumerable<T>> getAll, FuTextStyle carretStyle, Action<T, FuLayout> display, Func<T, float, Vector2> getSelectableSize, Action<T> onOpen, Action<T> onClose, Action<IEnumerable<T>> onSelect, Action<IEnumerable<T>> onDeSelect, Func<T, int> getLevel, Func<T, T, bool> equals, Func<T, IEnumerable<T>> getDirectChildren, Func<T, bool> isOpen, Func<T, bool> isSelected, float itemHeight)
         {
             _id = id;
+            _getAll = getAll;
             _carretStyle = carretStyle;
+            _onSelect = onSelect;
+            _onDeSelect = onDeSelect;
             _onOpen = onOpen;
             _onClose = onClose;
             _getLevel = getLevel;
             _equals = equals;
             _getDirectChildren = getDirectChildren;
             _display = display;
+            _getSelectableSize = getSelectableSize;
+            _isSelected = isSelected;
             _isOpen = isOpen;
             _itemHeight = itemHeight;
-            UpdateTree(elements);
+            UpdateTree(_getAll());
         }
 
-        public void TryOpen(T element)
+        public void TryOpen(T element, bool recursively)
         {
             int index = GetIndex(element);
             if (index == -1)
@@ -57,8 +61,9 @@ namespace Fu.Framework
             {
                 return;
             }
+
             // get all open children under these children
-            getOpenChildren(children, out List<T> allChildren);
+            getOpenChildren(children, out List<T> allChildren, recursively, true);
 
             _onPostRenderAction = () =>
             {
@@ -68,7 +73,7 @@ namespace Fu.Framework
             };
         }
 
-        public void TryClose(T element)
+        public void TryClose(T element, bool recursively)
         {
             int index = GetIndex(element) + 1;
             if (index == -1)
@@ -95,8 +100,18 @@ namespace Fu.Framework
                 maxIndex = _elements.Count;
             }
 
-            // register the post render action
             int count = maxIndex - index;
+
+            // recursively close
+            if (recursively)
+            {
+                for (int i = index; i <= count; i++)
+                {
+                    _onClose(_elements[i]);
+                }
+            }
+
+            // register the post render action
             _onPostRenderAction = () =>
             {
                 _elements.RemoveRange(index, count);
@@ -105,26 +120,32 @@ namespace Fu.Framework
             };
         }
 
-        private void getOpenChildren(IEnumerable<T> elements, out List<T> fullList)
+        private void getOpenChildren(IEnumerable<T> elements, out List<T> fullList, bool recursively, bool autoOpen)
         {
             fullList = new List<T>();
             foreach (T element in elements)
             {
-                getOpenChildren(element, fullList);
+                getOpenChildren(element, fullList, recursively, autoOpen);
             }
         }
 
-        private void getOpenChildren(T element, List<T> elements)
+        private void getOpenChildren(T element, List<T> elements, bool recursively, bool autoOpen)
         {
             elements.Add(element);
-            if (_isOpen(element))
+            bool open = _isOpen(element);
+            if (recursively || open)
             {
+                if (!open && autoOpen)
+                {
+                    _onOpen(element);
+                }
+
                 var children = _getDirectChildren(element);
                 if (children != null)
                 {
                     foreach (T child in children)
                     {
-                        getOpenChildren(child, elements);
+                        getOpenChildren(child, elements, recursively, autoOpen);
                     }
                 }
             }
@@ -145,8 +166,11 @@ namespace Fu.Framework
 
         public void UpdateTree(IEnumerable<T> elements)
         {
-            _elements = new List<T>();
-            bindListFromItems(elements);
+            if (elements != null)
+            {
+                _elements = new List<T>();
+                bindListFromItems(elements);
+            }
         }
 
         public void UpdateTree(T element)
@@ -181,6 +205,91 @@ namespace Fu.Framework
             }
         }
 
+        public void Select(T element, bool recursive, bool startEnd, bool additive, IEnumerable<T> currentSelection = null)
+        {
+            setSelected(element, true, recursive, startEnd, additive, currentSelection);
+        }
+
+        public void Deselect(T element, bool recursive, bool startEnd, bool additive, IEnumerable<T> currentSelection = null)
+        {
+            setSelected(element, false, recursive, startEnd, additive, currentSelection);
+        }
+
+        private void setSelected(T element, bool selected, bool recursive, bool startEnd, bool additive, IEnumerable<T> currentSelection = null)
+        {
+            List<T> selection = new List<T>();
+            var all = _getAll().ToList();
+            int elementIndex = all.IndexOf(element);
+            bool alreadySelected = _isSelected(element);
+
+            // if not additive, unselect all
+            if (selected && !additive && !startEnd)
+            {
+                if (currentSelection == null)
+                {
+                    currentSelection = all.Where(x => _isSelected(x));
+                }
+                // Unselect all elements
+                _onDeSelect(currentSelection.ToList());
+            }
+
+            // Start-end with shift
+            if (startEnd)
+            {
+                // Find the first and last selected elements
+                int firstSelected = all.FindIndex(x => _isSelected(x));
+                int lastSelected = all.FindLastIndex(x => _isSelected(x));
+
+                // If no element is selected, select the single element
+                if (firstSelected == -1)
+                {
+                    firstSelected = elementIndex;
+                    lastSelected = elementIndex;
+                }
+                // If the first selected element is after the current element, update first selected to current element
+                else if (elementIndex < firstSelected)
+                {
+                    firstSelected = elementIndex;
+                }
+                // If the last selected element is before the current element, update last selected to current element
+                else if (elementIndex > lastSelected)
+                {
+                    lastSelected = elementIndex;
+                }
+
+                // Add all elements between first selected and last selected to the selection list
+                for (int i = firstSelected; i <= lastSelected; i++)
+                {
+                    selection.Add(all[i]);
+                }
+            }
+            // Recursive
+            else
+            {
+                // Select the current element and its children if recursive is true
+                if (recursive)
+                {
+                    selection = new List<T> { element };
+                    getOpenChildren(element, selection, true, false);
+                }
+                // Select only the current element if recursive is false
+                else
+                {
+                    selection = new List<T> { element };
+                }
+            }
+
+            // do selection or deselection
+            if (selected)
+            {
+                _onSelect(selection);
+            }
+            else
+            {
+                _onDeSelect(selection);
+            }
+        }
+
         public void DrawTree()
         {
             float height = Fugui.CurrentContext.Scale * _itemHeight;
@@ -199,20 +308,26 @@ namespace Fu.Framework
                     {
                         int level = _getLevel(_elements[i]);
                         Vector2 startPos = ImGui.GetCursorScreenPos();
+                        // get item rect
+                        Rect itemRect = new Rect(ImGui.GetCursorScreenPos(), new Vector2(ImGui.GetContentRegionAvail().x, (_itemHeight * Fugui.CurrentContext.Scale)));
                         if (level > 0)
                         {
+                            // indent the cursor
                             ImGui.Indent(indent * level);
+                            // draw the V lines
                             for (int j = 0; j < level; j++)
                             {
                                 drawList.AddLine(new Vector2(startPos.x + (indent * j), startPos.y - 2f * Fugui.CurrentContext.Scale),
                                     new Vector2(startPos.x + (indent * j), startPos.y + height), col, 1f);
                             }
-                            drawElement(_elements[i], layout, drawList);
+                            // draw the element
+                            drawElement(_elements[i], layout, drawList, itemRect);
+                            // cancel the indent
                             ImGui.Indent(-indent * level);
                         }
                         else
                         {
-                            drawElement(_elements[i], layout, drawList);
+                            drawElement(_elements[i], layout, drawList, itemRect);
                         }
                     }
                 }
@@ -221,14 +336,32 @@ namespace Fu.Framework
             _onPostRenderAction?.Invoke();
         }
 
-
-        private void drawElement(T element, FuLayout layout, ImDrawListPtr drawList)
+        private void drawElement(T element, FuLayout layout, ImDrawListPtr drawList, Rect itemRect)
         {
             float height = Fugui.CurrentContext.Scale * _itemHeight;
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
             Vector4 color = _carretStyle.Text;
             uint col = ImGui.GetColorU32(color);
             float carretSize = 6f * Fugui.CurrentContext.Scale;
+            Vector2 selectableSize = _getSelectableSize(element, ImGui.GetContentRegionAvail().x - (carretSize + 4f * Fugui.CurrentContext.Scale));
+
+            // draw hover rect
+            Vector2 rectMin = cursorPos + new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, 0f);
+            if (ImGui.IsMouseHoveringRect(rectMin, rectMin + selectableSize))
+            {
+                drawList.AddRectFilled(itemRect.min, itemRect.max, FuWindow.CurrentDrawingWindow.Mouse.IsDown(0) ? ImGui.GetColorU32(ImGuiCol.HeaderActive) : ImGui.GetColorU32(ImGuiCol.HeaderHovered));
+                // click on element
+                if (FuWindow.CurrentDrawingWindow.Mouse.IsUp(0))
+                {
+                    setSelected(element, true, !FuWindow.CurrentDrawingWindow.Keyboard.KeyAlt, FuWindow.CurrentDrawingWindow.Keyboard.KeyShift, FuWindow.CurrentDrawingWindow.Keyboard.KeyCtrl);
+                }
+            }
+            // draw selected rect
+            else if (_isSelected(element))
+            {
+                drawList.AddRectFilled(itemRect.min, itemRect.max, ImGui.GetColorU32(ImGuiCol.Header));
+            }
+
             // draw a leaf
             var child = _getDirectChildren(element);
             if (child == null || child.Count() == 0)
@@ -276,16 +409,17 @@ namespace Fu.Framework
                 {
                     if (open)
                     {
-                        TryClose(element);
+                        TryClose(element, FuWindow.CurrentDrawingWindow.Keyboard.KeyCtrl);
                     }
                     else
                     {
-                        TryOpen(element);
+                        TryOpen(element, FuWindow.CurrentDrawingWindow.Keyboard.KeyCtrl);
                     }
                 }
             }
 
             ImGui.SameLine();
+
             // draw custom element
             _display(element, layout);
         }

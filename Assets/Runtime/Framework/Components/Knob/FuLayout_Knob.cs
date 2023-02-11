@@ -4,23 +4,6 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
-    public enum ImGuiKnobFlags
-    {
-        Default = 0,
-        ValueTooltip = 1
-    }
-
-    public enum ImGuiKnobVariant
-    {
-        Tick = 1 << 0,
-        Dot = 1 << 1,
-        Wiper = 1 << 2,
-        WiperOnly = 1 << 3,
-        WiperDot = 1 << 4,
-        Stepped = 1 << 5,
-        Space = 1 << 6,
-    }
-
     internal struct color_set
     {
         internal Vector4 color;
@@ -61,7 +44,7 @@ namespace Fu.Framework
             radius = _radius;
         }
 
-        public void Draw(string _label, ref float p_value, float v_min, float v_max, float speed, string format, ImGuiKnobFlags flags)
+        public void Draw(string _label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobFlags flags)
         {
             t = (p_value - v_min) / (v_max - v_min);
             var screen_pos = ImGui.GetCursorScreenPos();
@@ -77,7 +60,10 @@ namespace Fu.Framework
                 value_changed = true;
             }
 
-            value_changed = ImGui.DragFloat("##drag" + _label, ref p_value, speed, v_min, v_max, format);
+            if (!flags.HasFlag(FuKnobFlags.NoInput))
+            {
+                value_changed = ImGui.DragFloat("##drag" + _label, ref p_value, speed, v_min, v_max, format);
+            }
 
             angle_min = Mathf.PI * 0.75f;
             angle_max = Mathf.PI * 2.25f;
@@ -173,7 +159,7 @@ namespace Fu.Framework
             draw_arc1(center, radius, mid_angle - overlap, end_angle, thickness, color, num_segments);
         }
 
-        knob knob_with_drag(string label, ref float p_value, float v_min, float v_max, float _speed, string format, float size, ImGuiKnobFlags flags)
+        knob knob_with_drag(string label, ref float p_value, float v_min, float v_max, float _speed, string format, float size, FuKnobFlags flags)
         {
             var speed = _speed == 0 ? (v_max - v_min) / 250.0f : _speed;
             ImGui.PushID(label);
@@ -191,7 +177,7 @@ namespace Fu.Framework
             k.Draw(label, ref p_value, v_min, v_max, speed, format, flags);
 
             // Draw tooltip
-            if (flags.HasFlag(ImGuiKnobFlags.ValueTooltip) && (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) || ImGui.IsItemActive()))
+            if (flags.HasFlag(FuKnobFlags.ValueTooltip) && (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) || ImGui.IsItemActive()))
             {
                 ImGui.SetTooltip(p_value.ToString("f2"));
             }
@@ -226,26 +212,26 @@ namespace Fu.Framework
                 FuThemeManager.GetColor(FuColors.FrameBg));
         }
 
-        bool BaseKnob(string label, ref float p_value, float v_min, float v_max, float speed, string format, ImGuiKnobVariant variant, float size, ImGuiKnobFlags flags, int steps = 10)
+        bool BaseKnob(string label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobVariant variant, float size, FuKnobFlags flags, int steps = 10)
         {
             var knob = knob_with_drag(label, ref p_value, v_min, v_max, speed, format, size, flags);
 
             switch (variant)
             {
-                case ImGuiKnobVariant.Tick:
+                case FuKnobVariant.Tick:
                     {
                         knob.draw_circle(0.85f, GetSecondaryColorSet(), 32);
                         knob.draw_tick(0.5f, 0.85f, 0.08f, knob.angle, GetPrimaryColorSet());
                         break;
                     }
-                case ImGuiKnobVariant.Dot:
+                case FuKnobVariant.Dot:
                     {
                         knob.draw_circle(0.85f, GetSecondaryColorSet(), 32);
                         knob.draw_dot(0.12f, 0.6f, knob.angle, GetPrimaryColorSet(), true, 12);
                         break;
                     }
 
-                case ImGuiKnobVariant.Wiper:
+                case FuKnobVariant.Wiper:
                     {
                         knob.draw_circle(0.7f, GetSecondaryColorSet(), 32);
                         knob.draw_arc(this, 0.8f, 0.41f, knob.angle_min, knob.angle_max, GetTrackColorSet(), 16, 2);
@@ -256,7 +242,7 @@ namespace Fu.Framework
                         }
                         break;
                     }
-                case ImGuiKnobVariant.WiperOnly:
+                case FuKnobVariant.WiperOnly:
                     {
                         knob.draw_arc(this, 0.8f, 0.41f, knob.angle_min, knob.angle_max, GetTrackColorSet(), 32, 2);
 
@@ -266,14 +252,14 @@ namespace Fu.Framework
                         }
                         break;
                     }
-                case ImGuiKnobVariant.WiperDot:
+                case FuKnobVariant.WiperDot:
                     {
                         knob.draw_circle(0.6f, GetSecondaryColorSet(), 32);
                         knob.draw_arc(this, 0.85f, 0.41f, knob.angle_min, knob.angle_max, GetTrackColorSet(), 16, 2);
                         knob.draw_dot(0.1f, 0.85f, knob.angle, GetPrimaryColorSet(), true, 12);
                         break;
                     }
-                case ImGuiKnobVariant.Stepped:
+                case FuKnobVariant.Stepped:
                     {
                         for (var n = 0.0f; n < steps; n++)
                         {
@@ -286,7 +272,7 @@ namespace Fu.Framework
                         knob.draw_dot(0.12f, 0.4f, knob.angle, GetPrimaryColorSet(), true, 12);
                         break;
                     }
-                case ImGuiKnobVariant.Space:
+                case FuKnobVariant.Space:
                     {
                         knob.draw_circle(0.3f - knob.t * 0.1f, GetSecondaryColorSet(), 16);
 
@@ -317,7 +303,7 @@ namespace Fu.Framework
         /// <param name="size">size of the knob</param>
         /// <param name="flags">behaviour flag</param>
         /// <returns>true if value chage</returns>
-        public virtual bool Knob(string label, ref float value, float min = 0f, float max = 100f, ImGuiKnobVariant variant = ImGuiKnobVariant.Wiper, int steps = 10, float speed = 1f, string format = null, float size = 64f, ImGuiKnobFlags flags = ImGuiKnobFlags.Default)
+        public virtual bool Knob(string label, ref float value, float min = 0f, float max = 100f, FuKnobVariant variant = FuKnobVariant.Wiper, int steps = 10, float speed = 1f, string format = null, float size = 64f, FuKnobFlags flags = FuKnobFlags.Default)
         {
             beginElement(ref label);
             if (!_drawElement)

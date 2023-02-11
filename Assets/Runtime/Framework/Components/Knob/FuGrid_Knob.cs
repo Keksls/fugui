@@ -16,7 +16,7 @@
         /// <param name="size">size of the knob</param>
         /// <param name="flags">behaviour flag</param>
         /// <returns>true if value chage</returns>
-        public override bool Knob(string label, ref float value, float min = 0, float max = 100, ImGuiKnobVariant variant = ImGuiKnobVariant.Wiper, int steps = 10, float speed = 1, string format = null, float size = 64, ImGuiKnobFlags flags = ImGuiKnobFlags.Default)
+        public override bool Knob(string label, ref float value, float min = 0, float max = 100, FuKnobVariant variant = FuKnobVariant.Wiper, int steps = 10, float speed = 1, string format = null, float size = 64, FuKnobFlags flags = FuKnobFlags.Default)
         {
             if (!_gridCreated)
             {

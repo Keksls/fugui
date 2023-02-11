@@ -2,6 +2,24 @@
 
 namespace Fu.Framework
 {
+    public enum FuKnobFlags
+    {
+        Default = 0,
+        ValueTooltip = 1,
+        NoInput = 2
+    }
+
+    public enum FuKnobVariant
+    {
+        Tick = 1 << 0,
+        Dot = 1 << 1,
+        Wiper = 1 << 2,
+        WiperOnly = 1 << 3,
+        WiperDot = 1 << 4,
+        Stepped = 1 << 5,
+        Space = 1 << 6,
+    }
+
     /// <summary>
     /// Flag that represent the position of the text of a Progressbar
     /// </summary>

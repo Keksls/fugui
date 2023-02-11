@@ -206,7 +206,59 @@ namespace Fu.Core
             Vector2 screenPos = getAnchoredPosition(ref unsnappedDragPosition);
 
             // set overlay local rect
-            LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x + _retractButtonWidth, Size.y));
+            switch (_dragButtonPosition)
+            {
+                case FuOverlayDragPosition.Top:
+                    if (_collapsed)
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x, _retractButtonWidth));
+                    }
+                    else
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x, Size.y + _retractButtonWidth));
+                    }
+                    break;
+                case FuOverlayDragPosition.Right:
+                    if (_collapsed)
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition + new Vector2(Size.x, 0f), new Vector2(_retractButtonWidth, Size.y));
+                    }
+                    else
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x + _retractButtonWidth, Size.y));
+                    }
+                    break;
+                case FuOverlayDragPosition.Bottom:
+                    if (_collapsed)
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition + new Vector2(0f, Size.y), new Vector2(Size.x, _retractButtonWidth));
+                    }
+                    else
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x, Size.y + _retractButtonWidth));
+                    }
+                    break;
+                case FuOverlayDragPosition.Left:
+                    if (_collapsed)
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(_retractButtonWidth, Size.y));
+                    }
+                    else
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x + _retractButtonWidth, Size.y));
+                    }
+                    break;
+                default:
+                    if (_collapsed)
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(_retractButtonWidth, _retractButtonWidth));
+                    }
+                    else
+                    {
+                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x, Size.y));
+                    }
+                    break;
+            }
 
             // if we are dragging, draw unsnapped drag ghost and snap grid
             if (_draging)

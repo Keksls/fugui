@@ -12,6 +12,9 @@
     "performances",
     "ui toolkit"
   ],
+  "dependencies": {
+    "com.unity.postprocessing": "3.2.2"
+  },
   "author": {
     "name": "Keksls",
     "email": "vrdtmstudio@gmail.com",

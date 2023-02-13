@@ -1,0 +1,20 @@
+{
+  "name": "com.keksls.fugui",
+  "version": "0.1.0",
+  "displayName": "Fugui",
+  "description": "Imediate GUI Framework for Unity based on https://github.com/ocornut/imgui.",
+  "keywords": [
+    "fugui",
+    "dear imgui",
+    "imgui",
+    "ui framework",
+    "ui",
+    "performances",
+    "ui toolkit"
+  ],
+  "author": {
+    "name": "Keksls",
+    "email": "vrdtmstudio@gmail.com",
+    "url": "https://github.com/Keksls/fugui"
+  }
+}

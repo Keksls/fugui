@@ -7,26 +7,64 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    ///<summary>
+    /// Represents a custom tree UI framework for Unity using DearImgui.
+    ///</summary>
     public class FuTree<T>
     {
+        ///<summary>Delegate for displaying an element in the tree.</summary>
         private Action<T, FuLayout> _display;
+        ///<summary>Delegate for checking if an element is open.</summary>
         private Func<T, bool> _isOpen;
+        ///<summary>Delegate for checking if an element is selected.</summary>
         private Func<T, bool> _isSelected;
+        ///<summary>Delegate for getting the selectable size of an element.</summary>
         private Func<T, float, Vector2> _getSelectableSize;
+        ///<summary>Delegate for handling an element being opened.</summary>
         private Action<T> _onOpen;
+        ///<summary>Delegate for handling an element being closed.</summary>
         private Action<T> _onClose;
+        ///<summary>Delegate for handling selection of one or multiple elements.</summary>
         private Action<List<T>> _onSelect;
+        ///<summary>Delegate for handling deselection of one or multiple elements.</summary>
         private Action<List<T>> _onDeSelect;
+        ///<summary>Delegate for getting the level of an element in the tree.</summary>
         private Func<T, int> _getLevel;
+        ///<summary>Delegate for checking if two elements are equal.</summary>
         private Func<T, T, bool> _equals;
+        ///<summary>Delegate for getting the direct children of an element.</summary>
         private Func<T, IEnumerable<T>> _getDirectChildren;
+        ///<summary>Delegate for getting all the elements in the tree.</summary>
         private Func<IEnumerable<T>> _getAll;
+        ///<summary>The unique identifier of the tree.</summary>
         private string _id;
+        ///<summary>The height of each tree item.</summary>
         private float _itemHeight;
+        ///<summary>The list of elements in the tree.</summary>
         private List<T> _elements = new List<T>();
+        ///<summary>Action to be performed after rendering the tree.</summary>
         private Action _onPostRenderAction = null;
+        ///<summary>The text style of the caret.</summary>
         private FuTextStyle _carretStyle;
 
+        ///<summary>
+        /// Constructor for FuTree.
+        ///</summary>
+        ///<param name="id">The unique identifier of the tree.</param>
+        ///<param name="getAll">Delegate for getting all the elements in the tree.</param>
+        ///<param name="carretStyle">The text style of the caret.</param>
+        ///<param name="display">Delegate for displaying an element in the tree.</param>
+        ///<param name="getSelectableSize">Delegate for getting the selectable size of an element.</param>
+        ///<param name="onOpen">Delegate for handling an element being opened.</param>
+        ///<param name="onClose">Delegate for handling an element being closed.</param>
+        ///<param name="onSelect">Delegate for handling selection of one or multiple elements.</param>
+        ///<param name="onDeSelect">Delegate for handling deselection of one or multiple elements.</param>
+        ///<param name="getLevel">Delegate for getting the level of an element in the tree.</param>
+        ///<param name="equals">Delegate for checking if two elements are equal.</param>
+        ///<param name="getDirectChildren">Delegate for getting the direct children of an element.</param>
+        ///<param name="isOpen">Delegate for checking if an element is open.</param>
+        ///<param name="isSelected">Delegate for checking if an element is selected.</param>
+        ///<param name="itemHeight">The height of each tree item.</param>
         public FuTree(string id, Func<IEnumerable<T>> getAll, FuTextStyle carretStyle, Action<T, FuLayout> display, Func<T, float, Vector2> getSelectableSize, Action<T> onOpen, Action<T> onClose, Action<IEnumerable<T>> onSelect, Action<IEnumerable<T>> onDeSelect, Func<T, int> getLevel, Func<T, T, bool> equals, Func<T, IEnumerable<T>> getDirectChildren, Func<T, bool> isOpen, Func<T, bool> isSelected, float itemHeight)
         {
             _id = id;
@@ -47,9 +85,14 @@ namespace Fu.Framework
             UpdateTree(_getAll());
         }
 
+        ///<summary>
+        /// Tries to open an element in the tree.
+        ///</summary>
+        ///<param name="element">The element to be opened.</param>
+        ///<param name="recursively">Flag to indicate whether to open all children recursively or not.</param>
         public void TryOpen(T element, bool recursively)
         {
-            int index = GetIndex(element);
+            int index = getIndex(element);
             if (index == -1)
             {
                 Debug.LogError("Tree fail to get element " + element.ToString());
@@ -73,9 +116,14 @@ namespace Fu.Framework
             };
         }
 
+        ///<summary>
+        /// Tries to close an element in the tree.
+        ///</summary>
+        ///<param name="element">The element to be closed.</param>
+        ///<param name="recursively">Flag to indicate whether to close all children recursively or not.</param>
         public void TryClose(T element, bool recursively)
         {
-            int index = GetIndex(element) + 1;
+            int index = getIndex(element) + 1;
             if (index == -1)
             {
                 Debug.LogError("Tree fail to get element " + element.ToString());
@@ -120,6 +168,13 @@ namespace Fu.Framework
             };
         }
 
+        ///<summary>
+        /// Gets all the open children of a list of elements.
+        ///</summary>
+        ///<param name="elements">The list of elements to get the open children for.</param>
+        ///<param name="fullList">The list of all open children.</param>
+        ///<param name="recursively">Flag to indicate whether to get all children recursively or not.</param>
+        ///<param name="autoOpen">Flag to indicate whether to automatically open unopened elements or not.</param>
         private void getOpenChildren(IEnumerable<T> elements, out List<T> fullList, bool recursively, bool autoOpen)
         {
             fullList = new List<T>();
@@ -129,6 +184,13 @@ namespace Fu.Framework
             }
         }
 
+        ///<summary>
+        /// Gets all the open children of an element.
+        ///</summary>
+        ///<param name="element">The element to get the open children for.</param>
+        ///<param name="elements">The list of all open children.</param>
+        ///<param name="recursively">Flag to indicate whether to get all children recursively or not.</param>
+        ///<param name="autoOpen">Flag to indicate whether to automatically open unopened elements or not.</param>
         private void getOpenChildren(T element, List<T> elements, bool recursively, bool autoOpen)
         {
             elements.Add(element);
@@ -151,7 +213,12 @@ namespace Fu.Framework
             }
         }
 
-        private int GetIndex(T element)
+        ///<summary>
+        /// Gets the index of an element in the list of elements.
+        ///</summary>
+        ///<param name="element">The element to get the index for.</param>
+        ///<returns>The index of the element in the list of elements.</returns>
+        private int getIndex(T element)
         {
             int index = -1;
             for (int i = 0; i < _elements.Count; i++)
@@ -164,6 +231,10 @@ namespace Fu.Framework
             return index;
         }
 
+        ///<summary>
+        /// Updates the list of elements in the tree with a new set of elements.
+        ///</summary>
+        ///<param name="elements">The new set of elements to update the tree with.</param>
         public void UpdateTree(IEnumerable<T> elements)
         {
             if (elements != null)
@@ -173,6 +244,10 @@ namespace Fu.Framework
             }
         }
 
+        ///<summary>
+        /// Updates the list of elements in the tree with a single element.
+        ///</summary>
+        ///<param name="element">The single element to update the tree with.</param>
         public void UpdateTree(T element)
         {
             _elements = new List<T>
@@ -189,6 +264,10 @@ namespace Fu.Framework
             }
         }
 
+        ///<summary>
+        /// Binds the list of elements in the tree with a set of elements.
+        ///</summary>
+        ///<param name="elements">The set of elements to bind the tree with.</param>
         private void bindListFromItems(IEnumerable<T> elements)
         {
             foreach (T element in elements)
@@ -205,16 +284,57 @@ namespace Fu.Framework
             }
         }
 
+        ///<summary>
+        /// Selects an element in the tree.
+        ///</summary>
+        ///<param name="element">The element to be selected.</param>
+        ///<param name="recursive">Flag to indicate whether to select all children recursively or not.</param>
+        ///<param name="startEnd">Flag to indicate whether to select all children between the start and end of the current selection.</param>
+        ///<param name="additive">Flag to indicate whether to add the selection to the current selection or not.</param>
+        ///<param name="currentSelection">The current selection to add the new selection to, if any.</param>
         public void Select(T element, bool recursive, bool startEnd, bool additive, IEnumerable<T> currentSelection = null)
         {
             setSelected(element, true, recursive, startEnd, additive, currentSelection);
         }
 
+        ///<summary>
+        /// Deselects an element in the tree.
+        ///</summary>
+        ///<param name="element">The element to be deselected.</param>
+        ///<param name="recursive">Flag to indicate whether to deselect all children recursively or not.</param>
+        ///<param name="startEnd">Flag to indicate whether to deselect all children between the start and end of the current selection.</param>
+        ///<param name="additive">Flag to indicate whether to subtract the selection from the current selection or not.</param>
+        ///<param name="currentSelection">The current selection to remove the selection from, if any.</param>
         public void Deselect(T element, bool recursive, bool startEnd, bool additive, IEnumerable<T> currentSelection = null)
         {
             setSelected(element, false, recursive, startEnd, additive, currentSelection);
         }
 
+        ///<summary>
+        /// Selects all elements in the tree.
+        ///</summary>
+        public void SelectAll()
+        {
+            _onSelect(_getAll().Where(element => !_isSelected(element)).ToList());
+        }
+
+        ///<summary>
+        /// Deselects all elements in the tree.
+        ///</summary>
+        public void DeselectAll()
+        {
+            _onDeSelect(_getAll().Where(element => _isSelected(element)).ToList());
+        }
+
+        ///<summary>
+        /// Sets the selected status of an element in the tree.
+        ///</summary>
+        ///<param name="element">The element to set the selected status for.</param>
+        ///<param name="selected">Flag to indicate whether to select or deselect the element.</param>
+        ///<param name="recursive">Flag to indicate whether to apply the selection recursively to all children.</param>
+        ///<param name="startEnd">Flag to indicate whether to select or deselect all children between the start and end of the current selection.</param>
+        ///<param name="additive">Flag to indicate whether to add or subtract the selection from the current selection.</param>
+        ///<param name="currentSelection">The current selection to add or remove the selection from, if any.</param>
         private void setSelected(T element, bool selected, bool recursive, bool startEnd, bool additive, IEnumerable<T> currentSelection = null)
         {
             List<T> selection = new List<T>();
@@ -290,12 +410,18 @@ namespace Fu.Framework
             }
         }
 
+        ///<summary>
+        ///Draws the tree using DearImgui.
+        ///</summary>
         public void DrawTree()
         {
+            // Get the scale and height.
             float height = Fugui.CurrentContext.Scale * _itemHeight;
             float indent = 16f * Fugui.CurrentContext.Scale;
+            // Get the draw list and color.
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             uint col = ImGui.GetColorU32(new Vector4(_carretStyle.Text.r, _carretStyle.Text.g, _carretStyle.Text.b, 0.1f));
+            // Using a layout object and a list clipper, loop through the elements and draw them.
             using (FuLayout layout = new FuLayout())
             {
                 int count = _elements.Count;
@@ -308,21 +434,21 @@ namespace Fu.Framework
                     {
                         int level = _getLevel(_elements[i]);
                         Vector2 startPos = ImGui.GetCursorScreenPos();
-                        // get item rect
+                        // Get the item rect.
                         Rect itemRect = new Rect(ImGui.GetCursorScreenPos(), new Vector2(ImGui.GetContentRegionAvail().x, (_itemHeight * Fugui.CurrentContext.Scale)));
                         if (level > 0)
                         {
-                            // indent the cursor
+                            // Indent the cursor.
                             ImGui.Indent(indent * level);
-                            // draw the V lines
+                            // Draw the V lines.
                             for (int j = 0; j < level; j++)
                             {
                                 drawList.AddLine(new Vector2(startPos.x + (indent * j), startPos.y - 2f * Fugui.CurrentContext.Scale),
                                     new Vector2(startPos.x + (indent * j), startPos.y + height), col, 1f);
                             }
-                            // draw the element
+                            // Draw the element.
                             drawElement(_elements[i], layout, drawList, itemRect);
-                            // cancel the indent
+                            // Cancel the indent.
                             ImGui.Indent(-indent * level);
                         }
                         else
@@ -333,9 +459,17 @@ namespace Fu.Framework
                 }
                 Fugui.ListClipperEnd();
             }
+            // Invoke the post render action if there is any.
             _onPostRenderAction?.Invoke();
         }
 
+        ///<summary>
+        ///Draws an element of the tree.
+        ///</summary>
+        ///<param name="element">The element to draw.</param>
+        ///<param name="layout">The layout object.</param>
+        ///<param name="drawList">The draw list.</param>
+        ///<param name="itemRect">The rect of the item.</param>
         private void drawElement(T element, FuLayout layout, ImDrawListPtr drawList, Rect itemRect)
         {
             float height = Fugui.CurrentContext.Scale * _itemHeight;

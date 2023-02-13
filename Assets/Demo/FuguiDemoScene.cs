@@ -6,6 +6,9 @@ using System;
 using Fu;
 using System.Linq;
 using ImGuiNET;
+using log4net.Core;
+using static UnityEditor.PlayerSettings;
+using UnityEngine.UIElements.Experimental;
 
 /// <summary>
 /// this sample show how to use Fugui API
@@ -42,26 +45,35 @@ public class FuguiDemoScene : MonoBehaviour
             Children.Add(child);
         }
 
-        public static List<treeTestItem> GetRandomHierarchie()
+        public static List<treeTestItem> GetRandomHierarchie(int numberOfItemsPerLevel, int numberOfLevels)
         {
             List<treeTestItem> items = new List<treeTestItem>();
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < numberOfItemsPerLevel; i++)
             {
                 treeTestItem parent = new treeTestItem("Parent " + i, 0, new List<treeTestItem>());
-                for (int j = 0; j < 10; j++)
-                {
-                    treeTestItem child = new treeTestItem("Child " + j, 1, new List<treeTestItem>());
-                    for (int k = 0; k < 5; k++)
-                    {
-                        treeTestItem child2 = new treeTestItem("Child 2_" + k, 2);
-                        child.AddChild(child2);
-                    }
-                    parent.AddChild(child);
-                }
+                parent.Children = GetChildren(parent, numberOfItemsPerLevel, numberOfLevels, 1);
                 items.Add(parent);
             }
             return items;
+        }
+
+        private static List<treeTestItem> GetChildren(treeTestItem parent, int numberOfItemsPerLevel, int numberOfLevels, int level)
+        {
+            if (numberOfLevels == level)
+            {
+                return null;
+            }
+
+            List<treeTestItem> children = new List<treeTestItem>();
+            for (int i = 0; i < numberOfItemsPerLevel; i++)
+            {
+                treeTestItem child = new treeTestItem("Child_" + level + "_" + i, level, new List<treeTestItem>());
+                child.Parent = parent;
+                child.Children = GetChildren(child, numberOfItemsPerLevel, numberOfLevels, level + 1);
+                children.Add(child);
+            }
+            return children;
         }
 
         public static List<treeTestItem> getAll(List<treeTestItem> items)
@@ -301,7 +313,7 @@ public class FuguiDemoScene : MonoBehaviour
             }, flags: FuWindowFlags.AllowMultipleWindow);
 
         // add tree Window
-        List<treeTestItem> treeItems = treeTestItem.GetRandomHierarchie();
+        List<treeTestItem> treeItems = treeTestItem.GetRandomHierarchie(20, 3);
         FuTree<treeTestItem> tree = null;
         float treeItemHeight = 16f;
         tree = new FuTree<treeTestItem>("testTree",

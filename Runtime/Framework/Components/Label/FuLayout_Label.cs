@@ -98,7 +98,7 @@ namespace Fu.Framework
         /// <param name="style">default style to use</param>
         public virtual void SmartText(string text, FuTextStyle style)
         {
-            beginElement(ref text, style);
+            beginElement(ref text, style, true);
             // return if item must no be draw
             if (!_drawElement)
             {
@@ -119,6 +119,7 @@ namespace Fu.Framework
         /// <param name="text">text to draw</param>
         protected void _customText(string text)
         {
+            text = Fugui.GetUntagedText(text);
             int size = 14;
             Vector4 color = FuThemeManager.GetColor(FuColors.Text);
             ImGui.SameLine();

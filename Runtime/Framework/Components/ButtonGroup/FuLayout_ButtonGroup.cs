@@ -109,13 +109,14 @@ namespace Fu.Framework
             // draw buttons
             for (int i = 0; i < nbItems; i++)
             {
+                FuButtonStyle btnStyle = default;
                 if (selectedIndex == i)
                 {
-                    style.SelectedButtonStyle.Push(!_nextIsDisabled);
+                    btnStyle = style.SelectedButtonStyle;
                 }
                 else
                 {
-                    style.ButtonStyle.Push(!_nextIsDisabled);
+                    btnStyle = style.ButtonStyle;
                 }
 
                 ImGui.SetCursorPosX(cursorPos);
@@ -125,8 +126,7 @@ namespace Fu.Framework
                     itemWidth = 8f * Fugui.CurrentContext.Scale + Mathf.Max(txtSize.x, txtSize.y + 4f * Fugui.CurrentContext.Scale);
                 }
                 cursorPos += itemWidth - 1f;
-                Fugui.Push(ImGuiStyleVar.FramePadding, new Vector4(4f, 4f) * Fugui.CurrentContext.Scale);
-                if (ImGui.Button(items[i].ToString() + "##" + text, new Vector2(itemWidth, 0)) && !_nextIsDisabled)
+                if (this._customButton(items[i].ToString(), new Vector2(itemWidth, 0), new Vector4(4f, 4f) * Fugui.CurrentContext.Scale, Vector2.zero, btnStyle, FuThemeManager.CurrentTheme.ButtonsGradientStrenght) && !_nextIsDisabled)
                 {
                     FuSelectableBuilder.SetSelectedIndex(text, i);
                     callback?.Invoke(i);
@@ -135,8 +135,6 @@ namespace Fu.Framework
                 {
                     ImGui.SameLine();
                 }
-                Fugui.PopStyle();
-                FuButtonStyle.Default.Pop();
                 displayToolTip();
             }
             Fugui.PopStyle();

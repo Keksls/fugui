@@ -89,6 +89,8 @@ namespace Fu.Framework
             //draw hover frame
             if (hovered && !_nextIsDisabled)
             {
+                // set mouse cursor
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                 drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameHoverFeedback)), 64, 1f);
             }
 

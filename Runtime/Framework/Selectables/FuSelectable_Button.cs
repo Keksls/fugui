@@ -13,6 +13,7 @@ namespace Fu.Framework
         public FuElementSize Size { get => _size; set => _size = value; }
         private bool _enabled;
         public bool Enabled { get => _enabled; set => _enabled = value; }
+        private static FuLayout _layout = new FuLayout();
 
         /// <summary>
         /// A Selectable Item that draw a Button
@@ -54,7 +55,7 @@ namespace Fu.Framework
             {
                 FuButtonStyle.Default.Push(_enabled);
             }
-            bool clicked = ImGui.Button(Text, _size.GetSize());
+            bool clicked = _layout.Button(Text, _size.GetSize());
             FuButtonStyle.Default.Pop();
             return clicked;
         }

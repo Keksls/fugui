@@ -36,7 +36,7 @@ namespace Fu
         // The static dictionary of UI windows
         public static Dictionary<string, FuWindow> UIWindows { get; internal set; }
         // The static dictionary of UI window definitions
-        public static Dictionary<FuWindowsNames, FuWindowDefinition> UIWindowsDefinitions { get; internal set; }
+        public static Dictionary<FuWindowName, FuWindowDefinition> UIWindowsDefinitions { get; internal set; }
         // A boolean value indicating whether the render thread has started
         public static bool IsRendering { get; internal set; } = false;
         // The dictionary of external windows
@@ -85,7 +85,7 @@ namespace Fu
         {
             // instantiate UIWindows 
             UIWindows = new Dictionary<string, FuWindow>();
-            UIWindowsDefinitions = new Dictionary<FuWindowsNames, FuWindowDefinition>();
+            UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
             // init dic and queue
             _externalWindows = new Dictionary<string, FuExternalWindowContainer>();
             _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
@@ -316,9 +316,9 @@ namespace Fu
         /// <param name="windowToGet">window names to be created.</param>
         /// <param name="callback">A callback to be invoked after the windows was created, passing the instance of the created windows (null if fail).</param>
         /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
-        public static void CreateWindowAsync(FuWindowsNames windowToGet, Action<FuWindow> callback, bool autoAddToMainContainer = true)
+        public static void CreateWindowAsync(FuWindowName windowToGet, Action<FuWindow> callback, bool autoAddToMainContainer = true)
         {
-            CreateWindowsAsync(new List<FuWindowsNames>() { windowToGet }, (windows) =>
+            CreateWindowsAsync(new List<FuWindowName>() { windowToGet }, (windows) =>
             {
                 if (windows.ContainsKey(windowToGet))
                 {
@@ -337,7 +337,7 @@ namespace Fu
         /// <param name="windowsToGet">A list of window names to be created.</param>
         /// <param name="callback">A callback to be invoked after all windows are created, passing a dictionary of the created windows.</param>
         /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
-        public static void CreateWindowsAsync(List<FuWindowsNames> windowsToGet, Action<Dictionary<FuWindowsNames, FuWindow>> callback, bool autoAddToMainContainer = true)
+        public static void CreateWindowsAsync(List<FuWindowName> windowsToGet, Action<Dictionary<FuWindowName, FuWindow>> callback, bool autoAddToMainContainer = true)
         {
             // Initialize counters for the number of windows to add and the number of windows added
             int nbWIndowToAdd = 0;
@@ -346,7 +346,7 @@ namespace Fu
             // Initialize a list of window definitions
             List<FuWindowDefinition> winDefs = new List<FuWindowDefinition>();
             // Iterate over the window names
-            foreach (FuWindowsNames windowID in windowsToGet)
+            foreach (FuWindowName windowID in windowsToGet)
             {
                 // Check if a window definition with the specified name exists
                 if (UIWindowsDefinitions.ContainsKey(windowID))
@@ -358,7 +358,7 @@ namespace Fu
             }
 
             // Initialize a dictionary of UI windows
-            Dictionary<FuWindowsNames, FuWindow> windows = new Dictionary<FuWindowsNames, FuWindow>();
+            Dictionary<FuWindowName, FuWindow> windows = new Dictionary<FuWindowName, FuWindow>();
             // Iterate over the window definitions
             foreach (FuWindowDefinition winDef in winDefs)
             {

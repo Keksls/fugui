@@ -127,7 +127,19 @@ namespace Fu.Framework
         /// <returns>true if clicked</returns>
         public bool Button(string text, FuElementSize size, Vector2 padding, Vector2 textOffset, float gradientStrenght, FuButtonStyle style)
         {
-            return _customButton(text, size.BrutSize, padding, textOffset, style, gradientStrenght);
+            // begin the element
+            beginElement(ref text, style, true);
+            if (!_drawElement)
+            {
+                return false;
+            }
+
+            // draw the button
+            bool clicked = _customButton(text, size.BrutSize, padding, textOffset, style, gradientStrenght);
+
+            // end the element
+            endElement(style);
+            return clicked;
         }
 
         /// <summary>
@@ -142,13 +154,6 @@ namespace Fu.Framework
         /// <returns>true if clicked</returns>
         private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght)
         {
-            // begin the element
-            beginElement(ref text, style, true);
-            if (!_drawElement)
-            {
-                return false;
-            }
-
             // scale padding
             padding *= Fugui.CurrentContext.Scale;
 
@@ -205,25 +210,6 @@ namespace Fu.Framework
             if (gradientStrenght > 0f)
             {
                 Vector4 bg2f = new Vector4(bg1f.x * gradientStrenght, bg1f.y * gradientStrenght, bg1f.z * gradientStrenght, bg1f.w);
-
-                // prepare colors
-                if (active || hovered && !_nextIsDisabled)
-                {
-                    // Modify colors (ultimately this can be prebaked in the style)
-                    float h_increase = (active && hovered) ? 0.02f : 0.02f;
-                    float v_increase = (active && hovered) ? 0.20f : 0.07f;
-                    // prepare color 1
-                    ImGui.ColorConvertRGBtoHSV(bg1f.x, bg1f.y, bg1f.z, out bg1f.x, out bg1f.y, out bg1f.z);
-                    bg1f.x = Mathf.Min(bg1f.x + h_increase, 1.0f);
-                    bg1f.z = Mathf.Min(bg1f.z + v_increase, 1.0f);
-                    ImGui.ColorConvertHSVtoRGB(bg1f.x, bg1f.y, bg1f.z, out bg1f.x, out bg1f.y, out bg1f.z);
-                    // prepare color 2
-                    ImGui.ColorConvertRGBtoHSV(bg2f.x, bg2f.y, bg2f.z, out bg2f.x, out bg2f.y, out bg2f.z);
-                    bg2f.z = Mathf.Min(bg2f.z + h_increase, 1.0f);
-                    bg2f.z = Mathf.Min(bg2f.z + v_increase, 1.0f);
-                    ImGui.ColorConvertHSVtoRGB(bg2f.x, bg2f.y, bg2f.z, out bg2f.x, out bg2f.y, out bg2f.z);
-                }
-
                 // draw button frame
                 int vert_start_idx = drawList.VtxBuffer.Size;
                 drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), FuThemeManager.CurrentTheme.FrameRounding);
@@ -246,14 +232,17 @@ namespace Fu.Framework
             if (align.x > 0.0f) textPos.x = Mathf.Max(textPos.x, textPos.x + (bb.Max.x - textPos.x - label_size.x) * align.x);
             if (align.y > 0.0f) textPos.y = Mathf.Max(textPos.y, textPos.y + (bb.Max.y - textPos.y - label_size.y) * align.y);
 
+            // set mouse cursor
+            if (hovered && !_nextIsDisabled)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            }
+
             // draw text
             TextClipped(size, text, pos + textOffset, padding, label_size, align);
 
             // display the tooltip if necessary
             displayToolTip();
-
-            // end the element
-            endElement(style);
 
             // return whatever the button is clicked
             return clicked && !_nextIsDisabled;

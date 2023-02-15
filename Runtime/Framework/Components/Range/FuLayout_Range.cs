@@ -260,6 +260,12 @@ namespace Fu.Framework
                     _draggingSliders.Add(knobMaxID);
                 }
 
+                // set mouse cursor
+                if ((isKnobMinHovered || isKnobMaxHovered) && !_nextIsDisabled)
+                {
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                }
+
                 // stop dragging min knob
                 if (_draggingSliders.Contains(knobMinID) && !ImGui.IsMouseDown(0))
                 {

@@ -19,7 +19,7 @@ namespace Fu.Framework
         internal const string FUGUI_WINDOWS_DEF_ENUM_PATH = "Assets\\Runtime\\Settings\\FuWindowsNames.cs";
         internal const string FUGUI_DOCKSPACE_FOLDER_PATH = "Assets\\Runtime\\Settings\\Layout\\";
         internal static string _layoutFileName = "default_layout.flg";
-        internal static Dictionary<int, string> _fuguiWindows;
+        internal static Dictionary<ushort, string> _fuguiWindows;
         internal static string _windowsToAdd = string.Empty;
         internal static string _selectedWindowDefinition = string.Empty;
         internal static FuDockSpaceDefinition DisplayedLayout;
@@ -49,7 +49,7 @@ namespace Fu.Framework
                 Extensions = new string[1] { "flg" }
             };
 
-            _fuguiWindows = enumToDictionary(typeof(FuWindowsNames));
+            _fuguiWindows = enumToDictionary(FUGUI_WINDOWS_DEF_ENUM_PATH);
         }
 
         private static int LoadLayouts()
@@ -192,7 +192,7 @@ namespace Fu.Framework
         /// <param name="dockSpaceDefinition">The FuguiDockSpaceDefinition to use for creating the layout</param>
         private static void createDynamicLayout(FuDockSpaceDefinition dockSpaceDefinition)
         {
-            List<FuWindowsNames> windowsToGet = dockSpaceDefinition.GetAllWindowsDefinitions();
+            List<FuWindowName> windowsToGet = dockSpaceDefinition.GetAllWindowsDefinitions();
 
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
             Fugui.CreateWindowsAsync(windowsToGet, (windows) =>
@@ -219,7 +219,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="windows">The windows created</param>
         /// <param name="layout">The UIDockSpaceDefinition object representing the layout to create</param>
-        private static void createDocking(Dictionary<FuWindowsNames, Core.FuWindow> windows, FuDockSpaceDefinition layout)
+        private static void createDocking(Dictionary<FuWindowName, FuWindow> windows, FuDockSpaceDefinition layout)
         {
             switch (layout.Orientation)
             {
@@ -250,9 +250,9 @@ namespace Fu.Framework
 
             if (layout.WindowsDefinition.Count > 0)
             {
-                foreach (KeyValuePair<int, string> winDef in layout.WindowsDefinition)
+                foreach (KeyValuePair<ushort, string> winDef in layout.WindowsDefinition)
                 {
-                    ImGuiDocking.DockBuilderDockWindow(windows[(FuWindowsNames)winDef.Key].ID, layout.ID);
+                    ImGuiDocking.DockBuilderDockWindow(windows[new FuWindowName(winDef.Key, winDef.Value)].ID, layout.ID);
                 }
             }
 
@@ -312,7 +312,7 @@ namespace Fu.Framework
         /// </summary>
         private static void setDockSpaceConfigurationLayout()
         {
-            List<FuWindowsNames> windowsToGet = new List<FuWindowsNames>
+            List<FuWindowName> windowsToGet = new List<FuWindowName>
             {
                 FuWindowsNames.DockSpaceManager,
                 FuWindowsNames.WindowsDefinitionManager,
@@ -367,21 +367,38 @@ namespace Fu.Framework
         /// <param name="enumName">name of the enum</param>
         /// <param name="values">values of the enum</param>
         /// <returns>string that represent source code</returns>
-        internal static string generateEnum(string enumName, Dictionary<int, string> values)
+        internal static string generateEnum(string enumName, Dictionary<ushort, string> values)
         {
             var sb = new StringBuilder();
             // enum namespace and declaration
-            sb.AppendLine("namespace Fu.Core")
+            sb.AppendLine("using System.Collections.Generic;")
+                .AppendLine("using System.Runtime.CompilerServices;")
+                .AppendLine()
+                .AppendLine("namespace Fu.Core")
                 .AppendLine("{")
-                .AppendLine("    public enum " + enumName)
+
+                .AppendLine("    public static class " + enumName)
                 .AppendLine("    {");
 
-            // iterate on values to write enum inner keys
+            // iterate on values to write static values
             foreach (var item in values)
             {
-                sb.AppendFormat("        {0} = {1},", item.Value, item.Key);
-                sb.AppendLine();
+                sb.AppendLine("        private static FuWindowName _" + item.Value + " = new FuWindowName(" + item.Key + ", \"" + item.Value + "\");");
+                sb.AppendLine("        public static FuWindowName " + item.Value + " { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _" + item.Value + "; }");
             }
+
+            // iterate on values to write getAll method
+            sb.AppendLine()
+                .AppendLine("        public static List<FuWindowName> GetAllWindowsNames()")
+                .AppendLine("        {")
+                .AppendLine("            return new List<FuWindowName>()")
+                .AppendLine("            {");
+            foreach (var item in values)
+            {
+                sb.AppendLine("                _" + item.Value + ",");
+            }
+            sb.AppendLine("            };")
+                .AppendLine("        }");
 
             // end of scope
             sb.AppendLine("    }").Append("}");
@@ -393,12 +410,16 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="enumType"></param>
         /// <returns></returns>
-        internal static Dictionary<int, string> enumToDictionary(Type enumType)
+        internal static Dictionary<ushort, string> enumToDictionary(string path)
         {
-            // get each enum values as int array and write them into dic of key value
-            return Enum.GetValues(enumType)
-                .Cast<int>()
-                .ToDictionary(x => x, x => Enum.GetName(enumType, x));
+            Dictionary<ushort, string> dic = new Dictionary<ushort, string>();
+            string[] lines = File.ReadAllLines(path);
+            var windows = FuWindowsNames.GetAllWindowsNames();
+            foreach (var window in windows)
+            {
+                dic.Add(window.ID, window.Name);
+            }
+            return dic;
         }
 
         /// <summary>
@@ -406,7 +427,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="windowDefID">The unique identifier of the window definition to bind</param>
         /// <param name="dockspaceName">The name of the dock space to bind the window definition to</param>
-        internal static void bindWindowToDockspace(int windowDefID, string dockspaceName)
+        internal static void bindWindowToDockspace(ushort windowDefID, string dockspaceName)
         {
             if (DisplayedLayout != null)
             {
@@ -429,7 +450,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="windowDefID">The unique identifier of the window definition to check for binding</param>
         /// <returns>The name of the dock space that the window definition is currently binded to, or an empty string if the window definition is not currently binded to any dock space</returns>
-        internal static string getBindedLayout(int windowDefID)
+        internal static string getBindedLayout(ushort windowDefID)
         {
             // Initialize a variable to store the name of the binded dock space
             string bindedDockspaceName = "None";
@@ -452,7 +473,7 @@ namespace Fu.Framework
         /// This function removes the entry in the WindowsDefinition dictionary that corresponds to the given windowDefID from all children of the _dockSpaceDefinitionRoot object recursively.
         /// </summary>
         /// <param name="windowDefID">The unique identifier of the window definition to bind<</param>
-        internal static void unbindWindowToDockspace(int windowDefID)
+        internal static void unbindWindowToDockspace(ushort windowDefID)
         {
             if (DisplayedLayout != null)
             {
@@ -515,7 +536,6 @@ namespace Fu.Framework
         /// Callbacked used for user response after delete layout file
         /// </summary>
         /// <param name="result">User result</param>
-
         private static void confirmDeleteSelectedLayoutFile(bool result)
         {
             try

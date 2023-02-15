@@ -121,6 +121,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _settings:
+    FUGUI_WINDOWS_DEF_ENUM_PATH: Assets\Test\Runtime\FuWindowsNames.cs
+    FUGUI_DOCKSPACE_FOLDER_PATH: Assets\Runtime\Settings\Layout\
     InternalizeOnMouseRelease: 0
     IdleFPS: 4
     ManipulatingFPS: 48

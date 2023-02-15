@@ -137,7 +137,7 @@ namespace Fu.Framework
 
             // get and clamp current selectable index
             int selectedIndex = _selectableSelectedIndices[id];
-            if (selectedIndex >= items.Count)
+            if (selectedIndex >= items.Count && items.Count > 0)
             {
                 selectedIndex = items.Count - 1;
             }

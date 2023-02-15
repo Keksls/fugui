@@ -99,6 +99,11 @@ public class FuguiDemoScene : MonoBehaviour
         }
     }
 
+    private void Awake()
+    {
+        FuDockingLayoutManager.Initialize(FuWindowsNames.GetAllWindowsNames());
+    }
+
     void Start()
     {
         IFuWindowContainer mainContainer = Fugui.MainContainer;
@@ -140,7 +145,7 @@ public class FuguiDemoScene : MonoBehaviour
         FuDockingLayoutManager.OnDockLayoutInitialized += DockingLayoutManager_OnDockLayoutInitialized;
 
         Fugui.RegisterMainMenuItem("Layout", null);
-        foreach (KeyValuePair<string, FuDockSpaceDefinition> layoutDefinition in FuDockingLayoutManager.Layouts)
+        foreach (KeyValuePair<string, FuDockingLayoutDefinition> layoutDefinition in FuDockingLayoutManager.Layouts)
         {
             string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
             if (!Fugui.IsMainMenuRegisteredItem(menuName))
@@ -152,7 +157,7 @@ public class FuguiDemoScene : MonoBehaviour
         Fugui.RegisterMainMenuItem("Windows", null);
         foreach (FuWindowName windowName in FuWindowsNames.GetAllWindowsNames())
         {
-            if (windowName.Equals(FuWindowsNames.None))
+            if (windowName.Equals(FuSystemWindowsNames.None))
             {
                 continue;
             }
@@ -944,7 +949,7 @@ public class FuguiDemoScene : MonoBehaviour
     private void DockingLayoutManager_OnDockLayoutInitialized()
     {
         // instantiate test 3D window
-        Fugui.CreateWindowAsync(FuWindowsNames.FuguiSettings, (window) =>
+        Fugui.CreateWindowAsync(FuSystemWindowsNames.FuguiSettings, (window) =>
         {
             Fugui.Add3DWindow(window, new Vector3(0f, -2f, 0f), Quaternion.Euler(Vector3.up * 180f));
         }, false);
@@ -958,7 +963,7 @@ public class FuguiDemoScene : MonoBehaviour
         //Register the layout menu empty
         Fugui.RegisterMainMenuItem("Layout", null);
 
-        foreach (KeyValuePair<string, FuDockSpaceDefinition> layoutDefinition in FuDockingLayoutManager.Layouts)
+        foreach (KeyValuePair<string, FuDockingLayoutDefinition> layoutDefinition in FuDockingLayoutManager.Layouts)
         {
             //Add new children
             string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);

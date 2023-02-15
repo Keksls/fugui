@@ -16,6 +16,14 @@ namespace Fu.Core
     /// </summary>
     public class FuSettings
     {
+        [Tooltip("Path of the class that will store the FuWindow Names.")]
+        [FuTooltip("Path of the class that will store the FuWindow Names.")]
+        public string FUGUI_WINDOWS_DEF_ENUM_PATH = "Assets\\Runtime\\Settings\\FuWindowsNames.cs";
+
+        [Tooltip("Path of the folder that will store the Fugui layouts.")]
+        [FuTooltip("Path of the folder that will store the Fugui layouts.")]
+        public string FUGUI_DOCKSPACE_FOLDER_PATH = "Assets\\Runtime\\Settings\\Layout\\";
+
         [Tooltip("A boolean value indicating whether UI windows should be internalized on mouse release.")]
         [FuTooltip("A boolean value indicating whether UI windows should be internalized on mouse release.")]
         [FuToggle]

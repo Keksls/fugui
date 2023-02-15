@@ -16,17 +16,15 @@ namespace Fu.Framework
     public static class FuDockingLayoutManager
     {
         #region Variables
-        internal const string FUGUI_WINDOWS_DEF_ENUM_PATH = "Assets\\Runtime\\Settings\\FuWindowsNames.cs";
-        internal const string FUGUI_DOCKSPACE_FOLDER_PATH = "Assets\\Runtime\\Settings\\Layout\\";
         internal static string _layoutFileName = "default_layout.flg";
         internal static Dictionary<ushort, string> _fuguiWindows;
         internal static string _windowsToAdd = string.Empty;
         internal static string _selectedWindowDefinition = string.Empty;
-        internal static FuDockSpaceDefinition DisplayedLayout;
+        internal static FuDockingLayoutDefinition DisplayedLayout;
         internal static string DisplayLayoutName = "";
         internal static Dictionary<int, string> _definedDockSpaces;
         internal static ExtensionFilter _flgExtensionFilter;
-        public static Dictionary<string, FuDockSpaceDefinition> Layouts { get; private set; }
+        public static Dictionary<string, FuDockingLayoutDefinition> Layouts { get; private set; }
         /// <summary>
         /// Whatever we already are setting Layer right now
         /// </summary>
@@ -41,7 +39,7 @@ namespace Fu.Framework
         static FuDockingLayoutManager()
         {
             //Load layouts
-            LoadLayouts();
+            oadLayouts();
 
             _flgExtensionFilter = new ExtensionFilter
             {
@@ -49,10 +47,27 @@ namespace Fu.Framework
                 Extensions = new string[1] { "flg" }
             };
 
-            _fuguiWindows = enumToDictionary(FUGUI_WINDOWS_DEF_ENUM_PATH);
+            _fuguiWindows = null;
         }
 
-        private static int LoadLayouts()
+        /// <summary>
+        /// give to the layout manager the custom names of the FuWindows on your application
+        /// </summary>
+        /// <param name="windowsNames">names of the windows (mostly FuWindowsNames.GetAll())</param>
+        public static void Initialize(List<FuWindowName> windowsNames)
+        {
+            _fuguiWindows = new Dictionary<ushort, string>();
+            foreach (FuWindowName windowName in windowsNames)
+            {
+                _fuguiWindows.Add(windowName.ID, windowName.Name);
+            }
+        }
+
+        /// <summary>
+        /// Load all layouts from files
+        /// </summary>
+        /// <returns>number of loaded layouts</returns>
+        private static int oadLayouts()
         {
             // get folder path
             string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
@@ -75,13 +90,13 @@ namespace Fu.Framework
 
             List<string> files = Directory.GetFiles(folderPath).ToList();
 
-            Layouts = new Dictionary<string, FuDockSpaceDefinition>();
+            Layouts = new Dictionary<string, FuDockingLayoutDefinition>();
 
             // iterate on each file into folder
             foreach (string file in Directory.GetFiles(folderPath))
             {
                 string fileName = Path.GetFileName(file);
-                FuDockSpaceDefinition tempLayout = FuDockSpaceDefinition.ReadFromFile(file);
+                FuDockingLayoutDefinition tempLayout = FuDockingLayoutDefinition.ReadFromFile(file);
 
                 if (tempLayout != null)
                 {
@@ -92,7 +107,7 @@ namespace Fu.Framework
             // Select first layout
             if (Layouts.Count > 0)
             {
-                KeyValuePair<string, FuDockSpaceDefinition> firstLayoutInfo = Layouts.ElementAt(0);
+                KeyValuePair<string, FuDockingLayoutDefinition> firstLayoutInfo = Layouts.ElementAt(0);
                 DisplayedLayout = firstLayoutInfo.Value;
                 DisplayLayoutName = firstLayoutInfo.Key;
             }
@@ -115,7 +130,7 @@ namespace Fu.Framework
         {
             if (DisplayedLayout != null)
             {
-                _definedDockSpaces = getDictionary(DisplayedLayout);
+                _definedDockSpaces = getDictionaryFromDockSpace(DisplayedLayout);
             }
         }
 
@@ -123,7 +138,7 @@ namespace Fu.Framework
         /// This method takes in a "UIDockSpaceDefinition" object as a parameter and returns a dictionary containing the ID and name of the root object and all its children.
         /// It calls itself recursively on each child
         /// </summary>
-        private static Dictionary<int, string> getDictionary(FuDockSpaceDefinition root)
+        private static Dictionary<int, string> getDictionaryFromDockSpace(FuDockingLayoutDefinition root)
         {
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
             dictionary.Add(-1, "None");
@@ -131,7 +146,7 @@ namespace Fu.Framework
 
             foreach (var child in root.Children)
             {
-                var childDictionary = getDictionary(child);
+                var childDictionary = getDictionaryFromDockSpace(child);
 
                 foreach (KeyValuePair<int, string> entry in childDictionary)
                 {
@@ -157,8 +172,16 @@ namespace Fu.Framework
         /// Sets the layout of the UI windows to the specified layout.
         /// </summary>
         /// <param name="layout">The layout to be set.</param>
-        public static void SetLayout(FuDockSpaceDefinition layout)
+        public static void SetLayout(FuDockingLayoutDefinition layout)
         {
+            // check whatever the layout manager knows the custom application windows names
+            if (_fuguiWindows == null)
+            {
+                Debug.Log("Can't set sayout because Layout Manager is not Initialized." + Environment.NewLine +
+                    "Please call FuDockingLayoutManager.Initialize() befose setting a layout.");
+                return;
+            }
+
             // check whatever we car set Layer
             if (!canSetLayer())
             {
@@ -190,7 +213,7 @@ namespace Fu.Framework
         /// Method that creates a dynamic layout based on the specified UIDockSpaceDefinition. It first retrieves a list of all the windows definitions associated with the dock space and its children recursively, then creates those windows asynchronously, and finally invokes a callback function to complete the layout creation process.
         /// </summary>
         /// <param name="dockSpaceDefinition">The FuguiDockSpaceDefinition to use for creating the layout</param>
-        private static void createDynamicLayout(FuDockSpaceDefinition dockSpaceDefinition)
+        private static void createDynamicLayout(FuDockingLayoutDefinition dockSpaceDefinition)
         {
             List<FuWindowName> windowsToGet = dockSpaceDefinition.GetAllWindowsDefinitions();
 
@@ -219,7 +242,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="windows">The windows created</param>
         /// <param name="layout">The UIDockSpaceDefinition object representing the layout to create</param>
-        private static void createDocking(Dictionary<FuWindowName, FuWindow> windows, FuDockSpaceDefinition layout)
+        private static void createDocking(Dictionary<FuWindowName, FuWindow> windows, FuDockingLayoutDefinition layout)
         {
             switch (layout.Orientation)
             {
@@ -256,7 +279,7 @@ namespace Fu.Framework
                 }
             }
 
-            foreach (FuDockSpaceDefinition child in layout.Children)
+            foreach (FuDockingLayoutDefinition child in layout.Children)
             {
                 createDocking(windows, child);
             }
@@ -314,9 +337,8 @@ namespace Fu.Framework
         {
             List<FuWindowName> windowsToGet = new List<FuWindowName>
             {
-                FuWindowsNames.DockSpaceManager,
-                FuWindowsNames.WindowsDefinitionManager,
-                FuWindowsNames.MainCameraView
+                FuSystemWindowsNames.DockSpaceManager,
+                FuSystemWindowsNames.WindowsDefinitionManager
             };
 
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
@@ -332,9 +354,8 @@ namespace Fu.Framework
                 uint left;
                 uint right;
                 ImGuiDocking.DockBuilderSplitNode(Dockspace_id, ImGuiDir.Left, 0.7f, out left, out right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuWindowsNames.MainCameraView].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuWindowsNames.DockSpaceManager].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuWindowsNames.WindowsDefinitionManager].ID, right);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuSystemWindowsNames.DockSpaceManager].ID, left);
+                ImGuiDocking.DockBuilderDockWindow(windows[FuSystemWindowsNames.WindowsDefinitionManager].ID, right);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
                 endSettingLayout();
@@ -364,32 +385,33 @@ namespace Fu.Framework
         /// <summary>
         /// Generate the enum source code for Window Names
         /// </summary>
-        /// <param name="enumName">name of the enum</param>
+        /// <param name="className">name of the enum</param>
         /// <param name="values">values of the enum</param>
         /// <returns>string that represent source code</returns>
-        internal static string generateEnum(string enumName, Dictionary<ushort, string> values)
+        internal static string generateEnum(string className, Dictionary<ushort, string> values)
         {
             var sb = new StringBuilder();
             // enum namespace and declaration
-            sb.AppendLine("using System.Collections.Generic;")
-                .AppendLine("using System.Runtime.CompilerServices;")
+            sb.AppendLine("using System.Runtime.CompilerServices;")
+                .AppendLine("using System.Collections.Generic;")
                 .AppendLine()
                 .AppendLine("namespace Fu.Core")
                 .AppendLine("{")
-
-                .AppendLine("    public static class " + enumName)
+                .AppendLine("    public class " + className + " : FuSystemWindowsNames")
                 .AppendLine("    {");
 
             // iterate on values to write static values
             foreach (var item in values)
             {
-                sb.AppendLine("        private static FuWindowName _" + item.Value + " = new FuWindowName(" + item.Key + ", \"" + item.Value + "\");");
-                sb.AppendLine("        public static FuWindowName " + item.Value + " { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _" + item.Value + "; }");
+                if (item.Key > FuSystemWindowsNames.FuguiReservedLastID)
+                {
+                    sb.AppendLine("        private static FuWindowName _" + item.Value + " = new FuWindowName(" + item.Key + ", \"" + item.Value + "\");")
+                        .AppendLine("        public static FuWindowName " + item.Value + " { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _" + item.Value + "; }");
+                }
             }
 
-            // iterate on values to write getAll method
-            sb.AppendLine()
-                .AppendLine("        public static List<FuWindowName> GetAllWindowsNames()")
+            // add get window list
+            sb.AppendLine("        public static List<FuWindowName> GetAllWindowsNames()")
                 .AppendLine("        {")
                 .AppendLine("            return new List<FuWindowName>()")
                 .AppendLine("            {");
@@ -397,29 +419,14 @@ namespace Fu.Framework
             {
                 sb.AppendLine("                _" + item.Value + ",");
             }
+
+            // close scop
             sb.AppendLine("            };")
-                .AppendLine("        }");
+                .AppendLine("        }")
+                .AppendLine("    }")
+                .Append("}");
 
-            // end of scope
-            sb.AppendLine("    }").Append("}");
             return sb.ToString();
-        }
-
-        /// <summary>
-        /// Convert en enum to a dictionnary
-        /// </summary>
-        /// <param name="enumType"></param>
-        /// <returns></returns>
-        internal static Dictionary<ushort, string> enumToDictionary(string path)
-        {
-            Dictionary<ushort, string> dic = new Dictionary<ushort, string>();
-            string[] lines = File.ReadAllLines(path);
-            var windows = FuWindowsNames.GetAllWindowsNames();
-            foreach (var window in windows)
-            {
-                dic.Add(window.ID, window.Name);
-            }
-            return dic;
         }
 
         /// <summary>
@@ -433,7 +440,7 @@ namespace Fu.Framework
             {
                 DisplayedLayout.RemoveWindowsDefinitionInChildren(windowDefID);
 
-                FuDockSpaceDefinition tempDockSpace = DisplayedLayout.SearchInChildren(dockspaceName);
+                FuDockingLayoutDefinition tempDockSpace = DisplayedLayout.SearchInChildren(dockspaceName);
 
                 if (tempDockSpace != null)
                 {
@@ -456,7 +463,7 @@ namespace Fu.Framework
             string bindedDockspaceName = "None";
 
             // Search for the dock space that the window definition is binded to
-            FuDockSpaceDefinition bindedDockspace = DisplayedLayout.SearchInChildren(windowDefID);
+            FuDockingLayoutDefinition bindedDockspace = DisplayedLayout.SearchInChildren(windowDefID);
 
             // If the dock space is found
             if (bindedDockspace != null)
@@ -492,9 +499,9 @@ namespace Fu.Framework
 
             if (!Layouts.ContainsKey(newFileName))
             {
-                Layouts.Add(newFileName, new FuDockSpaceDefinition(newFileName, 0));
+                Layouts.Add(newFileName, new FuDockingLayoutDefinition(newFileName, 0));
 
-                FuDockSpaceDefinition newLayout = Layouts[newFileName];
+                FuDockingLayoutDefinition newLayout = Layouts[newFileName];
                 DisplayedLayout = newLayout;
                 DisplayLayoutName = newFileName;
             }
@@ -550,7 +557,7 @@ namespace Fu.Framework
             }
             finally
             {
-                LoadLayouts();
+                oadLayouts();
             }
         }
 
@@ -593,7 +600,7 @@ namespace Fu.Framework
                     saveLayoutFile();
 
                     //Reload layouts
-                    LoadLayouts();
+                    oadLayouts();
                 }
             }
         }
@@ -609,7 +616,7 @@ namespace Fu.Framework
                 saveLayoutFile();
 
                 //Reload layouts
-                LoadLayouts();
+                oadLayouts();
             }
         }
 
@@ -639,7 +646,7 @@ namespace Fu.Framework
             }
 
             string fileName = Path.Combine(folderPath, DisplayLayoutName);
-            File.WriteAllText(fileName, FuDockSpaceDefinition.Serialize(DisplayedLayout));
+            File.WriteAllText(fileName, FuDockingLayoutDefinition.Serialize(DisplayedLayout));
         }
 
         internal static bool checkSelectedName()

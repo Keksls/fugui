@@ -32,7 +32,7 @@ namespace Fu
 
         public override string ToString()
         {
-            return _id.ToString();
+            return _name;
         }
 
         public override bool Equals(object obj)

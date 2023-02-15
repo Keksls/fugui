@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Fu.Core;
 using Newtonsoft.Json;
 
 // TODO : Add summary on top of each methods/functions/cnstr
 namespace Fu.Framework
 {
-    public class FuDockSpaceDefinition
+    public class FuDockingLayoutDefinition
     {
         //The name of the dock space
         public string Name;
@@ -23,36 +22,36 @@ namespace Fu.Framework
 
         //A list of child dock spaces
         [JsonProperty]
-        public List<FuDockSpaceDefinition> Children;
+        public List<FuDockingLayoutDefinition> Children;
 
         //A lost of binded windowsdefintion
         [JsonProperty]
         public Dictionary<ushort, string> WindowsDefinition;
 
-        public FuDockSpaceDefinition()
+        public FuDockingLayoutDefinition()
         {
 
         }
 
         //Constructor that accepts 4 parameters: name, id, proportion and orientation
-        public FuDockSpaceDefinition(string name, uint id, float proportion, UIDockSpaceOrientation orientation)
+        public FuDockingLayoutDefinition(string name, uint id, float proportion, UIDockSpaceOrientation orientation)
         {
             Name = name;
             ID = id;
             Proportion = proportion;
             Orientation = orientation;
-            Children = new List<FuDockSpaceDefinition>();
+            Children = new List<FuDockingLayoutDefinition>();
             WindowsDefinition = new Dictionary<ushort, string>();
         }
 
         //Constructor that accepts 2 parameters: name and id, with default values for proportion and orientation
-        public FuDockSpaceDefinition(string name, uint id)
+        public FuDockingLayoutDefinition(string name, uint id)
         {
             Name = name;
             ID = id;
             Proportion = 0.5f;
             Orientation = UIDockSpaceOrientation.None;
-            Children = new List<FuDockSpaceDefinition>();
+            Children = new List<FuDockingLayoutDefinition>();
             WindowsDefinition = new Dictionary<ushort, string>();
         }
 
@@ -70,21 +69,21 @@ namespace Fu.Framework
         }
 
         //Serialization method
-        public static string Serialize(FuDockSpaceDefinition dockspaceDefinition)
+        public static string Serialize(FuDockingLayoutDefinition dockspaceDefinition)
         {
             return JsonConvert.SerializeObject(dockspaceDefinition);
         }
 
         //Deserialization method
-        public static FuDockSpaceDefinition ReadFromFile(string pathFile)
+        public static FuDockingLayoutDefinition ReadFromFile(string pathFile)
         {
-            FuDockSpaceDefinition result = null;
+            FuDockingLayoutDefinition result = null;
 
             try
             {
                 using (StreamReader sr = new StreamReader(pathFile))
                 {
-                    result = JsonConvert.DeserializeObject<FuDockSpaceDefinition>(sr.ReadToEnd());
+                    result = JsonConvert.DeserializeObject<FuDockingLayoutDefinition>(sr.ReadToEnd());
                 }
             }
             catch (Exception ex)
@@ -100,7 +99,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="dockspaceName">The name of the dock space to search for</param>
         /// <returns>The dock space with the specified name, or null if not found</returns>
-        internal FuDockSpaceDefinition SearchInChildren(string dockspaceName)
+        internal FuDockingLayoutDefinition SearchInChildren(string dockspaceName)
         {
             if (Name == dockspaceName)
             {
@@ -126,7 +125,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="windowDefID">The ID of the window definition</param>
         /// <returns>The dock space with the specified name, or null if not found</returns>
-        internal FuDockSpaceDefinition SearchInChildren(ushort windowDefID)
+        internal FuDockingLayoutDefinition SearchInChildren(ushort windowDefID)
         {
             if (WindowsDefinition.ContainsKey(windowDefID))
             {

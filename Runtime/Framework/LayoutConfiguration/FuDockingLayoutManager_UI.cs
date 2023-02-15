@@ -96,7 +96,7 @@ namespace Fu
         /// Clears the children of the dock space definition
         /// </summary>
         /// <param name="dockSpaceDefinition">The dock space definition to clear the children of</param>
-        private static void DockSpaceDefinitionClearChildren(FuDockSpaceDefinition dockSpaceDefinition)
+        private static void DockSpaceDefinitionClearChildren(FuDockingLayoutDefinition dockSpaceDefinition)
         {
             // Set the orientation to None
             dockSpaceDefinition.Orientation = UIDockSpaceOrientation.None;
@@ -116,7 +116,7 @@ namespace Fu
         /// <param name="layout">The layout to use for displaying the tree view</param>
         /// <param name="dockSpaceDefinition">The dock space definition to show in the tree view</param>
         /// <param name="root">Flag to set the root node</param>
-        private static void ShowTreeView(FuLayout layout, FuDockSpaceDefinition dockSpaceDefinition, bool root = false)
+        private static void ShowTreeView(FuLayout layout, FuDockingLayoutDefinition dockSpaceDefinition, bool root = false)
         {
             if (root)
             {
@@ -175,8 +175,8 @@ namespace Fu
                                     dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Horizontal;
                                     uint nextID = FuDockingLayoutManager.DisplayedLayout.GetTotalChildren();
 
-                                    FuDockSpaceDefinition leftPart = new FuDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitH_Left", nextID + 1);
-                                    FuDockSpaceDefinition rightPart = new FuDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitH_Right", nextID + 2);
+                                    FuDockingLayoutDefinition leftPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitH_Left", nextID + 1);
+                                    FuDockingLayoutDefinition rightPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitH_Right", nextID + 2);
 
                                     dockSpaceDefinition.Children.Add(leftPart);
                                     dockSpaceDefinition.Children.Add(rightPart);
@@ -189,8 +189,8 @@ namespace Fu
                                     dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Vertical;
                                     uint nextID = FuDockingLayoutManager.DisplayedLayout.GetTotalChildren();
 
-                                    FuDockSpaceDefinition topPart = new FuDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitV_Top", nextID + 1);
-                                    FuDockSpaceDefinition bottomPart = new FuDockSpaceDefinition(dockSpaceDefinition.Name + "_SplitV_Bottom", nextID + 2);
+                                    FuDockingLayoutDefinition topPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitV_Top", nextID + 1);
+                                    FuDockingLayoutDefinition bottomPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitV_Bottom", nextID + 2);
 
                                     dockSpaceDefinition.Children.Add(topPart);
                                     dockSpaceDefinition.Children.Add(bottomPart);
@@ -203,7 +203,7 @@ namespace Fu
                     }, () => dockSpaceDefinition.Orientation);
 
                     // REcursive display for children
-                    foreach (FuDockSpaceDefinition child in dockSpaceDefinition.Children)
+                    foreach (FuDockingLayoutDefinition child in dockSpaceDefinition.Children)
                     {
                         layout.Separator();
                         ShowTreeView(layout, child);
@@ -257,7 +257,7 @@ namespace Fu
                                                 formatedFuguiWindowsName.Add(fuguiItem.Key, RemoveSpaceAndCapitalize(fuguiItem.Value));
                                             }
 
-                                            FuDockingLayoutManager.writeToFile(FuDockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", formatedFuguiWindowsName));
+                                            FuDockingLayoutManager.writeToFile(Settings.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", formatedFuguiWindowsName));
                                             FuDockingLayoutManager._windowsToAdd = string.Empty;
                                         }
                                     }
@@ -285,7 +285,7 @@ namespace Fu
                                     if (keyToDelete < ushort.MaxValue)
                                     {
                                         FuDockingLayoutManager._fuguiWindows.Remove(keyToDelete);
-                                        FuDockingLayoutManager.writeToFile(FuDockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager._fuguiWindows));
+                                        FuDockingLayoutManager.writeToFile(Settings.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager._fuguiWindows));
                                         FuDockingLayoutManager._selectedWindowDefinition = "None";
                                     }
                                 }

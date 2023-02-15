@@ -248,11 +248,11 @@ namespace Fu
                                         if (!FuDockingLayoutManager._fuguiWindows.Values.Contains(FuDockingLayoutManager._windowsToAdd))
                                         {
                                             int newIndex = FuDockingLayoutManager._fuguiWindows.Max(x => x.Key) + 1;
-                                            FuDockingLayoutManager._fuguiWindows.Add(FuDockingLayoutManager._fuguiWindows.Keys.Last() + 1, FuDockingLayoutManager._windowsToAdd);
+                                            FuDockingLayoutManager._fuguiWindows.Add((ushort)(FuDockingLayoutManager._fuguiWindows.Keys.Last() + 1), FuDockingLayoutManager._windowsToAdd);
 
-                                            Dictionary<int, string> formatedFuguiWindowsName = new Dictionary<int, string>();
+                                            Dictionary<ushort, string> formatedFuguiWindowsName = new Dictionary<ushort, string>();
 
-                                            foreach (KeyValuePair<int, string> fuguiItem in FuDockingLayoutManager._fuguiWindows)
+                                            foreach (KeyValuePair<ushort, string> fuguiItem in FuDockingLayoutManager._fuguiWindows)
                                             {
                                                 formatedFuguiWindowsName.Add(fuguiItem.Key, RemoveSpaceAndCapitalize(fuguiItem.Value));
                                             }
@@ -271,9 +271,9 @@ namespace Fu
                             {
                                 if (FuDockingLayoutManager._fuguiWindows.Values.Contains(FuDockingLayoutManager._selectedWindowDefinition))
                                 {
-                                    int keyToDelete = -1;
+                                    ushort keyToDelete = ushort.MaxValue;
 
-                                    foreach (KeyValuePair<int, string> item in FuDockingLayoutManager._fuguiWindows)
+                                    foreach (KeyValuePair<ushort, string> item in FuDockingLayoutManager._fuguiWindows)
                                     {
                                         if (item.Value == FuDockingLayoutManager._selectedWindowDefinition)
                                         {
@@ -282,7 +282,7 @@ namespace Fu
                                         }
                                     }
 
-                                    if (keyToDelete != -1)
+                                    if (keyToDelete < ushort.MaxValue)
                                     {
                                         FuDockingLayoutManager._fuguiWindows.Remove(keyToDelete);
                                         FuDockingLayoutManager.writeToFile(FuDockingLayoutManager.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager._fuguiWindows));
@@ -302,7 +302,7 @@ namespace Fu
                         {
                             for (int i = 0; i < FuDockingLayoutManager._fuguiWindows.Count; i++)
                             {
-                                KeyValuePair<int, string> item = FuDockingLayoutManager._fuguiWindows.ElementAt(i);
+                                KeyValuePair<ushort, string> item = FuDockingLayoutManager._fuguiWindows.ElementAt(i);
 
                                 if (item.Value == "None")
                                 {

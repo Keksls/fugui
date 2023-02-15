@@ -195,6 +195,12 @@ namespace Fu.Framework
                     // Draw the right slider line
                     ImGui.GetWindowDrawList().AddLine(new Vector2(knobPos, y), new Vector2(x + width, y), ImGui.GetColorU32(rightLineColor), lineHeight);
 
+                    // set mouse cursor
+                    if (isKnobHovered && !_nextIsDisabled)
+                    {
+                        ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                    }
+
                     // Draw the knob
                     if (!_nextIsDisabled)
                     {

@@ -34,7 +34,7 @@ namespace Fu.Core
         }
 
         // properties
-        public FuWindowsNames WindowName { get; private set; }
+        public FuWindowName WindowName { get; private set; }
         public string ID { get; private set; }
         public Action<FuWindow> UI { get; internal set; }
         public Action<FuWindow> Constraints { get; internal set; }

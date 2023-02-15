@@ -81,6 +81,12 @@ namespace Fu.Framework
             bool clicked = hovered && ImGui.IsMouseReleased(0);
             bool active = hovered && ImGui.IsMouseDown(0);
 
+            // set mouse cursor
+            if(hovered && !_nextIsDisabled)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            }
+
             Vector4 BGColor = value ? FuThemeManager.GetColor(FuColors.Selected) : FuThemeManager.GetColor(FuColors.FrameBg);
             Vector4 KnobColor = FuThemeManager.GetColor(FuColors.Knob);
             Vector4 TextColor = value ? FuThemeManager.GetColor(FuColors.SelectedText) : FuThemeManager.GetColor(FuColors.Text);

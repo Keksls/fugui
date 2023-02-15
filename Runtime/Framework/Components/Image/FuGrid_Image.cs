@@ -10,7 +10,7 @@ namespace Fu.Framework
         /// <param name="id">ID/Label of the image</param>
         /// <param name="texture">Texture to draw</param>
         /// <param name="size">Size of the image</param>
-        public override void Image(string id, Texture2D texture, Vector2 size, Vector4 color)
+        public override void Image(string id, Texture2D texture, FuElementSize size, Vector4 color)
         {
             if (!_gridCreated)
             {
@@ -26,7 +26,7 @@ namespace Fu.Framework
         /// <param name="id">ID/Label of the image</param>
         /// <param name="texture">Texture to draw</param>
         /// <param name="size">Size of the image</param>
-        public override void Image(string id, RenderTexture texture, Vector2 size, Vector4 color)
+        public override void Image(string id, RenderTexture texture, FuElementSize size, Vector4 color)
         {
             if (!_gridCreated)
             {
@@ -43,7 +43,7 @@ namespace Fu.Framework
         /// <param name="texture">Texture to draw</param>
         /// <param name="size">Size of the image</param>
         /// <returns>true if clicked</returns>
-        public override bool ImageButton(string id, Texture2D texture, Vector2 size)
+        public override bool ImageButton(string id, Texture2D texture, FuElementSize size)
         {
             if (!_gridCreated)
             {
@@ -60,7 +60,7 @@ namespace Fu.Framework
         /// <param name="texture">Texture to draw</param>
         /// <param name="size">Size of the image</param>
         /// <returns>true if clicked</returns>
-        public override bool ImageButton(string id, Texture2D texture, Vector2 size, Vector4 color)
+        public override bool ImageButton(string id, Texture2D texture, FuElementSize size, Vector4 color)
         {
             if (!_gridCreated)
             {

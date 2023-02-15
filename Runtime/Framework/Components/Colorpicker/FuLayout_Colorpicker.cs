@@ -150,6 +150,13 @@ namespace Fu.Framework
                 CurrentPopUpID = null;
             }
             Fugui.PopStyle();
+
+            // set mouse cursor
+            if (hovered && !_nextIsDisabled)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            }
+
             endElement(style);
             return edited;
         }

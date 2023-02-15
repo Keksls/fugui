@@ -8,7 +8,7 @@ namespace Fu.Core
     public class FuWindowDefinition
     {
         #region Variables
-        public FuWindowsNames WindowName { get; private set; }
+        public FuWindowName WindowName { get; private set; }
         // A unique identifier for the window
         public string Id { get; private set; }
         // A delegate for updating the window's UI
@@ -44,7 +44,7 @@ namespace Fu.Core
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
-        public FuWindowDefinition(FuWindowsNames windowName, string id, Action<FuWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default)
+        public FuWindowDefinition(FuWindowName windowName, string id, Action<FuWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default)
         {
             // Assign the specified values to the corresponding fields
             WindowName = windowName;
@@ -145,10 +145,9 @@ namespace Fu.Core
         /// <returns>true if already exists</returns>
         public bool AlreadyHasInstance()
         {
-            // TODO : Once UIWinDef and UIWindow instances are stored nicely, we must check whatever an instance of this window already exists a better way
             foreach (FuWindow window in Fugui.UIWindows.Values)
             {
-                if (window.WindowName == WindowName)
+                if (window.WindowName.Equals(WindowName))
                 {
                     return true;
                 }

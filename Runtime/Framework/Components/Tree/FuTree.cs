@@ -509,6 +509,13 @@ namespace Fu.Framework
             {
                 ImGui.Dummy(new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, carretSize));
                 bool hover = ImGui.IsMouseHoveringRect(cursorPos, cursorPos + new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, height));
+
+                // set mouse cursor
+                if (hover)
+                {
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                }
+
                 // get 
                 if (hover && ImGui.IsMouseDown(ImGuiMouseButton.Left))
                 {

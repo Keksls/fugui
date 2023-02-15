@@ -28,7 +28,8 @@ namespace Fu.Framework
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
             bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
 
-            if (hovered)
+            // set mouse cursor
+            if (hovered && !_nextIsDisabled)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
@@ -86,11 +87,17 @@ namespace Fu.Framework
             if (hovered)
             {
                 SetToolTip(URL, FuTextStyle.Default);
-                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-                AddUnderLine();
+                if (!_nextIsDisabled)
+                {
+                    // set mouse cursor
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                    // underline the hovered text
+                    AddUnderLine();
+                }
             }
             Fugui.PopColor();
 
+            // open the URL on click
             if (clicked)
             {
                 try

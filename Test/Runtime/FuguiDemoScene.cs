@@ -153,9 +153,9 @@ public class FuguiDemoScene : MonoBehaviour
         }
 
         Fugui.RegisterMainMenuItem("Windows", null);
-        foreach (FuWindowsNames windowName in Enum.GetValues(typeof(FuWindowsNames)))
+        foreach (FuWindowName windowName in FuWindowsNames.GetAllWindowsNames())
         {
-            if (windowName == FuWindowsNames.None)
+            if (windowName.Equals(FuWindowsNames.None))
             {
                 continue;
             }
@@ -163,9 +163,9 @@ public class FuguiDemoScene : MonoBehaviour
         }
 
         Fugui.RegisterMainMenuItem("3D Windows", null);
-        foreach (FuWindowsNames windowName in Enum.GetValues(typeof(FuWindowsNames)))
+        foreach (FuWindowName windowName in FuWindowsNames.GetAllWindowsNames())
         {
-            if (windowName == FuWindowsNames.None)
+            if (windowName.Equals(FuWindowsNames.None))
             {
                 continue;
             }

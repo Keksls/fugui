@@ -4,6 +4,7 @@ using System.IO;
 using Fu.Core;
 using Newtonsoft.Json;
 
+// TODO : Add summary on top of each methods/functions/cnstr
 namespace Fu.Framework
 {
     public class FuDockSpaceDefinition
@@ -26,7 +27,7 @@ namespace Fu.Framework
 
         //A lost of binded windowsdefintion
         [JsonProperty]
-        public Dictionary<int, string> WindowsDefinition;
+        public Dictionary<ushort, string> WindowsDefinition;
 
         public FuDockSpaceDefinition()
         {
@@ -41,7 +42,7 @@ namespace Fu.Framework
             Proportion = proportion;
             Orientation = orientation;
             Children = new List<FuDockSpaceDefinition>();
-            WindowsDefinition = new Dictionary<int, string>();
+            WindowsDefinition = new Dictionary<ushort, string>();
         }
 
         //Constructor that accepts 2 parameters: name and id, with default values for proportion and orientation
@@ -52,13 +53,13 @@ namespace Fu.Framework
             Proportion = 0.5f;
             Orientation = UIDockSpaceOrientation.None;
             Children = new List<FuDockSpaceDefinition>();
-            WindowsDefinition = new Dictionary<int, string>();
+            WindowsDefinition = new Dictionary<ushort, string>();
         }
 
         //Method that returns the total number of children, including all children of children
         public uint GetTotalChildren()
         {
-            uint count = (uint) Children.Count;
+            uint count = (uint)Children.Count;
 
             foreach (var child in Children)
             {
@@ -67,7 +68,7 @@ namespace Fu.Framework
 
             return count;
         }
-        
+
         //Serialization method
         public static string Serialize(FuDockSpaceDefinition dockspaceDefinition)
         {
@@ -125,7 +126,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="windowDefID">The ID of the window definition</param>
         /// <returns>The dock space with the specified name, or null if not found</returns>
-        internal FuDockSpaceDefinition SearchInChildren(int windowDefID)
+        internal FuDockSpaceDefinition SearchInChildren(ushort windowDefID)
         {
             if (WindowsDefinition.ContainsKey(windowDefID))
             {
@@ -150,7 +151,7 @@ namespace Fu.Framework
         /// Method that removes all entries from the WindowsDefinition dictionary that have the specified window definition ID in the current dock space and its children recursively
         /// </summary>
         /// <param name="windowDefID">The ID of the window definition to remove</param>
-        internal void RemoveWindowsDefinitionInChildren(int windowDefID)
+        internal void RemoveWindowsDefinitionInChildren(ushort windowDefID)
         {
             WindowsDefinition.Remove(windowDefID);
 
@@ -160,13 +161,13 @@ namespace Fu.Framework
             }
         }
 
-        internal List<FuWindowsNames> GetAllWindowsDefinitions()
+        internal List<FuWindowName> GetAllWindowsDefinitions()
         {
-            List<FuWindowsNames> windows = new List<FuWindowsNames>();
+            List<FuWindowName> windows = new List<FuWindowName>();
 
             foreach (var window in WindowsDefinition)
             {
-                windows.Add((FuWindowsNames) window.Key);
+                windows.Add(new FuWindowName(window.Key, window.Value));
             }
 
             foreach (var child in Children)
@@ -190,4 +191,3 @@ namespace Fu.Framework
         Vertical
     }
 }
-   

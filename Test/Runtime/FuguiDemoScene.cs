@@ -1,14 +1,11 @@
-using UnityEngine;
+using Fu;
 using Fu.Core;
 using Fu.Framework;
-using System.Collections.Generic;
-using System;
-using Fu;
-using System.Linq;
 using ImGuiNET;
-using log4net.Core;
-using static UnityEditor.PlayerSettings;
-using UnityEngine.UIElements.Experimental;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 /// <summary>
 /// this sample show how to use Fugui API

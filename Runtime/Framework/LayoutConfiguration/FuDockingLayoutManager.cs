@@ -39,13 +39,18 @@ namespace Fu.Framework
         static FuDockingLayoutManager()
         {
             //Load layouts
-            oadLayouts();
+            LoadLayouts();
 
+            // create layout file extention filter
             _flgExtensionFilter = new ExtensionFilter
             {
                 Name = "Fugui Layout Configuration",
                 Extensions = new string[1] { "flg" }
             };
+
+            // create dockaspace windows definitions
+            new FuWindowDefinition(FuSystemWindowsNames.DockSpaceManager, "DockSpace Manager", (window) => Fugui.DrawDockSpaceManager());
+            new FuWindowDefinition(FuSystemWindowsNames.WindowsDefinitionManager, "Windows Definition Manager", (window) => Fugui.DrawWindowsDefinitionManager());
 
             _fuguiWindows = null;
         }
@@ -67,7 +72,7 @@ namespace Fu.Framework
         /// Load all layouts from files
         /// </summary>
         /// <returns>number of loaded layouts</returns>
-        private static int oadLayouts()
+        private static int LoadLayouts()
         {
             // get folder path
             string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
@@ -220,12 +225,6 @@ namespace Fu.Framework
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
             Fugui.CreateWindowsAsync(windowsToGet, (windows) =>
             {
-                if (windows.Count != windowsToGet.Count)
-                {
-                    Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
-                    return;
-                }
-
                 uint MainID = Fugui.MainContainer.Dockspace_id;
                 dockSpaceDefinition.ID = MainID;
 
@@ -275,7 +274,8 @@ namespace Fu.Framework
             {
                 foreach (KeyValuePair<ushort, string> winDef in layout.WindowsDefinition)
                 {
-                    ImGuiDocking.DockBuilderDockWindow(windows[new FuWindowName(winDef.Key, winDef.Value)].ID, layout.ID);
+                    if (windows.ContainsKey(new FuWindowName(winDef.Key, winDef.Value)))
+                        ImGuiDocking.DockBuilderDockWindow(windows[new FuWindowName(winDef.Key, winDef.Value)].ID, layout.ID);
                 }
             }
 
@@ -557,7 +557,7 @@ namespace Fu.Framework
             }
             finally
             {
-                oadLayouts();
+                LoadLayouts();
             }
         }
 
@@ -600,7 +600,7 @@ namespace Fu.Framework
                     saveLayoutFile();
 
                     //Reload layouts
-                    oadLayouts();
+                    LoadLayouts();
                 }
             }
         }
@@ -616,7 +616,7 @@ namespace Fu.Framework
                 saveLayoutFile();
 
                 //Reload layouts
-                oadLayouts();
+                LoadLayouts();
             }
         }
 

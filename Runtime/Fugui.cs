@@ -265,7 +265,7 @@ namespace Fu
         }
 
         /// <summary>
-        /// Registers a window definition with the specified ID.
+        /// Registers a window definition.
         /// </summary>
         /// <param name="windowDefinition">The window definition to be registered.</param>
         /// <returns>True if the window definition was successfully registered, false otherwise.</returns>
@@ -279,6 +279,28 @@ namespace Fu
             // Add the window definition to the list
             UIWindowsDefinitions.Add(windowDefinition.WindowName, windowDefinition);
             return true;
+        }
+
+        /// <summary>
+        /// Unregisters a window definition.
+        /// </summary>
+        /// <param name="windowDefinition">The window definition to be unregistered.</param>
+        /// <returns>True if the window definition was successfully unregistered, false otherwise.</returns>
+        public static bool UnregisterWindowDefinition(FuWindowDefinition windowDefinition)
+        {
+            // Check if a window definition with the same ID already exists
+            return UIWindowsDefinitions.Remove(windowDefinition.WindowName);
+        }
+
+        /// <summary>
+        /// Unregisters a window definition.
+        /// </summary>
+        /// <param name="windowDefinitionName">The name of the window definition to be unregistered.</param>
+        /// <returns>True if the window definition was successfully unregistered, false otherwise.</returns>
+        public static bool UnregisterWindowDefinition(FuWindowName windowDefinitionName)
+        {
+            // Check if a window definition with the same ID already exists
+            return UIWindowsDefinitions.Remove(windowDefinitionName);
         }
 
         /// <summary>

@@ -1,10 +1,14 @@
-﻿using ImGuiNET;
+﻿using Fu.Core;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
 {
     public partial class FuLayout
     {
+        // use this to store the position of the current active button. We don't use the ID, because the ID of a button is sometimes multiple on some button (eg. Icons). So position is more accurate
+        private static Vector2 _currentActiveButtonPosition = Vector2.zero;
+
         /// <summary>
         /// Render a button with the given style and size
         /// </summary>
@@ -161,7 +165,7 @@ namespace Fu.Framework
             gradientStrenght = 1f - Mathf.Clamp(gradientStrenght, 0.1f, 1f);
 
             // calc label size
-            Vector2 label_size = ImGui.CalcTextSize(text);
+            Vector2 label_size = ImGui.CalcTextSize(text, true);
 
             // calc item size 
             Vector2 region_max = default;
@@ -184,8 +188,38 @@ namespace Fu.Framework
 
             // get buttons states
             bool hovered = ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0;
-            bool active = ImGuiNative.igIsItemActive() != 0;
-            bool clicked = ImGuiNative.igIsItemClicked(ImGuiMouseButton.Left) != 0;
+            // get active state
+            bool active = default;
+            // check whatever this button is already active
+            if (_currentActiveButtonPosition.Equals(pos))
+            {
+                active = true;
+            }
+            else if (_currentActiveButtonPosition.x == 0f && _currentActiveButtonPosition.y == 0f)
+            {
+                // this button is not already active, let's check if it is this frame
+                active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
+                // first active frame
+                if (active && _currentActiveButtonPosition.Equals(Vector2.zero))
+                {
+                    // set this button as active
+                    _currentActiveButtonPosition = pos;
+                }
+            }
+            // force to draw the window if the button is active (avoid input miss frame on mouse release)
+            if (active)
+            {
+                FuWindow.CurrentDrawingWindow?.ForceDraw();
+            }
+            // whatever the mouse left button is released this frame
+            bool released = ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+            // click on button if it's released, active and hovered
+            bool clicked = hovered && released && active;
+            // reset the active button if mouse just release
+            if (released && _currentActiveButtonPosition.x != 0f && _currentActiveButtonPosition.y != 0f)
+            {
+                _currentActiveButtonPosition = Vector2.zero;
+            }
 
             // get current draw list
             ImDrawListPtr drawList = ImGuiNative.igGetWindowDrawList();

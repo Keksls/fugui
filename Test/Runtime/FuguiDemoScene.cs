@@ -174,9 +174,6 @@ public class FuguiDemoScene : MonoBehaviour
             Fugui.RegisterMainMenuItem("3D " + windowName.ToString(), () => Fugui.CreateWindowAsync(windowName, (window) => { Fugui.Add3DWindow(window, new Vector3(0f, -2f, 0f), Quaternion.Euler(Vector3.up * 180f)); }, false), "3D Windows");
         }
 
-        new FuWindowDefinition(FuWindowsNames.DockSpaceManager, "DockSpace Manager", (window) => Fugui.DrawDockSpaceManager());
-        new FuWindowDefinition(FuWindowsNames.WindowsDefinitionManager, "Windows Definition Manager", (window) => Fugui.DrawWindowsDefinitionManager());
-
         new FuWindowDefinition(FuWindowsNames.ToolBox, "Tool Box", debugWindow_UI, flags: FuWindowFlags.AllowMultipleWindow);
         void debugWindow_UI(FuWindow window)
         {
@@ -396,6 +393,12 @@ public class FuguiDemoScene : MonoBehaviour
         {
             using (FuPanel panel = new FuPanel("testTreePanel", false))
             {
+                if (new FuLayout().Button("add item"))
+                {
+                    treeTestItem item = new treeTestItem("added " + Guid.NewGuid().ToString(), 0, null);
+                    treeItems.Insert(UnityEngine.Random.Range(0, treeItems.Count), item);
+                    tree.UpdateTree(treeItems);
+                }
                 Fugui.Push(ImGuiStyleVar.ItemSpacing, Vector2.zero);
                 tree.DrawTree();
                 Fugui.PopStyle();

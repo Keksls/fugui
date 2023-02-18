@@ -79,7 +79,11 @@ namespace Fu.Framework
         /// <summary>
         /// Escape key will clear all input.
         /// </summary>
-        EscapeClearsAll = 0x100000
+        EscapeClearsAll = 0x100000,
+        /// <summary>
+        /// Validate the input text box only on Enter pressed
+        /// </summary>
+        EnterReturnsTrue = 0x20,
     }
 
     /// <summary>

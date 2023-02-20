@@ -37,6 +37,12 @@ namespace Fu
             MainMenuItem parent = null;
             if (parentName != null)
             {
+                // registter parent if not already registered
+                if (!_mainMenuItems.ContainsKey(parentName))
+                {
+                    RegisterMainMenuItem(parentName, null);
+                }
+                // parent foes not exists
                 if (!_mainMenuItems.TryGetValue(parentName, out parent))
                 {
                     throw new Exception($"Parent menu item with name '{parentName}' was not found");
@@ -95,6 +101,11 @@ namespace Fu
             MainMenuItem parent = null;
             if (parentName != null)
             {
+                // registter parent if not already registered
+                if (!_mainMenuItems.ContainsKey(parentName))
+                {
+                    RegisterMainMenuItem(parentName, null);
+                }
                 if (!_mainMenuItems.TryGetValue(parentName, out parent))
                 {
                     throw new Exception($"Parent menu item with name '{parentName}' was not found");

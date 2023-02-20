@@ -1,4 +1,3 @@
-using Fu.Framework;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -22,7 +21,7 @@ namespace Fu.Core
         // A flag indicating whether the window can be docked
         public bool IsDockable { get; private set; }
         // A flag indicating whether the window is interactible
-        public bool IsInterractible { get; private set; }
+        public bool IsInterractif { get; private set; }
         // A flag indicating whether other windows can dock over this window
         public bool NoDockingOverMe { get; private set; }
         // A flag indicating whether this window definition can instantiate more than one window at time
@@ -54,7 +53,7 @@ namespace Fu.Core
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
             IsExternalizable = !flags.HasFlag(FuWindowFlags.NoExternalization);
             IsDockable = !flags.HasFlag(FuWindowFlags.NoDocking);
-            IsInterractible = !flags.HasFlag(FuWindowFlags.NoInterractions);
+            IsInterractif = !flags.HasFlag(FuWindowFlags.NoInterractions);
             NoDockingOverMe = !flags.HasFlag(FuWindowFlags.NoDockingOverMe);
             AllowMultipleWindow = flags.HasFlag(FuWindowFlags.AllowMultipleWindow);
             _uiWindowType = typeof(FuWindow);
@@ -225,12 +224,12 @@ namespace Fu.Core
         /// <summary>
         /// Sets the interactibility of the UI window.
         /// </summary>
-        /// <param name="isInterractible">A boolean value indicating whether the UI window is interactible.</param>
+        /// <param name="isInterractif">A boolean value indicating whether the UI window is interactible.</param>
         /// <returns>The current UIWindowDefinition object.</returns>
-        public FuWindowDefinition SetInterractible(bool isInterractible)
+        public FuWindowDefinition SetInterractif(bool isInterractif)
         {
-            // Assign the specified value to the IsInterractible field
-            IsInterractible = isInterractible;
+            // Assign the specified value to the IsInterractif field
+            IsInterractif = isInterractif;
             // Return the current UIWindowDefinition object
             return this;
         }

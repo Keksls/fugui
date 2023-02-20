@@ -679,546 +679,616 @@ namespace Fu.Core
             io.KeyMap[(int)ImGuiKey.PageDown] = (int)Key.PageDown;
             io.KeyMap[(int)ImGuiKey.Home] = (int)Key.Home;
             io.KeyMap[(int)ImGuiKey.End] = (int)Key.End;
+            io.KeyMap[(int)ImGuiKey.Insert] = (int)Key.Insert;
             io.KeyMap[(int)ImGuiKey.Delete] = (int)Key.Delete;
             io.KeyMap[(int)ImGuiKey.Backspace] = (int)Key.BackSpace;
+            io.KeyMap[(int)ImGuiKey.Space] = (int)Key.Space;
             io.KeyMap[(int)ImGuiKey.Enter] = (int)Key.Enter;
             io.KeyMap[(int)ImGuiKey.Escape] = (int)Key.Escape;
             io.KeyMap[(int)ImGuiKey.A] = (int)Key.A;
+            io.KeyMap[(int)ImGuiKey.B] = (int)Key.B;
             io.KeyMap[(int)ImGuiKey.C] = (int)Key.C;
+            io.KeyMap[(int)ImGuiKey.D] = (int)Key.D;
+            io.KeyMap[(int)ImGuiKey.E] = (int)Key.E;
+            io.KeyMap[(int)ImGuiKey.F] = (int)Key.F;
+            io.KeyMap[(int)ImGuiKey.G] = (int)Key.G;
+            io.KeyMap[(int)ImGuiKey.H] = (int)Key.H;
+            io.KeyMap[(int)ImGuiKey.I] = (int)Key.I;
+            io.KeyMap[(int)ImGuiKey.J] = (int)Key.J;
+            io.KeyMap[(int)ImGuiKey.K] = (int)Key.K;
+            io.KeyMap[(int)ImGuiKey.L] = (int)Key.L;
+            io.KeyMap[(int)ImGuiKey.M] = (int)Key.M;
+            io.KeyMap[(int)ImGuiKey.N] = (int)Key.N;
+            io.KeyMap[(int)ImGuiKey.O] = (int)Key.O;
+            io.KeyMap[(int)ImGuiKey.P] = (int)Key.P;
+            io.KeyMap[(int)ImGuiKey.Q] = (int)Key.Q;
+            io.KeyMap[(int)ImGuiKey.R] = (int)Key.R;
+            io.KeyMap[(int)ImGuiKey.S] = (int)Key.S;
+            io.KeyMap[(int)ImGuiKey.T] = (int)Key.T;
+            io.KeyMap[(int)ImGuiKey.U] = (int)Key.U;
             io.KeyMap[(int)ImGuiKey.V] = (int)Key.V;
+            io.KeyMap[(int)ImGuiKey.W] = (int)Key.W;
             io.KeyMap[(int)ImGuiKey.X] = (int)Key.X;
             io.KeyMap[(int)ImGuiKey.Y] = (int)Key.Y;
             io.KeyMap[(int)ImGuiKey.Z] = (int)Key.Z;
+            io.KeyMap[(int)ImGuiKey.Keypad0] = (int)Key.Keypad0;
+            io.KeyMap[(int)ImGuiKey.Keypad1] = (int)Key.Keypad1;
+            io.KeyMap[(int)ImGuiKey.Keypad2] = (int)Key.Keypad2;
+            io.KeyMap[(int)ImGuiKey.Keypad3] = (int)Key.Keypad3;
+            io.KeyMap[(int)ImGuiKey.Keypad4] = (int)Key.Keypad4;
+            io.KeyMap[(int)ImGuiKey.Keypad5] = (int)Key.Keypad5;
+            io.KeyMap[(int)ImGuiKey.Keypad6] = (int)Key.Keypad6;
+            io.KeyMap[(int)ImGuiKey.Keypad7] = (int)Key.Keypad7;
+            io.KeyMap[(int)ImGuiKey.Keypad8] = (int)Key.Keypad8;
+            io.KeyMap[(int)ImGuiKey.Keypad9] = (int)Key.Keypad9;
+            io.KeyMap[(int)ImGuiKey.KeypadDecimal] = (int)Key.KeypadDecimal;
+            io.KeyMap[(int)ImGuiKey.KeypadDivide] = (int)Key.KeypadDivide;
+            io.KeyMap[(int)ImGuiKey.KeypadMultiply] = (int)Key.KeypadMultiply;
+            io.KeyMap[(int)ImGuiKey.KeypadSubtract] = (int)Key.KeypadMinus;
+            io.KeyMap[(int)ImGuiKey.KeypadAdd] = (int)Key.KeypadPlus;
+            io.KeyMap[(int)ImGuiKey.KeypadEnter] = (int)Key.KeypadEnter;
+            io.KeyMap[(int)ImGuiKey.LeftShift] = (int)Key.ShiftLeft;
+            io.KeyMap[(int)ImGuiKey.LeftCtrl] = (int)Key.ControlLeft;
+            io.KeyMap[(int)ImGuiKey.LeftAlt] = (int)Key.AltLeft;
+            io.KeyMap[(int)ImGuiKey.LeftSuper] = (int)Key.WinLeft;
+            io.KeyMap[(int)ImGuiKey.RightShift] = (int)Key.ShiftRight;
+            io.KeyMap[(int)ImGuiKey.RightCtrl] = (int)Key.ControlRight;
+            io.KeyMap[(int)ImGuiKey.RightAlt] = (int)Key.AltRight;
+            io.KeyMap[(int)ImGuiKey.RightSuper] = (int)Key.WinRight;
         }
+
+        //private static void SetKeyMappings()
+        //{
+        //    ImGuiIOPtr io = ImGui.GetIO();
+        //    io.KeyMap[(int)ImGuiKey.Tab] = (int)Key.Tab;
+        //    io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)Key.Left;
+        //    io.KeyMap[(int)ImGuiKey.RightArrow] = (int)Key.Right;
+        //    io.KeyMap[(int)ImGuiKey.UpArrow] = (int)Key.Up;
+        //    io.KeyMap[(int)ImGuiKey.DownArrow] = (int)Key.Down;
+        //    io.KeyMap[(int)ImGuiKey.PageUp] = (int)Key.PageUp;
+        //    io.KeyMap[(int)ImGuiKey.PageDown] = (int)Key.PageDown;
+        //    io.KeyMap[(int)ImGuiKey.Home] = (int)Key.Home;
+        //    io.KeyMap[(int)ImGuiKey.End] = (int)Key.End;
+        //    io.KeyMap[(int)ImGuiKey.Delete] = (int)Key.Delete;
+        //    io.KeyMap[(int)ImGuiKey.Backspace] = (int)Key.BackSpace;
+        //    io.KeyMap[(int)ImGuiKey.Enter] = (int)Key.Enter;
+        //    io.KeyMap[(int)ImGuiKey.Escape] = (int)Key.Escape;
+        //    io.KeyMap[(int)ImGuiKey.A] = (int)Key.A;
+        //    io.KeyMap[(int)ImGuiKey.C] = (int)Key.C;
+        //    io.KeyMap[(int)ImGuiKey.V] = (int)Key.V;
+        //    io.KeyMap[(int)ImGuiKey.X] = (int)Key.X;
+        //    io.KeyMap[(int)ImGuiKey.Y] = (int)Key.Y;
+        //    io.KeyMap[(int)ImGuiKey.Z] = (int)Key.Z;
+        //}
 
         /// <summary>
         /// Compute GL fixed update (process window inputs and native events)
         /// Must be called in window creation thread
         /// </summary>
         public void RegisterInputs()
-        {
-            if (!_started)
             {
-                return;
-            }
-
-            // first smooth externalizationdrag just end
-            if (_isFirstTimeDragging && !isLeftMouseButtonPressed())
-            {
-                Dragging = false;
-                FuWindow.IsDragging = false;
-                _isFirstTimeDragging = false;
-            }
-
-            // it's first frame, check if we still need to drag window for smooth externalization
-            if (_waitingForFirstCompletLoop)
-            {
-                // if clicked, start dragg. be carefull, NativeWindow does not received this event
-                // so we will need to handler stop dragg for this first drag
-                if (isLeftMouseButtonPressed())
+                if (!_started)
                 {
-                    // place center of window header to mouse cursor, maybe not
+                    return;
+                }
+
+                // first smooth externalizationdrag just end
+                if (_isFirstTimeDragging && !isLeftMouseButtonPressed())
+                {
+                    Dragging = false;
+                    FuWindow.IsDragging = false;
+                    _isFirstTimeDragging = false;
+                }
+
+                // it's first frame, check if we still need to drag window for smooth externalization
+                if (_waitingForFirstCompletLoop)
+                {
+                    // if clicked, start dragg. be carefull, NativeWindow does not received this event
+                    // so we will need to handler stop dragg for this first drag
+                    if (isLeftMouseButtonPressed())
+                    {
+                        // place center of window header to mouse cursor, maybe not
+                        SetPosition((int)Fugui.WorldMousePosition.x - _size.x / 2, (int)Fugui.WorldMousePosition.y - 20, true);
+                        _startDragOffset = Fugui.WorldMousePosition - new UnityEngine.Vector2Int(_worldPosition.x, _worldPosition.y);
+                        Dragging = true;
+                        FuWindow.IsDragging = true;
+                        _isFirstTimeDragging = true;
+                    }
+                }
+
+                // process window events
+                ProcessEvents();
+
+                // get current mouse & keyboard state (fail as fuck => do it ourself)
+                _mouseState = OpenTK.Input.Mouse.GetState();
+                _keyboardState = OpenTK.Input.Keyboard.GetState();
+
+                UnityEngine.Vector2Int absMousePos = new UnityEngine.Vector2Int(Fugui.WorldMousePosition.x, Fugui.WorldMousePosition.y);
+                // map cursor pos to window pos. first is IntPtr.Zero for relative desktop context
+                MapWindowPoints(IntPtr.Zero, _windowHDC, ref absMousePos, 1);
+                // save mouse relative pos
+                _mousePos = new UnityEngine.Vector2Int(absMousePos.x, absMousePos.y);
+
+                // Update Window State
+                FuWindow.UpdateState(_mouseState[MouseButton.Left]);
+            }
+            #endregion
+
+            #region Rendering
+            /// <summary>
+            /// Create Graphic context if needed
+            /// </summary>
+            public void TryCreateContext()
+            {
+                // ignore it if context already initialized
+                if (_contextInitialized)
+                {
+                    return;
+                }
+
+                // create window related OpenGL graphic context
+                _context = new GraphicsContext(GraphicsMode.Default, WindowInfo);
+                // load all default data into OpenGL context
+                _context.LoadAll();
+
+                // wait until the end of a frame (to ensure we are setting UIcontext outside of UUI render loop)
+                while (Fugui.IsRendering)
+                {
+                    continue;
+                }
+                // set graphic context as Current
+                _context.MakeCurrent(WindowInfo);
+                // create UI OpenTK renderer and UI font atlas
+                _controller = new OpenTKImGuiRenderer(_imGuiFontAtlasData.Pixels, _imGuiFontAtlasData.Width, _imGuiFontAtlasData.Height);
+
+                // set this window as render started (used to avoid crash on multiple window close)
+                _readyToNewFrame = true;
+                _readyToRender = false;
+                _contextInitialized = true;
+            }
+
+            /// <summary>
+            /// Destroy Graphic context if needed
+            /// </summary>
+            public void TryDestroyContext()
+            {
+                if (!_needDisposeContexts)
+                {
+                    return;
+                }
+
+                // set context as current to dispose controller
+                try
+                {
+                    _context.MakeCurrent(WindowInfo);
+                }
+                catch
+                {
+                    UnityEngine.Debug.Log("fail to make current context before killing it");
+                }
+                // dispose controller (dispone GL resources such as textures and shaders)
+                try
+                {
+                    _controller.Dispose();
+                }
+                catch
+                {
+                    UnityEngine.Debug.Log("fail to dispose controller");
+                }
+                // set current controller as null to release GC handle
+                try
+                {
+                    _context.MakeCurrent(null);
+                }
+                catch
+                {
+                    UnityEngine.Debug.Log("fail to make current context as null before killing it");
+                }
+                // dispose the window related GL context
+                try
+                {
+                    _context.Dispose();
+                }
+                catch
+                {
+                    UnityEngine.Debug.Log("fail to dispose context");
+                }
+                _contextDisposed = true;
+                _needDisposeContexts = false;
+                UnityEngine.Debug.Log("context disposed");
+                Close();
+            }
+
+            /// <summary>
+            /// this will be called every frame after main UI render
+            /// </summary>
+            private void FuguiContext_OnRender()
+            {
+                // prevent UI to render until next frame is draw
+                _readyToNewFrame = false;
+                // do UI render callback into main thread
+                RenderFuWindows();
+                // notify that UI is ready to render in GL thread
+                _readyToRender = true;
+
+                // notify OnReady if needed
+                if (_fireOnReadyNextFrame)
+                {
+                    FuWindow.InitializeOnContainer();
+                    _fireOnReadyNextFrame = false;
+                }
+            }
+
+            /// <summary>
+            /// this will be called every frame after FuguiContext render
+            /// </summary>
+            private void FuguiContext_OnPostRender()
+            {
+                _drawData.Bind(ImGui.GetDrawData());
+            }
+
+            /// <summary>
+            /// this will be called every frame berore FuguiContext create NewFrame
+            /// It's time to inject inputs if needed
+            /// </summary>
+            private bool FuguiContext_OnPrepareFrame()
+            {
+                // update the mouse state
+                _fuMouseState.UpdateState(this);
+
+                // return we are not started or no context is initialized
+                if (!_started || !_contextInitialized || !_readyToNewFrame || !FuWindow.MustBeDraw())
+                {
+                    return false;
+                }
+
+                // update UI Inputs
+                InjectImGuiInput();
+                // do fixed update (that will register inputs)
+                RegisterInputs();
+
+                return true;
+            }
+
+            /// <summary>
+            /// Do GL render
+            /// Must be called in GL context creation thread
+            /// </summary>
+            public void GLRender()
+            {
+                // wait for UI ended render
+                if (!_readyToRender || !_started)
+                {
+                    return;
+                }
+
+                // notify that GL is now not ready to render in GL thread
+                _readyToRender = false;
+
+                // set window graphic context as OpenGl current context
+                _context.MakeCurrent(WindowInfo);
+                if (_resized)
+                {
+                    // Update the opengl viewport if needed
+                    GL.Viewport(0, 0, ClientSize.Width, ClientSize.Height);
+                    _resized = false;
+                }
+                // OpenGL context clear buffer
+                GL.ClearColor(_backgroundColor.x, _backgroundColor.y, _backgroundColor.z, _backgroundColor.w);
+                GL.Clear(ClearBufferMask.ColorBufferBit);
+                // draw UI frame
+                _controller.RenderImDrawData(_drawData, new UnityEngine.Vector2(Width, Height), _backendFlags);
+                // swap buffers (OpenGL work with 2 buffer, a back and a front, this switch beetwin them to display the current frame)
+                _context.SwapBuffers();
+                // reliease Gl current context so we can switch next time
+                _context.MakeCurrent(null);
+
+                // notify that this window is initialized
+                if (_waitingForFirstCompletLoop)
+                {
+                    OnInitialized?.Invoke();
+                    _waitingForFirstCompletLoop = false;
+                    UIWindow_OnResize(FuWindow);
+                    UIWindow_OnMove(FuWindow);
+                    _fireOnReadyNextFrame = true;
+                }
+
+                // assume we are ready to compute next frame
+                _readyToNewFrame = true;
+            }
+            #endregion
+
+            #region Positioning and Sizing
+            /// <summary>
+            /// smart set position of this window in monitor space
+            /// </summary>
+            /// <param name="x">x position we try to reach</param>
+            /// <param name="y">y position we try to reach</param>
+            /// <param name="force">do we force window to go to the position</param>
+            public void SetPosition(int x, int y, bool force = false)
+            {
+                if (!force)
+                {
+                    _worldPosition = MonitorsUtils.GetBestPos(x, y, _size.x, _size.y, _lastPosition.x, _lastPosition.y);
+                    _lastPosition = _worldPosition;
+                }
+                else
+                {
+                    _worldPosition = new UnityEngine.Vector2Int(x, y);
+                }
+                X = _worldPosition.x;
+                Y = _worldPosition.y;
+
+                // ensure we take back Idle size if we drag as we was monitor docked
+                if (!force && !FuWindow.IsBusy && Dragging)
+                {
+                    switch (MonitorWindowState)
+                    {
+                        case MonitorWindowState.Maximized:
+                        case MonitorWindowState.HalfLeft:
+                        case MonitorWindowState.HalfRight:
+                        case MonitorWindowState.HalfTop:
+                        case MonitorWindowState.HalfBottom:
+                            SetMonitorState(MonitorWindowState.None);
+                            break;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// smart set size of this window in monitor space
+            /// </summary>
+            /// <param name="width">width we try to reach</param>
+            /// <param name="height">height we try to reach</param>
+            /// <param name="force">do we force window to resize</param>
+            public void SetSize(int width, int height, bool force = false)
+            {
+                if (!force)
+                {
+                    _size = MonitorsUtils.GetBestSize(_worldPosition.x, _worldPosition.y, width, height);
+                }
+                else
+                {
+                    _size = new UnityEngine.Vector2Int(width, height);
+                }
+                FuWindow.Size = _size;
+                Width = _size.x;
+                Height = _size.y;
+            }
+
+            /// <summary>
+            /// set current window state
+            /// </summary>
+            /// <param name="state">state to set</param>
+            public void SetMonitorState(MonitorWindowState state)
+            {
+                MonitorRect maxRect = MonitorsUtils.GetCurrentMonitor(_worldPosition.x + (_size.x / 2), false).WorkingArea;
+                int x, y, width, height;
+                switch (state)
+                {
+                    case MonitorWindowState.Maximized:
+                        x = maxRect.left;
+                        y = maxRect.top;
+                        width = maxRect.right - maxRect.left;
+                        height = maxRect.bottom - maxRect.top;
+                        break;
+
+                    case MonitorWindowState.Minimized:
+                        ShowWindow(_windowHDC, SW_MINIMIZE);
+                        return;
+
+                    case MonitorWindowState.HalfLeft:
+                        width = (maxRect.right - maxRect.left) / 2;
+                        height = maxRect.bottom - maxRect.top;
+                        x = maxRect.left;
+                        y = maxRect.top;
+                        break;
+
+                    case MonitorWindowState.HalfRight:
+                        width = (maxRect.right - maxRect.left) / 2;
+                        height = maxRect.bottom - maxRect.top;
+                        x = maxRect.right - width;
+                        y = maxRect.top;
+                        break;
+
+                    case MonitorWindowState.HalfTop:
+                        width = maxRect.right - maxRect.left;
+                        height = (maxRect.bottom - maxRect.top) / 2;
+                        x = maxRect.left;
+                        y = maxRect.top;
+                        break;
+
+                    case MonitorWindowState.HalfBottom:
+                        width = maxRect.right - maxRect.left;
+                        height = (maxRect.bottom - maxRect.top) / 2;
+                        x = maxRect.left;
+                        y = maxRect.bottom - height;
+                        break;
+
+                    default:
+                    case MonitorWindowState.Center:
+                        width = (maxRect.right - maxRect.left) / 2;
+                        height = (maxRect.bottom - maxRect.top) / 2;
+                        x = maxRect.left + (width / 2);
+                        y = maxRect.top + (height / 2);
+                        break;
+
+                    case MonitorWindowState.None:
+                        width = _noMotitorStateSize.x;
+                        height = _noMotitorStateSize.y;
+                        x = _noMotitorStatePosition.x;
+                        y = _noMotitorStatePosition.y;
+                        break;
+                }
+                // save old state if we was into free mode (none motinor state)
+                if (MonitorWindowState == MonitorWindowState.None)
+                {
+                    _noMotitorStatePosition = _worldPosition;
+                    _noMotitorStateSize = _size;
+                }
+
+                SetPosition(x, y, true);
+                SetSize(width, height, true);
+                MonitorWindowState = state;
+                Dragging = false;
+
+                // if new state is None and we are dragging, let's keep dragging and re pos 
+                if (MonitorWindowState == MonitorWindowState.None && _mouseState[MouseButton.Left])
+                {
+                    // place center of window header to mouse cursor
                     SetPosition((int)Fugui.WorldMousePosition.x - _size.x / 2, (int)Fugui.WorldMousePosition.y - 20, true);
                     _startDragOffset = Fugui.WorldMousePosition - new UnityEngine.Vector2Int(_worldPosition.x, _worldPosition.y);
                     Dragging = true;
                     FuWindow.IsDragging = true;
-                    _isFirstTimeDragging = true;
                 }
+
+                FuWindow.Fire_OnResize();
+                FuWindow.Fire_OnDrag();
             }
 
-            // process window events
-            ProcessEvents();
-
-            // get current mouse & keyboard state (fail as fuck => do it ourself)
-            _mouseState = OpenTK.Input.Mouse.GetState();
-            _keyboardState = OpenTK.Input.Keyboard.GetState();
-
-            UnityEngine.Vector2Int absMousePos = new UnityEngine.Vector2Int(Fugui.WorldMousePosition.x, Fugui.WorldMousePosition.y);
-            // map cursor pos to window pos. first is IntPtr.Zero for relative desktop context
-            MapWindowPoints(IntPtr.Zero, _windowHDC, ref absMousePos, 1);
-            // save mouse relative pos
-            _mousePos = new UnityEngine.Vector2Int(absMousePos.x, absMousePos.y);
-
-            // Update Window State
-            FuWindow.UpdateState(_mouseState[MouseButton.Left]);
-        }
-        #endregion
-
-        #region Rendering
-        /// <summary>
-        /// Create Graphic context if needed
-        /// </summary>
-        public void TryCreateContext()
-        {
-            // ignore it if context already initialized
-            if (_contextInitialized)
+            /// <summary>
+            /// draw window state panel
+            /// </summary>
+            private void drawWindowStatePanel()
             {
-                return;
-            }
-
-            // create window related OpenGL graphic context
-            _context = new GraphicsContext(GraphicsMode.Default, WindowInfo);
-            // load all default data into OpenGL context
-            _context.LoadAll();
-
-            // wait until the end of a frame (to ensure we are setting UIcontext outside of UUI render loop)
-            while (Fugui.IsRendering)
-            {
-                continue;
-            }
-            // set graphic context as Current
-            _context.MakeCurrent(WindowInfo);
-            // create UI OpenTK renderer and UI font atlas
-            _controller = new OpenTKImGuiRenderer(_imGuiFontAtlasData.Pixels, _imGuiFontAtlasData.Width, _imGuiFontAtlasData.Height);
-
-            // set this window as render started (used to avoid crash on multiple window close)
-            _readyToNewFrame = true;
-            _readyToRender = false;
-            _contextInitialized = true;
-        }
-
-        /// <summary>
-        /// Destroy Graphic context if needed
-        /// </summary>
-        public void TryDestroyContext()
-        {
-            if (!_needDisposeContexts)
-            {
-                return;
-            }
-
-            // set context as current to dispose controller
-            try
-            {
-                _context.MakeCurrent(WindowInfo);
-            }
-            catch
-            {
-                UnityEngine.Debug.Log("fail to make current context before killing it");
-            }
-            // dispose controller (dispone GL resources such as textures and shaders)
-            try
-            {
-                _controller.Dispose();
-            }
-            catch
-            {
-                UnityEngine.Debug.Log("fail to dispose controller");
-            }
-            // set current controller as null to release GC handle
-            try
-            {
-                _context.MakeCurrent(null);
-            }
-            catch
-            {
-                UnityEngine.Debug.Log("fail to make current context as null before killing it");
-            }
-            // dispose the window related GL context
-            try
-            {
-                _context.Dispose();
-            }
-            catch
-            {
-                UnityEngine.Debug.Log("fail to dispose context");
-            }
-            _contextDisposed = true;
-            _needDisposeContexts = false;
-            UnityEngine.Debug.Log("context disposed");
-            Close();
-        }
-
-        /// <summary>
-        /// this will be called every frame after main UI render
-        /// </summary>
-        private void FuguiContext_OnRender()
-        {
-            // prevent UI to render until next frame is draw
-            _readyToNewFrame = false;
-            // do UI render callback into main thread
-            RenderFuWindows();
-            // notify that UI is ready to render in GL thread
-            _readyToRender = true;
-
-            // notify OnReady if needed
-            if (_fireOnReadyNextFrame)
-            {
-                FuWindow.InitializeOnContainer();
-                _fireOnReadyNextFrame = false;
-            }
-        }
-
-        /// <summary>
-        /// this will be called every frame after FuguiContext render
-        /// </summary>
-        private void FuguiContext_OnPostRender()
-        {
-            _drawData.Bind(ImGui.GetDrawData());
-        }
-
-        /// <summary>
-        /// this will be called every frame berore FuguiContext create NewFrame
-        /// It's time to inject inputs if needed
-        /// </summary>
-        private bool FuguiContext_OnPrepareFrame()
-        {
-            // update the mouse state
-            _fuMouseState.UpdateState(this);
-
-            // return we are not started or no context is initialized
-            if (!_started || !_contextInitialized || !_readyToNewFrame || !FuWindow.MustBeDraw())
-            {
-                return false;
-            }
-
-            // update UI Inputs
-            InjectImGuiInput();
-            // do fixed update (that will register inputs)
-            RegisterInputs();
-
-            return true;
-        }
-
-        /// <summary>
-        /// Do GL render
-        /// Must be called in GL context creation thread
-        /// </summary>
-        public void GLRender()
-        {
-            // wait for UI ended render
-            if (!_readyToRender || !_started)
-            {
-                return;
-            }
-
-            // notify that GL is now not ready to render in GL thread
-            _readyToRender = false;
-
-            // set window graphic context as OpenGl current context
-            _context.MakeCurrent(WindowInfo);
-            if (_resized)
-            {
-                // Update the opengl viewport if needed
-                GL.Viewport(0, 0, ClientSize.Width, ClientSize.Height);
-                _resized = false;
-            }
-            // OpenGL context clear buffer
-            GL.ClearColor(_backgroundColor.x, _backgroundColor.y, _backgroundColor.z, _backgroundColor.w);
-            GL.Clear(ClearBufferMask.ColorBufferBit);
-            // draw UI frame
-            _controller.RenderImDrawData(_drawData, new UnityEngine.Vector2(Width, Height), _backendFlags);
-            // swap buffers (OpenGL work with 2 buffer, a back and a front, this switch beetwin them to display the current frame)
-            _context.SwapBuffers();
-            // reliease Gl current context so we can switch next time
-            _context.MakeCurrent(null);
-
-            // notify that this window is initialized
-            if (_waitingForFirstCompletLoop)
-            {
-                OnInitialized?.Invoke();
-                _waitingForFirstCompletLoop = false;
-                UIWindow_OnResize(FuWindow);
-                UIWindow_OnMove(FuWindow);
-                _fireOnReadyNextFrame = true;
-            }
-
-            // assume we are ready to compute next frame
-            _readyToNewFrame = true;
-        }
-        #endregion
-
-        #region Positioning and Sizing
-        /// <summary>
-        /// smart set position of this window in monitor space
-        /// </summary>
-        /// <param name="x">x position we try to reach</param>
-        /// <param name="y">y position we try to reach</param>
-        /// <param name="force">do we force window to go to the position</param>
-        public void SetPosition(int x, int y, bool force = false)
-        {
-            if (!force)
-            {
-                _worldPosition = MonitorsUtils.GetBestPos(x, y, _size.x, _size.y, _lastPosition.x, _lastPosition.y);
-                _lastPosition = _worldPosition;
-            }
-            else
-            {
-                _worldPosition = new UnityEngine.Vector2Int(x, y);
-            }
-            X = _worldPosition.x;
-            Y = _worldPosition.y;
-
-            // ensure we take back Idle size if we drag as we was monitor docked
-            if (!force && !FuWindow.IsBusy && Dragging)
-            {
-                switch (MonitorWindowState)
+                if (!_drawWindowStatePanel)
                 {
-                    case MonitorWindowState.Maximized:
-                    case MonitorWindowState.HalfLeft:
-                    case MonitorWindowState.HalfRight:
-                    case MonitorWindowState.HalfTop:
-                    case MonitorWindowState.HalfBottom:
-                        SetMonitorState(MonitorWindowState.None);
-                        break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// smart set size of this window in monitor space
-        /// </summary>
-        /// <param name="width">width we try to reach</param>
-        /// <param name="height">height we try to reach</param>
-        /// <param name="force">do we force window to resize</param>
-        public void SetSize(int width, int height, bool force = false)
-        {
-            if (!force)
-            {
-                _size = MonitorsUtils.GetBestSize(_worldPosition.x, _worldPosition.y, width, height);
-            }
-            else
-            {
-                _size = new UnityEngine.Vector2Int(width, height);
-            }
-            FuWindow.Size = _size;
-            Width = _size.x;
-            Height = _size.y;
-        }
-
-        /// <summary>
-        /// set current window state
-        /// </summary>
-        /// <param name="state">state to set</param>
-        public void SetMonitorState(MonitorWindowState state)
-        {
-            MonitorRect maxRect = MonitorsUtils.GetCurrentMonitor(_worldPosition.x + (_size.x / 2), false).WorkingArea;
-            int x, y, width, height;
-            switch (state)
-            {
-                case MonitorWindowState.Maximized:
-                    x = maxRect.left;
-                    y = maxRect.top;
-                    width = maxRect.right - maxRect.left;
-                    height = maxRect.bottom - maxRect.top;
-                    break;
-
-                case MonitorWindowState.Minimized:
-                    ShowWindow(_windowHDC, SW_MINIMIZE);
                     return;
+                }
 
-                case MonitorWindowState.HalfLeft:
-                    width = (maxRect.right - maxRect.left) / 2;
-                    height = maxRect.bottom - maxRect.top;
-                    x = maxRect.left;
-                    y = maxRect.top;
-                    break;
+                ImGui.SetNextWindowPos(new UnityEngine.Vector2(0f, 0f), ImGuiCond.Always);
+                ImGui.SetNextWindowSize(new UnityEngine.Vector2(_size.x, -1f), ImGuiCond.Always);
+                ImGui.SetNextWindowBgAlpha(0f);
+                ImGui.Begin(FuWindow.ID + "sp", ImGuiWindowFlags.NoDecoration);
 
-                case MonitorWindowState.HalfRight:
-                    width = (maxRect.right - maxRect.left) / 2;
-                    height = maxRect.bottom - maxRect.top;
-                    x = maxRect.right - width;
-                    y = maxRect.top;
-                    break;
+                // calc sizes
+                float width = Math.Min(_size.x, _size.y);
+                if (width > 3f * 64f)
+                    width = 3f * 64f;
+                float colSize = width / 3f;
+                UnityEngine.Vector2 buttonSize = new UnityEngine.Vector2(colSize - 8f, colSize - 8f);
+                UnityEngine.Vector4 buttonIconColor = new UnityEngine.Vector4(1, 1, 1, 0.5f);
 
-                case MonitorWindowState.HalfTop:
-                    width = maxRect.right - maxRect.left;
-                    height = (maxRect.bottom - maxRect.top) / 2;
-                    x = maxRect.left;
-                    y = maxRect.top;
-                    break;
+                ImGui.SetCursorPosX((_size.x) / 2f - (width / 2f));
+                ImGui.SetCursorPosY((_size.y) / 2f - (width / 2f));
+                ImGui.BeginChild("windowMonitorStatePanel", new UnityEngine.Vector2(width, width), false);
+                {
+                    ImGui.Columns(3, "windowMonitorStatePanelCols", false);
+                    ImGui.SetColumnWidth(0, colSize);
+                    ImGui.SetColumnWidth(1, colSize);
+                    ImGui.SetColumnWidth(2, colSize);
 
-                case MonitorWindowState.HalfBottom:
-                    width = maxRect.right - maxRect.left;
-                    height = (maxRect.bottom - maxRect.top) / 2;
-                    x = maxRect.left;
-                    y = maxRect.bottom - height;
-                    break;
+                    // switch up left column
+                    ImGui.NextColumn();
 
-                default:
-                case MonitorWindowState.Center:
-                    width = (maxRect.right - maxRect.left) / 2;
-                    height = (maxRect.bottom - maxRect.top) / 2;
-                    x = maxRect.left + (width / 2);
-                    y = maxRect.top + (height / 2);
-                    break;
+                    // half top icon
+                    Fugui.Push(ImGuiCol.Button, new UnityEngine.Vector4(0.1f, 0.1f, 0.1f, 0.1f));
+                    if (ImGuiImageButton(Fugui.Settings.TopIcon, buttonSize, buttonIconColor))
+                    {
+                        FuWindow.IsBusy = true;
+                        SetMonitorState(MonitorWindowState.HalfTop);
+                        FuWindow.IsBusy = false;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip("Send to screen top");
+                    }
+                    ImGui.NextColumn();
 
-                case MonitorWindowState.None:
-                    width = _noMotitorStateSize.x;
-                    height = _noMotitorStateSize.y;
-                    x = _noMotitorStatePosition.x;
-                    y = _noMotitorStatePosition.y;
-                    break;
+                    // maximize icon
+                    if (ImGuiImageButton(Fugui.Settings.MaximizeIcon, buttonSize, buttonIconColor))
+                    {
+                        FuWindow.IsBusy = true;
+                        SetMonitorState(MonitorWindowState.Maximized);
+                        FuWindow.IsBusy = false;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip("Maximize this window");
+                    }
+                    ImGui.NextColumn();
+
+                    // left icon
+                    if (ImGuiImageButton(Fugui.Settings.LeftIcon, buttonSize, buttonIconColor))
+                    {
+                        FuWindow.IsBusy = true;
+                        SetMonitorState(MonitorWindowState.HalfLeft);
+                        FuWindow.IsBusy = false;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip("Send to screen left");
+                    }
+                    ImGui.NextColumn();
+
+                    // center icon
+                    if (ImGuiImageButton(Fugui.Settings.CenterIcon, buttonSize, buttonIconColor))
+                    {
+                        FuWindow.IsBusy = true;
+                        SetMonitorState(MonitorWindowState.Center);
+                        FuWindow.IsBusy = false;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip("Send to screen center");
+                    }
+                    ImGui.NextColumn();
+
+                    // right icon
+                    if (ImGuiImageButton(Fugui.Settings.RightIcon, buttonSize, buttonIconColor))
+                    {
+                        FuWindow.IsBusy = true;
+                        SetMonitorState(MonitorWindowState.HalfRight);
+                        FuWindow.IsBusy = false;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip("Send to screen right");
+                    }
+                    ImGui.NextColumn();
+
+                    // minimized icon
+                    if (ImGuiImageButton(Fugui.Settings.MinimizeIcon, buttonSize, buttonIconColor))
+                    {
+                        FuWindow.IsBusy = true;
+                        SetMonitorState(MonitorWindowState.Minimized);
+                        FuWindow.IsBusy = false;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip("Minimize this window");
+                    }
+                    ImGui.NextColumn();
+
+                    // bottom icon
+                    if (ImGuiImageButton(Fugui.Settings.BottomIcon, buttonSize, buttonIconColor))
+                    {
+                        FuWindow.IsBusy = true;
+                        SetMonitorState(MonitorWindowState.HalfBottom);
+                        FuWindow.IsBusy = false;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip("Send to screen bottom");
+                    }
+                    Fugui.PopColor();
+
+                    ImGui.NextColumn();
+                    ImGui.Columns(1);
+                }
+                ImGui.EndChild();
+                ImGui.End();
             }
-            // save old state if we was into free mode (none motinor state)
-            if (MonitorWindowState == MonitorWindowState.None)
-            {
-                _noMotitorStatePosition = _worldPosition;
-                _noMotitorStateSize = _size;
-            }
-
-            SetPosition(x, y, true);
-            SetSize(width, height, true);
-            MonitorWindowState = state;
-            Dragging = false;
-
-            // if new state is None and we are dragging, let's keep dragging and re pos 
-            if (MonitorWindowState == MonitorWindowState.None && _mouseState[MouseButton.Left])
-            {
-                // place center of window header to mouse cursor
-                SetPosition((int)Fugui.WorldMousePosition.x - _size.x / 2, (int)Fugui.WorldMousePosition.y - 20, true);
-                _startDragOffset = Fugui.WorldMousePosition - new UnityEngine.Vector2Int(_worldPosition.x, _worldPosition.y);
-                Dragging = true;
-                FuWindow.IsDragging = true;
-            }
-
-            FuWindow.Fire_OnResize();
-            FuWindow.Fire_OnDrag();
+            #endregion
         }
 
         /// <summary>
-        /// draw window state panel
+        /// struct that contains imgui font atlas data
         /// </summary>
-        private void drawWindowStatePanel()
+        internal struct ImGuiFontAtlasData
         {
-            if (!_drawWindowStatePanel)
-            {
-                return;
-            }
-
-            ImGui.SetNextWindowPos(new UnityEngine.Vector2(0f, 0f), ImGuiCond.Always);
-            ImGui.SetNextWindowSize(new UnityEngine.Vector2(_size.x, -1f), ImGuiCond.Always);
-            ImGui.SetNextWindowBgAlpha(0f);
-            ImGui.Begin(FuWindow.ID + "sp", ImGuiWindowFlags.NoDecoration);
-
-            // calc sizes
-            float width = Math.Min(_size.x, _size.y);
-            if (width > 3f * 64f)
-                width = 3f * 64f;
-            float colSize = width / 3f;
-            UnityEngine.Vector2 buttonSize = new UnityEngine.Vector2(colSize - 8f, colSize - 8f);
-            UnityEngine.Vector4 buttonIconColor = new UnityEngine.Vector4(1, 1, 1, 0.5f);
-
-            ImGui.SetCursorPosX((_size.x) / 2f - (width / 2f));
-            ImGui.SetCursorPosY((_size.y) / 2f - (width / 2f));
-            ImGui.BeginChild("windowMonitorStatePanel", new UnityEngine.Vector2(width, width), false);
-            {
-                ImGui.Columns(3, "windowMonitorStatePanelCols", false);
-                ImGui.SetColumnWidth(0, colSize);
-                ImGui.SetColumnWidth(1, colSize);
-                ImGui.SetColumnWidth(2, colSize);
-
-                // switch up left column
-                ImGui.NextColumn();
-
-                // half top icon
-                Fugui.Push(ImGuiCol.Button, new UnityEngine.Vector4(0.1f, 0.1f, 0.1f, 0.1f));
-                if (ImGuiImageButton(Fugui.Settings.TopIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.HalfTop);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen top");
-                }
-                ImGui.NextColumn();
-
-                // maximize icon
-                if (ImGuiImageButton(Fugui.Settings.MaximizeIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.Maximized);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Maximize this window");
-                }
-                ImGui.NextColumn();
-
-                // left icon
-                if (ImGuiImageButton(Fugui.Settings.LeftIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.HalfLeft);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen left");
-                }
-                ImGui.NextColumn();
-
-                // center icon
-                if (ImGuiImageButton(Fugui.Settings.CenterIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.Center);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen center");
-                }
-                ImGui.NextColumn();
-
-                // right icon
-                if (ImGuiImageButton(Fugui.Settings.RightIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.HalfRight);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen right");
-                }
-                ImGui.NextColumn();
-
-                // minimized icon
-                if (ImGuiImageButton(Fugui.Settings.MinimizeIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.Minimized);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Minimize this window");
-                }
-                ImGui.NextColumn();
-
-                // bottom icon
-                if (ImGuiImageButton(Fugui.Settings.BottomIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.HalfBottom);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen bottom");
-                }
-                Fugui.PopColor();
-
-                ImGui.NextColumn();
-                ImGui.Columns(1);
-            }
-            ImGui.EndChild();
-            ImGui.End();
+            public IntPtr Pixels;
+            public int Width;
+            public int Height;
         }
-        #endregion
     }
-
-    /// <summary>
-    /// struct that contains imgui font atlas data
-    /// </summary>
-    internal struct ImGuiFontAtlasData
-    {
-        public IntPtr Pixels;
-        public int Width;
-        public int Height;
-    }
-}

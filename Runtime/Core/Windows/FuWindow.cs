@@ -77,7 +77,7 @@ namespace Fu.Core
         public bool IsHovered { get; internal set; }
         public bool IsDocked { get; internal set; }
         public bool IsBusy { get; internal set; }
-        public bool IsInterractible { get; set; }
+        public bool IsInterractif { get; set; }
 
         // events
         public event Action<FuWindow> OnResize;
@@ -184,7 +184,7 @@ namespace Fu.Core
             WindowName = windowDefinition.WindowName;
             IsDockable = windowDefinition.IsDockable;
             IsExternalizable = windowDefinition.IsExternalizable;
-            IsInterractible = windowDefinition.IsInterractible;
+            IsInterractif = windowDefinition.IsInterractif;
             Size = windowDefinition.Size;
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
@@ -487,7 +487,7 @@ namespace Fu.Core
                 case true:
                     return Fugui.Time > _lastRenderTime + _targetDeltaTimeMs
                         || _forceRedraw
-                        || (IsInterractible && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
+                        || (IsInterractif && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
 
                 case false:
                     return Fugui.Time > _lastRenderTime + _targetDeltaTimeMs

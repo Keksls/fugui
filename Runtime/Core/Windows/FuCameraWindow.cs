@@ -79,7 +79,7 @@ namespace Fu.Core
             _windowFlags |= ImGuiWindowFlags.NoScrollWithMouse;
             NeedToUpdateCamera = true;
             _lastCameraRenderTime = float.MinValue;
-            IsInterractible = true;
+            IsInterractif = true;
             Camera.enabled = false;
 
             OnAddToContainer += FuCameraWindow_OnAddToContainer;

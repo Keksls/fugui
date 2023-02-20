@@ -122,7 +122,6 @@ namespace Fu.Framework
             text = Fugui.GetUntagedText(text);
             int size = 14;
             Vector4 color = FuThemeManager.GetColor(FuColors.Text);
-            ImGui.SameLine();
             float startCursorX = ImGui.GetCursorPosX();
             bool bold = false;
             int nbFontPush = 0;

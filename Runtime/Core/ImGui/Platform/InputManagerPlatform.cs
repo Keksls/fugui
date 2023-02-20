@@ -54,33 +54,127 @@ namespace Fu.Core.DearImGui.Platform
         {
             // Map and store new keys by assigning io.KeyMap and setting value of array
             _mainKeys = new int[] {
-                io.KeyMap[(int)ImGuiKey.A] = (int)KeyCode.A, // For text edit CTRL+A: select all.
-				io.KeyMap[(int)ImGuiKey.C] = (int)KeyCode.C, // For text edit CTRL+C: copy.
-				io.KeyMap[(int)ImGuiKey.V] = (int)KeyCode.V, // For text edit CTRL+V: paste.
-				io.KeyMap[(int)ImGuiKey.X] = (int)KeyCode.X, // For text edit CTRL+X: cut.
-				io.KeyMap[(int)ImGuiKey.Y] = (int)KeyCode.Y, // For text edit CTRL+Y: redo.
-				io.KeyMap[(int)ImGuiKey.Z] = (int)KeyCode.Z, // For text edit CTRL+Z: undo.
-
-				io.KeyMap[(int)ImGuiKey.Tab] = (int)KeyCode.Tab,
-
+                io.KeyMap[(int)ImGuiKey.Tab] = (int)KeyCode.Tab,
                 io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)KeyCode.LeftArrow,
                 io.KeyMap[(int)ImGuiKey.RightArrow] = (int)KeyCode.RightArrow,
                 io.KeyMap[(int)ImGuiKey.UpArrow] = (int)KeyCode.UpArrow,
                 io.KeyMap[(int)ImGuiKey.DownArrow] = (int)KeyCode.DownArrow,
-
                 io.KeyMap[(int)ImGuiKey.PageUp] = (int)KeyCode.PageUp,
                 io.KeyMap[(int)ImGuiKey.PageDown] = (int)KeyCode.PageDown,
-
                 io.KeyMap[(int)ImGuiKey.Home] = (int)KeyCode.Home,
                 io.KeyMap[(int)ImGuiKey.End] = (int)KeyCode.End,
                 io.KeyMap[(int)ImGuiKey.Insert] = (int)KeyCode.Insert,
                 io.KeyMap[(int)ImGuiKey.Delete] = (int)KeyCode.Delete,
                 io.KeyMap[(int)ImGuiKey.Backspace] = (int)KeyCode.Backspace,
-
                 io.KeyMap[(int)ImGuiKey.Space] = (int)KeyCode.Space,
-                io.KeyMap[(int)ImGuiKey.Escape] = (int)KeyCode.Escape,
                 io.KeyMap[(int)ImGuiKey.Enter] = (int)KeyCode.Return,
+                io.KeyMap[(int)ImGuiKey.Escape] = (int)KeyCode.Escape,
+                io.KeyMap[(int)ImGuiKey.A] = (int)KeyCode.A,
+                io.KeyMap[(int)ImGuiKey.B] = (int)KeyCode.B,
+                io.KeyMap[(int)ImGuiKey.C] = (int)KeyCode.C,
+                io.KeyMap[(int)ImGuiKey.D] = (int)KeyCode.D,
+                io.KeyMap[(int)ImGuiKey.E] = (int)KeyCode.E,
+                io.KeyMap[(int)ImGuiKey.F] = (int)KeyCode.F,
+                io.KeyMap[(int)ImGuiKey.G] = (int)KeyCode.G,
+                io.KeyMap[(int)ImGuiKey.H] = (int)KeyCode.H,
+                io.KeyMap[(int)ImGuiKey.I] = (int)KeyCode.I,
+                io.KeyMap[(int)ImGuiKey.J] = (int)KeyCode.J,
+                io.KeyMap[(int)ImGuiKey.K] = (int)KeyCode.K,
+                io.KeyMap[(int)ImGuiKey.L] = (int)KeyCode.L,
+                io.KeyMap[(int)ImGuiKey.M] = (int)KeyCode.M,
+                io.KeyMap[(int)ImGuiKey.N] = (int)KeyCode.N,
+                io.KeyMap[(int)ImGuiKey.O] = (int)KeyCode.O,
+                io.KeyMap[(int)ImGuiKey.P] = (int)KeyCode.P,
+                io.KeyMap[(int)ImGuiKey.Q] = (int)KeyCode.Q,
+                io.KeyMap[(int)ImGuiKey.R] = (int)KeyCode.R,
+                io.KeyMap[(int)ImGuiKey.S] = (int)KeyCode.S,
+                io.KeyMap[(int)ImGuiKey.T] = (int)KeyCode.T,
+                io.KeyMap[(int)ImGuiKey.U] = (int)KeyCode.U,
+                io.KeyMap[(int)ImGuiKey.V] = (int)KeyCode.V,
+                io.KeyMap[(int)ImGuiKey.W] = (int)KeyCode.W,
+                io.KeyMap[(int)ImGuiKey.X] = (int)KeyCode.X,
+                io.KeyMap[(int)ImGuiKey.Y] = (int)KeyCode.Y,
+                io.KeyMap[(int)ImGuiKey.Z] = (int)KeyCode.Z,
+                io.KeyMap[(int)ImGuiKey.LeftCtrl] = (int)KeyCode.LeftControl,
+                io.KeyMap[(int)ImGuiKey.LeftShift] = (int)KeyCode.LeftShift,
+                io.KeyMap[(int)ImGuiKey.LeftAlt] = (int)KeyCode.LeftAlt,
+                io.KeyMap[(int)ImGuiKey.LeftSuper] = (int)KeyCode.LeftCommand,
+                io.KeyMap[(int)ImGuiKey.RightCtrl] = (int)KeyCode.RightControl,
+                io.KeyMap[(int)ImGuiKey.RightShift] = (int)KeyCode.RightShift,
+                io.KeyMap[(int)ImGuiKey.RightAlt] = (int)KeyCode.RightAlt,
+                io.KeyMap[(int)ImGuiKey.RightSuper] = (int)KeyCode.RightCommand,
+                io.KeyMap[(int)ImGuiKey.Menu] = (int)KeyCode.Menu,
+                io.KeyMap[(int)ImGuiKey._0] = (int)KeyCode.Alpha0,
+                io.KeyMap[(int)ImGuiKey._1] = (int)KeyCode.Alpha1,
+                io.KeyMap[(int)ImGuiKey._2] = (int)KeyCode.Alpha2,
+                io.KeyMap[(int)ImGuiKey._3] = (int)KeyCode.Alpha3,
+                io.KeyMap[(int)ImGuiKey._4] = (int)KeyCode.Alpha4,
+                io.KeyMap[(int)ImGuiKey._5] = (int)KeyCode.Alpha5,
+                io.KeyMap[(int)ImGuiKey._6] = (int)KeyCode.Alpha6,
+                io.KeyMap[(int)ImGuiKey._7] =(int)KeyCode.Alpha7,
+                io.KeyMap[(int)ImGuiKey._8] = (int)KeyCode.Alpha8,
+                io.KeyMap[(int)ImGuiKey._9] = (int)KeyCode.Alpha9,
+                io.KeyMap[(int)ImGuiKey.Apostrophe] = (int)KeyCode.Quote,
+                io.KeyMap[(int)ImGuiKey.Comma] = (int)KeyCode.Comma,
+                io.KeyMap[(int)ImGuiKey.Minus] = (int)KeyCode.Minus,
+                io.KeyMap[(int)ImGuiKey.Period] = (int)KeyCode.Period,
+                io.KeyMap[(int)ImGuiKey.Slash] = (int)KeyCode.Slash,
+                io.KeyMap[(int)ImGuiKey.Semicolon] = (int)KeyCode.Semicolon,
+                io.KeyMap[(int)ImGuiKey.Equal] = (int)KeyCode.Equals,
+                io.KeyMap[(int)ImGuiKey.LeftBracket] = (int)KeyCode.LeftBracket,
+                io.KeyMap[(int)ImGuiKey.Backslash] = (int)KeyCode.Backslash,
+                io.KeyMap[(int)ImGuiKey.RightBracket] = (int)KeyCode.RightBracket,
+                io.KeyMap[(int)ImGuiKey.GraveAccent] = (int)KeyCode.BackQuote,
+                io.KeyMap[(int)ImGuiKey.CapsLock] = (int)KeyCode.CapsLock,
+                io.KeyMap[(int)ImGuiKey.ScrollLock] = (int)KeyCode.ScrollLock,
+                io.KeyMap[(int)ImGuiKey.NumLock] = (int)KeyCode.Numlock,
+                io.KeyMap[(int)ImGuiKey.PrintScreen] = (int)KeyCode.Print,
+                io.KeyMap[(int)ImGuiKey.Pause] = (int)KeyCode.Pause,
+                io.KeyMap[(int)ImGuiKey.Keypad0] = (int)KeyCode.Keypad0,
+                io.KeyMap[(int)ImGuiKey.Keypad1] = (int)KeyCode.Keypad1,
+                io.KeyMap[(int)ImGuiKey.Keypad2] = (int)KeyCode.Keypad2,
+                io.KeyMap[(int)ImGuiKey.Keypad3] = (int)KeyCode.Keypad3,
+                io.KeyMap[(int)ImGuiKey.Keypad4] = (int)KeyCode.Keypad4,
+                io.KeyMap[(int)ImGuiKey.Keypad5] = (int)KeyCode.Keypad5,
+                io.KeyMap[(int)ImGuiKey.Keypad6] = (int)KeyCode.Keypad6,
+                io.KeyMap[(int)ImGuiKey.Keypad7] = (int)KeyCode.Keypad7,
+                io.KeyMap[(int)ImGuiKey.Keypad8] = (int)KeyCode.Keypad8,
+                io.KeyMap[(int)ImGuiKey.Keypad9] = (int)KeyCode.Keypad9,
+                io.KeyMap[(int)ImGuiKey.KeypadDecimal] = (int)KeyCode.KeypadPeriod,
+                io.KeyMap[(int)ImGuiKey.KeypadDivide] = (int)KeyCode.KeypadDivide,
+                io.KeyMap[(int)ImGuiKey.KeypadMultiply] = (int)KeyCode.KeypadMultiply,
+                io.KeyMap[(int)ImGuiKey.KeypadSubtract] = (int)KeyCode.KeypadMinus,
+                io.KeyMap[(int)ImGuiKey.KeypadAdd] = (int)KeyCode.KeypadPlus,
                 io.KeyMap[(int)ImGuiKey.KeypadEnter] = (int)KeyCode.KeypadEnter,
+                io.KeyMap[(int)ImGuiKey.KeypadEqual] = (int)KeyCode.KeypadEquals,
+
+    //        io.KeyMap[(int)ImGuiKey.A] = (int)KeyCode.A, // For text edit CTRL+A: select all.
+				//io.KeyMap[(int)ImGuiKey.C] = (int)KeyCode.C, // For text edit CTRL+C: copy.
+				//io.KeyMap[(int)ImGuiKey.V] = (int)KeyCode.V, // For text edit CTRL+V: paste.
+				//io.KeyMap[(int)ImGuiKey.X] = (int)KeyCode.X, // For text edit CTRL+X: cut.
+				//io.KeyMap[(int)ImGuiKey.Y] = (int)KeyCode.Y, // For text edit CTRL+Y: redo.
+				//io.KeyMap[(int)ImGuiKey.Z] = (int)KeyCode.Z, // For text edit CTRL+Z: undo.
+
+				//io.KeyMap[(int)ImGuiKey.Tab] = (int)KeyCode.Tab,
+
+    //            io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)KeyCode.LeftArrow,
+    //            io.KeyMap[(int)ImGuiKey.RightArrow] = (int)KeyCode.RightArrow,
+    //            io.KeyMap[(int)ImGuiKey.UpArrow] = (int)KeyCode.UpArrow,
+    //            io.KeyMap[(int)ImGuiKey.DownArrow] = (int)KeyCode.DownArrow,
+
+    //            io.KeyMap[(int)ImGuiKey.PageUp] = (int)KeyCode.PageUp,
+    //            io.KeyMap[(int)ImGuiKey.PageDown] = (int)KeyCode.PageDown,
+
+    //            io.KeyMap[(int)ImGuiKey.Home] = (int)KeyCode.Home,
+    //            io.KeyMap[(int)ImGuiKey.End] = (int)KeyCode.End,
+    //            io.KeyMap[(int)ImGuiKey.Insert] = (int)KeyCode.Insert,
+    //            io.KeyMap[(int)ImGuiKey.Delete] = (int)KeyCode.Delete,
+    //            io.KeyMap[(int)ImGuiKey.Backspace] = (int)KeyCode.Backspace,
+
+    //            io.KeyMap[(int)ImGuiKey.Space] = (int)KeyCode.Space,
+    //            io.KeyMap[(int)ImGuiKey.Escape] = (int)KeyCode.Escape,
+    //            io.KeyMap[(int)ImGuiKey.Enter] = (int)KeyCode.Return,
+    //            io.KeyMap[(int)ImGuiKey.KeypadEnter] = (int)KeyCode.KeypadEnter,
             };
         }
 

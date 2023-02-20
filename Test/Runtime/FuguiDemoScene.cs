@@ -936,7 +936,6 @@ public class FuguiDemoScene : MonoBehaviour
         // imgui demo window
         if (ShowImGuiDemoWindow)
         {
-            // TODO : Use Context
             Fugui.DefaultContext.OnRender += UImGuiUtility_Layout;
         }
 

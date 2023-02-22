@@ -167,6 +167,9 @@ namespace Fu.Framework
             // calc label size
             Vector2 label_size = ImGui.CalcTextSize(text, true);
 
+            // get the current cursor pos so we draw at the right place
+            Vector2 pos = ImGui.GetCursorScreenPos();
+
             // calc item size
             Vector2 region_max = default;
             if (size.x < 0.0f || size.y < 0.0f)
@@ -181,7 +184,7 @@ namespace Fu.Framework
                 size.y = Mathf.Max(4.0f, region_max.y - ImGuiNative.igGetCursorPosY() + size.y);
 
             // draw a dummy button to update cursor and get states
-            bool clicked = ImGui.InvisibleButton(text, size);
+            bool clicked = ImGui.InvisibleButton(text, size) && !_nextIsDisabled;
             bool hovered = ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0;
             bool active = ImGuiNative.igIsItemActive() != 0;
 
@@ -210,14 +213,14 @@ namespace Fu.Framework
                 Vector4 bg2f = new Vector4(bg1f.x * gradientStrenght, bg1f.y * gradientStrenght, bg1f.z * gradientStrenght, bg1f.w);
                 // draw button frame
                 int vert_start_idx = drawList.VtxBuffer.Size;
-                drawList.AddRectFilled(_currentItemStartPos, _currentItemStartPos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), FuThemeManager.CurrentTheme.FrameRounding);
+                drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), FuThemeManager.CurrentTheme.FrameRounding);
                 int vert_end_idx = drawList.VtxBuffer.Size;
-                ImGuiInternal.igShadeVertsLinearColorGradientKeepAlpha(drawList.NativePtr, vert_start_idx, vert_end_idx, _currentItemStartPos, bb.GetBL(), ImGuiNative.igGetColorU32_Vec4(bg1f), ImGuiNative.igGetColorU32_Vec4(bg2f));
+                ImGuiInternal.igShadeVertsLinearColorGradientKeepAlpha(drawList.NativePtr, vert_start_idx, vert_end_idx, pos, bb.GetBL(), ImGuiNative.igGetColorU32_Vec4(bg1f), ImGuiNative.igGetColorU32_Vec4(bg2f));
             }
             // draw frame button
             else
             {
-                drawList.AddRectFilled(_currentItemStartPos, _currentItemStartPos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), FuThemeManager.CurrentTheme.FrameRounding);
+                drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), FuThemeManager.CurrentTheme.FrameRounding);
             }
 
             // draw border
@@ -226,7 +229,7 @@ namespace Fu.Framework
                 drawList.AddRect(bb.Min, bb.Max, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), FuThemeManager.CurrentTheme.FrameRounding, 0, FuThemeManager.CurrentTheme.FrameBorderSize);
             }
             // Align whole block. We should defer that to the better rendering function when we'll have support for individual line alignment.
-            Vector2 textPos = _currentItemStartPos;
+            Vector2 textPos = pos;
             Vector2 align = FuThemeManager.CurrentTheme.ButtonTextAlign;
 
             if (align.x > 0.0f)
@@ -245,7 +248,7 @@ namespace Fu.Framework
             }
 
             // draw text
-            TextClipped(size, text, _currentItemStartPos + textOffset, padding, label_size, align);
+            TextClipped(size, text, pos + textOffset, padding, label_size, align);
 
             // display the tooltip if necessary
             displayToolTip();

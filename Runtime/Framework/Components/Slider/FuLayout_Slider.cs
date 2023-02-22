@@ -148,7 +148,6 @@ namespace Fu.Framework
                     }
                 }
                 ImGui.PopItemWidth();
-                //updateFloatString("##sliderInput" + text, value);
                 displayToolTip();
                 _elementHoverFramed = true;
                 drawHoverFrame();

@@ -35,7 +35,8 @@ namespace Fu.Framework
         protected bool _currentToolTipsOnLabels = false;
         // has animations enabled
         protected bool _animationEnabled = true;
-        private Vector2 _currentItemStartPos;
+        // screen relative pos of the current drawing item
+        private static Vector2 _currentItemStartPos;
         #endregion
 
         #region Elements Data

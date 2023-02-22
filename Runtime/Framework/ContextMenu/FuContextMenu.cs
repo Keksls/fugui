@@ -1,6 +1,7 @@
 ﻿using Fu.Framework;
 using ImGuiNET;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Fu
@@ -112,6 +113,12 @@ namespace Fu
                 _openThisFrameLevel = _currentContextMenuStackIndex;
                 // Merge the items from the current context menu stack and set the result as the current context menu items
                 _currentContextMenuItems = mergeContextMenuItemsStack(_contextMenuItemsStack);
+                // cancel openning if there is no items at current level
+                if(_currentContextMenuItems.Count == 0)
+                {
+                    _currentOpenContextID = -1;
+                    _openThisFrameLevel = -1;
+                }
             }
         }
 

@@ -12,10 +12,12 @@ namespace Fu.Framework
         ///<param name="id">The identifier for the input field.</param>
         ///<param name="value">The float value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref float value, string vString = null)
+        public bool Drag(string id, ref float value, string vString = null, float speed = 0.1f, string format = null)
         {
-            return Drag(id, ref value, vString, 0, 100, FuFrameStyle.Default);
+            return Drag(id, ref value, vString, 0, 100, FuFrameStyle.Default, speed, format);
         }
 
         ///<summary>
@@ -26,10 +28,12 @@ namespace Fu.Framework
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref float value, string vString, float min, float max)
+        public bool Drag(string id, ref float value, string vString, float min, float max, float speed = 0.1f, string format = null)
         {
-            return Drag(id, ref value, vString, min, max, FuFrameStyle.Default);
+            return Drag(id, ref value, vString, min, max, FuFrameStyle.Default, speed, format);
         }
 
         ///<summary>
@@ -41,8 +45,10 @@ namespace Fu.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         /// <param name="style">The style of the Drag</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref float value, string vString, float min, float max, FuFrameStyle style)
+        public virtual bool Drag(string id, ref float value, string vString, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
         {
             beginElement(ref id, style);
             // return if item must no be draw
@@ -50,7 +56,7 @@ namespace Fu.Framework
             {
                 return false;
             }
-            bool valueChanged = dragFloat(id, ref value, vString, min, max);
+            bool valueChanged = dragFloat(id, ref value, vString, min, max, speed, format);
             endElement(style);
             return valueChanged;
         }
@@ -63,8 +69,10 @@ namespace Fu.Framework
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        private bool dragFloat(string id, ref float value, string vString, float min, float max)
+        private bool dragFloat(string id, ref float value, string vString, float min, float max, float speed, string format)
         {
             // Display the string before the input field if it was provided
             if (!string.IsNullOrEmpty(vString))
@@ -77,7 +85,7 @@ namespace Fu.Framework
             // Set the width of the input field and create it
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             var oldVal = value; // Store the old value in case the input field is disabled
-            bool valueChanged = ImGui.DragFloat("##" + id, ref value, 0.1f, min, max, getFloatString(value), _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+            bool valueChanged = ImGui.DragFloat("##" + id, ref value, speed, min, max, string.IsNullOrEmpty(format) ? getFloatString(value) : format, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
 
             // Update the format string for the input field based on its current value
             //updateFloatString("##" + id, value);
@@ -105,10 +113,12 @@ namespace Fu.Framework
         ///<param name="value">The Vector2 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
         ///<param name="v2String">A string to be displayed before the input field Y. If empty, no string will be displayed.</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref Vector2 value, string v1String = null, string v2String = null)
+        public bool Drag(string id, ref Vector2 value, string v1String = null, string v2String = null, float speed = 0.1f, string format = null)
         {
-            return Drag(id, ref value, v1String, v2String, 0f, 100f, FuFrameStyle.Default);
+            return Drag(id, ref value, v1String, v2String, 0f, 100f, FuFrameStyle.Default, speed, format);
         }
 
         ///<summary>
@@ -120,10 +130,12 @@ namespace Fu.Framework
         ///<param name="v2String">A string to be displayed before the input field Y. If empty, no string will be displayed.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref Vector2 value, string v1String, string v2String, float min, float max)
+        public bool Drag(string id, ref Vector2 value, string v1String, string v2String, float min, float max, float speed = 0.1f, string format = null)
         {
-            return Drag(id, ref value, v1String, v2String, min, max, FuFrameStyle.Default);
+            return Drag(id, ref value, v1String, v2String, min, max, FuFrameStyle.Default, speed, format);
         }
 
         ///<summary>
@@ -136,8 +148,10 @@ namespace Fu.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         /// <param name="style">The style of the Drag</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref Vector2 value, string v1String, string v2String, float min, float max, FuFrameStyle style)
+        public virtual bool Drag(string id, ref Vector2 value, string v1String, string v2String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
         {
             // Begin the element and apply the specified style
             beginElement(ref id, style);
@@ -161,13 +175,13 @@ namespace Fu.Framework
                 // Move to the first column
                 ImGui.TableNextColumn();
                 // Create a draggable float for the first value in the table, using the specified ID and value string
-                valueChanged |= dragFloat(id + "val1", ref value.x, v1String, min, max);
+                valueChanged |= dragFloat(id + "val1", ref value.x, v1String, min, max, speed, format);
                 // Draw a hover frame around the element if it is hovered
                 drawHoverFrame();
                 // Move to the second column
                 ImGui.TableNextColumn();
                 // Create a draggable float for the second value in the table, using the specified ID and value string
-                valueChanged |= dragFloat(id + "val2", ref value.y, v2String, min, max);
+                valueChanged |= dragFloat(id + "val2", ref value.y, v2String, min, max, speed, format);
                 // Draw a hover frame around the element if it is hovered
                 drawHoverFrame();
                 // End the table
@@ -191,10 +205,12 @@ namespace Fu.Framework
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
         ///<param name="v2String">A string to be displayed before the input field Y. If empty, no string will be displayed.</param>
         ///<param name="v3String">A string to be displayed before the input field Z. If empty, no string will be displayed.</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref Vector3 value, string v1String = null, string v2String = null, string v3String = null)
+        public bool Drag(string id, ref Vector3 value, string v1String = null, string v2String = null, string v3String = null, float speed = 0.1f, string format = null)
         {
-            return Drag(id, ref value, v1String, v2String, v3String, 0f, 100f, FuFrameStyle.Default);
+            return Drag(id, ref value, v1String, v2String, v3String, 0f, 100f, FuFrameStyle.Default, speed, format);
         }
 
         ///<summary>
@@ -207,10 +223,12 @@ namespace Fu.Framework
         ///<param name="v3String">A string to be displayed before the input field Z. If empty, no string will be displayed.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max)
+        public bool Drag(string id, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, float speed = 0.1f, string format = null)
         {
-            return Drag(id, ref value, v1String, v2String, v3String, min, max, FuFrameStyle.Default);
+            return Drag(id, ref value, v1String, v2String, v3String, min, max, FuFrameStyle.Default, speed, format);
         }
 
         ///<summary>
@@ -224,8 +242,10 @@ namespace Fu.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         /// <param name="style">The style of the Drag</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, FuFrameStyle style)
+        public virtual bool Drag(string id, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
         {
             beginElement(ref id, style);
             // return if item must no be draw
@@ -248,21 +268,21 @@ namespace Fu.Framework
                 ImGui.TableNextColumn();
 
                 // Drag the first value
-                valueChanged |= dragFloat(id + "val1", ref value.x, v1String, min, max);
+                valueChanged |= dragFloat(id + "val1", ref value.x, v1String, min, max, speed, format);
                 drawHoverFrame();
 
                 // Begin the second column
                 ImGui.TableNextColumn();
 
                 // Drag the second value
-                valueChanged |= dragFloat(id + "val2", ref value.y, v2String, min, max);
+                valueChanged |= dragFloat(id + "val2", ref value.y, v2String, min, max, speed, format);
                 drawHoverFrame();
 
                 // Begin the third column
                 ImGui.TableNextColumn();
 
                 // Drag the third value
-                valueChanged |= dragFloat(id + "val3", ref value.z, v3String, min, max);
+                valueChanged |= dragFloat(id + "val3", ref value.z, v3String, min, max, speed, format);
                 drawHoverFrame();
 
                 // End the table
@@ -287,10 +307,12 @@ namespace Fu.Framework
         ///<param name="v2String">A string to be displayed before the input field Y. If empty, no string will be displayed.</param>
         ///<param name="v3String">A string to be displayed before the input field Z. If empty, no string will be displayed.</param>
         ///<param name="v4String">A string to be displayed before the input field W. If empty, no string will be displayed.</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref Vector4 value, string v1String = null, string v2String = null, string v3String = null, string v4String = null)
+        public bool Drag(string id, ref Vector4 value, string v1String = null, string v2String = null, string v3String = null, string v4String = null, float speed = 0.1f, string format = null)
         {
-            return Drag(id, ref value, v1String, v2String, v3String, v4String, 0f, 100f, FuFrameStyle.Default);
+            return Drag(id, ref value, v1String, v2String, v3String, v4String, 0f, 100f, FuFrameStyle.Default, speed, format);
         }
         ///<summary>
         /// Creates a draggable Vector4 input field.
@@ -303,10 +325,12 @@ namespace Fu.Framework
         ///<param name="v4String">A string to be displayed before the input field W. If empty, no string will be displayed.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max)
+        public bool Drag(string id, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, float speed = 0.1f, string format = null)
         {
-            return Drag(id, ref value, v1String, v2String, v3String, v4String, min, max, FuFrameStyle.Default);
+            return Drag(id, ref value, v1String, v2String, v3String, v4String, min, max, FuFrameStyle.Default, speed, format);
         }
         ///<summary>
         /// Creates a draggable Vector4 input field.
@@ -320,8 +344,10 @@ namespace Fu.Framework
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
         /// <param name="style">The style of the Drag</param>
+        ///<param name="speed">Speed of the drag step</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string id, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, FuFrameStyle style)
+        public virtual bool Drag(string id, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
         {
             beginElement(ref id, style);
             // return if item must no be draw
@@ -343,16 +369,16 @@ namespace Fu.Framework
 
                 // Move to the first column
                 ImGui.TableNextColumn();
-                valueChanged |= dragFloat(id + "val1", ref value.x, v1String, min, max); // Drag float for the first value
+                valueChanged |= dragFloat(id + "val1", ref value.x, v1String, min, max, speed, format); // Drag float for the first value
                 drawHoverFrame();
                 ImGui.TableNextColumn();
-                valueChanged |= dragFloat(id + "val2", ref value.y, v2String, min, max); // Drag float for the second value
+                valueChanged |= dragFloat(id + "val2", ref value.y, v2String, min, max, speed, format); // Drag float for the second value
                 drawHoverFrame();
                 ImGui.TableNextColumn();
-                valueChanged |= dragFloat(id + "val3", ref value.z, v3String, min, max); // Drag float for the third value
+                valueChanged |= dragFloat(id + "val3", ref value.z, v3String, min, max, speed, format); // Drag float for the third value
                 drawHoverFrame();
                 ImGui.TableNextColumn();
-                valueChanged |= dragFloat(id + "val4", ref value.w, v4String, min, max); // Drag float for the fourth value
+                valueChanged |= dragFloat(id + "val4", ref value.w, v4String, min, max, speed, format); // Drag float for the fourth value
                 drawHoverFrame();
                 ImGui.EndTable();
             }
@@ -369,8 +395,9 @@ namespace Fu.Framework
         ///</summary>
         ///<param name="id">The identifier for the input field.</param>
         ///<param name="value">The int value to be displayed in the input field.</param>
+        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref int value)
+        public bool Drag(string id, ref int value, string format = "%.0f")
         {
             return Drag(id, null, ref value, 0, 100, FuFrameStyle.Default);
         }
@@ -381,8 +408,9 @@ namespace Fu.Framework
         ///<param name="id">The identifier for the input field.</param>
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
+        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, string vString, ref int value)
+        public bool Drag(string id, string vString, ref int value, string format = "%.0f")
         {
             return Drag(id, vString, ref value, 0, 100, FuFrameStyle.Default);
         }
@@ -395,8 +423,9 @@ namespace Fu.Framework
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
+        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, string vString, ref int value, int min, int max)
+        public bool Drag(string id, string vString, ref int value, int min, int max, string format = "%.0f")
         {
             return Drag(id, vString, ref value, min, max, FuFrameStyle.Default);
         }
@@ -408,8 +437,9 @@ namespace Fu.Framework
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
+        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string id, ref int value, int min, int max)
+        public bool Drag(string id, ref int value, int min, int max, string format = "%.0f")
         {
             return Drag(id, null, ref value, min, max, FuFrameStyle.Default);
         }
@@ -425,8 +455,9 @@ namespace Fu.Framework
         /// <param name="min">The minimum value for the element.</param>
         /// <param name="max">The maximum value for the element.</param>
         /// <param name="style">The style to be used for the element's appearance.</param>
+        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
         /// <returns>True if the value was modified, false otherwise.</returns>
-        public virtual bool Drag(string id, string vString, ref int value, int min, int max, FuFrameStyle style)
+        public virtual bool Drag(string id, string vString, ref int value, int min, int max, FuFrameStyle style, string format = "%.0f")
         {
             // start drawing the element
             beginElement(ref id, style);
@@ -449,7 +480,7 @@ namespace Fu.Framework
             // store the current value in case the element is disabled
             var oldVal = value;
             // draw the draggable integer input element
-            bool valueChanged = ImGui.DragInt("##" + id, ref value, 0.05f, min, max, "%.0f", _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+            bool valueChanged = ImGui.DragInt("##" + id, ref value, 0.05f, min, max, format, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
             // if the element is disabled, restore the old value and return false for valueChanged
             if (_nextIsDisabled)
             {

@@ -152,13 +152,13 @@ namespace Fu.Framework
                 displayToolTip();
                 _elementHoverFramed = true;
                 drawHoverFrame();
-            }
-
+            } 
+            
             // function that draw the slider
             bool drawSlider(string text, ref float value, float min, float max, bool isInt, float knobRadius, float hoverPaddingY, float lineHeight, float width, float x, float y)
             {
-                // draw a dummy so the cursor is well placed
-                ImGui.Dummy(new Vector2(width + (4f * Fugui.CurrentContext.Scale), height));
+                // draw a dummy button so the cursor is well placed and we can get the state and prevent from clicking on multiple elements at time + get the state only if the widget is visible
+                ImGui.InvisibleButton(text, new Vector2(width + (4f * Fugui.CurrentContext.Scale), height));
 
                 // is there place to draw slider
                 if (width >= 24f)

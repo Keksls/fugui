@@ -161,7 +161,7 @@ public class FuguiDemoScene : MonoBehaviour
             {
                 continue;
             }
-            Fugui.RegisterMainMenuItem(windowName.ToString(), () => Fugui.CreateWindowAsync(windowName, null), "Windows");
+            Fugui.RegisterMainMenuItem(windowName.ToString(), () => Fugui.CreateWindowAsync(windowName, (win) => { win.AutoDock(); }), "Windows");
         }
 
         Fugui.RegisterMainMenuItem("3D Windows", null);
@@ -410,6 +410,7 @@ public class FuguiDemoScene : MonoBehaviour
         {
             using (FuLayout layout = new FuLayout())
             {
+                layout.DisableNextElements();
                 layout.ComboboxEnum<AnchorLocation>("Notify Anchor", (anchor) =>
                 {
                     Fugui.Settings.NotificationAnchorPosition = (AnchorLocation)anchor;
@@ -438,6 +439,7 @@ public class FuguiDemoScene : MonoBehaviour
                         Fugui.Notify("this is a type " + type.ToString(), null, type);
                     }
                 }
+                layout.EnableNextElements();
                 layout.Separator();
                 foreach (StateType type in Enum.GetValues(typeof(StateType)))
                 {

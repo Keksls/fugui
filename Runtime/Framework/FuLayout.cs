@@ -12,15 +12,27 @@ namespace Fu.Framework
     public unsafe partial class FuLayout : IDisposable
     {
         #region Variables
-        // The current pop-up window ID.
-        public static string CurrentPopUpWindowID { get; private set; } = null;
-        // The current pop-up ID.
-        public static string CurrentPopUpID { get; private set; } = null;
-        // The current pop-up Rect.
-        public static Rect CurrentPopUpRect { get; private set; } = default;
-        // A flag indicating whether the layout is inside a pop-up.
-        public static bool IsInsidePopUp { get; private set; } = false;
+        /// <summary>
+        /// The current Layout or grid that is drawing at time.
+        /// </summary>
         public static FuLayout CurrentDrawer { get; protected set; } = null;
+        /// <summary>
+        /// The ID of the window in wich a popup is open (if there is some)
+        /// </summary>
+        public static string CurrentPopUpWindowID { get; private set; } = null;
+        /// <summary>
+        /// The ID of the currently open pop-up (if there is some)
+        /// </summary>
+        public static string CurrentPopUpID { get; private set; } = null;
+        /// <summary>
+        /// The Rect of the currently open pop-up (if there is some)
+        /// </summary>
+        public static Rect CurrentPopUpRect { get; private set; } = default;
+        /// <summary>
+        /// A flag indicating whether the layout is inside a pop-up.
+        /// </summary>
+        public static bool IsInsidePopUp { get; private set; } = false;
+
         // A flag indicating whether the element is hover framed.
         private bool _elementHoverFramed = false;
         // A flag indicating whether the next element should be disabled.
@@ -37,6 +49,8 @@ namespace Fu.Framework
         protected bool _animationEnabled = true;
         // screen relative pos of the current drawing item
         private static Vector2 _currentItemStartPos;
+        // whatever elements are currently disabled (if true)
+        private bool _longDisabled = false;
         #endregion
 
         #region Elements Data
@@ -73,6 +87,25 @@ namespace Fu.Framework
         public void DisableNextElement()
         {
             _nextIsDisabled = true;
+        }
+
+        /// <summary>
+        /// Disables all next elements in this layout from now.
+        /// Call 'EnableNextElements' to stop disabling
+        /// </summary>
+        public void DisableNextElements()
+        {
+            _nextIsDisabled = true;
+            _longDisabled = true;
+        }
+
+        /// <summary>
+        /// Enables all next element in this layout.
+        /// </summary>
+        public void EnableNextElements()
+        {
+            _nextIsDisabled = false;
+            _longDisabled = false;
         }
 
         /// <summary>
@@ -117,7 +150,10 @@ namespace Fu.Framework
                 drawHoverFrame();
                 Fugui.TryOpenContextMenuOnRectClick(_currentItemStartPos, ImGui.GetItemRectMax());
             }
-            _nextIsDisabled = false;
+            if (!_longDisabled)
+            {
+                _nextIsDisabled = false;
+            }
             _elementHoverFramed = false;
             if (!IsInsidePopUp && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
             {

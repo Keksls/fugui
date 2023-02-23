@@ -25,7 +25,7 @@ namespace Fu
                         _layoutManagement_grid.Text("Select a FuGui Layout Configuration in the list to edit. You can also create a new one and associate windows defination to layout and dockspaces. If you create a new one or edit an existing FuGui Layout, please clic on 'Save layout' button to save changes.");
                         _layoutManagement_grid.Combobox("Available layouts", FuDockingLayoutManager.Layouts.Keys.ToList(), (key) =>
                         {
-                            FuDockingLayoutManager.DisplayedLayout = FuDockingLayoutManager.Layouts[key];
+                            FuDockingLayoutManager.CurrentLayout = FuDockingLayoutManager.Layouts[key];
                             FuDockingLayoutManager.DisplayLayoutName = key;
                         },
                         () =>
@@ -75,7 +75,7 @@ namespace Fu
                     }
                 });
 
-                if (FuDockingLayoutManager.DisplayedLayout != null)
+                if (FuDockingLayoutManager.CurrentLayout != null)
                 {
                     loadSave_layout.Collapsable("Dockspace configuration", () =>
                     {
@@ -83,7 +83,7 @@ namespace Fu
                         {
                             using (FuLayout dockSpaceList_layout = new FuLayout())
                             {
-                                ShowTreeView(dockSpaceList_layout, FuDockingLayoutManager.DisplayedLayout, true);
+                                ShowTreeView(dockSpaceList_layout, FuDockingLayoutManager.CurrentLayout, true);
                                 FuDockingLayoutManager.RefreshDockSpaces();
                             }
                         }
@@ -173,7 +173,7 @@ namespace Fu
                                     DockSpaceDefinitionClearChildren(dockSpaceDefinition);
 
                                     dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Horizontal;
-                                    uint nextID = FuDockingLayoutManager.DisplayedLayout.GetTotalChildren();
+                                    uint nextID = FuDockingLayoutManager.CurrentLayout.GetTotalChildren();
 
                                     FuDockingLayoutDefinition leftPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitH_Left", nextID + 1);
                                     FuDockingLayoutDefinition rightPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitH_Right", nextID + 2);
@@ -187,7 +187,7 @@ namespace Fu
                                     DockSpaceDefinitionClearChildren(dockSpaceDefinition);
 
                                     dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Vertical;
-                                    uint nextID = FuDockingLayoutManager.DisplayedLayout.GetTotalChildren();
+                                    uint nextID = FuDockingLayoutManager.CurrentLayout.GetTotalChildren();
 
                                     FuDockingLayoutDefinition topPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitV_Top", nextID + 1);
                                     FuDockingLayoutDefinition bottomPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitV_Bottom", nextID + 2);
@@ -294,7 +294,7 @@ namespace Fu
                     }
                 });
 
-                if (FuDockingLayoutManager.DisplayedLayout != null)
+                if (FuDockingLayoutManager.CurrentLayout != null)
                 {
                     layout.Collapsable("Bind Windows definition to DockSpace", () =>
                     {

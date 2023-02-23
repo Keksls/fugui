@@ -20,7 +20,7 @@ namespace Fu.Framework
         internal static Dictionary<ushort, string> _fuguiWindows;
         internal static string _windowsToAdd = string.Empty;
         internal static string _selectedWindowDefinition = string.Empty;
-        internal static FuDockingLayoutDefinition DisplayedLayout;
+        internal static FuDockingLayoutDefinition CurrentLayout;
         internal static string DisplayLayoutName = "";
         internal static Dictionary<int, string> _definedDockSpaces;
         internal static ExtensionFilter _flgExtensionFilter;
@@ -113,12 +113,12 @@ namespace Fu.Framework
             if (Layouts.Count > 0)
             {
                 KeyValuePair<string, FuDockingLayoutDefinition> firstLayoutInfo = Layouts.ElementAt(0);
-                DisplayedLayout = firstLayoutInfo.Value;
+                CurrentLayout = firstLayoutInfo.Value;
                 DisplayLayoutName = firstLayoutInfo.Key;
             }
             else
             {
-                DisplayedLayout = null;
+                CurrentLayout = null;
                 DisplayLayoutName = string.Empty;
             }
 
@@ -133,9 +133,9 @@ namespace Fu.Framework
         /// </summary>
         internal static void RefreshDockSpaces()
         {
-            if (DisplayedLayout != null)
+            if (CurrentLayout != null)
             {
-                _definedDockSpaces = getDictionaryFromDockSpace(DisplayedLayout);
+                _definedDockSpaces = getDictionaryFromDockSpace(CurrentLayout);
             }
         }
 
@@ -163,6 +163,50 @@ namespace Fu.Framework
             }
 
             return dictionary;
+        }
+
+        /// <summary>
+        /// Try to dock the window to current DockingLayoutDefinition
+        /// </summary>
+        /// <param name="window">widow to dock</param>
+        /// <returns>whatever the window has been docked</returns>
+        public static bool AutoDockWindow(FuWindow window)
+        {
+            bool success = false;
+            tryAutoDockWindow(window, CurrentLayout, ref success);
+            if (success)
+            {
+                uint MainID = Fugui.MainContainer.Dockspace_id;
+                ImGuiDocking.DockBuilderFinish(MainID);
+            }
+            return success;
+        }
+
+        /// <summary>
+        /// recursively iterrate over each dockspaces in a dockingLayoutDefinition and dock the window in the right dockSpace
+        /// </summary>
+        /// <param name="window">window to dock</param>
+        /// <param name="dockSpaceDefinition">dockspaceDefinition to iterate on</param>
+        /// <param name="success">whatever the window has been docked</param>
+        private static void tryAutoDockWindow(FuWindow window, FuDockingLayoutDefinition dockSpaceDefinition, ref bool success)
+        {
+            foreach (KeyValuePair<ushort, string> winDef in dockSpaceDefinition.WindowsDefinition)
+            {
+                if (window.WindowName.ID == winDef.Key)
+                {
+                    ImGuiDocking.DockBuilderDockWindow(window.ID, dockSpaceDefinition.ID);
+                    success = true;
+                    return;
+                }
+            }
+            if (dockSpaceDefinition.Children == null)
+            {
+                return;
+            }
+            foreach (var child in dockSpaceDefinition.Children)
+            {
+                tryAutoDockWindow(window, child, ref success);
+            }
         }
 
         /// <summary>
@@ -436,11 +480,11 @@ namespace Fu.Framework
         /// <param name="dockspaceName">The name of the dock space to bind the window definition to</param>
         internal static void bindWindowToDockspace(ushort windowDefID, string dockspaceName)
         {
-            if (DisplayedLayout != null)
+            if (CurrentLayout != null)
             {
-                DisplayedLayout.RemoveWindowsDefinitionInChildren(windowDefID);
+                CurrentLayout.RemoveWindowsDefinitionInChildren(windowDefID);
 
-                FuDockingLayoutDefinition tempDockSpace = DisplayedLayout.SearchInChildren(dockspaceName);
+                FuDockingLayoutDefinition tempDockSpace = CurrentLayout.SearchInChildren(dockspaceName);
 
                 if (tempDockSpace != null)
                 {
@@ -463,7 +507,7 @@ namespace Fu.Framework
             string bindedDockspaceName = "None";
 
             // Search for the dock space that the window definition is binded to
-            FuDockingLayoutDefinition bindedDockspace = DisplayedLayout.SearchInChildren(windowDefID);
+            FuDockingLayoutDefinition bindedDockspace = CurrentLayout.SearchInChildren(windowDefID);
 
             // If the dock space is found
             if (bindedDockspace != null)
@@ -482,9 +526,9 @@ namespace Fu.Framework
         /// <param name="windowDefID">The unique identifier of the window definition to bind<</param>
         internal static void unbindWindowToDockspace(ushort windowDefID)
         {
-            if (DisplayedLayout != null)
+            if (CurrentLayout != null)
             {
-                DisplayedLayout.RemoveWindowsDefinitionInChildren(windowDefID);
+                CurrentLayout.RemoveWindowsDefinitionInChildren(windowDefID);
             }
         }
 
@@ -502,7 +546,7 @@ namespace Fu.Framework
                 Layouts.Add(newFileName, new FuDockingLayoutDefinition(newFileName, 0));
 
                 FuDockingLayoutDefinition newLayout = Layouts[newFileName];
-                DisplayedLayout = newLayout;
+                CurrentLayout = newLayout;
                 DisplayLayoutName = newFileName;
             }
         }
@@ -566,7 +610,7 @@ namespace Fu.Framework
         /// </summary>
         internal static void saveSelectedLayout()
         {
-            if (DisplayedLayout != null)
+            if (CurrentLayout != null)
             {
                 // get folder path
                 string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
@@ -646,7 +690,7 @@ namespace Fu.Framework
             }
 
             string fileName = Path.Combine(folderPath, DisplayLayoutName);
-            File.WriteAllText(fileName, FuDockingLayoutDefinition.Serialize(DisplayedLayout));
+            File.WriteAllText(fileName, FuDockingLayoutDefinition.Serialize(CurrentLayout));
         }
 
         internal static bool checkSelectedName()

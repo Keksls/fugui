@@ -702,6 +702,15 @@ namespace Fu.Core
 
         #region Public Utils
         /// <summary>
+        /// Try to dock the window in the right DockSpace in the current DockingLayout
+        /// </summary>
+        /// <returns>whatever the window has been docked</returns>
+        public bool AutoDock()
+        {
+            return FuDockingLayoutManager.AutoDockWindow(this);
+        }
+
+        /// <summary>
         /// Remove this window from it container and from Manager windows list
         /// </summary>
         public void Close(Action callback)

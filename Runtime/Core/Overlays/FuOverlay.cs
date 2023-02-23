@@ -384,6 +384,7 @@ namespace Fu.Core
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.ChildWindows))
             {
                 _dragButtonHovered = true;
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && _draggable)
                 {
                     _draging = true;

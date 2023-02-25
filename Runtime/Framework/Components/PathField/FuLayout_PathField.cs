@@ -7,30 +7,30 @@ namespace Fu.Framework
 {
     public partial class FuLayout
     {
-        public void InputFolder(string id, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
+        public void InputFolder(string text, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
         {
-            _pathField(id, true, callback, FuFrameStyle.Default, defaultPath, extentions);
+            _pathField(text, true, callback, FuFrameStyle.Default, defaultPath, extentions);
         }
 
-        public void InputFolder(string id, FuFrameStyle style, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
+        public void InputFolder(string text, FuFrameStyle style, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
         {
-            _pathField(id, true, callback, style, defaultPath, extentions);
+            _pathField(text, true, callback, style, defaultPath, extentions);
         }
 
-        public void InputFile(string id, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
+        public void InputFile(string text, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
         {
-            _pathField(id, false, callback, FuFrameStyle.Default, defaultPath, extentions);
+            _pathField(text, false, callback, FuFrameStyle.Default, defaultPath, extentions);
         }
 
-        public void InputFile(string id, FuFrameStyle style, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
+        public void InputFile(string text, FuFrameStyle style, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
         {
-            _pathField(id, false, callback, style, defaultPath, extentions);
+            _pathField(text, false, callback, style, defaultPath, extentions);
         }
 
-        protected virtual void _pathField(string id, bool onlyFolder, Action<string> callback, FuFrameStyle style, string defaultPath = "", params ExtensionFilter[] extentions)
+        protected virtual void _pathField(string text, bool onlyFolder, Action<string> callback, FuFrameStyle style, string defaultPath = "", params ExtensionFilter[] extentions)
         {
             // apply style and set unique ID
-            beginElement(ref id, style);
+            beginElement(ref text, style);
             // return if item must no be draw
             if (!_drawElement)
             {
@@ -38,11 +38,11 @@ namespace Fu.Framework
             }
 
             // set path if not exist in dic
-            if (!_pathFieldValues.ContainsKey(id))
+            if (!_pathFieldValues.ContainsKey(text))
             {
-                _pathFieldValues.Add(id, string.IsNullOrEmpty(defaultPath) ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) : defaultPath);
+                _pathFieldValues.Add(text, string.IsNullOrEmpty(defaultPath) ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) : defaultPath);
             }
-            string path = _pathFieldValues[id];
+            string path = _pathFieldValues[text];
 
             // display values
             float cursorPos = ImGui.GetCursorScreenPos().x;
@@ -52,10 +52,12 @@ namespace Fu.Framework
             // draw input text
             ImGui.SetNextItemWidth(width - buttonWidth);
             bool edited = false;
-            if (ImGui.InputText("##" + id, ref path, 2048, ImGuiInputTextFlags.EnterReturnsTrue))
+            if (ImGui.InputText("##" + text, ref path, 2048, ImGuiInputTextFlags.EnterReturnsTrue))
             {
                 validatePath();
             }
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             // draw text input frame and tooltip
             _elementHoverFramed = true;
             drawHoverFrame();
@@ -64,7 +66,7 @@ namespace Fu.Framework
             // draw button
             ImGui.SameLine();
             ImGui.SetCursorScreenPos(new Vector2(cursorPos + width - buttonWidth, ImGui.GetCursorScreenPos().y));
-            if (ImGui.Button("...##" + id, new Vector2(buttonWidth, 0)))
+            if (ImGui.Button("...##" + text, new Vector2(buttonWidth, 0)))
             {
                 string[] paths = null;
                 if (onlyFolder)
@@ -86,7 +88,7 @@ namespace Fu.Framework
 
             if (edited)
             {
-                callback?.Invoke(_pathFieldValues[id]);
+                callback?.Invoke(_pathFieldValues[text]);
             }
 
             void validatePath()
@@ -94,7 +96,7 @@ namespace Fu.Framework
                 // it must be a directory and it exists
                 if (onlyFolder && Directory.Exists(path))
                 {
-                    _pathFieldValues[id] = path;
+                    _pathFieldValues[text] = path;
                     edited = true;
                 }
                 // it must be a file and it exists
@@ -113,7 +115,7 @@ namespace Fu.Framework
                                 // check whatever extention is valid
                                 if (extStr == "*" || extStr == fileExt)
                                 {
-                                    _pathFieldValues[id] = path;
+                                    _pathFieldValues[text] = path;
                                     edited = true;
                                     return;
                                 }
@@ -123,7 +125,7 @@ namespace Fu.Framework
                     // we do not need to check extentions
                     else
                     {
-                        _pathFieldValues[id] = path;
+                        _pathFieldValues[text] = path;
                         edited = true;
                     }
                 }

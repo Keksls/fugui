@@ -1,7 +1,7 @@
 ﻿using Fu.Framework;
 using ImGuiNET;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Fu
@@ -27,6 +27,51 @@ namespace Fu
         {
             // Add a new level to the context menu stack
             _contextMenuItemsStack[_currentContextMenuStackIndex] = items;
+            // Increment the current context menu stack index
+            _currentContextMenuStackIndex++;
+            // Check if the current context menu stack index is larger than the size of the stack
+            if (_currentContextMenuStackIndex >= _contextMenuItemsStack.Length)
+            {
+                // If so, set the current context menu stack index to the maximum size of the stack
+                _currentContextMenuStackIndex = _contextMenuItemsStack.Length - 1;
+            }
+        }
+
+        /// <summary>
+        /// Push an item to the context menu items stack
+        /// If the context menu will be open betwin this call and the next 'Pop' call, the item will be added to the context menu
+        /// Must call a Pop after pushing items before the end of the frame
+        /// </summary>
+        /// <param name="item">Item to push</param>
+        public static void PushContextMenuItem(FuContextMenuItem item)
+        {
+            // Add a new level to the context menu stack
+            _contextMenuItemsStack[_currentContextMenuStackIndex] = new List<FuContextMenuItem>() { item };
+            // Increment the current context menu stack index
+            _currentContextMenuStackIndex++;
+            // Check if the current context menu stack index is larger than the size of the stack
+            if (_currentContextMenuStackIndex >= _contextMenuItemsStack.Length)
+            {
+                // If so, set the current context menu stack index to the maximum size of the stack
+                _currentContextMenuStackIndex = _contextMenuItemsStack.Length - 1;
+            }
+        }
+
+        /// <summary>
+        /// Push an item to the context menu items stack
+        /// If the context menu will be open betwin this call and the next 'Pop' call, the item will be added to the context menu
+        /// Must call a Pop after pushing items before the end of the frame
+        /// </summary>
+        /// <param name="itemLabel">The label for the item</param>
+        /// <param name="enabled">Whether the item is enabled</param>
+        /// <param name="itemCallback">The action to perform when the item is clicked</param>
+        public static void PushContextMenuItem(string itemLabel, Action itemCallback, bool enabled = true)
+        {
+            // Add a new level to the context menu stack
+            _contextMenuItemsStack[_currentContextMenuStackIndex] = new List<FuContextMenuItem>()
+            {
+                new FuContextMenuItem(itemLabel, null, enabled, false, itemCallback, null)
+            };
             // Increment the current context menu stack index
             _currentContextMenuStackIndex++;
             // Check if the current context menu stack index is larger than the size of the stack
@@ -114,7 +159,7 @@ namespace Fu
                 // Merge the items from the current context menu stack and set the result as the current context menu items
                 _currentContextMenuItems = mergeContextMenuItemsStack(_contextMenuItemsStack);
                 // cancel openning if there is no items at current level
-                if(_currentContextMenuItems.Count == 0)
+                if (_currentContextMenuItems.Count == 0)
                 {
                     _currentOpenContextID = -1;
                     _openThisFrameLevel = -1;
@@ -144,7 +189,7 @@ namespace Fu
         public static void RenderContextMenu()
         {
             // ignore rendering id the context menu if not open on the current FuContext
-            if(CurrentContext.ID != _currentOpenContextID)
+            if (CurrentContext.ID != _currentOpenContextID)
             {
                 return;
             }

@@ -104,6 +104,7 @@ namespace Fu.Core
         internal float _lastRenderTime = 0;
         private bool _open = true;
         private static int _windowIndex = 0;
+        private bool _ignoreTransformThisFrame = false;
 
         // static fields
         public static FuWindow CurrentDrawingWindow { get; private set; }
@@ -116,7 +117,7 @@ namespace Fu.Core
             get { return _size; }
             set
             {
-                _size = new Vector2Int((int)(value.x * Container?.Scale ?? 1f), (int)(value.y * Container?.Scale ?? 1f));
+                _size = new Vector2Int((int)(value.x * (Container?.Scale ?? 1f)), (int)(value.y * (Container?.Scale ?? 1f)));
                 _localRect = new Rect(_localPosition, _size);
                 _forceLocationNextFrame = true;
             }
@@ -175,7 +176,7 @@ namespace Fu.Core
             {
                 return;
             }
-
+            _ignoreTransformThisFrame = true;
             IsBusy = true;
             IsInitialized = false;
             UI = windowDefinition.UI;
@@ -266,28 +267,32 @@ namespace Fu.Core
                 return;
             }
 
-            // handle ImGui window local move
-            if (_lastFramePos != newFramePos)
+            if (!_ignoreTransformThisFrame)
             {
-                LocalPosition = newFramePos;
-                HasMovedThisFrame = true;
-                Fire_OnDrag();
-                if (!IsDragging && Mouse.IsPressed(0))
+                // handle ImGui window local move
+                if (_lastFramePos != newFramePos)
                 {
-                    IsDragging = true;
+                    LocalPosition = newFramePos;
+                    HasMovedThisFrame = true;
+                    Fire_OnDrag();
+                    if (!IsDragging && Mouse.IsPressed(0))
+                    {
+                        IsDragging = true;
+                    }
                 }
-            }
 
-            // handle ImGui window resize
-            if (_lastFrameSize != newFrameSize)
-            {
-                if (!_forceLocationNextFrame || IsDocked)
+                // handle ImGui window resize
+                if (_lastFrameSize != newFrameSize)
                 {
-                    _size = newFrameSize;
-                    _localRect = new Rect(_localPosition, _size);
+                    if (!_forceLocationNextFrame || IsDocked)
+                    {
+                        _size = newFrameSize;
+                        _localRect = new Rect(_localPosition, _size);
+                    }
+                    Fire_OnResize();
                 }
-                Fire_OnResize();
             }
+            _ignoreTransformThisFrame = false;
 
             // drag state
             if (IsDragging && !Mouse.IsPressed(0))

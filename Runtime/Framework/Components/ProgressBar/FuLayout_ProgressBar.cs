@@ -74,6 +74,9 @@ namespace Fu.Framework
             {
                 idleProgressBar(size);
             }
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, false, false);
+            displayToolTip();
             endElement();
         }
 

@@ -151,6 +151,8 @@ namespace Fu.Framework
                 // End the ListBox
                 ImGui.EndListBox();
             }
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             // Display the tooltip
             displayToolTip();
             // End the element with the current ListBox size

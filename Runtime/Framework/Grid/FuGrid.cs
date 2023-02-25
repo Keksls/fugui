@@ -141,11 +141,10 @@ namespace Fu.Framework
         /// <param name="rowPadding">rows padding</param>
         private void setGrid(bool linesBg, float cellPadding, float rowPadding, float outterPadding)
         {
-            if (IsInsidePopUp)
-            {
-                Debug.LogError("You are trying to create a grid inside a PopUp, wich is not a good idee. Please check your code and remove it.");
-            }
-
+            //if (IsInsidePopUp)
+            //{
+            //    Debug.LogError("You are trying to create a grid inside a PopUp, wich is not a good idee. Please check your code and remove it.");
+            //}
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
             _gridCreated = _currentGridDef.SetupTable(_ID, outterPadding, linesBg, ref _isResponsivelyResized);
             if (!_gridCreated)

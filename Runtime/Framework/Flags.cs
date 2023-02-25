@@ -2,6 +2,13 @@
 
 namespace Fu.Framework
 {
+    public enum FuMouseButton
+    {
+        None,
+        Left,
+        Right
+    }
+
     public enum FuKnobFlags
     {
         Default = 0,

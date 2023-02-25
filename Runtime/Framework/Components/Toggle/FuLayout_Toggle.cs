@@ -5,20 +5,44 @@ namespace Fu.Framework
 {
     public partial class FuLayout
     {
-
-        public bool Toggle(string id, ref bool value, FuToggleFlags flags = FuToggleFlags.Default)
+        /// <summary>
+        /// Draw a Toggle with the specified parameters
+        /// </summary>
+        /// <param name="text">Label of the toggle</param>
+        /// <param name="value">reference of the toggle value</param>
+        /// <param name="flags">behaviour flags of the toggle</param>
+        /// <returns>true if value changed</returns>
+        public bool Toggle(string text, ref bool value, FuToggleFlags flags = FuToggleFlags.Default)
         {
-            return _customToggle(id, ref value, null, null, flags);
+            return _customToggle(text, ref value, null, null, flags);
         }
 
-        public bool Toggle(string id, ref bool value, string textLeft, string textRight, FuToggleFlags flags = FuToggleFlags.Default)
+        /// <summary>
+        /// Draw a Toggle with the specified parameters
+        /// </summary>
+        /// <param name="text">Label of the toggle</param>
+        /// <param name="value">reference of the toggle value</param>
+        /// <param name="textLeft">text when toggle is on left (deactivated)</param>
+        /// <param name="textRight">text when toggle is on right (activated)</param>
+        /// <param name="flags">behaviour flags of the toggle</param>
+        /// <returns>true if value changed</returns>
+        public bool Toggle(string text, ref bool value, string textLeft, string textRight, FuToggleFlags flags = FuToggleFlags.Default)
         {
-            return _customToggle(id, ref value, textLeft, textRight, flags);
+            return _customToggle(text, ref value, textLeft, textRight, flags);
         }
 
-        protected virtual bool _customToggle(string id, ref bool value, string textLeft, string textRight, FuToggleFlags flags)
+        /// <summary>
+        /// Draw a Toggle with the specified parameters
+        /// </summary>
+        /// <param name="text">Label of the toggle</param>
+        /// <param name="value">reference of the toggle value</param>
+        /// <param name="textLeft">text when toggle is on left (deactivated)</param>
+        /// <param name="textRight">text when toggle is on right (activated)</param>
+        /// <param name="flags">behaviour flags of the toggle</param>
+        /// <returns>true if value changed</returns>
+        protected virtual bool _customToggle(string text, ref bool value, string textLeft, string textRight, FuToggleFlags flags)
         {
-            beginElement(ref id, null, true);
+            beginElement(ref text, null, true);
             // return if item must no be draw
             if (!_drawElement)
             {
@@ -26,11 +50,11 @@ namespace Fu.Framework
             }
 
             // and and get toggle data struct
-            if (!_uiElementAnimationDatas.ContainsKey(id))
+            if (!_uiElementAnimationDatas.ContainsKey(text))
             {
-                _uiElementAnimationDatas.Add(id, new FuElementAnimationData(!value));
+                _uiElementAnimationDatas.Add(text, new FuElementAnimationData(!value));
             }
-            FuElementAnimationData data = _uiElementAnimationDatas[id];
+            FuElementAnimationData data = _uiElementAnimationDatas[text];
 
             // process Text Size
             string currentText = value ? textRight : textLeft;
@@ -67,22 +91,30 @@ namespace Fu.Framework
                 ImGui.SameLine();
             }
             Vector2 pos = ImGui.GetCursorScreenPos();
+            Vector2 localPos = ImGui.GetCursorPos();
             Vector2 center = pos + new Vector2(size.x / 2, size.y / 2);
             float radius = size.y / 2f - 3f * Fugui.CurrentContext.Scale;
-            Vector2 startCursorPos = ImGui.GetCursorPos();
 
             // handle knob position animation
             Vector2 knobLeftPos = new Vector2(pos.x + 3f * Fugui.CurrentContext.Scale, center.y - radius);
             Vector2 knobRightPos = new Vector2(pos.x + size.x - (radius * 2f) - 3f * Fugui.CurrentContext.Scale, center.y - radius);
             Vector2 knobPos = Vector2.Lerp(knobLeftPos, knobRightPos, data.CurrentValue);
 
-            // input states
-            bool hovered = ImGui.IsMouseHoveringRect(pos, pos + size);
-            bool clicked = hovered && ImGui.IsMouseReleased(0);
-            bool active = hovered && ImGui.IsMouseDown(0);
+            // draw dummy to match ImGui layout
+            ImGui.SetCursorScreenPos(pos);
+            ImGui.Dummy(size);
+            // set states for this element
+            setBaseElementState(text, pos, size, true, false, true);
+
+            // handle click
+            if (LastItemUpdate)
+            {
+                value = !value;
+                valueChanged = true;
+            }
 
             // set mouse cursor
-            if(hovered && !_nextIsDisabled)
+            if (LastItemHovered && !_nextIsDisabled)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
@@ -96,12 +128,12 @@ namespace Fu.Framework
                 BGColor *= 0.5f;
                 KnobColor *= 0.5f;
             }
-            else if (active)
+            else if (LastItemActive)
             {
                 KnobColor = FuThemeManager.GetColor(FuColors.KnobActive);
                 BGColor = value ? FuThemeManager.GetColor(FuColors.SelectedActive) : FuThemeManager.GetColor(FuColors.FrameBgActive);
             }
-            else if (hovered)
+            else if (LastItemHovered)
             {
                 KnobColor = FuThemeManager.GetColor(FuColors.KnobHovered);
                 BGColor = value ? FuThemeManager.GetColor(FuColors.SelectedHovered) : FuThemeManager.GetColor(FuColors.FrameBgHovered);
@@ -120,31 +152,20 @@ namespace Fu.Framework
             {
                 if (!value)
                 {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + radius * 2f + 12f * Fugui.CurrentContext.Scale);
+                    ImGui.SetCursorPosX(localPos.x + radius * 2f + 12f * Fugui.CurrentContext.Scale);
                 }
                 else
                 {
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 8f * Fugui.CurrentContext.Scale);
+                    ImGui.SetCursorPosX(localPos.x + 8f * Fugui.CurrentContext.Scale);
                 }
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2f * Fugui.CurrentContext.Scale);
+                ImGui.SetCursorPosY(localPos.y + 2f * Fugui.CurrentContext.Scale);
                 Fugui.Push(ImGuiCol.Text, TextColor);
                 ImGui.Text(currentText);
                 Fugui.PopColor();
             }
 
-            // draw dummy to match ImGui layout
-            ImGui.SetCursorPos(startCursorPos);
-            ImGui.Dummy(size);
-
-            // handle hover and click
-            if (clicked && !_nextIsDisabled)
-            {
-                value = !value;
-                valueChanged = true;
-            }
-
             data.Update(value, _animationEnabled);
-            displayToolTip(hovered);
+            displayToolTip(LastItemHovered);
             endElement(null);
             return valueChanged;
         }

@@ -32,6 +32,26 @@ namespace Fu.Framework
         /// A flag indicating whether the layout is inside a pop-up.
         /// </summary>
         public static bool IsInsidePopUp { get; private set; } = false;
+        /// <summary>
+        /// A flag indicating last drawed item is hovered by current pointer.
+        /// </summary>
+        public static bool LastItemHovered { get; private set; } = false;
+        /// <summary>
+        /// A flag indicating last drawed item is currently used by current pointer.
+        /// </summary>
+        public static bool LastItemActive { get; private set; } = false;
+        /// <summary>
+        /// A flag indicating last drawed item was active laft frame and is no more this frame.
+        /// </summary>
+        public static bool LastItemJustDeactivated { get; private set; } = false;
+        /// <summary>
+        /// A flag indicating last drawed item has just done an update operation this frame.
+        /// </summary>
+        public static bool LastItemUpdate { get; private set; } = false;
+        /// <summary>
+        /// A flag indicating last drawed item has just done an update operation this frame.
+        /// </summary>
+        public static FuMouseButton LastItemClickedButton { get; private set; } = FuMouseButton.None;
 
         // A flag indicating whether the element is hover framed.
         private bool _elementHoverFramed = false;
@@ -114,6 +134,12 @@ namespace Fu.Framework
         /// <param name="style">The style to use for this element.</param>
         protected virtual void beginElement(ref string elementID, IFuElementStyle style = null, bool noEditID = false, bool canBeHidden = true)
         {
+            LastItemActive = false;
+            LastItemHovered = false;
+            LastItemJustDeactivated = false;
+            LastItemUpdate = false;
+            LastItemClickedButton = FuMouseButton.None;
+
             // whatever we must draw the next item
             _drawElement = true;
             if (!IsInsidePopUp && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
@@ -148,7 +174,10 @@ namespace Fu.Framework
             {
                 style?.Pop();
                 drawHoverFrame();
-                Fugui.TryOpenContextMenuOnRectClick(_currentItemStartPos, ImGui.GetItemRectMax());
+                if(LastItemClickedButton == FuMouseButton.Right)
+                {
+                    Fugui.TryOpenContextMenu();
+                }
             }
             if (!_longDisabled)
             {
@@ -172,12 +201,21 @@ namespace Fu.Framework
                 {
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
                 }
-                else if (ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0)
+                else if (LastItemHovered)
                 {
                     // ImGui fail on inputText since version 1.88, check on new version
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
                 }
             }
+        }
+
+        /// <summary>
+        /// Draws a frame border at the given rect.
+        /// </summary>
+        /// <param name="rect">rect of the frame (pos + size)</param>
+        private void drawBorderFrame(Rect rect, bool rounded = true)
+        {
+            ImGui.GetWindowDrawList().AddRect(rect.min, rect.max, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameSelectedFeedback)), rounded ? ImGui.GetStyle().FrameRounding : 0f);
         }
 
         /// <summary>
@@ -333,7 +371,7 @@ namespace Fu.Framework
             if (_currentToolTips != null && _currentToolTipsIndex < _currentToolTips.Length)
             {
                 // If the element is hovered over or force is set to true
-                if (force || ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0)
+                if (force || LastItemHovered || ImGui.IsItemHovered())
                 {
                     FuTextStyle style = FuTextStyle.Default;
                     // push tooltip styles
@@ -422,6 +460,99 @@ namespace Fu.Framework
             return true;
         }
         #endregion
-        #endregion
+
+        #region element state
+        private static string _activeItem = null;
+        /// <summary>
+        /// Set the states of an items for this frame (until another item is draw)
+        ///     LastItemHovered
+        ///     LastItemClickedButton
+        ///     LastItemJustDeactivated
+        ///     LastItemActive
+        ///     LastItemUpdate
+        /// </summary>
+        /// <param name="uniqueID"></param>
+        /// <param name="pos"></param>
+        /// <param name="size"></param>
+        /// <param name="clickable"></param>
+        /// <param name="updated"></param>
+        /// <param name="updateOnClick"></param>
+        protected void setBaseElementState(string uniqueID, Vector2 pos, Vector2 size, bool clickable, bool updated, bool updateOnClick = false)
+        {
+            // do nothing if the item is disabled
+            if (_nextIsDisabled)
+            {
+                // the item is disabled but it was the last active
+                if (_activeItem == uniqueID)
+                {
+                    _activeItem = null;
+                }
+                return;
+            }
+
+            // get hover state
+            LastItemHovered = isItemHovered(pos, size);
+
+            // get click state
+            if (clickable && LastItemHovered)
+            {
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                {
+                    LastItemClickedButton = FuMouseButton.Left;
+                    if (updateOnClick)
+                    {
+                        updated = true;
+                    }
+                    _activeItem = uniqueID;
+                }
+                else if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                {
+                    LastItemClickedButton = FuMouseButton.Right;
+                }
+            }
+
+            // get deactivated state
+            LastItemJustDeactivated = _activeItem == uniqueID && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+            if (LastItemJustDeactivated)
+            {
+                _activeItem = null;
+            }
+            // get active state
+            LastItemActive = _activeItem == uniqueID;
+            // get update state
+            LastItemUpdate = updated;
+        }
+
+        /// <summary>
+        /// Clean check whatever an item is hovered
+        /// </summary>
+        /// <param name="pos">screen position of the item to check</param>
+        /// <param name="size">size of the item to check</param>
+        /// <returns>true ifhovered</returns>
+        protected bool isItemHovered(Vector2 pos, Vector2 size)
+        {
+            bool hovered;
+            Vector2 mousePos = ImGui.GetMousePos();
+            // the element is drawed inside a window
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                // get hover state on window
+                hovered = FuWindow.CurrentDrawingWindow.IsHovered && mousePos.x > pos.x && mousePos.x < pos.x + size.x && mousePos.y > pos.y && mousePos.y < pos.y + size.y;
+            }
+            else
+            {
+                // get hover state
+                hovered = mousePos.x > pos.x && mousePos.x < pos.x + size.x && mousePos.y > pos.y && mousePos.y < pos.y + size.y;
+            }
+
+            // we are NOT inside a popup but there is a popup, assuming we can't hover anything
+            if (!IsInsidePopUp && !string.IsNullOrEmpty(CurrentPopUpID))
+            {
+                hovered = false;
+            }
+            return hovered;
+        }
     }
+    #endregion
+    #endregion
 }

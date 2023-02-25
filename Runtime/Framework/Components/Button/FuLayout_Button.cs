@@ -184,9 +184,8 @@ namespace Fu.Framework
                 size.y = Mathf.Max(4.0f, region_max.y - ImGuiNative.igGetCursorPosY() + size.y);
 
             // draw a dummy button to update cursor and get states
-            bool clicked = ImGui.InvisibleButton(text, size) && !_nextIsDisabled;
-            bool hovered = ImGuiNative.igIsItemHovered(ImGuiHoveredFlags.None) != 0;
-            bool active = ImGuiNative.igIsItemActive() != 0;
+            bool clicked = ImGui.InvisibleButton(text, size, ImGuiButtonFlags.None) && !_nextIsDisabled;
+            setBaseElementState(text, pos, size, true, clicked);
 
             // get current draw list
             ImDrawListPtr drawList = ImGuiNative.igGetWindowDrawList();
@@ -198,11 +197,11 @@ namespace Fu.Framework
             {
                 bg1f = style.DisabledButton;
             }
-            else if (active)
+            else if (LastItemActive)
             {
                 bg1f = style.ButtonActive;
             }
-            else if (hovered)
+            else if (LastItemHovered)
             {
                 bg1f = style.ButtonHovered;
             }
@@ -242,19 +241,19 @@ namespace Fu.Framework
             }
 
             // set mouse cursor
-            if (hovered && !_nextIsDisabled)
+            if (LastItemHovered && !_nextIsDisabled)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
 
             // draw text
-            TextClipped(size, text, pos + textOffset, padding, label_size, align);
+            _customTextClipped(size, text, pos + textOffset, padding, label_size, align);
 
             // display the tooltip if necessary
             displayToolTip();
 
             // return whatever the button is clicked
-            return clicked && !_nextIsDisabled;
+            return LastItemUpdate;
         }
     }
 }

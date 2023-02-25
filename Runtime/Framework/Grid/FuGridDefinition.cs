@@ -1,6 +1,7 @@
 using ImGuiNET;
 using System;
 using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace Fu.Framework
 {
@@ -33,7 +34,7 @@ namespace Fu.Framework
         /// </summary>
         public static FuGridDefinition DefaultRatio { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultRatioGrid; } }
 
-        static readonly FuGridDefinition _defaultFlexible = new FuGridDefinition(64);
+        static readonly FuGridDefinition _defaultFlexible = new FuGridDefinition(64f);
         /// <summary>
         /// Create a default Flexible grid. The number of cols will be determinated by the fixed (pixels) columns width and available H width
         /// </summary>
@@ -196,16 +197,16 @@ namespace Fu.Framework
                 // this mode derterminate the number of rows, according to a fixed column width
                 // can not be forced to responsive
                 case FuGridType.FlexibleCols:
-                    nbCols = (int)(availWidth / (ColumnWidth * Fugui.CurrentContext.Scale));
+                    // get nb of columns
+                    float cellPadding = FuThemeManager.CurrentTheme.CellPadding.x;
+                    float scaledColWidth = ColumnWidth * Fugui.CurrentContext.Scale;
+                    nbCols = Mathf.FloorToInt(availWidth / (scaledColWidth + cellPadding * 2f));
                     if (nbCols < 1)
                     {
                         nbCols = 1;
                     }
-                    colWidth = new float[nbCols];
-                    for (int i = 0; i < nbCols; i++)
-                    {
-                        colWidth[i] = (ColumnWidth * Fugui.CurrentContext.Scale);
-                    }
+                    // set nul width array so we will let imgui decide of the size
+                    colWidth = null;
                     break;
 
                 default:

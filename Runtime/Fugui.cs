@@ -361,6 +361,10 @@ namespace Fu
         /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
         public static void CreateWindowsAsync(List<FuWindowName> windowsToGet, Action<Dictionary<FuWindowName, FuWindow>> callback, bool autoAddToMainContainer = true)
         {
+            // Initialize counters for the number of windows to add and the number of windows added
+            int nbWIndowToAdd = 0;
+            int nbWIndowAdded = 0;
+
             // Initialize a list of window definitions
             List<FuWindowDefinition> winDefs = new List<FuWindowDefinition>();
             // Iterate over the window names
@@ -371,34 +375,9 @@ namespace Fu
                 {
                     // Add the window definition to the list and increment the window to add counter
                     winDefs.Add(UIWindowsDefinitions[windowID]);
+                    nbWIndowToAdd++;
                 }
             }
-
-            CreateWindowsAsync(winDefs, callback, autoAddToMainContainer);
-        }
-
-        /// <summary>
-        /// Creates UI window asynchronously.
-        /// </summary>
-        /// <param name="winDef">the Window defintion to be created.</param>
-        /// <param name="callback">A callback to be invoked after all windows are created, passing a dictionary of the created windows.</param>
-        /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
-        private static void CreateWindowAsync(FuWindowDefinition winDef, Action<FuWindow> callback, bool autoAddToMainContainer)
-        {
-            CreateWindowsAsync(new List<FuWindowDefinition>() { winDef }, (windows) => { callback?.Invoke(windows.Values.FirstOrDefault()); }, autoAddToMainContainer);
-        }
-
-        /// <summary>
-        /// Creates UI windows asynchronously.
-        /// </summary>
-        /// <param name="winDefs">A list of Window defintion to be created.</param>
-        /// <param name="callback">A callback to be invoked after all windows are created, passing a dictionary of the created windows.</param>
-        /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
-        private static void CreateWindowsAsync(List<FuWindowDefinition> winDefs, Action<Dictionary<FuWindowName, FuWindow>> callback, bool autoAddToMainContainer)
-        {
-            // Initialize counters for the number of windows to add and the number of windows added
-            int nbWIndowToAdd = winDefs.Count;
-            int nbWIndowAdded = 0;
 
             // Initialize a dictionary of UI windows
             Dictionary<FuWindowName, FuWindow> windows = new Dictionary<FuWindowName, FuWindow>();

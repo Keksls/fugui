@@ -1,4 +1,7 @@
-﻿using ImGuiNET;
+﻿using Fu.Core;
+using ImGuiNET;
+using System;
+using System.Diagnostics;
 using System.Text;
 using UnityEngine;
 
@@ -6,6 +9,7 @@ namespace Fu.Framework
 {
     public partial class FuLayout
     {
+        #region Text
         /// <summary>
         /// Displays a text string.
         /// </summary>
@@ -32,13 +36,17 @@ namespace Fu.Framework
             // verticaly align text to frame padding
             ImGui.AlignTextToFramePadding();
             ImGui.Text(text); //display the text
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             if (_currentToolTipsOnLabels) //if the current tooltips should be displayed on labels
             {
                 displayToolTip(); //display the current tooltips
             }
             endElement(style); //remove the style from the element
         }
+        #endregion
 
+        #region Wrapped
         /// <summary>
         /// Displays a text string.
         /// </summary>
@@ -65,13 +73,17 @@ namespace Fu.Framework
             // verticaly align text to frame padding
             ImGui.AlignTextToFramePadding();
             ImGui.TextWrapped(text); //display the text
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             if (_currentToolTipsOnLabels) //if the current tooltips should be displayed on labels
             {
                 displayToolTip(); //display the current tooltips
             }
             endElement(style); //remove the style from the element
         }
+        #endregion
 
+        #region Smart
         /// <summary>
         /// A lot more perf cost than just display a text, use it only if truely needed.
         /// Display a RichText that take some tags. The text automaticaly line break is cursor pass throw container
@@ -106,6 +118,8 @@ namespace Fu.Framework
             }
 
             _customText(text);
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             if (_currentToolTipsOnLabels)
             {
                 displayToolTip();
@@ -278,16 +292,30 @@ namespace Fu.Framework
                 nbFontPush--;
             }
         }
+        #endregion
+
+        #region Clipped
+        /// <summary>
+        /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
+        /// The text will not displace cursor, so please do it yourself if needed
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="maxWidth">maximum size of the text</param>
+        public unsafe void TextClipped(string text, float maxWidth)
+        {
+            TextClipped(new Vector2(maxWidth, 0f), text, ImGui.GetCursorScreenPos(), Vector2.zero, ImGui.CalcTextSize(text, true), new Vector2(0f, 0.5f), FuTextStyle.Default);
+        }
 
         /// <summary>
         /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
         /// The text will not displace cursor, so please do it yourself if needed
         /// </summary>
-        /// <param name="maxSize">maximum size of the text</param>
-        /// <param name="label">text to draw</param>
-        public static unsafe void TextClipped(Vector2 maxSize, string label)
+        /// <param name="text">text to draw</param>
+        /// <param name="maxWidth">maximum size of the text</param>
+        /// <param name="alignment">the Horizontal alignment of the text (between 0f and 1f)</param>
+        public unsafe void TextClipped(string text, float maxWidth, float alignment)
         {
-            TextClipped(maxSize, label, ImGui.GetCursorScreenPos(), Vector2.zero, ImGui.CalcTextSize(label, true), new Vector2(0f, 0.5f));
+            TextClipped(new Vector2(maxWidth, 0f), text, ImGui.GetCursorScreenPos(), Vector2.zero, ImGui.CalcTextSize(text, true), new Vector2(alignment, 0.5f), FuTextStyle.Default);
         }
 
         /// <summary>
@@ -295,11 +323,11 @@ namespace Fu.Framework
         /// The text will not displace cursor, so please do it yourself if needed
         /// </summary>
         /// <param name="maxSize">maximum size of the text</param>
-        /// <param name="label">text to draw</param>
+        /// <param name="text">text to draw</param>
         /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
-        public static unsafe void TextClipped(Vector2 maxSize, string label, Vector2 padding)
+        public unsafe void TextClipped(Vector2 maxSize, string text, Vector2 padding)
         {
-            TextClipped(maxSize, label, ImGui.GetCursorScreenPos(), padding, ImGui.CalcTextSize(label, true), new Vector2(0f, 0.5f));
+            TextClipped(maxSize, text, ImGui.GetCursorScreenPos(), padding, ImGui.CalcTextSize(text, true), new Vector2(0f, 0.5f), FuTextStyle.Default);
         }
 
         /// <summary>
@@ -307,12 +335,12 @@ namespace Fu.Framework
         /// The text will not displace cursor, so please do it yourself if needed
         /// </summary>
         /// <param name="maxSize">maximum size of the text</param>
-        /// <param name="label">text to draw</param>
+        /// <param name="text">text to draw</param>
         /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
         /// <param name="text_size">size of the text</param>
-        public static unsafe void TextClipped(Vector2 maxSize, string label, Vector2 padding, Vector2 text_size)
+        public unsafe void TextClipped(Vector2 maxSize, string text, Vector2 padding, Vector2 text_size)
         {
-            TextClipped(maxSize, label, ImGui.GetCursorScreenPos(), padding, text_size, new Vector2(0f, 0.5f));
+            TextClipped(maxSize, text, ImGui.GetCursorScreenPos(), padding, text_size, new Vector2(0f, 0.5f), FuTextStyle.Default);
         }
 
         /// <summary>
@@ -320,13 +348,52 @@ namespace Fu.Framework
         /// The text will not displace cursor, so please do it yourself if needed
         /// </summary>
         /// <param name="maxSize">maximum size of the text</param>
-        /// <param name="label">text to draw</param>
+        /// <param name="text">text to draw</param>
         /// <param name="pos">position of the text (screen space)</param>
         /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
         /// <param name="text_size">size of the text</param>
-        public static unsafe void TextClipped(Vector2 maxSize, string label, Vector2 padding, Vector2 text_size, Vector2 pos)
+        public unsafe void TextClipped(Vector2 maxSize, string text, Vector2 padding, Vector2 text_size, Vector2 pos)
         {
-            TextClipped(maxSize, label, pos, padding, text_size, new Vector2(0f, 0.5f));
+            TextClipped(maxSize, text, pos, padding, text_size, new Vector2(0f, 0.5f), FuTextStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
+        /// The text will not displace cursor, so please do it yourself if needed
+        /// </summary>
+        /// <param name="maxSize">maximum size of the text</param>
+        /// <param name="text">text to draw</param>
+        /// <param name="pos">position of the text (screen space)</param>
+        /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
+        /// <param name="text_size">size of the text</param>
+        /// <param name="alignment">text alignement (between 0f and 1f)</param>
+        internal unsafe void TextClipped(Vector2 maxSize, string text, Vector2 pos, Vector2 padding, Vector2 text_size, Vector2 alignment, FuTextStyle style)
+        {
+            beginElement(ref text, style, true);
+            if (!_drawElement)
+            {
+                return;
+            }
+            Vector2 size = _customTextClipped(maxSize, text, pos, padding, text_size, alignment);
+            Rect rect = new Rect(ImGui.GetCursorScreenPos(), size);
+            ImGui.Dummy(size);
+            bool hovered = false;
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max) && FuWindow.CurrentDrawingWindow.IsHovered &&
+                    !FuWindow.CurrentDrawingWindow.Mouse.IsHoverOverlay && !FuWindow.CurrentDrawingWindow.Mouse.IsHoverPopup;
+            }
+            else
+            {
+                hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max);
+            }
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            if (_currentToolTipsOnLabels)
+            {
+                displayToolTip(hovered);
+            }
+            endElement(style);
         }
 
         /// <summary>
@@ -339,8 +406,14 @@ namespace Fu.Framework
         /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
         /// <param name="text_size">size of the text</param>
         /// <param name="alignment">text alignement (between 0f and 1f)</param>
-        public static unsafe void TextClipped(Vector2 maxSize, string label, Vector2 pos, Vector2 padding, Vector2 text_size, Vector2 alignment)
+        internal unsafe Vector2 _customTextClipped(Vector2 maxSize, string label, Vector2 pos, Vector2 padding, Vector2 text_size, Vector2 alignment)
         {
+            // get maxSize Y 
+            if (maxSize.y <= 0f)
+            {
+                maxSize.y = text_size.y;
+            }
+
             // we need to crop the text, so let's reduce the size so we draw dots at the end
             if (text_size.x > maxSize.x - padding.x * 2f)
             {
@@ -351,19 +424,21 @@ namespace Fu.Framework
                 // reduce max size
                 maxSize -= dotsSize;
                 // draw the clipped text
-                TextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize));
+                _customTextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize));
                 // draw dots
-                maxSize.y = 4f;
+                Vector2 size = maxSize + dotsSize;
+                maxSize.y = 0;
                 ImGui.GetWindowDrawList().AddText(pos + maxSize, ImGui.GetColorU32(ImGuiCol.Text), "...");
+                return size;
             }
             else
             {
                 // draw the clipped text
-                TextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize));
+                return _customTextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize));
             }
         }
 
-        private static unsafe void TextClipped(Vector2 pos_min, Vector2 pos_max, string label, Vector2 text_size_if_known, Vector2 align, ImRect clip_rect)
+        private unsafe Vector2 _customTextClipped(Vector2 pos_min, Vector2 pos_max, string label, Vector2 text_size_if_known, Vector2 align, ImRect clip_rect)
         {
             // get str ptr
             int num = 0;
@@ -383,6 +458,250 @@ namespace Fu.Framework
             {
                 Util.Free(ptr);
             }
+            return pos_max - pos_min;
         }
+        #endregion
+
+        #region Frammed
+        /// <summary>
+        /// Draw a text inside a frame background
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        public void FramedText(string text)
+        {
+            _customFramedText(text, 0f, new Vector2(-1f, 0f), FuFrameStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw a text inside a frame background
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="size">size of the frame</param>
+        public void FramedText(string text, FuElementSize size)
+        {
+            _customFramedText(text, 0f, size, FuFrameStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw a text inside a frame background
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="alignment">horizontal alignment of the text inside the frame.
+        /// 0f to 1f, 0 si left, 1 is right, 0.5 is center</param>
+        public void FramedText(string text, float alignment = 0f)
+        {
+            _customFramedText(text, alignment, new Vector2(-1f, 0f), FuFrameStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw a text inside a frame background
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="size">size of the frame</param>
+        /// <param name="alignment">horizontal alignment of the text inside the frame.
+        /// 0f to 1f, 0 si left, 1 is right, 0.5 is center</param>
+        public void FramedText(string text, FuElementSize size, float alignment = 0f)
+        {
+            _customFramedText(text, alignment, size, FuFrameStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw a text inside a frame background
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="size">size of the frame</param>
+        /// <param name="alignment">horizontal alignment of the text inside the frame.
+        /// 0f to 1f, 0 si left, 1 is right, 0.5 is center</param>
+        /// <param name="style">style of the frame and text</param>
+        public void FramedText(string text, FuElementSize size, float alignment, FuFrameStyle style)
+        {
+            _customFramedText(text, alignment, size, style);
+        }
+
+        /// <summary>
+        /// Draw a text inside a frame background
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="size">size of the frame</param>
+        /// <param name="alignment">horizontal alignment of the text inside the frame.
+        /// 0f to 1f, 0 si left, 1 is right, 0.5 is center</param>
+        /// <param name="style">style of the frame and text</param>
+        private void _customFramedText(string text, float alignment, Vector2 size, FuFrameStyle style)
+        {
+            beginElement(ref text, style, true);
+            if (!_drawElement)
+            {
+                return;
+            }
+
+            Vector2 pos = ImGui.GetCursorScreenPos();
+            Vector2 padding = ImGui.GetStyle().FramePadding;
+            Vector2 textSize = ImGui.CalcTextSize(text, true);
+            Vector2 alignmentV2 = new Vector2(Mathf.Clamp01(alignment), 0.5f);
+
+            // calc item size
+            Vector2 region_max = default;
+            if (size.x < 0.0f || size.y < 0.0f)
+                region_max = ImGui.GetContentRegionMax();
+            if (size.x == 0.0f)
+                size.x = textSize.x + padding.x * 2f;
+            else if (size.x < 0.0f)
+                size.x = Mathf.Max(4.0f, region_max.x - ImGuiNative.igGetCursorPosX() + size.x);
+            if (size.y == 0.0f)
+                size.y = textSize.y + padding.y * 2f;
+            else if (size.y < 0.0f)
+                size.y = Mathf.Max(4.0f, region_max.y - ImGuiNative.igGetCursorPosY() + size.y);
+
+            // draw frame
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.FrameBg, 1f), FuThemeManager.CurrentTheme.FrameRounding);
+            drawList.AddRect(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), FuThemeManager.CurrentTheme.FrameRounding);
+
+            // draw text
+            Vector2 realSize = _customTextClipped(size, text, pos, padding, textSize, alignmentV2);
+
+            // fake dummy
+            Rect rect = new Rect(ImGui.GetCursorScreenPos(), realSize);
+            ImGui.Dummy(size);
+            bool hovered = false;
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max) && FuWindow.CurrentDrawingWindow.IsHovered &&
+                    !FuWindow.CurrentDrawingWindow.Mouse.IsHoverOverlay && !FuWindow.CurrentDrawingWindow.Mouse.IsHoverPopup;
+            }
+            else
+            {
+                hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max);
+            }
+
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            // tooltip and end element
+            if (_currentToolTipsOnLabels)
+            {
+                displayToolTip(hovered);
+            }
+            endElement(style);
+        }
+        #endregion
+
+        #region Clickable
+        /// <summary>
+        /// Draw a clickable text element
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="style">style of the text to draw</param>
+        /// <returns>whatever the text is clicked</returns>
+        public virtual bool ClickableText(string text, FuTextStyle style)
+        {
+            beginElement(ref text, style, true);
+            // return if item must no be draw
+            if (!_drawElement)
+            {
+                return false;
+            }
+
+            Vector2 rectMin = ImGui.GetCursorScreenPos() - new Vector2(4f, 0f);
+            Vector2 rectMax = rectMin + ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding;
+            bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
+            bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
+            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+
+            // set mouse cursor
+            if (hovered && !_nextIsDisabled)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            }
+
+            Color textColor = style.Text;
+            if (active)
+            {
+                textColor *= 0.8f;
+            }
+            else if (hovered)
+            {
+                textColor *= 0.9f;
+            }
+            Fugui.Push(ImGuiCol.Text, textColor);
+            ImGui.Text(text);
+            Fugui.PopColor();
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            if (_currentToolTipsOnLabels)
+            {
+                displayToolTip();
+            }
+            endElement(style);
+            return clicked;
+        }
+
+        /// <summary>
+        /// Draw a clickable URL text element
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="URL">URL to open on text click</param>
+        /// <param name="style">style of the text to draw</param>
+        /// <returns>whatever the text is clicked</returns>
+        public virtual void TextURL(string text, string URL, FuTextStyle style)
+        {
+            beginElement(ref text, style, true);
+            // return if item must no be draw
+            if (!_drawElement)
+            {
+                return;
+            }
+
+            Vector2 rectMin = ImGui.GetCursorScreenPos() - new Vector2(4f, 0f);
+            Vector2 rectMax = rectMin + ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding;
+            bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
+            bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
+            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+
+            Color textColor = style.Text;
+            if (active)
+            {
+                textColor *= 0.8f;
+            }
+            else if (hovered)
+            {
+                textColor *= 0.9f;
+            }
+            Fugui.Push(ImGuiCol.Text, textColor);
+            ImGui.Text(text);
+            if (hovered)
+            {
+                SetToolTip(URL, FuTextStyle.Default);
+                if (!_nextIsDisabled)
+                {
+                    // set mouse cursor
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                    // underline the hovered text
+                    AddUnderLine();
+                }
+            }
+            Fugui.PopColor();
+
+            // open the URL on click
+            if (clicked)
+            {
+                try
+                {
+                    Process.Start(URL);
+                }
+                catch (Exception ex)
+                {
+                    Fugui.Notify("fail to open URI", ex.Message, StateType.Danger);
+                }
+            }
+
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, clicked);
+            if (_currentToolTipsOnLabels)
+            {
+                displayToolTip();
+            }
+            endElement(style);
+        }
+        #endregion
     }
 }

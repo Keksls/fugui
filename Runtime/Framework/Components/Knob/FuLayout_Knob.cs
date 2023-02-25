@@ -292,7 +292,7 @@ namespace Fu.Framework
         /// <summary>
         /// Draw a knob button
         /// </summary>
-        /// <param name="label">Laberl of the knob</param>
+        /// <param name="text">Laberl of the knob</param>
         /// <param name="value">value of the knob</param>
         /// <param name="min">minimum value</param>
         /// <param name="max">maximum value</param>
@@ -303,15 +303,18 @@ namespace Fu.Framework
         /// <param name="size">size of the knob</param>
         /// <param name="flags">behaviour flag</param>
         /// <returns>true if value chage</returns>
-        public virtual bool Knob(string label, ref float value, float min = 0f, float max = 100f, FuKnobVariant variant = FuKnobVariant.Wiper, int steps = 10, float speed = 1f, string format = null, float size = 64f, FuKnobFlags flags = FuKnobFlags.Default)
+        public virtual bool Knob(string text, ref float value, float min = 0f, float max = 100f, FuKnobVariant variant = FuKnobVariant.Wiper, int steps = 10, float speed = 1f, string format = null, float size = 64f, FuKnobFlags flags = FuKnobFlags.Default)
         {
-            beginElement(ref label);
+            beginElement(ref text);
             if (!_drawElement)
             {
                 return false;
             }
             string _format = format == null ? "%.3f" : format;
-            bool updated = BaseKnob(label, ref value, min, max, speed, _format, variant, size, flags, steps);
+            bool updated = BaseKnob(text, ref value, min, max, speed, _format, variant, size, flags, steps);
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, updated);
+            displayToolTip();
             endElement();
             return updated;
         }

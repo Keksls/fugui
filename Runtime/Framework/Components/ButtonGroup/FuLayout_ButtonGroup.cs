@@ -52,9 +52,9 @@ namespace Fu.Framework
         /// <param name="itemGetter">A func that return a way to get current stored value for the buttonGroup. can be null if buttonGroup il not linked to an object's field
         /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
         /// <param name="flags">behaviour flags of the button group</param>
-        public void ButtonsGroup<T>(string text, List<T> items, Action<T> callback, Func<string> itemGetter, FuButtonsGroupFlags flags = FuButtonsGroupFlags.Default)
+        public void ButtonsGroup<T>(string text, List<T> items, Action<int> callback, Func<string> itemGetter, FuButtonsGroupFlags flags = FuButtonsGroupFlags.Default)
         {
-            _buttonsGroup<T>(text, items, (index) => { callback?.Invoke(items[index]); }, itemGetter, flags, FuButtonsGroupStyle.Default);
+            _buttonsGroup<T>(text, items, callback, itemGetter, flags, FuButtonsGroupStyle.Default);
         }
 
         /// <summary>
@@ -67,9 +67,9 @@ namespace Fu.Framework
         /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
         /// <param name="flags">behaviour flags of the button group</param>
         /// <param name="style">style of the element</param>
-        public void ButtonsGroup<T>(string text, List<T> items, Action<T> callback, Func<string> itemGetter, FuButtonsGroupFlags flags, FuButtonsGroupStyle style)
+        public void ButtonsGroup<T>(string text, List<T> items, Action<int> callback, Func<string> itemGetter, FuButtonsGroupFlags flags, FuButtonsGroupStyle style)
         {
-            _buttonsGroup<T>(text, items, (index) => { callback?.Invoke(items[index]); }, itemGetter, flags, style);
+            _buttonsGroup<T>(text, items, callback, itemGetter, flags, style);
         }
         #endregion
 
@@ -87,7 +87,8 @@ namespace Fu.Framework
 
             // draw data
             int nbItems = items.Count;
-            float cursorPos = ImGui.GetCursorPos().x;
+            Vector2 startPos = ImGui.GetCursorScreenPos();
+            float cursorPos = ImGui.GetCursorPosX();
             float avail = ImGui.GetContentRegionAvail().x;
             float itemWidth = avail / nbItems;
             bool autoSize = flags.HasFlag(FuButtonsGroupFlags.AutoSizeButtons);
@@ -105,6 +106,7 @@ namespace Fu.Framework
                 cursorPos = cursorPos + ImGui.GetContentRegionAvail().x - naturalSize;
             }
 
+            bool updated = false;
             Fugui.Push(ImGuiStyleVar.FrameRounding, 0f);
             // draw buttons
             for (int i = 0; i < nbItems; i++)
@@ -130,6 +132,7 @@ namespace Fu.Framework
                 {
                     FuSelectableBuilder.SetSelectedIndex(text, i);
                     callback?.Invoke(i);
+                    updated = true;
                 }
                 if (i < nbItems - 1)
                 {
@@ -138,6 +141,8 @@ namespace Fu.Framework
                 displayToolTip();
             }
             Fugui.PopStyle();
+
+            setBaseElementState(text, startPos, ImGui.GetItemRectMax() - startPos, true, updated);
             endElement();
         }
     }

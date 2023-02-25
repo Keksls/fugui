@@ -1,4 +1,5 @@
 ﻿using Fu.Core;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -8,39 +9,42 @@ namespace Fu.Framework
         /// <summary>
         /// Draw an image
         /// </summary>
-        /// <param name="id">ID/Label of the Image</param>
+        /// <param name="text">ID/Label of the Image</param>
         /// <param name="texture">Texture2D to draw</param>
         /// <param name="size">size of the image</param>
-        public virtual void Image(string id, Texture2D texture, FuElementSize size)
+        /// <param name="addBorder">if true, add a frame border around the image</param>
+        public bool Image(string text, Texture2D texture, FuElementSize size, bool addBorder = false)
         {
-            Image(id, texture, size, Vector4.one);
+            return Image(text, texture, size, Vector4.one, addBorder);
         }
 
         /// <summary>
         /// Draw a RenderTexture
         /// </summary>
-        /// <param name="id">ID/Label of the RenderTexture</param>
+        /// <param name="text">ID/Label of the RenderTexture</param>
         /// <param name="texture">RenderTexture to draw</param>
         /// <param name="size">size of the RenderTexture</param>
-        public virtual void Image(string id, RenderTexture texture, FuElementSize size)
+        /// <param name="addBorder">if true, add a frame border around the image</param>
+        public bool Image(string text, RenderTexture texture, FuElementSize size, bool addBorder = false)
         {
-            Image(id, texture, size, Vector4.one);
+            return Image(text, texture, size, Vector4.one, addBorder);
         }
 
         /// <summary>
         /// Draw an image
         /// </summary>
-        /// <param name="id">ID/Label of the Image</param>
+        /// <param name="text">ID/Label of the Image</param>
         /// <param name="texture">Texture2D to draw</param>
         /// <param name="size">size of the image</param>
         /// <param name="color">color of the image</param>
-        public virtual void Image(string id, Texture2D texture, FuElementSize size, Vector4 color)
+        /// <param name="addBorder">if true, add a frame border around the image</param>
+        public virtual bool Image(string text, Texture2D texture, FuElementSize size, Vector4 color, bool addBorder = false)
         {
-            beginElement(ref id);
+            beginElement(ref text);
             // return if item must no be draw
             if (!_drawElement)
             {
-                return;
+                return false;
             }
             if (FuWindow.CurrentDrawingWindow == null)
             {
@@ -50,24 +54,38 @@ namespace Fu.Framework
             {
                 FuWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size.GetSize(), color);
             }
+
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             displayToolTip();
+            if (LastItemHovered)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            }
+            if (addBorder)
+            {
+                drawBorderFrame(new Rect(_currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos), false);
+                _elementHoverFramed = true;
+            }
             endElement();
+            return LastItemClickedButton == FuMouseButton.Left;
         }
 
         /// <summary>
         /// Draw a RenderTexture
         /// </summary>
-        /// <param name="id">ID/Label of the RenderTexture</param>
+        /// <param name="text">ID/Label of the RenderTexture</param>
         /// <param name="texture">RenderTexture to draw</param>
         /// <param name="size">size of the RenderTexture</param>
         /// <param name="color">color of the image</param>
-        public virtual void Image(string id, RenderTexture texture, FuElementSize size, Vector4 color)
+        /// <param name="addBorder">if true, add a frame border around the image</param>
+        public virtual bool Image(string text, RenderTexture texture, FuElementSize size, Vector4 color, bool addBorder = false)
         {
-            beginElement(ref id);
+            beginElement(ref text);
             // return if item must no be draw
             if (!_drawElement)
             {
-                return;
+                return false;
             }
             if (FuWindow.CurrentDrawingWindow == null)
             {
@@ -77,20 +95,32 @@ namespace Fu.Framework
             {
                 FuWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size.GetSize(), color);
             }
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            if (LastItemHovered)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            }
+            if (addBorder)
+            {
+                drawBorderFrame(new Rect(_currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos), false);
+                _elementHoverFramed = true;
+            }
             displayToolTip();
             endElement();
+            return LastItemClickedButton == FuMouseButton.Left;
         }
 
         /// <summary>
         /// Draw an image button (clickable image)
         /// </summary>
-        /// <param name="id">ID/Label of the Image</param>
+        /// <param name="text">ID/Label of the Image</param>
         /// <param name="texture">Texture2D to draw</param>
         /// <param name="size">size of the image</param>
         /// <returns>true if clicked</returns>
-        public virtual bool ImageButton(string id, Texture2D texture, FuElementSize size)
+        public virtual bool ImageButton(string text, Texture2D texture, FuElementSize size)
         {
-            beginElement(ref id);
+            beginElement(ref text);
             // return if item must no be draw
             if (!_drawElement)
             {
@@ -105,6 +135,8 @@ namespace Fu.Framework
             {
                 clicked = FuWindow.CurrentDrawingWindow.Container.ImGuiImageButton(texture, size);
             }
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);        
             displayToolTip();
             endElement();
             return clicked;
@@ -113,14 +145,14 @@ namespace Fu.Framework
         /// <summary>
         /// Draw an image button (clickable image)
         /// </summary>
-        /// <param name="id">ID/Label of the Image</param>
+        /// <param name="text">ID/Label of the Image</param>
         /// <param name="texture">Texture2D to draw</param>
         /// <param name="size">size of the image</param>
         /// <param name="color">tint color of the button</param>
         /// <returns>true if clicked</returns>
-        public virtual bool ImageButton(string id, Texture2D texture, FuElementSize size, Vector4 color)
+        public virtual bool ImageButton(string text, Texture2D texture, FuElementSize size, Vector4 color)
         {
-            beginElement(ref id);
+            beginElement(ref text);
             // return if item must no be draw
             if (!_drawElement)
             {
@@ -135,6 +167,8 @@ namespace Fu.Framework
             {
                 clicked = FuWindow.CurrentDrawingWindow.Container.ImGuiImageButton(texture, size, color);
             }
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             displayToolTip();
             endElement();
             return clicked;

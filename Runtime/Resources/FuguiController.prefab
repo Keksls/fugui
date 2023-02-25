@@ -10,9 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 963194228}
   - component: {fileID: 963194227}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: UI Camera
-  m_TagString: MainCamera
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -121,8 +121,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _settings:
-    FUGUI_WINDOWS_DEF_ENUM_PATH: Assets\Test\Runtime\FuWindowsNames.cs
-    FUGUI_DOCKSPACE_FOLDER_PATH: Assets\Runtime\Settings\Layout\
+    FUGUI_WINDOWS_DEF_ENUM_PATH: Assets\Scripts\UI\FuWindowsNames.cs
+    FUGUI_DOCKSPACE_FOLDER_PATH: Assets\StreamingAssets\Fugui\Layout\
     InternalizeOnMouseRelease: 0
     IdleFPS: 4
     ManipulatingFPS: 48
@@ -146,7 +146,8 @@ MonoBehaviour:
     LeftIcon: {fileID: 2800000, guid: 2d092e4968abaea428c3a12ea1abbf7c, type: 3}
     RightIcon: {fileID: 2800000, guid: e43a48c6f5b887f4b8dc9078fe467bdf, type: 3}
     CenterIcon: {fileID: 2800000, guid: 88d6d9ba964f11e41aa111b8b482cbe5, type: 3}
-    OpenGLNonReadableTexture: {fileID: 2800000, guid: 86e79ee31b0415048851a462666eea0d, type: 3}
+    OpenGLNonReadableTexture: {fileID: 2800000, guid: 86e79ee31b0415048851a462666eea0d,
+      type: 3}
     InfoIcon: {fileID: 2800000, guid: 04c00c04e0f871c4fb92d618c431717a, type: 3}
     WarningIcon: {fileID: 2800000, guid: 4d5c887232331e04b87d503925340957, type: 3}
     DangerIcon: {fileID: 2800000, guid: 11f3a4d594ed7b244948b9cc632faffc, type: 3}

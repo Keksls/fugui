@@ -103,6 +103,8 @@ namespace Fu.Framework
             // align and draw text
             ImGui.AlignTextToFramePadding();
             ImGui.Text(text);
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
 
             // display tooltip if needed
             displayToolTip(); // Display a tooltip if one has been set for this element

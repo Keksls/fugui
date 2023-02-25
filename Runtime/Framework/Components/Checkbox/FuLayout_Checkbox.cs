@@ -14,6 +14,7 @@ namespace Fu.Framework
         public virtual bool CheckBox(string text, ref bool isChecked)
         {
             bool clicked = false;
+            text = "##text";
             beginElement(ref text, null); // Push the style for the checkbox element
 
             // return if item must no be draw
@@ -68,8 +69,11 @@ namespace Fu.Framework
             }
             displayToolTip(); // Display a tooltip if one has been set for this element
             _elementHoverFramed = true; // Set the flag indicating that this element should have a hover frame drawn around it
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, clicked);
             endElement(null); // Pop the style for the checkbox element
             Fugui.PopColor(4);
+
+
             return clicked; // Return a boolean indicating whether the checkbox was clicked by the user
         }
     }

@@ -20,13 +20,13 @@ namespace Fu.Framework
         /// <summary>
         /// Displays a collapsable UI element with the given identifier, content, and style.
         /// </summary>
-        /// <param name="id">The identifier of the element.</param>
+        /// <param name="text">The identifier of the element.</param>
         /// <param name="innerUI">The content to display within the collapsable element.</param>
         /// <param name="style">The style to apply to the element.</param>
-        public void Collapsable(string id, Action innerUI, FuCollapsableStyle style, float indent = 16f)
+        public void Collapsable(string text, Action innerUI, FuCollapsableStyle style, float indent = 16f)
         {
             // Begin the element and apply the specified style
-            beginElement(ref id, style, false, false);
+            beginElement(ref text, style, false, false);
             // return if item must no be draw
             if (!_drawElement)
             {
@@ -40,13 +40,15 @@ namespace Fu.Framework
             // Set the font for the header to be bold and size 14
             Fugui.PushFont(14, FontType.Bold);
             // Display the collapsable header with the given identifier
-            bool open = ImGui.CollapsingHeader(id, ImGuiTreeNodeFlags.CollapsingHeader | ImGuiTreeNodeFlags.DefaultOpen);
+            bool open = ImGui.CollapsingHeader(text, ImGuiTreeNodeFlags.CollapsingHeader | ImGuiTreeNodeFlags.DefaultOpen);
             // Pop the font changes
             Fugui.PopFont();
-            // Display the tool tip for the element
-            displayToolTip();
             // Pop the padding and spacing changes
             Fugui.PopStyle(2);
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            // Display the tool tip for the element
+            displayToolTip();
             // End the element
             endElement(style);
 

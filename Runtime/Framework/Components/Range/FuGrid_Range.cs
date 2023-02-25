@@ -13,15 +13,16 @@
         /// <param name="isInt">whatever the slider is an Int slider (default is float). If true, the value will be rounded</param>
         /// <param name="step">step of the slider value change</param>
         /// <param name="flags">behaviour flag of the slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>true if value changed</returns>
-        protected override bool _customRange(string text, ref float valueMin, ref float valueMax, float min, float max, bool isInt, float step, FuSliderFlags flags)
+        protected override bool _customRange(string text, ref float valueMin, ref float valueMax, float min, float max, bool isInt, float step, FuSliderFlags flags, string format)
         {
             if (!_gridCreated)
             {
                 return false;
             }
             drawElementLabel(text, FuTextStyle.Default);
-            return base._customRange(text, ref valueMin, ref valueMax, min, max, isInt, step, flags);
+            return base._customRange(text, ref valueMin, ref valueMax, min, max, isInt, step, flags, format);
         }
     }
 }

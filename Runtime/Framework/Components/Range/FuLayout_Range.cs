@@ -14,10 +14,11 @@ namespace Fu.Framework
         /// <param name="valueMin">The minimum value of the range slider, which will be updated if the user interacts with the slider.</param>
         /// <param name="valueMax">The maximum value of the range slider, which will be updated if the user interacts with the slider.</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Range(string text, ref int valueMin, ref int valueMax, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Range(string text, ref int valueMin, ref int valueMax, FuSliderFlags flags = FuSliderFlags.Default, string format = null)
         {
-            return Range(text, ref valueMin, ref valueMax, 0, 100, flags);
+            return Range(text, ref valueMin, ref valueMax, 0, 100, flags, format);
         }
 
         /// <summary>
@@ -29,12 +30,13 @@ namespace Fu.Framework
         /// <param name="min">The minimum value that the user can select.</param>
         /// <param name="max">The maximum value that the user can select.</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Range(string text, ref int valueMin, ref int valueMax, int min, int max, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Range(string text, ref int valueMin, ref int valueMax, int min, int max, FuSliderFlags flags = FuSliderFlags.Default, string format = null)
         {
             float valMin = valueMin;
             float valMax = valueMax;
-            bool valueChange = _customRange(text, ref valMin, ref valMax, min, max, true, 1f, flags);
+            bool valueChange = _customRange(text, ref valMin, ref valMax, min, max, true, 1f, flags, format);
             valueMin = (int)valMin;
             valueMax = (int)valMax;
             return valueChange;
@@ -50,10 +52,11 @@ namespace Fu.Framework
         /// <param name="valueMax">The maximum value of the range slider, which will be updated if the user interacts with the slider.</param>
         /// <param name="step">step of the slider value change</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Range(string text, ref float valueMin, ref float valueMax, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Range(string text, ref float valueMin, ref float valueMax, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default, string format = null)
         {
-            return Range(text, ref valueMin, ref valueMax, 0f, 100f, step, flags);
+            return _customRange(text, ref valueMin, ref valueMax, 0f, 100f, false, step, flags, format);
         }
 
         /// <summary>
@@ -66,10 +69,11 @@ namespace Fu.Framework
         /// <param name="max">The maximum value that the user can select.</param>
         /// <param name="step">step of the slider value change</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Range(string text, ref float valueMin, ref float valueMax, float min, float max, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Range(string text, ref float valueMin, ref float valueMax, float min, float max, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default, string format = null)
         {
-            return _customRange(text, ref valueMin, ref valueMax, min, max, false, step, flags);
+            return _customRange(text, ref valueMin, ref valueMax, min, max, false, step, flags, format);
         }
         #endregion
 
@@ -84,8 +88,9 @@ namespace Fu.Framework
         /// <param name="isInt">whatever the slider is an Int slider (default is float). If true, the value will be rounded</param>
         /// <param name="step">step of the slider value change</param>
         /// <param name="flags">behaviour flag of the slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>true if value changed</returns>
-        protected virtual bool _customRange(string text, ref float valueMin, ref float valueMax, float min, float max, bool isInt, float step, FuSliderFlags flags)
+        protected virtual bool _customRange(string text, ref float valueMin, ref float valueMax, float min, float max, bool isInt, float step, FuSliderFlags flags, string format)
         {
             beginElement(ref text, FuFrameStyle.Default);
             // return if item must no be draw
@@ -98,7 +103,7 @@ namespace Fu.Framework
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
             float knobRadius = 5f * Fugui.CurrentContext.Scale;
             float hoverPaddingY = 4f * Fugui.CurrentContext.Scale;
-            float height = 20f * Fugui.CurrentContext.Scale;
+            float height = ImGui.CalcTextSize("Ap").y + (ImGui.GetStyle().FramePadding.y * 2f);
             float lineHeight = 2f * Fugui.CurrentContext.Scale;
             float width = ImGui.GetContentRegionAvail().x - (8f * Fugui.CurrentContext.Scale);
             float x = cursorPos.x;
@@ -118,10 +123,12 @@ namespace Fu.Framework
             ImGuiNative.igSameLine(0f, -1f);
             float maxY = ImGui.GetItemRectMax().y;
             ImGui.SetCursorScreenPos(cursorPos);
-            ImGui.Dummy(new Vector2(width, maxY - cursorPos.y));
+            ImGui.InvisibleButton(text, new Vector2(width, maxY - cursorPos.y), ImGuiButtonFlags.None);
 
             // do not draw hover frame
             _elementHoverFramed = false;
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, updated);
             // end the element
             endElement(FuFrameStyle.Default);
             return updated;
@@ -133,7 +140,8 @@ namespace Fu.Framework
                 bool updated = false;
                 ImGui.Text(text);
                 ImGui.SameLine();
-                if (ImGui.DragFloat(id, ref value, step, min, max, isInt ? "%.0f" : getFloatString(value), _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp))
+                string formatString = format != null ? format : getFloatString(value);
+                if (ImGui.DragFloat(id, ref value, step, min, max, isInt ? "%.0f" : formatString, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp))
                 {
                     updated = true;
                     // Clamp the value to the min and max range
@@ -144,7 +152,6 @@ namespace Fu.Framework
                     }
                 }
                 ImGui.PopItemWidth();
-                //updateFloatString("##sliderInput" + text, value);
                 displayToolTip();
                 _elementHoverFramed = true;
                 drawHoverFrame();
@@ -162,8 +169,8 @@ namespace Fu.Framework
                 float knobPosMin = (x + knobRadius) + (width - knobRadius * 2f) * (valueMin - min) / (max - min);
                 float knobPosMax = (x + knobRadius) + (width - knobRadius * 2f) * (valueMax - min) / (max - min);
                 // Check if the mouse is hovering over the knob
-                bool isKnobMinHovered = ImGui.IsMouseHoveringRect(new Vector2(knobPosMin - knobRadius, y - knobRadius), new Vector2(knobPosMin + knobRadius, y + knobRadius));
-                bool isKnobMaxHovered = ImGui.IsMouseHoveringRect(new Vector2(knobPosMax - knobRadius, y - knobRadius), new Vector2(knobPosMax + knobRadius, y + knobRadius));
+                bool isKnobMinHovered = isItemHovered(new Vector2(knobPosMin - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
+                bool isKnobMaxHovered = isItemHovered(new Vector2(knobPosMax - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
                 // Check if slider is dragging
                 bool isDraggingMin = _draggingSliders.Contains(knobMinID);
                 bool isDraggingMax = _draggingSliders.Contains(knobMaxID);

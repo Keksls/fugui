@@ -61,7 +61,7 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// Displays a single-line text input field with a hint
+        /// Displays a multi-line text input field with a hint
         /// </summary>
         /// <param name="id">A unique identifier for the text input field</param>
         /// <param name="hint">The hint that will be displayed when the field is empty</param>
@@ -77,7 +77,7 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// Displays a single-line text input field with a hint
+        /// Displays a text input field with a hint
         /// </summary>
         /// <param name="id">A unique identifier for the text input field</param>
         /// <param name="hint">The hint that will be displayed when the field is empty</param>
@@ -111,6 +111,8 @@ namespace Fu.Framework
             {
                 edited = ImGui.InputTextWithHint(id, hint, ref text, size, (ImGuiInputTextFlags)flags);
             }
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, edited);
             // Display a tool tip if one has been set
             displayToolTip();
             // Mark the element as hover framed

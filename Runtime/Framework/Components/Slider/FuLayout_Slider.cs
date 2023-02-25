@@ -13,10 +13,11 @@ namespace Fu.Framework
         /// <param name="text">The label for the slider.</param>
         /// <param name="value">The current value of the slider, which will be updated if the user interacts with the slider.</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Slider(string text, ref int value, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Slider(string text, ref int value, FuSliderFlags flags = FuSliderFlags.Default, string format = null)
         {
-            return Slider(text, ref value, 0, 100, flags);
+            return Slider(text, ref value, 0, 100, flags, format);
         }
 
         /// <summary>
@@ -27,11 +28,12 @@ namespace Fu.Framework
         /// <param name="min">The minimum value that the user can select.</param>
         /// <param name="max">The maximum value that the user can select.</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Slider(string text, ref int value, int min, int max, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Slider(string text, ref int value, int min, int max, FuSliderFlags flags = FuSliderFlags.Default, string format = null)
         {
             float val = value;
-            bool valueChange = _customSlider(text, ref val, min, max, true, 1f, flags);
+            bool valueChange = _customSlider(text, ref val, min, max, true, 1f, flags, format);
             value = (int)val;
             return valueChange;
         }
@@ -45,10 +47,11 @@ namespace Fu.Framework
         /// <param name="value">The current value of the slider, which will be updated if the user interacts with the slider.</param>
         /// <param name="step">step of the slider value change</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Slider(string text, ref float value, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Slider(string text, ref float value, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default, string format = null)
         {
-            return Slider(text, ref value, 0f, 100f, step, flags);
+            return Slider(text, ref value, 0f, 100f, step, flags, format);
         }
 
         /// <summary>
@@ -60,10 +63,11 @@ namespace Fu.Framework
         /// <param name="max">The maximum value that the user can select.</param>
         /// <param name="step">step of the slider value change</param>
         /// <param name="flags">Behaviour flags of the Slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>True if the value was changed by the user, false otherwise.</returns>
-        public bool Slider(string text, ref float value, float min, float max, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default)
+        public bool Slider(string text, ref float value, float min, float max, float step = 0.01f, FuSliderFlags flags = FuSliderFlags.Default, string format = null)
         {
-            return _customSlider(text, ref value, min, max, false, step, flags);
+            return _customSlider(text, ref value, min, max, false, step, flags, format);
         }
         #endregion
 
@@ -77,8 +81,9 @@ namespace Fu.Framework
         /// <param name="isInt">whatever the slider is an Int slider (default is float). If true, the value will be rounded</param>
         /// <param name="step">step of the slider value change</param>
         /// <param name="flags">behaviour flag of the slider</param>
+        ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>true if value changed</returns>
-        protected virtual bool _customSlider(string text, ref float value, float min, float max, bool isInt, float step, FuSliderFlags flags)
+        protected virtual bool _customSlider(string text, ref float value, float min, float max, bool isInt, float step, FuSliderFlags flags, string format)
         {
             beginElement(ref text, FuFrameStyle.Default);
             // return if item must no be draw
@@ -90,8 +95,8 @@ namespace Fu.Framework
             // Calculate the position and size of the slider
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
             float knobRadius = 5f * Fugui.CurrentContext.Scale;
-            float hoverPaddingY = 4f * Fugui.CurrentContext.Scale;
-            float height = 20f * Fugui.CurrentContext.Scale;
+            float hoverPaddingY = 5f * Fugui.CurrentContext.Scale;
+            float height = ImGui.CalcTextSize("Ap").y + (ImGui.GetStyle().FramePadding.y * 2f);
             float lineHeight = 2f * Fugui.CurrentContext.Scale;
             float dragWidth = 52f * Fugui.CurrentContext.Scale;
             float width = ImGui.GetContentRegionAvail().x - dragWidth - (8f * Fugui.CurrentContext.Scale);
@@ -130,13 +135,16 @@ namespace Fu.Framework
             tmp = Mathf.Round(tmp);
             value = tmp * step;
 
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, value != oldValue);
+
             endElement(FuFrameStyle.Default);
             return value != oldValue;
 
             // function that draw the slider drag
             void drawDrag(string text, ref float value, float min, float max, bool isInt)
             {
-                string formatString = getFloatString(value);
+                string formatString = format != null ? format : getFloatString(value);
                 ImGui.PushItemWidth(dragWidth);
                 if (ImGui.InputFloat("##" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, _nextIsDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
                 {
@@ -151,13 +159,13 @@ namespace Fu.Framework
                 displayToolTip();
                 _elementHoverFramed = true;
                 drawHoverFrame();
-            } 
-            
+            }
+
             // function that draw the slider
             bool drawSlider(string text, ref float value, float min, float max, bool isInt, float knobRadius, float hoverPaddingY, float lineHeight, float width, float x, float y)
             {
                 // draw a dummy button so the cursor is well placed and we can get the state and prevent from clicking on multiple elements at time + get the state only if the widget is visible
-                ImGui.InvisibleButton(text, new Vector2(width + (4f * Fugui.CurrentContext.Scale), height));
+                ImGui.InvisibleButton(text, new Vector2(width + (4f * Fugui.CurrentContext.Scale), height), ImGuiButtonFlags.None);
 
                 // is there place to draw slider
                 if (width >= 24f)
@@ -165,9 +173,9 @@ namespace Fu.Framework
                     // Calculate the position of the knob
                     float knobPos = (x + knobRadius) + (width - knobRadius * 2f) * (value - min) / (max - min);
                     // Check if the mouse is hovering over the slider
-                    bool isLineHovered = ImGui.IsMouseHoveringRect(new Vector2(x, y - hoverPaddingY - lineHeight), new Vector2(x + width, y + hoverPaddingY + lineHeight));
+                    bool isLineHovered = isItemHovered(new Vector2(x, y - hoverPaddingY - lineHeight), new Vector2(width, hoverPaddingY * 2f + lineHeight * 2f));
                     // Check if the mouse is hovering over the knob
-                    bool isKnobHovered = ImGui.IsMouseHoveringRect(new Vector2(knobPos - knobRadius, y - knobRadius), new Vector2(knobPos + knobRadius, y + knobRadius));
+                    bool isKnobHovered = isItemHovered(new Vector2(knobPos - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
                     // Check if slider is dragging
                     bool isDragging = _draggingSliders.Contains(text);
                     // Calculate colors
@@ -197,7 +205,7 @@ namespace Fu.Framework
                     ImGui.GetWindowDrawList().AddLine(new Vector2(knobPos, y), new Vector2(x + width, y), ImGui.GetColorU32(rightLineColor), lineHeight);
 
                     // set mouse cursor
-                    if (isKnobHovered && !_nextIsDisabled)
+                    if ((isKnobHovered || isLineHovered) && !_nextIsDisabled)
                     {
                         ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                     }

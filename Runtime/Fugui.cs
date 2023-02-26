@@ -10,35 +10,63 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.Windows;
 
 namespace Fu
 {
     public static partial class Fugui
     {
+        #region Variablels
+        /// <summary>
+        /// The current Context Fugui is drawing on
+        /// </summary>
         public static FuContext CurrentContext { get; internal set; }
+        /// <summary>
+        /// All registered contexts
+        /// </summary>
         public static Dictionary<int, FuContext> Contexts { get; internal set; } = new Dictionary<int, FuContext>();
-        public static Queue<int> ToDeleteContexts { get; internal set; } = new Queue<int>();
-        // The settings for the Fugui Manager
+        /// <summary>
+        /// context fugui need to delete from now
+        /// </summary>
+        internal static Queue<int> ToDeleteContexts { get; private set; } = new Queue<int>();
+        /// <summary>
+        /// The settings for the Fugui Manager
+        /// </summary>
         public static FuSettings Settings { get; internal set; }
-        // The public property for the current world mouse position
+        /// <summary>
+        /// The public property for the current world mouse position
+        /// </summary>
         public static Vector2Int WorldMousePosition { get; internal set; }
-        // The current time
+        /// <summary>
+        /// The current time
+        /// </summary>
         public static float Time { get; internal set; }
-        // The static main UI container
+        /// <summary>
+        /// The static main UI container (this is the unity default 3D view)
+        /// </summary>
         public static FuMainWindowContainer MainContainer { get; internal set; }
-        // Default Fugui Context
+        /// <summary>
+        /// Default Fugui Context (it's the main unity context)
+        /// </summary>
         public static FuUnityContext DefaultContext { get; internal set; }
-        // The static dictionary of UI windows
+        /// <summary>
+        /// The static dictionary of UI windows
+        /// </summary>
         public static Dictionary<string, FuWindow> UIWindows { get; internal set; }
-        // The static dictionary of UI window definitions
+        /// <summary>
+        /// The static dictionary of UI window definitions
+        /// </summary>
         public static Dictionary<FuWindowName, FuWindowDefinition> UIWindowsDefinitions { get; internal set; }
-        // A boolean value indicating whether the render thread has started
+        /// <summary>
+        /// A boolean value indicating whether the render thread has started
+        /// </summary>
         public static bool IsRendering { get; internal set; } = false;
+        /// <summary>
+        /// FuGui Controller instance
+        /// </summary>
+        internal static FuController Controller;
         // The dictionary of external windows
         private static Dictionary<string, FuExternalWindowContainer> _externalWindows;
         // The dictionary of external windows
@@ -49,8 +77,6 @@ namespace Fu
         private static bool _canAddWindow = false;
         // A boolean value indicating whether the render thread has started
         private static bool _renderThreadStarted = false;
-        // FuGui Manager instance
-        internal static FuController Manager;
         // counter of Fugui Contexts
         private static int _contextID = 0;
 
@@ -62,9 +88,18 @@ namespace Fu
         public static Stack<pushStyleData> StylesStack;
         public static Stack<pushColorData> ColorStack;
 #endif
+        #endregion
+
         #region Events
+        /// <summary>
+        /// Event invoken whenever an exception happend within the UI render
+        /// </summary>
         public static event Action<Exception> OnUIException;
-        internal static void DoOnUIException(Exception ex) => OnUIException?.Invoke(ex);
+        /// <summary>
+        /// Fire the UI exception event
+        /// </summary>
+        /// <param name="ex"></param>
+        internal static void Fire_OnUIException(Exception ex) => OnUIException?.Invoke(ex);
         #endregion
 
         static Fugui()
@@ -194,7 +229,7 @@ namespace Fu
         /// <param name="sleep">time to wait before execute</param>
         public static void ExecuteCallbackAfterAsyncSleep(Action callback, float sleep)
         {
-            Manager.StartCoroutine(executeCallbackAfterAsyncSleep_Routine(callback, sleep));
+            Controller.StartCoroutine(executeCallbackAfterAsyncSleep_Routine(callback, sleep));
         }
 
         /// <summary>
@@ -220,6 +255,16 @@ namespace Fu
         }
 
         /// <summary>
+        /// Removes an external window with the specified Window.
+        /// </summary>
+        /// <param name="uiWindow">The external window to be removed.</param>
+        internal static void RemoveExternalWindow(FuWindow uiWindow)
+        {
+            // Close the external window and remove it from the list
+            RemoveExternalWindow(uiWindow.ID);
+        }
+
+        /// <summary>
         /// Removes an external window with the specified ID.
         /// </summary>
         /// <param name="id">The ID of the external window to be removed.</param>
@@ -235,9 +280,9 @@ namespace Fu
         }
 
         /// <summary>
-        /// Adds an UI window to be externalized.
+        /// Adds an UI window to be in 3D context.
         /// </summary>
-        /// <param name="uiWindow">The UI window to be externalized.</param>
+        /// <param name="uiWindow">The UI window to be display in 3D.</param>
         public static void Add3DWindow(FuWindow uiWindow, Vector3? position = null, Quaternion? rotation = null)
         {
             if (uiWindow == null)
@@ -250,17 +295,27 @@ namespace Fu
         }
 
         /// <summary>
+        /// Removes a 3D window with the specified Window.
+        /// </summary>
+        /// <param name="uiWindow">The 3D window to be removed.</param>
+        internal static void Remove3DWindow(FuWindow uiWindow)
+        {
+            // Close the 3D window and remove it from the list
+            Remove3DWindow(uiWindow.ID);
+        }
+
+        /// <summary>
         /// Removes an external window with the specified ID.
         /// </summary>
         /// <param name="id">The ID of the external window to be removed.</param>
         internal static void Remove3DWindow(string id)
         {
-            // Check if an external window with the specified ID exists
+            // Check if a 3D window with the specified ID exists
             if (!_3DWindows.ContainsKey(id))
             {
                 return;
             }
-            // Close the external window and remove it from the list
+            // Close the 3D window and remove it from the list
             _3DWindows[id].Close();
         }
 
@@ -838,12 +893,12 @@ namespace Fu
             return Regex.Replace(input, @"(?<=[a-z])(?=[A-Z])", " ");
         }
 
+        private static Dictionary<string, string> _untagedStrings = new Dictionary<string, string>();
         /// <summary>
         /// Get a text without tag "##xxxxxx"
         /// </summary>
         /// <param name="input">taged text</param>
         /// <returns>untaged text</returns>
-        static Dictionary<string, string> _untagedStrings = new Dictionary<string, string>();
         public static string GetUntagedText(string input)
         {
             if (!_untagedStrings.ContainsKey(input))
@@ -908,36 +963,50 @@ namespace Fu
         // Clipper
         private static unsafe readonly ImGuiListClipper* _clipper = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
 
+        /// <summary>
+        /// Beggin a list clipper. Use it to help drawing only visible items of a list (items need to have fixed height)
+        /// </summary>
+        /// <param name="count">number of items</param>
+        /// <param name="itemHeight">height of an item</param>
         public static unsafe void ListClipperBegin(int count = -1, float itemHeight = -1f)
         {
             ImGuiNative.ImGuiListClipper_Begin(_clipper, count, itemHeight);
         }
 
+        /// <summary>
+        /// End a list clipper
+        /// </summary>
         public static unsafe void ListClipperEnd()
         {
             ImGuiNative.ImGuiListClipper_End(_clipper);
         }
 
+        /// <summary>
+        /// do one step inside the list clipper. should be called like while(Step())
+        /// </summary>
+        /// <returns>true if step success</returns>
         public static unsafe bool ListClipperStep()
         {
             return ImGuiNative.ImGuiListClipper_Step(_clipper) == 1;
         }
 
+        /// <summary>
+        /// Get the index of the first list item to draw
+        /// </summary>
+        /// <returns>index of the item</returns>
         public static unsafe int ListClipperDisplayStart()
         {
             return _clipper->DisplayStart;
         }
 
+        /// <summary>
+        /// Get the index of the last list item to draw
+        /// </summary>
+        /// <returns>index of the item</returns>
         public static unsafe int ListClipperDisplayEnd()
         {
             return _clipper->DisplayEnd;
         }
         #endregion
-    }
-
-    public enum FontType
-    {
-        Regular,
-        Bold
     }
 }

@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Fu.Core;
+using ImGuiNET;
 using System;
 using UnityEngine;
 

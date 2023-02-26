@@ -133,7 +133,7 @@ namespace Fu.Framework
                 catch (Exception ex)
                 {
                     // something gone wrong, let's invoke Fugui Exception event
-                    Fugui.DoOnUIException(ex);
+                    Fugui.Fire_OnUIException(ex);
                     return Themes.Count;
                 }
             }
@@ -179,7 +179,7 @@ namespace Fu.Framework
                 catch (Exception ex)
                 {
                     // something gone wrong, let's invoke Fugui Exception event
-                    Fugui.DoOnUIException(ex);
+                    Fugui.Fire_OnUIException(ex);
                     return false;
                 }
             }
@@ -224,7 +224,7 @@ namespace Fu.Framework
             catch (Exception ex)
             {
                 // something gone wrong, let's invoke Fugui Exception event
-                Fugui.DoOnUIException(ex);
+                Fugui.Fire_OnUIException(ex);
                 return false;
             }
             return true;

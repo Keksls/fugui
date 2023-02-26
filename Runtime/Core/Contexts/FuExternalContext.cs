@@ -44,6 +44,7 @@ namespace Fu.Core
         /// </summary>
         internal override void EndRender()
         {
+            Fugui.IsRendering = false;
         }
 
         /// <summary>
@@ -51,6 +52,7 @@ namespace Fu.Core
         /// </summary>
         internal override bool PrepareRender()
         {
+            Fugui.IsRendering = true;
             Fugui.SetCurrentContext(this);
             if (!TryExecuteOnPrepareEvent())
             {

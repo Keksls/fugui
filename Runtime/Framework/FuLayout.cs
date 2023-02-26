@@ -201,7 +201,7 @@ namespace Fu.Framework
                 {
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
                 }
-                else if (LastItemHovered)
+                else if (ImGui.IsItemHovered())
                 {
                     // ImGui fail on inputText since version 1.88, check on new version
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
@@ -519,6 +519,11 @@ namespace Fu.Framework
             }
             // get active state
             LastItemActive = _activeItem == uniqueID;
+            // force full FPS the current active window
+            if(LastItemActive)
+            {
+                FuWindow.CurrentDrawingWindow?.ForceDraw();
+            }
             // get update state
             LastItemUpdate = updated;
         }

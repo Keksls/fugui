@@ -23,7 +23,7 @@ namespace Fu.Core
         void Awake()
         {
             // store Fugui settings
-            Fugui.Manager = this;
+            Fugui.Controller = this;
             Fugui.Settings = _settings;
 
             // init OpenTK, prevent UI Window externalization

@@ -80,6 +80,7 @@ namespace Fu.Core
         /// </summary>
         internal override void EndRender()
         {
+            Fugui.IsRendering = true;
             if (!renderPrepared)
                 return;
             renderPrepared = false;
@@ -92,6 +93,7 @@ namespace Fu.Core
         /// </summary>
         internal override bool PrepareRender()
         {
+            Fugui.IsRendering = true;
             // set this contextr as current
             Fugui.SetCurrentContext(this);
 

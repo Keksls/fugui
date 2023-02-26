@@ -42,7 +42,7 @@ namespace Fu.Core
         private int _currentTextureDepth = 24;
         private PostProcessLayer _postProcessLayer;
         private PostProcessLayer.Antialiasing _defaultAntiAliasing;
-        private bool _defaultCameraMSAA;
+        private bool _defaultCameraMSAA = false;
         private Vector2 _currentImageUV;
 
         public FuCameraWindow(FuCameraWindowDefinition windowDefinition) : base(windowDefinition)
@@ -56,7 +56,7 @@ namespace Fu.Core
             {
                 _defaultAntiAliasing = _postProcessLayer.antialiasingMode;
             }
-            Camera.allowMSAA = _defaultCameraMSAA;
+            _defaultCameraMSAA = Camera.allowMSAA;
             // set default MSAA friendly texture format
             _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
             _currentTextureDepth = 24;

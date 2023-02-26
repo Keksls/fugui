@@ -1,4 +1,5 @@
-﻿using Fu.Framework;
+﻿using Fu.Core;
+using Fu.Framework;
 using ImGuiNET;
 using UnityEngine;
 

@@ -1,5 +1,12 @@
 ﻿namespace Fu.Core
 {
+    public enum FontType
+    {
+        Regular,
+        Bold,
+        Italic
+    }
+
     public enum FuWindowFlags
     {
         Default = 0,

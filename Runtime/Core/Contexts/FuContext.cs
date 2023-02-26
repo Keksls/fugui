@@ -118,7 +118,7 @@ namespace Fu.Core
             }
             catch (Exception ex)
             {
-                Fugui.DoOnUIException(ex);
+                Fugui.Fire_OnUIException(ex);
             }
             finally
             {

@@ -140,7 +140,7 @@ namespace Fu.Framework
                 bool updated = false;
                 ImGui.Text(text);
                 ImGui.SameLine();
-                string formatString = format != null ? format : getFloatString(value);
+                string formatString = format != null ? format : getStringFormat(value);
                 if (ImGui.DragFloat(id, ref value, step, min, max, isInt ? "%.0f" : formatString, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp))
                 {
                     updated = true;

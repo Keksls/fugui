@@ -116,7 +116,7 @@ namespace Fu.Framework
             // Display a tool tip if one has been set
             displayToolTip();
             // Mark the element as hover framed
-            _elementHoverFramed = true;
+            _elementHoverFramedEnabled = true;
             // End the element
             endElement(style);
             // Return whether the text was edited

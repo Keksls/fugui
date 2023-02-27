@@ -58,7 +58,7 @@ namespace Fu.Framework
         public static FuMouseButton LastItemClickedButton { get; private set; } = FuMouseButton.None;
 
         // A flag indicating whether the element is hover framed.
-        private bool _elementHoverFramed = false;
+        private bool _elementHoverFramedEnabled = false;
         // A flag indicating whether the next element should be disabled.
         protected bool _nextIsDisabled;
         // An array of strings representing the current tool tips.
@@ -195,7 +195,7 @@ namespace Fu.Framework
             {
                 _nextIsDisabled = false;
             }
-            _elementHoverFramed = false;
+            _elementHoverFramedEnabled = false;
             if (!IsInsidePopUp && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
             {
                 FuPanel.Clipper.EndDrawElement();
@@ -207,7 +207,7 @@ namespace Fu.Framework
         /// </summary>
         private void drawHoverFrame()
         {
-            if (_elementHoverFramed && !_nextIsDisabled)
+            if (_elementHoverFramedEnabled && !_nextIsDisabled)
             {
                 if (ImGuiNative.igIsItemFocused() != 0)
                 {

@@ -59,7 +59,7 @@ namespace Fu.Framework
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             // draw text input frame and tooltip
-            _elementHoverFramed = true;
+            _elementHoverFramedEnabled = true;
             drawHoverFrame();
             displayToolTip(false, true);
 
@@ -83,7 +83,7 @@ namespace Fu.Framework
                     validatePath();
                 }
             }
-            _elementHoverFramed = true;
+            _elementHoverFramedEnabled = true;
             endElement(style);
 
             if (edited)

@@ -11,6 +11,7 @@ namespace Fu.Framework
         private class FuPopupData
         {
             public Action UI;
+            public Action OnClose;
             public bool OpenThisFrame = false;
             public bool CloseThisFrame = false;
             public Vector2 Size;
@@ -24,7 +25,8 @@ namespace Fu.Framework
         /// <param name="id">ID of the popup to draw</param>
         /// <param name="ui">UI to draw inside the popup</param>
         /// <param name="size">default size of the popup</param>
-        public void OpenPopUp(string id, Action ui, Vector2 size)
+        /// <param name="onClose">callback invoken then the popup close</param>
+        public void OpenPopUp(string id, Action ui, Vector2 size, Action onClose = null)
         {
             // remove from dic if already exists
             _registeredPopups.Remove(id);
@@ -34,7 +36,8 @@ namespace Fu.Framework
                 OpenThisFrame = true,
                 CloseThisFrame = false,
                 Size = size,
-                UI = ui
+                UI = ui,
+                OnClose = onClose
             };
             _registeredPopups.Add(id, data);
         }
@@ -130,6 +133,11 @@ namespace Fu.Framework
                 CurrentPopUpWindowID = null;
                 // Set the CurrentPopUpID to null
                 CurrentPopUpID = null;
+            }
+            // invoke the OnClose callback
+            if(_registeredPopups.ContainsKey(id))
+            {
+                _registeredPopups[id].OnClose?.Invoke();
             }
             // remove from dic
             _registeredPopups.Remove(id);

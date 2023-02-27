@@ -18,6 +18,14 @@ namespace Fu.Framework
         static FuStyle _defaultGridStyle;
         public static FuStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultGridStyle; } }
 
+        // no BG layout style
+        static FuStyle _noBGGridStyle;
+        public static FuStyle NoBackground { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGGridStyle; } }
+
+        // no BG unpadded layout style
+        static FuStyle _noBGUnpaddedGridStyle;
+        public static FuStyle NoBackgroundUnpadded { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGUnpaddedGridStyle; } }
+
         // modal layout style
         static FuStyle _modalStyle;
         public static FuStyle Modal { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _modalStyle; } }
@@ -66,6 +74,26 @@ namespace Fu.Framework
                 _textStyle = FuTextStyle.Default,
                 _framePadding = new Vector2(6f, 1f),
                 WindowPadding = new Vector2(2f, 2f)
+            };
+
+            // no background layout style
+            _noBGGridStyle = new FuStyle()
+            {
+                _containerStyle = FuPanelStyle.Transparent,
+                _frameStyle = FuFrameStyle.Default,
+                _textStyle = FuTextStyle.Default,
+                _framePadding = new Vector2(6f, 1f),
+                WindowPadding = new Vector2(2f, 2f)
+            };
+
+            // no background unpadded layout style
+            _noBGUnpaddedGridStyle = new FuStyle()
+            {
+                _containerStyle = FuPanelStyle.Transparent,
+                _frameStyle = FuFrameStyle.Default,
+                _textStyle = FuTextStyle.Default,
+                _framePadding = new Vector2(6f, 1f),
+                WindowPadding = new Vector2(0f, 0f)
             };
 
             // unpadded layout style

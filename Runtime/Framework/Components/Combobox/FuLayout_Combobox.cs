@@ -51,7 +51,7 @@ namespace Fu.Framework
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not linked to an object's field</param>
         /// <param name="listUpdated">whatever the list has been updated since last call (list or values inside. it's for performances on large. You can handle it using ObservableCollections)
         /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
-        public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter = null, Func<bool> listUpdated = null)
+        public void Combobox<T>(string text, List<T> items, Action<int> itemChange, Func<T> itemGetter = null, Func<bool> listUpdated = null)
         {
             Combobox<T>(text, items, itemChange, itemGetter, FuComboboxStyle.Default, listUpdated);
         }
@@ -67,14 +67,11 @@ namespace Fu.Framework
         /// <param name="style">The style to use for the dropdown box.</param>
         /// <param name="listUpdated">whatever the list has been updated since last call (list or values inside. it's for performances on large. You can handle it using ObservableCollections)
         /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
-        public void Combobox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter, FuComboboxStyle style, Func<bool> listUpdated = null)
+        public void Combobox<T>(string text, List<T> items, Action<int> itemChange, Func<T> itemGetter, FuComboboxStyle style, Func<bool> listUpdated = null)
         {
             List<IFuSelectable> cItems = FuSelectableBuilder.BuildFromList<T>(text, items, listUpdated?.Invoke() ?? true);
             // Display the custom combobox and call the specified action when the selected item changes
-            _customCombobox(text, cItems, (index) =>
-            {
-                itemChange?.Invoke(items[index]);
-            }, () => { return itemGetter?.Invoke()?.ToString(); }, style);
+            _customCombobox(text, cItems, itemChange, () => { return itemGetter?.Invoke()?.ToString(); }, style);
         }
         #endregion
 

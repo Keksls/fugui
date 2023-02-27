@@ -100,7 +100,7 @@ namespace Fu.Framework
             setBaseElementState(text, ImGui.GetItemRectMin(), ImGui.GetItemRectSize(), true, valueChanged);
             // Display a tooltip and set the _elementHoverFramed flag
             displayToolTip();
-            _elementHoverFramed = true;
+            _elementHoverFramedEnabled = true;
             return valueChanged;
         }
         #endregion
@@ -189,7 +189,7 @@ namespace Fu.Framework
             }
             Fugui.PopStyle();
             // prevent to draw full element hover frame
-            _elementHoverFramed = false;
+            _elementHoverFramedEnabled = false;
             // reset last item ID (has been change before to use a unique ID per dragFloat)
             LastItemID = text;
             // set states for this element
@@ -299,7 +299,7 @@ namespace Fu.Framework
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, valueChanged);
             // prevent to draw full element hover frame
-            _elementHoverFramed = false;
+            _elementHoverFramedEnabled = false;
             endElement(style);
             return valueChanged;
         }
@@ -392,7 +392,7 @@ namespace Fu.Framework
             }
             Fugui.PopStyle();
             // prevent to draw full element hover frame
-            _elementHoverFramed = false;
+            _elementHoverFramedEnabled = false;
             // reset last item ID (has been change before to use a unique ID per dragFloat)
             LastItemID = text;
             // set states for this element
@@ -505,7 +505,7 @@ namespace Fu.Framework
             // display the tool tip, if there is one
             displayToolTip();
             // this element can draw a fram if it is hovered
-            _elementHoverFramed = true;
+            _elementHoverFramedEnabled = true;
             // endup the element
             endElement(style);
             // return whatever the value has changed

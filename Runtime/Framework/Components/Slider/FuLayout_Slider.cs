@@ -157,7 +157,7 @@ namespace Fu.Framework
                 }
                 ImGui.PopItemWidth();
                 displayToolTip();
-                _elementHoverFramed = true;
+                _elementHoverFramedEnabled = true;
                 drawHoverFrame();
             }
 

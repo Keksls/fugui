@@ -65,7 +65,7 @@ namespace Fu.Framework
             if (addBorder)
             {
                 drawBorderFrame(new Rect(_currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos), false);
-                _elementHoverFramed = true;
+                _elementHoverFramedEnabled = true;
             }
             endElement();
             return LastItemClickedButton == FuMouseButton.Left;
@@ -104,7 +104,7 @@ namespace Fu.Framework
             if (addBorder)
             {
                 drawBorderFrame(new Rect(_currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos), false);
-                _elementHoverFramed = true;
+                _elementHoverFramedEnabled = true;
             }
             displayToolTip();
             endElement();

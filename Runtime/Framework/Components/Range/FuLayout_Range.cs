@@ -126,7 +126,7 @@ namespace Fu.Framework
             ImGui.InvisibleButton(text, new Vector2(width, maxY - cursorPos.y), ImGuiButtonFlags.None);
 
             // do not draw hover frame
-            _elementHoverFramed = false;
+            _elementHoverFramedEnabled = false;
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, updated);
             // end the element
@@ -153,9 +153,9 @@ namespace Fu.Framework
                 }
                 ImGui.PopItemWidth();
                 displayToolTip();
-                _elementHoverFramed = true;
+                _elementHoverFramedEnabled = true;
                 drawHoverFrame();
-                _elementHoverFramed = false;
+                _elementHoverFramedEnabled = false;
                 return updated;
             }
 

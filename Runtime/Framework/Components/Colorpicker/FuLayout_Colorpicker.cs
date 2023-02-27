@@ -13,7 +13,8 @@ namespace Fu.Framework
         ///<param name="color">A reference to the vector3 containing the current color value. This value will be updated if the user changes the color.</param>
         public bool ColorPicker(string text, ref Vector4 color)
         {
-            return ColorPicker(text, ref color, FuFrameStyle.Default);
+            // Use the custom color picker function to display the widget and get the result
+            return _customColorPicker(text, true, ref color, FuFrameStyle.Default);
         }
 
         ///<summary>
@@ -23,7 +24,17 @@ namespace Fu.Framework
         ///<param name="color">A reference to the vector4 containing the current color value. This value will be updated if the user changes the color.</param>
         public bool ColorPicker(string text, ref Vector3 color)
         {
-            return ColorPicker(text, ref color, FuFrameStyle.Default);
+            // Convert the vector3 color value to a vector4 value
+            Vector4 col = color;
+            // Use the custom color picker function to display the widget and get the result
+            bool edited = _customColorPicker(text, false, ref col, FuFrameStyle.Default);
+            // If the color was edited, update the vector3 value with the new color
+            if (edited)
+            {
+                color = (Vector3)col;
+            }
+            // Return whether the color was edited
+            return edited;
         }
 
         ///<summary>
@@ -32,10 +43,10 @@ namespace Fu.Framework
         ///<param name="text">A unique identifier for the color picker widget.</param>
         ///<param name="color">A reference to the vector4 containing the current color value. This value will be updated if the user changes the color.</param>
         ///<param name="style">The style to apply to the color picker widget.</param>
-        public virtual bool ColorPicker(string text, ref Vector4 color, FuFrameStyle style)
+        public bool ColorPicker(string text, ref Vector4 color, FuFrameStyle style)
         {
             // Use the custom color picker function to display the widget and get the result
-            return _customColorPicker(text, true, ref color, FuFrameStyle.Default);
+            return _customColorPicker(text, true, ref color, style);
         }
 
         ///<summary>
@@ -44,12 +55,12 @@ namespace Fu.Framework
         ///<param name="text">A unique identifier for the color picker widget.</param>
         ///<param name="color">A reference to the vector3 containing the current color value. This value will be updated if the user changes the color.</param>
         ///<param name="style">The style to apply to the color picker widget.</param>
-        public virtual bool ColorPicker(string text, ref Vector3 color, FuFrameStyle style)
+        public bool ColorPicker(string text, ref Vector3 color, FuFrameStyle style)
         {
             // Convert the vector3 color value to a vector4 value
             Vector4 col = color;
             // Use the custom color picker function to display the widget and get the result
-            bool edited = _customColorPicker(text, false, ref col, FuFrameStyle.Default);
+            bool edited = _customColorPicker(text, false, ref col, style);
             // If the color was edited, update the vector3 value with the new color
             if (edited)
             {
@@ -67,7 +78,7 @@ namespace Fu.Framework
         /// <param name="color">reference of the color to display and edit</param>
         /// <param name="style">the FrameStyle to apply to the right-side input</param>
         /// <returns>true if value has been edited</returns>
-        private bool _customColorPicker(string text, bool alpha, ref Vector4 color, FuFrameStyle style)
+        protected virtual bool _customColorPicker(string text, bool alpha, ref Vector4 color, FuFrameStyle style)
         {
             bool edited = false;
             beginElement(ref text, style);
@@ -109,9 +120,9 @@ namespace Fu.Framework
             drawList.AddRect(min, max, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Border)), rounding, ImDrawFlags.None, 1f);
             // fake draw the element
             ImGui.Dummy(max - min + Vector2.one * 2f);
-            _elementHoverFramed = true;
+            _elementHoverFramedEnabled = true;
             drawHoverFrame();
-            _elementHoverFramed = false;
+            _elementHoverFramedEnabled = false;
 
             // set states for this element
             setBaseElementState(text, min, max - min, true, false);
@@ -124,17 +135,17 @@ namespace Fu.Framework
 
             if (alpha)
             {
-                ImGui.SetNextWindowSize(new Vector2(256f * Fugui.CurrentContext.Scale, 202f * Fugui.CurrentContext.Scale));
+                ImGui.SetNextWindowSize(new Vector2(404f * Fugui.CurrentContext.Scale, 212f * Fugui.CurrentContext.Scale));
             }
             else
             {
-                ImGui.SetNextWindowSize(new Vector2(256f * Fugui.CurrentContext.Scale, 224f * Fugui.CurrentContext.Scale));
+                ImGui.SetNextWindowSize(new Vector2(404f * Fugui.CurrentContext.Scale, 224f * Fugui.CurrentContext.Scale));
             }
-            if (ImGui.BeginPopup("ColorPicker" + text))
+            if (ImGui.BeginPopup("ColorPicker" + text, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 // Draw the color picker
                 ImGui.SetNextItemWidth(184f * Fugui.CurrentContext.Scale);
-                edited = ImGui.ColorPicker4("##picker" + text, ref color, ImGuiColorEditFlags.DefaultOptions | ImGuiColorEditFlags.DisplayHex | (alpha ? ImGuiColorEditFlags.AlphaBar : ImGuiColorEditFlags.NoAlpha));
+                edited = Fugui.Colorpicker("##picker" + text, ref color, false, true, alpha, alpha);
                 if (CurrentPopUpID != "ColorPicker" + text)
                 {
                     CurrentPopUpWindowID = FuWindow.CurrentDrawingWindow?.ID;

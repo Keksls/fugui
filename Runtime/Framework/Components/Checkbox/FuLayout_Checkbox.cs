@@ -68,7 +68,7 @@ namespace Fu.Framework
                 clicked = ImGui.Checkbox(text, ref isChecked); // Display an enabled checkbox and update the value of isChecked based on user interaction
             }
             displayToolTip(); // Display a tooltip if one has been set for this element
-            _elementHoverFramed = true; // Set the flag indicating that this element should have a hover frame drawn around it
+            _elementHoverFramedEnabled = true; // Set the flag indicating that this element should have a hover frame drawn around it
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, clicked);
             endElement(null); // Pop the style for the checkbox element
             Fugui.PopColor(4);

@@ -7,35 +7,19 @@ namespace Fu.Framework
         /// <summary>
         /// Display a custom color picker
         /// </summary>
-        /// <param name="id">ID/Label of the colorpicked</param>
+        /// <param name="text">ID/Label of the colorpicked</param>
+        /// <param name="alpha">did the color picker must draw alpha line and support alpha</param>
         /// <param name="color">reference od the color value</param>
         /// <param name="style">UIFrameStyle of the colorpicker</param>
         /// <returns>true if value change</returns>
-        public override bool ColorPicker(string id, ref Vector4 color, FuFrameStyle style)
+        protected override bool _customColorPicker(string text, bool alpha, ref Vector4 color, FuFrameStyle style)
         {
             if (!_gridCreated)
             {
                 return false;
             }
-            drawElementLabel(id, FuTextStyle.Default);
-            return base.ColorPicker(id, ref color, style);
-        }
-
-        /// <summary>
-        /// Display a alphaless custom color picker (without alpha)
-        /// </summary>
-        /// <param name="id">ID/Label of the colorpicked</param>
-        /// <param name="color">reference od the color value</param>
-        /// <param name="style">UIFrameStyle of the colorpicker</param>
-        /// <returns>true if value change</returns>
-        public override bool ColorPicker(string id, ref Vector3 color, FuFrameStyle style)
-        {
-            if (!_gridCreated)
-            {
-                return false;
-            }
-            drawElementLabel(id, FuTextStyle.Default);
-            return base.ColorPicker(id, ref color, style);
+            drawElementLabel(text, FuTextStyle.Default);
+            return base._customColorPicker(text, alpha, ref color, style);
         }
     }
 }

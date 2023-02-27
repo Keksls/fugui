@@ -108,7 +108,7 @@ namespace Fu.Framework
 
             // display tooltip if needed
             displayToolTip(); // Display a tooltip if one has been set for this element
-            _elementHoverFramed = false; // Set the flag indicating that this element should have a hover frame drawn around it
+            _elementHoverFramedEnabled = false; // Set the flag indicating that this element should have a hover frame drawn around it
             endElement(style); // Pop the style for the checkbox element
             return clicked; // Return a boolean indicating whether the checkbox was clicked by the user
         }

@@ -49,7 +49,11 @@ namespace Fu.Framework
         /// </summary>
         public static bool LastItemUpdate { get; private set; } = false;
         /// <summary>
-        /// A flag indicating last drawed item has just done an update operation this frame.
+        /// The ID of the item that just been draw.
+        /// </summary>
+        public static string LastItemID { get; private set; } = string.Empty;
+        /// <summary>
+        /// the button just clicked on the last draw item.
         /// </summary>
         public static FuMouseButton LastItemClickedButton { get; private set; } = FuMouseButton.None;
 
@@ -71,6 +75,13 @@ namespace Fu.Framework
         private static Vector2 _currentItemStartPos;
         // whatever elements are currently disabled (if true)
         private bool _longDisabled = false;
+        // the time before an hovered element display it's tooltip
+        private static float _tooltipAppearDuration = 1.0f;
+        // the time at the fame the current hovered element start to be hovered
+        private static float _currentHoveredStartHoverTime = 0f;
+        // the time at the fame the current hovered element star
+        // the ID if the element that want to display tooltips
+        private static string _currentHoveredElementId = string.Empty;
         #endregion
 
         #region Elements Data
@@ -155,6 +166,7 @@ namespace Fu.Framework
                 {
                     elementID = elementID + "##" + FuWindow.CurrentDrawingWindow.ID;
                 }
+                LastItemID = elementID;
             }
             // if out of scroll bounds, we must dummy the element rect
             else
@@ -174,7 +186,7 @@ namespace Fu.Framework
             {
                 style?.Pop();
                 drawHoverFrame();
-                if(LastItemClickedButton == FuMouseButton.Right)
+                if (LastItemClickedButton == FuMouseButton.Right)
                 {
                     Fugui.TryOpenContextMenu();
                 }
@@ -331,14 +343,14 @@ namespace Fu.Framework
         }
 
         #region private utils
-        #region drag decimals
+        #region string formats
         /// <summary>
         /// Gets the string format for the given id and value
         /// </summary>
         /// <param name="id">ID of the UIElement</param>
         /// <param name="value">float Value</param>
         /// <returns></returns>
-        private string getFloatString(float value)
+        private string getStringFormat(float value)
         {
             // If the element is focused, set the string format to 4 decimal places
             if (ImGuiNative.igIsItemFocused() != 0)
@@ -360,7 +372,7 @@ namespace Fu.Framework
         }
         #endregion
 
-        #region string utils
+        #region tooltip utils
         /// <summary>
         /// Displays a tooltip if the current element is hovered over, or if force is set to true.
         /// </summary>
@@ -380,7 +392,12 @@ namespace Fu.Framework
                         style = _currentToolTipsStyles[_currentToolTipsIndex];
                     }
 
-                    SetToolTip(_currentToolTips[_currentToolTipsIndex], style);
+                    setToolTip(LastItemID, _currentToolTips[_currentToolTipsIndex], style);
+                }
+                // cancel smooth tooltip display
+                else if (LastItemID == _currentHoveredElementId)
+                {
+                    _currentHoveredElementId = string.Empty;
                 }
 
                 // is we want to ignore tooltip avancement, let's return without increment the index
@@ -403,24 +420,34 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="text">text of the tooltip</param>
         /// <param name="style">style on the tooltip</param>
-        public void SetToolTip(string text, FuTextStyle style)
+        private void setToolTip(string ID, string text, FuTextStyle style)
         {
-            style.Push(!_nextIsDisabled);
-            // set padding and font
-            Fugui.PushDefaultFont();
-            Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
-            // Display the current tooltip
-            if (_nextIsDisabled)
+            // handle delayed display
+            if (ID != _currentHoveredElementId)
             {
-                ImGui.SetTooltip("(Disabled) : " + text);
+                _currentHoveredElementId = ID;
+                _currentHoveredStartHoverTime = Fugui.Time;
             }
-            else
+
+            if (Fugui.Time - _currentHoveredStartHoverTime >= _tooltipAppearDuration)
             {
-                ImGui.SetTooltip(text);
+                style.Push(!_nextIsDisabled);
+                // set padding and font
+                Fugui.PushDefaultFont();
+                Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
+                // Display the current tooltip
+                if (_nextIsDisabled)
+                {
+                    ImGui.SetTooltip("(Disabled) : " + text);
+                }
+                else
+                {
+                    ImGui.SetTooltip(text);
+                }
+                Fugui.PopStyle();
+                Fugui.PopFont();
+                style.Pop();
             }
-            Fugui.PopStyle();
-            Fugui.PopFont();
-            style.Pop();
         }
         #endregion
 
@@ -520,7 +547,7 @@ namespace Fu.Framework
             // get active state
             LastItemActive = _activeItem == uniqueID;
             // force full FPS the current active window
-            if(LastItemActive)
+            if (LastItemActive)
             {
                 FuWindow.CurrentDrawingWindow?.ForceDraw();
             }
@@ -536,6 +563,12 @@ namespace Fu.Framework
         /// <returns>true ifhovered</returns>
         protected bool isItemHovered(Vector2 pos, Vector2 size)
         {
+            // we are NOT inside a popup but there is a popup, assuming we can't hover anything
+            if (!IsInsidePopUp && !string.IsNullOrEmpty(CurrentPopUpID))
+            {
+                return false;
+            }
+
             bool hovered;
             Vector2 mousePos = ImGui.GetMousePos();
             // the element is drawed inside a window
@@ -550,11 +583,6 @@ namespace Fu.Framework
                 hovered = mousePos.x > pos.x && mousePos.x < pos.x + size.x && mousePos.y > pos.y && mousePos.y < pos.y + size.y;
             }
 
-            // we are NOT inside a popup but there is a popup, assuming we can't hover anything
-            if (!IsInsidePopUp && !string.IsNullOrEmpty(CurrentPopUpID))
-            {
-                hovered = false;
-            }
             return hovered;
         }
     }

@@ -670,7 +670,6 @@ namespace Fu.Framework
             ImGui.Text(text);
             if (hovered)
             {
-                SetToolTip(URL, FuTextStyle.Default);
                 if (!_nextIsDisabled)
                 {
                     // set mouse cursor

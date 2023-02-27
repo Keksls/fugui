@@ -144,7 +144,7 @@ namespace Fu.Framework
             // function that draw the slider drag
             void drawDrag(string text, ref float value, float min, float max, bool isInt)
             {
-                string formatString = format != null ? format : getFloatString(value);
+                string formatString = format != null ? format : getStringFormat(value);
                 ImGui.PushItemWidth(dragWidth);
                 if (ImGui.InputFloat("##" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, _nextIsDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
                 {

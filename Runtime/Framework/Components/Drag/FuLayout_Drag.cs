@@ -74,6 +74,8 @@ namespace Fu.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         private bool dragFloat(string text, ref float value, string vString, float min, float max, float speed, string format)
         {
+            // set the current item ID, so internal calculation can be unique (overwise the V2/V3 and V4 draw will use same ID for each dragFloat)
+            LastItemID = text;
             // Display the string before the input field if it was provided
             if (!string.IsNullOrEmpty(vString))
             {
@@ -85,7 +87,7 @@ namespace Fu.Framework
             // Set the width of the input field and create it
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             var oldVal = value; // Store the old value in case the input field is disabled
-            bool valueChanged = ImGui.DragFloat("##" + text, ref value, speed, min, max, string.IsNullOrEmpty(format) ? getFloatString(value) : format, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+            bool valueChanged = ImGui.DragFloat("##" + text, ref value, speed, min, max, string.IsNullOrEmpty(format) ? getStringFormat(value) : format, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
 
             // If the input field is disabled, reset its value and return false for the valueChanged flag
             if (_nextIsDisabled)
@@ -95,7 +97,7 @@ namespace Fu.Framework
             }
 
             // set states for this element
-            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, valueChanged);
+            setBaseElementState(text, ImGui.GetItemRectMin(), ImGui.GetItemRectSize(), true, valueChanged);
             // Display a tooltip and set the _elementHoverFramed flag
             displayToolTip();
             _elementHoverFramed = true;
@@ -186,8 +188,10 @@ namespace Fu.Framework
                 ImGui.EndTable();
             }
             Fugui.PopStyle();
-            // Reset the flag for whether the element is hovered and framed
+            // prevent to draw full element hover frame
             _elementHoverFramed = false;
+            // reset last item ID (has been change before to use a unique ID per dragFloat)
+            LastItemID = text;
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, valueChanged);
             // End the element
@@ -290,10 +294,11 @@ namespace Fu.Framework
             }
             Fugui.PopStyle();
 
+            // reset last item ID (has been change before to use a unique ID per dragFloat)
+            LastItemID = text;
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, valueChanged);
-
-            // Reset the hover frame flag
+            // prevent to draw full element hover frame
             _elementHoverFramed = false;
             endElement(style);
             return valueChanged;
@@ -386,7 +391,10 @@ namespace Fu.Framework
                 ImGui.EndTable();
             }
             Fugui.PopStyle();
+            // prevent to draw full element hover frame
             _elementHoverFramed = false;
+            // reset last item ID (has been change before to use a unique ID per dragFloat)
+            LastItemID = text;
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, valueChanged);
             endElement(style);

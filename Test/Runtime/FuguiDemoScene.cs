@@ -492,6 +492,8 @@ public class FuguiDemoScene : MonoBehaviour
                 {
                     layout.Text("Check Fugui ");
                     layout.SameLine();
+                    layout.SetNextElementToolTipStyles(FuTextStyle.Info);
+                    layout.SetNextElementToolTipWithLabel("https://framagit.org/Hydrocode/fugui");
                     layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui", FuTextStyle.Info);
 
                     layout.Collapsable("Knobs", () =>

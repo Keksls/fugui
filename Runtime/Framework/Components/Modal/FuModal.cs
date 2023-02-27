@@ -41,6 +41,14 @@ namespace Fu
                     new FuModalButton("OK", CloseModal, FuButtonStyle.Default)
                 };
             }
+            // set default button style if needed
+            if (!Settings.StateModalsUseButtonColors)
+            {
+                foreach (var button in buttons)
+                {
+                    button.SetStyle(FuButtonStyle.Default);
+                }
+            }
             _modalButtons = buttons; //store the buttons
             _showModal = true; //set showModal to true to show the modal
             _currentModalSize = modalSize;
@@ -69,7 +77,7 @@ namespace Fu
             if (_showModal)
             {
                 ImGui.OpenPopup(_modalTitle); //open the modal with the stored title
-                 
+
                 // claculate y padding
                 float yPadding = FuThemeManager.CurrentTheme.FramePadding.y * 2f + FuThemeManager.CurrentTheme.WindowPadding.y * 2f;
                 // calculate footer height
@@ -242,13 +250,8 @@ namespace Fu
         /// <param name="modalSize">size of the modal</param>
         /// <param name="icon">icon of the modal box</param>
         /// <param name="color">color of the icon</param>
-        private static void showBox(string title, Action body, FuModalSize modalSize, Texture2D icon, Color color, FuButtonStyle buttonStyle)
+        private static void showBox(string title, Action body, FuModalSize modalSize, Texture2D icon, Color color, params FuModalButton[] buttons)
         {
-            // set default button style if needed
-            if(!Fugui.Settings.StateModalsUseButtonColors)
-            {
-                buttonStyle = FuButtonStyle.Default;
-            }
             //call the ShowModal method with the title, body, and buttons
             ShowModal(title, () =>
             {
@@ -263,7 +266,7 @@ namespace Fu
                     grid.NextColumn();
                     body?.Invoke();
                 };
-            }, modalSize, new FuModalButton("OK", CloseModal, buttonStyle));
+            }, modalSize, buttons);
         }
 
         /// <summary>
@@ -274,7 +277,7 @@ namespace Fu
         /// <param name="modalSize">size of the modal</param>
         /// <param name="icon">icon of the modal box</param>
         /// <param name="color">color of the icon</param>
-        private static void showBox(string title, string body, FuModalSize modalSize, Texture2D icon, Color color, FuButtonStyle buttonStyle)
+        private static void showBox(string title, string body, FuModalSize modalSize, Texture2D icon, Color color, params FuModalButton[] buttons)
         {
             showBox(title, () =>
             {
@@ -282,7 +285,7 @@ namespace Fu
                 {
                     layout.Text(body);
                 }
-            }, modalSize, icon, color, buttonStyle);
+            }, modalSize, icon, color, buttons);
         }
 
         /// <summary>
@@ -291,9 +294,9 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowInfo(string title, Action body, FuModalSize modalSize)
+        public static void ShowInfo(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.InfoIcon, FuTextStyle.Info.Text, FuButtonStyle.Info);
+            showBox(title, body, modalSize, Fugui.Settings.InfoIcon, FuTextStyle.Info.Text, buttons);
         }
 
         /// <summary>
@@ -302,9 +305,9 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowInfo(string title, string body, FuModalSize modalSize)
+        public static void ShowInfo(string title, string body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.InfoIcon, FuTextStyle.Info.Text, FuButtonStyle.Info);
+            showBox(title, body, modalSize, Fugui.Settings.InfoIcon, FuTextStyle.Info.Text, buttons);
         }
 
         /// <summary>
@@ -313,9 +316,9 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowDanger(string title, Action body, FuModalSize modalSize)
+        public static void ShowDanger(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.DangerIcon, FuTextStyle.Danger.Text, FuButtonStyle.Danger);
+            showBox(title, body, modalSize, Fugui.Settings.DangerIcon, FuTextStyle.Danger.Text, buttons);
         }
 
         /// <summary>
@@ -324,9 +327,9 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowDanger(string title, string body, FuModalSize modalSize)
+        public static void ShowDanger(string title, string body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.DangerIcon, FuTextStyle.Danger.Text, FuButtonStyle.Danger);
+            showBox(title, body, modalSize, Fugui.Settings.DangerIcon, FuTextStyle.Danger.Text, buttons);
         }
 
         /// <summary>
@@ -335,9 +338,9 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowWarning(string title, Action body, FuModalSize modalSize)
+        public static void ShowWarning(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.WarningIcon, FuTextStyle.Warning.Text, FuButtonStyle.Warning);
+            showBox(title, body, modalSize, Fugui.Settings.WarningIcon, FuTextStyle.Warning.Text, buttons);
         }
 
         /// <summary>
@@ -346,9 +349,9 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowWarning(string title, string body, FuModalSize modalSize)
+        public static void ShowWarning(string title, string body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.WarningIcon, FuTextStyle.Warning.Text, FuButtonStyle.Warning);
+            showBox(title, body, modalSize, Fugui.Settings.WarningIcon, FuTextStyle.Warning.Text, buttons);
         }
 
         /// <summary>
@@ -357,9 +360,9 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowSuccess(string title, Action body, FuModalSize modalSize)
+        public static void ShowSuccess(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.SuccessIcon, FuTextStyle.Success.Text, FuButtonStyle.Success);
+            showBox(title, body, modalSize, Fugui.Settings.SuccessIcon, FuTextStyle.Success.Text, buttons);
         }
 
         /// <summary>
@@ -368,9 +371,9 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowSuccess(string title, string body, FuModalSize modalSize)
+        public static void ShowSuccess(string title, string body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.SuccessIcon, FuTextStyle.Success.Text, FuButtonStyle.Success);
+            showBox(title, body, modalSize, Fugui.Settings.SuccessIcon, FuTextStyle.Success.Text, buttons);
         }
         #endregion
     }

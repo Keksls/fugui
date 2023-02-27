@@ -313,6 +313,11 @@ namespace Fu.Core
         /// <param name="size">size of the image</param>
         public void ImGuiImage(RenderTexture texture, Vector2 size)
         {
+            if(texture == null)
+            {
+                ImGui.Dummy(size);
+                return;
+            }
             ImGui.Image(GetTextureID(texture), size);
         }
 
@@ -323,6 +328,11 @@ namespace Fu.Core
         /// <param name="size">size of the image</param>
         public void ImGuiImage(Texture2D texture, Vector2 size)
         {
+            if (texture == null)
+            {
+                ImGui.Dummy(size);
+                return;
+            }
             ImGui.Image(GetTextureID(texture), size);
         }
 
@@ -334,6 +344,11 @@ namespace Fu.Core
         /// <param name="color">tint color of the image</param>
         public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color)
         {
+            if (texture == null)
+            {
+                ImGui.Dummy(size);
+                return;
+            }
             ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
         }
 
@@ -345,6 +360,11 @@ namespace Fu.Core
         /// <param name="color">tint color of the image</param>
         public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color)
         {
+            if (texture == null)
+            {
+                ImGui.Dummy(size);
+                return;
+            }
             ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
         }
 
@@ -356,6 +376,11 @@ namespace Fu.Core
         /// <returns>true if clicked</returns>
         public bool ImGuiImageButton(Texture2D texture, Vector2 size)
         {
+            if (texture == null)
+            {
+                ImGui.Dummy(size);
+                return false;
+            }
             return ImGui.ImageButton("", GetTextureID(texture), size);
         }
 
@@ -368,6 +393,11 @@ namespace Fu.Core
         /// <returns>true if clicked</returns>
         public bool ImGuiImageButton(Texture2D texture, Vector2 size, Vector4 color)
         {
+            if (texture == null)
+            {
+                ImGui.Dummy(size);
+                return false;
+            }
             return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
         }
         #endregion

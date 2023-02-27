@@ -1,35 +1,40 @@
 ﻿using ImGuiNET;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
     public struct FuModalButton
     {
-        public string text;
-        public Action callback;
-        public FuButtonStyle style;
+        public string Text;
+        public Action Callback;
+        public FuButtonStyle Style;
 
         public FuModalButton(string text, Action callback, FuButtonStyle style)
         {
-            this.text = text;
-            this.callback = callback;
-            this.style = style;
+            this.Text = text;
+            this.Callback = callback;
+            this.Style = style;
         }
 
         public void Draw(FuLayout layout)
         {
-            if (layout.Button(text, GetButtonSize(), style))
+            if (layout.Button(Text, GetButtonSize(), Style))
             {
-                callback();
+                Callback?.Invoke();
+                Fugui.CloseModal();
             }
         }
 
         public Vector2 GetButtonSize()
         {
             Vector2 framePadding = FuThemeManager.CurrentTheme.FramePadding;
-            return ImGui.CalcTextSize(text) + (framePadding * 2f);
+            return ImGui.CalcTextSize(Text) + (framePadding * 2f);
+        }
+
+        public void SetStyle(FuButtonStyle style)
+        {
+            Style = style;
         }
     }
 }

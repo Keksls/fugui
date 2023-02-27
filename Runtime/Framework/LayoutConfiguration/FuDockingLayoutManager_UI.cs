@@ -23,8 +23,9 @@ namespace Fu
                     {
                         _layoutManagement_grid.NextColumn();
                         _layoutManagement_grid.Text("Select a FuGui Layout Configuration in the list to edit. You can also create a new one and associate windows defination to layout and dockspaces. If you create a new one or edit an existing FuGui Layout, please clic on 'Save layout' button to save changes.");
-                        _layoutManagement_grid.Combobox("Available layouts", FuDockingLayoutManager.Layouts.Keys.ToList(), (key) =>
+                        _layoutManagement_grid.Combobox("Available layouts", FuDockingLayoutManager.Layouts.Keys.ToList(), (index) =>
                         {
+                            var key = FuDockingLayoutManager.Layouts.Keys.ToList()[index];
                             FuDockingLayoutManager.CurrentLayout = FuDockingLayoutManager.Layouts[key];
                             FuDockingLayoutManager.DisplayLayoutName = key;
                         },
@@ -225,7 +226,7 @@ namespace Fu
                 {
                     using (FuGrid windowsDefinition_grid = new FuGrid("windowsDefinition_grid"))
                     {
-                        windowsDefinition_grid.Combobox("Windows definition", FuDockingLayoutManager._fuguiWindows.Values.ToList(), (x) => { FuDockingLayoutManager._selectedWindowDefinition = x; }, () => { return FuDockingLayoutManager._selectedWindowDefinition; });
+                        windowsDefinition_grid.Combobox("Windows definition", FuDockingLayoutManager._fuguiWindows.Values.ToList(), (index) => { FuDockingLayoutManager._selectedWindowDefinition = FuDockingLayoutManager._fuguiWindows.Values.ToList()[index]; }, () => { return FuDockingLayoutManager._selectedWindowDefinition; });
                         windowsDefinition_grid.TextInput("Window name", ref FuDockingLayoutManager._windowsToAdd);
 
                         if (!string.IsNullOrEmpty(FuDockingLayoutManager._windowsToAdd))
@@ -311,17 +312,18 @@ namespace Fu
 
                                 if (FuDockingLayoutManager._definedDockSpaces != null)
                                 {
-                                    tempGrid.Combobox(item.Value, FuDockingLayoutManager._definedDockSpaces.Values.ToList(), (x) =>
+                                    tempGrid.Combobox(item.Value, FuDockingLayoutManager._definedDockSpaces.Values.ToList(), (index) =>
                                     {
-                                        if (x != null)
+                                        var value = FuDockingLayoutManager._definedDockSpaces.Values.ToList()[index];
+                                        if (value != null)
                                         {
-                                            if (x == "None")
+                                            if (value == "None")
                                             {
                                                 FuDockingLayoutManager.unbindWindowToDockspace(item.Key);
                                             }
                                             else
                                             {
-                                                FuDockingLayoutManager.bindWindowToDockspace(item.Key, x);
+                                                FuDockingLayoutManager.bindWindowToDockspace(item.Key, value);
                                             }
                                         }
                                     },

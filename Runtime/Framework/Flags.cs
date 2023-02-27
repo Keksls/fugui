@@ -220,7 +220,15 @@ namespace Fu.Framework
         /// <summary>
         /// Align toggle text to the left
         /// </summary>
-        AlignLeft = 2
+        AlignLeft = 2,
+        /// <summary>
+        /// The state of this toggle can't be changed by user
+        /// </summary>
+        NoEditable = 4,
+        /// <summary>
+        /// The toggle is not an activation state, it's a switch state, so the color will always be the non selected one
+        /// </summary>
+        SwitchState = 8
     }
 
     /// <summary>

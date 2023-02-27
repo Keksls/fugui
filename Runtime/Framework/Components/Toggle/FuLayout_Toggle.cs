@@ -55,6 +55,7 @@ namespace Fu.Framework
                 _uiElementAnimationDatas.Add(text, new FuElementAnimationData(!value));
             }
             FuElementAnimationData data = _uiElementAnimationDatas[text];
+            bool noEditable = flags.HasFlag(FuToggleFlags.NoEditable);
 
             // process Text Size
             string currentText = value ? textRight : textLeft;
@@ -104,7 +105,7 @@ namespace Fu.Framework
             ImGui.SetCursorScreenPos(pos);
             ImGui.Dummy(size);
             // set states for this element
-            setBaseElementState(text, pos, size, true, false, true);
+            setBaseElementState(text, pos, size, !noEditable, false, true);
 
             // handle click
             if (LastItemUpdate)
@@ -114,29 +115,30 @@ namespace Fu.Framework
             }
 
             // set mouse cursor
-            if (LastItemHovered && !_nextIsDisabled)
+            if (LastItemHovered && !_nextIsDisabled && !noEditable)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
 
-            Vector4 BGColor = value ? FuThemeManager.GetColor(FuColors.Selected) : FuThemeManager.GetColor(FuColors.FrameBg);
+            bool colValue = flags.HasFlag(FuToggleFlags.SwitchState) ? false : value;
+            Vector4 BGColor = colValue ? FuThemeManager.GetColor(FuColors.Selected) : FuThemeManager.GetColor(FuColors.FrameBg);
             Vector4 KnobColor = FuThemeManager.GetColor(FuColors.Knob);
-            Vector4 TextColor = value ? FuThemeManager.GetColor(FuColors.SelectedText) : FuThemeManager.GetColor(FuColors.Text);
+            Vector4 TextColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedText) : FuThemeManager.GetColor(FuColors.Text);
 
             if (_nextIsDisabled)
             {
                 BGColor *= 0.5f;
                 KnobColor *= 0.5f;
             }
-            else if (LastItemActive)
+            else if (LastItemActive && !noEditable)
             {
                 KnobColor = FuThemeManager.GetColor(FuColors.KnobActive);
-                BGColor = value ? FuThemeManager.GetColor(FuColors.SelectedActive) : FuThemeManager.GetColor(FuColors.FrameBgActive);
+                BGColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedActive) : FuThemeManager.GetColor(FuColors.FrameBgActive);
             }
-            else if (LastItemHovered)
+            else if (LastItemHovered && !noEditable)
             {
                 KnobColor = FuThemeManager.GetColor(FuColors.KnobHovered);
-                BGColor = value ? FuThemeManager.GetColor(FuColors.SelectedHovered) : FuThemeManager.GetColor(FuColors.FrameBgHovered);
+                BGColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedHovered) : FuThemeManager.GetColor(FuColors.FrameBgHovered);
             }
             Vector4 BorderColor = BGColor * 0.66f;
 

@@ -16,9 +16,9 @@ namespace Fu
                 {
                     using (FuGrid grid = new FuGrid("themeManagmentGrid"))
                     {
-                        grid.Combobox("Current theme", FuThemeManager.Themes.Values.ToList(), (theme) =>
+                        grid.Combobox("Current theme", FuThemeManager.Themes.Values.ToList(), (index) =>
                         {
-                            FuThemeManager.SetTheme(theme);
+                            FuThemeManager.SetTheme(FuThemeManager.Themes.Values.ToList()[index]);
                         }, () => { return FuThemeManager.CurrentTheme; });
                     }
                     using (FuGrid grid = new FuGrid("themeManagmentActions", new FuGridDefinition(3, new float[] { 1f / 3f, 1f / 3f, 1f / 3f }), cellPadding: 0f))

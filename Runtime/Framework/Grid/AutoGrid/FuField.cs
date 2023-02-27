@@ -88,9 +88,9 @@ namespace Fu.Framework
                 Values.Add(Fugui.AddSpacesBeforeUppercase(Value.ToString()));
             }
             bool updated = false;
-            grid.Combobox(FieldName, Values, (newValue) =>
+            grid.Combobox(FieldName, Values, (index) =>
             {
-                newValue = newValue.Replace(" ", "");
+                string newValue = Values[index].Replace(" ", "");
                 _fieldInfo.SetValue(objectInstance, Enum.Parse(_fieldInfo.FieldType, newValue));
                 updated = true;
             }, () => { return _fieldInfo.GetValue(objectInstance).ToString(); });

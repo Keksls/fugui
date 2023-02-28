@@ -21,7 +21,7 @@ namespace Fu.Framework
         internal static string _windowsToAdd = string.Empty;
         internal static string _selectedWindowDefinition = string.Empty;
         internal static FuDockingLayoutDefinition CurrentLayout;
-        internal static string DisplayLayoutName = "";
+        public static string CurrentLayoutName { get; internal set; } = "";
         internal static Dictionary<int, string> _definedDockSpaces;
         internal static ExtensionFilter _flgExtensionFilter;
         public static Dictionary<string, FuDockingLayoutDefinition> Layouts { get; private set; }
@@ -114,12 +114,12 @@ namespace Fu.Framework
             {
                 KeyValuePair<string, FuDockingLayoutDefinition> firstLayoutInfo = Layouts.ElementAt(0);
                 CurrentLayout = firstLayoutInfo.Value;
-                DisplayLayoutName = firstLayoutInfo.Key;
+                CurrentLayoutName = firstLayoutInfo.Key;
             }
             else
             {
                 CurrentLayout = null;
-                DisplayLayoutName = string.Empty;
+                CurrentLayoutName = string.Empty;
             }
 
             OnDockLayoutReloaded?.Invoke();
@@ -214,14 +214,32 @@ namespace Fu.Framework
         /// </summary>
         public static void SetConfigurationLayout()
         {
-            SetLayout(null);
+            SetLayout(null, "FuguiConfigurationLayout");
+        }
+
+        /// <summary>
+        /// Sets the layout of the UI windows to the specified layout.
+        /// </summary>
+        /// <param name="layoutName">The name of the layout to be set.</param>
+        public static void SetLayout(string layoutName)
+        {
+            if(!Layouts.ContainsKey(layoutName))
+            {
+                layoutName += ".flg";
+            }
+            if (!Layouts.ContainsKey(layoutName))
+            {
+                return;
+            }
+
+            SetLayout(Layouts[layoutName], layoutName);
         }
 
         /// <summary>
         /// Sets the layout of the UI windows to the specified layout.
         /// </summary>
         /// <param name="layout">The layout to be set.</param>
-        public static void SetLayout(FuDockingLayoutDefinition layout)
+        public static void SetLayout(FuDockingLayoutDefinition layout, string layoutName)
         {
             // check whatever the layout manager knows the custom application windows names
             if (_fuguiWindows == null)
@@ -249,11 +267,11 @@ namespace Fu.Framework
                 if (layout == null)
                 {
                     //setDefaultLayout();
-                    setDockSpaceConfigurationLayout();
+                    setDockSpaceConfigurationLayout(layoutName);
                 }
                 else
                 {
-                    createDynamicLayout(layout);
+                    createDynamicLayout(layout, layoutName);
                 }
             });
         }
@@ -262,7 +280,7 @@ namespace Fu.Framework
         /// Method that creates a dynamic layout based on the specified UIDockSpaceDefinition. It first retrieves a list of all the windows definitions associated with the dock space and its children recursively, then creates those windows asynchronously, and finally invokes a callback function to complete the layout creation process.
         /// </summary>
         /// <param name="dockSpaceDefinition">The FuguiDockSpaceDefinition to use for creating the layout</param>
-        private static void createDynamicLayout(FuDockingLayoutDefinition dockSpaceDefinition)
+        private static void createDynamicLayout(FuDockingLayoutDefinition dockSpaceDefinition, string layoutName)
         {
             List<FuWindowName> windowsToGet = dockSpaceDefinition.GetAllWindowsDefinitions();
 
@@ -275,7 +293,8 @@ namespace Fu.Framework
                 createDocking(windows, dockSpaceDefinition);
 
                 ImGuiDocking.DockBuilderFinish(MainID);
-
+                CurrentLayoutName = layoutName;
+                CurrentLayout = dockSpaceDefinition;
                 endSettingLayout();
             });
         }
@@ -377,7 +396,7 @@ namespace Fu.Framework
         /// <summary>
         /// Sets the "dockspace configuration" layout for the UI windows.
         /// </summary>
-        private static void setDockSpaceConfigurationLayout()
+        private static void setDockSpaceConfigurationLayout(string layoutName)
         {
             List<FuWindowName> windowsToGet = new List<FuWindowName>
             {
@@ -402,6 +421,8 @@ namespace Fu.Framework
                 ImGuiDocking.DockBuilderDockWindow(windows[FuSystemWindowsNames.WindowsDefinitionManager].ID, right);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
+                CurrentLayoutName = layoutName;
+                CurrentLayout = null;
                 endSettingLayout();
             });
         }
@@ -547,7 +568,7 @@ namespace Fu.Framework
 
                 FuDockingLayoutDefinition newLayout = Layouts[newFileName];
                 CurrentLayout = newLayout;
-                DisplayLayoutName = newFileName;
+                CurrentLayoutName = newFileName;
             }
         }
 
@@ -556,7 +577,7 @@ namespace Fu.Framework
         /// </summary>
         internal static void deleteSelectedLayout()
         {
-            if (!string.IsNullOrEmpty(DisplayLayoutName))
+            if (!string.IsNullOrEmpty(CurrentLayoutName))
             {
                 // get folder path
                 string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
@@ -566,7 +587,7 @@ namespace Fu.Framework
                 {
                     try
                     {
-                        string filePathToDelete = Path.Combine(folderPath, DisplayLayoutName);
+                        string filePathToDelete = Path.Combine(folderPath, CurrentLayoutName);
 
                         if (File.Exists(filePathToDelete))
                         {
@@ -592,7 +613,7 @@ namespace Fu.Framework
             try
             {
                 string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
-                File.Delete(Path.Combine(folderPath, DisplayLayoutName));
+                File.Delete(Path.Combine(folderPath, CurrentLayoutName));
             }
             catch (Exception ex)
             {
@@ -631,12 +652,12 @@ namespace Fu.Framework
                     }
                 }
 
-                string fileName = Path.Combine(folderPath, DisplayLayoutName);
+                string fileName = Path.Combine(folderPath, CurrentLayoutName);
 
                 // If file already exists, ask question
                 if (File.Exists(fileName))
                 {
-                    Fugui.ShowYesNoModal(DisplayLayoutName + " already exits. Are you sure you want to overwrite it ?", confirmSaveLayoutFileAlreadyExists, FuModalSize.Large);
+                    Fugui.ShowYesNoModal(CurrentLayoutName + " already exits. Are you sure you want to overwrite it ?", confirmSaveLayoutFileAlreadyExists, FuModalSize.Large);
                 }
                 else
                 {
@@ -689,7 +710,7 @@ namespace Fu.Framework
                 }
             }
 
-            string fileName = Path.Combine(folderPath, DisplayLayoutName);
+            string fileName = Path.Combine(folderPath, CurrentLayoutName);
             File.WriteAllText(fileName, FuDockingLayoutDefinition.Serialize(CurrentLayout));
         }
 
@@ -697,7 +718,7 @@ namespace Fu.Framework
         {
             string pattern = @"^[a-zA-Z0-9_-]+\.flg$";
 
-            return (!string.IsNullOrEmpty(DisplayLayoutName) && Regex.IsMatch(DisplayLayoutName, pattern));
+            return (!string.IsNullOrEmpty(CurrentLayoutName) && Regex.IsMatch(CurrentLayoutName, pattern));
         }
 
         #endregion

@@ -87,9 +87,9 @@ namespace Fu.Core
             UI = (window) =>
             {
                 Vector2 cursorPos = ImGui.GetCursorScreenPos();
-                ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + window.WorkingAreaSize, Vector2.zero, _currentImageUV);
-                //Container.ImGuiImage(_rTexture, WorkingAreaSize);
-                //ImGui.SetCursorScreenPos(cursorPos);
+                //ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + window.WorkingAreaSize, Vector2.zero, _currentImageUV);
+                Container.ImGuiImage(_rTexture, WorkingAreaSize);
+                ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this);
             };
 

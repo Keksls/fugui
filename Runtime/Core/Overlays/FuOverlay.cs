@@ -8,18 +8,20 @@ namespace Fu.Core
     public class FuOverlay
     {
         #region Variables
-        // ID of the UI window
+        // ID of the Overlay
         public string ID { get; private set; }
-        // Size of the UI window
-        public Vector2 Size { get; set; }
-        // Offset of the anchor point from the top-left corner of the window
-        public Vector2 AnchorOffset { get; set; }
-        // Custom UI display function for the window
+        // Size of the Overlay
+        public Vector2Int Size { get; set; }
+        // Offset of the anchor point from the top-left corner of the overlay
+        public Vector2Int AnchorOffset { get; set; }
+        // Custom UI display function for the overlay
         public Action<FuOverlay> UI { get; private set; }
         // Public variable that store local Rect of this overlay
         public Rect LocalRect { get; private set; }
         // Public variable for the UIWindow instance
         public FuWindow UIWindow { get; private set; }
+        // Minimum Size of the UI window to display this overlay
+        public Vector2Int MinimumWindowSize { get; private set; }
 
         // Flag to indicate if the window is collapsible
         private bool _collapsable;
@@ -55,7 +57,7 @@ namespace Fu.Core
         // Private constant for the width of the snap grid lines
         private float _gridWidth = 1f;
         private AnchorLocation _defaultAnchorLocation;
-        private Vector2 _defaultAnchorOffset;
+        private Vector2Int _defaultAnchorOffset;
         #endregion
 
         /// <summary>
@@ -65,7 +67,7 @@ namespace Fu.Core
         /// <param name="size">size of this overlay</param>
         /// <param name="ui">UI of this overlay</param>
         /// <param name="flags">Overlay comportement flags</param>
-        public FuOverlay(string id, Vector2 size, Action<FuOverlay> ui, FuOverlayFlags flags = FuOverlayFlags.Default, FuOverlayDragPosition dragButtonPosition = FuOverlayDragPosition.Auto)
+        public FuOverlay(string id, Vector2Int size, Action<FuOverlay> ui, FuOverlayFlags flags = FuOverlayFlags.Default, FuOverlayDragPosition dragButtonPosition = FuOverlayDragPosition.Auto)
         {
             // Set the ID of the window
             ID = id;
@@ -74,7 +76,7 @@ namespace Fu.Core
             // Set the UI display function
             UI = ui;
             // Set the default anchor offset
-            AnchorOffset = new Vector2(8f, 8f);
+            AnchorOffset = new Vector2Int(8, 8);
             // Set the initial collapsed state to false
             _collapsed = false;
 
@@ -96,7 +98,7 @@ namespace Fu.Core
 
             // set default AnchorLocation and Offset
             _defaultAnchorLocation = AnchorLocation.TopLeft;
-            _defaultAnchorOffset = Vector2.zero;
+            _defaultAnchorOffset = Vector2Int.zero;
         }
 
         /// <summary>
@@ -107,7 +109,7 @@ namespace Fu.Core
         /// <param name="anchor">location anchor to anchor the overlay</param>
         /// <param name="anchorOffset">offset position of the overlay according to it location anchor</param>
         /// <returns>true if added</returns>
-        public bool AnchorWindowDefinition(FuWindowDefinition window, AnchorLocation anchor, Vector2 anchorOffset)
+        public bool AnchorWindowDefinition(FuWindowDefinition window, AnchorLocation anchor, Vector2Int anchorOffset)
         {
             if (!window.AddOverlay(this))
             {
@@ -185,8 +187,18 @@ namespace Fu.Core
             // set anchor location
             _anchorLocation = anchor;
             // snap anchored offset
-            AnchorOffset = new Vector2((float)Math.Floor(anchorOffset.x / _dragStep) * _dragStep, (float)Math.Floor(anchorOffset.y / _dragStep) * _dragStep);
+            AnchorOffset = new Vector2Int((int)(Mathf.FloorToInt(anchorOffset.x / _dragStep) * _dragStep), (int)(Mathf.FloorToInt(anchorOffset.y / _dragStep) * _dragStep));
             return true;
+        }
+
+        /// <summary>
+        /// The the minimum size of the window that display this overlay to display it
+        /// The overlay will be hidden if the window is smaller that this Vector2
+        /// </summary>
+        /// <param name="minimumWindowSize">minimum size of the window</param>
+        public void SetMinimumWindowSize(Vector2Int minimumWindowSize)
+        {
+            MinimumWindowSize = minimumWindowSize;
         }
 
         /// <summary>
@@ -199,6 +211,11 @@ namespace Fu.Core
             {
                 _draging = false;
                 _drawSnapGrid = false;
+            }
+
+            if(UIWindow.WorkingAreaSize.x < MinimumWindowSize.x || UIWindow.WorkingAreaSize.y < MinimumWindowSize.y)
+            {
+                return;
             }
 
             // get anchored container position
@@ -396,7 +413,7 @@ namespace Fu.Core
                     _collapsed = !_collapsed;
                 }
                 // open context menu if right clicked
-                if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                if (ImGui.IsMouseClicked(ImGuiMouseButton.Right) && !_noEditAnchor)
                 {
                     // build context menu items
                     var builder = FuContextMenuBuilder.Start()

@@ -150,7 +150,7 @@ public class FuguiDemoScene : MonoBehaviour
             string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
             if (!Fugui.IsMainMenuRegisteredItem(menuName))
             {
-                Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+                Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Key), "Layout");
             }
         }
 
@@ -492,8 +492,6 @@ public class FuguiDemoScene : MonoBehaviour
                 {
                     layout.Text("Check Fugui ");
                     layout.SameLine();
-                    layout.SetNextElementToolTipStyles(FuTextStyle.Info);
-                    layout.SetNextElementToolTipWithLabel("https://framagit.org/Hydrocode/fugui");
                     layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui", FuTextStyle.Info);
 
                     layout.Collapsable("Knobs", () =>
@@ -768,7 +766,7 @@ public class FuguiDemoScene : MonoBehaviour
 
         #region Overlays
         // render graph panel
-        FuOverlay rg = new FuOverlay("oRG", new Vector2(224f, 36f), (overlay) =>
+        FuOverlay rg = new FuOverlay("oRG", new Vector2Int(224, 36), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {
@@ -779,20 +777,20 @@ public class FuguiDemoScene : MonoBehaviour
                 layout.Button(Icons.DataFusion, FuElementSize.AutoSize, FuButtonStyle.Highlight);
             };
         }, FuOverlayFlags.NoBackground | FuOverlayFlags.NoClose | FuOverlayFlags.NoMove);
-        rg.AnchorWindowDefinition(camWinDef, AnchorLocation.TopLeft, Vector2.zero);
+        rg.AnchorWindowDefinition(camWinDef, AnchorLocation.TopLeft, Vector2Int.zero);
 
         // gizmos panel
-        FuOverlay gz = new FuOverlay("oGP", new Vector2(46f, 36f), (overlay) =>
+        FuOverlay gz = new FuOverlay("oGP", new Vector2Int(46, 36), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {
                 layout.Button(Icons.Gizmo, FuButtonStyle.Highlight);
             }
         }, FuOverlayFlags.NoClose | FuOverlayFlags.NoMove | FuOverlayFlags.NoBackground, FuOverlayDragPosition.Right);
-        gz.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, Vector2.zero);
+        gz.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, Vector2Int.zero);
 
         // legend
-        FuOverlay bc = new FuOverlay("oLP", new Vector2(128f, 128f), (overlay) =>
+        FuOverlay bc = new FuOverlay("oLP", new Vector2Int(128, 128), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {
@@ -803,10 +801,10 @@ public class FuguiDemoScene : MonoBehaviour
                 layout.Text("Legend 5");
             }
         }, FuOverlayFlags.NoEditAnchor, FuOverlayDragPosition.Bottom);
-        bc.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomLeft, Vector2.zero);
+        bc.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomLeft, Vector2Int.zero);
 
         // legend
-        FuOverlay tb = new FuOverlay("oTB", new Vector2(312f, 48f), (overlay) =>
+        FuOverlay tb = new FuOverlay("oTB", new Vector2Int(312, 48), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {
@@ -836,21 +834,21 @@ public class FuguiDemoScene : MonoBehaviour
                 Fugui.PopFont();
             }
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Top);
-        tb.AnchorWindowDefinition(camWinDef, AnchorLocation.TopCenter, Vector2.zero);
+        tb.AnchorWindowDefinition(camWinDef, AnchorLocation.TopCenter, Vector2Int.zero);
 
         // FPS display Cam 1
-        FuOverlay fps1 = new FuOverlay("oCamFPS", new Vector2(102f, 52f), (overlay) =>
+        FuOverlay fps1 = new FuOverlay("oCamFPS", new Vector2Int(102, 52), (overlay) =>
         {
             drawCameraFPSOverlay(_mainCam);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);
-        fps1.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, new Vector2(0f, 64f));
+        fps1.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, new Vector2Int(0, 64));
 
         // cam 1 SS
-        FuOverlay ss1 = new FuOverlay("oCamSS", new Vector2(224f, 36f), (overlay) =>
+        FuOverlay ss1 = new FuOverlay("oCamSS", new Vector2Int(224, 36), (overlay) =>
         {
             drawCameraOverlay(_mainCam);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);
-        ss1.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomRight, Vector2.zero);
+        ss1.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomRight, Vector2Int.zero);
 
         void drawCameraOverlay(FuCameraWindow cam)
         {
@@ -880,7 +878,7 @@ public class FuguiDemoScene : MonoBehaviour
 
         // cam 1 SS
         int qualityIndex = 3;
-        FuOverlay fastest = new FuOverlay("oFF", new Vector2(278f, 36f), (overlay) =>
+        FuOverlay fastest = new FuOverlay("oFF", new Vector2Int(278, 36), (overlay) =>
         {
             using (FuLayout layout = new FuLayout())
             {
@@ -921,7 +919,7 @@ public class FuguiDemoScene : MonoBehaviour
                 Fugui.PopFont();
             }
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Bottom);
-        fastest.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomCenter, Vector2.zero);
+        fastest.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomCenter, Vector2Int.zero);
 
         void drawCameraFPSOverlay(FuCameraWindow cam)
         {
@@ -947,7 +945,7 @@ public class FuguiDemoScene : MonoBehaviour
         {
             // TODO : save layout into enum and set theme by enum (easyer by code)
             string firstKey = FuDockingLayoutManager.Layouts.Keys.ToList()[0];
-            FuDockingLayoutManager.SetLayout(FuDockingLayoutManager.Layouts[firstKey]);
+            FuDockingLayoutManager.SetLayout(firstKey);
         }
     }
 
@@ -974,7 +972,7 @@ public class FuguiDemoScene : MonoBehaviour
             string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
             if (!Fugui.IsMainMenuRegisteredItem(menuName))
             {
-                Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+                Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value, layoutDefinition.Key), "Layout");
             }
         }
     }

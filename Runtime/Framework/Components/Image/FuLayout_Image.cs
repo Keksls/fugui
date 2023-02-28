@@ -68,7 +68,7 @@ namespace Fu.Framework
                 _elementHoverFramedEnabled = true;
             }
             endElement();
-            return LastItemClickedButton == FuMouseButton.Left;
+            return LastItemJustDeactivated && LastItemHovered;
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace Fu.Framework
             }
             displayToolTip();
             endElement();
-            return LastItemClickedButton == FuMouseButton.Left;
+            return LastItemJustDeactivated && LastItemHovered;
         }
 
         /// <summary>

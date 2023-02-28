@@ -11,8 +11,8 @@ namespace Fu.Framework
         /// Draw a tabBar
         /// </summary>
         /// <param name="items">items to draw</param>
-        /// <param name="callback">Callback of the UI to draw, the param is the value of the selected item</param>
-        public void Tabs(string ID, IEnumerable<string> items, Action<string> callback)
+        /// <param name="callback">Callback of the UI to draw, the param is the index of the value of the selected item</param>
+        public void Tabs(string ID, IEnumerable<string> items, Action<int> callback)
         {
             // draw tab bg color
             Vector2 pos = ImGui.GetCursorScreenPos();
@@ -24,13 +24,15 @@ namespace Fu.Framework
             if (ImGui.BeginTabBar(ID))
             {
                 // draw the tab items
+                int index = 0;
                 foreach (string item in items)
                 {
                     if (ImGui.BeginTabItem(item))
                     {
-                        callback?.Invoke(item);
+                        callback?.Invoke(index);
                         ImGui.EndTabItem();
                     }
+                    index++;
                 }
                 ImGui.EndTabBar();
             }

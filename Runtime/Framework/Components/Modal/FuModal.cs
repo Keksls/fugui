@@ -10,6 +10,7 @@ namespace Fu
     {
         #region Variables
         private static bool _showModal = false;
+        private static bool _preventCloseModal = false;
         private static string _modalTitle;
         private static Action _modalBody;
         private static FuModalButton[] _modalButtons;
@@ -63,8 +64,20 @@ namespace Fu
         /// </summary>
         public static void CloseModal()
         {
-            _enlapsed = Settings.ModalAnimationDuration;
-            _showModal = false; //set showModal to false to hide the modal
+            if (!_preventCloseModal)
+            {
+                _enlapsed = Settings.ModalAnimationDuration;
+                _showModal = false; //set showModal to false to hide the modal
+            }
+            _preventCloseModal = false;
+        }
+
+        /// <summary>
+        /// Prevent the modal to close on next CloseModal call
+        /// </summary>
+        public static void CancelNextModalClose()
+        {
+            _preventCloseModal = true;
         }
         #endregion
 

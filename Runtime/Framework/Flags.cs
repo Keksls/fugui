@@ -214,7 +214,7 @@ namespace Fu.Framework
         /// </summary>
         Default = 0,
         /// <summary>
-        /// Maximum text size for toggle
+        /// The size of the toggle will be the size of the largest text
         /// </summary>
         MaximumTextSize = 1,
         /// <summary>

@@ -342,6 +342,31 @@ namespace Fu.Framework
             ImGuiNative.igDummy(size * Fugui.CurrentContext.Scale);
         }
 
+        #region Center Item
+        /// <summary>
+        /// Prepare centering for the next item (next item should be a text)
+        /// </summary>
+        /// <param name="nextItemText">text of the next item</param>
+        public void CenterNextItem(string nextItemText)
+        {
+            float txtWidth = ImGui.CalcTextSize(nextItemText).x;
+            float avWidth = ImGui.GetContentRegionAvail().x;
+            Dummy(avWidth / 2f - txtWidth / 2f);
+            SameLine();
+        }
+
+        /// <summary>
+        /// Prepare centering for the next item
+        /// </summary>
+        /// <param name="itemWidth">width of the next item</param>
+        public void PrepareCenterNextItem(float itemWidth)
+        {
+            float avWidth = ImGui.GetContentRegionAvail().x;
+            Dummy(avWidth / 2f - itemWidth / 2f);
+            SameLine();
+        }
+        #endregion
+
         #region private utils
         #region string formats
         /// <summary>

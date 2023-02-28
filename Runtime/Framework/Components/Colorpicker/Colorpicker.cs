@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -42,7 +43,7 @@ namespace Fu
         /// <returns>true if color value is updated this frame</returns>
         public static bool Colorpicker(string id, ref Vector4 color, bool hdr = false, bool drag_and_drop = true, bool alpha_half_preview = true, bool alpha_preview = true, bool options_menu = false)
         {
-            if(_colorpickerCurrentID != id)
+            if (_colorpickerCurrentID != id)
             {
                 _colorpickerCurrentID = id;
                 _colorpickerBackupColor = color;
@@ -52,7 +53,7 @@ namespace Fu
             bool edited = ImGui.ColorPicker4(id, ref color, misc_flags | ImGuiColorEditFlags.NoSidePreview | ImGuiColorEditFlags.NoSmallPreview);
             ImGui.SameLine();
             ImGui.BeginGroup(); // Lock X position
-            
+
             // current color
             ImGui.Spacing();
             ImGui.SameLine();
@@ -60,7 +61,7 @@ namespace Fu
             ImGui.Text("Current");
             ImGui.ColorButton("##current" + id, color, ImGuiColorEditFlags.NoPicker | ImGuiColorEditFlags.AlphaPreviewHalf, new Vector2(60, 40) * CurrentContext.Scale);
             ImGui.EndGroup();
-            
+
             // preview color
             ImGui.SameLine();
             ImGui.Spacing();

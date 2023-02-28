@@ -22,6 +22,10 @@ namespace Fu.Framework
         // blue button style
         static FuComboboxStyle _highlightStyle;
         public static FuComboboxStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightStyle; } }
+
+        // blue button style
+        static FuComboboxStyle _selectedStyle;
+        public static FuComboboxStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedStyle; } }
         #endregion
 
         /// <summary>
@@ -76,6 +80,16 @@ namespace Fu.Framework
                 _frameHovered = FuThemeManager.GetColor(FuColors.HighlightHovered),
                 _frameActive = FuThemeManager.GetColor(FuColors.HighlightActive),
                 _frameDisabled = FuThemeManager.GetColor(FuColors.HighlightDisabled)
+            };
+
+            // selected style
+            _selectedStyle = new FuComboboxStyle()
+            {
+                ButtonStyle = FuButtonStyle.Selected,
+                _frame = FuThemeManager.GetColor(FuColors.Selected),
+                _frameHovered = FuThemeManager.GetColor(FuColors.SelectedHovered),
+                _frameActive = FuThemeManager.GetColor(FuColors.SelectedActive),
+                _frameDisabled = FuThemeManager.GetColor(FuColors.Selected) * 0.5f
             };
         }
     }

@@ -27,14 +27,18 @@ namespace Fu
                         {
                             var key = FuDockingLayoutManager.Layouts.Keys.ToList()[index];
                             FuDockingLayoutManager.CurrentLayout = FuDockingLayoutManager.Layouts[key];
-                            FuDockingLayoutManager.DisplayLayoutName = key;
+                            FuDockingLayoutManager.CurrentLayoutName = key;
                         },
                         () =>
                         {
-                            return FuDockingLayoutManager.DisplayLayoutName;
+                            return FuDockingLayoutManager.CurrentLayoutName;
                         });
 
-                        _layoutManagement_grid.TextInput("Edit layout name", ref FuDockingLayoutManager.DisplayLayoutName);
+                        string layoutName = FuDockingLayoutManager.CurrentLayoutName;
+                        if (_layoutManagement_grid.TextInput("Edit layout name", ref layoutName))
+                        {
+                            FuDockingLayoutManager.CurrentLayoutName = layoutName;
+                        }
                         saveAvailable = FuDockingLayoutManager.checkSelectedName();
 
                         if (!saveAvailable)
@@ -63,7 +67,7 @@ namespace Fu
                             }
 
                             // delete button and behaviors
-                            if (string.IsNullOrEmpty(FuDockingLayoutManager.DisplayLayoutName))
+                            if (string.IsNullOrEmpty(FuDockingLayoutManager.CurrentLayoutName))
                             {
                                 _buttonsAction_grid.DisableNextElement();
                             }

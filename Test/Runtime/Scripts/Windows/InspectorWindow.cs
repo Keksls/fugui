@@ -12,6 +12,9 @@ public class InspectorWindow : MonoBehaviour
         registerInspectorWindow();
     }
 
+    /// <summary>
+    /// Register the FuWindowDefinition of the Inspector window
+    /// </summary>
     private void registerInspectorWindow()
     {
         new FuWindowDefinition(FuWindowsNames.Inspector, "Inspector", (window) =>
@@ -20,6 +23,7 @@ public class InspectorWindow : MonoBehaviour
             {
                 using (var layout = new FuLayout())
                 {
+                    // raycaster transform
                     layout.Collapsable("Transform (raycaster)", () =>
                     {
                         using (FuGrid grid = new FuGrid("transformGrid", rowsPadding: 1f, outterPadding: 8f))
@@ -48,10 +52,12 @@ public class InspectorWindow : MonoBehaviour
                         }
                     }, 8f);
 
+                    // camera settings
                     layout.Collapsable("Camera", () =>
                     {
                         using (FuGrid grid = new FuGrid("cameraGrid", outterPadding: 8f))
                         {
+                            // camera clear flags
                             grid.SetMinimumLineHeight(22f);
                             grid.SetNextElementToolTipWithLabel("Clear flag of the camera");
                             grid.ComboboxEnum<CameraClearFlags>("Clear Flags", (CameraClearFlags) =>
@@ -59,6 +65,7 @@ public class InspectorWindow : MonoBehaviour
                                 Camera.clearFlags = (CameraClearFlags)CameraClearFlags;
                             }, () => { return Camera.clearFlags; });
 
+                            // camera field of view
                             float FOV = Camera.fieldOfView;
                             grid.SetNextElementToolTipWithLabel("Field of View (FOV) of the camera");
                             if (grid.Slider("Field of view", ref FOV))
@@ -66,6 +73,7 @@ public class InspectorWindow : MonoBehaviour
                                 Camera.fieldOfView = FOV;
                             }
 
+                            // Use physical camera
                             bool physicalCamera = Camera.usePhysicalProperties;
                             grid.SetNextElementToolTip("Whatever the main camera use physical properties");
                             if (grid.CheckBox("Physical Camera", ref physicalCamera))
@@ -73,6 +81,7 @@ public class InspectorWindow : MonoBehaviour
                                 Camera.usePhysicalProperties = physicalCamera;
                             }
 
+                            // background color
                             grid.SetNextElementToolTipWithLabel("Background Color of the camera (only if Clear Flag is on 'Solid Color')");
                             if (Camera.clearFlags != CameraClearFlags.SolidColor)
                             {

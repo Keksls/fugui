@@ -29,7 +29,7 @@ namespace Fu.Framework
         /// Whatever we already are setting Layer right now
         /// </summary>
         public static bool IsSettingLayout { get; private set; }
-        public static event Action OnDockLayoutInitialized;
+        public static event Action OnDockLayoutSet;
         public static event Action OnDockLayoutReloaded;
         #endregion
 
@@ -389,7 +389,7 @@ namespace Fu.Framework
         private static void endSettingLayout()
         {
             IsSettingLayout = false;
-            OnDockLayoutInitialized?.Invoke();
+            OnDockLayoutSet?.Invoke();
             Fugui.ClosePopupMessage();
         }
 

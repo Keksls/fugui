@@ -414,7 +414,7 @@ namespace Fu.Framework
         /// Prepare centering for the next item
         /// </summary>
         /// <param name="itemWidth">width of the next item</param>
-        public void PrepareCenterNextItem(float itemWidth)
+        public void CenterNextItem(float itemWidth)
         {
             float avWidth = ImGui.GetContentRegionAvail().x;
             Dummy(avWidth / 2f - itemWidth / 2f);

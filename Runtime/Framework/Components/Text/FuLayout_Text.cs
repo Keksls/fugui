@@ -140,6 +140,7 @@ namespace Fu.Framework
             bool bold = false;
             int nbFontPush = 0;
             int nbColorPush = 0;
+            bool firstChunk = true;
             StringBuilder sb = new StringBuilder();
 
             for (int i = 0; i < text.Length; i++)
@@ -250,7 +251,6 @@ namespace Fu.Framework
             // end of parsing, display remaning text
             displayText();
 
-
             // internal method that display text
             void displayText()
             {
@@ -259,7 +259,11 @@ namespace Fu.Framework
                     // get txt width
                     float txtWidth = ImGui.CalcTextSize(sb.ToString()).x;
                     // assumle we always are on same line (simpler that derterminate it at this point)
-                    ImGui.SameLine();
+                    if (!firstChunk)
+                    {
+                        ImGui.SameLine();
+                    }
+                    firstChunk = false;
                     // check whatever wee pass throw right max
                     if (ImGui.GetContentRegionAvail().x < txtWidth + 4f)
                     {
@@ -590,6 +594,16 @@ namespace Fu.Framework
         /// Draw a clickable text element
         /// </summary>
         /// <param name="text">text to draw</param>
+        /// <returns>whatever the text is clicked</returns>
+        public virtual bool ClickableText(string text)
+        {
+            return ClickableText(text, FuTextStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw a clickable text element
+        /// </summary>
+        /// <param name="text">text to draw</param>
         /// <param name="style">style of the text to draw</param>
         /// <returns>whatever the text is clicked</returns>
         public virtual bool ClickableText(string text, FuTextStyle style)
@@ -633,6 +647,17 @@ namespace Fu.Framework
             }
             endElement(style);
             return clicked;
+        }
+
+        /// <summary>
+        /// Draw a clickable URL text element
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="URL">URL to open on text click</param>
+        /// <returns>whatever the text is clicked</returns>
+        public virtual void TextURL(string text, string URL)
+        {
+            TextURL(text, URL, FuTextStyle.Default);
         }
 
         /// <summary>

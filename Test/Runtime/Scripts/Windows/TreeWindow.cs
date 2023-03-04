@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace FuguiDemo
 {
-    public class Tree : MonoBehaviour
+    public class TreeWindow : MonoBehaviour
     {
         private List<treeTestItem> _treeItems;
         private FuTree<treeTestItem> _tree = null;

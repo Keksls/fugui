@@ -137,7 +137,7 @@ namespace Fu
                     if (_modalBody != null)
                     {
                         //call the stored body callback
-                        using (new FuPanel("FuguiModalBody", FuStyle.Modal, true, _currentBodySize.y))
+                        using (new FuPanel("FuguiModalBody", FuStyle.NoBackgroundUnpadded, true, _currentBodySize.y))
                         {
                             float cursorY = ImGui.GetCursorScreenPos().y;
                             ImGui.Dummy(Vector2.zero);

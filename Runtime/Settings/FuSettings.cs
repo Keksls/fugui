@@ -41,6 +41,12 @@ namespace Fu.Core
         [FuSlider(1, 90)]
         public int ManipulatingFPS = 60;
 
+        [Tooltip("The number of Camera FPS to be used when the UI windows are Idle.")]
+        [FuTooltip("The number of Camera FPS to be used when the UI windows are Idle.")]
+        [Range(1, 90)]
+        [FuSlider(1, 90)]
+        public int IdleCameraFPS = 4;
+
         [Tooltip("The number of FPS to be used when the UI windows are being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are being manipulated.")]
         [Range(1f, 100f)]
@@ -192,7 +198,7 @@ namespace Fu.Core
         [Header("Notifications")]
         [Tooltip("The position anchor of the notification panel")]
         [FuTooltip("The position anchor of the notification panel")]
-        public AnchorLocation NotificationAnchorPosition;
+        public FuOverlayAnchorLocation NotificationAnchorPosition;
 
         [Tooltip("Size of the state Icon in notifications title")]
         [FuTooltip("Size of the state Icon in notifications title")]

@@ -1,4 +1,3 @@
-using Fu.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -16,30 +15,44 @@ namespace Fu.Framework
         #region Pressets
         // default layout style
         static FuStyle _defaultGridStyle;
+        /// <summary>
+        /// Default style, use panel, frame, text default styles, (6,1) frame padding, (2,2) window padding
+        /// </summary>
         public static FuStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultGridStyle; } }
 
         // no BG layout style
         static FuStyle _noBGGridStyle;
+        /// <summary>
+        /// Default style, use transparent panel and frame, text default styles, (6,1) frame padding, (2,2) window padding
+        /// </summary>
         public static FuStyle NoBackground { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGGridStyle; } }
 
         // no BG unpadded layout style
         static FuStyle _noBGUnpaddedGridStyle;
+        /// <summary>
+        /// Default style, use transparent panel and frame, text default styles, (6,1) frame padding, (0,0) window padding
+        /// </summary>
         public static FuStyle NoBackgroundUnpadded { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGUnpaddedGridStyle; } }
-
-        // modal layout style
-        static FuStyle _modalStyle;
-        public static FuStyle Modal { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _modalStyle; } }
 
         // unpadded layout style
         static FuStyle _unpaddedGridStyle;
+        /// <summary>
+        /// Default style, use panel, frame, text default styles, (6,1) frame padding, (0,0) window padding
+        /// </summary>
         public static FuStyle Unpadded { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _unpaddedGridStyle; } }
 
         // overlay layout style
         static FuStyle _overlayGridStyle;
+        /// <summary>
+        /// Default style, use panel, frame, text default styles, (6,1) frame padding, (8,8) window padding
+        /// </summary>
         public static FuStyle Overlay { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _overlayGridStyle; } }
 
         // overlay layout style
         static FuStyle _noBGOverlayGridStyle;
+        /// <summary>
+        /// Default style, use transparent panel and frame, text default styles, (6,1) frame padding, (8,8) window padding
+        /// </summary>
         public static FuStyle NoBackgroundOverlay { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGOverlayGridStyle; } }
         #endregion
 
@@ -124,16 +137,6 @@ namespace Fu.Framework
                 _textStyle = FuTextStyle.Default,
                 _framePadding = new Vector2(6f, 4f),
                 WindowPadding = new Vector2(8f, 8f)
-            };
-
-            // _modal style
-            _modalStyle = new FuStyle()
-            {
-                _containerStyle = FuPanelStyle.Transparent,
-                _frameStyle = FuFrameStyle.Default,
-                _textStyle = FuTextStyle.Default,
-                _framePadding = new Vector2(6f, 1f),
-                WindowPadding = new Vector2(0f, 0f)
             };
         }
     }

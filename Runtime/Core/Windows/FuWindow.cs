@@ -36,7 +36,7 @@ namespace Fu.Core
         // properties
         public FuWindowName WindowName { get; private set; }
         public string ID { get; private set; }
-        public Action<FuWindow> UI { get; internal set; }
+        public Action<FuWindow> UI { get; set; }
         public Action<FuWindow> Constraints { get; internal set; }
         public bool HasMovedThisFrame { get; private set; }
         public bool HasJustBeenDraw { get; set; }

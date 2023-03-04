@@ -19,6 +19,15 @@ namespace Fu.Framework
         private static Dictionary<string, FuPopupData> _registeredPopups = new Dictionary<string, FuPopupData>();
 
         /// <summary>
+        /// Force to close the current openpopup (if there is some)
+        /// Work with : Context menu, Popup, Combobox
+        /// </summary>
+        public void ForceCloseOpenPopup()
+        {
+            ImGui.CloseCurrentPopup();
+        }
+
+        /// <summary>
         /// Give the order to draw a specific popup.
         /// You must call DrawPopup (each frames) to display the popup
         /// </summary>

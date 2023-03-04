@@ -43,6 +43,10 @@ namespace Fu.Core
 
         private FuMouseState _fuMouseState;
         private FuKeyboardState _fuKeyboardState;
+        // the height of the footer ( <= 0 will hide footer)
+        private float _footerHeight = -1f;
+        // the UI callback of the footer
+        private Action _footerUI = null;
         // The world position of the container.
         private Vector2Int _worldPosition;
         // A queue of windows to be externalized.
@@ -156,6 +160,19 @@ namespace Fu.Core
             _worldPosition = Fugui.WorldMousePosition - _mousePos;
             _lastFrameWorldMousePos = Fugui.WorldMousePosition;
         }
+
+        #region Footer
+        /// <summary>
+        /// Set the footer UI and Height
+        /// </summary>
+        /// <param name="height">height of the footer (<= 0 will hide footer)</param>
+        /// <param name="callbackUI">UI callback of the footer</param>
+        public void SetFooter(float height, Action callbackUI)
+        {
+            _footerHeight = height;
+            _footerUI = callbackUI;
+        }
+        #endregion
 
         #region Container
         /// <summary>
@@ -313,7 +330,7 @@ namespace Fu.Core
         /// <param name="size">size of the image</param>
         public void ImGuiImage(RenderTexture texture, Vector2 size)
         {
-            if(texture == null)
+            if (texture == null)
             {
                 ImGui.Dummy(size);
                 return;
@@ -418,7 +435,7 @@ namespace Fu.Core
             uint viewPortID = 0;
             ImGuiDockNodeFlags dockspace_flags = Fugui.Settings.DockingFlags;
             ImGui.SetNextWindowPos(new Vector2(0f, mainMenuHeight));
-            ImGui.SetNextWindowSize(new Vector2(_size.x, _size.y - mainMenuHeight));
+            ImGui.SetNextWindowSize(new Vector2(_size.x, _size.y - mainMenuHeight - Mathf.Max(0f, _footerHeight)));
             ImGui.SetNextWindowViewport(viewPortID);
             Fugui.Push(ImGuiStyleVar.WindowRounding, 0.0f);
             Fugui.Push(ImGuiStyleVar.WindowBorderSize, 0.0f);
@@ -427,16 +444,30 @@ namespace Fu.Core
             Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
             // We are using the UIWindowFlags_NoDocking flag to make the parent window not dockable into,
             // because it would be confusing to have two docking targets within each others.
-            ImGuiWindowFlags window_flags = ImGuiWindowFlags.NoDocking;
-            window_flags |= ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
-            window_flags |= ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus | ImGuiWindowFlags.NoBackground;
+            ImGuiWindowFlags window_flags = ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove |
+                ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus;
 
             // draw DockSpace main container
-            if (ImGui.Begin("MainDockSpace", window_flags))
+            if (ImGui.Begin("MainDockSpace", window_flags | ImGuiWindowFlags.NoBackground))
             {
                 Dockspace_id = ImGui.GetID("DockSpace");
                 ImGui.DockSpace(Dockspace_id, Vector2.zero, dockspace_flags);
                 ImGui.End();
+            }
+
+            // draw footer
+            if (_footerHeight > 0f)
+            {
+                Fugui.Push(ImGuiCol.WindowBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
+                ImGui.SetNextWindowPos(new Vector2(0f, _size.y - _footerHeight));
+                ImGui.SetNextWindowSize(new Vector2(_size.x, _footerHeight));
+                ImGui.SetNextWindowViewport(viewPortID);
+                if (ImGui.Begin("FuguiFooter", window_flags))
+                {
+                    _footerUI?.Invoke();
+                    ImGui.End();
+                }
+                Fugui.PopColor();
             }
             Fugui.PopStyle(5);
         }

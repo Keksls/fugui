@@ -119,7 +119,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="text">The label displayed next to the combobox</param>
         /// <param name="selectedItemText">The currently selected item</param>
-        /// <param name="callback">The callback function that is called when an item is selected</param>
+        /// <param name="callback">custom UI to draw when Combobox is open</param>
         public void Combobox(string text, string selectedItemText, Action callback)
         {
             Combobox(text, selectedItemText, callback, FuComboboxStyle.Default);
@@ -131,7 +131,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="text">The label displayed next to the combobox</param>
         /// <param name="selectedItemText">The currently selected item</param>
-        /// <param name="callback">The callback function that is called when an item is selected</param>
+        /// <param name="callback">custom UI to draw when Combobox is open</param>
         /// <param name="style">The style of the combobox</param>
         public virtual void Combobox(string text, string selectedItemText, Action callback, FuComboboxStyle style)
         {

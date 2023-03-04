@@ -32,7 +32,7 @@ namespace Fu.Core
         // Flag to indicate if the window has a background
         private bool _noEditAnchor;
         // Private variable for the anchor location of the window
-        private AnchorLocation _anchorLocation;
+        private FuOverlayAnchorLocation _anchorLocation;
         // Private variable to track the collapsed state of the window
         private bool _collapsed;
 
@@ -56,8 +56,12 @@ namespace Fu.Core
         private Vector4 _gridColor = new Vector4(.1f, .1f, .1f, .25f);
         // Private constant for the width of the snap grid lines
         private float _gridWidth = 1f;
-        private AnchorLocation _defaultAnchorLocation;
+        // the default location of the overlay anchor
+        private FuOverlayAnchorLocation _defaultAnchorLocation;
+        // the default offset of the overlay aanchor
         private Vector2Int _defaultAnchorOffset;
+        // the style of the overlay panel
+        private FuStyle _overlayStyle;
         #endregion
 
         /// <summary>
@@ -97,10 +101,12 @@ namespace Fu.Core
             }
 
             // set default AnchorLocation and Offset
-            _defaultAnchorLocation = AnchorLocation.TopLeft;
+            _defaultAnchorLocation = FuOverlayAnchorLocation.TopLeft;
             _defaultAnchorOffset = Vector2Int.zero;
+            _overlayStyle = FuStyle.Overlay;
         }
 
+        #region Public Utils
         /// <summary>
         /// Anchor this overlay to a WindoDefinition. 
         /// Once the according winDef will create a UIWindow, Anchor will be added to UIWindow
@@ -109,7 +115,7 @@ namespace Fu.Core
         /// <param name="anchor">location anchor to anchor the overlay</param>
         /// <param name="anchorOffset">offset position of the overlay according to it location anchor</param>
         /// <returns>true if added</returns>
-        public bool AnchorWindowDefinition(FuWindowDefinition window, AnchorLocation anchor, Vector2Int anchorOffset)
+        public bool AnchorWindowDefinition(FuWindowDefinition window, FuOverlayAnchorLocation anchor, Vector2Int anchorOffset)
         {
             if (!window.AddOverlay(this))
             {
@@ -137,7 +143,7 @@ namespace Fu.Core
         /// <param name="anchor">location to anchor this overlay</param>
         /// <param name="anchorOffset">anchor position offset</param>
         /// <returns>true if success</returns>
-        public bool AnchorWindow(FuWindow window, AnchorLocation anchor, Vector2 anchorOffset)
+        public bool AnchorWindow(FuWindow window, FuOverlayAnchorLocation anchor, Vector2 anchorOffset)
         {
             // try add container to the UIWIndow
             if (!window.AddOverlay(this))
@@ -161,24 +167,24 @@ namespace Fu.Core
             {
                 switch (anchor)
                 {
-                    case AnchorLocation.TopCenter:
+                    case FuOverlayAnchorLocation.TopCenter:
                         _dragButtonPosition = FuOverlayDragPosition.Top;
                         break;
 
-                    case AnchorLocation.TopLeft:
-                    case AnchorLocation.MiddleLeft:
-                    case AnchorLocation.MiddleCenter:
-                    case AnchorLocation.BottomLeft:
+                    case FuOverlayAnchorLocation.TopLeft:
+                    case FuOverlayAnchorLocation.MiddleLeft:
+                    case FuOverlayAnchorLocation.MiddleCenter:
+                    case FuOverlayAnchorLocation.BottomLeft:
                         _dragButtonPosition = FuOverlayDragPosition.Left;
                         break;
 
-                    case AnchorLocation.MiddleRight:
-                    case AnchorLocation.BottomRight:
-                    case AnchorLocation.TopRight:
+                    case FuOverlayAnchorLocation.MiddleRight:
+                    case FuOverlayAnchorLocation.BottomRight:
+                    case FuOverlayAnchorLocation.TopRight:
                         _dragButtonPosition = FuOverlayDragPosition.Right;
                         break;
 
-                    case AnchorLocation.BottomCenter:
+                    case FuOverlayAnchorLocation.BottomCenter:
                         _dragButtonPosition = FuOverlayDragPosition.Bottom;
                         break;
                 }
@@ -202,6 +208,16 @@ namespace Fu.Core
         }
 
         /// <summary>
+        /// Set the FuStyle of  this overlay's panel (default is FuStyle.Overlay)
+        /// </summary>
+        /// <param name="style">FuStyle to set on this overlay</param>
+        public void SetStyle(FuStyle style)
+        {
+            _overlayStyle = style;
+        }
+        #endregion
+
+        /// <summary>
         /// Draw the overlay, will be call by anchored window
         /// </summary>
         internal void Draw()
@@ -213,7 +229,7 @@ namespace Fu.Core
                 _drawSnapGrid = false;
             }
 
-            if(UIWindow.WorkingAreaSize.x < MinimumWindowSize.x || UIWindow.WorkingAreaSize.y < MinimumWindowSize.y)
+            if (UIWindow.WorkingAreaSize.x < MinimumWindowSize.x || UIWindow.WorkingAreaSize.y < MinimumWindowSize.y)
             {
                 return;
             }
@@ -312,56 +328,63 @@ namespace Fu.Core
                 switch (_dragButtonPosition)
                 {
                     case FuOverlayDragPosition.Top:
-                        ImGui.SetCursorScreenPos(new Vector2(screenPos.x, screenPos.y + _retractButtonWidth));
+                        ImGuiNative.igSetCursorScreenPos(new Vector2(screenPos.x, screenPos.y + _retractButtonWidth));
                         break;
 
                     case FuOverlayDragPosition.Right:
-                        ImGui.SetCursorScreenPos(screenPos);
+                        ImGuiNative.igSetCursorScreenPos(screenPos);
                         break;
 
                     case FuOverlayDragPosition.Bottom:
-                        ImGui.SetCursorScreenPos(new Vector2(screenPos.x, screenPos.y - _retractButtonWidth));
+                        ImGuiNative.igSetCursorScreenPos(new Vector2(screenPos.x, screenPos.y - _retractButtonWidth));
                         break;
 
                     default:
                     case FuOverlayDragPosition.Left:
-                        ImGui.SetCursorScreenPos(new Vector2(screenPos.x + _retractButtonWidth, screenPos.y));
+                        ImGuiNative.igSetCursorScreenPos(new Vector2(screenPos.x + _retractButtonWidth, screenPos.y));
                         break;
                 }
+
+                _overlayStyle.Push(true);
                 if (_noBackground)
                 {
-                    FuStyle.NoBackgroundOverlay.Push(true);
-                }
-                else
-                {
-                    FuStyle.Overlay.Push(true);
+                    Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
                 }
                 ImGui.BeginChild(ID, Size, true, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
                 {
                     UI?.Invoke(this);
                 }
-                FuStyle.Overlay.Pop();
-                ImGui.EndChild();
+                if (_noBackground)
+                {
+                    Fugui.PopColor();
+                }
+                _overlayStyle.Pop();
+                ImGuiNative.igEndChild();
             }
             Fugui.PopStyle();
         }
 
+        #region Private utils
+        /// <summary>
+        /// Draw the drag button
+        /// </summary>
+        /// <param name="screenPos">screen relative position of the drag button</param>
         private void drawDragButton(Vector2 screenPos)
         {
             // set draggingColor
             if (_draging)
             {
-                Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonActive]);
+                Fugui.Push(ImGuiCol.ChildBg, FuThemeManager.GetColor(FuColors.ButtonActive));
             }
             // set hovered color
             else if (_dragButtonHovered)
             {
-                Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered]);
+                Fugui.Push(ImGuiCol.ChildBg, FuThemeManager.GetColor(FuColors.ButtonHovered));
             }
             // set default color
             else
             {
-                Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.Button]);
+                Fugui.Push(ImGuiCol.ChildBg, FuThemeManager.GetColor(FuColors.Button));
             }
 
             // get retract button position
@@ -418,7 +441,7 @@ namespace Fu.Core
                     // build context menu items
                     var builder = FuContextMenuBuilder.Start()
                         .BeginChild("Overlay Anchor");
-                    foreach (AnchorLocation location in Enum.GetValues(typeof(AnchorLocation)))
+                    foreach (FuOverlayAnchorLocation location in Enum.GetValues(typeof(FuOverlayAnchorLocation)))
                     {
                         builder.AddItem(Fugui.AddSpacesBeforeUppercaseDirect(location.ToString()), () =>
                         {
@@ -460,31 +483,31 @@ namespace Fu.Core
             // Calculate the position of the widget based on the anchor point
             switch (_anchorLocation)
             {
-                case AnchorLocation.TopLeft:
+                case FuOverlayAnchorLocation.TopLeft:
                     localPosition = AnchorOffset; // position at top left corner
                     break;
-                case AnchorLocation.TopCenter:
+                case FuOverlayAnchorLocation.TopCenter:
                     localPosition = new Vector2((UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, AnchorOffset.y); // position at top center
                     break;
-                case AnchorLocation.TopRight:
+                case FuOverlayAnchorLocation.TopRight:
                     localPosition = new Vector2(UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x, AnchorOffset.y); // position at top right corner
                     break;
-                case AnchorLocation.MiddleLeft:
+                case FuOverlayAnchorLocation.MiddleLeft:
                     localPosition = new Vector2(AnchorOffset.x, (UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle left side
                     break;
-                case AnchorLocation.MiddleCenter:
+                case FuOverlayAnchorLocation.MiddleCenter:
                     localPosition = new Vector2((UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, (UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle center
                     break;
-                case AnchorLocation.MiddleRight:
+                case FuOverlayAnchorLocation.MiddleRight:
                     localPosition = new Vector2(UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x, (UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle right side
                     break;
-                case AnchorLocation.BottomLeft:
+                case FuOverlayAnchorLocation.BottomLeft:
                     localPosition = new Vector2(AnchorOffset.x, UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom left corner
                     break;
-                case AnchorLocation.BottomCenter:
+                case FuOverlayAnchorLocation.BottomCenter:
                     localPosition = new Vector2((UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom center
                     break;
-                case AnchorLocation.BottomRight:
+                case FuOverlayAnchorLocation.BottomRight:
                     localPosition = new Vector2(UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x, UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom right corner
                     break;
             }
@@ -550,12 +573,6 @@ namespace Fu.Core
             // Calculate the starting position of the snap grid
             Vector2 startPos = UIWindow.LocalPosition + UIWindow.WorkingAreaPosition;
 
-            // TODO : add offset according to drag button position
-            //if (!_collapseButtonLeft)
-            //{
-            //    startPos += new Vector2(_dragStep / 2f, 0f);
-            //}
-
             // Draw the vertical lines of the snap grid
             for (int x = 0; x < cols; x++)
             {
@@ -576,19 +593,6 @@ namespace Fu.Core
                 drawList.AddLine(p1 + startPos, p2 + startPos, color, _gridWidth);
             }
         }
-    }
-
-    // Define an enum to represent the different anchor points
-    public enum AnchorLocation
-    {
-        TopLeft,      // anchor to top left corner
-        TopCenter,    // anchor to top center
-        TopRight,     // anchor to top right corner
-        MiddleLeft,   // anchor to middle left side
-        MiddleCenter, // anchor to middle center
-        MiddleRight,  // anchor to middle right side
-        BottomLeft,   // anchor to bottom left corner
-        BottomCenter, // anchor to bottom center
-        BottomRight   // anchor to bottom right corner
+        #endregion
     }
 }

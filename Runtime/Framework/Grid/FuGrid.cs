@@ -44,14 +44,14 @@ namespace Fu.Framework
         /// <param name="rowsPadding">spaces in pixel between rows</param>
         /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public FuGrid(string ID, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f) : base()
+        public FuGrid(string ID, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f, float width = -1f) : base()
         {
             _ID = ID;
             _autoDrawLabel = !flags.HasFlag(FuGridFlag.NoAutoLabels);
             _dontDisableLabels = flags.HasFlag(FuGridFlag.DoNotDisableLabels);
             _alwaysAutoTooltipsOnLabels = flags.HasFlag(FuGridFlag.AutoToolTipsOnLabels);
             _currentGridDef = FuGridDefinition.DefaultFixed;
-            setGrid(flags.HasFlag(FuGridFlag.LinesBackground), cellPadding, rowsPadding, outterPadding);
+            setGrid(flags.HasFlag(FuGridFlag.LinesBackground), cellPadding, rowsPadding, outterPadding, width);
         }
 
         /// <summary>
@@ -63,14 +63,14 @@ namespace Fu.Framework
         /// <param name="rowsPadding">spaces in pixel between rows</param>
         /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public FuGrid(string ID, FuGridDefinition gridDef, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f) : base()
+        public FuGrid(string ID, FuGridDefinition gridDef, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f, float width = -1f) : base()
         {
             _ID = ID;
             _autoDrawLabel = !flags.HasFlag(FuGridFlag.NoAutoLabels);
             _dontDisableLabels = flags.HasFlag(FuGridFlag.DoNotDisableLabels);
             _alwaysAutoTooltipsOnLabels = flags.HasFlag(FuGridFlag.AutoToolTipsOnLabels);
             _currentGridDef = gridDef;
-            setGrid(flags.HasFlag(FuGridFlag.LinesBackground), cellPadding, rowsPadding, outterPadding);
+            setGrid(flags.HasFlag(FuGridFlag.LinesBackground), cellPadding, rowsPadding, outterPadding, width);
         }
 
         #region Grid
@@ -139,18 +139,10 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="linesBg">Colorise evens rows</param>
         /// <param name="rowPadding">rows padding</param>
-        private void setGrid(bool linesBg, float cellPadding, float rowPadding, float outterPadding)
+        private void setGrid(bool linesBg, float cellPadding, float rowPadding, float outterPadding, float width)
         {
-            //if (IsInsidePopUp)
-            //{
-            //    Debug.LogError("You are trying to create a grid inside a PopUp, wich is not a good idee. Please check your code and remove it.");
-            //}
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
-            _gridCreated = _currentGridDef.SetupTable(_ID, outterPadding, linesBg, ref _isResponsivelyResized);
-            if (!_gridCreated)
-            {
-                //Debug.LogWarning("Fail to create grid '" + _ID + "' at frame " + Time.frameCount + Environment.NewLine + "This can append if the main container of this grid has not been draw yet. Ignore this warning if it's the first and only time you see it. If this message display every frames, you should check your code.");
-            }
+            _gridCreated = _currentGridDef.SetupTable(_ID, cellPadding, outterPadding, linesBg, ref _isResponsivelyResized, width);
         }
         #endregion
 

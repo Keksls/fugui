@@ -87,14 +87,13 @@ namespace Fu.Core
             UI = (window) =>
             {
                 Vector2 cursorPos = ImGui.GetCursorScreenPos();
-                //ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + window.WorkingAreaSize, Vector2.zero, _currentImageUV);
                 Container.ImGuiImage(_rTexture, WorkingAreaSize);
                 ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this);
             };
 
             // register raycaster
-            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsPressed(0), () => Mouse.IsPressed(1), () => Mouse.IsPressed(2), () => Mouse.Wheel.y, () => IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup);
+            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsPressed(Framework.FuMouseButton.Left), () => Mouse.IsPressed(Framework.FuMouseButton.Right), () => false, () => Mouse.Wheel.y, () => IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup);
             FuRaycasting.RegisterRaycaster(_raycaster);
         }
 

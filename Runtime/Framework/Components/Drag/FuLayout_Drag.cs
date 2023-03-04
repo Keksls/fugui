@@ -412,7 +412,7 @@ namespace Fu.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public bool Drag(string text, ref int value, string format = "%.0f")
         {
-            return Drag(text, null, ref value, 0, 100, FuFrameStyle.Default);
+            return Drag(text, null, ref value, 0, 100, FuFrameStyle.Default, format);
         }
 
         ///<summary>
@@ -425,7 +425,7 @@ namespace Fu.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public bool Drag(string text, string vString, ref int value, string format = "%.0f")
         {
-            return Drag(text, vString, ref value, 0, 100, FuFrameStyle.Default);
+            return Drag(text, vString, ref value, 0, 100, FuFrameStyle.Default, format);
         }
 
         ///<summary>
@@ -440,7 +440,7 @@ namespace Fu.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public bool Drag(string text, string vString, ref int value, int min, int max, string format = "%.0f")
         {
-            return Drag(text, vString, ref value, min, max, FuFrameStyle.Default);
+            return Drag(text, vString, ref value, min, max, FuFrameStyle.Default, format);
         }
 
         ///<summary>
@@ -454,7 +454,7 @@ namespace Fu.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         public bool Drag(string text, ref int value, int min, int max, string format = "%.0f")
         {
-            return Drag(text, null, ref value, min, max, FuFrameStyle.Default);
+            return Drag(text, null, ref value, min, max, FuFrameStyle.Default, format);
         }
 
         /// <summary>
@@ -493,7 +493,7 @@ namespace Fu.Framework
             // store the current value in case the element is disabled
             var oldVal = value;
             // draw the draggable integer input element
-            bool valueChanged = ImGui.DragInt("##" + text, ref value, 0.05f, min, max, format, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+            bool valueChanged = ImGui.DragInt("##" + text, ref value, 0.1f, min, max, format, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
             // if the element is disabled, restore the old value and return false for valueChanged
             if (_nextIsDisabled)
             {

@@ -5,7 +5,6 @@ using UnityEngine;
 public class CameraWindow : MonoBehaviour
 {
     public Camera Camera;
-    public Test3DRaycaster Raycaster;
     public float HitForce = 50f;
     private FuCameraWindow _cameraWindow;
 
@@ -14,9 +13,12 @@ public class CameraWindow : MonoBehaviour
         registerCameraViewWindow();
     }
 
+    /// <summary>
+    /// register the camera window and its overlays
+    /// </summary>
     private void registerCameraViewWindow()
     {
-        // add main camera window
+        // register camera window
         FuWindowDefinition camWinDef = new FuCameraWindowDefinition(FuWindowsNames.MainCameraView, Camera, "3DView", null, flags: FuWindowFlags.NoInterractions);
         camWinDef.SetCustomWindowType<FuCameraWindow>();
         camWinDef.OnUIWindowCreated += CamWinDef_OnUIWindowCreated;
@@ -36,6 +38,10 @@ public class CameraWindow : MonoBehaviour
         ss1.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.BottomRight, Vector2Int.zero);
     }
 
+    /// <summary>
+    /// whenever the camera window in instantiated
+    /// </summary>
+    /// <param name="camWindow">camera FuWindow instance</param>
     private void CamWinDef_OnUIWindowCreated(FuWindow camWindow)
     {
         _cameraWindow = (FuCameraWindow)camWindow;
@@ -43,6 +49,10 @@ public class CameraWindow : MonoBehaviour
     }
 
     #region overlays
+    /// <summary>
+    /// Draw camera FPS on an overlay
+    /// </summary>
+    /// <param name="cam">FuCameraWindow definition</param>
     void drawCameraFPSOverlay(FuCameraWindow cam)
     {
         using (FuGrid grid = new FuGrid("camFPS", new FuGridDefinition(2, new int[] { 42 }, responsiveMinWidth: 0)))
@@ -54,6 +64,10 @@ public class CameraWindow : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Draw camera supersampling settings overlay
+    /// </summary>
+    /// <param name="cam">FuCameraWindow definition</param>
     void drawSupersamplingOverlay(FuCameraWindow cam)
     {
         using (var layout = new FuLayout())
@@ -88,6 +102,7 @@ public class CameraWindow : MonoBehaviour
             return;
         }
 
+        // just for fun and for demo raycast from camera window
         if (_cameraWindow.Mouse.IsDown(FuMouseButton.Left) && !_cameraWindow.Mouse.IsHoverOverlay && !_cameraWindow.Mouse.IsHoverPopup)
         {
             RaycastHit hit;

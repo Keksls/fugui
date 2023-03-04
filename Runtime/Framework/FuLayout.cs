@@ -371,6 +371,14 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Align the next text widget to add a frame padding around it
+        /// </summary>
+        public void AlignTextToFramePadding()
+        {
+            ImGuiNative.igAlignTextToFramePadding();
+        }
+
+        /// <summary>
         /// Beggin a group of widgets
         /// The cursor default pos is now according to the group pos
         /// You can SameLine groups

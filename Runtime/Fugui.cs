@@ -92,18 +92,25 @@ namespace Fu
 
         #region Events
         /// <summary>
-        /// Event invoken whenever an exception happend within the UI render
+        /// Event invoken whenever an exception happend within the UI render loop
         /// </summary>
         public static event Action<Exception> OnUIException;
         /// <summary>
         /// Fire the UI exception event
         /// </summary>
-        /// <param name="ex"></param>
+        /// <param name="ex">exception of the event</param>
         internal static void Fire_OnUIException(Exception ex) => OnUIException?.Invoke(ex);
         #endregion
 
         static Fugui()
         {
+            // instantiate UIWindows 
+            UIWindows = new Dictionary<string, FuWindow>();
+            UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
+            // init dic and queue
+            _externalWindows = new Dictionary<string, FuExternalWindowContainer>();
+            _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
+            _windowsToExternalize = new Queue<FuWindow>();
             // prepare context menu
             ResetContextMenu(true);
 #if IMDEBUG
@@ -118,13 +125,6 @@ namespace Fu
         /// <param name="mainContainerUICamera">Camera that will display UI of main container</param>
         public static void Initialize(Camera mainContainerUICamera)
         {
-            // instantiate UIWindows 
-            UIWindows = new Dictionary<string, FuWindow>();
-            UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
-            // init dic and queue
-            _externalWindows = new Dictionary<string, FuExternalWindowContainer>();
-            _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
-            _windowsToExternalize = new Queue<FuWindow>();
             // we can now add window
             _canAddWindow = true;
             // assume that render thread is not already started

@@ -7,18 +7,14 @@ namespace Fu.Core
     {
         private static FuWindowName _Tree = new FuWindowName(4, "Tree");
         public static FuWindowName Tree { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Tree; }
-        private static FuWindowName _Captures = new FuWindowName(5, "Captures");
-        public static FuWindowName Captures { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Captures; }
         private static FuWindowName _Inspector = new FuWindowName(6, "Inspector");
         public static FuWindowName Inspector { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Inspector; }
-        private static FuWindowName _Metadata = new FuWindowName(7, "Metadata");
-        public static FuWindowName Metadata { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Metadata; }
-        private static FuWindowName _ToolBox = new FuWindowName(8, "ToolBox");
-        public static FuWindowName ToolBox { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _ToolBox; }
+        private static FuWindowName _Widgets = new FuWindowName(11, "Widgets");
+        public static FuWindowName Widgets { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Widgets; }
         private static FuWindowName _MainCameraView = new FuWindowName(9, "MainCameraView");
         public static FuWindowName MainCameraView { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _MainCameraView; }
-        private static FuWindowName _Modals = new FuWindowName(10, "Modals");
-        public static FuWindowName Modals { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Modals; }
+        private static FuWindowName _Popups = new FuWindowName(10, "Popups");
+        public static FuWindowName Popups { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Popups; }
         public static List<FuWindowName> GetAllWindowsNames()
         {
             return new List<FuWindowName>()
@@ -28,12 +24,10 @@ namespace Fu.Core
                 _FuguiSettings,
                 _DockSpaceManager,
                 _Tree,
-                _Captures,
                 _Inspector,
-                _Metadata,
-                _ToolBox,
+                _Widgets,
                 _MainCameraView,
-                _Modals,
+                _Popups,
             };
         }
     }

@@ -22,7 +22,7 @@ namespace Fu.Core
             {
                 _container = value;
                 IsUnityContext = !(value is FuExternalWindowContainer);
-                if(value == null)
+                if (value == null)
                 {
                     OnRemovedFromContainer?.Invoke(this);
                 }
@@ -320,7 +320,7 @@ namespace Fu.Core
             // set current theme frame padding
             if (ImGui.Begin(ID, ref _open, _windowFlags))
             {
-                bool docked = ImGui.IsWindowDocked();
+                bool docked = ImGuiNative.igIsWindowDocked() != 0;
                 if (docked != IsDocked)
                 {
                     IsDocked = docked;
@@ -339,7 +339,7 @@ namespace Fu.Core
                 if (IsDocked)
                 {
                     // get size of this window
-                    CurrentDockID = ImGui.GetWindowDockID();
+                    CurrentDockID = ImGuiNative.igGetWindowDockID();
                     ImGuiDockNodePtr node = ImGuiDocking.DockBuilderGetNode(CurrentDockID);
                     ImRect rect = node.Rect();
                     var size = rect.Max - rect.Min;
@@ -379,10 +379,10 @@ namespace Fu.Core
                 // get pos of this window
                 var pos = ImGui.GetWindowPos();
                 newFramePos = new Vector2Int((int)pos.x, (int)pos.y);
-                HasFocus = ImGui.IsWindowFocused();
+                HasFocus = ImGuiNative.igIsWindowFocused(ImGuiFocusedFlags.None) != 0;
                 // whatever window is hovered
                 IsHovered = (LocalRect.Contains(Container.LocalMousePos) &&
-                    ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup)) ||
+                    ImGuiNative.igIsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup) != 0) ||
                     FuLayout.CurrentPopUpWindowID == ID;
 
                 // draw debug data
@@ -507,11 +507,11 @@ namespace Fu.Core
         private void updateMouseState()
         {
             // set mouse buttons state
-            Mouse.ButtonStates[0].SetState(ImGui.IsMouseDown(ImGuiMouseButton.Left) & IsHovered);
-            Mouse.ButtonStates[1].SetState(ImGui.IsMouseDown(ImGuiMouseButton.Right) & IsHovered);
+            Mouse.ButtonStates[0].SetState(IsHovered && ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Left) != 0);
+            Mouse.ButtonStates[1].SetState(IsHovered && ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Right) != 0);
             // set mouse pos and wheel
             Mouse.SetPosition(this);
-            Mouse.SetWheel(new Vector2(ImGui.GetIO().MouseWheelH, ImGui.GetIO().MouseWheel));
+            Mouse.SetWheel(new Vector2(Container.Context.IO.MouseWheelH, Container.Context.IO.MouseWheel));
         }
         #endregion
 

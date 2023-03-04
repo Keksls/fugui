@@ -89,45 +89,45 @@ namespace Fu.Core
         }
 
         /// <summary>
-        /// is a mouse button down
+        /// is a mouse button just down this frame
         /// </summary>
-        /// <param name="index">0 left, 1 right</param>
+        /// <param name="mouseButton">Mouse button to check</param>
         /// <returns>true if down</returns>
-        public bool IsDown(int index)
+        public bool IsDown(FuMouseButton mouseButton)
         {
-            if (index >= ButtonStates.Length || index < 0)
+            if (mouseButton == FuMouseButton.None)
             {
                 return false;
             }
-            return ButtonStates[index].IsDown;
+            return ButtonStates[(int)mouseButton].IsDown;
         }
 
         /// <summary>
-        /// is a mouse button up
+        /// is a mouse button just up this frame
         /// </summary>
-        /// <param name="index">0 left, 1 right</param>
+        /// <param name="mouseButton">Mouse button to check</param>
         /// <returns>true if up</returns>
-        public bool IsUp(int index)
+        public bool IsUp(FuMouseButton mouseButton)
         {
-            if (index >= ButtonStates.Length || index < 0)
+            if (mouseButton == FuMouseButton.None)
             {
                 return false;
             }
-            return ButtonStates[index].IsUp;
+            return ButtonStates[(int)mouseButton].IsUp;
         }
 
         /// <summary>
-        /// is a mouse button pressed
+        /// is a mouse button is currently pressed
         /// </summary>
-        /// <param name="index">0 left, 1 right</param>
+        /// <param name="mouseButton">Mouse button to check</param>
         /// <returns>true if pressed</returns>
-        public bool IsPressed(int index)
+        public bool IsPressed(FuMouseButton mouseButton)
         {
-            if (index >= ButtonStates.Length || index < 0)
+            if (mouseButton == FuMouseButton.None)
             {
                 return false;
             }
-            return ButtonStates[index].IsPressed;
+            return ButtonStates[(int)mouseButton].IsPressed;
         }
     }
 

@@ -2,29 +2,56 @@
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Define Fugui mouse buttons
+    /// </summary>
     public enum FuMouseButton
     {
-        None,
-        Left,
-        Right
+        /// <summary>
+        /// None / default no button
+        /// </summary>
+        None = -1,
+        /// <summary>
+        /// Left mouse button
+        /// </summary>
+        Left = 0,
+        /// <summary>
+        /// Right mouse button
+        /// </summary>
+        Right = 1
     }
 
+    /// <summary>
+    /// Define Fugui Knobs behaviour flags
+    /// </summary>
     public enum FuKnobFlags
     {
+        /// <summary>
+        /// Default knob behaviour
+        /// </summary>
         Default = 0,
+        /// <summary>
+        /// Display a tooltip hover value
+        /// </summary>
         ValueTooltip = 1,
+        /// <summary>
+        /// Do not draw Drag float under the knob
+        /// </summary>
         NoInput = 2
     }
 
+    /// <summary>
+    /// Define knob types
+    /// </summary>
     public enum FuKnobVariant
     {
-        Tick = 1 << 0,
-        Dot = 1 << 1,
-        Wiper = 1 << 2,
-        WiperOnly = 1 << 3,
-        WiperDot = 1 << 4,
-        Stepped = 1 << 5,
-        Space = 1 << 6,
+        Tick = 1,
+        Dot = 2,
+        Wiper = 4,
+        WiperOnly = 8,
+        WiperDot = 16,
+        Stepped = 32,
+        Space = 64,
     }
 
     /// <summary>

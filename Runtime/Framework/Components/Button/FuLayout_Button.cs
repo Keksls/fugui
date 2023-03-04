@@ -128,8 +128,9 @@ namespace Fu.Framework
         /// <param name="textOffset">offset of the text inside the button</param>
         /// <param name="gradientStrenght">strenght of the button gradient (typicaly the one of the theme)</param>
         /// <param name="style">style of the button</param>
+        /// <param name="bordered">draw borders arround button</param>
         /// <returns>true if clicked</returns>
-        public bool Button(string text, FuElementSize size, Vector2 padding, Vector2 textOffset, float gradientStrenght, FuButtonStyle style)
+        public bool Button(string text, FuElementSize size, Vector2 padding, Vector2 textOffset, float gradientStrenght, FuButtonStyle style, bool bordered = true)
         {
             // begin the element
             beginElement(ref text, style, true);
@@ -139,7 +140,7 @@ namespace Fu.Framework
             }
 
             // draw the button
-            bool clicked = _customButton(text, size.BrutSize, padding, textOffset, style, gradientStrenght);
+            bool clicked = _customButton(text, size.BrutSize, padding, textOffset, style, gradientStrenght, bordered);
 
             // end the element
             endElement(style);
@@ -155,8 +156,9 @@ namespace Fu.Framework
         /// <param name="textOffset">offset of the text inside the button</param>
         /// <param name="gradientStrenght">strenght of the button gradient (typicaly the one of the theme)</param>
         /// <param name="style">style of the button</param>
+        /// <param name="bordered">draw borders arround button</param>
         /// <returns>true if clicked</returns>
-        private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght)
+        private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght, bool bordered = true)
         {
             // scale padding
             padding *= Fugui.CurrentContext.Scale;
@@ -223,7 +225,7 @@ namespace Fu.Framework
             }
 
             // draw border
-            if (FuThemeManager.CurrentTheme.FrameBorderSize > 0.0f)
+            if (FuThemeManager.CurrentTheme.FrameBorderSize > 0.0f && bordered)
             {
                 drawList.AddRect(bb.Min, bb.Max, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), FuThemeManager.CurrentTheme.FrameRounding, 0, FuThemeManager.CurrentTheme.FrameBorderSize);
             }

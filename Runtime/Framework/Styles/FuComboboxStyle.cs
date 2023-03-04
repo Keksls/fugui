@@ -15,16 +15,25 @@ namespace Fu.Framework
         private Color _frameDisabled;
 
         #region Pressets
-        // default button style
+        // Default combobox style
         static FuComboboxStyle _defaultStyle;
+        /// <summary>
+        /// Default combox colors, use 'Button' theme colors
+        /// </summary>
         public static FuComboboxStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultStyle; } }
 
-        // blue button style
+        // Highlight combobox style
         static FuComboboxStyle _highlightStyle;
+        /// <summary>
+        /// Highlight combox colors, use 'Highlight' theme colors
+        /// </summary>
         public static FuComboboxStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightStyle; } }
 
-        // blue button style
+        // Selected combobox style
         static FuComboboxStyle _selectedStyle;
+        /// <summary>
+        /// Selected combox colors, use 'Selected' theme colors
+        /// </summary>
         public static FuComboboxStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedStyle; } }
         #endregion
 

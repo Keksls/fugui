@@ -1,4 +1,3 @@
-using Fu.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -17,6 +16,9 @@ namespace Fu.Framework
         #region Pressets
         // default collapsable style
         static FuCollapsableStyle _defaultContainerStyle;
+        /// <summary>
+        /// Default collapsable style, use 'Collapsable' theme colors + default text
+        /// </summary>
         public static FuCollapsableStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultContainerStyle; } }
         #endregion
 

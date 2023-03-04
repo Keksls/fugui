@@ -1,4 +1,3 @@
-using Fu.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -13,12 +12,23 @@ namespace Fu.Framework
         #region Pressets
         // default container style
         static FuPanelStyle _defaultContainerStyle;
+        /// <summary>
+        /// Default panel (container) style, use 'WindowBg' and 'Border' theme colors
+        /// </summary>
         public static FuPanelStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultContainerStyle; } }
+       
         // popup container style
         static FuPanelStyle _popupContainerStyle;
+        /// <summary>
+        /// PopUp panel (container) style, use 'PopupBg' and 'Border' theme colors
+        /// </summary>
         public static FuPanelStyle PopUp { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _popupContainerStyle; } }
+        
         // transparent container style
         static FuPanelStyle _transparentContainerStyle;
+        /// <summary>
+        /// Transparent panel (container) style, set transparent BG and borders
+        /// </summary>
         public static FuPanelStyle Transparent { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _transparentContainerStyle; } }
         #endregion
 

@@ -410,9 +410,9 @@ public class FuguiDemoScene : MonoBehaviour
         {
             using (FuLayout layout = new FuLayout())
             {
-                layout.ComboboxEnum<AnchorLocation>("Notify Anchor", (anchor) =>
+                layout.ComboboxEnum<FuOverlayAnchorLocation>("Notify Anchor", (anchor) =>
                 {
-                    Fugui.Settings.NotificationAnchorPosition = (AnchorLocation)anchor;
+                    Fugui.Settings.NotificationAnchorPosition = (FuOverlayAnchorLocation)anchor;
                 }, () => Fugui.Settings.NotificationAnchorPosition);
                 layout.Separator();
                 foreach (StateType type in Enum.GetValues(typeof(StateType)))
@@ -770,14 +770,14 @@ public class FuguiDemoScene : MonoBehaviour
         {
             using (FuLayout layout = new FuLayout())
             {
-                layout.ComboboxEnum<AnchorLocation>("##rgCB", (val) => { });
+                layout.ComboboxEnum<FuOverlayAnchorLocation>("##rgCB", (val) => { });
                 layout.SameLine();
                 layout.Button(Icons.Ghost, FuElementSize.AutoSize);
                 layout.SameLine();
                 layout.Button(Icons.DataFusion, FuElementSize.AutoSize, FuButtonStyle.Highlight);
             };
         }, FuOverlayFlags.NoBackground | FuOverlayFlags.NoClose | FuOverlayFlags.NoMove);
-        rg.AnchorWindowDefinition(camWinDef, AnchorLocation.TopLeft, Vector2Int.zero);
+        rg.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.TopLeft, Vector2Int.zero);
 
         // gizmos panel
         FuOverlay gz = new FuOverlay("oGP", new Vector2Int(46, 36), (overlay) =>
@@ -787,7 +787,7 @@ public class FuguiDemoScene : MonoBehaviour
                 layout.Button(Icons.Gizmo, FuButtonStyle.Highlight);
             }
         }, FuOverlayFlags.NoClose | FuOverlayFlags.NoMove | FuOverlayFlags.NoBackground, FuOverlayDragPosition.Right);
-        gz.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, Vector2Int.zero);
+        gz.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.TopRight, Vector2Int.zero);
 
         // legend
         FuOverlay bc = new FuOverlay("oLP", new Vector2Int(128, 128), (overlay) =>
@@ -801,7 +801,7 @@ public class FuguiDemoScene : MonoBehaviour
                 layout.Text("Legend 5");
             }
         }, FuOverlayFlags.NoEditAnchor, FuOverlayDragPosition.Bottom);
-        bc.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomLeft, Vector2Int.zero);
+        bc.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.BottomLeft, Vector2Int.zero);
 
         // legend
         FuOverlay tb = new FuOverlay("oTB", new Vector2Int(312, 48), (overlay) =>
@@ -834,21 +834,21 @@ public class FuguiDemoScene : MonoBehaviour
                 Fugui.PopFont();
             }
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Top);
-        tb.AnchorWindowDefinition(camWinDef, AnchorLocation.TopCenter, Vector2Int.zero);
+        tb.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.TopCenter, Vector2Int.zero);
 
         // FPS display Cam 1
         FuOverlay fps1 = new FuOverlay("oCamFPS", new Vector2Int(102, 52), (overlay) =>
         {
             drawCameraFPSOverlay(_mainCam);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);
-        fps1.AnchorWindowDefinition(camWinDef, AnchorLocation.TopRight, new Vector2Int(0, 64));
+        fps1.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.TopRight, new Vector2Int(0, 64));
 
         // cam 1 SS
         FuOverlay ss1 = new FuOverlay("oCamSS", new Vector2Int(224, 36), (overlay) =>
         {
             drawCameraOverlay(_mainCam);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);
-        ss1.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomRight, Vector2Int.zero);
+        ss1.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.BottomRight, Vector2Int.zero);
 
         void drawCameraOverlay(FuCameraWindow cam)
         {
@@ -919,7 +919,7 @@ public class FuguiDemoScene : MonoBehaviour
                 Fugui.PopFont();
             }
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Bottom);
-        fastest.AnchorWindowDefinition(camWinDef, AnchorLocation.BottomCenter, Vector2Int.zero);
+        fastest.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.BottomCenter, Vector2Int.zero);
 
         void drawCameraFPSOverlay(FuCameraWindow cam)
         {

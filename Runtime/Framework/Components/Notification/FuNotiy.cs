@@ -108,31 +108,31 @@ namespace Fu
             // Calculate the position of the widget based on the anchor point
             switch (Settings.NotificationAnchorPosition)
             {
-                case AnchorLocation.TopLeft:
+                case FuOverlayAnchorLocation.TopLeft:
                     localPosition = Vector2.zero; // position at top left corner
                     break;
-                case AnchorLocation.TopCenter:
+                case FuOverlayAnchorLocation.TopCenter:
                     localPosition = new Vector2((container.Size.x - _panelSize.x - _notificationPadding.x) * 0.5f, _notificationPadding.y); // position at top center
                     break;
-                case AnchorLocation.TopRight:
+                case FuOverlayAnchorLocation.TopRight:
                     localPosition = new Vector2(container.Size.x - _panelSize.x - _notificationPadding.x, _notificationPadding.y); // position at top right corner
                     break;
-                case AnchorLocation.MiddleLeft:
+                case FuOverlayAnchorLocation.MiddleLeft:
                     localPosition = new Vector2(_notificationPadding.x, (container.Size.y - _panelSize.y - _notificationPadding.y) * 0.5f); // position at middle left side
                     break;
-                case AnchorLocation.MiddleCenter:
+                case FuOverlayAnchorLocation.MiddleCenter:
                     localPosition = new Vector2((container.Size.x - _panelSize.x - _notificationPadding.x) * 0.5f, (container.Size.y - _panelSize.y - _notificationPadding.y) * 0.5f); // position at middle center
                     break;
-                case AnchorLocation.MiddleRight:
+                case FuOverlayAnchorLocation.MiddleRight:
                     localPosition = new Vector2(container.Size.x - _panelSize.x - _notificationPadding.x, (container.Size.y - _panelSize.y - _notificationPadding.y) * 0.5f); // position at middle right side
                     break;
-                case AnchorLocation.BottomLeft:
+                case FuOverlayAnchorLocation.BottomLeft:
                     localPosition = new Vector2(_notificationPadding.x, container.Size.y - _panelSize.y - _notificationPadding.y); // position at bottom left corner
                     break;
-                case AnchorLocation.BottomCenter:
+                case FuOverlayAnchorLocation.BottomCenter:
                     localPosition = new Vector2((container.Size.x - _panelSize.x - _notificationPadding.x) * 0.5f, container.Size.y - _panelSize.y - _notificationPadding.y); // position at bottom center
                     break;
-                case AnchorLocation.BottomRight:
+                case FuOverlayAnchorLocation.BottomRight:
                     localPosition = new Vector2(container.Size.x - _panelSize.x - _notificationPadding.x, container.Size.y - _panelSize.y - _notificationPadding.y); // position at bottom right corner
                     break;
             }

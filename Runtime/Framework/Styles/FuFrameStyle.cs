@@ -24,6 +24,9 @@ namespace Fu.Framework
         #region Pressets
         // default button style
         static FuFrameStyle _defaultFrameStyle;
+        /// <summary>
+        /// Default frame style, use 'Frame', 'Border' and 'CheckMark' theme colors
+        /// </summary>
         public static FuFrameStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultFrameStyle; } }
         #endregion
 

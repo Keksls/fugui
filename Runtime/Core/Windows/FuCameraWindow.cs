@@ -273,11 +273,11 @@ namespace Fu.Core
             {
                 default:
                 case FuWindowState.Idle:
-                    TargetCameraFPS = 10;
+                    TargetCameraFPS = Fugui.Settings.IdleCameraFPS;
                     break;
 
                 case FuWindowState.Manipulating:
-                    TargetCameraFPS = 48;
+                    TargetCameraFPS = Fugui.Settings.ManipulatingFPS;
                     break;
             }
         }

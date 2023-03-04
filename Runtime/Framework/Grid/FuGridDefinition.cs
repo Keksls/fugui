@@ -41,6 +41,7 @@ namespace Fu.Framework
         public static FuGridDefinition DefaultFlexible { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultFlexible; } }
         #endregion
 
+        #region Constructors
         /// <summary>
         /// This will create a FixedWidth type Grid.
         /// That mean at least one of the columns has a fixed pixels width.
@@ -111,22 +112,26 @@ namespace Fu.Framework
             GridType = FuGridType.FlexibleCols;
             ResponsiveMinWidth = -1f;
         }
+        #endregion
 
         /// <summary>
         /// Setup the current table columns according to this grid definition
         /// </summary>
-        /// <param name="gridName">Unique nam of the grid</param>
+        /// <param name="gridName">Unique name of the grid</param>
+        /// <param name="cellPadding">space between each cells (rows padding)</param>
+        /// <param name="outterPadding">padding on left and right out of the grid</param>
         /// <param name="linesBg">colorize evens rows</param>
         /// <param name="isResponsivelyResized">whatever this method determinate if the grid need to be resized (if it's too small). At this point, the grid has beed resized for you</param>
+        /// <param name="width">target width of the row (be carefull, you can draw out of current container)</param>
         /// <returns>true if the grid was created</returns>
-        internal bool SetupTable(string gridName, float outterPadding, bool linesBg, ref bool isResponsivelyResized)
+        internal bool SetupTable(string gridName, float cellPadding, float outterPadding, bool linesBg, ref bool isResponsivelyResized, float width = -1)
         {
             outterPadding *= Fugui.CurrentContext.Scale;
             isResponsivelyResized = false;
             // prepare columns width
-            float[] colWidth = null;
+            float[] colWidth;
             int nbCols = NbColumns;
-            float availWidth = ImGui.GetContentRegionAvail().x - (outterPadding * 2f);
+            float availWidth = width <= 0f ? ImGui.GetContentRegionAvail().x - (outterPadding * 2f) : width;
             switch (GridType)
             {
                 // set auto width
@@ -141,9 +146,16 @@ namespace Fu.Framework
                 // it use Minimum second column size to determinate whatever the first fixed columns need to be erased
                 case FuGridType.FixedWidth:
                     colWidth = new float[ColumnsWidth.Length];
+                    float currentRemaningWidth = availWidth;
                     for (int i = 0; i < colWidth.Length; i++)
                     {
-                        colWidth[i] = ColumnsWidth[i] * Fugui.CurrentContext.Scale;
+                        float targetUnscaledWidth = ColumnsWidth[i];
+                        if(targetUnscaledWidth < 0f)
+                        {
+                            targetUnscaledWidth = currentRemaningWidth - targetUnscaledWidth;
+                        }
+                        colWidth[i] = targetUnscaledWidth * Fugui.CurrentContext.Scale;
+                        currentRemaningWidth -= (colWidth[i] + cellPadding);
                     }
                     if (NbColumns == 2 && MinSecondColumnSize > 0 && ColumnsWidth.Length > 0)
                     {
@@ -198,7 +210,6 @@ namespace Fu.Framework
                 // can not be forced to responsive
                 case FuGridType.FlexibleCols:
                     // get nb of columns
-                    float cellPadding = FuThemeManager.CurrentTheme.CellPadding.x;
                     float scaledColWidth = ColumnWidth * Fugui.CurrentContext.Scale;
                     nbCols = Mathf.FloorToInt(availWidth / (scaledColWidth + cellPadding * 2f));
                     if (nbCols < 1)
@@ -215,7 +226,7 @@ namespace Fu.Framework
 
             // try to create the table
             ImGuiNative.igSetCursorPosX(ImGuiNative.igGetCursorPosX() + outterPadding);
-            bool tableCreated = ImGui.BeginTable(gridName, nbCols, linesBg ? ImGuiTableFlags.RowBg : ImGuiTableFlags.None, new UnityEngine.Vector2(availWidth, 0f));
+            bool tableCreated = ImGui.BeginTable(gridName, nbCols, linesBg ? ImGuiTableFlags.RowBg : ImGuiTableFlags.None, new Vector2(availWidth, 0f));
             if (!tableCreated)
             {
                 return false;

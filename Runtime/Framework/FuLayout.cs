@@ -98,7 +98,6 @@ namespace Fu.Framework
         protected bool _drawElement = true;
         #endregion
 
-        #region Layout
         public FuLayout()
         {
             CurrentDrawer = this;
@@ -112,33 +111,7 @@ namespace Fu.Framework
             CurrentDrawer = null;
         }
 
-        /// <summary>
-        /// Disables the next element in this layout.
-        /// </summary>
-        public void DisableNextElement()
-        {
-            _nextIsDisabled = true;
-        }
-
-        /// <summary>
-        /// Disables all next elements in this layout from now.
-        /// Call 'EnableNextElements' to stop disabling
-        /// </summary>
-        public void DisableNextElements()
-        {
-            _nextIsDisabled = true;
-            _longDisabled = true;
-        }
-
-        /// <summary>
-        /// Enables all next element in this layout.
-        /// </summary>
-        public void EnableNextElements()
-        {
-            _nextIsDisabled = false;
-            _longDisabled = false;
-        }
-
+        #region elements utils
         /// <summary>
         /// Begins an element in this layout with the specified style.
         /// </summary>
@@ -229,7 +202,42 @@ namespace Fu.Framework
         {
             ImGui.GetWindowDrawList().AddRect(rect.min, rect.max, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameSelectedFeedback)), rounded ? ImGui.GetStyle().FrameRounding : 0f);
         }
+        #endregion
 
+        #region ToopTips
+        /// <summary>
+        /// Set tooltips for the x next element(s)
+        /// </summary>
+        /// <param name="tooltips">array of tooltips to set</param>
+        public void SetNextElementToolTip(params string[] tooltips)
+        {
+            _currentToolTips = tooltips;
+            _currentToolTipsIndex = 0;
+            _currentToolTipsOnLabels = false;
+        }
+
+        /// <summary>
+        /// Set tooltips for the x next element(s), including labels
+        /// </summary>
+        /// <param name="tooltips">array of tooltips to set</param>
+        public void SetNextElementToolTipWithLabel(params string[] tooltips)
+        {
+            _currentToolTips = tooltips;
+            _currentToolTipsIndex = 0;
+            _currentToolTipsOnLabels = true;
+        }
+
+        /// <summary>
+        /// Set tooltips styles for the x next elements
+        /// </summary>
+        /// <param name="styles">array of styles to set</param>
+        public void SetNextElementToolTipStyles(params FuTextStyle[] styles)
+        {
+            _currentToolTipsStyles = styles;
+        }
+        #endregion
+
+        #region Public Utils
         /// <summary>
         /// Add a line under the last drawed element
         /// </summary>
@@ -256,40 +264,33 @@ namespace Fu.Framework
         {
             _animationEnabled = false;
         }
-        #endregion
 
-        #region ToopTips
         /// <summary>
-        /// Set tooltips for the x next element(s)
+        /// Disables the next element in this layout.
         /// </summary>
-        /// <param name="tooltips">array of tooltips to set</param>
-        public void SetNextElementToolTip(params string[] tooltips)
+        public void DisableNextElement()
         {
-            _currentToolTips = tooltips;
-            _currentToolTipsIndex = 0;
-            _currentToolTipsOnLabels = false;
-        }
-        /// <summary>
-        /// Set tooltips for the x next element(s), including labels
-        /// </summary>
-        /// <param name="tooltips">array of tooltips to set</param>
-        public void SetNextElementToolTipWithLabel(params string[] tooltips)
-        {
-            _currentToolTips = tooltips;
-            _currentToolTipsIndex = 0;
-            _currentToolTipsOnLabels = true;
+            _nextIsDisabled = true;
         }
 
         /// <summary>
-        /// Set tooltips styles for the x next elements
+        /// Disables all next elements in this layout from now.
+        /// Call 'EnableNextElements' to stop disabling
         /// </summary>
-        /// <param name="styles">array of styles to set</param>
-        public void SetNextElementToolTipStyles(params FuTextStyle[] styles)
+        public void DisableNextElements()
         {
-            _currentToolTipsStyles = styles;
+            _nextIsDisabled = true;
+            _longDisabled = true;
         }
-        #endregion
 
+        /// <summary>
+        /// Enables all next element in this layout.
+        /// </summary>
+        public void EnableNextElements()
+        {
+            _nextIsDisabled = false;
+            _longDisabled = false;
+        }
         /// <summary>
         /// Draw a Separator Line
         /// </summary>
@@ -341,6 +342,52 @@ namespace Fu.Framework
         {
             ImGuiNative.igDummy(size * Fugui.CurrentContext.Scale);
         }
+
+        /// <summary>
+        /// Get the current available area of the drawing region
+        /// </summary>
+        /// <returns>Vector2 that represent the available area (x = width, y = height)</returns>
+        public Vector2 GetAvailable()
+        {
+            return ImGui.GetContentRegionAvail();
+        }
+
+        /// <summary>
+        /// Get the current available width of the drawing region
+        /// </summary>
+        /// <returns>float that represent the available width</returns>
+        public float GetAvailableWidth()
+        {
+            return ImGui.GetContentRegionAvail().x;
+        }
+
+        /// <summary>
+        /// Get the current available height of the drawing region
+        /// </summary>
+        /// <returns>float that represent the available height</returns>
+        public float GetAvailableHeight()
+        {
+            return ImGui.GetContentRegionAvail().y;
+        }
+
+        /// <summary>
+        /// Beggin a group of widgets
+        /// The cursor default pos is now according to the group pos
+        /// You can SameLine groups
+        /// </summary>
+        public void BeginGroup()
+        {
+            ImGuiNative.igBeginGroup();
+        }
+
+        /// <summary>
+        /// End of a group of widgets
+        /// </summary>
+        public void EndGroup()
+        {
+            ImGuiNative.igEndGroup();
+        }
+        #endregion
 
         #region Center Item
         /// <summary>

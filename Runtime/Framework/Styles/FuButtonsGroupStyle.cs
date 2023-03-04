@@ -9,6 +9,11 @@ namespace Fu.Framework
 
         #region Pressets
         static FuButtonsGroupStyle defaultButtonsGroupStyle;
+        /// <summary>
+        /// Default style of buttonGroups widgets
+        /// unselected buttons are 'Default' button style
+        /// selected buttons are 'Selected' button style
+        /// </summary>
         public static FuButtonsGroupStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return defaultButtonsGroupStyle; } }
         #endregion
 

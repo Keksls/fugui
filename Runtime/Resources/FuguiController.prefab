@@ -124,8 +124,9 @@ MonoBehaviour:
     FUGUI_WINDOWS_DEF_ENUM_PATH: Assets\Scripts\UI\FuWindowsNames.cs
     FUGUI_DOCKSPACE_FOLDER_PATH: Assets\StreamingAssets\Fugui\Layout\
     InternalizeOnMouseRelease: 0
-    IdleFPS: 4
-    ManipulatingFPS: 48
+    IdleFPS: 1
+    ManipulatingFPS: 28
+    IdleCameraFPS: 2
     Windows3DScale: 10
     Windows3DSuperSampling: 2
     Windows3DFontScale: 3

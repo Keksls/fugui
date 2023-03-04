@@ -13,18 +13,45 @@ namespace Fu.Framework
 
         #region Pressets
         static FuTextStyle _defaultTextStyle;
+        /// <summary>
+        /// Default text style, use 'Text' theme colors
+        /// </summary>
         public static FuTextStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultTextStyle; } }
+        
         static FuTextStyle _selectedTextStyle;
+        /// <summary>
+        /// Selected text style, use 'SelectedText' theme colors
+        /// </summary>
         public static FuTextStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedTextStyle; } }
+       
         static FuTextStyle _highlightTextStyle;
+        /// <summary>
+        /// Highlight text style, use 'HighlightText' theme colors
+        /// </summary>
         public static FuTextStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightTextStyle; } }
+        
         static FuTextStyle _infoTextStyle;
+        /// <summary>
+        /// Info text style, use 'InfoText' theme colors
+        /// </summary>
         public static FuTextStyle Info { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _infoTextStyle; } }
+        
         static FuTextStyle _warningTextStyle;
+        /// <summary>
+        /// Warning text style, use 'WarningText' theme colors
+        /// </summary>
         public static FuTextStyle Warning { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _warningTextStyle; } }
+        
         static FuTextStyle _dangerTextStyle;
+        /// <summary>
+        /// Danger text style, use 'DangerText' theme colors
+        /// </summary>
         public static FuTextStyle Danger { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _dangerTextStyle; } }
+        
         static FuTextStyle _successTextStyle;
+        /// <summary>
+        /// Success text style, use 'SuccessText' theme colors
+        /// </summary>
         public static FuTextStyle Success { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _successTextStyle; } }
         #endregion
 
@@ -67,7 +94,7 @@ namespace Fu.Framework
             _selectedTextStyle = new FuTextStyle()
             {
                 Text = FuThemeManager.GetColor(FuColors.SelectedText),
-                DisabledText = FuThemeManager.GetColor(FuColors.SelectedText) * 0.8f
+                DisabledText = FuThemeManager.GetColor(FuColors.SelectedText) * 0.5f
             };
             // highlight text style
             _highlightTextStyle = new FuTextStyle()

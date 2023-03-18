@@ -16,8 +16,14 @@ namespace Fu.Core
         public Vector2Int AnchorOffset { get; set; }
         // Custom UI display function for the overlay
         public Action<FuOverlay> UI { get; private set; }
+        // Whenever the Overlay will render just right now
+        public event Action OnPreRender;
+        // Whenever the Overlay just render right now
+        public event Action OnPostRender;
         // Public variable that store local Rect of this overlay
         public Rect LocalRect { get; private set; }
+        // Public variable that store local Rect of this overlay
+        public Rect WorldRect { get => new Rect(LocalRect.x + UIWindow.LocalRect.x, LocalRect.y + UIWindow.LocalRect.y, LocalRect.width, LocalRect.height); }
         // Public variable for the UIWindow instance
         public FuWindow UIWindow { get; private set; }
         // Minimum Size of the UI window to display this overlay
@@ -313,7 +319,6 @@ namespace Fu.Core
 
             // force child to have no rounding
             Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
-
             // draw drag button
             if (_collapsable || _draggable)
             {
@@ -349,14 +354,18 @@ namespace Fu.Core
                 if (_noBackground)
                 {
                     Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
+                    Fugui.Push(ImGuiCol.Border, Vector4.zero);
+                    Fugui.Push(ImGuiCol.BorderShadow, Vector4.zero);
                 }
+                OnPreRender?.Invoke();
                 ImGui.BeginChild(ID, Size, true, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
                 {
                     UI?.Invoke(this);
                 }
+                OnPostRender?.Invoke();
                 if (_noBackground)
                 {
-                    Fugui.PopColor();
+                    Fugui.PopColor(3);
                 }
                 _overlayStyle.Pop();
                 ImGuiNative.igEndChild();
@@ -546,14 +555,15 @@ namespace Fu.Core
         /// <returns>clamped position</returns>
         private Vector2 clampPosition(Vector2 localPosition)
         {
-            if (localPosition.x + Size.x + 8f + _retractButtonWidth > UIWindow.WorkingAreaSize.x)
-                localPosition.x = UIWindow.WorkingAreaSize.x - Size.x - 8f - _retractButtonWidth;
-            if (localPosition.y + Size.y + 8f > UIWindow.WorkingAreaSize.y)
-                localPosition.y = UIWindow.WorkingAreaSize.y - Size.y - 8f;
-            if (localPosition.x < 8f)
-                localPosition.x = 8f;
-            if (localPosition.y < 8f)
-                localPosition.y = 8f;
+            float windowPadding = 4f;
+            if (localPosition.x + Size.x + windowPadding + _retractButtonWidth > UIWindow.WorkingAreaSize.x)
+                localPosition.x = UIWindow.WorkingAreaSize.x - Size.x - windowPadding - _retractButtonWidth;
+            if (localPosition.y + Size.y + windowPadding > UIWindow.WorkingAreaSize.y)
+                localPosition.y = UIWindow.WorkingAreaSize.y - Size.y - windowPadding;
+            if (localPosition.x < windowPadding)
+                localPosition.x = windowPadding;
+            if (localPosition.y < windowPadding)
+                localPosition.y = windowPadding;
             return localPosition;
         }
 

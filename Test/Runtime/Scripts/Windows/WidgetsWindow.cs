@@ -74,7 +74,7 @@ public class WidgetsWindow : MonoBehaviour
                 layout.Text("Check Fugui's ");
                 layout.SameLine();
                 layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui", FuTextStyle.Info);
-                layout.Toggle("##toggleDisable", ref _enableWidgets, "Disable Widgets", "Enable Widgets", FuToggleFlags.MaximumTextSize);
+                layout.Toggle("##toggleDisable", ref _enableWidgets, "Widgets Disabled", "Widgets Enabled", FuToggleFlags.MaximumTextSize);
 
                 using (new FuPanel("widgetsDemoPanel"))
                 {
@@ -117,29 +117,24 @@ public class WidgetsWindow : MonoBehaviour
         using (var grid = new FuGrid("buttonsGrid"))
         {
             if (!_enableWidgets)
+            {
                 grid.DisableNextElements();
+                layout.DisableNextElements();
+            }
 
-            layout.Button("Button");
-            grid.NextColumn();
-            layout.Button("Selected", FuElementSize.AutoSize, FuButtonStyle.Selected);
+            grid.Button("Button");
+            grid.Button("Selected", FuElementSize.AutoSize, FuButtonStyle.Selected);
             grid.SameLine();
             layout.Button("Highlight", FuElementSize.AutoSize, FuButtonStyle.Highlight);
-            grid.NextColumn();
-            layout.Text("Info");
-            grid.NextColumn();
-            layout.Button("Info", FuButtonStyle.Info);
-            grid.NextColumn();
-            layout.Text("Success");
-            grid.NextColumn();
-            layout.Button("Success", FuButtonStyle.Success);
-            grid.NextColumn();
-            layout.Text("Danger");
-            grid.NextColumn();
-            layout.Button("Danger", FuButtonStyle.Danger);
-            grid.NextColumn();
-            layout.Text("Warning");
-            grid.NextColumn();
-            layout.Button("Warning", FuButtonStyle.Warning);
+
+            grid.Text("Info");
+            grid.Button("Info", FuButtonStyle.Info);
+            grid.Text("Success");
+            grid.Button("Success", FuButtonStyle.Success);
+            grid.Text("Danger");
+            grid.Button("Danger", FuButtonStyle.Danger);
+            grid.Text("Warning");
+            grid.Button("Warning", FuButtonStyle.Warning);
 
             grid.Separator();
 
@@ -149,8 +144,12 @@ public class WidgetsWindow : MonoBehaviour
             grid.ButtonsGroup("Left", new List<string>() { Icons.About + "##1", Icons.Accelerate + "##1", Icons.Arch + "##1", Icons.ArrowDown + "##1" }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft);
             grid.ButtonsGroup("Auto size", new List<string>() { Icons.About + "##2", Icons.Accelerate + "##2", Icons.Arch + "##2", Icons.ArrowDown + "##2" }, (index) => { }, null, FuButtonsGroupFlags.AutoSizeButtons);
             grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About + "##3", Icons.Accelerate + "##3", Icons.Arch + "##3", Icons.ArrowDown + "##3" }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
+           
             if (!_enableWidgets)
+            {
                 grid.EnableNextElements();
+                layout.EnableNextElements();
+            }
         }
     }
 
@@ -316,6 +315,7 @@ public class WidgetsWindow : MonoBehaviour
     {
         if (!_enableWidgets)
             layout.DisableNextElements();
+
         layout.Text("Default text");
         layout.Text("Highlight text", FuTextStyle.Highlight);
         layout.Text("Selected text", FuTextStyle.Selected);
@@ -343,6 +343,8 @@ public class WidgetsWindow : MonoBehaviour
 
         using (var grid = new FuGrid("dragsGrid"))
         {
+            if (!_enableWidgets)
+                grid.DisableNextElements();
             grid.InputFolder("Folder Path", (path) => pathText = path, pathText);
             grid.InputFile("File Path", (path) => filePathText = path, filePathText);
 
@@ -350,6 +352,8 @@ public class WidgetsWindow : MonoBehaviour
             grid.TextInput("password", ref smallText, 0f, FuInputTextFlags.Password);
 
             grid.TextInput("multiline rich text", "", ref richText, 4096, 64f, FuFrameStyle.Default, 0f, FuInputTextFlags.Default);
+            if (!_enableWidgets)
+                grid.EnableNextElements();
         }
         layout.SmartText(richText);
         if (!_enableWidgets)

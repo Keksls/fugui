@@ -101,7 +101,12 @@ namespace Fu.Framework
 
             // Set the width of the next item to the width of the available content region
             ImGui.SetNextItemWidth(width <= 0 ? ImGui.GetContentRegionAvail().x : width);
-            // If a height was specified, create a multiline text input
+            // prevent user for editing the value if the element is disabled
+            if (_nextIsDisabled)
+            {
+                flags |= FuInputTextFlags.ReadOnly;
+            }
+            // set multiline if height has a value
             if (height > 0)
             {
                 edited = ImGui.InputTextMultiline(id, ref text, size, new Vector2(ImGui.GetContentRegionAvail().x, height * Fugui.CurrentContext.Scale), (ImGuiInputTextFlags)flags);

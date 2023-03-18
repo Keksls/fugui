@@ -24,7 +24,7 @@ namespace Fu.Framework
 
         static readonly FuGridDefinition _defaultFixedGrid = new FuGridDefinition(2, new int[] { 96 }, 196);
         /// <summary>
-        /// Create a default TwoColumns FixedSize grid. The first row is 128px, the second is remaning width. If the second go under 196px, the first will start reduce untill the all goes under min responsive width
+        /// Create a default TwoColumns FixedSize grid. The first row is 96px, the second is remaning width. If the second go under 196px, the first will start reduce untill the all goes under min responsive width
         /// </summary>
         public static FuGridDefinition DefaultFixed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultFixedGrid; } }
 

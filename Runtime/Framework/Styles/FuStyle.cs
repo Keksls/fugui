@@ -56,6 +56,17 @@ namespace Fu.Framework
         public static FuStyle NoBackgroundOverlay { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGOverlayGridStyle; } }
         #endregion
 
+        #region constructor
+        public FuStyle(FuTextStyle textStyle, FuFrameStyle frameStyle, FuPanelStyle containerStyle, Vector2 framePadding, Vector2 windowPadding)
+        {
+            _textStyle = textStyle;
+            _frameStyle = frameStyle;
+            _containerStyle = containerStyle;
+            _framePadding = framePadding;
+            WindowPadding = windowPadding;
+        }
+        #endregion
+
         public void Push(bool enabled)
         {
             _frameStyle.Push(enabled);

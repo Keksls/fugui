@@ -17,6 +17,14 @@ namespace Fu.Framework
         public static FuButtonsGroupStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return defaultButtonsGroupStyle; } }
         #endregion
 
+        #region constructor
+        public FuButtonsGroupStyle(FuButtonStyle buttonStyle, FuButtonStyle selectedButtonStyle)
+        {
+            ButtonStyle = buttonStyle;
+            SelectedButtonStyle = selectedButtonStyle;
+        }
+        #endregion
+
         /// <summary>
         /// Pushes the UIButtonStyle onto the ImGui style stack. If enabled is true, the enabled style will be used. If enabled is false, the disabled style will be used.
         /// </summary>

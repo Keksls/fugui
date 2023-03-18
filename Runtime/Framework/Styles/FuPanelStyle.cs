@@ -16,20 +16,28 @@ namespace Fu.Framework
         /// Default panel (container) style, use 'WindowBg' and 'Border' theme colors
         /// </summary>
         public static FuPanelStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultContainerStyle; } }
-       
+
         // popup container style
         static FuPanelStyle _popupContainerStyle;
         /// <summary>
         /// PopUp panel (container) style, use 'PopupBg' and 'Border' theme colors
         /// </summary>
         public static FuPanelStyle PopUp { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _popupContainerStyle; } }
-        
+
         // transparent container style
         static FuPanelStyle _transparentContainerStyle;
         /// <summary>
         /// Transparent panel (container) style, set transparent BG and borders
         /// </summary>
         public static FuPanelStyle Transparent { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _transparentContainerStyle; } }
+        #endregion
+
+        #region constructor
+        public FuPanelStyle(Color bgColor, Color borderColor)
+        {
+            _bgColor = bgColor;
+            _borderColor = borderColor;
+        }
         #endregion
 
         /// <summary>
@@ -70,8 +78,8 @@ namespace Fu.Framework
             // transparent container style
             _transparentContainerStyle = new FuPanelStyle()
             {
-                _bgColor = FuThemeManager.GetColor(FuColors.WindowBg) * 0f,// / 254f,
-                _borderColor = FuThemeManager.GetColor(FuColors.Border) * 0f// 254f
+                _bgColor = Vector4.zero,
+                _borderColor = Vector4.zero
             };
         }
     }

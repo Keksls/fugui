@@ -7,11 +7,11 @@ namespace Fu.Framework
     public struct FuButtonStyle : IFuElementStyle
     {
         // enabled
-        internal Color Button;
-        internal Color ButtonHovered;
-        internal Color ButtonActive;
+        public Color Button { get; private set; }
+        public Color ButtonHovered { get; private set; }
+        public Color ButtonActive { get; private set; }
         // disabled
-        internal Color DisabledButton;
+        public Color DisabledButton { get; private set; }
         // additional styles
         public FuTextStyle TextStyle { get; private set; }
         private Vector2 _framePadding;
@@ -22,48 +22,60 @@ namespace Fu.Framework
         /// Default button style, use 'Button' theme colors
         /// </summary>
         public static FuButtonStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultButtonStyle; } }
-        
+
         static FuButtonStyle _transparent;
         /// <summary>
         /// Transparent button style, button have no background
         /// </summary>
         public static FuButtonStyle Transparent { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _transparent; } }
-        
+
         static FuButtonStyle _selectedButtonStyle;
         /// <summary>
         /// Selected button style, use 'Selected' theme colors
         /// </summary>
         public static FuButtonStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedButtonStyle; } }
-        
+
         static FuButtonStyle _highlightButtonStyle;
         /// <summary>
         /// Highlight button style, use 'Highlight' theme colors
         /// </summary>
         public static FuButtonStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightButtonStyle; } }
-        
+
         static FuButtonStyle _infoButtonStyle;
         /// <summary>
         /// Info button style, use 'InfoBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Info { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _infoButtonStyle; } }
-        
+
         static FuButtonStyle _successButtonStyle;
         /// <summary>
         /// Success button style, use 'SuccessBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Success { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _successButtonStyle; } }
-       
+
         static FuButtonStyle _warningButtonStyle;
         /// <summary>
         /// Warning button style, use 'WarningBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Warning { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _warningButtonStyle; } }
-        
+
         static FuButtonStyle _dangerButtonStyle;
         /// <summary>
         /// Danger button style, use 'DangerBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Danger { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _dangerButtonStyle; } }
+        #endregion
+
+        #region constructor
+        public FuButtonStyle(Color button, Color buttonHovered, Color buttonActive, Color buttonDisabled, FuTextStyle textStyle, Vector2 framePadding)
+        {
+            Button = button;
+            ButtonHovered = buttonHovered;
+            ButtonActive = buttonActive;
+            DisabledButton = buttonDisabled;
+            TextStyle = textStyle;
+            _framePadding = framePadding;
+        }
         #endregion
 
         /// <summary>

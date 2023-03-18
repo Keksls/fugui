@@ -385,7 +385,7 @@ namespace Fu.Framework
             style.WindowBorderSize = WindowBorderSize * scale;
             style.WindowMinSize = WindowMinSize * scale;
             style.WindowTitleAlign = WindowTitleAlign;
-            style.WindowMenuButtonPosition = ImGuiDir.Right;
+            style.WindowMenuButtonPosition = WindowMenuButtonPosition;
             style.ChildRounding = ChildRounding * scale;
             style.ChildBorderSize = ChildBorderSize * scale;
             style.PopupRounding = PopupRounding * scale;

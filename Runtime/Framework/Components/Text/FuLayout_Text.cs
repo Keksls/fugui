@@ -370,7 +370,23 @@ namespace Fu.Framework
         /// <param name="pos">position of the text (screen space)</param>
         /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
         /// <param name="text_size">size of the text</param>
+        /// <param name="style">The style to apply to the text.</param>
+        public unsafe void TextClipped(Vector2 maxSize, string text, Vector2 padding, Vector2 text_size, Vector2 pos, FuTextStyle style)
+        {
+            TextClipped(maxSize, text, pos, padding, text_size, new Vector2(0f, 0.5f), style);
+        }
+
+        /// <summary>
+        /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
+        /// The text will not displace cursor, so please do it yourself if needed
+        /// </summary>
+        /// <param name="maxSize">maximum size of the text</param>
+        /// <param name="text">text to draw</param>
+        /// <param name="pos">position of the text (screen space)</param>
+        /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
+        /// <param name="text_size">size of the text</param>
         /// <param name="alignment">text alignement (between 0f and 1f)</param>
+        /// <param name="style">The style to apply to the text.</param>
         internal unsafe void TextClipped(Vector2 maxSize, string text, Vector2 pos, Vector2 padding, Vector2 text_size, Vector2 alignment, FuTextStyle style)
         {
             beginElement(ref text, style, true);
@@ -378,21 +394,20 @@ namespace Fu.Framework
             {
                 return;
             }
-            Vector2 size = _customTextClipped(maxSize, text, pos, padding, text_size, alignment);
-            Rect rect = new Rect(ImGui.GetCursorScreenPos(), size);
+            Vector2 size = _customTextClipped(maxSize, text, pos, padding, text_size, alignment, style);
+            Rect rect = new Rect(pos, size);
             ImGui.Dummy(size);
             bool hovered = false;
             if (FuWindow.CurrentDrawingWindow != null)
             {
-                hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max) && FuWindow.CurrentDrawingWindow.IsHovered &&
-                    !FuWindow.CurrentDrawingWindow.Mouse.IsHoverOverlay && !FuWindow.CurrentDrawingWindow.Mouse.IsHoverPopup;
+                hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max) && FuWindow.CurrentDrawingWindow.IsHoveredContent;
             }
             else
             {
                 hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max);
             }
             // set states for this element
-            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            setBaseElementState(text, pos, size, true, false);
             if (_currentToolTipsOnLabels)
             {
                 displayToolTip(hovered);
@@ -410,13 +425,15 @@ namespace Fu.Framework
         /// <param name="padding">padding of the text inside the rect (pos + maxSize)</param>
         /// <param name="text_size">size of the text</param>
         /// <param name="alignment">text alignement (between 0f and 1f)</param>
-        internal unsafe Vector2 _customTextClipped(Vector2 maxSize, string label, Vector2 pos, Vector2 padding, Vector2 text_size, Vector2 alignment)
+        internal unsafe Vector2 _customTextClipped(Vector2 maxSize, string label, Vector2 pos, Vector2 padding, Vector2 text_size, Vector2 alignment, FuTextStyle style)
         {
+            style.Push(!_nextIsDisabled);
             // get maxSize Y 
             if (maxSize.y <= 0f)
             {
                 maxSize.y = text_size.y;
             }
+            Vector2 size;
 
             // we need to crop the text, so let's reduce the size so we draw dots at the end
             if (text_size.x > maxSize.x - padding.x * 2f)
@@ -428,22 +445,24 @@ namespace Fu.Framework
                 // reduce max size
                 maxSize -= dotsSize;
                 // draw the clipped text
-                _customTextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize));
+                _customTextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize), style);
                 // draw dots
-                Vector2 size = maxSize + dotsSize;
+                size = maxSize + dotsSize;
                 maxSize.y = 0;
                 ImGui.GetWindowDrawList().AddText(pos + maxSize, ImGui.GetColorU32(ImGuiCol.Text), "...");
-                return size;
             }
             else
             {
                 // draw the clipped text
-                return _customTextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize));
+                size = _customTextClipped(pos + padding, (pos + maxSize) - padding, label, text_size, alignment, new ImRect(pos, pos + maxSize), style);
             }
+            style.Pop();
+            return size;
         }
 
-        private unsafe Vector2 _customTextClipped(Vector2 pos_min, Vector2 pos_max, string label, Vector2 text_size_if_known, Vector2 align, ImRect clip_rect)
+        private unsafe Vector2 _customTextClipped(Vector2 pos_min, Vector2 pos_max, string label, Vector2 text_size_if_known, Vector2 align, ImRect clip_rect, FuTextStyle style)
         {
+            style.Push(!_nextIsDisabled);
             // get str ptr
             int num = 0;
             byte* ptr = null;
@@ -462,7 +481,9 @@ namespace Fu.Framework
             {
                 Util.Free(ptr);
             }
-            return pos_max - pos_min;
+            Vector2 size = pos_max - pos_min;
+            style.Pop();
+            return size;
         }
         #endregion
 
@@ -562,7 +583,7 @@ namespace Fu.Framework
             drawList.AddRect(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), FuThemeManager.CurrentTheme.FrameRounding);
 
             // draw text
-            Vector2 realSize = _customTextClipped(size, text, pos, padding, textSize, alignmentV2);
+            Vector2 realSize = _customTextClipped(size, text, pos, padding, textSize, alignmentV2, style.TextStyle);
 
             // fake dummy
             Rect rect = new Rect(ImGui.GetCursorScreenPos(), realSize);
@@ -570,8 +591,7 @@ namespace Fu.Framework
             bool hovered = false;
             if (FuWindow.CurrentDrawingWindow != null)
             {
-                hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max) && FuWindow.CurrentDrawingWindow.IsHovered &&
-                    !FuWindow.CurrentDrawingWindow.Mouse.IsHoverOverlay && !FuWindow.CurrentDrawingWindow.Mouse.IsHoverPopup;
+                hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max) && FuWindow.CurrentDrawingWindow.IsHoveredContent;
             }
             else
             {
@@ -608,7 +628,9 @@ namespace Fu.Framework
         /// <returns>whatever the text is clicked</returns>
         public virtual bool ClickableText(string text, FuTextStyle style)
         {
-            beginElement(ref text, style, true);
+            string id = text;
+            text = Fugui.GetUntagedText(text);
+            beginElement(ref id, style, true);
             // return if item must no be draw
             if (!_drawElement)
             {
@@ -619,7 +641,7 @@ namespace Fu.Framework
             Vector2 rectMax = rectMin + ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding;
             bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
-            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !_nextIsDisabled;
 
             // set mouse cursor
             if (hovered && !_nextIsDisabled)
@@ -627,23 +649,26 @@ namespace Fu.Framework
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
 
-            Color textColor = style.Text;
-            if (active)
+            Color textColor = _nextIsDisabled ? style.DisabledText : style.Text;
+            if (!_nextIsDisabled)
             {
-                textColor *= 0.8f;
-            }
-            else if (hovered)
-            {
-                textColor *= 0.9f;
+                if (active)
+                {
+                    textColor *= 0.8f;
+                }
+                else if (hovered)
+                {
+                    textColor *= 0.9f;
+                }
             }
             Fugui.Push(ImGuiCol.Text, textColor);
             ImGui.Text(text);
             Fugui.PopColor();
             // set states for this element
-            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            setBaseElementState(id, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             if (_currentToolTipsOnLabels)
             {
-                displayToolTip();
+                displayToolTip(LastItemHovered);
             }
             endElement(style);
             return clicked;
@@ -669,7 +694,7 @@ namespace Fu.Framework
         /// <returns>whatever the text is clicked</returns>
         public virtual void TextURL(string text, string URL, FuTextStyle style)
         {
-            beginElement(ref text, style, true);
+            beginElement(ref text, null, true);
             // return if item must no be draw
             if (!_drawElement)
             {
@@ -680,16 +705,19 @@ namespace Fu.Framework
             Vector2 rectMax = rectMin + ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding;
             bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
-            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !_nextIsDisabled;
 
-            Color textColor = style.Text;
-            if (active)
+            Color textColor = _nextIsDisabled ? style.DisabledText : style.Text;
+            if (!_nextIsDisabled)
             {
-                textColor *= 0.8f;
-            }
-            else if (hovered)
-            {
-                textColor *= 0.9f;
+                if (active)
+                {
+                    textColor *= 0.8f;
+                }
+                else if (hovered)
+                {
+                    textColor *= 0.9f;
+                }
             }
             Fugui.Push(ImGuiCol.Text, textColor);
             ImGui.Text(text);
@@ -724,7 +752,7 @@ namespace Fu.Framework
             {
                 displayToolTip();
             }
-            endElement(style);
+            endElement();
         }
         #endregion
     }

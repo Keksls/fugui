@@ -123,7 +123,6 @@ namespace Fu.Framework
             bool colValue = flags.HasFlag(FuToggleFlags.SwitchState) ? false : value;
             Vector4 BGColor = colValue ? FuThemeManager.GetColor(FuColors.Selected) : FuThemeManager.GetColor(FuColors.FrameBg);
             Vector4 KnobColor = FuThemeManager.GetColor(FuColors.Knob);
-            Vector4 TextColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedText) : FuThemeManager.GetColor(FuColors.Text);
 
             if (_nextIsDisabled)
             {
@@ -161,9 +160,16 @@ namespace Fu.Framework
                     ImGui.SetCursorPosX(localPos.x + 8f * Fugui.CurrentContext.Scale);
                 }
                 ImGui.SetCursorPosY(localPos.y + 2f * Fugui.CurrentContext.Scale);
-                Fugui.Push(ImGuiCol.Text, TextColor);
+                if (colValue)
+                {
+                    FuTextStyle.Selected.Push(!_nextIsDisabled);
+                }
+                else
+                {
+                    FuTextStyle.Default.Push(!_nextIsDisabled);
+                }
                 ImGui.Text(currentText);
-                Fugui.PopColor();
+                FuTextStyle.Default.Pop();
             }
 
             data.Update(value, _animationEnabled);

@@ -87,13 +87,14 @@ namespace Fu.Core
             UI = (window) =>
             {
                 Vector2 cursorPos = ImGui.GetCursorScreenPos();
-                Container.ImGuiImage(_rTexture, WorkingAreaSize);
-                ImGui.SetCursorScreenPos(cursorPos);
+                ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + WorkingAreaSize, Vector2.zero, _currentImageUV);
+                //Container.ImGuiImage(_rTexture, WorkingAreaSize);
+                //ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this);
             };
 
             // register raycaster
-            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsPressed(Framework.FuMouseButton.Left), () => Mouse.IsPressed(Framework.FuMouseButton.Right), () => false, () => Mouse.Wheel.y, () => IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup);
+            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsPressed(Framework.FuMouseButton.Left), () => Mouse.IsPressed(Framework.FuMouseButton.Right), () => false, () => Mouse.Wheel.y, () => IsHoveredContent);
             FuRaycasting.RegisterRaycaster(_raycaster);
         }
 
@@ -286,9 +287,7 @@ namespace Fu.Core
         /// </summary>
         public override void DrawWindow()
         {
-            Fugui.Push(ImGuiCol.WindowBg, new Vector4(0f, 0f, 0f, 1f));
             base.DrawWindow();
-            Fugui.PopColor();
             updateCameraRender();
             updateCameraSize();
         }

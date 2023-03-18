@@ -32,6 +32,10 @@ namespace Fu.Core
         internal Type _uiWindowType;
         // public event invoked when UIWindow is Creating according to this current UIWindowDefinition
         public event Action<FuWindow> OnUIWindowCreated;
+        // the callback UI of the optional toolbar of this window
+        public Action<FuWindow, float, float> UITopBar { get; set; }
+        // The height of the window topBar (optional)
+        public float TopBarHeight { get; private set; }
         #endregion
 
         /// <summary>
@@ -156,6 +160,23 @@ namespace Fu.Core
         #endregion
 
         #region Default definitions fields setters
+        /// <summary>
+        /// Sets the UI of the topBar of this window
+        /// This will be called before main UI callback and set the cursor
+        /// Sets the height of the topBar of this window
+        /// The WorkingArea Size and Position will be calculated according to this value.
+        /// The topBar will not be draw by Fugui, you will have to do it yourself
+        /// </summary>
+        /// <param name="UITopBar">The height of the optional window TopBar.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetTopbarUI(Action<FuWindow, float, float> uiTopBar, float topBarHeight)
+        {
+            TopBarHeight = Mathf.Max(0f, topBarHeight);
+            UITopBar = uiTopBar;
+            // Return the current UIWindowDefinition object
+            return this;
+        }
+
         /// <summary>
         /// Sets the action to be performed on the UI window.
         /// </summary>

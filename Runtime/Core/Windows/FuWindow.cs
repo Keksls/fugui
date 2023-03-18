@@ -37,7 +37,7 @@ namespace Fu.Core
         public FuWindowName WindowName { get; private set; }
         public string ID { get; private set; }
         public Action<FuWindow> UI { get; set; }
-        public Action<FuWindow> Constraints { get; internal set; }
+        public Action<FuWindow, float, float> UITopBar { get; set; }
         public bool HasMovedThisFrame { get; private set; }
         public bool HasJustBeenDraw { get; set; }
         public bool WantCaptureKeyboard { get; private set; }
@@ -75,6 +75,7 @@ namespace Fu.Core
         public bool IsUnityContext { get; private set; }
         public bool IsDragging { get; internal set; }
         public bool IsHovered { get; internal set; }
+        public bool IsHoveredContent { get { return IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup && !Mouse.IsHoverTopBar; } }
         public bool IsDocked { get; internal set; }
         public bool IsBusy { get; internal set; }
         public bool IsInterractif { get; set; }
@@ -89,6 +90,8 @@ namespace Fu.Core
         public event Action<FuWindow> OnInitialized;
         public event Action<FuWindow> OnRemovedFromContainer;
         public event Action<FuWindow> OnAddToContainer;
+        public event Action<FuWindow> OnPreDraw;
+        public event Action<FuWindow> OnPostDraw;
 
         // private fields
         internal ImGuiWindowFlags _windowFlags;
@@ -111,6 +114,8 @@ namespace Fu.Core
         #endregion
 
         #region Window Location
+        // The height of the window topBar (optional)
+        public float TopBarHeight { get; private set; }
         internal Vector2Int _size;
         public Vector2Int Size
         {
@@ -189,12 +194,15 @@ namespace Fu.Core
             Size = windowDefinition.Size;
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
+            TopBarHeight = windowDefinition.TopBarHeight;
+            UITopBar = windowDefinition.UITopBar;
             // add default overlays
             Overlays = new Dictionary<string, FuOverlay>();
             foreach (FuOverlay overlay in windowDefinition.Overlays.Values)
             {
                 overlay.AnchorWindow(this);
             }
+            ForceDraw();
         }
 
         /// <summary>
@@ -315,8 +323,8 @@ namespace Fu.Core
             // if we are in main window container and this window is docked, we must surround UI by ImGuiChild
             // Child will have name that will be used by DrawCmd to store idx and vtx without recompute DrawList
             bool createChild = IsDocked && IsUnityContext;
-            // invoke user custom constraints
-            Constraints?.Invoke(this);
+            // invoke pre draw event
+            OnPreDraw?.Invoke(this);
             // set current theme frame padding
             if (ImGui.Begin(ID, ref _open, _windowFlags))
             {
@@ -389,6 +397,8 @@ namespace Fu.Core
                 drawDebugPanel();
                 ImGui.End();
             }
+            // invoke post draw event
+            OnPostDraw?.Invoke(this);
         }
 
         /// <summary>
@@ -397,12 +407,19 @@ namespace Fu.Core
         private void tryDrawUI()
         {
             // save working area size and position
-            _workingAreaSize = new Vector2Int((int)ImGui.GetContentRegionAvail().x, (int)ImGui.GetContentRegionAvail().y);
-            _workingAreaPosition = new Vector2Int((int)ImGui.GetCursorScreenPos().x, (int)ImGui.GetCursorScreenPos().y) - _localPosition;
+            _workingAreaSize = new Vector2Int((int)ImGui.GetContentRegionAvail().x, (int)(ImGui.GetContentRegionAvail().y - TopBarHeight));
+            _workingAreaPosition = new Vector2Int((int)ImGui.GetCursorScreenPos().x, (int)(ImGui.GetCursorScreenPos().y + TopBarHeight)) - _localPosition;
             if (MustBeDraw())
             {
                 CurrentDrawingWindow = this;
                 _forceRedraw = false;
+                // draw topBar if needed
+                if(TopBarHeight > 0f && UITopBar != null)
+                {
+                    Vector2 screenCursorPos = ImGui.GetCursorScreenPos();
+                    UITopBar.Invoke(this, _workingAreaSize.x, TopBarHeight);
+                    ImGui.SetCursorScreenPos(screenCursorPos + new Vector2(0f, TopBarHeight));
+                }
                 // draw user UI callback
                 UI?.Invoke(this);
                 // save whatever ImGui want capture Keyboard
@@ -578,6 +595,7 @@ namespace Fu.Core
         public bool TryAddToContainer(IFuWindowContainer container)
         {
             IsBusy = true;
+            ForceDraw();
             return container.TryAddWindow(this);
         }
 
@@ -588,6 +606,7 @@ namespace Fu.Core
         public bool TryRemoveFromContainer()
         {
             IsBusy = true;
+            ForceDraw();
             return Container?.TryRemoveWindow(ID) ?? false;
         }
         #endregion
@@ -817,15 +836,6 @@ namespace Fu.Core
             {
                 TargetFPS = Fugui.Settings.IdleFPS;
             }
-        }
-
-        /// <summary>
-        /// Set window ImGui constraints callback
-        /// </summary>
-        /// <param name="callback">will be called just before ImGui.Begin()</param>
-        public void SetWindowConstraintCallback(Action<FuWindow> callback)
-        {
-            Constraints = callback;
         }
         #endregion
     }

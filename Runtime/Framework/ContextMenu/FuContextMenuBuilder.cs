@@ -5,6 +5,7 @@ namespace Fu.Framework
 {
     public class FuContextMenuBuilder
     {
+        public int Count { get => _items.Count; }
         // The list of items in the current context menu
         private List<FuContextMenuItem> _items = null;
         // The current level of items in the context menu

@@ -9,12 +9,11 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="text">Text to display next to the checkbox</param>
         /// <param name="isChecked">Boolean variable to store the value of the checkbox</param>
-        /// <param name="style">Style to use for the checkbox</param>
         /// <returns>True if the checkbox was clicked, false otherwise</returns>
         public virtual bool CheckBox(string text, ref bool isChecked)
         {
             bool clicked = false;
-            text = "##text";
+            text = "##" + text;
             beginElement(ref text, null); // Push the style for the checkbox element
 
             // return if item must no be draw
@@ -72,7 +71,6 @@ namespace Fu.Framework
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, clicked);
             endElement(null); // Pop the style for the checkbox element
             Fugui.PopColor(4);
-
 
             return clicked; // Return a boolean indicating whether the checkbox was clicked by the user
         }

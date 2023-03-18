@@ -1,6 +1,5 @@
 using Fu.Framework;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Fu.Core
 {
@@ -23,6 +22,8 @@ namespace Fu.Core
         public bool IsHoverOverlay { get { return _isHoverOverlay; } }
         private bool _isHoverPupUp;
         public bool IsHoverPopup { get { return _isHoverPupUp; } }
+        private bool _isHoverTopBar;
+        public bool IsHoverTopBar { get { return _isHoverTopBar; } }
 
         /// <summary>
         /// instantiate a new UIMouseState and init mouse Buttons array
@@ -67,6 +68,7 @@ namespace Fu.Core
                 _isHoverOverlay |= overlay.LocalRect.Contains(position);
             }
             _isHoverPupUp = !string.IsNullOrEmpty(FuLayout.CurrentPopUpID) ? FuLayout.CurrentPopUpRect.Contains(window.Container.LocalMousePos) : false;
+            _isHoverTopBar = window.UITopBar != null && window.TopBarHeight > 0f && position.y <= window.TopBarHeight + (window.WorkingAreaPosition.y - window.LocalPosition.y);
         }
 
         /// <summary>
@@ -80,11 +82,13 @@ namespace Fu.Core
             _position = container.LocalMousePos;
             _isHoverOverlay = false;
             _isHoverPupUp = false;
+            _isHoverTopBar = false;
             // check whatever mouse is hover any overlay
             container.OnEachWindow((window) =>
             {
                 _isHoverOverlay |= window.Mouse.IsHoverOverlay;
                 _isHoverPupUp |= window.Mouse.IsHoverPopup;
+                _isHoverTopBar |= window.Mouse.IsHoverTopBar;
             });
         }
 

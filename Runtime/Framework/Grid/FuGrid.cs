@@ -122,7 +122,7 @@ namespace Fu.Framework
         /// <param name="minLineHeight">wished minimum lines (rows) height</param>
         public void SetMinimumLineHeight(float minLineHeight)
         {
-            _minLineHeight = minLineHeight;
+            _minLineHeight = minLineHeight * Fugui.CurrentContext.Scale;
         }
 
         /// <summary>

@@ -35,6 +35,19 @@ namespace Fu.Framework
         /// <param name="ui">UI to draw inside the popup</param>
         /// <param name="size">default size of the popup</param>
         /// <param name="onClose">callback invoken then the popup close</param>
+        public void OpenPopUp(string id, Action ui, Action onClose = null)
+        {
+            OpenPopUp(id, ui, Vector2.zero, onClose);
+        }
+
+        /// <summary>
+        /// Give the order to draw a specific popup.
+        /// You must call DrawPopup (each frames) to display the popup
+        /// </summary>
+        /// <param name="id">ID of the popup to draw</param>
+        /// <param name="ui">UI to draw inside the popup</param>
+        /// <param name="size">default size of the popup</param>
+        /// <param name="onClose">callback invoken then the popup close</param>
         public void OpenPopUp(string id, Action ui, Vector2 size, Action onClose = null)
         {
             // remove from dic if already exists
@@ -57,7 +70,7 @@ namespace Fu.Framework
         /// <param name="id">ID of the popup to draw</param>
         public void DrawPopup(string id)
         {
-            DrawPopup(id, Vector2.zero);
+            DrawPopup(id, Vector2.zero, Vector2.zero);
         }
 
         /// <summary>
@@ -65,7 +78,8 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="id">ID of the popup to draw</param>
         /// <param name="size">size of the popup</param>
-        public void DrawPopup(string id, Vector2 size)
+        /// <param name="pos">position of the popup</param>
+        public void DrawPopup(string id, Vector2 size, Vector2 pos)
         {
             if (_registeredPopups.TryGetValue(id, out FuPopupData data))
             {
@@ -79,6 +93,10 @@ namespace Fu.Framework
                 }
 
                 ImGui.SetNextWindowSize(data.Size);
+                if (pos.x != 0f || pos.y != 0f)
+                {
+                    ImGui.SetNextWindowPos(pos);
+                }
                 if (ImGui.BeginPopupContextWindow(id))
                 {
                     data.OpenThisFrame = false;
@@ -144,7 +162,7 @@ namespace Fu.Framework
                 CurrentPopUpID = null;
             }
             // invoke the OnClose callback
-            if(_registeredPopups.ContainsKey(id))
+            if (_registeredPopups.ContainsKey(id))
             {
                 _registeredPopups[id].OnClose?.Invoke();
             }

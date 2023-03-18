@@ -31,7 +31,7 @@ public class MouseOrbitImproved : MonoBehaviour
     {
         if (target && Camera != null)
         {
-            if (Camera.IsHovered && !Camera.Mouse.IsHoverOverlay && !Camera.Mouse.IsHoverPopup)
+            if (Camera.IsHoveredContent)
             {
                 distance = Mathf.Clamp(distance - (Camera.Mouse.Wheel.y * zSpeed), distanceMin, distanceMax);
                 if (Camera.Mouse.IsPressed(Fu.Framework.FuMouseButton.Right))

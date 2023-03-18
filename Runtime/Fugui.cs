@@ -364,6 +364,7 @@ namespace Fu
         /// <param name="callback">A callback to be invoked after all windows are closed.</param>
         public static void CloseAllWindowsAsync(Action callback)
         {
+            ForceDrawAllWindows();
             // Get a list of all UI windows
             List<FuWindow> windows = UIWindows.Values.ToList();
             if (windows.Count == 0)
@@ -451,6 +452,8 @@ namespace Fu
                     {
                         callback(windows);
                     }
+                    // Force window to draw first frame
+                    window.ForceDraw();
                     // Unsubscribe from the OnReady event
                     window.OnInitialized -= onWindowReady;
                 };

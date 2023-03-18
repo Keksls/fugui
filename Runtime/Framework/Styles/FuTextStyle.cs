@@ -17,6 +17,12 @@ namespace Fu.Framework
         /// Default text style, use 'Text' theme colors
         /// </summary>
         public static FuTextStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultTextStyle; } }
+
+        static FuTextStyle _defaultDeactivated;
+        /// <summary>
+        /// Default text style, use 'Text' theme colors
+        /// </summary>
+        public static FuTextStyle Deactivated { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultDeactivated; } }
         
         static FuTextStyle _selectedTextStyle;
         /// <summary>
@@ -89,6 +95,12 @@ namespace Fu.Framework
             {
                 Text = FuThemeManager.GetColor(FuColors.Text),
                 DisabledText = FuThemeManager.GetColor(FuColors.TextDisabled)
+            };
+            // default text style
+            _defaultDeactivated = new FuTextStyle()
+            {
+                Text = FuThemeManager.GetColor(FuColors.Text) * 0.66f,
+                DisabledText = FuThemeManager.GetColor(FuColors.TextDisabled) * 0.66f
             };
             // selected text style
             _selectedTextStyle = new FuTextStyle()

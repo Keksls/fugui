@@ -118,6 +118,10 @@ namespace Fu.Framework
         /// Validate the input text box only on Enter pressed
         /// </summary>
         EnterReturnsTrue = 0x20,
+        /// <summary>
+        /// The input is in readonly mode, user can not edit it (prefere using DisableNextElement if you need to disable the widget)
+        /// </summary>
+        ReadOnly = 0x4000
     }
 
     /// <summary>

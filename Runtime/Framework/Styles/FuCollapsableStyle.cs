@@ -22,6 +22,18 @@ namespace Fu.Framework
         public static FuCollapsableStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultContainerStyle; } }
         #endregion
 
+        #region constructor
+        public FuCollapsableStyle(Color color, Color colorHovered, Color colorActive, Color colorDisabled, FuTextStyle textStyle, FuStyle layout)
+        {
+            _color = color;
+            _colorHovered = colorHovered;
+            _colorActive = colorActive;
+            _disabledColor = colorDisabled;
+            _text = textStyle;
+            _layout = layout;
+        }
+        #endregion
+
         /// <summary>
         /// Pushes the style for the header element.
         /// </summary>

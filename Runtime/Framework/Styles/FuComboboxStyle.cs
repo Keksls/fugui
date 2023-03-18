@@ -37,6 +37,17 @@ namespace Fu.Framework
         public static FuComboboxStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedStyle; } }
         #endregion
 
+        #region constructor
+        public FuComboboxStyle(Color color, Color colorHovered, Color colorActive, Color colorDisabled, FuButtonStyle buttonStyle)
+        {
+            _frame = color;
+            _frameHovered = colorHovered;
+            _frameActive = colorActive;
+            _frameDisabled = colorDisabled;
+            ButtonStyle = buttonStyle;
+        }
+        #endregion
+
         /// <summary>
         /// Pushes the style for the combobox element.
         /// </summary>

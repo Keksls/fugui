@@ -102,7 +102,7 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// return the color of the current theme that match with the giver enum parameter
+        /// return the color of the current theme that match with the given enum parameter
         /// </summary>
         /// <param name="color">color enum to get value of</param>
         /// <returns>color value as Vector4</returns>

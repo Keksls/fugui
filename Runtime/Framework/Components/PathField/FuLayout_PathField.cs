@@ -52,7 +52,14 @@ namespace Fu.Framework
             // draw input text
             ImGui.SetNextItemWidth(width - buttonWidth);
             bool edited = false;
-            if (ImGui.InputText("##" + text, ref path, 2048, ImGuiInputTextFlags.EnterReturnsTrue))
+            // set default flag as validate when user press enter
+            ImGuiInputTextFlags flags = ImGuiInputTextFlags.EnterReturnsTrue;
+            // prevent user to edit disabled widget
+            if(_nextIsDisabled)
+            {
+                flags |= ImGuiInputTextFlags.ReadOnly;
+            }
+            if (ImGui.InputText("##" + text, ref path, 2048, flags))
             {
                 validatePath();
             }

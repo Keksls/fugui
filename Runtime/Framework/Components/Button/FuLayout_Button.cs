@@ -129,8 +129,9 @@ namespace Fu.Framework
         /// <param name="gradientStrenght">strenght of the button gradient (typicaly the one of the theme)</param>
         /// <param name="style">style of the button</param>
         /// <param name="bordered">draw borders arround button</param>
+        /// <param name="alignment">alignment of the button text</param>
         /// <returns>true if clicked</returns>
-        public bool Button(string text, FuElementSize size, Vector2 padding, Vector2 textOffset, float gradientStrenght, FuButtonStyle style, bool bordered = true)
+        public bool Button(string text, FuElementSize size, Vector2 padding, Vector2 textOffset, float gradientStrenght, FuButtonStyle style, bool bordered = true, float alignment = -1f)
         {
             // begin the element
             beginElement(ref text, style, true);
@@ -140,7 +141,7 @@ namespace Fu.Framework
             }
 
             // draw the button
-            bool clicked = _customButton(text, size.BrutSize, padding, textOffset, style, gradientStrenght, bordered);
+            bool clicked = _customButton(text, size.BrutSize, padding, textOffset, style, gradientStrenght, bordered, alignment);
 
             // end the element
             endElement(style);
@@ -158,7 +159,7 @@ namespace Fu.Framework
         /// <param name="style">style of the button</param>
         /// <param name="bordered">draw borders arround button</param>
         /// <returns>true if clicked</returns>
-        private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght, bool bordered = true)
+        private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght, bool bordered = true, float alignment = -1f)
         {
             // scale padding
             padding *= Fugui.CurrentContext.Scale;
@@ -191,6 +192,7 @@ namespace Fu.Framework
 
             // get current draw list
             ImDrawListPtr drawList = ImGuiNative.igGetWindowDrawList();
+            ImGuiStylePtr imStyle = ImGui.GetStyle();
 
             // get colors
             ImRect bb = new ImRect() { Min = ImGui.GetItemRectMin(), Max = ImGui.GetItemRectMax() };
@@ -214,24 +216,24 @@ namespace Fu.Framework
                 Vector4 bg2f = new Vector4(bg1f.x * gradientStrenght, bg1f.y * gradientStrenght, bg1f.z * gradientStrenght, bg1f.w);
                 // draw button frame
                 int vert_start_idx = drawList.VtxBuffer.Size;
-                drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), FuThemeManager.CurrentTheme.FrameRounding);
+                drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), imStyle.FrameRounding);
                 int vert_end_idx = drawList.VtxBuffer.Size;
                 ImGuiInternal.igShadeVertsLinearColorGradientKeepAlpha(drawList.NativePtr, vert_start_idx, vert_end_idx, pos, bb.GetBL(), ImGuiNative.igGetColorU32_Vec4(bg1f), ImGuiNative.igGetColorU32_Vec4(bg2f));
             }
             // draw frame button
             else
             {
-                drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), FuThemeManager.CurrentTheme.FrameRounding);
+                drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), imStyle.FrameRounding);
             }
 
             // draw border
-            if (FuThemeManager.CurrentTheme.FrameBorderSize > 0.0f && bordered)
+            if (imStyle.FrameBorderSize > 0.0f && bordered)
             {
-                drawList.AddRect(bb.Min, bb.Max, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), FuThemeManager.CurrentTheme.FrameRounding, 0, FuThemeManager.CurrentTheme.FrameBorderSize);
+                drawList.AddRect(bb.Min, bb.Max, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), imStyle.FrameRounding, 0, imStyle.FrameBorderSize);
             }
             // Align whole block. We should defer that to the better rendering function when we'll have support for individual line alignment.
             Vector2 textPos = pos;
-            Vector2 align = FuThemeManager.CurrentTheme.ButtonTextAlign;
+            Vector2 align = alignment == -1f ? imStyle.ButtonTextAlign : new Vector2(alignment, 0.5f);
 
             if (align.x > 0.0f)
             {
@@ -249,7 +251,7 @@ namespace Fu.Framework
             }
 
             // draw text
-            _customTextClipped(size, text, pos + textOffset, padding, label_size, align);
+            _customTextClipped(size, text, pos + textOffset, padding, label_size, align, style.TextStyle);
 
             // display the tooltip if necessary
             displayToolTip();

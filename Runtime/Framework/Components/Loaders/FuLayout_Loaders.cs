@@ -293,7 +293,7 @@ namespace Fu.Framework
             {
                 float t = (float)i / numSegments;
                 float wavePhase = t * waveFrequency + animationTime * 2f;
-                Vector2 currentPos = new Vector2(startPos.x + t * size.x, startPos.y + (float)Math.Sin(wavePhase) * waveAmplitude);
+                Vector2 currentPos = new Vector2(startPos.x + t * size.x, startPos.y + (float)Math.Sin(wavePhase) * waveAmplitude + size.y / 2f);
                 if (i > 0)
                 {
                     drawList.AddLine(prevPos, currentPos, ImGui.GetColorU32(Vector4.Lerp(startColor, endColor, (float)i / (float)numSegments)), 2);

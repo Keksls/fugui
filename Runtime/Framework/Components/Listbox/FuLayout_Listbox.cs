@@ -1,8 +1,6 @@
-using Fu.Core;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Fu.Framework
 {
@@ -31,7 +29,7 @@ namespace Fu.Framework
         /// <param name="size">The size to be applied to the ListBox</param>
         public void ListBoxEnum<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter, FuElementSize size) where TEnum : struct, IConvertible
         {
-            FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<IFuSelectable> enumSelectables);
+            FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<string> enumSelectables);
             // call the custom ListBox function, passing in the lists and the itemChange
             _customListBox(text, enumSelectables, (index) =>
             {
@@ -69,9 +67,8 @@ namespace Fu.Framework
         /// <param name="size">The size to use for the dropdown box.</param>
         public void ListBox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter, FuElementSize size, Func<bool> listUpdated = null)
         {
-            List<IFuSelectable> cItems = FuSelectableBuilder.BuildFromList<T>(text, items, listUpdated?.Invoke() ?? true);
             // Display the custom ListBox and call the specified action when the selected item changes
-            _customListBox(text, cItems, (index) =>
+            _customListBox(text, items, (index) =>
             {
                 itemChange?.Invoke(items[index]);
             }, () => { return itemGetter?.Invoke()?.ToString(); }, size);
@@ -87,7 +84,7 @@ namespace Fu.Framework
         ///<param name="itemChange">The action to be performed when an item is selected.</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the ListBox. can be null if ListBox il not lined to an object's field</param>
         ///<param name="size">The size for the ListBox element.</param>
-        private void _customListBox(string text, List<IFuSelectable> items, Action<int> itemChange, Func<string> itemGetter, FuElementSize size)
+        private void _customListBox<T>(string text, List<T> items, Action<int> itemChange, Func<string> itemGetter, FuElementSize size)
         {
             // get the current selected index
             int selectedIndex = FuSelectableBuilder.GetSelectedIndex(text, items, itemGetter);
@@ -97,12 +94,15 @@ namespace Fu.Framework
             {
                 for (int i = 0; i < items.Count; i++)
                 {
-                    if (items[i]?.DrawItem(i == selectedIndex) ?? false && items[i].Enabled)
+                    if (items[i] != null)
                     {
-                        // Update the selected index and invoke the item change action
-                        selectedIndex = i;
-                        FuSelectableBuilder.SetSelectedIndex(text, selectedIndex);
-                        itemChange?.Invoke(i);
+                        if (ImGui.Selectable(items[i].ToString(), selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
+                        {
+                            // Update the selected index and invoke the item change action
+                            selectedIndex = i;
+                            FuSelectableBuilder.SetSelectedIndex(text, selectedIndex);
+                            itemChange?.Invoke(i);
+                        }
                     }
                 }
             }, size);

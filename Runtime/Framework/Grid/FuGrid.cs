@@ -269,10 +269,10 @@ namespace Fu.Framework
             float wantedNextElementYpadding = _nextElementYPadding;
             _nextElementYPadding = 0f;
 
-            bool disabled = _nextIsDisabled;
-            _nextIsDisabled = _nextIsDisabled && !_dontDisableLabels;
+            bool disabled = LastItemDisabled;
+            LastItemDisabled = LastItemDisabled && !_dontDisableLabels;
             Text(Fugui.AddSpacesBeforeUppercase(Fugui.GetUntagedText(text)), style);
-            _nextIsDisabled = disabled;
+            LastItemDisabled = disabled;
             _nextElementYPadding = wantedNextElementYpadding;
         }
         #endregion

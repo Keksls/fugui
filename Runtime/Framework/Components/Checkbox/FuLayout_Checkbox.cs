@@ -23,21 +23,21 @@ namespace Fu.Framework
             }
 
             // push colors
-            if (_nextIsDisabled)
+            if (LastItemDisabled)
             {
                 if (isChecked)
                 {
-                    Fugui.Push(ImGuiCol.CheckMark, FuThemeManager.GetColor(FuColors.Knob) * 0.3f);
-                    Fugui.Push(ImGuiCol.FrameBg, FuThemeManager.GetColor(FuColors.CheckMark) * 0.3f);
-                    Fugui.Push(ImGuiCol.FrameBgHovered, FuThemeManager.GetColor(FuColors.CheckMark) * 0.3f);
-                    Fugui.Push(ImGuiCol.FrameBgActive, FuThemeManager.GetColor(FuColors.CheckMark) * 0.3f);
+                    Fugui.Push(ImGuiCol.CheckMark, FuThemeManager.GetColor(FuColors.Knob) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBg, FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgHovered, FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgActive, FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
                 }
                 else
                 {
-                    Fugui.Push(ImGuiCol.CheckMark, FuThemeManager.GetColor(FuColors.Knob) * 0.3f);
-                    Fugui.Push(ImGuiCol.FrameBg, FuThemeManager.GetColor(FuColors.FrameBg) * 0.3f);
-                    Fugui.Push(ImGuiCol.FrameBgHovered, FuThemeManager.GetColor(FuColors.FrameBgHovered) * 0.3f);
-                    Fugui.Push(ImGuiCol.FrameBgActive, FuThemeManager.GetColor(FuColors.FrameBgActive) * 0.3f);
+                    Fugui.Push(ImGuiCol.CheckMark, FuThemeManager.GetColor(FuColors.Knob) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBg, FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgHovered, FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgActive, FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
                 }
             }
             else
@@ -57,20 +57,28 @@ namespace Fu.Framework
                     Fugui.Push(ImGuiCol.FrameBgActive, FuThemeManager.GetColor(FuColors.FrameBgActive));
                 }
             }
-            if (_nextIsDisabled)
+            // reduce border strenght
+            Fugui.Push(ImGuiCol.Border, FuThemeManager.GetColor(FuColors.Border) * 0.5f);
+            ImGui.PushID(text);
+            if (LastItemDisabled)
             {
                 bool value = isChecked; // Create a temporary variable to hold the value of isChecked
-                ImGui.Checkbox(text, ref value); // Display a disabled checkbox with the given text label
+                ImGui.Checkbox("", ref value); // Display a disabled checkbox with the given text label
             }
             else
             {
-                clicked = ImGui.Checkbox(text, ref isChecked); // Display an enabled checkbox and update the value of isChecked based on user interaction
+                clicked = ImGui.Checkbox("", ref isChecked); // Display an enabled checkbox and update the value of isChecked based on user interaction
             }
-            displayToolTip(); // Display a tooltip if one has been set for this element
-            _elementHoverFramedEnabled = true; // Set the flag indicating that this element should have a hover frame drawn around it
+            // Pop the style for the checkbox element
+            Fugui.PopColor(5);
+            // Display a tooltip if one has been set for this element
+            displayToolTip();
+            // Set the flag indicating that this element should have a hover frame drawn around it
+            _elementHoverFramedEnabled = true;
+            // process element states
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, clicked);
-            endElement(null); // Pop the style for the checkbox element
-            Fugui.PopColor(4);
+            endElement(null);
+            ImGui.PopID();
 
             return clicked; // Return a boolean indicating whether the checkbox was clicked by the user
         }

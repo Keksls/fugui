@@ -127,8 +127,8 @@ namespace Fu.Framework
             // set states for this element
             setBaseElementState(text, min, max - min, true, false);
 
-            displayToolTip(LastItemHovered);
-            if (LastItemClickedButton == FuMouseButton.Left)
+            displayToolTip(_lastItemHovered);
+            if (_lastItemClickedButton == FuMouseButton.Left)
             {
                 ImGui.OpenPopup("ColorPicker" + text);
             }
@@ -164,7 +164,7 @@ namespace Fu.Framework
             Fugui.PopStyle();
 
             // set mouse cursor
-            if (LastItemHovered && !_nextIsDisabled)
+            if (_lastItemHovered && !LastItemDisabled)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }

@@ -108,14 +108,14 @@ namespace Fu.Framework
             setBaseElementState(text, pos, size, !noEditable, false, true);
 
             // handle click
-            if (LastItemUpdate)
+            if (_lastItemUpdate)
             {
                 value = !value;
                 valueChanged = true;
             }
 
             // set mouse cursor
-            if (LastItemHovered && !_nextIsDisabled && !noEditable)
+            if (_lastItemHovered && !LastItemDisabled && !noEditable)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
@@ -124,17 +124,17 @@ namespace Fu.Framework
             Vector4 BGColor = colValue ? FuThemeManager.GetColor(FuColors.Selected) : FuThemeManager.GetColor(FuColors.FrameBg);
             Vector4 KnobColor = FuThemeManager.GetColor(FuColors.Knob);
 
-            if (_nextIsDisabled)
+            if (LastItemDisabled)
             {
                 BGColor *= 0.5f;
                 KnobColor *= 0.5f;
             }
-            else if (LastItemActive && !noEditable)
+            else if (_lastItemActive && !noEditable)
             {
                 KnobColor = FuThemeManager.GetColor(FuColors.KnobActive);
                 BGColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedActive) : FuThemeManager.GetColor(FuColors.FrameBgActive);
             }
-            else if (LastItemHovered && !noEditable)
+            else if (_lastItemHovered && !noEditable)
             {
                 KnobColor = FuThemeManager.GetColor(FuColors.KnobHovered);
                 BGColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedHovered) : FuThemeManager.GetColor(FuColors.FrameBgHovered);
@@ -162,18 +162,18 @@ namespace Fu.Framework
                 ImGui.SetCursorPosY(localPos.y + 2f * Fugui.CurrentContext.Scale);
                 if (colValue)
                 {
-                    FuTextStyle.Selected.Push(!_nextIsDisabled);
+                    FuTextStyle.Selected.Push(!LastItemDisabled);
                 }
                 else
                 {
-                    FuTextStyle.Default.Push(!_nextIsDisabled);
+                    FuTextStyle.Default.Push(!LastItemDisabled);
                 }
                 ImGui.Text(currentText);
                 FuTextStyle.Default.Pop();
             }
 
             data.Update(value, _animationEnabled);
-            displayToolTip(LastItemHovered);
+            displayToolTip(_lastItemHovered);
             endElement(null);
             return valueChanged;
         }

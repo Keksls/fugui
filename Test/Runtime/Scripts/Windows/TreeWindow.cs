@@ -103,8 +103,8 @@ namespace FuguiDemo
             layout.Dummy(layout.GetAvailableWidth() - (20f * Fugui.CurrentContext.Scale));
             layout.SameLine();
 
-            // draw a small delete button
-            if (layout.Button(Icons.Delete, FuElementSize.AutoSize, new Vector2(2f, 2f), new Vector2(0.7f, -2.2f), FuButtonStyle.Danger))
+            // draw a small delete button as a clickable text
+            if (layout.ClickableText(Icons.Close, FuTextStyle.Danger))
             {
                 // display a confirmation modal with 'danger' modal layout
                 Fugui.ShowDanger("Tree element remove",

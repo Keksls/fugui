@@ -21,6 +21,7 @@ public class WidgetsWindow : MonoBehaviour
     // drag and sliders
     int intVal = 5;
     float floatVal = 5f;
+    float floatValKnob = 5f;
     Vector2 v2Val = Vector2.zero;
     Vector3 v3Val = Vector3.zero;
     Vector4 v4Val = Vector4.zero;
@@ -35,16 +36,6 @@ public class WidgetsWindow : MonoBehaviour
     }
     myTestEnum _selectedEnumValue = myTestEnum.EnumValueC;
     List<string> cbTexts = new List<string>() { "cb1", "cb2", "cb3" };
-    List<IFuSelectable> cbButtons = new List<IFuSelectable>() {
-            new FuSelectable_Button("button 1"),
-            new FuSelectable_Button("button 2", FuElementSize.AutoSize),
-            new FuSelectable_SameLine(),
-            new FuSelectable_Button("button 3", false),
-            new FuSelectable_Separator(),
-            new FuSelectable_Button("button 4", new Vector2(32f, 32f)),
-            new FuSelectable_SameLine(),
-            new FuSelectable_Button("button 5"),
-        };
     // radio buttons
     int radioButtonGroup1Index;
     int radioButtonGroup2Index;
@@ -76,7 +67,7 @@ public class WidgetsWindow : MonoBehaviour
                 layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui", FuTextStyle.Info);
                 layout.Toggle("##toggleDisable", ref _enableWidgets, "Widgets Disabled", "Widgets Enabled", FuToggleFlags.MaximumTextSize);
 
-                using (new FuPanel("widgetsDemoPanel"))
+                using (new FuPanel("widgetsDemoPanel", FuStyle.Unpadded))
                 {
                     layout.Collapsable("Sliders", drawSliders);
                     layout.Collapsable("Basics Widgets", () => { drawBasics(layout); });
@@ -101,12 +92,12 @@ public class WidgetsWindow : MonoBehaviour
         {
             if (!_enableWidgets)
                 grid.DisableNextElements();
-            grid.Knob("knob Dot", ref floatVal, 0f, 100f, FuKnobVariant.Dot);
-            grid.Knob("knob Space", ref floatVal, 0f, 100f, FuKnobVariant.Space);
-            grid.Knob("knob WiperOnly", ref floatVal, 0f, 100f, FuKnobVariant.WiperOnly);
-            grid.Knob("knob Space", ref floatVal, 0f, 100f, FuKnobVariant.Tick);
-            grid.Knob("knob Wiper", ref floatVal, 0f, 100f, FuKnobVariant.Wiper);
-            grid.Knob("knob Stepped", ref floatVal, 0f, 100f, FuKnobVariant.Stepped, 10, 10f, "%1.f");
+            grid.Knob("knob Dot", ref floatValKnob, 0f, 100f, FuKnobVariant.Dot);
+            grid.Knob("knob Space", ref floatValKnob, 0f, 100f, FuKnobVariant.Space);
+            grid.Knob("knob WiperOnly", ref floatValKnob, 0f, 100f, FuKnobVariant.WiperOnly);
+            grid.Knob("knob Space", ref floatValKnob, 0f, 100f, FuKnobVariant.Tick);
+            grid.Knob("knob Wiper", ref floatValKnob, 0f, 100f, FuKnobVariant.Wiper);
+            grid.Knob("knob Stepped", ref floatValKnob, 0f, 100f, FuKnobVariant.Stepped, 10, 10f, "%1.f");
             if (!_enableWidgets)
                 grid.EnableNextElements();
         }
@@ -144,7 +135,7 @@ public class WidgetsWindow : MonoBehaviour
             grid.ButtonsGroup("Left", new List<string>() { Icons.About + "##1", Icons.Accelerate + "##1", Icons.Arch + "##1", Icons.ArrowDown + "##1" }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft);
             grid.ButtonsGroup("Auto size", new List<string>() { Icons.About + "##2", Icons.Accelerate + "##2", Icons.Arch + "##2", Icons.ArrowDown + "##2" }, (index) => { }, null, FuButtonsGroupFlags.AutoSizeButtons);
             grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About + "##3", Icons.Accelerate + "##3", Icons.Arch + "##3", Icons.ArrowDown + "##3" }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
-           
+
             if (!_enableWidgets)
             {
                 grid.EnableNextElements();
@@ -201,7 +192,6 @@ public class WidgetsWindow : MonoBehaviour
                         break;
 
                     case 3:
-                        layout.BeginGroup();
                         if (layout.RadioButton("c 1", radioButtonGroup1Index == 0))
                         {
                             radioButtonGroup1Index = 0;
@@ -221,9 +211,7 @@ public class WidgetsWindow : MonoBehaviour
                         {
                             radioButtonGroup1Index = 3;
                         }
-                        layout.EndGroup();
 
-                        layout.BeginGroup();
                         if (layout.RadioButton("c 1##1", radioButtonGroup2Index == 0))
                         {
                             radioButtonGroup2Index = 0;
@@ -240,7 +228,6 @@ public class WidgetsWindow : MonoBehaviour
                         {
                             radioButtonGroup2Index = 3;
                         }
-                        layout.EndGroup();
                         break;
                 }
                 if (!_enableWidgets)
@@ -254,11 +241,13 @@ public class WidgetsWindow : MonoBehaviour
         using (var grid = new FuGrid("listsGrid"))
         {
             if (!_enableWidgets)
+            {
                 grid.DisableNextElements();
+                layout.DisableNextElements();
+            }
             grid.Combobox("test callback combo", "click me custom", () =>
             {
-                bool chk = true;
-                layout.CheckBox("chdk1", ref chk);
+                layout.CheckBox("chdk1", ref boolVal);
                 layout.Drag("drdag", ref floatVal);
                 layout.Button("big button");
                 layout.DisableNextElement();
@@ -269,15 +258,13 @@ public class WidgetsWindow : MonoBehaviour
                 layout.Slider("sdlc3", ref floatVal);
             });
             grid.Combobox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
-            grid.Combobox("test button box", cbButtons, (newValue) => { Debug.Log(newValue); });
             grid.ComboboxEnum<myTestEnum>("Enum combobox", (index) => { _selectedEnumValue = (myTestEnum)index; }, () => _selectedEnumValue);
 
             layout.Separator();
 
             grid.ListBox("test callback combo", () =>
             {
-                bool chk = true;
-                layout.CheckBox("chdk1", ref chk);
+                layout.CheckBox("chdk1", ref boolVal);
                 layout.Drag("drdag", ref floatVal);
                 layout.Button("big button");
                 layout.DisableNextElement();
@@ -288,9 +275,11 @@ public class WidgetsWindow : MonoBehaviour
                 layout.Slider("sdlc3", ref floatVal);
             });
             grid.ListBox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
-            grid.ListBox("test button box", cbButtons, (newValue) => { Debug.Log(newValue); });
             if (!_enableWidgets)
+            {
                 grid.EnableNextElements();
+                layout.EnableNextElements();
+            }
         }
     }
 
@@ -300,7 +289,7 @@ public class WidgetsWindow : MonoBehaviour
         {
             if (!_enableWidgets)
                 grid.DisableNextElements();
-            grid.Drag("drag int##dint", ref intVal, "%.0f rad");
+            grid.Drag("drag int##dint", ref intVal, "%d rad");
             grid.Drag("drag float##1", ref floatVal, "value", 0f, 360f, 0.1f, "%.1f°");
             grid.Drag("drag float##2", ref floatVal, "%", 0f, 360f, 1f, "%.0f%%");
             grid.Drag("drag v2", ref v2Val, "x", "y");
@@ -320,9 +309,9 @@ public class WidgetsWindow : MonoBehaviour
         layout.Text("Highlight text", FuTextStyle.Highlight);
         layout.Text("Selected text", FuTextStyle.Selected);
         layout.Text("Info text", FuTextStyle.Info);
-        layout.Text("Selected text", FuTextStyle.Success);
-        layout.Text("Danger text", FuTextStyle.Danger);
         layout.Text("Success text", FuTextStyle.Success);
+        layout.Text("Warning text", FuTextStyle.Warning);
+        layout.Text("Danger text", FuTextStyle.Danger);
         layout.Separator();
 
         layout.TextURL("This is a hyperkling text URL", "https://framagit.org/Hydrocode/fugui");

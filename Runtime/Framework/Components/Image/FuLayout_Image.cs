@@ -46,6 +46,10 @@ namespace Fu.Framework
             {
                 return false;
             }
+            if(LastItemDisabled)
+            {
+                color *= 0.5f;
+            }
             if (FuWindow.CurrentDrawingWindow == null)
             {
                 Fugui.MainContainer.ImGuiImage(texture, size.GetSize(), color);
@@ -58,7 +62,7 @@ namespace Fu.Framework
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             displayToolTip();
-            if (LastItemHovered)
+            if (_lastItemHovered)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
@@ -68,7 +72,7 @@ namespace Fu.Framework
                 _elementHoverFramedEnabled = true;
             }
             endElement();
-            return LastItemJustDeactivated && LastItemHovered;
+            return _lastItemJustDeactivated && _lastItemHovered;
         }
 
         /// <summary>
@@ -87,6 +91,10 @@ namespace Fu.Framework
             {
                 return false;
             }
+            if (LastItemDisabled)
+            {
+                color *= 0.5f;
+            }
             if (FuWindow.CurrentDrawingWindow == null)
             {
                 Fugui.MainContainer.ImGuiImage(texture, size.GetSize(), color);
@@ -97,7 +105,7 @@ namespace Fu.Framework
             }
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
-            if (LastItemHovered)
+            if (_lastItemHovered)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
@@ -108,7 +116,7 @@ namespace Fu.Framework
             }
             displayToolTip();
             endElement();
-            return LastItemJustDeactivated && LastItemHovered;
+            return _lastItemJustDeactivated && _lastItemHovered;
         }
 
         /// <summary>
@@ -126,20 +134,27 @@ namespace Fu.Framework
             {
                 return false;
             }
-            bool clicked = default;
+            bool clicked;
+            FuButtonStyle.Default.Push(!LastItemDisabled);
+            Color color = Color.white;
+            if (LastItemDisabled)
+            {
+                color *= 0.5f;
+            }
             if (FuWindow.CurrentDrawingWindow == null)
             {
-                clicked = Fugui.MainContainer.ImGuiImageButton(texture, size);
+                clicked = Fugui.MainContainer.ImGuiImageButton(texture, size, color);
             }
             else
             {
-                clicked = FuWindow.CurrentDrawingWindow.Container.ImGuiImageButton(texture, size);
+                clicked = FuWindow.CurrentDrawingWindow.Container.ImGuiImageButton(texture, size, color);
             }
+            FuButtonStyle.Default.Pop();
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);        
             displayToolTip();
             endElement();
-            return clicked;
+            return clicked && !LastItemDisabled;
         }
 
         /// <summary>
@@ -158,7 +173,12 @@ namespace Fu.Framework
             {
                 return false;
             }
-            bool clicked = default;
+            bool clicked;
+            FuButtonStyle.Default.Push(!LastItemDisabled);
+            if (LastItemDisabled)
+            {
+                color *= 0.5f;
+            }
             if (FuWindow.CurrentDrawingWindow == null)
             {
                 clicked = Fugui.MainContainer.ImGuiImageButton(texture, size, color);
@@ -167,11 +187,12 @@ namespace Fu.Framework
             {
                 clicked = FuWindow.CurrentDrawingWindow.Container.ImGuiImageButton(texture, size, color);
             }
+            FuButtonStyle.Default.Pop();
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             displayToolTip();
             endElement();
-            return clicked;
+            return clicked && !LastItemDisabled;
         }
     }
 }

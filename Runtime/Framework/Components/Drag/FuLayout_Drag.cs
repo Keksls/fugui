@@ -75,7 +75,7 @@ namespace Fu.Framework
         private bool dragFloat(string text, ref float value, string vString, float min, float max, float speed, string format)
         {
             // set the current item ID, so internal calculation can be unique (overwise the V2/V3 and V4 draw will use same ID for each dragFloat)
-            LastItemID = text;
+            _lastItemID = text;
             // Display the string before the input field if it was provided
             if (!string.IsNullOrEmpty(vString))
             {
@@ -87,10 +87,10 @@ namespace Fu.Framework
             // Set the width of the input field and create it
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             var oldVal = value; // Store the old value in case the input field is disabled
-            bool valueChanged = ImGui.DragFloat("##" + text, ref value, speed, min, max, string.IsNullOrEmpty(format) ? getStringFormat(value) : format, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+            bool valueChanged = ImGui.DragFloat("##" + text, ref value, speed, min, max, string.IsNullOrEmpty(format) ? getStringFormat(value) : format, LastItemDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
 
             // If the input field is disabled, reset its value and return false for the valueChanged flag
-            if (_nextIsDisabled)
+            if (LastItemDisabled)
             {
                 value = oldVal;
                 valueChanged = false;
@@ -191,7 +191,7 @@ namespace Fu.Framework
             // prevent to draw full element hover frame
             _elementHoverFramedEnabled = false;
             // reset last item ID (has been change before to use a unique ID per dragFloat)
-            LastItemID = text;
+            _lastItemID = text;
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, valueChanged);
             // End the element
@@ -295,7 +295,7 @@ namespace Fu.Framework
             Fugui.PopStyle();
 
             // reset last item ID (has been change before to use a unique ID per dragFloat)
-            LastItemID = text;
+            _lastItemID = text;
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, valueChanged);
             // prevent to draw full element hover frame
@@ -394,7 +394,7 @@ namespace Fu.Framework
             // prevent to draw full element hover frame
             _elementHoverFramedEnabled = false;
             // reset last item ID (has been change before to use a unique ID per dragFloat)
-            LastItemID = text;
+            _lastItemID = text;
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, valueChanged);
             endElement(style);
@@ -408,9 +408,9 @@ namespace Fu.Framework
         ///</summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The int value to be displayed in the input field.</param>
-        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
+        ///<param name="format">string format of the displayed value (default is "%d")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, ref int value, string format = "%.0f")
+        public bool Drag(string text, ref int value, string format = "%d")
         {
             return Drag(text, null, ref value, 0, 100, FuFrameStyle.Default, format);
         }
@@ -421,9 +421,9 @@ namespace Fu.Framework
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
-        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
+        ///<param name="format">string format of the displayed value (default is "%d")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, string vString, ref int value, string format = "%.0f")
+        public bool Drag(string text, string vString, ref int value, string format = "%d")
         {
             return Drag(text, vString, ref value, 0, 100, FuFrameStyle.Default, format);
         }
@@ -436,9 +436,9 @@ namespace Fu.Framework
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
-        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
+        ///<param name="format">string format of the displayed value (default is "%d")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, string vString, ref int value, int min, int max, string format = "%.0f")
+        public bool Drag(string text, string vString, ref int value, int min, int max, string format = "%df")
         {
             return Drag(text, vString, ref value, min, max, FuFrameStyle.Default, format);
         }
@@ -450,9 +450,9 @@ namespace Fu.Framework
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
         ///<param name="max">The maximum allowed value for the input field.</param>
-        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
+        ///<param name="format">string format of the displayed value (default is "%d")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, ref int value, int min, int max, string format = "%.0f")
+        public bool Drag(string text, ref int value, int min, int max, string format = "%df")
         {
             return Drag(text, null, ref value, min, max, FuFrameStyle.Default, format);
         }
@@ -468,9 +468,9 @@ namespace Fu.Framework
         /// <param name="min">The minimum value for the element.</param>
         /// <param name="max">The maximum value for the element.</param>
         /// <param name="style">The style to be used for the element's appearance.</param>
-        ///<param name="format">string format of the displayed value (default is "%.0f")</param>
+        ///<param name="format">string format of the displayed value (default is "%d")</param>
         /// <returns>True if the value was modified, false otherwise.</returns>
-        public virtual bool Drag(string text, string vString, ref int value, int min, int max, FuFrameStyle style, string format = "%.0f")
+        public virtual bool Drag(string text, string vString, ref int value, int min, int max, FuFrameStyle style, string format = "%d")
         {
             // start drawing the element
             beginElement(ref text, style);
@@ -493,9 +493,9 @@ namespace Fu.Framework
             // store the current value in case the element is disabled
             var oldVal = value;
             // draw the draggable integer input element
-            bool valueChanged = ImGui.DragInt("##" + text, ref value, 0.1f, min, max, format, _nextIsDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+            bool valueChanged = ImGui.DragInt("##" + text, ref value, 0.1f, min, max, format, LastItemDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
             // if the element is disabled, restore the old value and return false for valueChanged
-            if (_nextIsDisabled)
+            if (LastItemDisabled)
             {
                 value = oldVal;
                 valueChanged = false;

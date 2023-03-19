@@ -1,3 +1,4 @@
+using Fu;
 using Fu.Core;
 using Fu.Framework;
 using UnityEngine;
@@ -6,6 +7,7 @@ public class InspectorWindow : MonoBehaviour
 {
     public Camera Camera;
     public Test3DRaycaster Raycaster;
+    public CameraWindow CameraWindow;
 
     private void Awake()
     {
@@ -93,7 +95,37 @@ public class InspectorWindow : MonoBehaviour
                                 Camera.backgroundColor = color;
                             }
                         }
-                    }, 8f);
+                    }, FuButtonStyle.Collapsable, 8f, true, 14f, () =>
+                    {
+                        bool camEnabled = CameraWindow.enabled;
+                        // reduce the size of the font to reduce checkbox size
+                        Fugui.PushFont(12, FontType.Regular);
+                        // move the cursor of 2px on Y because we reduce the checkBox size of 2 (default font size is 14)
+                        Fugui.MoveY(2f);
+                        if (layout.CheckBox("cmEnbldChkCsbl", ref camEnabled))
+                        {
+                            CameraWindow.enabled = camEnabled;
+                        }
+                        Fugui.PopFont();
+                    }, 22f, () =>
+                    {
+                        string cameraSettingsPopupID = "cmPppStng";
+                        Fugui.PushFont(18, FontType.Regular);
+                        if (layout.ClickableText(Icons.MenuDots))
+                        {
+                            layout.OpenPopUp(cameraSettingsPopupID, () =>
+                            {
+                                layout.Spacing();
+                                using (FuGrid grid = new FuGrid("cmStngGrd", width: 196f, outterPadding:8f))
+                                {
+                                    grid.Slider("Hit force", ref CameraWindow.HitForce, 10f, 500f, format:"%.0f N");
+                                }
+                                layout.Spacing();
+                            });
+                        }
+                        Fugui.PopFont();
+                        layout.DrawPopup(cameraSettingsPopupID);
+                    });
                 }
             }
         }, flags: FuWindowFlags.AllowMultipleWindow);

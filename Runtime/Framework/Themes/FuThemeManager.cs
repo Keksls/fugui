@@ -28,8 +28,7 @@ namespace Fu.Framework
                 typeof(FuComboboxStyle),
                 typeof(FuPanelStyle),
                 typeof(FuButtonsGroupStyle),
-                typeof(FuStyle),
-                typeof(FuCollapsableStyle)
+                typeof(FuStyle)
             };
         }
 

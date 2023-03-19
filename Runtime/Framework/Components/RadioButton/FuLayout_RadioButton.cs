@@ -47,13 +47,13 @@ namespace Fu.Framework
             Vector2 CircleCenter = new Vector2(pos.x + height / 2f + 2f * Fugui.CurrentContext.Scale, pos.y + height / 2f + 2f * Fugui.CurrentContext.Scale);
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             // input stats
-            bool hovered = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(height + 4f * Fugui.CurrentContext.Scale, height));
+            bool hovered = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(height, height));
             bool active = hovered && ImGui.IsMouseDown(0);
             bool clicked = hovered && ImGui.IsMouseReleased(0);
             // frame colors
-            Vector4 BGColor = default;
-            Vector4 knobColor = default;
-            if (_nextIsDisabled)
+            Vector4 BGColor;
+            Vector4 knobColor;
+            if (LastItemDisabled)
             {
                 BGColor = style.DisabledFrame;
                 knobColor = FuThemeManager.GetColor(FuColors.Knob) * 0.3f;
@@ -87,7 +87,7 @@ namespace Fu.Framework
             }
 
             //draw hover frame
-            if (hovered && !_nextIsDisabled)
+            if (hovered && !LastItemDisabled)
             {
                 // set mouse cursor
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
@@ -98,10 +98,10 @@ namespace Fu.Framework
             animationData.Update(isChecked, _animationEnabled);
 
             // dummy display button
-            ImGui.Dummy(new Vector2(height + 4f * Fugui.CurrentContext.Scale, height));
-            ImGui.SameLine();
+            ImGuiNative.igDummy(new Vector2(height, height));
+            ImGuiNative.igSameLine(0f, -1f);
             // align and draw text
-            ImGui.AlignTextToFramePadding();
+            ImGuiNative.igAlignTextToFramePadding();
             ImGui.Text(text);
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);

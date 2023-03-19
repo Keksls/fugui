@@ -5,6 +5,29 @@ namespace Fu.Framework
     /// <summary>
     /// Define Fugui mouse buttons
     /// </summary>
+    public enum FuComboboxPopupPosition
+    {
+        /// <summary>
+        /// Draw the combobox's Popup on bottom of the combobox button, Left aligned
+        /// </summary>
+        BottomLeftAlign = 0,
+        /// <summary>
+        /// Draw the combobox's Popup on bottom of the combobox button, Left aligned
+        /// </summary>
+        BottomRightAlign = 1,
+        /// <summary>
+        /// Draw the combobox's Popup on top of the combobox button, Left aligned
+        /// </summary>
+        TopLeftAlign = 2,
+        /// <summary>
+        /// Draw the combobox's Popup on top of the combobox button, Left aligned
+        /// </summary>
+        TopRightAlign = 3,
+    }
+
+    /// <summary>
+    /// Define Fugui mouse buttons
+    /// </summary>
     public enum FuMouseButton
     {
         /// <summary>

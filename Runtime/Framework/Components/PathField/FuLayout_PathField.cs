@@ -55,7 +55,7 @@ namespace Fu.Framework
             // set default flag as validate when user press enter
             ImGuiInputTextFlags flags = ImGuiInputTextFlags.EnterReturnsTrue;
             // prevent user to edit disabled widget
-            if(_nextIsDisabled)
+            if(LastItemDisabled)
             {
                 flags |= ImGuiInputTextFlags.ReadOnly;
             }
@@ -73,7 +73,7 @@ namespace Fu.Framework
             // draw button
             ImGui.SameLine();
             ImGui.SetCursorScreenPos(new Vector2(cursorPos + width - buttonWidth, ImGui.GetCursorScreenPos().y));
-            if (ImGui.Button("...##" + text, new Vector2(buttonWidth, 0)))
+            if (_customButton("...##" + text, new Vector2(buttonWidth, ImGui.GetItemRectSize().y), Vector2.zero, new Vector2(0f, -4f), FuButtonStyle.Default, FuThemeManager.CurrentTheme.ButtonsGradientStrenght))
             {
                 string[] paths = null;
                 if (onlyFolder)

@@ -10804,6 +10804,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 197b9dd31fa57ca419cc76af754cccb0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _showImGuiDemoWindow: 0
 --- !u!114 &4082823442619091940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10832,6 +10833,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Camera: {fileID: 5027617570534833868}
   Raycaster: {fileID: 184572714933081265}
+  CameraWindow: {fileID: 4082823442619091940}
 --- !u!114 &2335456719184029569
 MonoBehaviour:
   m_ObjectHideFlags: 0

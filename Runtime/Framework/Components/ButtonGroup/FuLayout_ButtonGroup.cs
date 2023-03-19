@@ -32,7 +32,7 @@ namespace Fu.Framework
         /// <param name="style">style of the element</param>
         public void ButtonsGroup<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter, FuButtonsGroupFlags flags, FuButtonsGroupStyle style) where TEnum : struct, IConvertible
         {
-            FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<IFuSelectable> enumSelectables);
+            FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<string> enumSelectables);
 
             // call the custom combobox function, passing in the lists and the itemChange
             _buttonsGroup(text, enumSelectables, (index) =>
@@ -128,7 +128,7 @@ namespace Fu.Framework
                     itemWidth = 8f * Fugui.CurrentContext.Scale + Mathf.Max(txtSize.x, txtSize.y + 4f * Fugui.CurrentContext.Scale);
                 }
                 cursorPos += itemWidth - 1f;
-                if (this._customButton(items[i].ToString(), new Vector2(itemWidth, 0), new Vector4(4f, 4f) * Fugui.CurrentContext.Scale, Vector2.zero, btnStyle, FuThemeManager.CurrentTheme.ButtonsGradientStrenght) && !_nextIsDisabled)
+                if (this._customButton(items[i].ToString(), new Vector2(itemWidth, 0), new Vector4(4f, 4f) * Fugui.CurrentContext.Scale, Vector2.zero, btnStyle, FuThemeManager.CurrentTheme.ButtonsGradientStrenght) && !LastItemDisabled)
                 {
                     FuSelectableBuilder.SetSelectedIndex(text, i);
                     callback?.Invoke(i);

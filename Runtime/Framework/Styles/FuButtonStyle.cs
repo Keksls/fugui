@@ -64,6 +64,12 @@ namespace Fu.Framework
         /// Danger button style, use 'DangerBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Danger { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _dangerButtonStyle; } }
+
+        static FuButtonStyle _collapsableButtonStyle;
+        /// <summary>
+        /// Danger button style, use 'DangerBackground' theme colors and default Thext color
+        /// </summary>
+        public static FuButtonStyle Collapsable { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _collapsableButtonStyle; } }
         #endregion
 
         #region constructor
@@ -217,6 +223,16 @@ namespace Fu.Framework
                 ButtonHovered = FuThemeManager.GetColor(FuColors.BackgroundWarning) * 0.9f,
                 ButtonActive = FuThemeManager.GetColor(FuColors.BackgroundWarning) * 0.8f,
                 DisabledButton = FuThemeManager.GetColor(FuColors.BackgroundWarning) * 0.5f,
+                TextStyle = FuTextStyle.Default
+            };
+            // collapsable
+            _collapsableButtonStyle = new FuButtonStyle()
+            {
+                _framePadding = new Vector2(8f, 3f),
+                Button = FuThemeManager.GetColor(FuColors.Collapsable),
+                ButtonHovered = FuThemeManager.GetColor(FuColors.CollapsableHovered),
+                ButtonActive = FuThemeManager.GetColor(FuColors.CollapsableActive),
+                DisabledButton = FuThemeManager.GetColor(FuColors.CollapsableDisabled),
                 TextStyle = FuTextStyle.Default
             };
         }

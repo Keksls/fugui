@@ -44,14 +44,15 @@ namespace Fu.Framework
             radius = _radius;
         }
 
-        public void Draw(string _label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobFlags flags)
+        public void Draw(string _label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobFlags flags, bool disabled)
         {
             t = (p_value - v_min) / (v_max - v_min);
             var screen_pos = ImGui.GetCursorScreenPos();
+            float oldValue = p_value;
 
             // Handle dragging
             ImGui.InvisibleButton(_label, new Vector2(radius * 2.0f, radius * 2.0f));
-            if (ImGui.IsItemActive() && ImGui.GetIO().MouseDelta.x != 0.0f)
+            if (ImGui.IsItemActive() && ImGui.GetIO().MouseDelta.x != 0.0f && !disabled)
             {
                 float step = (v_max - v_min) / 200.0f;
                 p_value += ImGui.GetIO().MouseDelta.x * step;
@@ -62,7 +63,7 @@ namespace Fu.Framework
 
             if (!flags.HasFlag(FuKnobFlags.NoInput))
             {
-                value_changed = ImGui.DragFloat("##drag" + _label, ref p_value, speed, v_min, v_max, format);
+                value_changed = ImGui.DragFloat("##drag" + _label, ref p_value, speed, v_min, v_max, format, disabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
             }
 
             angle_min = Mathf.PI * 0.75f;
@@ -73,6 +74,12 @@ namespace Fu.Framework
             angle = angle_min + (angle_max - angle_min) * t;
             angle_cos = Mathf.Cos(angle);
             angle_sin = Mathf.Sin(angle);
+
+            if (disabled)
+            {
+                value_changed = false;
+                p_value = oldValue;
+            }
         }
 
         internal void draw_dot(float size, float radius, float angle, color_set color, bool filled, int segments)
@@ -174,7 +181,9 @@ namespace Fu.Framework
             }
             knob k = _knobs[label];
 
-            k.Draw(label, ref p_value, v_min, v_max, speed, format, flags);
+            FuFrameStyle.Default.Push(!LastItemDisabled);
+            k.Draw(label, ref p_value, v_min, v_max, speed, format, flags, LastItemDisabled);
+            FuFrameStyle.Default.Pop();
 
             // Draw tooltip
             if (flags.HasFlag(FuKnobFlags.ValueTooltip) && (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) || ImGui.IsItemActive()))
@@ -191,25 +200,54 @@ namespace Fu.Framework
 
         color_set GetPrimaryColorSet()
         {
-            return new color_set(
-                FuThemeManager.GetColor(FuColors.CheckMark),
-                FuThemeManager.GetColor(FuColors.CheckMark),
-                FuThemeManager.GetColor(FuColors.CheckMark));
+            if (LastItemDisabled)
+            {
+                return new color_set(
+                    FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f,
+                    FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f,
+                    FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
+            }
+            else
+            {
+                return new color_set(
+                    FuThemeManager.GetColor(FuColors.CheckMark),
+                    FuThemeManager.GetColor(FuColors.CheckMark),
+                    FuThemeManager.GetColor(FuColors.CheckMark));
+            }
         }
 
         color_set GetSecondaryColorSet()
         {
-            Vector4 active = FuThemeManager.GetColor(FuColors.FrameBg) * 0.8f;
-            Vector4 hovered = FuThemeManager.GetColor(FuColors.FrameBg) * 0.8f;
-            return new color_set(active, hovered, hovered);
+            if (LastItemDisabled)
+            {
+                Vector4 active = FuThemeManager.GetColor(FuColors.FrameBg) * 0.8f;
+                Vector4 hovered = FuThemeManager.GetColor(FuColors.FrameBg) * 0.8f;
+                return new color_set(active, hovered, hovered);
+            }
+            else
+            {
+                Vector4 active = FuThemeManager.GetColor(FuColors.FrameBg) * 0.4f;
+                Vector4 hovered = FuThemeManager.GetColor(FuColors.FrameBg) * 0.4f;
+                return new color_set(active, hovered, hovered);
+            }
         }
 
         color_set GetTrackColorSet()
         {
-            return new color_set(
-                FuThemeManager.GetColor(FuColors.FrameBg),
-                FuThemeManager.GetColor(FuColors.FrameBg),
-                FuThemeManager.GetColor(FuColors.FrameBg));
+            if (LastItemDisabled)
+            {
+                return new color_set(
+                    FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f,
+                    FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f,
+                    FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
+            }
+            else
+            {
+                return new color_set(
+                    FuThemeManager.GetColor(FuColors.FrameBg),
+                    FuThemeManager.GetColor(FuColors.FrameBg),
+                    FuThemeManager.GetColor(FuColors.FrameBg));
+            }
         }
 
         bool BaseKnob(string label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobVariant variant, float size, FuKnobFlags flags, int steps = 10)
@@ -311,6 +349,7 @@ namespace Fu.Framework
                 return false;
             }
             string _format = format == null ? "%.3f" : format;
+            value = Mathf.Clamp(value, min, max);
             bool updated = BaseKnob(text, ref value, min, max, speed, _format, variant, size, flags, steps);
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, updated);

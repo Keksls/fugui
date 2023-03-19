@@ -1,5 +1,4 @@
-﻿using Fu.Core;
-using ImGuiNET;
+﻿using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -159,7 +158,7 @@ namespace Fu.Framework
         /// <param name="style">style of the button</param>
         /// <param name="bordered">draw borders arround button</param>
         /// <returns>true if clicked</returns>
-        private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght, bool bordered = true, float alignment = -1f)
+        private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght, bool bordered = true, float alignment = -1f, float textWidthOffset = 0f)
         {
             // scale padding
             padding *= Fugui.CurrentContext.Scale;
@@ -187,7 +186,7 @@ namespace Fu.Framework
                 size.y = Mathf.Max(4.0f, region_max.y - ImGuiNative.igGetCursorPosY() + size.y);
 
             // draw a dummy button to update cursor and get states
-            bool clicked = ImGui.InvisibleButton(text, size, ImGuiButtonFlags.None) && !_nextIsDisabled;
+            bool clicked = ImGui.InvisibleButton(text, size, ImGuiButtonFlags.None) && !LastItemDisabled;
             setBaseElementState(text, pos, size, true, clicked);
 
             // get current draw list
@@ -197,15 +196,15 @@ namespace Fu.Framework
             // get colors
             ImRect bb = new ImRect() { Min = ImGui.GetItemRectMin(), Max = ImGui.GetItemRectMax() };
             Vector4 bg1f = style.Button;
-            if (_nextIsDisabled)
+            if (LastItemDisabled)
             {
                 bg1f = style.DisabledButton;
             }
-            else if (LastItemActive)
+            else if (_lastItemActive)
             {
                 bg1f = style.ButtonActive;
             }
-            else if (LastItemHovered)
+            else if (_lastItemHovered)
             {
                 bg1f = style.ButtonHovered;
             }
@@ -231,33 +230,25 @@ namespace Fu.Framework
             {
                 drawList.AddRect(bb.Min, bb.Max, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), imStyle.FrameRounding, 0, imStyle.FrameBorderSize);
             }
-            // Align whole block. We should defer that to the better rendering function when we'll have support for individual line alignment.
-            Vector2 textPos = pos;
+
+            // calculate alignment
             Vector2 align = alignment == -1f ? imStyle.ButtonTextAlign : new Vector2(alignment, 0.5f);
 
-            if (align.x > 0.0f)
-            {
-                textPos.x = Mathf.Max(textPos.x, textPos.x + (bb.Max.x - textPos.x - label_size.x) * align.x);
-            }
-            if (align.y > 0.0f)
-            {
-                textPos.y = Mathf.Max(textPos.y, textPos.y + (bb.Max.y - textPos.y - label_size.y) * align.y);
-            }
-
             // set mouse cursor
-            if (LastItemHovered && !_nextIsDisabled)
+            if (_lastItemHovered && !LastItemDisabled)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
 
             // draw text
+            size.x -= textWidthOffset;
             _customTextClipped(size, text, pos + textOffset, padding, label_size, align, style.TextStyle);
 
             // display the tooltip if necessary
             displayToolTip();
 
             // return whatever the button is clicked
-            return LastItemUpdate;
+            return _lastItemUpdate;
         }
     }
 }

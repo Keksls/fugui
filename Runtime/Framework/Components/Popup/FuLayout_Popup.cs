@@ -65,6 +65,16 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Get whatevr a Popup is curently open
+        /// </summary>
+        /// <param name="id">id of  the popup to check</param>
+        /// <returns>True if popup if open</returns>
+        public bool IsPopupOpen(string id)
+        {
+            return _registeredPopups.ContainsKey(id);
+        }
+
+        /// <summary>
         /// Draw a registered popup (will draw only after you call OpenPopup
         /// </summary>
         /// <param name="id">ID of the popup to draw</param>
@@ -168,6 +178,8 @@ namespace Fu.Framework
             }
             // remove from dic
             _registeredPopups.Remove(id);
+            // clear popup Rect
+            CurrentPopUpRect = default;
         }
     }
 }

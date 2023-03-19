@@ -10,6 +10,7 @@ using UnityEngine;
 /// </summary>
 public class FuguiDemoScene : MonoBehaviour
 {
+    [SerializeField]
     private bool _showImGuiDemoWindow = false;
 
     private void Awake()
@@ -125,6 +126,9 @@ public class FuguiDemoScene : MonoBehaviour
     private void MainContainerContext_OnRender()
     {
         // draw imgui demo winfow (if _showImGuiDemoWindow is true)
-        ImGuiNET.ImGui.ShowDemoWindow(ref _showImGuiDemoWindow);
+        if (_showImGuiDemoWindow)
+        {
+            ImGuiNET.ImGui.ShowDemoWindow(ref _showImGuiDemoWindow);
+        }
     }
 }

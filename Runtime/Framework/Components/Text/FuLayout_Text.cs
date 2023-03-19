@@ -225,6 +225,10 @@ namespace Fu.Framework
                             {
                                 color = col;
                             }
+                            if(LastItemDisabled)
+                            {
+                                color *= 0.5f;
+                            }
                             Fugui.Push(ImGuiCol.Text, color);
                             nbColorPush++;
                         }
@@ -427,7 +431,7 @@ namespace Fu.Framework
         /// <param name="alignment">text alignement (between 0f and 1f)</param>
         internal unsafe Vector2 _customTextClipped(Vector2 maxSize, string label, Vector2 pos, Vector2 padding, Vector2 text_size, Vector2 alignment, FuTextStyle style)
         {
-            style.Push(!_nextIsDisabled);
+            style.Push(!LastItemDisabled);
             // get maxSize Y 
             if (maxSize.y <= 0f)
             {
@@ -462,7 +466,7 @@ namespace Fu.Framework
 
         private unsafe Vector2 _customTextClipped(Vector2 pos_min, Vector2 pos_max, string label, Vector2 text_size_if_known, Vector2 align, ImRect clip_rect, FuTextStyle style)
         {
-            style.Push(!_nextIsDisabled);
+            style.Push(!LastItemDisabled);
             // get str ptr
             int num = 0;
             byte* ptr = null;
@@ -641,16 +645,16 @@ namespace Fu.Framework
             Vector2 rectMax = rectMin + ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding;
             bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
-            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !_nextIsDisabled;
+            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !LastItemDisabled;
 
             // set mouse cursor
-            if (hovered && !_nextIsDisabled)
+            if (hovered && !LastItemDisabled)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
 
-            Color textColor = _nextIsDisabled ? style.DisabledText : style.Text;
-            if (!_nextIsDisabled)
+            Color textColor = LastItemDisabled ? style.DisabledText : style.Text;
+            if (!LastItemDisabled)
             {
                 if (active)
                 {
@@ -668,7 +672,7 @@ namespace Fu.Framework
             setBaseElementState(id, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             if (_currentToolTipsOnLabels)
             {
-                displayToolTip(LastItemHovered);
+                displayToolTip(_lastItemHovered);
             }
             endElement(style);
             return clicked;
@@ -705,10 +709,10 @@ namespace Fu.Framework
             Vector2 rectMax = rectMin + ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding;
             bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
-            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !_nextIsDisabled;
+            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !LastItemDisabled;
 
-            Color textColor = _nextIsDisabled ? style.DisabledText : style.Text;
-            if (!_nextIsDisabled)
+            Color textColor = LastItemDisabled ? style.DisabledText : style.Text;
+            if (!LastItemDisabled)
             {
                 if (active)
                 {
@@ -723,7 +727,7 @@ namespace Fu.Framework
             ImGui.Text(text);
             if (hovered)
             {
-                if (!_nextIsDisabled)
+                if (!LastItemDisabled)
                 {
                     // set mouse cursor
                     ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);

@@ -35,32 +35,40 @@ namespace Fu.Framework
         /// <summary>
         /// A flag indicating last drawed item is hovered by current pointer.
         /// </summary>
-        public static bool LastItemHovered { get; private set; } = false;
+        public bool LastItemHovered { get => _lastItemHovered; }
+        private static bool _lastItemHovered = false;
         /// <summary>
         /// A flag indicating last drawed item is currently used by current pointer.
         /// </summary>
-        public static bool LastItemActive { get; private set; } = false;
+        public bool LastItemActive { get => _lastItemActive; }
+        private static bool _lastItemActive = false;
         /// <summary>
         /// A flag indicating last drawed item was active laft frame and is no more this frame.
         /// </summary>
-        public static bool LastItemJustDeactivated { get; private set; } = false;
+        public bool LastItemJustDeactivated { get => _lastItemJustDeactivated; }
+        private static bool _lastItemJustDeactivated = false;
         /// <summary>
         /// A flag indicating last drawed item has just done an update operation this frame.
         /// </summary>
-        public static bool LastItemUpdate { get; private set; } = false;
+        public bool LastItemUpdate { get => _lastItemUpdate; }
+        private static bool _lastItemUpdate = false;
         /// <summary>
         /// The ID of the item that just been draw.
         /// </summary>
-        public static string LastItemID { get; private set; } = string.Empty;
+        public string LastItemID { get => _lastItemID; }
+        private static string _lastItemID = string.Empty;
         /// <summary>
         /// the button just clicked on the last draw item.
         /// </summary>
-        public static FuMouseButton LastItemClickedButton { get; private set; } = FuMouseButton.None;
+        public FuMouseButton LastItemClickedButton { get => _lastItemClickedButton; }
+        private static FuMouseButton _lastItemClickedButton = FuMouseButton.None;
+        /// <summary>
+        /// A flag indicating whether the Last element has been disabled.
+        /// </summary>
+        public bool LastItemDisabled { get; protected set; } = false;
 
         // A flag indicating whether the element is hover framed.
         private bool _elementHoverFramedEnabled = false;
-        // A flag indicating whether the next element should be disabled.
-        protected bool _nextIsDisabled;
         // An array of strings representing the current tool tips.
         protected string[] _currentToolTips = null;
         // An array of styles representing the current tool tips styles.
@@ -79,7 +87,6 @@ namespace Fu.Framework
         private static float _tooltipAppearDuration = 1.0f;
         // the time at the fame the current hovered element start to be hovered
         private static float _currentHoveredStartHoverTime = 0f;
-        // the time at the fame the current hovered element star
         // the ID if the element that want to display tooltips
         private static string _currentHoveredElementId = string.Empty;
         #endregion
@@ -101,6 +108,7 @@ namespace Fu.Framework
         public FuLayout()
         {
             CurrentDrawer = this;
+            _tooltipAppearDuration = 1.0f;
         }
 
         /// <summary>
@@ -118,11 +126,11 @@ namespace Fu.Framework
         /// <param name="style">The style to use for this element.</param>
         protected virtual void beginElement(ref string elementID, IFuElementStyle style = null, bool noEditID = false, bool canBeHidden = true)
         {
-            LastItemActive = false;
-            LastItemHovered = false;
-            LastItemJustDeactivated = false;
-            LastItemUpdate = false;
-            LastItemClickedButton = FuMouseButton.None;
+            _lastItemActive = false;
+            _lastItemHovered = false;
+            _lastItemJustDeactivated = false;
+            _lastItemUpdate = false;
+            _lastItemClickedButton = FuMouseButton.None;
 
             // whatever we must draw the next item
             _drawElement = true;
@@ -134,12 +142,12 @@ namespace Fu.Framework
             {
                 _currentItemStartPos = ImGui.GetCursorScreenPos();
                 // we must prepare next item
-                style?.Push(!_nextIsDisabled);
+                style?.Push(!LastItemDisabled);
                 if (!noEditID && FuWindow.CurrentDrawingWindow != null)
                 {
                     elementID = elementID + "##" + FuWindow.CurrentDrawingWindow.ID;
                 }
-                LastItemID = elementID;
+                _lastItemID = elementID;
             }
             // if out of scroll bounds, we must dummy the element rect
             else
@@ -159,14 +167,14 @@ namespace Fu.Framework
             {
                 style?.Pop();
                 drawHoverFrame();
-                if (LastItemClickedButton == FuMouseButton.Right)
+                if (_lastItemClickedButton == FuMouseButton.Right)
                 {
                     Fugui.TryOpenContextMenu();
                 }
             }
             if (!_longDisabled)
             {
-                _nextIsDisabled = false;
+                LastItemDisabled = false;
             }
             _elementHoverFramedEnabled = false;
             if (!IsInsidePopUp && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
@@ -180,7 +188,7 @@ namespace Fu.Framework
         /// </summary>
         private void drawHoverFrame()
         {
-            if (_elementHoverFramedEnabled && !_nextIsDisabled)
+            if (_elementHoverFramedEnabled && !LastItemDisabled)
             {
                 if (ImGuiNative.igIsItemFocused() != 0)
                 {
@@ -239,7 +247,17 @@ namespace Fu.Framework
 
         #region Public Utils
         /// <summary>
+        /// Set the time user have to keep hover an elemenet before showing its tooltip
+        /// </summary>
+        /// <param name="tooltipAppearDuration"></param>
+        public void SetToolTipAppearDuration(float tooltipAppearDuration)
+        {
+            _tooltipAppearDuration = Mathf.Clamp(tooltipAppearDuration, 0f, 5f);
+        }
+
+        /// <summary>
         /// Add a line under the last drawed element
+        /// You can change its color by pushing Text color
         /// </summary>
         public void AddUnderLine()
         {
@@ -270,7 +288,7 @@ namespace Fu.Framework
         /// </summary>
         public void DisableNextElement()
         {
-            _nextIsDisabled = true;
+            LastItemDisabled = true;
         }
 
         /// <summary>
@@ -279,7 +297,7 @@ namespace Fu.Framework
         /// </summary>
         public void DisableNextElements()
         {
-            _nextIsDisabled = true;
+            LastItemDisabled = true;
             _longDisabled = true;
         }
 
@@ -288,7 +306,7 @@ namespace Fu.Framework
         /// </summary>
         public void EnableNextElements()
         {
-            _nextIsDisabled = false;
+            LastItemDisabled = false;
             _longDisabled = false;
         }
         /// <summary>
@@ -463,7 +481,7 @@ namespace Fu.Framework
             if (_currentToolTips != null && _currentToolTipsIndex < _currentToolTips.Length)
             {
                 // If the element is hovered over or force is set to true
-                if (force || LastItemHovered || ImGui.IsItemHovered())
+                if (force || _lastItemHovered || ImGui.IsItemHovered())
                 {
                     FuTextStyle style = FuTextStyle.Default;
                     // push tooltip styles
@@ -472,10 +490,10 @@ namespace Fu.Framework
                         style = _currentToolTipsStyles[_currentToolTipsIndex];
                     }
 
-                    setToolTip(LastItemID, _currentToolTips[_currentToolTipsIndex], style);
+                    setToolTip(_lastItemID, _currentToolTips[_currentToolTipsIndex], style);
                 }
                 // cancel smooth tooltip display
-                else if (LastItemID == _currentHoveredElementId)
+                else if (_lastItemID == _currentHoveredElementId)
                 {
                     _currentHoveredElementId = string.Empty;
                 }
@@ -511,12 +529,12 @@ namespace Fu.Framework
 
             if (Fugui.Time - _currentHoveredStartHoverTime >= _tooltipAppearDuration)
             {
-                style.Push(!_nextIsDisabled);
+                style.Push(!LastItemDisabled);
                 // set padding and font
                 Fugui.PushDefaultFont();
                 Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
                 // Display the current tooltip
-                if (_nextIsDisabled)
+                if (LastItemDisabled)
                 {
                     ImGui.SetTooltip("(Disabled) : " + text);
                 }
@@ -587,7 +605,7 @@ namespace Fu.Framework
         protected void setBaseElementState(string uniqueID, Vector2 pos, Vector2 size, bool clickable, bool updated, bool updateOnClick = false)
         {
             // do nothing if the item is disabled
-            if (_nextIsDisabled)
+            if (LastItemDisabled)
             {
                 // the item is disabled but it was the last active
                 if (_activeItem == uniqueID)
@@ -598,14 +616,14 @@ namespace Fu.Framework
             }
 
             // get hover state
-            LastItemHovered = isItemHovered(pos, size);
+            _lastItemHovered = isItemHovered(pos, size);
 
             // get click state
-            if (clickable && LastItemHovered)
+            if (clickable && _lastItemHovered)
             {
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                 {
-                    LastItemClickedButton = FuMouseButton.Left;
+                    _lastItemClickedButton = FuMouseButton.Left;
                     if (updateOnClick)
                     {
                         updated = true;
@@ -614,25 +632,25 @@ namespace Fu.Framework
                 }
                 else if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
                 {
-                    LastItemClickedButton = FuMouseButton.Right;
+                    _lastItemClickedButton = FuMouseButton.Right;
                 }
             }
 
             // get deactivated state
-            LastItemJustDeactivated = _activeItem == uniqueID && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
-            if (LastItemJustDeactivated)
+            _lastItemJustDeactivated = _activeItem == uniqueID && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+            if (_lastItemJustDeactivated)
             {
                 _activeItem = null;
             }
             // get active state
-            LastItemActive = _activeItem == uniqueID;
+            _lastItemActive = _activeItem == uniqueID;
             // force full FPS the current active window
-            if (LastItemActive)
+            if (_lastItemActive)
             {
                 FuWindow.CurrentDrawingWindow?.ForceDraw();
             }
             // get update state
-            LastItemUpdate = updated;
+            _lastItemUpdate = updated;
         }
 
         /// <summary>

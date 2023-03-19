@@ -102,7 +102,7 @@ namespace Fu.Framework
             // Set the width of the next item to the width of the available content region
             ImGui.SetNextItemWidth(width <= 0 ? ImGui.GetContentRegionAvail().x : width);
             // prevent user for editing the value if the element is disabled
-            if (_nextIsDisabled)
+            if (LastItemDisabled)
             {
                 flags |= FuInputTextFlags.ReadOnly;
             }

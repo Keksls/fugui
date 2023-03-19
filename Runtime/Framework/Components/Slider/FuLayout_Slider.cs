@@ -121,8 +121,12 @@ namespace Fu.Framework
 
                 case FuSliderFlags.LeftDrag:
                     drawDrag(text, ref value, min, max, isInt);
+                    _elementHoverFramedEnabled = true;
+                    drawHoverFrame();
                     x += dragWidth + (8f * Fugui.CurrentContext.Scale);
+                    ImGui.SameLine();
                     drawSlider(text, ref value, min, max, isInt, knobRadius, hoverPaddingY, lineHeight, width, x, y);
+                    _elementHoverFramedEnabled = false;
                     break;
 
                 case FuSliderFlags.NoDrag:
@@ -146,7 +150,7 @@ namespace Fu.Framework
             {
                 string formatString = format != null ? format : getStringFormat(value);
                 ImGui.PushItemWidth(dragWidth);
-                if (ImGui.InputFloat("##" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, _nextIsDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
+                if (ImGui.InputFloat("##" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, LastItemDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
                 {
                     // Clamp the value to the min and max range
                     value = Math.Clamp(value, min, max);
@@ -182,7 +186,7 @@ namespace Fu.Framework
                     Vector4 leftLineColor = FuThemeManager.GetColor(FuColors.CheckMark);
                     Vector4 rightLineColor = FuThemeManager.GetColor(FuColors.FrameBg);
                     Vector4 knobColor = FuThemeManager.GetColor(FuColors.Knob);
-                    if (_nextIsDisabled)
+                    if (LastItemDisabled)
                     {
                         leftLineColor *= 0.5f;
                         rightLineColor *= 0.5f;
@@ -205,13 +209,13 @@ namespace Fu.Framework
                     ImGui.GetWindowDrawList().AddLine(new Vector2(knobPos, y), new Vector2(x + width, y), ImGui.GetColorU32(rightLineColor), lineHeight);
 
                     // set mouse cursor
-                    if ((isKnobHovered || isLineHovered) && !_nextIsDisabled)
+                    if ((isKnobHovered || isLineHovered) && !LastItemDisabled)
                     {
                         ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                     }
 
                     // Draw the knob
-                    if (!_nextIsDisabled)
+                    if (!LastItemDisabled)
                     {
                         if (_draggingSliders.Contains(text))
                         {
@@ -224,9 +228,9 @@ namespace Fu.Framework
                         knobColor.w = 1f;
                     }
                     // draw knob border
-                    ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), ((isKnobHovered || isDragging) && !_nextIsDisabled ? knobRadius : knobRadius * 0.8f) + 1f, ImGui.GetColorU32(ImGuiCol.Border), 32);
+                    ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), ((isKnobHovered || isDragging) && !LastItemDisabled ? knobRadius : knobRadius * 0.8f) + 1f, ImGui.GetColorU32(ImGuiCol.Border), 32);
                     // draw knob
-                    ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), (isKnobHovered || isDragging) && !_nextIsDisabled ? knobRadius : knobRadius * 0.8f, ImGui.GetColorU32(knobColor), 32);
+                    ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), (isKnobHovered || isDragging) && !LastItemDisabled ? knobRadius : knobRadius * 0.8f, ImGui.GetColorU32(knobColor), 32);
 
                     // start dragging this slider
                     if ((isLineHovered || isKnobHovered) && !_draggingSliders.Contains(text) && ImGui.IsMouseClicked(0))
@@ -241,7 +245,7 @@ namespace Fu.Framework
                     }
 
                     // If the mouse is hovering over the knob, change the value when the mouse is clicked
-                    if (_draggingSliders.Contains(text) && ImGui.IsMouseDown(0) && !_nextIsDisabled)
+                    if (_draggingSliders.Contains(text) && ImGui.IsMouseDown(0) && !LastItemDisabled)
                     {
                         // Calculate the new value based on the mouse position
                         float mouseX = ImGui.GetMousePos().x;

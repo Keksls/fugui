@@ -33,8 +33,6 @@ namespace Fu.Framework
                 return;
             }
 
-            // verticaly align text to frame padding
-            ImGui.AlignTextToFramePadding();
             ImGui.Text(text); //display the text
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
@@ -70,8 +68,6 @@ namespace Fu.Framework
                 return;
             }
 
-            // verticaly align text to frame padding
-            ImGui.AlignTextToFramePadding();
             ImGui.TextWrapped(text); //display the text
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
@@ -279,8 +275,6 @@ namespace Fu.Framework
                         // if not, place X cusror to minus 3, because it's a hard ImGui Text padding
                         ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 3f);
                     }
-                    // verticaly align text to frame padding
-                    ImGui.AlignTextToFramePadding();
                     // draw the text
                     ImGui.Text(sb.ToString());
                     // clear the string builder

@@ -65,7 +65,7 @@ namespace Fu
         /// <param name="itemLabel">The label for the item</param>
         /// <param name="enabled">Whether the item is enabled</param>
         /// <param name="itemCallback">The action to perform when the item is clicked</param>
-        public static void PushContextMenuItem(string itemLabel, Action itemCallback, bool enabled = true)
+        public static void PushContextMenuItem(string itemLabel, Action itemCallback, Func<bool> enabled = null)
         {
             // Add a new level to the context menu stack
             _contextMenuItemsStack[_currentContextMenuStackIndex] = new List<FuContextMenuItem>()
@@ -236,7 +236,7 @@ namespace Fu
                 else if (menuItem.Children.Count > 0)
                 {
                     // draw the parent and bind children if parent is open
-                    if (ImGui.BeginMenu(menuItem.Label, menuItem.Enabled))
+                    if (ImGui.BeginMenu(menuItem.Label, menuItem.Enabled?.Invoke() ?? true))
                     {
                         // bind children
                         drawContextMenuItems(menuItem.Children);
@@ -244,7 +244,7 @@ namespace Fu
                     }
                 }
                 // whatever the item is a 'leaf' (no child)
-                else if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, menuItem.Enabled))
+                else if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, menuItem.Enabled?.Invoke() ?? true))
                 {
                     // invoke the callback action of the item if clicked and close the context menu
                     menuItem.ClickAction?.Invoke();

@@ -108,7 +108,7 @@ namespace Fu.Framework
         public FuLayout()
         {
             CurrentDrawer = this;
-            _tooltipAppearDuration = 1.0f;
+            _tooltipAppearDuration = 0.7f;
         }
 
         /// <summary>

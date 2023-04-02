@@ -127,11 +127,12 @@ namespace Fu.Framework
         internal bool SetupTable(string gridName, float cellPadding, float outterPadding, bool linesBg, ref bool isResponsivelyResized, float width = -1)
         {
             outterPadding *= Fugui.CurrentContext.Scale;
+            cellPadding *= Fugui.CurrentContext.Scale;
             isResponsivelyResized = false;
             // prepare columns width
             float[] colWidth;
             int nbCols = NbColumns;
-            float availWidth = width <= 0f ? ImGui.GetContentRegionAvail().x - (outterPadding * 2f) : width;
+            float availWidth = width <= 0f ? ImGui.GetContentRegionAvail().x - (outterPadding * 2f) : width * Fugui.CurrentContext.Scale;
             switch (GridType)
             {
                 // set auto width
@@ -150,7 +151,7 @@ namespace Fu.Framework
                     for (int i = 0; i < colWidth.Length; i++)
                     {
                         float targetUnscaledWidth = ColumnsWidth[i];
-                        if(targetUnscaledWidth < 0f)
+                        if (targetUnscaledWidth < 0f)
                         {
                             targetUnscaledWidth = currentRemaningWidth - targetUnscaledWidth;
                         }

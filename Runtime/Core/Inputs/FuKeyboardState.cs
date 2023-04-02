@@ -9,10 +9,10 @@ namespace Fu.Core
     {
         private FuWindow _window;
         private ImGuiIOPtr _io;
-        public bool KeyAlt { get { return _window.State == FuWindowState.Manipulating ? _io.KeyAlt : false; } }
-        public bool KeyCtrl { get { return _window.State == FuWindowState.Manipulating ? _io.KeyCtrl : false; } }
-        public bool KeyShift { get { return _window.State == FuWindowState.Manipulating ? _io.KeyShift : false; } }
-        public bool KeySuper { get { return _window.State == FuWindowState.Manipulating ? _io.KeySuper : false; } }
+        public bool KeyAlt { get { return (_window == null || _window.State == FuWindowState.Manipulating) ? _io.KeyAlt : false; } }
+        public bool KeyCtrl { get { return (_window == null || _window.State == FuWindowState.Manipulating) ? _io.KeyCtrl : false; } }
+        public bool KeyShift { get { return (_window == null || _window.State == FuWindowState.Manipulating) ? _io.KeyShift : false; } }
+        public bool KeySuper { get { return (_window == null || _window.State == FuWindowState.Manipulating) ? _io.KeySuper : false; } }
 
         /// <summary>
         /// instantiate a new FuKeyboardState relatif to a FuWindow

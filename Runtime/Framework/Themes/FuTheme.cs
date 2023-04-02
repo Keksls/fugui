@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using System;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -80,6 +81,9 @@ namespace Fu.Framework
         [FuHidden]
         public Vector4[] Colors;
 
+        public static Enum ThemeExtension { get; private set; }
+        public static int ThemeExtensionCount { get; private set; }
+
         /// <summary>
         /// Instantiate a new FuguiTheme instance. Default values are Dark theme
         /// </summary>
@@ -107,6 +111,42 @@ namespace Fu.Framework
         public bool UnregisterToThemeManager()
         {
             return FuThemeManager.UnregisterTheme(this);
+        }
+
+        /// <summary>
+        /// Extend theme with more colors
+        /// </summary>
+        /// <param name="themesExtension">Enum of colors to add to all themes</param>
+        internal static void ExtendThemes(Enum themesExtension)
+        {
+            ThemeExtension = themesExtension;
+            ThemeExtensionCount = Enum.GetNames(ThemeExtension.GetType()).Length;
+        }
+
+        /// <summary>
+        /// Updates theme accordingly with the themes extension
+        /// </summary>
+        internal void UpdateThemeWithExtension()
+        {
+            int colorsCount = (int)FuColors.COUNT + ThemeExtensionCount;
+            if (Colors.Length < colorsCount)
+            {
+                Vector4[] colors = new Vector4[colorsCount];
+                Colors.CopyTo(colors, 0);
+                for (int i = Colors.Length; i < colorsCount; i++)
+                {
+                    colors[i] = Vector4.one;
+                }
+                Colors = colors;
+            }
+        }
+
+        /// <summary>
+        /// Removes themes extension
+        /// </summary>
+        internal static void ReduceThemes()
+        {
+            ThemeExtension = null;
         }
 
         /// <summary>
@@ -148,7 +188,8 @@ namespace Fu.Framework
             AntiAliasedLines = true;
             AntiAliasedFill = true;
 
-            Colors = new Vector4[(int)FuColors.COUNT];
+            int colorsCount = ThemeExtension != null ? (int)FuColors.COUNT + ThemeExtensionCount : (int)FuColors.COUNT;
+            Colors = new Vector4[colorsCount];
             // imgui colors
             Colors[(int)FuColors.Text] = new Vector4(223f / 255f, 223f / 255f, 223f / 255f, 1.0f);
             Colors[(int)FuColors.TextDisabled] = new Vector4(0.3764705955982208f, 0.3764705955982208f, 0.3764705955982208f, 1.0f);
@@ -240,6 +281,11 @@ namespace Fu.Framework
             Colors[(int)FuColors.BackgroundInfo] = new Vector4(81f / 255f, 212f / 255f, 233f / 255f, 1f);
             Colors[(int)FuColors.BackgroundSuccess] = new Vector4(97f / 255f, 217f / 255f, 124f / 255f, 1f);
             Colors[(int)FuColors.BackgroundWarning] = new Vector4(255f / 255f, 199f / 255f, 30f / 255f, 1f);
+
+			for (int i = (int)FuColors.COUNT; i < colorsCount; i++)
+			{
+                Colors[i] = Vector4.one;
+			}
         }
 
         /// <summary>
@@ -281,9 +327,9 @@ namespace Fu.Framework
             AntiAliasedLines = true;
             AntiAliasedFill = true;
 
+            int colorsCount = ThemeExtension != null ? (int)FuColors.COUNT + ThemeExtensionCount : (int)FuColors.COUNT;
+            Colors = new Vector4[colorsCount];
             // imgui colors
-            Colors = new Vector4[(int)FuColors.COUNT];
-
             Colors[(int)FuColors.Text] = new Vector4(0.15f, 0.15f, 0.15f, 1.00f);
             Colors[(int)FuColors.TextDisabled] = new Vector4(0.60f, 0.60f, 0.60f, 1.00f);
             Colors[(int)FuColors.WindowBg] = new Vector4(0.87f, 0.87f, 0.87f, 1.00f);
@@ -372,6 +418,11 @@ namespace Fu.Framework
             Colors[(int)FuColors.BackgroundInfo] = new Vector4(23f / 255f, 162f / 255f, 184f / 255f, 1f);
             Colors[(int)FuColors.BackgroundSuccess] = new Vector4(40f / 255f, 167f / 255f, 69f / 255f, 1f);
             Colors[(int)FuColors.BackgroundWarning] = new Vector4(255f / 255f, 193f / 255f, 7f / 255f, 1f);
+
+            for (int i = (int)FuColors.COUNT; i < colorsCount; i++)
+            {
+                Colors[i] = Vector4.one;
+            }
         }
 
         /// <summary>

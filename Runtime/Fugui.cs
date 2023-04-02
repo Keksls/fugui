@@ -1,6 +1,6 @@
 ﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
-//#define IMDEBUG 
+//#define FUDEBUG 
 using Fu.Core;
 using Fu.Framework;
 using ImGuiNET;
@@ -67,6 +67,18 @@ namespace Fu
         /// FuGui Controller instance
         /// </summary>
         internal static FuController Controller;
+        /// <summary>
+        /// counter of color push
+        /// </summary>
+        internal static int NbPushColor { get; private set; } = 0;
+        /// <summary>
+        /// counter of style push
+        /// </summary>
+        internal static int NbPushStyle { get; private set; } = 0;
+        /// <summary>
+        /// counter of font push
+        /// </summary>
+        internal static int NbPushFont { get; private set; } = 0;
         // The dictionary of external windows
         private static Dictionary<string, FuExternalWindowContainer> _externalWindows;
         // The dictionary of external windows
@@ -79,15 +91,6 @@ namespace Fu
         private static bool _renderThreadStarted = false;
         // counter of Fugui Contexts
         private static int _contextID = 0;
-
-#if IMDEBUG
-        public static int NbPushStyle = 0;
-        public static int NbPushColor = 0;
-        public static int NbPopStyle = 0;
-        public static int NbPopColor = 0;
-        public static Stack<pushStyleData> StylesStack;
-        public static Stack<pushColorData> ColorStack;
-#endif
         #endregion
 
         #region Events
@@ -113,9 +116,6 @@ namespace Fu
             _windowsToExternalize = new Queue<FuWindow>();
             // prepare context menu
             ResetContextMenu(true);
-#if IMDEBUG
-            NewFrame();
-#endif
         }
 
         #region Workflow
@@ -136,6 +136,11 @@ namespace Fu
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
             MainContainer = new FuMainWindowContainer(DefaultContext);
+
+            // initialize debug tool if debug is enabled
+#if FUDEBUG
+            initDebugTool();
+#endif
         }
 
         /// <summary>
@@ -144,6 +149,11 @@ namespace Fu
         /// </summary>
         public static void Update()
         {
+            // prepare debug new frame
+#if FUDEBUG
+            newFrame();
+#endif
+
             // set shared time
             Time = UnityEngine.Time.unscaledTime;
             // get absolute monitors cursor pos
@@ -513,6 +523,59 @@ namespace Fu
         {
             return UIWindows.Remove(window.ID);
         }
+
+        /// <summary>
+        /// Whatever a FuWIndowName has at least an instance
+        /// </summary>
+        /// <param name="windowName">WindowName to check</param>
+        /// <returns>True if instancied at least once</returns>
+        public static bool IsWindowOpen(FuWindowName windowName)
+        {
+            foreach (var window in UIWindows)
+            {
+                if (window.Value.WindowName.Equals(windowName))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Get a list of all instances of the given FuWIndowName
+        /// </summary>
+        /// <param name="windowName">WindowName to check</param>
+        /// <returns>list of windows instances</returns>
+        public static List<FuWindow> GetWindowInstances(FuWindowName windowName)
+        {
+            List<FuWindow> windows = new List<FuWindow>();
+            foreach (var window in UIWindows)
+            {
+                if (window.Value.WindowName.Equals(windowName))
+                {
+                    windows.Add(window.Value);
+                }
+            }
+            return windows;
+        }
+
+        /// <summary>
+        /// Get the number of instances for a given FuWIndowName
+        /// </summary>
+        /// <param name="windowName">WindowName to check</param>
+        /// <returns>number of instancied windows</returns>
+        public static int GetNbWindowInstances(FuWindowName windowName)
+        {
+            int nbWindows = 0;
+            foreach (var window in UIWindows)
+            {
+                if (window.Value.WindowName.Equals(windowName))
+                {
+                    nbWindows++;
+                }
+            }
+            return nbWindows;
+        }
         #endregion
 
         #region Render Thread
@@ -578,96 +641,77 @@ namespace Fu
         #endregion
 
         #region Styles and Colors
-#if IMDEBUG
-        public static void NewFrame()
-        {
-            NbPushStyle = 0;
-            NbPushColor = 0;
-            NbPopStyle = 0;
-            NbPopColor = 0;
-            StylesStack = new Stack<pushStyleData>();
-            ColorStack = new Stack<pushColorData>();
-        }
-
-        public static void Push(ImGuiCol imCol, Vector4 color)
-        {
-            ImGui.PushStyleColor(imCol, color);
-            ColorStack.Push(new pushColorData()
-            {
-                color = imCol,
-                stackTrace = Environment.StackTrace
-            });
-            NbPushColor++;
-        }
-        public static void Push(ImGuiStyleVar imVar, Vector2 value)
-        {
-            ImGui.PushStyleVar(imVar, value);
-            StylesStack.Push(new pushStyleData()
-            {
-                style = imVar,
-                stackTrace = Environment.StackTrace
-            });
-            NbPushStyle++;
-        }
-        public static void Push(ImGuiStyleVar imVar, float value)
-        {
-            ImGui.PushStyleVar(imVar, value);
-            StylesStack.Push(new pushStyleData()
-            {
-                style = imVar,
-                stackTrace = Environment.StackTrace
-            });
-            NbPushStyle++;
-        }
-        public static void PopColor(int nb = 1)
-        {
-            for (int i = 0; i < nb; i++)
-            {
-                if (ColorStack.Count > 0)
-                {
-                    ImGui.PopStyleColor();
-                    NbPopColor++;
-                    ColorStack.Pop();
-                }
-            }
-        }
-        public static void PopStyle(int nb = 1)
-        {
-            for (int i = 0; i < nb; i++)
-            {
-                if (StylesStack.Count > 0)
-                {
-                    ImGui.PopStyleVar();
-                    NbPopStyle++;
-                    StylesStack.Pop();
-                }
-            }
-        }
-#else
+#if !FUDEBUG
+        /// <summary>
+        /// Push a color style to ImGui color stack
+        /// </summary>
+        /// <param name="imCol">ImGui color to push</param>
+        /// <param name="color">colot value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Push(ImGuiCol imCol, Vector4 color)
         {
             ImGuiNative.igPushStyleColor_Vec4(imCol, color);
+            NbPushColor++;
         }
+
+        /// <summary>
+        /// Push a style var to ImGui style var stack
+        /// </summary>
+        /// <param name="imVar">ImGUi style var to push</param>
+        /// <param name="value">style var value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Push(ImGuiStyleVar imVar, Vector2 value)
         {
             ImGuiNative.igPushStyleVar_Vec2(imVar, value);
+            NbPushStyle++;
         }
+
+        /// <summary>
+        /// Push a style var to ImGui style var stack
+        /// </summary>
+        /// <param name="imVar">ImGUi style var to push</param>
+        /// <param name="value">style var value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Push(ImGuiStyleVar imVar, float value)
         {
             ImGuiNative.igPushStyleVar_Float(imVar, value);
+            NbPushStyle++;
         }
+
+        /// <summary>
+        /// Pop some colors from ImGui color stack
+        /// </summary>
+        /// <param name="nb">quantity of color to pop</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void PopColor(int nb = 1)
         {
-            ImGuiNative.igPopStyleColor(nb);
+            if (nb > NbPushColor)
+            {
+                nb = NbPushColor;
+            }
+            if (NbPushColor > 0)
+            {
+                ImGuiNative.igPopStyleColor(nb);
+                NbPushColor -= nb;
+            }
         }
+
+        /// <summary>
+        /// Pop some style var from ImGui style stack
+        /// </summary>
+        /// <param name="nb">quantity of style var to pop</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void PopStyle(int nb = 1)
         {
-            ImGuiNative.igPopStyleVar(nb);
+            if (nb > NbPushStyle)
+            {
+                nb = NbPushStyle;
+            }
+            if (NbPushStyle > 0)
+            {
+                ImGuiNative.igPopStyleVar(nb);
+                NbPushStyle -= nb;
+            }
         }
 #endif
         #endregion
@@ -690,6 +734,7 @@ namespace Fu
                     ImGui.PushFont(CurrentContext.Fonts[size].Bold);
                     break;
             }
+            NbPushFont++;
         }
 
         public static void PushFont(FontType type)
@@ -699,20 +744,25 @@ namespace Fu
 
         public static void PopFont()
         {
-            ImGui.PopFont();
+            if (NbPushFont > 0)
+            {
+                ImGui.PopFont();
+                NbPushFont--;
+            }
         }
 
         public static void PopFont(int nbPop)
         {
             for (int i = 0; i < nbPop; i++)
             {
-                ImGui.PopFont();
+                PopFont();
             }
         }
 
         public static void PushDefaultFont()
         {
             ImGui.PushFont(CurrentContext.DefaultFont.Regular);
+            NbPushFont++;
         }
         #endregion
 

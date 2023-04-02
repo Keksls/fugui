@@ -119,9 +119,9 @@ namespace Fu.Framework
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
-
+            
             bool colValue = flags.HasFlag(FuToggleFlags.SwitchState) ? false : value;
-            Vector4 BGColor = colValue ? FuThemeManager.GetColor(FuColors.Selected) : FuThemeManager.GetColor(FuColors.FrameBg);
+            Vector4 BGColor = colValue ? FuThemeManager.GetColor(FuColors.Selected) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg];
             Vector4 KnobColor = FuThemeManager.GetColor(FuColors.Knob);
 
             if (LastItemDisabled)
@@ -132,12 +132,12 @@ namespace Fu.Framework
             else if (_lastItemActive && !noEditable)
             {
                 KnobColor = FuThemeManager.GetColor(FuColors.KnobActive);
-                BGColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedActive) : FuThemeManager.GetColor(FuColors.FrameBgActive);
+                BGColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedActive) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBgActive];
             }
             else if (_lastItemHovered && !noEditable)
             {
                 KnobColor = FuThemeManager.GetColor(FuColors.KnobHovered);
-                BGColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedHovered) : FuThemeManager.GetColor(FuColors.FrameBgHovered);
+                BGColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedHovered) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBgHovered];
             }
             Vector4 BorderColor = BGColor * 0.66f;
 

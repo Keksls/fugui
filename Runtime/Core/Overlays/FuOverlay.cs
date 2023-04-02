@@ -68,6 +68,10 @@ namespace Fu.Core
         private Vector2Int _defaultAnchorOffset;
         // the style of the overlay panel
         private FuStyle _overlayStyle;
+        // var to count how many push are at frame start, so we can pop missing push
+        private static int _nbColorPushOnFrameStart = 0;
+        private static int _nbStylePushOnFrameStart = 0;
+        private static int _nbFontPushOnFrameStart = 0;
         #endregion
 
         /// <summary>
@@ -82,7 +86,7 @@ namespace Fu.Core
             // Set the ID of the window
             ID = id;
             // Set the size of the window
-            Size = size;
+            Size = new Vector2Int((int)((float)size.x * Fugui.CurrentContext.Scale), (int)((float)size.y * Fugui.CurrentContext.Scale));
             // Set the UI display function
             UI = ui;
             // Set the default anchor offset
@@ -113,6 +117,18 @@ namespace Fu.Core
         }
 
         #region Public Utils
+        /// <summary>
+        /// Anchor this overlay to a WindoDefinition. 
+        /// Once the according winDef will create a UIWindow, Anchor will be added to UIWindow
+        /// </summary>
+        /// <param name="window">window definition to add overlay</param>
+        /// <param name="anchor">location anchor to anchor the overlay</param>
+        /// <returns>true if added</returns>
+        public bool AnchorWindowDefinition(FuWindowDefinition window, FuOverlayAnchorLocation anchor)
+        {
+            return AnchorWindowDefinition(window, anchor, Vector2Int.zero);
+        }
+
         /// <summary>
         /// Anchor this overlay to a WindoDefinition. 
         /// Once the according winDef will create a UIWindow, Anchor will be added to UIWindow
@@ -228,6 +244,11 @@ namespace Fu.Core
         /// </summary>
         internal void Draw()
         {
+            // count nb push at render begin
+            _nbColorPushOnFrameStart = Fugui.NbPushColor;
+            _nbStylePushOnFrameStart = Fugui.NbPushStyle;
+            _nbFontPushOnFrameStart = Fugui.NbPushFont;
+
             // stop dragging if mouse release
             if (!Fugui.CurrentContext.IO.MouseDown[0])
             {
@@ -315,6 +336,9 @@ namespace Fu.Core
                 ImGui.BeginChild(ID + "draginGhost", _collapsed ? new Vector2(12f, Size.y) : new Vector2(12f + Size.x, Size.y));
                 ImGui.EndChild();
                 Fugui.PopColor();
+
+                // force render window next frame in case we are dragging but ùouse is out of window
+                UIWindow.ForceDraw();
             }
 
             // force child to have no rounding
@@ -371,6 +395,23 @@ namespace Fu.Core
                 ImGuiNative.igEndChild();
             }
             Fugui.PopStyle();
+
+            // pop missing push
+            int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
+            if (nbMissingColor > 0)
+            {
+                Fugui.PopColor(nbMissingColor);
+            }
+            int nbMissingStyle = Fugui.NbPushStyle - _nbStylePushOnFrameStart;
+            if (nbMissingStyle > 0)
+            {
+                Fugui.PopStyle(nbMissingStyle);
+            }
+            int nbMissingFont = Fugui.NbPushFont - _nbFontPushOnFrameStart;
+            if (nbMissingFont > 0)
+            {
+                Fugui.PopFont(nbMissingFont);
+            }
         }
 
         #region Private utils

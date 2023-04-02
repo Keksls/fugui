@@ -22,6 +22,10 @@ namespace Fu.Framework
         private bool _panelCreated = false;
         private string _ID;
         private bool _useClipper = true;
+        // var to count how many push are at frame start, so we can pop missing push
+        private static int _nbColorPushOnFrameStart = 0;
+        private static int _nbStylePushOnFrameStart = 0;
+        private static int _nbFontPushOnFrameStart = 0;
         internal static FuPanelClipper Clipper = null;
         private static Dictionary<string, FuPanelClipper> _clippingDict = new Dictionary<string, FuPanelClipper>();
 
@@ -118,6 +122,13 @@ namespace Fu.Framework
                 // push style if created
                 _currentStyle.Pop();
             }
+            else
+            {
+                // count nb push at render begin
+                _nbColorPushOnFrameStart = Fugui.NbPushColor;
+                _nbStylePushOnFrameStart = Fugui.NbPushStyle;
+                _nbFontPushOnFrameStart = Fugui.NbPushFont;
+            }
             // assume we now are inside a panel
             IsInsidePanel = _panelCreated;
 
@@ -138,6 +149,23 @@ namespace Fu.Framework
         {
             if (_panelCreated)
             {
+                // pop missing push
+                int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
+                if (nbMissingColor > 0)
+                {
+                    Fugui.PopColor(nbMissingColor);
+                }
+                int nbMissingStyle = Fugui.NbPushStyle - _nbStylePushOnFrameStart;
+                if (nbMissingStyle > 0)
+                {
+                    Fugui.PopStyle(nbMissingStyle);
+                }
+                int nbMissingFont = Fugui.NbPushFont - _nbFontPushOnFrameStart;
+                if (nbMissingFont > 0)
+                {
+                    Fugui.PopFont(nbMissingFont);
+                }
+
                 ImGui.EndChild();
                 IsInsidePanel = false;
                 _currentStyle.Pop();

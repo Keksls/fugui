@@ -25,7 +25,7 @@ namespace Fu
         /// <param name="shortcut">The optional shortcut key for the menu item.</param>
         /// <param name="enabled">The optional enabled/disabled status of the menu item. Defaults to true.</param>
         /// <param name="selected">The optional selected/unselected status of the menu item. Defaults to false.</param>
-        public static void RegisterMainMenuItem(string name, Action callback, string parentName = null, string shortcut = null, bool enabled = true, bool selected = false)
+        public static void RegisterMainMenuItem(string name, Action callback, string parentName = null, string shortcut = null, bool enabled = true, bool selected = false, Func<string> funcName = null)
         {
             // Check if a menu item with the same name has already been registered
             if (_mainMenuItems.ContainsKey(name))
@@ -50,7 +50,7 @@ namespace Fu
             }
 
             // Create a new MenuItem object with the provided parameters
-            var menuItem = new MainMenuItem(name, shortcut, enabled, selected, callback, parent);
+            var menuItem = new MainMenuItem(name, shortcut, enabled, selected, callback, parent, funcName);
 
             // Add the menu item to the collection of registered menu items
             _mainMenuItems.Add(name, menuItem);
@@ -77,6 +77,32 @@ namespace Fu
                 }
 
                 _mainMenuItems.Remove(name);
+            }
+        }
+
+        /// <summary>
+        /// Enable a main menu item
+        /// </summary>
+        /// <param name="name">Menu item to enable</param>
+        public static void EnableMainMenuItem(string name)
+        {
+            // Check if a menu item with the same name has already been registered
+            if (_mainMenuItems.ContainsKey(name))
+            {
+                _mainMenuItems[name].Enabled = true;
+            }
+        }
+
+        /// <summary>
+        /// Disable a main menu item
+        /// </summary>
+        /// <param name="name">Menu item to disable</param>
+        public static void DisableMainMenuItem(string name)
+        {
+            // Check if a menu item with the same name has already been registered
+            if (_mainMenuItems.ContainsKey(name))
+            {
+                _mainMenuItems[name].Enabled = false;
             }
         }
 
@@ -129,12 +155,13 @@ namespace Fu
 
             // Set various style options for the main menu bar and its items
             Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
-            Push(ImGuiStyleVar.FramePadding, new Vector2(8f, 8f));
-            Push(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 8f));
-            Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
+            Push(ImGuiStyleVar.FramePadding, new Vector2(4f, 4f));
+            Push(ImGuiStyleVar.ItemSpacing, new Vector2(4f, 4f));
+            Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 4f));
             Push(ImGuiCol.Header, FuThemeManager.GetColor(FuColors.HeaderHovered));
             Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.MainMenuText));
-
+            Push(ImGuiCol.PopupBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
+            Push(ImGuiCol.Separator, FuThemeManager.GetColor(FuColors.MainMenuText) * 0.33f);
             // Begin the main menu bar
             if (ImGui.BeginMainMenuBar())
             {
@@ -152,7 +179,7 @@ namespace Fu
             }
 
             // Pop the set style options
-            PopColor(2);
+            PopColor(4);
             PopStyle(4);
         }
 
@@ -167,12 +194,14 @@ namespace Fu
         {
             if (item.Parent != null)
             {
-                Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.Text));
+                Push(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 8f));
             }
+            string itemText = item.NameFunc?.Invoke() ?? item.Name;
+            Push(ImGuiStyleVar.WindowPadding, new Vector2(12f, 12f));
             if (item.Children != null && item.Children.Count > 0)
             {
                 // Begin a submenu if the menu item has children
-                if (ImGui.BeginMenu(item.Parent == null ? "  " + item.Name + "   " : item.Name, item.Enabled))
+                if (ImGui.BeginMenu(item.Parent == null ? "  " + itemText + "   " : itemText, item.Enabled))
                 {
                     // Draw all children of the menu item
                     foreach (var child in item.Children)
@@ -189,7 +218,7 @@ namespace Fu
                     // Draw a separator line if the menu item is a separator
                     ImGui.Separator();
                 }
-                else if (ImGui.MenuItem(item.Parent == null ? "  " + item.Name + "   " : item.Name, item.Shortcut, item.Selected, item.Enabled))
+                else if (ImGui.MenuItem(item.Parent == null ? "  " + itemText + "   " : itemText, item.Shortcut, item.Selected, item.Enabled))
                 {
                     // Draw a regular menu item and execute its callback action if clicked
                     item.Callback?.Invoke();
@@ -197,8 +226,9 @@ namespace Fu
             }
             if (item.Parent != null)
             {
-                PopColor();
+                PopStyle();
             }
+            PopStyle();
         }
     }
 }

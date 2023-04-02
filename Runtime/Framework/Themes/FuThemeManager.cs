@@ -38,6 +38,7 @@ namespace Fu.Framework
         internal static void Initialize()
         {
             LoadAllThemes();
+
             if (GetTheme(DEFAULT_FUGUI_THEME_NAME, out FuTheme theme))
             {
                 SetTheme(theme);
@@ -108,6 +109,16 @@ namespace Fu.Framework
         public static Vector4 GetColor(FuColors color)
         {
             return CurrentTheme.Colors[(int)color];
+        }
+
+        /// <summary>
+        /// return the color of the current theme extension that match with the given enum parameter
+        /// </summary>
+        /// <param name="color">color enum to get value of</param>
+        /// <returns>color value as Vector4</returns>
+        public static Vector4 GetExtensionColor(int color)
+        {
+            return CurrentTheme.Colors[(int)FuColors.COUNT + color];
         }
         #endregion
 
@@ -211,15 +222,9 @@ namespace Fu.Framework
             {
                 // read json data from file
                 string json = File.ReadAllText(filePath);
-                // deserialize json data
-                theme = JsonUtility.FromJson<FuTheme>(json);
-                Vector4[] colors = new Vector4[(int)FuColors.COUNT];
-                for (int i = 0; i < theme.Colors.Length; i++)
-                {
-                    colors[i] = theme.Colors[i];
-                }
-                theme.Colors = colors;
-            }
+				// deserialize json data
+				theme = JsonUtility.FromJson<FuTheme>(json);
+			}
             catch (Exception ex)
             {
                 // something gone wrong, let's invoke Fugui Exception event
@@ -300,6 +305,27 @@ namespace Fu.Framework
             // unregister the theme
             Themes.Remove(theme.ThemeName);
             return true;
+        }
+
+        /// <summary>
+        /// Extend theme with more colors
+        /// </summary>
+        /// <param name="themesExtension">Enum of colors to add to all themes</param>
+        public static void ExtendThemes(Enum themesExtension)
+        {
+            FuTheme.ExtendThemes(themesExtension);
+			foreach (FuTheme theme in Themes.Values)
+			{
+                theme.UpdateThemeWithExtension();
+			}
+        }
+
+        /// <summary>
+        /// Removes themes extension
+        /// </summary>
+        public static void ReduceThemes()
+        {
+            FuTheme.ReduceThemes();
         }
         #endregion
     }

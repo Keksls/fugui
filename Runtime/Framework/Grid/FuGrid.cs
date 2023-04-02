@@ -141,7 +141,7 @@ namespace Fu.Framework
         /// <param name="rowPadding">rows padding</param>
         private void setGrid(bool linesBg, float cellPadding, float rowPadding, float outterPadding, float width)
         {
-            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
+            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(cellPadding * Fugui.CurrentContext.Scale, rowPadding * Fugui.CurrentContext.Scale));
             _gridCreated = _currentGridDef.SetupTable(_ID, cellPadding, outterPadding, linesBg, ref _isResponsivelyResized, width);
         }
         #endregion

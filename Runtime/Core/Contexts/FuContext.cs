@@ -17,7 +17,17 @@ namespace Fu.Core
         public IntPtr ImGuiContext;
         public IntPtr ImNodesContext;
         public IntPtr ImPlotContext;
+        /// <summary>
+        /// Whenever the context render
+        /// </summary>
         public event Action OnRender;
+        /// <summary>
+        /// Whenever the context has render its windows, but you still can render ImGUi native window 
+        /// </summary>
+        public event Action OnLastRender;
+        /// <summary>
+        /// Whenever the context has compute its draw calls, you can't render UI in it
+        /// </summary>
         public event Action OnPostRender;
         public event Func<bool> OnPrepareFrame;
         public bool AutoUpdateMouse = true;
@@ -28,6 +38,10 @@ namespace Fu.Core
         protected bool renderPrepared = false;
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
         internal FontSet DefaultFont { get; private set; }
+        // var to count how many push are at frame start, so we can pop missing push
+        private static int _nbColorPushOnFrameStart = 0;
+        private static int _nbStylePushOnFrameStart = 0;
+        private static int _nbFontPushOnFrameStart = 0;
 
         /// <summary>
         /// Create new imgui native contexts
@@ -107,14 +121,19 @@ namespace Fu.Core
             {
                 return;
             }
-            
+
+            // count nb push at render begin
+            _nbColorPushOnFrameStart = Fugui.NbPushColor;
+            _nbStylePushOnFrameStart = Fugui.NbPushStyle;
+            _nbFontPushOnFrameStart = Fugui.NbPushFont;
             try
             {
                 FuStyle.Default.Push(true);
                 Fugui.Push(ImGuiStyleVar.FramePadding, FuThemeManager.CurrentTheme.FramePadding);
                 OnRender?.Invoke();
-                Fugui.PopStyle(1);
+                Fugui.PopStyle();
                 FuStyle.Default.Pop();
+                OnLastRender?.Invoke();
             }
             catch (Exception ex)
             {
@@ -122,6 +141,23 @@ namespace Fu.Core
             }
             finally
             {
+                // pop missing push
+                int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
+                if (nbMissingColor > 0)
+                {
+                    Fugui.PopColor(nbMissingColor);
+                }
+                int nbMissingStyle = Fugui.NbPushStyle - _nbStylePushOnFrameStart;
+                if (nbMissingStyle > 0)
+                {
+                    Fugui.PopStyle(nbMissingStyle);
+                }
+                int nbMissingFont = Fugui.NbPushFont - _nbFontPushOnFrameStart;
+                if (nbMissingFont > 0)
+                {
+                    Fugui.PopFont(nbMissingFont);
+                }
+
                 ImGuiNative.igRender();
             }
             OnPostRender?.Invoke();

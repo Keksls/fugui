@@ -230,6 +230,103 @@ namespace Fu.Framework
                 DrawPopup(popupID, popupSize, pos);
             }
         }
+
+        /// <summary>
+        /// Displays a combobox that allows the user to choose from a list of predefined items. 
+        /// When an item is selected, the specified callback function is called.
+        /// </summary>
+        /// <param name="text">The label displayed next to the combobox</param>
+        /// <param name="selectedItemText">The currently selected item</param>
+        /// <param name="callback">custom UI to draw when Combobox is open</param>
+        /// <param name="size">The size of the Combobox button</param>
+        /// <param name="popupSize">The size of  the combobox Popup</param>
+        /// <param name="style">The style of the combobox</param>
+        /// <param name="popupPosition">Position of  the combobox Popup</param>
+        private void _internalCombobox(string text, string selectedItemText, Action callback, FuElementSize size, Vector2 popupSize, FuButtonStyle style, FuComboboxPopupPosition popupPosition = FuComboboxPopupPosition.BottomLeftAlign)
+        {
+            // draw combobox button
+            string popupID = text + "pu";
+            float carretWidth = 16f * Fugui.CurrentContext.Scale;
+            if (_customButton(selectedItemText + "##" + text, size.BrutSize, FuThemeManager.CurrentTheme.FramePadding, Vector2.zero, style, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth))
+            {
+                OpenPopUp(popupID, () =>
+                {
+                    Spacing();
+                    Spacing();
+                    SameLine();
+                    BeginGroup();
+                    callback?.Invoke();
+                    EndGroup();
+                    SameLine();
+                    Spacing();
+                    Spacing();
+                });
+            }
+            // get popup open state
+            bool opened = IsPopupOpen(popupID);
+
+            // get button rect info
+            Vector2 btnMin = ImGui.GetItemRectMin();
+            Vector2 btnMax = ImGui.GetItemRectMax();
+            Vector2 btnSize = btnMax - btnMin;
+
+            // draw carret
+            if (opened)
+            {
+                Fugui.DrawCarret_Top(ImGui.GetWindowDrawList(), btnMax - new Vector2(carretWidth, btnSize.y), carretWidth / 3f, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+            }
+            else
+            {
+                Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), btnMax - new Vector2(carretWidth, btnSize.y), carretWidth / 3f, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+            }
+
+            // draw the popup
+            if (opened)
+            {
+                // calculate popup transform
+                Vector2 pos = default;
+                // help popup size
+                if (popupSize.x == 0f)
+                {
+                    popupSize.x = btnSize.x;
+                }
+                if (popupSize.y <= 0f)
+                {
+                    popupSize.y = -1f;
+                }
+                // calculate position
+                switch (popupPosition)
+                {
+                    // Bottom Left
+                    default:
+                    case FuComboboxPopupPosition.BottomLeftAlign:
+                        pos = new Vector2(btnMin.x, btnMax.y + 2f);
+                        break;
+                    // Bottom Right
+                    case FuComboboxPopupPosition.BottomRightAlign:
+                        pos = new Vector2(btnMin.x - (popupSize.x - btnSize.x), btnMax.y + 2f);
+                        break;
+
+                    // Top Left
+                    case FuComboboxPopupPosition.TopLeftAlign:
+                        pos = new Vector2(btnMin.x, btnMin.y - CurrentPopUpRect.size.y - 2f);
+                        break;
+
+                    // Bottom Right
+                    case FuComboboxPopupPosition.TopRightAlign:
+                        pos = new Vector2(btnMin.x - (popupSize.x - btnSize.x), btnMin.y - CurrentPopUpRect.size.y - 2f);
+                        break;
+                }
+
+                // clamp height of the popup
+                if (popupSize.y == -1f && CurrentPopUpRect.size.y > COMBOBOX_POPUP_MAXIMUM_HEIGHT)
+                {
+                    popupSize.y = COMBOBOX_POPUP_MAXIMUM_HEIGHT;
+                }
+                // draw the popup
+                DrawPopup(popupID, popupSize, pos);
+            }
+        }
         #endregion
     }
 }

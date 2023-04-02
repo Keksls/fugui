@@ -80,7 +80,7 @@ namespace Fu.Core
         /// </summary>
         internal override void EndRender()
         {
-            Fugui.IsRendering = true;
+            Fugui.IsRendering = false;
             if (!renderPrepared)
                 return;
             renderPrepared = false;

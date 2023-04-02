@@ -1,6 +1,21 @@
 ﻿namespace Fu.Core
 {
     /// <summary>
+    /// Enum that represent an UI window state
+    /// </summary>
+    public enum FuWindowState
+    {
+        /// <summary>
+        /// UI is not focused and can be drawed few times per seconds
+        /// </summary>
+        Idle,
+        /// <summary>
+        /// UI is focused or manipulated and must be drawed many times per seconds
+        /// </summary>
+        Manipulating
+    }
+
+    /// <summary>
     /// Define Fugui font types
     /// </summary>
     public enum FontType

@@ -1,0 +1,117 @@
+[
+  {
+    "instruction": "What is FuGui?",
+    "input": "",
+    "output": "FuGui is an immediate GUI Framework for Unity based on DearImgui. It offers a range of powerful features to make UI development fast and easy."
+  },
+  {
+    "instruction": "What are the key features of FuGui?",
+    "input": "",
+    "output": "The key features of FuGui include target FPS handling for smooth and optimal UI window performance, display of cameras within UI windows for improved idle performance, native camera supersampling rendering, overlay support for adding extra visual elements to camera windows, save/restore functionality for custom docking layouts, display of UI windows outside of the Unity build window using OpenTK, attractive and customizable themes, window definition support for instantiating multiple instances of the same window, and responsive and unified layout components."
+  },
+  {
+    "instruction": "How can FuGui be installed into a Unity project?",
+    "input": "",
+    "output": "FuGui can be installed into a Unity project using the Unity Package Manager. Simply add the git to the package manager and you're ready to start building your UI."
+  },
+  {
+    "instruction": "What is the target FPS handling feature in FuGui?",
+    "input": "",
+    "output": "The target FPS handling feature in FuGui ensures that each UI window is drawn at low FPS, which is fully customizable through configuration. This ensures that the UI windows do not slow down the project and are raised only when needed, making it feel really smooth."
+  },
+  {
+    "instruction": "What is the camera display feature in FuGui?",
+    "input": "",
+    "output": "The camera display feature in FuGui makes it easy to display cameras within UI windows, which can improve the project's performances. Each camera can have a different target FPS according to FuGui camera windows' state. The camera renders slowly when needed to keep huge projects smooth even if a lot of objects are loaded into the 3D context, and when required, FuGui increases the camera FPS to make it feel smooth."
+  },
+  {
+    "instruction": "What is the overlay support feature in FuGui?",
+    "input": "",
+    "output": "The overlay support feature in FuGui allows adding extra visual elements to camera windows. Overlays can be dragged, collapsed, snapped into a virtual grid and customized easily."
+  },
+  {
+    "instruction": "How does FuGui support displaying UI windows outside of the Unity build window?",
+    "input": "",
+    "output": "FuGui supports displaying UI windows outside of the Unity build window using OpenTK. Any window, including the camera view, can be dragged outside of the Unity render context while keeping the maximum performance. External render runs on a separate thread."
+  },
+  {
+    "instruction": "What are the themes provided with FuGui?",
+    "input": "",
+    "output": "FuGui comes with a range of attractive and customizable themes to give the UI a professional look and feel."
+  },
+  {
+    "instruction": "What is the window definition support feature in FuGui?",
+    "input": "",
+    "output": "The window definition support feature in FuGui makes it easy to instantiate multiple instances of the same UI window. Simply define the window, and let FuGui handle the rest."
+  },
+  {
+    "instruction": "Where can I find more information on how to use FuGui?",
+    "input": "",
+    "output": "For more information on how to use FuGui, please see the Wiki on the git repository. If you have any questions or encounter any issues, do not hesitate to reach out for support."
+  },
+  {
+    "instruction": "What is the purpose of the 'Fugui' class in this code?",
+    "input": "",
+    "output": "The 'Fugui' class is a static class that provides a set of tools and functionalities for building user interfaces with the ImGuiNET library in Unity. It manages UI contexts, windows, and events, and also provides methods for initializing and updating the Fugui system."
+  },
+  {
+    "instruction": "What is the purpose of the 'FuContext' class in this code?",
+    "input": "",
+    "output": "The 'FuContext' class represents an UI context in the Fugui system. It holds the state of the UI and provides a rendering pipeline for displaying ImGui elements on a specific Unity camera."
+  },
+  {
+    "instruction": "What is the purpose of the 'Settings' property in the 'Fugui' class?",
+    "input": "",
+    "output": "The 'Settings' property is a public property of the 'Fugui' class that holds the settings for the Fugui Manager. It provides a way to customize the behavior of the Fugui system, such as the flags used for external windows, the size of the UI elements, and more."
+  },
+  {
+    "instruction": "What is the purpose of the 'UIWindows' dictionary in the 'Fugui' class?",
+    "input": "",
+    "output": "The 'UIWindows' dictionary is a static dictionary in the 'Fugui' class that holds a collection of named 'FuWindow' instances. These represent the UI elements that are managed by the Fugui system and can be displayed in various contexts, such as external windows or the main Unity view."
+  },
+  {
+    "instruction": "What is the purpose of the 'Initialize' method in the 'Fugui' class?",
+    "input": "",
+    "output": "The 'Initialize' method is a static method in the 'Fugui' class that initializes the Fugui system and creates the main container for displaying ImGui UI elements in the Unity editor. It takes a Unity camera as a parameter and creates a 'FuUnityContext' object that represents the main UI context for the Fugui system."
+  },
+  {
+    "instruction": "What is the purpose of the 'Update' method in the 'Fugui' class?",
+    "input": "",
+    "output": "The 'Update' method is a static method in the 'Fugui' class that updates the state of the Fugui system and its UI elements. It updates the mouse position, checks for any new windows that need to be externalized, and starts the OpenTK render loop thread if necessary. It should be called in the main thread of the Unity application, such as in the 'Update' or 'LateUpdate' methods."
+  },
+  {
+    "instruction": "What is DearImgui?",
+    "input": "",
+    "output": "DearImgui is a bloat-free graphical user interface library for C++. It allows developers to quickly and easily create graphical user interfaces for their applications. FuGui is based on DearImgui and extends its functionality for use in Unity."
+  },
+  {
+    "instruction": "What is ImGuiNET?",
+    "input": "",
+    "output": "ImGuiNET is a .NET wrapper for the DearImgui library. It allows developers to use DearImgui in .NET applications, including Unity. FuGui uses the ImGuiNET wrapper to interface with DearImgui and provide a streamlined UI development experience for Unity developers."
+  },
+  {
+    "instruction": "What is a 'FuWindow' in the Fugui system?",
+    "input": "",
+    "output": "A 'FuWindow' in the Fugui system represents a single UI window in the Fugui UI. It contains all of the elements, layouts, and styling for a specific UI window and can be displayed in various contexts, such as in the main Unity window or in an external window. Each 'FuWindow' is represented by a named instance of the class."
+  },
+  {
+    "instruction": "What is a 'FuUnityContext' object in the Fugui system?",
+    "input": "",
+    "output": "A 'FuUnityContext' object in the Fugui system represents the main UI context for the Fugui system in the Unity editor. It provides a rendering pipeline for displaying ImGui elements on a specific Unity camera, and is used by the Fugui system to manage UI elements within the main Unity window."
+  },
+  {
+    "instruction": "What is the purpose of the 'OpenTK' library in Fugui?",
+    "input": "",
+    "output": "The 'OpenTK' library is a cross-platform graphics and gaming library used by Fugui to display UI windows outside of the Unity build window. It provides a way to create external windows for displaying the Fugui UI, and ensures that the external windows run on a separate thread for maximum performance and stability."
+  },
+  {
+    "instruction": "What is the purpose of the 'ExternalWindowFlags' property in the 'Fugui' class?",
+    "input": "",
+    "output": "The 'ExternalWindowFlags' property is a public property of the 'Fugui' class that holds the flags used for external windows in the Fugui system. These flags determine the behavior of the external windows, such as whether they can be resized, whether they have a border, and more. By customizing these flags, developers can create external windows that are tailored to their specific needs."
+  },
+  {
+    "instruction": "What is the purpose of the 'GetWindow' method in the 'Fugui' class?",
+    "input": "",
+    "output": "The 'GetWindow' method is a static method in the 'Fugui' class that returns a named 'FuWindow' instance from the 'UIWindows' dictionary. This method is used by the Fugui system to retrieve a specific UI window and display it in the appropriate context, such as in an external window or in the main Unity window."
+  }
+]

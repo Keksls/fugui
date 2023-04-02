@@ -83,7 +83,7 @@ namespace Fu
         /// <param name="strenght">quantity of pixels to move on X from here</param>
         public static void MoveX(float strenght)
         {
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + strenght);
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + strenght * Fugui.CurrentContext.Scale);
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Fu
         /// <param name="strenght">quantity of pixels to move on Y from here</param>
         public static void MoveY(float strenght)
         {
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + strenght);
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + strenght * Fugui.CurrentContext.Scale);
         }
     }
 }

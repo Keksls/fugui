@@ -78,7 +78,8 @@ namespace Fu.Core
         public bool IsHoveredContent { get { return IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup && !Mouse.IsHoverTopBar; } }
         public bool IsDocked { get; internal set; }
         public bool IsBusy { get; internal set; }
-        public bool IsInterractif { get; set; }
+        public bool IsInterractable { get; set; }
+        public bool IsVisible { get; private set; }
 
         // events
         public event Action<FuWindow> OnResize;
@@ -97,17 +98,22 @@ namespace Fu.Core
         internal ImGuiWindowFlags _windowFlags;
         private bool _forceLocationNextFrame = false;
         private bool _forceFocusNextFrame = false;
-        private bool _forceRedraw = false;
+        private int _forceRedraw = 0;
         private bool _sendReadyNextFrame = false;
         internal bool _ignoreResizeForThisFrame = false;
         private Vector2Int _lastFrameSize;
         private Vector2Int _lastFramePos;
+        private bool _lastFrameVisible;
         private float _leaveThreshold = 0.8f;
         internal float _targetDeltaTimeMs = 1;
         internal float _lastRenderTime = 0;
         private bool _open = true;
         private static int _windowIndex = 0;
         private bool _ignoreTransformThisFrame = false;
+        // var to count how many push are at frame start, so we can pop missing push
+        private static int _nbColorPushOnFrameStart = 0;
+        private static int _nbStylePushOnFrameStart = 0;
+        private static int _nbFontPushOnFrameStart = 0;
 
         // static fields
         public static FuWindow CurrentDrawingWindow { get; private set; }
@@ -190,19 +196,20 @@ namespace Fu.Core
             WindowName = windowDefinition.WindowName;
             IsDockable = windowDefinition.IsDockable;
             IsExternalizable = windowDefinition.IsExternalizable;
-            IsInterractif = windowDefinition.IsInterractif;
+            IsInterractable = windowDefinition.IsInterractif;
             Size = windowDefinition.Size;
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
             TopBarHeight = windowDefinition.TopBarHeight;
             UITopBar = windowDefinition.UITopBar;
+            _lastFrameVisible = false;
             // add default overlays
             Overlays = new Dictionary<string, FuOverlay>();
             foreach (FuOverlay overlay in windowDefinition.Overlays.Values)
             {
                 overlay.AnchorWindow(this);
             }
-            ForceDraw();
+            ForceDraw(10);
         }
 
         /// <summary>
@@ -396,7 +403,18 @@ namespace Fu.Core
                 // draw debug data
                 drawDebugPanel();
                 ImGui.End();
+                IsVisible = true;
             }
+            else
+            {
+                IsVisible = false;
+            }
+            // handle visible state (whatever ImGui draw the window this frame)
+            if (_lastFrameVisible != IsVisible)
+            {
+                Fugui.ForceDrawAllWindows();
+            }
+            _lastFrameVisible = IsVisible;
             // invoke post draw event
             OnPostDraw?.Invoke(this);
         }
@@ -412,16 +430,43 @@ namespace Fu.Core
             if (MustBeDraw())
             {
                 CurrentDrawingWindow = this;
-                _forceRedraw = false;
+                if (_forceRedraw > 0)
+                {
+                    _forceRedraw--;
+                }
                 // draw topBar if needed
-                if(TopBarHeight > 0f && UITopBar != null)
+                if (TopBarHeight > 0f && UITopBar != null)
                 {
                     Vector2 screenCursorPos = ImGui.GetCursorScreenPos();
                     UITopBar.Invoke(this, _workingAreaSize.x, TopBarHeight);
                     ImGui.SetCursorScreenPos(screenCursorPos + new Vector2(0f, TopBarHeight));
                 }
+
+                // count nb push at render begin
+                _nbColorPushOnFrameStart = Fugui.NbPushColor;
+                _nbStylePushOnFrameStart = Fugui.NbPushStyle;
+                _nbFontPushOnFrameStart = Fugui.NbPushFont;
+
                 // draw user UI callback
                 UI?.Invoke(this);
+
+                // pop missing push
+                int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
+                if (nbMissingColor > 0)
+                {
+                    Fugui.PopColor(nbMissingColor);
+                }
+                int nbMissingStyle = Fugui.NbPushStyle - _nbStylePushOnFrameStart;
+                if (nbMissingStyle > 0)
+                {
+                    Fugui.PopStyle(nbMissingStyle);
+                }
+                int nbMissingFont = Fugui.NbPushFont - _nbFontPushOnFrameStart;
+                if (nbMissingFont > 0)
+                {
+                    Fugui.PopFont(nbMissingFont);
+                }
+
                 // save whatever ImGui want capture Keyboard
                 WantCaptureKeyboard = ImGui.GetIO().WantTextInput;
                 // draw overlays
@@ -493,9 +538,9 @@ namespace Fu.Core
         /// <summary>
         /// force this window to be draw next render tick
         /// </summary>
-        public void ForceDraw()
+        public void ForceDraw(int nbFrames = 1)
         {
-            _forceRedraw = true;
+            _forceRedraw += nbFrames;
         }
 
         /// <summary>
@@ -508,12 +553,12 @@ namespace Fu.Core
             {
                 case true:
                     return Fugui.Time > _lastRenderTime + _targetDeltaTimeMs
-                        || _forceRedraw
-                        || (IsInterractif && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
+                        || _forceRedraw > 0
+                        || (IsInterractable && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
 
                 case false:
                     return Fugui.Time > _lastRenderTime + _targetDeltaTimeMs
-                        || _forceRedraw
+                        || _forceRedraw > 0
                         || LocalRect.Contains(Container.LocalMousePos);
             }
         }
@@ -595,7 +640,7 @@ namespace Fu.Core
         public bool TryAddToContainer(IFuWindowContainer container)
         {
             IsBusy = true;
-            ForceDraw();
+            ForceDraw(10);
             return container.TryAddWindow(this);
         }
 
@@ -606,7 +651,7 @@ namespace Fu.Core
         public bool TryRemoveFromContainer()
         {
             IsBusy = true;
-            ForceDraw();
+            ForceDraw(10);
             return Container?.TryRemoveWindow(ID) ?? false;
         }
         #endregion

@@ -1,4 +1,5 @@
 ﻿using Fu.Framework;
+using System;
 using System.Linq;
 using UnityEngine;
 
@@ -27,7 +28,6 @@ namespace Fu
                         if (grid.Button("Save"))
                         {
                             FuThemeManager.SaveTheme(FuThemeManager.CurrentTheme);
-                            FuThemeManager.LoadAllThemes();
                             FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
                         }
                         // create new theme
@@ -97,6 +97,20 @@ namespace Fu
                             if (grid.ColorPicker(colorName, ref selectedColor))
                             {
                                 FuThemeManager.CurrentTheme.Colors[i] = selectedColor;
+                                FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
+                                ForceDrawAllWindows();
+                            }
+                        }
+
+                        /////////////////////////////////// To change if extension is not activated
+						for (int i = 0; i < FuTheme.ThemeExtensionCount; i++)
+						{
+                            Vector4 selectedColor = FuThemeManager.CurrentTheme.Colors[(int)FuColors.COUNT + i];
+                            string colorName = Enum.GetName(FuTheme.ThemeExtension.GetType(), i);
+                            colorName = AddSpacesBeforeUppercase(colorName);
+                            if (grid.ColorPicker(colorName, ref selectedColor))
+                            {
+                                FuThemeManager.CurrentTheme.Colors[(int)FuColors.COUNT + i] = selectedColor;
                                 FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
                                 ForceDrawAllWindows();
                             }

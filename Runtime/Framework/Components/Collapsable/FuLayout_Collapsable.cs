@@ -69,10 +69,14 @@ namespace Fu.Framework
                 return;
             }
 
+            // scale left and right ui widths
+            leftPartCustomUIWidth *= Fugui.CurrentContext.Scale;
+            rightPartCustomUIWidth *= Fugui.CurrentContext.Scale;
+
             // register collapsable open state if not already done
             if (!_collapsablesOpenStates.ContainsKey(text))
             {
-                _collapsablesOpenStates.Add(text, true);
+                _collapsablesOpenStates.Add(text, defaultOpen);
             }
             // get collapsable open state
             bool open = _collapsablesOpenStates[text];
@@ -108,7 +112,7 @@ namespace Fu.Framework
             // Draw left custom UI
             if (leftPartCustomUI != null)
             {
-                ImGui.SetCursorScreenPos(new Vector2(btnMin.x + carretWidth, btnMin.y + 2f));
+                ImGui.SetCursorScreenPos(new Vector2(btnMin.x + carretWidth, btnMin.y + (2f * Fugui.CurrentContext.Scale)));
                 leftPartCustomUI?.Invoke();
             }
             // Draw right custom UI

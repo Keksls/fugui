@@ -101,28 +101,6 @@ namespace Fu.Core
         }
     }
 
-    public struct pushStyleData
-    {
-        public ImGuiStyleVar style;
-        public string stackTrace;
-
-        public override string ToString()
-        {
-            return style.ToString() + Environment.NewLine + stackTrace;
-        }
-    }
-
-    public struct pushColorData
-    {
-        public ImGuiCol color;
-        public string stackTrace;
-
-        public override string ToString()
-        {
-            return color.ToString() + Environment.NewLine + stackTrace;
-        }
-    }
-
     /// <summary>
     /// Represent a memory copy of an ImGui DrawList.
     /// It need to be a class because we store it on x frames, and it will significatively incrase GC.Collect() time if we keep it too long.

@@ -13,7 +13,7 @@ namespace Fu.Framework
         // Shortcut for the item
         public string Shortcut;
         // Whether the item is enabled
-        public bool Enabled;
+        public Func<bool> Enabled;
         // Whether the item is a separator
         public bool IsSeparator;
         // Action to perform when the item is clicked
@@ -30,7 +30,7 @@ namespace Fu.Framework
         /// <param name="isSeparator">Whether the item is a separator</param>
         /// <param name="clickAction">The action to perform when the item is clicked</param>
         /// <param name="children">The children items for the item</param>
-        public FuContextMenuItem(string label, string shortcut, bool enabled, bool isSeparator, Action clickAction, List<FuContextMenuItem> children = null)
+        public FuContextMenuItem(string label, string shortcut, Func<bool> enabled, bool isSeparator, Action clickAction, List<FuContextMenuItem> children = null)
         {
             Label = label;
             Shortcut = shortcut;

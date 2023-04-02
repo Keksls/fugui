@@ -100,10 +100,12 @@ namespace FuguiDemo
             layout.SameLine();
 
             // add some empty space to place cursor on right pos - 20px
-            layout.Dummy(layout.GetAvailableWidth() - (20f * Fugui.CurrentContext.Scale));
+            layout.Dummy(layout.GetAvailableWidth() - (14f * Fugui.CurrentContext.Scale));
             layout.SameLine();
 
             // draw a small delete button as a clickable text
+            Fugui.PushFont(10, FontType.Regular);
+            layout.SetNextElementToolTipWithLabel("Delete this element");
             if (layout.ClickableText(Icons.Close, FuTextStyle.Danger))
             {
                 // display a confirmation modal with 'danger' modal layout
@@ -113,6 +115,7 @@ namespace FuguiDemo
                     new FuModalButton("Yes", () => { deleteItem(item); }, FuButtonStyle.Danger),
                     new FuModalButton("No", null, FuButtonStyle.Default));
             }
+            Fugui.PopFont();
         }
 
         /// <summary>

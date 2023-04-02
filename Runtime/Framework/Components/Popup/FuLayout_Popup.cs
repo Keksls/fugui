@@ -19,6 +19,20 @@ namespace Fu.Framework
         private static Dictionary<string, FuPopupData> _registeredPopups = new Dictionary<string, FuPopupData>();
 
         /// <summary>
+        /// Get the PopupID unique by current drawing window
+        /// </summary>
+        /// <param name="ID">ID to unify</param>
+        /// <returns>Unique ID</returns>
+        private string getUniqueID(string ID)
+        {
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                return ID + "##" + FuWindow.CurrentDrawingWindow.ID;
+            }
+            return ID;
+        }
+
+        /// <summary>
         /// Force to close the current openpopup (if there is some)
         /// Work with : Context menu, Popup, Combobox
         /// </summary>
@@ -50,8 +64,18 @@ namespace Fu.Framework
         /// <param name="onClose">callback invoken then the popup close</param>
         public void OpenPopUp(string id, Action ui, Vector2 size, Action onClose = null)
         {
+            id = getUniqueID(id);
             // remove from dic if already exists
             _registeredPopups.Remove(id);
+            // scale size
+            if (size.x > 0)
+            {
+                size.x *= Fugui.CurrentContext.Scale;
+            }
+            if (size.y > 0)
+            {
+                size.y *= Fugui.CurrentContext.Scale;
+            }
             // add to dic
             FuPopupData data = new FuPopupData()
             {
@@ -71,7 +95,7 @@ namespace Fu.Framework
         /// <returns>True if popup if open</returns>
         public bool IsPopupOpen(string id)
         {
-            return _registeredPopups.ContainsKey(id);
+            return _registeredPopups.ContainsKey(getUniqueID(id));
         }
 
         /// <summary>
@@ -91,22 +115,39 @@ namespace Fu.Framework
         /// <param name="pos">position of the popup</param>
         public void DrawPopup(string id, Vector2 size, Vector2 pos)
         {
+            id = getUniqueID(id);
             if (_registeredPopups.TryGetValue(id, out FuPopupData data))
             {
+                // open popup if needed
                 if (data.OpenThisFrame)
                 {
                     ImGui.OpenPopup(id);
                 }
+
+                // scale size
+                if (size.x > 0)
+                {
+                    size.x *= Fugui.CurrentContext.Scale;
+                }
+                if (size.y > 0)
+                {
+                    size.y *= Fugui.CurrentContext.Scale;
+                }
+
+                // keep size to force popup size
                 if (size.x > 0 || size.y > 0)
                 {
                     data.Size = size;
                 }
 
+                // set size
                 ImGui.SetNextWindowSize(data.Size);
                 if (pos.x != 0f || pos.y != 0f)
                 {
                     ImGui.SetNextWindowPos(pos);
                 }
+
+                // draw popup
                 if (ImGui.BeginPopupContextWindow(id))
                 {
                     data.OpenThisFrame = false;
@@ -144,6 +185,7 @@ namespace Fu.Framework
         /// </summary>
         public void ClosePopup(string id)
         {
+            id = getUniqueID(id);
             if (_registeredPopups.TryGetValue(id, out FuPopupData data))
             {
                 data.CloseThisFrame = true;

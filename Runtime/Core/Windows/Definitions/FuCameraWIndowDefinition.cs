@@ -12,6 +12,10 @@ namespace Fu.Core
         /// Gets the camera associated with the UI window.
         /// </summary>
         public Camera Camera { get; private set; }
+        /// <summary>
+        /// Get the default supersampling for camera window
+        /// </summary>
+        public float SuperSampling { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the UICameraWindowDefinition class with the specified parameters.
@@ -24,6 +28,8 @@ namespace Fu.Core
         /// <param name="flags">Behaviour flag of this window definition</param>
         public FuCameraWindowDefinition(FuWindowName windowName, Camera camera, string id, Action<FuWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default) : base(windowName, id, ui, pos, size, flags)
         {
+            // set default camera window supersampling
+            SuperSampling = 1f;
             // Assign the specified camera to the Camera field
             Camera = camera;
         }
@@ -36,6 +42,16 @@ namespace Fu.Core
         {
             // Assign the specified camera to the Camera field
             Camera = camera;
+        }
+
+        /// <summary>
+        /// Sets the default Supersampling for the UI window.
+        /// </summary>
+        /// <param name="superSampling">The default camera window supersampling.</param>
+        public void SetSupersampling(float superSampling)
+        {
+            // Assign the default camera supersampling
+            SuperSampling = superSampling;
         }
     }
 }

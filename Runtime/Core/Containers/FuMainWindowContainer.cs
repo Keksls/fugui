@@ -427,7 +427,7 @@ namespace Fu.Core
         {
             // draw main menu
             Fugui.RenderMainMenu();
-            float mainMenuHeight = 31f;
+            float mainMenuHeight = 24f;
             // draw main menu separator
             ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - 1f), new Vector2(_size.x, mainMenuHeight - 1f), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.HeaderHovered)));
 

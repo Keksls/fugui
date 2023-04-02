@@ -36,7 +36,7 @@ namespace Fu.Framework
         /// <param name="shortcut">The keyboard shortcut of the item</param>
         /// <param name="enabled">Whether the item is enabled or not</param>
         /// <param name="clickAction">The action to perform when the item is clicked</param>
-        public FuContextMenuBuilder AddItem(string label, string shortcut, bool enabled, Action clickAction)
+        public FuContextMenuBuilder AddItem(string label, string shortcut, Func<bool> enabled, Action clickAction)
         {
             // Adds a new context menu item to the current level with the given label, shortcut, enabled status, and click action
             _currentLevel.Add(new FuContextMenuItem(label, shortcut, enabled, false, clickAction));
@@ -48,7 +48,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="label">The label text of the item</param>
         /// <param name="enabled">Whether the item is enabled or not</param>
-        public FuContextMenuBuilder AddItem(string label, bool enabled)
+        public FuContextMenuBuilder AddItem(string label, Func<bool> enabled)
         {
             // Adds a new context menu item to the current level with the given label and enabled status
             _currentLevel.Add(new FuContextMenuItem(label, string.Empty, enabled, false, null));
@@ -62,7 +62,7 @@ namespace Fu.Framework
         public FuContextMenuBuilder AddItem(string label)
         {
             // Adds a new enabled context menu item to the current level with the given label
-            _currentLevel.Add(new FuContextMenuItem(label, string.Empty, true, false, null));
+            _currentLevel.Add(new FuContextMenuItem(label, string.Empty, null, false, null));
             return this;
         }
 
@@ -75,7 +75,7 @@ namespace Fu.Framework
         public FuContextMenuBuilder AddItem(string label, string shortcut, Action clickAction)
         {
             // Adds a new enabled context menu item to the current level with the given label and keyboard shortcut
-            _currentLevel.Add(new FuContextMenuItem(label, shortcut, true, false, clickAction));
+            _currentLevel.Add(new FuContextMenuItem(label, shortcut, null, false, clickAction));
             return this;
         }
 
@@ -85,7 +85,7 @@ namespace Fu.Framework
         /// <param name="label">The label text of the item</param>
         /// <param name="enabled">Whether the item is enabled or not</param>
         /// <param name="clickAction">The action to perform when the item is clicked</param>
-        public FuContextMenuBuilder AddItem(string label, bool enabled, Action clickAction)
+        public FuContextMenuBuilder AddItem(string label, Func<bool> enabled, Action clickAction)
         {
             // Adds a context menu item with label, enabled status, and click action.
             _currentLevel.Add(new FuContextMenuItem(label, string.Empty, enabled, false, clickAction));
@@ -100,7 +100,7 @@ namespace Fu.Framework
         public FuContextMenuBuilder AddItem(string label, Action clickAction)
         {
             // Adds a context menu item with label and click action.
-            _currentLevel.Add(new FuContextMenuItem(label, string.Empty, true, false, clickAction));
+            _currentLevel.Add(new FuContextMenuItem(label, string.Empty, null, false, clickAction));
             return this;
         }
 
@@ -110,7 +110,7 @@ namespace Fu.Framework
         public FuContextMenuBuilder AddSeparator()
         {
             // Adds a separator to the context menu.
-            _currentLevel.Add(new FuContextMenuItem(null, null, false, true, null));
+            _currentLevel.Add(new FuContextMenuItem(null, null, null, true, null));
             return this;
         }
 
@@ -120,7 +120,7 @@ namespace Fu.Framework
         /// <param name="label">Label of the parent item</param>
         public FuContextMenuBuilder BeginChild(string label)
         {
-            return BeginChild(label, true);
+            return BeginChild(label, null);
         }
 
         /// <summary>
@@ -128,7 +128,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="label">Label of the parent item</param>
         /// <param name="enabled">Whatever the item is enabled</param>
-        public FuContextMenuBuilder BeginChild(string label, bool enabled)
+        public FuContextMenuBuilder BeginChild(string label, Func<bool> enabled)
         {
             // Starts a new child context menu with the specified label and enabled status.
             var item = new FuContextMenuItem(label, string.Empty, enabled, false, null, new List<FuContextMenuItem>());
@@ -142,17 +142,28 @@ namespace Fu.Framework
         /// </summary>
         public FuContextMenuBuilder EndChild()
         {
-            var parentLevel = _items;
-            foreach (var item in _items)
+            bool finded = false;
+            GetParentLevel(_items, ref finded);
+            if (!finded)
+            {
+                _currentLevel = _items;
+            }
+            return this;
+        }
+
+        private void GetParentLevel(List<FuContextMenuItem> level, ref bool finded)
+        {
+            foreach (var item in level)
             {
                 if (item.Children == _currentLevel)
                 {
-                    _currentLevel = parentLevel;
-                    break;
+                    _currentLevel = level;
+                    finded = true;
+                    return;
                 }
-                parentLevel = item.Children;
+
+                GetParentLevel(item.Children, ref finded);
             }
-            return this;
         }
 
         /// <summary>

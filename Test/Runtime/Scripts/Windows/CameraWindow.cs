@@ -19,7 +19,8 @@ public class CameraWindow : MonoBehaviour
     private void registerCameraViewWindow()
     {
         // register camera window
-        FuWindowDefinition camWinDef = new FuCameraWindowDefinition(FuWindowsNames.MainCameraView, Camera, "3DView", null, flags: FuWindowFlags.NoInterractions);
+        FuCameraWindowDefinition camWinDef = new FuCameraWindowDefinition(FuWindowsNames.MainCameraView, Camera, "3DView", null, flags: FuWindowFlags.NoInterractions);
+        camWinDef.SetSupersampling(2f);
         camWinDef.SetCustomWindowType<FuCameraWindow>();
         camWinDef.OnUIWindowCreated += CamWinDef_OnUIWindowCreated;
 
@@ -28,14 +29,14 @@ public class CameraWindow : MonoBehaviour
         {
             drawCameraFPSOverlay(_cameraWindow);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);
-        fps1.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.TopRight, new Vector2Int(0, 64));
+        fps1.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.TopRight);
 
         // camera supersampling overlay
-        FuOverlay ss1 = new FuOverlay("oCamSS", new Vector2Int(224, 36), (overlay) =>
+        FuOverlay ss1 = new FuOverlay("oCamSS", new Vector2Int(196, 36), (overlay) =>
         {
             drawSupersamplingOverlay(_cameraWindow);
-        }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);
-        ss1.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.BottomRight, Vector2Int.zero);
+        }, FuOverlayFlags.Default, FuOverlayDragPosition.Left);
+        ss1.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.TopLeft);
     }
 
     /// <summary>

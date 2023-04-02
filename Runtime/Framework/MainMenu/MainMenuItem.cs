@@ -13,13 +13,17 @@ namespace Fu.Framework
         /// </summary>
         public string Name { get; set; }
         /// <summary>
+        /// The name of the menu item.
+        /// </summary>
+        public Func<string> NameFunc { get; set; }
+        /// <summary>
         /// The optional shortcut key for the menu item.
         /// </summary>
         public string Shortcut { get; private set; }
         /// <summary>
         /// A flag indicating whether the menu item is enabled or disabled.
         /// </summary>
-        public bool Enabled { get; private set; }
+        public bool Enabled { get; internal set; }
         /// <summary>
         /// A flag indicating whether the menu item is selected or not.
         /// </summary>
@@ -52,7 +56,7 @@ namespace Fu.Framework
         /// <param name="selected">The optional selected/unselected status of the menu item. Defaults to false.</param>
         /// <param name="callback">The callback action to be executed when the menu item is selected.</param>
         /// <param name="parent">The optional parent menu item.</param>
-        public MainMenuItem(string name, string shortcut, bool enabled, bool selected, Action callback, MainMenuItem parent)
+        public MainMenuItem(string name, string shortcut, bool enabled, bool selected, Action callback, MainMenuItem parent, Func<string> funcName)
         {
             Name = name;
             Shortcut = shortcut;
@@ -65,6 +69,7 @@ namespace Fu.Framework
             {
                 parent.Children.Add(this);
             }
+            NameFunc = funcName;
         }
 
         /// <summary>

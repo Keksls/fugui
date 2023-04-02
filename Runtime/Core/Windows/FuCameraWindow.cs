@@ -47,7 +47,7 @@ namespace Fu.Core
 
         public FuCameraWindow(FuCameraWindowDefinition windowDefinition) : base(windowDefinition)
         {
-            SuperSampling = 1f;
+            SuperSampling = windowDefinition.SuperSampling;
             Camera = windowDefinition.Camera;
 
             // get post process data
@@ -79,7 +79,7 @@ namespace Fu.Core
             _windowFlags |= ImGuiWindowFlags.NoScrollWithMouse;
             NeedToUpdateCamera = true;
             _lastCameraRenderTime = float.MinValue;
-            IsInterractif = true;
+            IsInterractable = true;
             Camera.enabled = false;
 
             OnAddToContainer += FuCameraWindow_OnAddToContainer;

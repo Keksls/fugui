@@ -171,7 +171,7 @@ MonoBehaviour:
     DisplayTabBarButton: 1
     TabBarButtonRight: 1
     LayoutsFolder: Fugui/Layouts
-    FontIconsSizeOffset: 5
+    FontIconsSizeOffset: 2
     FontIconsOffset: {x: 0, y: -1}
     RendererType: 0
     PlatformType: 0

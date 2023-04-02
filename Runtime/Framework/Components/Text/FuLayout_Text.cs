@@ -635,6 +635,19 @@ namespace Fu.Framework
                 return false;
             }
 
+            bool clicked = _internalClickableText(text, style);
+            // set states for this element
+            setBaseElementState(id, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            if (_currentToolTipsOnLabels)
+            {
+                displayToolTip(_lastItemHovered);
+            }
+            endElement(style);
+            return clicked;
+        }
+
+        private bool _internalClickableText(string text, FuTextStyle style)
+        {
             Vector2 rectMin = ImGui.GetCursorScreenPos() - new Vector2(4f, 0f);
             Vector2 rectMax = rectMin + ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding;
             bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
@@ -662,13 +675,6 @@ namespace Fu.Framework
             Fugui.Push(ImGuiCol.Text, textColor);
             ImGui.Text(text);
             Fugui.PopColor();
-            // set states for this element
-            setBaseElementState(id, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
-            if (_currentToolTipsOnLabels)
-            {
-                displayToolTip(_lastItemHovered);
-            }
-            endElement(style);
             return clicked;
         }
 

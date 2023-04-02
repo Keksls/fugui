@@ -1,6 +1,7 @@
 using Fu;
 using Fu.Core;
 using Fu.Framework;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -42,6 +43,8 @@ public class WidgetsWindow : MonoBehaviour
     // color pickers
     Vector3 colorV3 = (Vector3)(Vector4)Color.yellow;
     Vector4 colorV4 = Color.blue;
+    // date time pickers
+    DateTime dateTime = DateTime.Now;
     // spinners
     float spinnerSize = 20f;
     int spinnerNbDots = 6;
@@ -146,7 +149,7 @@ public class WidgetsWindow : MonoBehaviour
 
     private void drawBasics(FuLayout layout)
     {
-        layout.Tabs("basicWidgetsTabs", new string[] { "Checkbox and Toggles", "Images", "ColorPicker", "RadioButtons" }, (index) =>
+        layout.Tabs("basicWidgetsTabs", new string[] { "Checkbox and Toggles", "Images", "ColorPicker", "RadioButtons", "DatePicker" }, (index) =>
         {
             using (var grid = new FuGrid("basicWidgetsGrid"))
             {
@@ -228,6 +231,10 @@ public class WidgetsWindow : MonoBehaviour
                         {
                             radioButtonGroup2Index = 3;
                         }
+                        break;
+
+                    case 4:
+                        grid.DateTimePickerPopup("dtPicker", ref dateTime);
                         break;
                 }
                 if (!_enableWidgets)

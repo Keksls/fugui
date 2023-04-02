@@ -99,6 +99,22 @@ namespace Fu.Framework
                 return false;
             }
 
+            edited = _internalTextInput(id, hint, ref text, size, height, width, flags);
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, edited);
+            // Display a tool tip if one has been set
+            displayToolTip();
+            // Mark the element as hover framed
+            _elementHoverFramedEnabled = true;
+            // End the element
+            endElement(style);
+            // Return whether the text was edited
+            return edited;
+        }
+
+        private bool _internalTextInput(string id, string hint, ref string text, uint size, float height, float width, FuInputTextFlags flags)
+        {
+            bool edited;
             // Set the width of the next item to the width of the available content region
             ImGui.SetNextItemWidth(width <= 0 ? ImGui.GetContentRegionAvail().x : width);
             // prevent user for editing the value if the element is disabled
@@ -116,15 +132,7 @@ namespace Fu.Framework
             {
                 edited = ImGui.InputTextWithHint(id, hint, ref text, size, (ImGuiInputTextFlags)flags);
             }
-            // set states for this element
-            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, edited);
-            // Display a tool tip if one has been set
-            displayToolTip();
-            // Mark the element as hover framed
-            _elementHoverFramedEnabled = true;
-            // End the element
-            endElement(style);
-            // Return whether the text was edited
+
             return edited;
         }
     }

@@ -7,9 +7,8 @@ namespace Fu.Core
     public class FuWindowDefinition
     {
         #region Variables
-        public FuWindowName WindowName { get; private set; }
         // A unique identifier for the window
-        public string Id { get; private set; }
+        public FuWindowName WindowName { get; private set; }
         // A delegate for updating the window's UI
         public Action<FuWindow> UI { get; private set; }
         // The position of the window on the screen
@@ -47,11 +46,10 @@ namespace Fu.Core
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
-        public FuWindowDefinition(FuWindowName windowName, string id, Action<FuWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default)
+        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default)
         {
             // Assign the specified values to the corresponding fields
             WindowName = windowName;
-            Id = id;
             UI = ui;
             Position = pos.HasValue ? pos.Value : new Vector2Int(256, 256);
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);

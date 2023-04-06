@@ -19,7 +19,7 @@ public class CameraWindow : MonoBehaviour
     private void registerCameraViewWindow()
     {
         // register camera window
-        FuCameraWindowDefinition camWinDef = new FuCameraWindowDefinition(FuWindowsNames.MainCameraView, Camera, "3DView", null, flags: FuWindowFlags.NoInterractions);
+        FuCameraWindowDefinition camWinDef = new FuCameraWindowDefinition(FuWindowsNames.MainCameraView, Camera, null, flags: FuWindowFlags.NoInterractions);
         camWinDef.SetSupersampling(2f);
         camWinDef.SetCustomWindowType<FuCameraWindow>();
         camWinDef.OnUIWindowCreated += CamWinDef_OnUIWindowCreated;

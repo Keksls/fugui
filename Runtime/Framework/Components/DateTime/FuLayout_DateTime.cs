@@ -110,7 +110,6 @@ namespace Fu.Framework
 
             ImGui.SameLine();
             // Year input
-            Fugui.MoveY(FuThemeManager.CurrentTheme.FramePadding.y);
             string txtYear = year.ToString();
             if (_internalTextInput("##" + text + "yearInpt", year.ToString(), ref txtYear, 4, 0f, 72f, FuInputTextFlags.CharsDecimal))
             {

@@ -94,5 +94,44 @@ namespace Fu
         {
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + strenght * Fugui.CurrentContext.Scale);
         }
+
+        ///<summary>
+        /// This method generates a tiled background using a given number of rows and an alternating pattern of dark and light tiles.
+        /// It takes in an ImDrawList object, which is used to draw the tiles, as well as the position and size of the background.
+        ///</summary>
+        /// <param name="drawList">The ImDrawList object used to draw the tiles.</param>
+        /// <param name="pos">The position of the tiled background.</param>
+        /// <param name="size">The size of the tiled background.</param>
+        /// <param name="numRows">The number of rows to use for the tiled background. Default value is 2.</param>
+        public static void DrawTilesBackground(ImDrawListPtr drawList, Vector2 pos, Vector2 size, int numRows = 2)
+        {
+            // Calculate the size of each tile
+            float tileSize = size.y / numRows;
+            // Calculate the number of columns based on the tile size
+            int numCols = (int)(size.x / tileSize);
+
+            // Define the dark and light colors
+            uint darkColor = ImGui.GetColorU32(new Vector4(0.25f, 0.25f, 0.25f, 1f));
+            uint lightColor = ImGui.GetColorU32(new Vector4(0.5f, 0.5f, 0.5f, 1f));
+
+            // Iterate over each tile and draw it
+            for (int row = 0; row < numRows; row++)
+            {
+                for (int col = 0; col < numCols; col++)
+                {
+                    // Calculate the position of the top-left and bottom-right corners of the tile
+                    Vector2 topLeft = new Vector2(pos.x + col * tileSize, pos.y + row * tileSize);
+                    Vector2 bottomRight = new Vector2(pos.x + (col + 1) * tileSize, pos.y + (row + 1) * tileSize);
+
+                    // Determine the color of the tile based on its position
+                    bool isEvenRow = row % 2 == 0;
+                    bool isEvenCol = col % 2 == 0;
+                    uint color = isEvenRow ^ isEvenCol ? darkColor : lightColor; // alternate black and white squares
+
+                    // Draw the tile
+                    drawList.AddRectFilled(topLeft, bottomRight, color);
+                }
+            }
+        }
     }
 }

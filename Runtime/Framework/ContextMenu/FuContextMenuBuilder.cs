@@ -109,6 +109,11 @@ namespace Fu.Framework
         /// </summary>
         public FuContextMenuBuilder AddSeparator()
         {
+            // prevend to add 2 separators on top of each others
+            if (_currentLevel.Count > 0 && _currentLevel[_currentLevel.Count - 1].IsSeparator)
+            {
+                return this;
+            }
             // Adds a separator to the context menu.
             _currentLevel.Add(new FuContextMenuItem(null, null, null, true, null));
             return this;

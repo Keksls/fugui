@@ -232,23 +232,35 @@ namespace Fu
                 {
                     ImGuiNative.igSeparator();
                 }
-                // whatever the item is a parent (contain children)
-                else if (menuItem.Children.Count > 0)
+                else
                 {
-                    // draw the parent and bind children if parent is open
-                    if (ImGui.BeginMenu(menuItem.Label, menuItem.Enabled?.Invoke() ?? true))
+                    bool enabled = menuItem.Enabled?.Invoke() ?? true;
+                    if (!enabled)
                     {
-                        // bind children
-                        drawContextMenuItems(menuItem.Children);
-                        ImGuiNative.igEndMenu();
+                        Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.TextDisabled));
                     }
-                }
-                // whatever the item is a 'leaf' (no child)
-                else if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, menuItem.Enabled?.Invoke() ?? true))
-                {
-                    // invoke the callback action of the item if clicked and close the context menu
-                    menuItem.ClickAction?.Invoke();
-                    CloseContextMenu();
+                    // whatever the item is a parent (contain children)
+                    if (menuItem.Children.Count > 0)
+                    {
+                        // draw the parent and bind children if parent is open
+                        if (ImGui.BeginMenu(menuItem.Label, enabled))
+                        {
+                            // bind children
+                            drawContextMenuItems(menuItem.Children);
+                            ImGuiNative.igEndMenu();
+                        }
+                    }
+                    // whatever the item is a 'leaf' (no child)
+                    else if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, enabled))
+                    {
+                        // invoke the callback action of the item if clicked and close the context menu
+                        menuItem.ClickAction?.Invoke();
+                        CloseContextMenu();
+                    }
+                    if (!enabled)
+                    {
+                        PopColor();
+                    }
                 }
             }
         }
@@ -285,8 +297,6 @@ namespace Fu
                     continue;
                 }
 
-                // Keep track of the last parent item added to the merged list
-                int parentIndex = mergedItems.Count - 1;
                 // Loop through the items at this level
                 for (int j = 0; j < levelItems.Count; j++)
                 {
@@ -297,13 +307,6 @@ namespace Fu
                     {
                         var childrenItems = mergeContextMenuItemsStack(new List<FuContextMenuItem>[] { levelItems[j].Children });
                         levelItems[j].Children = childrenItems;
-                        parentIndex = mergedItems.Count - 1;
-                    }
-                    // If the last item in the merged list is a separator and the current item doesn't have children, remove it
-                    else if (parentIndex >= 0 && mergedItems[parentIndex].IsSeparator)
-                    {
-                        mergedItems.RemoveAt(parentIndex);
-                        parentIndex--;
                     }
                 }
             }
@@ -330,6 +333,21 @@ namespace Fu
             _currentContextMenuStackIndex = 0;
             // Reset the current context menu items to null
             _currentContextMenuItems = null;
+            // Loop through the context menu items stack
+            for (int i = 0; i < _contextMenuItemsStack.Length; i++)
+            {
+                // Set each level of the stack to null
+                _contextMenuItemsStack[i] = null;
+            }
+        }
+
+        /// <summary>
+        /// Clear the context menu stack data. 
+        /// </summary>
+        public static void ClearContextMenuStack()
+        {
+            // Reset the current context menu stack index to 0
+            _currentContextMenuStackIndex = 0;
             // Loop through the context menu items stack
             for (int i = 0; i < _contextMenuItemsStack.Length; i++)
             {

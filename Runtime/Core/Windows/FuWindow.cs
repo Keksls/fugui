@@ -180,7 +180,8 @@ namespace Fu.Core
         /// <param name="windowDefinition">UI Window Definition</param>
         public FuWindow(FuWindowDefinition windowDefinition)
         {
-            ID = windowDefinition.Id + "##" + _windowIndex;
+            WindowName = windowDefinition.WindowName;
+            ID = WindowName.Name + "##" + _windowIndex;
             _windowIndex++;
 
             if (!Fugui.TryAddUIWindow(this))
@@ -193,7 +194,6 @@ namespace Fu.Core
             UI = windowDefinition.UI;
             IsOpened = true;
             HasFocus = false;
-            WindowName = windowDefinition.WindowName;
             IsDockable = windowDefinition.IsDockable;
             IsExternalizable = windowDefinition.IsExternalizable;
             IsInterractable = windowDefinition.IsInterractif;

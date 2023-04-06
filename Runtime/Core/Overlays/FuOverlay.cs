@@ -237,6 +237,15 @@ namespace Fu.Core
         {
             _overlayStyle = style;
         }
+
+        /// <summary>
+        /// Set the local rectangle describing the overlay
+        /// </summary>
+        /// <param name="rect">Rectangle describing the overlay within the window</param>
+        public void SetLocalRect(Rect rect)
+		{
+            LocalRect = rect;
+		}
         #endregion
 
         /// <summary>
@@ -526,7 +535,7 @@ namespace Fu.Core
         /// get overlay anchor position relative to it anchorLocation and position
         /// </summary>
         /// <returns>container relative position</returns>
-        private Vector2 getAnchoredPosition(ref Vector2 unsnappedDragPosition)
+        public Vector2 getAnchoredPosition(ref Vector2 unsnappedDragPosition)
         {
             Vector2 localPosition = default;
 

@@ -3,6 +3,21 @@
 namespace Fu.Framework
 {
     /// <summary>
+    /// Define FuGradient blending modes behaviours
+    /// </summary>
+    public enum FuGradientBlendMode
+    {
+        /// <summary>
+        /// Gradient will smoothly lerp between color key values
+        /// </summary>
+        Continious,
+        /// <summary>
+        /// Gradient will hardly goes from color key to an other
+        /// </summary>
+        Fixed
+    }
+
+    /// <summary>
     /// Define Fugui mouse buttons
     /// </summary>
     public enum FuComboboxPopupPosition

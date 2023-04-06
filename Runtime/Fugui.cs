@@ -544,7 +544,7 @@ namespace Fu
         /// <summary>
         /// Get a list of all instances of the given FuWIndowName
         /// </summary>
-        /// <param name="windowName">WindowName to check</param>
+        /// <param name="windowName">WindowName to get</param>
         /// <returns>list of windows instances</returns>
         public static List<FuWindow> GetWindowInstances(FuWindowName windowName)
         {
@@ -557,6 +557,21 @@ namespace Fu
                 }
             }
             return windows;
+        }
+
+        /// <summary>
+        /// Refresh UI render of all instances of the given FuWIndowName
+        /// </summary>
+        /// <param name="windowName">WindowName to refresh</param>
+        public static void RefreshWindowsInstances(FuWindowName windowName)
+        {
+            foreach (var window in UIWindows)
+            {
+                if (window.Value.WindowName.Equals(windowName))
+                {
+                    window.Value.ForceDraw();
+                }
+            }
         }
 
         /// <summary>
@@ -599,6 +614,8 @@ namespace Fu
                     }
                 }
             }
+            // clear context menu stack in case dev forgot to pop something OR exception raise between push and pop
+            ClearContextMenuStack();
             // prepare a new frame after all render, so we can use ImGui methods outside FuguiContext.OnLayout events
             DefaultContext.PrepareRender();
         }

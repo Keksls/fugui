@@ -12,6 +12,7 @@ namespace Fu.Core
         public static long ImDrawCmdSize { get; private set; }
         public static long ImDrawVertSize { get; private set; }
         private static DrawData cmd = new DrawData();
+        private static Dictionary<string, string> _unIconnizedTitleMapping = new Dictionary<string, string>();
 
         static ImGuiDrawListUtils()
         {
@@ -28,6 +29,37 @@ namespace Fu.Core
             for (int i = 0; i < imDrawDataPtr.CmdListsCount; i++)
             {
                 string name = imDrawDataPtr.CmdListsRange[i]._OwnerName;
+
+                // prevent icons name to switch render (for some reason, ImGui copy the name like 'name/name##pathID' when name contain Icon)
+                if (name.StartsWith("??? ") && name.Contains("/"))
+                {
+                    if (!_unIconnizedTitleMapping.ContainsKey(name))
+                    {
+                        string escapedTitle = name.Remove(0, 4).Split('/')[0]; // get icon escaped title
+                        // search csharp formated window title
+                        string csharpeEquivalentTitle = string.Empty;
+                        foreach (string windowTitle in windows.Keys)
+                        {
+                            // icon escaped csharp formated title match excaped native formated title
+                            if (windowTitle.Remove(0, 2) == escapedTitle)
+                            {
+                                csharpeEquivalentTitle = name.Replace("??? ", windowTitle.Substring(0, 2));
+                            }
+                        }
+
+                        // save mapping unescaped values (native => csharp formated)
+                        if (!string.IsNullOrEmpty(csharpeEquivalentTitle))
+                        {
+                            _unIconnizedTitleMapping.Add(name, csharpeEquivalentTitle);
+                        }
+                    }
+
+                    // replace native formated icon values by csharp formated versions
+                    if (_unIconnizedTitleMapping.ContainsKey(name))
+                    {
+                        name = _unIconnizedTitleMapping[name];
+                    }
+                }
 
                 bool isChild = false;
                 if (!windows.ContainsKey(name) && name.Contains("/")) // it may be a window's child

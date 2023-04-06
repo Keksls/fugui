@@ -481,7 +481,7 @@ namespace Fu.Framework
             if (_currentToolTips != null && _currentToolTipsIndex < _currentToolTips.Length)
             {
                 // If the element is hovered over or force is set to true
-                if (force || _lastItemHovered || ImGui.IsItemHovered())
+                if (force || _lastItemHovered)
                 {
                     FuTextStyle style = FuTextStyle.Default;
                     // push tooltip styles
@@ -490,7 +490,7 @@ namespace Fu.Framework
                         style = _currentToolTipsStyles[_currentToolTipsIndex];
                     }
 
-                    setToolTip(_lastItemID, _currentToolTips[_currentToolTipsIndex], style);
+                    SetToolTip(_lastItemID, _currentToolTips[_currentToolTipsIndex], style);
                 }
                 // cancel smooth tooltip display
                 else if (_lastItemID == _currentHoveredElementId)
@@ -516,14 +516,15 @@ namespace Fu.Framework
         /// <summary>
         /// Imediate Display a tooltip
         /// </summary>
+        /// <param name="id">unique id of the tooltip</param>
         /// <param name="text">text of the tooltip</param>
         /// <param name="style">style on the tooltip</param>
-        private void setToolTip(string ID, string text, FuTextStyle style)
+        public void SetToolTip(string id, string text, FuTextStyle style)
         {
             // handle delayed display
-            if (ID != _currentHoveredElementId)
+            if (id != _currentHoveredElementId)
             {
-                _currentHoveredElementId = ID;
+                _currentHoveredElementId = id;
                 _currentHoveredStartHoverTime = Fugui.Time;
             }
 

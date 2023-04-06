@@ -19,7 +19,7 @@ public class InspectorWindow : MonoBehaviour
     /// </summary>
     private void registerInspectorWindow()
     {
-        new FuWindowDefinition(FuWindowsNames.Inspector, "Inspector", (window) =>
+        new FuWindowDefinition(FuWindowsNames.Inspector, (window) =>
         {
             using (new FuPanel("demoContainer", FuStyle.Unpadded))
             {

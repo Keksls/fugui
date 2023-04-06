@@ -49,8 +49,8 @@ namespace Fu.Framework
             };
 
             // create dockaspace windows definitions
-            new FuWindowDefinition(FuSystemWindowsNames.DockSpaceManager, "DockSpace Manager", (window) => Fugui.DrawDockSpaceManager());
-            new FuWindowDefinition(FuSystemWindowsNames.WindowsDefinitionManager, "Windows Definition Manager", (window) => Fugui.DrawWindowsDefinitionManager());
+            new FuWindowDefinition(FuSystemWindowsNames.DockSpaceManager, (window) => Fugui.DrawDockSpaceManager());
+            new FuWindowDefinition(FuSystemWindowsNames.WindowsDefinitionManager, (window) => Fugui.DrawWindowsDefinitionManager());
 
             _fuguiWindows = null;
         }

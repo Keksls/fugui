@@ -121,7 +121,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _settings:
-    FUGUI_WINDOWS_DEF_ENUM_PATH: Assets\Test\Runtime\Settings\FuWindowsNames.cs
+    FUGUI_WINDOWS_DEF_ENUM_PATH: Assets\Scripts\UI\FuWindowsNames.cs
     FUGUI_DOCKSPACE_FOLDER_PATH: Assets\StreamingAssets\Fugui\Layout\
     InternalizeOnMouseRelease: 0
     IdleFPS: 1
@@ -193,7 +193,7 @@ MonoBehaviour:
     ConfigDockingAlwaysTabBar: 1
     ConfigDockingTransparentPayload: 0
     Shaders: {fileID: 11400000, guid: 16d5b609d19632f418f94c335a29d67d, type: 2}
-    CursorShapes: {fileID: 11400000, guid: 544ebd31157cfd842871f087e10eb417, type: 2}
+    CursorShapes: {fileID: 11400000, guid: 0ba180003734b7b4caf415d92cd9bd88, type: 2}
     Render: {fileID: 0}
   _uiCamera: {fileID: 963194227}
   _logErrors: 1

@@ -141,7 +141,7 @@ namespace FuguiDemo
         private void registerUIWindow()
         {
             // create a new FuWindowDefinition, Fugui will automaticaly register it so it can instantiate a FuWiindow when needed
-            new FuWindowDefinition(FuWindowsNames.Tree, "Tree", (window) =>
+            new FuWindowDefinition(FuWindowsNames.Tree, (window) =>
             {
                 // create a panel to draw tree on it (we don't need to use cliper because FuTree has its own clipping system)
                 using (FuPanel panel = new FuPanel("treePanel", false))

@@ -42,7 +42,7 @@ public class PopupsWindow : MonoBehaviour
             .AddItem("This is a very special listbox", "some shortcut", () => { Debug.Log("click on my very special listbox !"); })
             .Build();
 
-        new FuWindowDefinition(FuWindowsNames.Popups, "Popups Demo", (window) =>
+        new FuWindowDefinition(FuWindowsNames.Popups, (window) =>
         {
             using (FuPanel panel = new FuPanel("popupWindowPanel", FuStyle.Unpadded))
             {

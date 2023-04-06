@@ -16,7 +16,7 @@ public class FuguiDemoScene : MonoBehaviour
     private void Awake()
     {
         // register Fugui Settings Window
-        new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, "Fugui Settings", (window) =>
+        new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, (window) =>
         {
             Fugui.DrawSettings();
         }, flags: FuWindowFlags.AllowMultipleWindow);

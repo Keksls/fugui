@@ -52,15 +52,17 @@ public class WidgetsWindow : MonoBehaviour
     bool spinnerDoubleColor = false;
     Vector2 spinnerV2Size = new Vector2(64f, 20f);
     float spinnerFrequency = 6f;
+    FuGradient gradient;
 
     void Awake()
     {
+        gradient = new FuGradient();
         registerUIWidgetsWindow();
     }
 
     private void registerUIWidgetsWindow()
     {
-        new FuWindowDefinition(FuWindowsNames.Widgets, "Widgets Demo", (window) =>
+        new FuWindowDefinition(FuWindowsNames.Widgets, (window) =>
         {
             using (var layout = new FuLayout())
             {
@@ -185,7 +187,9 @@ public class WidgetsWindow : MonoBehaviour
                         grid.ImageButton("Image button blue", Fugui.Settings.FuguiLogo, Vector2.one * 32f, Color.blue);
                         break;
 
+                    // Colors and Gradient
                     case 2:
+                        grid.Gradient("gradient", ref gradient);
                         grid.ColorPicker("picker", ref colorV3);
                         grid.ColorPicker("picker with alpha", ref colorV4);
                         grid.Separator();

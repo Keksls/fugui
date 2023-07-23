@@ -1,4 +1,6 @@
 using Fu.Framework;
+using ImGuiNET;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Core
@@ -11,7 +13,8 @@ namespace Fu.Core
         /// <summary>
         /// button states by buttons (0 is left, 1 is right)
         /// </summary>
-        internal UIMouseButtonState[] ButtonStates;
+        internal FuKeyState[] ButtonStates;
+        private readonly FuKeyState[] _virtualButtonStates;
         private Vector2 _movement;
         public Vector2 Movement { get { return _movement; } }
         private Vector2 _wheel;
@@ -24,6 +27,7 @@ namespace Fu.Core
         public bool IsHoverPopup { get { return _isHoverPupUp; } }
         private bool _isHoverTopBar;
         public bool IsHoverTopBar { get { return _isHoverTopBar; } }
+        private static readonly HashSet<int> _currentPressedKeys = new HashSet<int>();
 
         /// <summary>
         /// instantiate a new UIMouseState and init mouse Buttons array
@@ -33,9 +37,16 @@ namespace Fu.Core
             _position = Vector2Int.zero;
             _movement = Vector2.zero;
             _wheel = Vector2.zero;
-            ButtonStates = new UIMouseButtonState[2];
-            ButtonStates[0] = new UIMouseButtonState();
-            ButtonStates[1] = new UIMouseButtonState();
+
+            ButtonStates = new FuKeyState[3];
+            ButtonStates[0] = new FuKeyState(0);
+            ButtonStates[1] = new FuKeyState(1);
+            ButtonStates[2] = new FuKeyState(2);
+
+            _virtualButtonStates = new FuKeyState[3];
+            _virtualButtonStates[0] = new FuKeyState(0);
+            _virtualButtonStates[1] = new FuKeyState(1);
+            _virtualButtonStates[2] = new FuKeyState(2);
         }
 
         /// <summary>
@@ -67,12 +78,12 @@ namespace Fu.Core
             {
                 _isHoverOverlay |= overlay.LocalRect.Contains(position);
             }
-            _isHoverPupUp = !string.IsNullOrEmpty(FuLayout.CurrentPopUpID) ? FuLayout.CurrentPopUpRect.Contains(window.Container.LocalMousePos) : false;
+            _isHoverPupUp = Fugui.IsInsideAnyPopup(window.Container.LocalMousePos);
             _isHoverTopBar = window.UITopBar != null && window.TopBarHeight > 0f && position.y <= window.TopBarHeight + (window.WorkingAreaPosition.y - window.LocalPosition.y);
         }
 
         /// <summary>
-        /// set current mouse position
+        /// set current mouse data
         /// </summary>
         /// <param name="container">container to set mouse position on</param>
         internal void UpdateState(IFuWindowContainer container)
@@ -83,6 +94,16 @@ namespace Fu.Core
             _isHoverOverlay = false;
             _isHoverPupUp = false;
             _isHoverTopBar = false;
+
+            // set container mouse buttons states
+            bool btn0State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Left) != 0;
+            bool btn1State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Right) != 0;
+            bool btn2State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Middle) != 0;
+
+            ButtonStates[0].SetState(btn0State);
+            ButtonStates[1].SetState(btn1State);
+            ButtonStates[2].SetState(btn2State);
+
             // check whatever mouse is hover any overlay
             container.OnEachWindow((window) =>
             {
@@ -90,6 +111,77 @@ namespace Fu.Core
                 _isHoverPupUp |= window.Mouse.IsHoverPopup;
                 _isHoverTopBar |= window.Mouse.IsHoverTopBar;
             });
+        }
+
+        internal void UpdateState(FuWindow window)
+        {
+            bool btn0State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Left) != 0;
+            bool btn1State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Right) != 0;
+            bool btn2State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Middle) != 0;
+
+            // set brut states, without handling focus/hover and clicked window
+            _virtualButtonStates[0].SetState(btn0State);
+            _virtualButtonStates[1].SetState(btn1State);
+            _virtualButtonStates[2].SetState(btn2State);
+
+            // check if a button is Down this frame if this window is hover and no window has been clicked for now
+            if ((FuWindow.InputFocusedWindow == null || FuWindow.InputFocusedWindow == window) && window.IsHovered)
+            {
+                for (int i = 0; i < ButtonStates.Length; i++)
+                {
+                    if (_virtualButtonStates[i].IsDown)
+                    {
+                        FuWindow.InputFocusedWindow = window;
+                        // increase quantity of input holding the current input focused window
+                        FuWindow.NbInputFocusedWindow++;
+                        _currentPressedKeys.Add(i);
+                    }
+                }
+            }
+
+            // check if pressed button is Up this frame and pressed window is me
+            if (_currentPressedKeys.Count > 0 && FuWindow.InputFocusedWindow == window)
+            {
+                for (int i = 0; i < ButtonStates.Length; i++)
+                {
+                    if (_currentPressedKeys.Contains(i) && _virtualButtonStates[i].IsUp)
+                    {
+                        // increase quantity of input holding the current input focused window
+                        FuWindow.NbInputFocusedWindow--;
+                        _currentPressedKeys.Remove(i);
+                    }
+                }
+            }
+
+            // no window has been pressed for now, let's just set states regulary
+            if (FuWindow.InputFocusedWindow == null)
+            {
+                ButtonStates[0].SetState(window.IsHovered && btn0State);
+                ButtonStates[1].SetState(window.IsHovered && btn1State);
+                ButtonStates[2].SetState(window.IsHovered && btn2State);
+            }
+            // a window is pressed, only this one should retrieve mouse inputs
+            else
+            {
+                // we are the pressed window
+                if (FuWindow.InputFocusedWindow == window)
+                {
+                    ButtonStates[0].SetState(btn0State);
+                    ButtonStates[1].SetState(btn1State);
+                    ButtonStates[2].SetState(btn2State);
+                }
+                // we are another window, let's not handle inputs
+                else
+                {
+                    ButtonStates[0].SetState(false);
+                    ButtonStates[1].SetState(false);
+                    ButtonStates[2].SetState(false);
+                }
+            }
+
+            // set mouse pos and wheel
+            SetPosition(window);
+            SetWheel(new Vector2(window.Container.Context.IO.MouseWheelH, window.Container.Context.IO.MouseWheel));
         }
 
         /// <summary>
@@ -132,53 +224,6 @@ namespace Fu.Core
                 return false;
             }
             return ButtonStates[(int)mouseButton].IsPressed;
-        }
-    }
-
-    /// <summary>
-    /// struct that represent a mouse button state
-    /// </summary>
-    internal struct UIMouseButtonState
-    {
-        internal bool IsPressed;
-        internal bool IsDown;
-        internal bool IsUp;
-
-        /// <summary>
-        /// Set a state for this frame
-        /// </summary>
-        /// <param name="state">true is pressed</param>
-        internal void SetState(bool state)
-        {
-            // first frame pressed, down for this frame
-            if (!IsPressed && state)
-            {
-                IsDown = true;
-            }
-            // already down or not pressed anymore, not down for this frame
-            else
-            {
-                IsDown = false;
-            }
-
-            // pressed last frame and not pressed anymore, up for this frame
-            if (IsPressed && !state)
-            {
-                IsUp = true;
-            }
-            // not pressed or still pressed, not up for this frame
-            else
-            {
-                IsUp = false;
-            }
-
-            // pressed for this frame is new state
-            IsPressed = state;
-        }
-
-        public override string ToString()
-        {
-            return "p. " + IsPressed + " d. " + IsDown + " u. " + IsUp;
         }
     }
 }

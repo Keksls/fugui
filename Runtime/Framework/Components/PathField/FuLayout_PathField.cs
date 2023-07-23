@@ -55,7 +55,7 @@ namespace Fu.Framework
             // set default flag as validate when user press enter
             ImGuiInputTextFlags flags = ImGuiInputTextFlags.EnterReturnsTrue;
             // prevent user to edit disabled widget
-            if(LastItemDisabled)
+            if (LastItemDisabled)
             {
                 flags |= ImGuiInputTextFlags.ReadOnly;
             }
@@ -90,6 +90,32 @@ namespace Fu.Framework
                     validatePath();
                 }
             }
+            // open path on right click
+            if (LastItemClickedButton == FuMouseButton.Right)
+            {
+                try
+                {
+                    string folderPath = path;
+                    if (!Directory.Exists(folderPath))
+                    {
+                        if (File.Exists(folderPath))
+                        {
+                            folderPath = Path.GetDirectoryName(folderPath);
+                        }
+                    }
+                    if (Directory.Exists(folderPath))
+                    {
+                        System.Diagnostics.Process.Start(folderPath);
+                    }
+                }
+                catch { }
+            }
+            // display ... button tooltip
+            if (LastItemHovered)
+            {
+                SetToolTip(LastItemID, "Click to select file / folder.\nRight click to open folder.", FuTextStyle.Default);
+            }
+
             _elementHoverFramedEnabled = true;
             endElement(style);
 

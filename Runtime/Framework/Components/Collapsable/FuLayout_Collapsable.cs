@@ -20,10 +20,7 @@ namespace Fu.Framework
             {
                 id = id + "##" + FuWindow.CurrentDrawingWindow.ID;
             }
-            if (_collapsablesOpenStates.ContainsKey(id))
-            {
-                _collapsablesOpenStates[id] = true;
-            }
+            _collapsablesOpenStates[id] = true;
         }
 
         /// <summary>
@@ -36,10 +33,25 @@ namespace Fu.Framework
             {
                 id = id + "##" + FuWindow.CurrentDrawingWindow.ID;
             }
-            if (_collapsablesOpenStates.ContainsKey(id))
+            _collapsablesOpenStates[id] = false;
+        }
+
+
+        /// <summary>
+        /// Check if a collapsable is open or not
+        /// </summary>
+        /// <param name="id">id of the collapsable to check</param>
+        public bool IsCollapsableOpen(string id)
+        {
+            if (FuWindow.CurrentDrawingWindow != null)
             {
-                _collapsablesOpenStates[id] = false;
+                id = id + "##" + FuWindow.CurrentDrawingWindow.ID;
             }
+            if (_collapsablesOpenStates.TryGetValue(id, out bool isOpen))
+            {
+                return isOpen;
+            }
+            return false;
         }
 
         /// <summary>
@@ -61,6 +73,15 @@ namespace Fu.Framework
         /// <param name="style">The style to apply to the element.</param>
         public void Collapsable(string text, Action innerUI, FuButtonStyle style, float indent = 16f, bool defaultOpen = true, float leftPartCustomUIWidth = 0f, Action leftPartCustomUI = null, float rightPartCustomUIWidth = 0f, Action rightPartCustomUI = null)
         {
+            // check value
+            if (leftPartCustomUI == null)
+            {
+                leftPartCustomUIWidth = 0f;
+            }
+            if (rightPartCustomUI == null)
+            {
+                rightPartCustomUIWidth = 0f;
+            }
             // Begin the element and apply the specified style
             beginElement(ref text, canBeHidden: false);
             // return if item must no be draw

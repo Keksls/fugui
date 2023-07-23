@@ -56,7 +56,7 @@ namespace Fu.Framework
             {
                 return false;
             }
-            bool valueChanged = dragFloat(text, ref value, vString, min, max, speed, format);
+            bool valueChanged = dragFloat(text, ref value, vString, min, max, speed, format, LastItemDisabled);
             endElement(style);
             return valueChanged;
         }
@@ -72,7 +72,7 @@ namespace Fu.Framework
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        private bool dragFloat(string text, ref float value, string vString, float min, float max, float speed, string format)
+        private bool dragFloat(string text, ref float value, string vString, float min, float max, float speed, string format, bool disabled)
         {
             // set the current item ID, so internal calculation can be unique (overwise the V2/V3 and V4 draw will use same ID for each dragFloat)
             _lastItemID = text;
@@ -84,13 +84,22 @@ namespace Fu.Framework
                 ImGui.Text(vString);
                 ImGui.SameLine();
             }
+
             // Set the width of the input field and create it
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             var oldVal = value; // Store the old value in case the input field is disabled
-            bool valueChanged = ImGui.DragFloat("##" + text, ref value, speed, min, max, string.IsNullOrEmpty(format) ? getStringFormat(value) : format, LastItemDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
-
+            if(disabled)
+            {
+                ImGui.BeginDisabled();
+            }
+            ImGui.DragFloat("##" + text, ref value, speed, min, max, string.IsNullOrEmpty(format) ? getStringFormat(value) : format, disabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+            if (disabled)
+            {
+                ImGui.EndDisabled();
+            }
+            bool valueChanged = value != oldVal;
             // If the input field is disabled, reset its value and return false for the valueChanged flag
-            if (LastItemDisabled)
+            if (disabled)
             {
                 value = oldVal;
                 valueChanged = false;
@@ -115,10 +124,11 @@ namespace Fu.Framework
         ///<param name="v2String">A string to be displayed before the input field Y. If empty, no string will be displayed.</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, ref Vector2 value, string v1String = null, string v2String = null, float speed = 0.1f, string format = null)
+        public bool Drag(string text, ref Vector2 value, string v1String = null, string v2String = null, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
-            return Drag(text, ref value, v1String, v2String, 0f, 100f, FuFrameStyle.Default, speed, format);
+            return Drag(text, ref value, v1String, v2String, 0f, 100f, FuFrameStyle.Default, speed, format, disabledInputs);
         }
 
         ///<summary>
@@ -132,10 +142,11 @@ namespace Fu.Framework
         ///<param name="max">The maximum allowed value for the input field.</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, ref Vector2 value, string v1String, string v2String, float min, float max, float speed = 0.1f, string format = null)
+        public bool Drag(string text, ref Vector2 value, string v1String, string v2String, float min, float max, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
-            return Drag(text, ref value, v1String, v2String, min, max, FuFrameStyle.Default, speed, format);
+            return Drag(text, ref value, v1String, v2String, min, max, FuFrameStyle.Default, speed, format, disabledInputs);
         }
 
         ///<summary>
@@ -150,8 +161,9 @@ namespace Fu.Framework
         /// <param name="style">The style of the Drag</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string text, ref Vector2 value, string v1String, string v2String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
+        public virtual bool Drag(string text, ref Vector2 value, string v1String, string v2String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
             // Begin the element and apply the specified style
             beginElement(ref text, style);
@@ -175,13 +187,13 @@ namespace Fu.Framework
                 // Move to the first column
                 ImGui.TableNextColumn();
                 // Create a draggable float for the first value in the table, using the specified ID and value string
-                valueChanged |= dragFloat(text + "val1", ref value.x, v1String, min, max, speed, format);
+                valueChanged |= dragFloat(text + "val1", ref value.x, v1String, min, max, speed, format, disabledInputs.Length > 0 ? disabledInputs[0] : false);
                 // Draw a hover frame around the element if it is hovered
                 drawHoverFrame();
                 // Move to the second column
                 ImGui.TableNextColumn();
                 // Create a draggable float for the second value in the table, using the specified ID and value string
-                valueChanged |= dragFloat(text + "val2", ref value.y, v2String, min, max, speed, format);
+                valueChanged |= dragFloat(text + "val2", ref value.y, v2String, min, max, speed, format, disabledInputs.Length > 1 ? disabledInputs[1] : false);
                 // Draw a hover frame around the element if it is hovered
                 drawHoverFrame();
                 // End the table
@@ -211,10 +223,11 @@ namespace Fu.Framework
         ///<param name="v3String">A string to be displayed before the input field Z. If empty, no string will be displayed.</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, ref Vector3 value, string v1String = null, string v2String = null, string v3String = null, float speed = 0.1f, string format = null)
+        public bool Drag(string text, ref Vector3 value, string v1String = null, string v2String = null, string v3String = null, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
-            return Drag(text, ref value, v1String, v2String, v3String, 0f, 100f, FuFrameStyle.Default, speed, format);
+            return Drag(text, ref value, v1String, v2String, v3String, 0f, 100f, FuFrameStyle.Default, speed, format, disabledInputs);
         }
 
         ///<summary>
@@ -229,10 +242,11 @@ namespace Fu.Framework
         ///<param name="max">The maximum allowed value for the input field.</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, float speed = 0.1f, string format = null)
+        public bool Drag(string text, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
-            return Drag(text, ref value, v1String, v2String, v3String, min, max, FuFrameStyle.Default, speed, format);
+            return Drag(text, ref value, v1String, v2String, v3String, min, max, FuFrameStyle.Default, speed, format, disabledInputs);
         }
 
         ///<summary>
@@ -248,8 +262,9 @@ namespace Fu.Framework
         /// <param name="style">The style of the Drag</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string text, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
+        public virtual bool Drag(string text, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
             beginElement(ref text, style);
             // return if item must no be draw
@@ -272,21 +287,21 @@ namespace Fu.Framework
                 ImGui.TableNextColumn();
 
                 // Drag the first value
-                valueChanged |= dragFloat(text + "val1", ref value.x, v1String, min, max, speed, format);
+                valueChanged |= dragFloat(text + "val1", ref value.x, v1String, min, max, speed, format, disabledInputs.Length > 0 ? disabledInputs[0] : false);
                 drawHoverFrame();
 
                 // Begin the second column
                 ImGui.TableNextColumn();
 
                 // Drag the second value
-                valueChanged |= dragFloat(text + "val2", ref value.y, v2String, min, max, speed, format);
+                valueChanged |= dragFloat(text + "val2", ref value.y, v2String, min, max, speed, format, disabledInputs.Length > 1 ? disabledInputs[1] : false);
                 drawHoverFrame();
 
                 // Begin the third column
                 ImGui.TableNextColumn();
 
                 // Drag the third value
-                valueChanged |= dragFloat(text + "val3", ref value.z, v3String, min, max, speed, format);
+                valueChanged |= dragFloat(text + "val3", ref value.z, v3String, min, max, speed, format, disabledInputs.Length > 2 ? disabledInputs[2] : false);
                 drawHoverFrame();
 
                 // End the table
@@ -317,10 +332,11 @@ namespace Fu.Framework
         ///<param name="v4String">A string to be displayed before the input field W. If empty, no string will be displayed.</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, ref Vector4 value, string v1String = null, string v2String = null, string v3String = null, string v4String = null, float speed = 0.1f, string format = null)
+        public bool Drag(string text, ref Vector4 value, string v1String = null, string v2String = null, string v3String = null, string v4String = null, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
-            return Drag(text, ref value, v1String, v2String, v3String, v4String, 0f, 100f, FuFrameStyle.Default, speed, format);
+            return Drag(text, ref value, v1String, v2String, v3String, v4String, 0f, 100f, FuFrameStyle.Default, speed, format, disabledInputs);
         }
         ///<summary>
         /// Creates a draggable Vector4 input field.
@@ -335,10 +351,11 @@ namespace Fu.Framework
         ///<param name="max">The maximum allowed value for the input field.</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public bool Drag(string text, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, float speed = 0.1f, string format = null)
+        public bool Drag(string text, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
-            return Drag(text, ref value, v1String, v2String, v3String, v4String, min, max, FuFrameStyle.Default, speed, format);
+            return Drag(text, ref value, v1String, v2String, v3String, v4String, min, max, FuFrameStyle.Default, speed, format, disabledInputs);
         }
         ///<summary>
         /// Creates a draggable Vector4 input field.
@@ -354,8 +371,9 @@ namespace Fu.Framework
         /// <param name="style">The style of the Drag</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
-        public virtual bool Drag(string text, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
+        public virtual bool Drag(string text, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
             beginElement(ref text, style);
             // return if item must no be draw
@@ -377,16 +395,16 @@ namespace Fu.Framework
 
                 // Move to the first column
                 ImGui.TableNextColumn();
-                valueChanged |= dragFloat(text + "val1", ref value.x, v1String, min, max, speed, format); // Drag float for the first value
+                valueChanged |= dragFloat(text + "val1", ref value.x, v1String, min, max, speed, format, disabledInputs.Length > 0 ? disabledInputs[0] : false); // Drag float for the first value
                 drawHoverFrame();
                 ImGui.TableNextColumn();
-                valueChanged |= dragFloat(text + "val2", ref value.y, v2String, min, max, speed, format); // Drag float for the second value
+                valueChanged |= dragFloat(text + "val2", ref value.y, v2String, min, max, speed, format, disabledInputs.Length > 1 ? disabledInputs[1] : false); // Drag float for the second value
                 drawHoverFrame();
                 ImGui.TableNextColumn();
-                valueChanged |= dragFloat(text + "val3", ref value.z, v3String, min, max, speed, format); // Drag float for the third value
+                valueChanged |= dragFloat(text + "val3", ref value.z, v3String, min, max, speed, format, disabledInputs.Length > 2 ? disabledInputs[2] : false); // Drag float for the third value
                 drawHoverFrame();
                 ImGui.TableNextColumn();
-                valueChanged |= dragFloat(text + "val4", ref value.w, v4String, min, max, speed, format); // Drag float for the fourth value
+                valueChanged |= dragFloat(text + "val4", ref value.w, v4String, min, max, speed, format, disabledInputs.Length > 3 ? disabledInputs[3] : false); // Drag float for the fourth value
                 drawHoverFrame();
                 ImGui.EndTable();
             }

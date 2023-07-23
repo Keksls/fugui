@@ -66,10 +66,20 @@ namespace Fu.Core
         private DrawData _drawData;
         private bool _isFirstTimeDragging = false;
         private bool _fireOnReadyNextFrame = false;
+        private List<FuContextMenuItem> _externalWindowContextMenuItems;
+        private bool _internalizeOnClose = false;
+        private float _lastTimeLeftMouseButtonUp = 0f;
+        private bool _readyToDrag = false;
+        private UnityEngine.Vector2Int _startDragMousePosition = default;
         #endregion
 
         public FuExternalWindowContainer(FuWindow window, FuExternalWindowFlags flags = FuExternalWindowFlags.Default)
         {
+            // set world pos before setting container
+            X = (int)window.WorldPosition.x;
+            Y = (int)window.WorldPosition.y + 36;
+            Size = new System.Drawing.Size(window.Size.x, window.Size.y);
+
             // set imguiWindow object to render
             if (!TryAddWindow(window))
             {
@@ -132,6 +142,21 @@ namespace Fu.Core
             _fuguiContext.OnPostRender += FuguiContext_OnPostRender;
             // register Fugui prepare frame to inject inputes at this time
             _fuguiContext.OnPrepareFrame += FuguiContext_OnPrepareFrame;
+            // set default internalization right according to quantity of internalization keys set on settings
+            // if not keys set, we want to internalize without pressing any key, so internalization is always enabled
+            FuWindow.CanInternalize = Fugui.Settings.InternalizationKey.Count == 0;
+
+            // bind external window context menu items
+            FuContextMenuBuilder contextMenuItemsBuilder = FuContextMenuBuilder.Start()
+                .BeginChild("Window state");
+            foreach (MonitorWindowState windowState in Enum.GetValues(typeof(MonitorWindowState)))
+            {
+                contextMenuItemsBuilder.AddItem(windowState.ToString(), () => SetMonitorState(windowState));
+            }
+            contextMenuItemsBuilder.EndChild()
+                .AddItem("Internalize window", () => InternalizeWindow(FuWindow));
+
+            _externalWindowContextMenuItems = contextMenuItemsBuilder.Build();
         }
 
         #region Container
@@ -149,11 +174,12 @@ namespace Fu.Core
             // store UIWindow variable
             FuWindow = uiWindow;
             // set world pos before setting container
-            SetPosition((int)FuWindow.WorldPosition.x, (int)FuWindow.WorldPosition.y + 36);
             FuWindow.Container = this;
             // register window events
             FuWindow.OnResize += UIWindow_OnResize;
             FuWindow.OnDrag += UIWindow_OnMove;
+            // register on window body draw event so we can inject context menu call after drawing the window's body
+            FuWindow.OnBodyDraw += Window_OnBodyDraw;
             // set pos and size
             FuWindow.LocalPosition = UnityEngine.Vector2Int.zero;
             SetSize(FuWindow.Size.x, FuWindow.Size.y);
@@ -231,7 +257,6 @@ namespace Fu.Core
             _backendFlags = io.BackendFlags;
             io.DisplaySize = new UnityEngine.Vector2(Width, Height);
             io.DisplayFramebufferScale = UnityEngine.Vector2.one;
-            //io.DeltaTime = UIWindow.DeltaTime;
 
             // render UI window
             RenderFuWindow(FuWindow);
@@ -246,18 +271,41 @@ namespace Fu.Core
         /// <param name="UIWindow">UIWindow to render</param>
         public void RenderFuWindow(FuWindow UIWindow)
         {
+            // push external window context menu items
+            Fugui.PushContextMenuItems(_externalWindowContextMenuItems);
             // force set UI pos on appear (don't need to any frame because ForcePos() return true, it's checked into UIWindow src)
             ImGui.SetNextWindowPos(UnityEngine.Vector2.zero, ImGuiCond.Appearing);
+
+            // for window render if dragging or trying to
+            if (_readyToDrag || Dragging)
+            {
+                UIWindow.ForceDraw();
+            }
+
             // call UIWindow.DrawWindow
             UIWindow.DrawWindow();
+
+            // pop external window context menu items
+            Fugui.PopContextMenuItems();
+
             // if needed, will draw state panel
             drawWindowStatePanel();
+
             // internalization check
-            if (UIWindow.WantToEnter(Fugui.MainContainer))
+            if (Dragging && UIWindow.WantToEnter(Fugui.MainContainer))
             {
-                Fugui.RemoveExternalWindow(UIWindow.ID);
-                UIWindow.TryAddToContainer(Fugui.MainContainer);
+                InternalizeWindow(UIWindow);
             }
+        }
+
+        /// <summary>
+        /// Internalize a FuWindow to the main container
+        /// </summary>
+        /// <param name="UIWindow">FuWindow to internalize</param>
+        public void InternalizeWindow(FuWindow UIWindow)
+        {
+            _internalizeOnClose = true;
+            Fugui.RemoveExternalWindow(UIWindow.ID);
         }
 
         /// <summary>
@@ -339,7 +387,7 @@ namespace Fu.Core
                 ImGui.Dummy(size);
                 return;
             }
-            ImGui.Image(GetTextureID(texture), size, UnityEngine.Vector2.zero, UnityEngine.Vector2.one, color);
+            ImGui.Image(GetTextureID(texture), size, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f), color);
         }
 
         /// <summary>
@@ -409,6 +457,16 @@ namespace Fu.Core
         {
             SetSize(UIWindow.Size.x, UIWindow.Size.y);
         }
+
+
+        /// <summary>
+        /// try to open the context menu each frames after drawing the window's body
+        /// </summary>
+        /// <param name="UIWindow">UIWindow that just resize</param>
+        private void Window_OnBodyDraw(FuWindow UIWindow)
+        {
+            Fugui.TryOpenContextMenuOnWindowClick();
+        }
         #endregion
 
         #region Window Methods
@@ -432,6 +490,8 @@ namespace Fu.Core
                 if (FuWindow != null)
                 {
                     FuWindow.OnResize -= UIWindow_OnResize;
+                    FuWindow.OnDrag += UIWindow_OnMove;
+                    FuWindow.OnBodyDraw -= Window_OnBodyDraw;
                 }
             }
 
@@ -451,6 +511,35 @@ namespace Fu.Core
             // dispose this window
             Dispose();
             FuWindow.Container = null;
+
+            // add the FuWindow to the main container if we want to internalize the window on close external container
+            if (_internalizeOnClose)
+            {
+                // set new container's local position so the world position match the external container's position before internalization
+                UnityEngine.Vector2Int worldPosition = _worldPosition;
+                FuWindow.LocalPosition = worldPosition - Fugui.MainContainer.Position;
+
+                // clamp position if internalize from outside of main container rect bounds
+                bool isFullyInsideMainContainerRect = true;
+                if (_worldPosition.x < Fugui.MainContainer.Position.x)
+                    isFullyInsideMainContainerRect = false;
+                if (_worldPosition.x + _size.x > Fugui.MainContainer.Position.x + Fugui.MainContainer.Size.x)
+                    isFullyInsideMainContainerRect = false;
+                if (_worldPosition.y < Fugui.MainContainer.Position.y)
+                    isFullyInsideMainContainerRect = false;
+                if (_worldPosition.y + _size.y > Fugui.MainContainer.Position.y + Fugui.MainContainer.Size.y)
+                    isFullyInsideMainContainerRect = false;
+
+                // window is not fully inside main container rect bounds, let's place it at center of main container
+                if (!isFullyInsideMainContainerRect)
+                {
+                    FuWindow.LocalPosition = Fugui.MainContainer.Size / 2 - FuWindow.Size / 2;
+                }
+
+                // add FuWindow to the main container
+                FuWindow.TryAddToContainer(Fugui.MainContainer);
+                _internalizeOnClose = false;
+            }
         }
 
         /// <summary>
@@ -472,7 +561,7 @@ namespace Fu.Core
         {
             base.OnMouseWheel(e);
             // save current scroll (will be send to UI when needed)
-            _mouseScrollWheel = e.DeltaPrecise;
+            _mouseScrollWheel = e.DeltaPrecise / 10f;
         }
 
         /// <summary>
@@ -503,6 +592,7 @@ namespace Fu.Core
 
             // ceck if any externalisation key is pressed
             // if any, this window can now be internalized
+            FuWindow.CanInternalize = Fugui.Settings.InternalizationKey.Count == 0;
             foreach (Key key in Fugui.Settings.InternalizationKey)
             {
                 if (e.Key == key)
@@ -551,10 +641,12 @@ namespace Fu.Core
                 // click on window header, start dragging until release mouse
                 if (e.X >= 0f && e.X < Width && e.Y >= 0f && e.Y < 20f)
                 {
-                    // assume we are dragging now
-                    _startDragOffset = Fugui.WorldMousePosition - new UnityEngine.Vector2Int(X, Y);
-                    Dragging = true;
-                    FuWindow.IsDragging = true;
+                    _startDragMousePosition = new UnityEngine.Vector2Int(e.X, e.Y);
+                    _readyToDrag = true;
+                }
+                else
+                {
+                    _readyToDrag = false;
                 }
             }
         }
@@ -567,8 +659,41 @@ namespace Fu.Core
         {
             base.OnMouseUp(e);
 
+            // detect double click
+            bool doubleClick = e.Button == MouseButton.Left && Fugui.Time - _lastTimeLeftMouseButtonUp < 0.5f;
+
+            // save current time if it's a left click to detect double click
+            if (e.Button == MouseButton.Left)
+            {
+                // we just hit a double click, let's reset _lastTimeLeftMouseButtonUp to avoid multi double click
+                if (doubleClick)
+                {
+                    _lastTimeLeftMouseButtonUp = 0f;
+                }
+                // we just hit a simple click, let's save _lastTimeLeftMouseButtonUp to prepare furture double click
+                else
+                {
+                    _lastTimeLeftMouseButtonUp = Fugui.Time;
+                }
+            }
+
+            // double click on title window title
+            if (doubleClick && e.X >= 0f && e.X < Width && e.Y >= 0f && e.Y < 20f)
+            {
+                // window is not maximized, let's maximize it
+                if (MonitorWindowState != MonitorWindowState.Maximized)
+                {
+                    SetMonitorState(MonitorWindowState.Maximized);
+                }
+                // window is maximized, let's restore it as last free state
+                else
+                {
+                    SetMonitorState(MonitorWindowState.None);
+                    SetPosition((int)Fugui.WorldMousePosition.x - _size.x / 2, (int)Fugui.WorldMousePosition.y - 20);
+                }
+            }
             // maximize if release window on top of screen
-            if (Dragging && MonitorWindowState != MonitorWindowState.Maximized && _worldPosition.y <= MonitorsUtils.GetCurrentMonitor(_worldPosition.x + (_size.x / 2), false).WorkingArea.top)
+            else if (Dragging && MonitorWindowState != MonitorWindowState.Maximized && _worldPosition.y <= MonitorsUtils.GetCurrentMonitor(_worldPosition.x + (_size.x / 2), false).WorkingArea.top)
             {
                 SetMonitorState(MonitorWindowState.Maximized);
             }
@@ -579,6 +704,7 @@ namespace Fu.Core
             }
             // we are not dragging anymore
             Dragging = false;
+            _readyToDrag = false;
             FuWindow.IsDragging = true;
         }
 
@@ -591,6 +717,46 @@ namespace Fu.Core
             base.OnMouseEnter(e);
             // force draw on next frame to be reactive on state update when mouse enter window rect
             FuWindow.ForceDraw();
+        }
+
+        /// <summary>
+        /// invoked when mouse leave window rect
+        /// </summary>
+        /// <param name="e">nothing usefull, just generic evt args</param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            // force draw on next frame to be reactive on state update when mouse leave window rect
+            FuWindow.ForceDraw();
+        }
+
+        protected override void OnMouseMove(MouseMoveEventArgs e)
+        {
+            base.OnMouseMove(e);
+
+            // get and store current window mouse position
+            UnityEngine.Vector2Int currentDragMousePosition = new UnityEngine.Vector2Int(e.X, e.Y);
+
+            // verify we have move enought to start drag operation (6 px => same as windows value)
+            if (_readyToDrag && UnityEngine.Vector2Int.Distance(currentDragMousePosition, _startDragMousePosition) > 6)
+            {
+                _readyToDrag = false;
+
+                // get offset between current mouse position and start drag mouse position
+                UnityEngine.Vector2Int offsetDragMousePosition = _startDragMousePosition - currentDragMousePosition;
+
+                // assume we are dragging now
+                _startDragOffset = Fugui.WorldMousePosition - new UnityEngine.Vector2Int(X, Y) + offsetDragMousePosition;
+                Dragging = true;
+                FuWindow.IsDragging = true;
+
+                // restore default state if dragging a maximized window
+                if (MonitorWindowState != MonitorWindowState.None)
+                {
+                    SetMonitorState(MonitorWindowState.None);
+                    SetPosition((int)Fugui.WorldMousePosition.x - _size.x / 2, (int)Fugui.WorldMousePosition.y - 20);
+                }
+            }
         }
         #endregion
 
@@ -715,6 +881,7 @@ namespace Fu.Core
             io.KeyMap[(int)ImGuiKey.Space] = (int)Key.Space;
             io.KeyMap[(int)ImGuiKey.Enter] = (int)Key.Enter;
             io.KeyMap[(int)ImGuiKey.Escape] = (int)Key.Escape;
+
             io.KeyMap[(int)ImGuiKey.A] = (int)Key.A;
             io.KeyMap[(int)ImGuiKey.B] = (int)Key.B;
             io.KeyMap[(int)ImGuiKey.C] = (int)Key.C;
@@ -741,6 +908,7 @@ namespace Fu.Core
             io.KeyMap[(int)ImGuiKey.X] = (int)Key.X;
             io.KeyMap[(int)ImGuiKey.Y] = (int)Key.Y;
             io.KeyMap[(int)ImGuiKey.Z] = (int)Key.Z;
+
             io.KeyMap[(int)ImGuiKey.Keypad0] = (int)Key.Keypad0;
             io.KeyMap[(int)ImGuiKey.Keypad1] = (int)Key.Keypad1;
             io.KeyMap[(int)ImGuiKey.Keypad2] = (int)Key.Keypad2;
@@ -751,6 +919,31 @@ namespace Fu.Core
             io.KeyMap[(int)ImGuiKey.Keypad7] = (int)Key.Keypad7;
             io.KeyMap[(int)ImGuiKey.Keypad8] = (int)Key.Keypad8;
             io.KeyMap[(int)ImGuiKey.Keypad9] = (int)Key.Keypad9;
+
+            io.KeyMap[(int)ImGuiKey._0] = (int)Key.Number0;
+            io.KeyMap[(int)ImGuiKey._1] = (int)Key.Number1;
+            io.KeyMap[(int)ImGuiKey._2] = (int)Key.Number2;
+            io.KeyMap[(int)ImGuiKey._3] = (int)Key.Number3;
+            io.KeyMap[(int)ImGuiKey._4] = (int)Key.Number4;
+            io.KeyMap[(int)ImGuiKey._5] = (int)Key.Number5;
+            io.KeyMap[(int)ImGuiKey._6] = (int)Key.Number6;
+            io.KeyMap[(int)ImGuiKey._7] = (int)Key.Number7;
+            io.KeyMap[(int)ImGuiKey._8] = (int)Key.Number8;
+            io.KeyMap[(int)ImGuiKey._9] = (int)Key.Number9;
+
+            io.KeyMap[(int)ImGuiKey.F1] = (int)Key.F1;
+            io.KeyMap[(int)ImGuiKey.F2] = (int)Key.F2;
+            io.KeyMap[(int)ImGuiKey.F3] = (int)Key.F3;
+            io.KeyMap[(int)ImGuiKey.F4] = (int)Key.F4;
+            io.KeyMap[(int)ImGuiKey.F5] = (int)Key.F5;
+            io.KeyMap[(int)ImGuiKey.F6] = (int)Key.F6;
+            io.KeyMap[(int)ImGuiKey.F7] = (int)Key.F7;
+            io.KeyMap[(int)ImGuiKey.F8] = (int)Key.F8;
+            io.KeyMap[(int)ImGuiKey.F9] = (int)Key.F9;
+            io.KeyMap[(int)ImGuiKey.F10] = (int)Key.F10;
+            io.KeyMap[(int)ImGuiKey.F11] = (int)Key.F11;
+            io.KeyMap[(int)ImGuiKey.F12] = (int)Key.F12;
+
             io.KeyMap[(int)ImGuiKey.KeypadDecimal] = (int)Key.KeypadDecimal;
             io.KeyMap[(int)ImGuiKey.KeypadDivide] = (int)Key.KeypadDivide;
             io.KeyMap[(int)ImGuiKey.KeypadMultiply] = (int)Key.KeypadMultiply;
@@ -766,30 +959,6 @@ namespace Fu.Core
             io.KeyMap[(int)ImGuiKey.RightAlt] = (int)Key.AltRight;
             io.KeyMap[(int)ImGuiKey.RightSuper] = (int)Key.WinRight;
         }
-
-        //private static void SetKeyMappings()
-        //{
-        //    ImGuiIOPtr io = ImGui.GetIO();
-        //    io.KeyMap[(int)ImGuiKey.Tab] = (int)Key.Tab;
-        //    io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)Key.Left;
-        //    io.KeyMap[(int)ImGuiKey.RightArrow] = (int)Key.Right;
-        //    io.KeyMap[(int)ImGuiKey.UpArrow] = (int)Key.Up;
-        //    io.KeyMap[(int)ImGuiKey.DownArrow] = (int)Key.Down;
-        //    io.KeyMap[(int)ImGuiKey.PageUp] = (int)Key.PageUp;
-        //    io.KeyMap[(int)ImGuiKey.PageDown] = (int)Key.PageDown;
-        //    io.KeyMap[(int)ImGuiKey.Home] = (int)Key.Home;
-        //    io.KeyMap[(int)ImGuiKey.End] = (int)Key.End;
-        //    io.KeyMap[(int)ImGuiKey.Delete] = (int)Key.Delete;
-        //    io.KeyMap[(int)ImGuiKey.Backspace] = (int)Key.BackSpace;
-        //    io.KeyMap[(int)ImGuiKey.Enter] = (int)Key.Enter;
-        //    io.KeyMap[(int)ImGuiKey.Escape] = (int)Key.Escape;
-        //    io.KeyMap[(int)ImGuiKey.A] = (int)Key.A;
-        //    io.KeyMap[(int)ImGuiKey.C] = (int)Key.C;
-        //    io.KeyMap[(int)ImGuiKey.V] = (int)Key.V;
-        //    io.KeyMap[(int)ImGuiKey.X] = (int)Key.X;
-        //    io.KeyMap[(int)ImGuiKey.Y] = (int)Key.Y;
-        //    io.KeyMap[(int)ImGuiKey.Z] = (int)Key.Z;
-        //}
 
         /// <summary>
         /// Compute GL fixed update (process window inputs and native events)
@@ -957,6 +1126,7 @@ namespace Fu.Core
             _drawData.Bind(ImGui.GetDrawData());
         }
 
+        string lastRenderDate = "";
         /// <summary>
         /// this will be called every frame berore FuguiContext create NewFrame
         /// It's time to inject inputs if needed
@@ -965,6 +1135,7 @@ namespace Fu.Core
         {
             // update the mouse state
             _fuMouseState.UpdateState(this);
+            _fuKeyboardState.UpdateState();
 
             // return we are not started or no context is initialized
             if (!_started || !_contextInitialized || !_readyToNewFrame || !FuWindow.MustBeDraw())
@@ -976,7 +1147,7 @@ namespace Fu.Core
             InjectImGuiInput();
             // do fixed update (that will register inputs)
             RegisterInputs();
-
+            lastRenderDate = DateTime.Now.TimeOfDay.ToString();
             return true;
         }
 
@@ -1017,6 +1188,7 @@ namespace Fu.Core
             if (_waitingForFirstCompletLoop)
             {
                 OnInitialized?.Invoke();
+                SetPosition(Fugui.WorldMousePosition.x - Size.Width / 2, Fugui.WorldMousePosition.y - 12);
                 _waitingForFirstCompletLoop = false;
                 UIWindow_OnResize(FuWindow);
                 UIWindow_OnMove(FuWindow);
@@ -1191,122 +1363,20 @@ namespace Fu.Core
             ImGui.SetNextWindowBgAlpha(0f);
             ImGui.Begin(FuWindow.ID + "sp", ImGuiWindowFlags.NoDecoration);
 
-            // calc sizes
-            float width = Math.Min(_size.x, _size.y);
-            if (width > 3f * 64f)
-                width = 3f * 64f;
-            float colSize = width / 3f;
-            UnityEngine.Vector2 buttonSize = new UnityEngine.Vector2(colSize - 8f, colSize - 8f);
-            UnityEngine.Vector4 buttonIconColor = new UnityEngine.Vector4(1, 1, 1, 0.5f);
+            ImGui.Dummy(new UnityEngine.Vector2(0f, 32f));
+            ImGui.Text("Left mouse button : " + _mouseState[MouseButton.Left]);
+            ImGui.Text("Middle mouse button : " + _mouseState[MouseButton.Middle]);
+            ImGui.Text("Right mouse button : " + _mouseState[MouseButton.Right]);
+            ImGui.Text("Last render time : " + lastRenderDate);
 
-            ImGui.SetCursorPosX((_size.x) / 2f - (width / 2f));
-            ImGui.SetCursorPosY((_size.y) / 2f - (width / 2f));
-            ImGui.BeginChild("windowMonitorStatePanel", new UnityEngine.Vector2(width, width), false);
-            {
-                ImGui.Columns(3, "windowMonitorStatePanelCols", false);
-                ImGui.SetColumnWidth(0, colSize);
-                ImGui.SetColumnWidth(1, colSize);
-                ImGui.SetColumnWidth(2, colSize);
+            ImGui.Separator();
 
-                // switch up left column
-                ImGui.NextColumn();
+            ImGui.Text("Dragging " + Dragging);
+            ImGui.Text("IsBusy " + FuWindow.IsBusy);
+            ImGui.Text("IsExternalizable " + FuWindow.IsExternalizable);
+            ImGui.Text("IsExternal " + FuWindow.IsExternal);
+            ImGui.Text("CanInternalize " + FuWindow.CanInternalize);
 
-                // half top icon
-                Fugui.Push(ImGuiCol.Button, new UnityEngine.Vector4(0.1f, 0.1f, 0.1f, 0.1f));
-                if (ImGuiImageButton(Fugui.Settings.TopIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.HalfTop);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen top");
-                }
-                ImGui.NextColumn();
-
-                // maximize icon
-                if (ImGuiImageButton(Fugui.Settings.MaximizeIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.Maximized);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Maximize this window");
-                }
-                ImGui.NextColumn();
-
-                // left icon
-                if (ImGuiImageButton(Fugui.Settings.LeftIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.HalfLeft);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen left");
-                }
-                ImGui.NextColumn();
-
-                // center icon
-                if (ImGuiImageButton(Fugui.Settings.CenterIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.Center);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen center");
-                }
-                ImGui.NextColumn();
-
-                // right icon
-                if (ImGuiImageButton(Fugui.Settings.RightIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.HalfRight);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen right");
-                }
-                ImGui.NextColumn();
-
-                // minimized icon
-                if (ImGuiImageButton(Fugui.Settings.MinimizeIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.Minimized);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Minimize this window");
-                }
-                ImGui.NextColumn();
-
-                // bottom icon
-                if (ImGuiImageButton(Fugui.Settings.BottomIcon, buttonSize, buttonIconColor))
-                {
-                    FuWindow.IsBusy = true;
-                    SetMonitorState(MonitorWindowState.HalfBottom);
-                    FuWindow.IsBusy = false;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Send to screen bottom");
-                }
-                Fugui.PopColor();
-
-                ImGui.NextColumn();
-                ImGui.Columns(1);
-            }
-            ImGui.EndChild();
             ImGui.End();
         }
         #endregion

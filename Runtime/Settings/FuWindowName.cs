@@ -6,12 +6,39 @@ namespace Fu
     {
         ushort _id;
         string _name;
+        bool _autoInstantiateWindowOnlayoutSet;
+        short _idleFPS;
         public ushort ID { get { return _id; } }
         public string Name { get { return _name; } }
+        /// <summary>
+        /// Whatever Fugui will instantiate the window once the layout is set
+        ///</summary>
+        public bool AutoInstantiateWindowOnlayoutSet { get { return _autoInstantiateWindowOnlayoutSet; } }
+        /// <summary>
+        /// Idle FPS of the window (-1 to let fugui handle it auto)
+        ///</summary>
+        public short IdleFPS { get { return _idleFPS; } }
 
-        public FuWindowName(ushort id, string name)
+        public FuWindowName(ushort id, string name, bool autoInstantiateWindowOnlayoutSet, short idleFPS)
         {
             _id = id;
+            _name = name;
+            _autoInstantiateWindowOnlayoutSet = autoInstantiateWindowOnlayoutSet;
+            _idleFPS = idleFPS;
+        }
+
+        public void SetAutoInstantiateOnLayoutSet(bool autoInstantiateWindowOnlayoutSet)
+        {
+            _autoInstantiateWindowOnlayoutSet = autoInstantiateWindowOnlayoutSet;
+        }
+
+        public void SetIdleFPS(short idleFPS)
+        {
+            _idleFPS = idleFPS;
+        }
+
+        public void SetName(string name)
+        {
             _name = name;
         }
 

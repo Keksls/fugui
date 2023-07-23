@@ -101,6 +101,7 @@ namespace Fu.Core
         {
             // update mouse state
             _fuMouseState.UpdateState(this);
+            _fuKeyboardState.UpdateState();
 
             // externalize windows
             while (_toExternalizeWindows.Count > 0)
@@ -215,7 +216,7 @@ namespace Fu.Core
             DrawMainDockSpace();
 
             // whatever the user want to externalize a window this frame
-            _canExternalizeThisFrame = false;
+            _canExternalizeThisFrame = Fugui.Settings.ExternalizationKey.Count == 0;
             foreach (KeyCode key in Fugui.Settings.ExternalizationKey)
             {
                 if (Input.GetKey(key))
@@ -229,10 +230,10 @@ namespace Fu.Core
             bool leftButtonState = Input.GetMouseButton(0);
             foreach (FuWindow window in Windows.Values)
             {
-                // check whatever window must be draw
-                RenderFuWindow(window);
                 // update window state
                 window.UpdateState(leftButtonState);
+                // check whatever window must be draw
+                RenderFuWindow(window);
                 // add to externalize list
                 if (_canExternalizeThisFrame && window.WantToLeave())
                 {

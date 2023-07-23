@@ -56,7 +56,11 @@ namespace Fu.Framework
         /// <summary>
         /// Right mouse button
         /// </summary>
-        Right = 1
+        Right = 1,
+        /// <summary>
+        /// Center mouse button
+        /// </summary>
+        Center = 2
     }
 
     /// <summary>

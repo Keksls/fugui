@@ -96,7 +96,7 @@ namespace Fu.Framework
                 {
                     if (items[i] != null)
                     {
-                        if (ImGui.Selectable(items[i].ToString(), selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
+                        if (ImGui.Selectable(Fugui.AddSpacesBeforeUppercase(items[i].ToString()), selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
                         {
                             // Update the selected index and invoke the item change action
                             selectedIndex = i;
@@ -142,12 +142,8 @@ namespace Fu.Framework
             // Begin the ListBox
             if (ImGui.BeginListBox(text, size))
             {
-                // Set the IsInsidePopUp flag to true
-                IsInsidePopUp = true;
                 // execute the callback
                 callback?.Invoke();
-                // Set the IsInsidePopUp flag to false
-                IsInsidePopUp = false;
                 // End the ListBox
                 ImGui.EndListBox();
             }

@@ -39,6 +39,15 @@ namespace Fu.Core
             }
         }
 
+        private void Start()
+        {
+            // if no layouts and settings is set so, display Fugui settings to avoid 'softLocked scene'
+            if (FuDockingLayoutManager.CurrentLayout == null && FuDockingLayoutManager.Layouts.Count == 0 && Fugui.Settings.DisplaySettingsIfNoLayout)
+            {
+                Fugui.CreateWindowAsync(FuSystemWindowsNames.FuguiSettings, null);
+            }
+        }
+
         private void FuGui_OnUIException(Exception error)
         {
             Debug.LogException(error);
@@ -98,6 +107,5 @@ namespace Fu.Core
             Fugui.Dispose();
         }
         #endregion
-
     }
 }

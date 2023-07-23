@@ -71,6 +71,7 @@ namespace Fu
             if (ImGui.ColorButton("##previous" + id, _colorpickerBackupColor, ImGuiColorEditFlags.NoPicker | ImGuiColorEditFlags.AlphaPreviewHalf, new Vector2(60, 40) * CurrentContext.Scale))
             {
                 color = _colorpickerBackupColor;
+                edited = true;
             }
             ImGui.EndGroup();
 

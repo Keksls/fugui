@@ -1,4 +1,5 @@
 using ImGuiNET;
+using System.Collections.Generic;
 
 namespace Fu.Core
 {
@@ -7,12 +8,15 @@ namespace Fu.Core
     /// </summary>
     public class FuKeyboardState
     {
-        private FuWindow _window;
-        private ImGuiIOPtr _io;
-        public bool KeyAlt { get { return (_window == null || _window.State == FuWindowState.Manipulating) ? _io.KeyAlt : false; } }
-        public bool KeyCtrl { get { return (_window == null || _window.State == FuWindowState.Manipulating) ? _io.KeyCtrl : false; } }
-        public bool KeyShift { get { return (_window == null || _window.State == FuWindowState.Manipulating) ? _io.KeyShift : false; } }
-        public bool KeySuper { get { return (_window == null || _window.State == FuWindowState.Manipulating) ? _io.KeySuper : false; } }
+        private readonly FuWindow _window;
+        private readonly ImGuiIOPtr _io;
+        public bool KeyAlt { get { return (_window == null || _window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window) && _io.KeyAlt; } }
+        public bool KeyCtrl { get { return (_window == null || _window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window) && _io.KeyCtrl; } }
+        public bool KeyShift { get { return (_window == null || _window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window) && _io.KeyShift; } }
+        public bool KeySuper { get { return (_window == null || _window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window) && _io.KeySuper; } }
+        private static readonly HashSet<FuKeysCode> _currentPressedKeys = new HashSet<FuKeysCode>();
+        private readonly FuKeyState[] _keysStates;
+        private static int _minKeyValue;
 
         /// <summary>
         /// instantiate a new FuKeyboardState relatif to a FuWindow
@@ -23,6 +27,30 @@ namespace Fu.Core
         {
             _window = window;
             _io = io;
+            // get and store FuKeysCode.MIN as int to avoid multiple cast at runtime
+            if (_minKeyValue == 0)
+            {
+                _minKeyValue = (int)FuKeysCode.MIN;
+            }
+            // bind keys states and store it into an array
+            _keysStates = new FuKeyState[(int)FuKeysCode.MAX - (int)FuKeysCode.MIN];
+            for (int key = 0; key < _keysStates.Length; key++)
+            {
+                _keysStates[key] = new FuKeyState(key + _minKeyValue);
+            }
+        }
+
+        /// <summary>
+        /// Whatever a keyboard key is pressed
+        /// </summary>
+        /// <returns>true if Pressed</returns>
+        public FuKeyState GetKeyStates(FuKeysCode key)
+        {
+            if (_window == null || _window.State == FuWindowState.Manipulating)
+            {
+                return _keysStates[(int)key - _minKeyValue];
+            }
+            return default;
         }
 
         /// <summary>
@@ -33,7 +61,7 @@ namespace Fu.Core
         {
             if (_window == null || _window.State == FuWindowState.Manipulating)
             {
-                return _io.KeysDown[(int)key];
+                return _keysStates[(int)key - _minKeyValue].IsPressed;
             }
             return false;
         }
@@ -46,8 +74,7 @@ namespace Fu.Core
         {
             if (_window == null || _window.State == FuWindowState.Manipulating)
             {
-                ImGuiKeyData data = _io.KeysData[(int)key];
-                return data.Down != 0 && data.DownDurationPrev == 0;
+                return _keysStates[(int)key - _minKeyValue].IsDown;
             }
             return false;
         }
@@ -60,10 +87,71 @@ namespace Fu.Core
         {
             if (_window == null || _window.State == FuWindowState.Manipulating)
             {
-                ImGuiKeyData data = _io.KeysData[(int)key];
-                return data.Down == 0 && data.DownDurationPrev != -1;
+                return _keysStates[(int)key - _minKeyValue].IsUp;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Update keyboard backed states for this frame
+        /// Must called once by frame event in each windows and each container that implement keyboard state (juste next to mouse states update)
+        /// </summary>
+        internal void UpdateState()
+        {
+            switch (_window)
+            {
+                // window is null, so it's a container related keyboard, let's bind it whatever current input focused window
+                case null:
+                    for (int key = 0; key < _keysStates.Length; key++)
+                    {
+                        _keysStates[key].SetState(_io.KeysDown[key + _minKeyValue]);
+                    }
+                    break;
+
+                // window is NOT nul, so it's a window related keyboard, let's bind it according to current input focused window
+                case not null:
+                    if (_window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window)
+                    {
+                        for (int key = 0; key < _keysStates.Length; key++)
+                        {
+                            bool keyState = _io.KeysDown[key + _minKeyValue];
+
+                            // the key has just been pressed this frame => KeyDown
+                            if (!_keysStates[key].IsPressed && keyState)
+                            {
+                                // Set current window as input focus
+                                FuWindow.InputFocusedWindow = _window;
+                                // increase quantity of input holding the current input focused window
+                                FuWindow.NbInputFocusedWindow++;
+                                // add down key as pressed keys
+                                _currentPressedKeys.Add((FuKeysCode)key + _minKeyValue);
+                            }
+
+                            // the key has just been released this frame => KeyUp
+                            if (_keysStates[key].IsPressed && !keyState)
+                            {
+                                // remove up key from pressed keys
+                                if (_currentPressedKeys.Remove((FuKeysCode)key + _minKeyValue))
+                                {
+                                    // decrease quantity of input holding the current input focused window
+                                    FuWindow.NbInputFocusedWindow--;
+                                }
+                            }
+
+                            // update key state
+                            _keysStates[key].SetState(keyState);
+                        }
+                    }
+                    // This window does NOT has focus, let's ignore binding
+                    else
+                    {
+                        for (int key = 0; key < _keysStates.Length; key++)
+                        {
+                            _keysStates[key].SetState(false);
+                        }
+                    }
+                    break;
+            }
         }
     }
 }

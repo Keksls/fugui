@@ -3,7 +3,7 @@
     public enum FuKeysCode
     {
         None = 0,
-        Tab = 0x200,
+        Tab = 512,
         LeftArrow = 513,
         RightArrow = 514,
         UpArrow = 515,
@@ -107,6 +107,9 @@
         KeypadSubtract = 613,
         KeypadAdd = 614,
         KeypadEnter = 615,
-        KeypadEqual = 616
+        KeypadEqual = 616,
+
+        MIN = 512,
+        MAX = 616
     }
 }

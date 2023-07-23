@@ -17,22 +17,6 @@ namespace Fu.Framework
         /// </summary>
         public static FuLayout CurrentDrawer { get; protected set; } = null;
         /// <summary>
-        /// The ID of the window in wich a popup is open (if there is some)
-        /// </summary>
-        public static string CurrentPopUpWindowID { get; private set; } = null;
-        /// <summary>
-        /// The ID of the currently open pop-up (if there is some)
-        /// </summary>
-        public static string CurrentPopUpID { get; private set; } = null;
-        /// <summary>
-        /// The Rect of the currently open pop-up (if there is some)
-        /// </summary>
-        public static Rect CurrentPopUpRect { get; private set; } = default;
-        /// <summary>
-        /// A flag indicating whether the layout is inside a pop-up.
-        /// </summary>
-        public static bool IsInsidePopUp { get; private set; } = false;
-        /// <summary>
         /// A flag indicating last drawed item is hovered by current pointer.
         /// </summary>
         public bool LastItemHovered { get => _lastItemHovered; }
@@ -43,10 +27,15 @@ namespace Fu.Framework
         public bool LastItemActive { get => _lastItemActive; }
         private static bool _lastItemActive = false;
         /// <summary>
-        /// A flag indicating last drawed item was active laft frame and is no more this frame.
+        /// A flag indicating last drawed item was active last frame and is no more this frame.
         /// </summary>
         public bool LastItemJustDeactivated { get => _lastItemJustDeactivated; }
         private static bool _lastItemJustDeactivated = false;
+        /// <summary>
+        /// A flag indicating last drawed item was NOT active last frame and is this frame.
+        /// </summary>
+        public bool LastItemJustActivated { get => _lastItemJustActivated; }
+        private static bool _lastItemJustActivated = false;
         /// <summary>
         /// A flag indicating last drawed item has just done an update operation this frame.
         /// </summary>
@@ -80,7 +69,7 @@ namespace Fu.Framework
         // has animations enabled
         protected bool _animationEnabled = true;
         // screen relative pos of the current drawing item
-        private static Vector2 _currentItemStartPos;
+        protected static Vector2 _currentItemStartPos;
         // whatever elements are currently disabled (if true)
         private bool _longDisabled = false;
         // the time before an hovered element display it's tooltip
@@ -112,7 +101,7 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// Disposes this object.
+        /// Disposes this Layout
         /// </summary>
         public virtual void Dispose()
         {
@@ -130,11 +119,12 @@ namespace Fu.Framework
             _lastItemHovered = false;
             _lastItemJustDeactivated = false;
             _lastItemUpdate = false;
+            _lastItemJustActivated = false;
             _lastItemClickedButton = FuMouseButton.None;
 
             // whatever we must draw the next item
             _drawElement = true;
-            if (!IsInsidePopUp && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
+            if (!Fugui.IsDrawingInsidePopup() && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
             {
                 _drawElement = FuPanel.Clipper.BeginDrawElement(canBeHidden);
             }
@@ -177,7 +167,7 @@ namespace Fu.Framework
                 LastItemDisabled = false;
             }
             _elementHoverFramedEnabled = false;
-            if (!IsInsidePopUp && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
+            if (!Fugui.IsDrawingInsidePopup() && FuPanel.IsInsidePanel && FuPanel.Clipper != null)
             {
                 FuPanel.Clipper.EndDrawElement();
             }
@@ -424,8 +414,11 @@ namespace Fu.Framework
         {
             float txtWidth = ImGui.CalcTextSize(nextItemText).x;
             float avWidth = ImGui.GetContentRegionAvail().x;
-            Dummy(avWidth / 2f - txtWidth / 2f);
-            SameLine();
+            float offset = avWidth / 2f - txtWidth / 2f;
+            if (offset > 0f)
+            {
+                Fugui.MoveX(offset);
+            }
         }
 
         /// <summary>
@@ -435,8 +428,11 @@ namespace Fu.Framework
         public void CenterNextItem(float itemWidth)
         {
             float avWidth = ImGui.GetContentRegionAvail().x;
-            Dummy(avWidth / 2f - itemWidth / 2f);
-            SameLine();
+            float offset = avWidth / 2f - itemWidth / 2f;
+            if (offset > 0f)
+            {
+                Fugui.MoveX(offset);
+            }
         }
         #endregion
 
@@ -608,6 +604,8 @@ namespace Fu.Framework
             // do nothing if the item is disabled
             if (LastItemDisabled)
             {
+                // get hover state
+                _lastItemHovered = isItemHovered(pos, size);
                 // the item is disabled but it was the last active
                 if (_activeItem == uniqueID)
                 {
@@ -629,7 +627,9 @@ namespace Fu.Framework
                     {
                         updated = true;
                     }
+
                     _activeItem = uniqueID;
+                    _lastItemJustActivated = true;
                 }
                 else if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
                 {
@@ -637,19 +637,16 @@ namespace Fu.Framework
                 }
             }
 
-            // get deactivated state
-            _lastItemJustDeactivated = _activeItem == uniqueID && ImGui.IsMouseReleased(ImGuiMouseButton.Left);
-            if (_lastItemJustDeactivated)
+            // current item was activated and mouse has just released left button
+            if (_activeItem == uniqueID && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
             {
+                // item is no more actif
                 _activeItem = null;
+                _lastItemJustDeactivated = true;
             }
+
             // get active state
             _lastItemActive = _activeItem == uniqueID;
-            // force full FPS the current active window
-            if (_lastItemActive)
-            {
-                FuWindow.CurrentDrawingWindow?.ForceDraw();
-            }
             // get update state
             _lastItemUpdate = updated;
         }
@@ -662,8 +659,17 @@ namespace Fu.Framework
         /// <returns>true ifhovered</returns>
         protected bool isItemHovered(Vector2 pos, Vector2 size)
         {
-            // we are NOT inside a popup but there is a popup, assuming we can't hover anything
-            if (!IsInsidePopUp && !string.IsNullOrEmpty(CurrentPopUpID))
+            // a popup is drawing
+            if (Fugui.IsDrawingInsidePopup())
+            {
+                // the drawing popup has NOT the focus
+                if (!Fugui.IsDrawingPopupFocused())
+                {
+                    return false;
+                }
+            }
+            // we are not drawing inside a popup but there is some
+            else if (Fugui.IsThereAnyOpenPopup())
             {
                 return false;
             }

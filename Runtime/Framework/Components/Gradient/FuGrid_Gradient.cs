@@ -7,17 +7,20 @@
         /// </summary>
         /// <param name="text">text / ID of the gradient</param>
         /// <param name="gradient">gradient to edit</param>
-        /// <param name="width">width of the gradient picker popup</param>
-        /// <param name="height">height of the gradient preview on popup</param>
+        /// <param name="addKeyOnGradientClick">if enabled, allow the user to add a key on gradient click</param>
+        /// <param name="allowAlpha">Whatever the gradient allow transparency on color keys</param>
+        /// <param name="relativeMin">The value represented when time = 0. If bigger or equal to RelativeMax, gradient will not take this in account</param>
+        /// <param name="relativeMax">The value represented when time = 1. If smaller or equal to RelativeMin, gradient will not take this in account</param>
         /// <returns>whatever the gradient has been edited this frame</returns>
-        public override bool Gradient(string text, ref FuGradient gradient, float width = 256f, float height = 24f)
+        public override bool Gradient(string text, ref FuGradient gradient, bool addKeyOnGradientClick = true, bool allowAlpha = true,
+            float relativeMin = 0, float relativeMax = 0)
         {
             if (!_gridCreated)
             {
                 return false;
             }
             drawElementLabel(text, FuTextStyle.Default);
-            return base.Gradient(text, ref gradient, width, height);
+            return base.Gradient(text, ref gradient, addKeyOnGradientClick, allowAlpha, relativeMin, relativeMax);
         }
     }
 }

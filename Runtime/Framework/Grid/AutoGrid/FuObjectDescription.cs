@@ -215,7 +215,7 @@ namespace Fu.Framework
         /// <param name="grid">grid to draw object in</param>
         /// <param name="objectInstance">object instance to draw</param>
         /// <returns>true if some value has just been edited</returns>
-        internal bool DrawObject<T>(FuGrid grid, T objectInstance)
+        internal bool DrawObject<T>(string objectID, FuGrid grid, T objectInstance)
         {
             // check whatever object Type is already binded
             if (Fields == null)
@@ -235,7 +235,7 @@ namespace Fu.Framework
             bool updated = false;
             foreach (var pair in Fields)
             {
-                updated |= pair.Value.Draw(grid, objectInstance);
+                updated |= pair.Value.Draw(objectID, grid, objectInstance);
             }
             // return whatever any field has just been updated
             return updated;

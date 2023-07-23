@@ -24,7 +24,7 @@ namespace Fu.Core
             {
                 return (int)(1f / _targetCameraDeltaTimeMs);
             }
-            internal set
+            set
             {
                 _targetCameraDeltaTimeMs = 1f / value;
             }
@@ -33,6 +33,7 @@ namespace Fu.Core
         public float CurrentCameraFPS { get; internal set; }
         public IntPtr PixelsPtr { get; private set; }
         public Camera Camera { get; private set; }
+        public bool AutoCameraFPS { get; set; }
         private bool _forceCameraRender;
         private float _targetCameraDeltaTimeMs;
         private float _lastCameraRenderTime;
@@ -47,6 +48,7 @@ namespace Fu.Core
 
         public FuCameraWindow(FuCameraWindowDefinition windowDefinition) : base(windowDefinition)
         {
+            AutoCameraFPS = true;
             SuperSampling = windowDefinition.SuperSampling;
             Camera = windowDefinition.Camera;
 
@@ -87,9 +89,9 @@ namespace Fu.Core
             UI = (window) =>
             {
                 Vector2 cursorPos = ImGui.GetCursorScreenPos();
-                ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + WorkingAreaSize, Vector2.zero, _currentImageUV);
-                //Container.ImGuiImage(_rTexture, WorkingAreaSize);
-                //ImGui.SetCursorScreenPos(cursorPos);
+                //ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + WorkingAreaSize, Vector2.zero, _currentImageUV);
+                Container.ImGuiImage(_rTexture, WorkingAreaSize);
+                ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this);
             };
 
@@ -158,9 +160,9 @@ namespace Fu.Core
         /// <summary>
         /// draw debug panel
         /// </summary>
-        internal override void drawDebugPanel()
+        internal override void DrawDebugPanel()
         {
-            base.drawDebugPanel();
+            base.DrawDebugPanel();
 
             if (!Fugui.Settings.DrawDebugPanel)
             {
@@ -240,8 +242,9 @@ namespace Fu.Core
             Camera.targetTexture = _rTexture;
             // resize cam target
             Camera.pixelRect = new Rect(0, 0, (int)(WorkingAreaSize.x * _superSampling), (int)(WorkingAreaSize.y * _superSampling));
-            // will render for next frame
-            _forceCameraRender = true;
+
+            ForceRenderCamera();
+            updateCameraRender();
         }
 
         /// <summary>
@@ -250,15 +253,14 @@ namespace Fu.Core
         private void updateCameraRender()
         {
             // did the camera must be enabled for a frame
-            bool mustDraw = (Fugui.Time > _lastCameraRenderTime + _targetCameraDeltaTimeMs) || _forceCameraRender;
-            _forceCameraRender = false;
-            if (mustDraw)
+            if ((Fugui.Time > _lastCameraRenderTime + _targetCameraDeltaTimeMs) || _forceCameraRender)
             {
                 Camera.Render();
                 CameraDeltaTime = Fugui.Time - _lastCameraRenderTime;
                 CurrentCameraFPS = 1f / CameraDeltaTime;
                 _lastCameraRenderTime = Fugui.Time;
             }
+            _forceCameraRender = false;
         }
 
         /// <summary>
@@ -269,16 +271,19 @@ namespace Fu.Core
         internal override void SetPerformanceState(FuWindowState state)
         {
             base.SetPerformanceState(state);
-            switch (state)
+            if (AutoCameraFPS)
             {
-                default:
-                case FuWindowState.Idle:
-                    TargetCameraFPS = Fugui.Settings.IdleCameraFPS;
-                    break;
+                switch (state)
+                {
+                    default:
+                    case FuWindowState.Idle:
+                        TargetCameraFPS = Fugui.Settings.IdleCameraFPS;
+                        break;
 
-                case FuWindowState.Manipulating:
-                    TargetCameraFPS = Fugui.Settings.ManipulatingFPS;
-                    break;
+                    case FuWindowState.Manipulating:
+                        TargetCameraFPS = Fugui.Settings.ManipulatingFPS;
+                        break;
+                }
             }
         }
 

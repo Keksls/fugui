@@ -35,13 +35,21 @@ namespace Fu.Core
         public bool Started { get; private set; }
         public float Scale { get; private set; }
         public float FontScale { get; private set; }
-        protected bool renderPrepared = false;
+        public bool RenderPrepared { get; protected set; } = false;
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
         internal FontSet DefaultFont { get; private set; }
         // var to count how many push are at frame start, so we can pop missing push
         private static int _nbColorPushOnFrameStart = 0;
         private static int _nbStylePushOnFrameStart = 0;
         private static int _nbFontPushOnFrameStart = 0;
+        // the payload of draggDrop operation
+        internal object _dragDropPayload = null;
+        // Whatever fugui is currently dragging a payload (using Drag Drop)
+        internal bool _isDraggingPayload = false;
+        // ID of the current dragging payload (if there is some, else is null)
+        internal string _draggingPayloadID;
+        // Is it the first frame of the current drag drop operation
+        internal bool _firstFrameDragging;
 
         /// <summary>
         /// Create new imgui native contexts
@@ -117,7 +125,7 @@ namespace Fu.Core
         /// </summary>       
         internal void Render()
         {
-            if (!renderPrepared)
+            if (!RenderPrepared)
             {
                 return;
             }
@@ -244,7 +252,7 @@ namespace Fu.Core
                 // call event and stop here before creating a new frame if event return false
                 if (!OnPrepareFrame.Invoke())
                 {
-                    return renderPrepared = false;
+                    return RenderPrepared = false;
                 }
             }
             return true;
@@ -369,6 +377,91 @@ namespace Fu.Core
                 }
             }
         }
+
+        #region Drag Drop
+        /// <summary>
+        /// Must be placed just after an UI element so this one can be dragged
+        /// </summary>
+        /// <param name="payloadID">Unique ID of the payload for the drag drop operation (must be same as used in BeginDragDropTarget method)</param>
+        /// <param name="dragDropFlags">lags for this drag drop operation (see ImGuiDragDropFlags on google)</param>
+        /// <param name="onDraggingUICallback">Callback called each frame while a drag drop operation. Use it to draw the preview drag drop window UI)</param>
+        /// <param name="payload">payload to set, will be passed to the target on Drop frame</param>
+        public void BeginDragDropSource(string payloadID, ImGuiDragDropFlags dragDropFlags, Action onDraggingUICallback, object payload)
+        {
+            if (ImGui.BeginDragDropSource(dragDropFlags))
+            {
+                ImGui.SetDragDropPayload(payloadID, IntPtr.Zero, 0);
+                _firstFrameDragging = !_isDraggingPayload;
+                _isDraggingPayload = true;
+                _draggingPayloadID = payloadID;
+                _dragDropPayload = payload;
+                onDraggingUICallback?.Invoke();
+                ImGui.EndDragDropSource();
+
+                // force render current window if there is some
+                FuWindow.CurrentDrawingWindow?.ForceDraw();
+            }
+        }
+
+        /// <summary>
+        /// Must be placed just after an UI element so this can be dropped
+        /// </summary>
+        /// <typeparam name="T">Type of the drag drop payload to get (must be same as set as 'payload' arg in BeginDragDropSource method)</typeparam>
+        /// <param name="payloadID">Unique ID of the payload for the drag drop operation (must be same as used in BeginDragDropTarget method)</param>
+        /// <param name="onDropCallback">Callback called whenever the user drop the dragging payload on this UI element</param>
+        public void BeginDragDropTarget<T>(string payloadID, Action<T> onDropCallback)
+        {
+            if (ImGui.BeginDragDropTarget())
+            {
+                unsafe
+                {
+                    ImGuiPayloadPtr payload;
+                    if ((payload = ImGui.AcceptDragDropPayload(payloadID)).NativePtr != null)
+                    {
+                        onDropCallback?.Invoke((T)_dragDropPayload);
+                        _isDraggingPayload = false;
+                        _draggingPayloadID = null;
+                        _dragDropPayload = null;
+                    }
+                    ImGui.EndDragDropTarget();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Cancel a drag drop operation related to the given payloadID
+        /// </summary>
+        /// <param name="payloadID">ID of the payload to cancel (keep null to cancel any current drag drop operation)</param>
+        public void CancelDragDrop(string payloadID = null)
+        {
+            if (string.IsNullOrEmpty(payloadID) || _draggingPayloadID == payloadID)
+            {
+                _isDraggingPayload = false;
+                _draggingPayloadID = null;
+                _dragDropPayload = null;
+            }
+        }
+
+        /// <summary>
+        /// Get the current drag drop payload (null if there is no drag drop operation for now)
+        /// </summary>
+        /// <typeparam name="T">Type of the current payload</typeparam>
+        /// <returns>return the current drag drop payload if there is one</returns>
+        public T GetDragDropPayload<T>()
+        {
+            return (T)_dragDropPayload;
+        }
+
+        /// <summary>
+        /// Whatever we are performing a drag drop operation right now with the given payloadID
+        /// </summary>
+        /// <param name="payloadID">ID of the payload (Drag Drop data ID) to check</param>
+        /// <returns>true if user if performing a drag drop operation for the given payload ID</returns>
+        public bool IsDraggingPayload(string payloadID)
+        {
+            return _isDraggingPayload && _draggingPayloadID == payloadID;
+        }
+        #endregion
     }
 
     internal class FontSet

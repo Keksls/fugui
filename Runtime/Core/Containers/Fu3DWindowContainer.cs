@@ -176,6 +176,7 @@ namespace Fu.Core
 
             // update mouse states
             _mouseState.UpdateState(this);
+            _keyboardState.UpdateState();
 
             // get input state for this container
             InputState inputState = FuRaycasting.GetInputState(ID, _panelGameObject);
@@ -323,10 +324,10 @@ namespace Fu.Core
             {
                 FuWindow.LocalPosition = Vector2Int.zero;
             }
-            // call UIWindow.DrawWindow
-            FuWindow.DrawWindow();
             // update the window state (Idle / Manipulating etc)
             FuWindow.UpdateState(_fuguiContext.IO.MouseDown[0]);
+            // call UIWindow.DrawWindow
+            FuWindow.DrawWindow();
         }
 
         /// <summary>

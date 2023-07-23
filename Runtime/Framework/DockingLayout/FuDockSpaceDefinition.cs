@@ -3,30 +3,36 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 
-// TODO : Add summary on top of each methods/functions/cnstr
 namespace Fu.Framework
 {
     public class FuDockingLayoutDefinition
     {
-        //The name of the dock space
+        /// <summary>
+        /// The name of the dock space
+        ///</summary>
         public string Name;
-
-        //The unique identifier of the dock space
+        /// <summary>
+        /// The unique identifier of the dock space
+        ///</summary>
         public uint ID;
-
-        //The proportion of the dock space relative to its parent
+        /// <summary>
+        /// The proportion of the dock space relative to its parent
+        ///</summary>
         public float Proportion;
-
-        //The orientation of the dock space
+        /// <summary>
+        /// The orientation of the dock space
+        ///</summary>
         public UIDockSpaceOrientation Orientation;
-
-        //A list of child dock spaces
+        /// <summary>
+        /// A list of child dock spaces
+        ///</summary>
         [JsonProperty]
         public List<FuDockingLayoutDefinition> Children;
-
-        //A lost of binded windowsdefintion
+        /// <summary>
+        /// A list of binded windowsdefintion
+        ///</summary>
         [JsonProperty]
-        public Dictionary<ushort, string> WindowsDefinition;
+        public List<ushort> WindowsDefinition;
 
         public FuDockingLayoutDefinition()
         {
@@ -41,7 +47,7 @@ namespace Fu.Framework
             Proportion = proportion;
             Orientation = orientation;
             Children = new List<FuDockingLayoutDefinition>();
-            WindowsDefinition = new Dictionary<ushort, string>();
+            WindowsDefinition = new List<ushort>();
         }
 
         //Constructor that accepts 2 parameters: name and id, with default values for proportion and orientation
@@ -52,7 +58,7 @@ namespace Fu.Framework
             Proportion = 0.5f;
             Orientation = UIDockSpaceOrientation.None;
             Children = new List<FuDockingLayoutDefinition>();
-            WindowsDefinition = new Dictionary<ushort, string>();
+            WindowsDefinition = new List<ushort>();
         }
 
         //Method that returns the total number of children, including all children of children
@@ -127,7 +133,7 @@ namespace Fu.Framework
         /// <returns>The dock space with the specified name, or null if not found</returns>
         internal FuDockingLayoutDefinition SearchInChildren(ushort windowDefID)
         {
-            if (WindowsDefinition.ContainsKey(windowDefID))
+            if (WindowsDefinition.Contains(windowDefID))
             {
                 return this;
             }
@@ -160,33 +166,61 @@ namespace Fu.Framework
             }
         }
 
-        internal List<FuWindowName> GetAllWindowsDefinitions()
+        /// <summary>
+        /// Get all window definitions of this dock space
+        /// </summary>
+        /// <param name="getOnlyAutoInstantiated">Whatever you only want windows in this layout that will auto instantiated by layout</param>
+        /// <returns>list of all window names</returns>
+        internal List<FuWindowName> GetAllWindowsNames(bool getOnlyAutoInstantiated)
         {
             List<FuWindowName> windows = new List<FuWindowName>();
 
-            foreach (var window in WindowsDefinition)
+            foreach (ushort windowID in WindowsDefinition)
             {
-                windows.Add(new FuWindowName(window.Key, window.Value));
+                if (getOnlyAutoInstantiated && FuDockingLayoutManager.RegisteredWindowsNames[windowID].AutoInstantiateWindowOnlayoutSet || !getOnlyAutoInstantiated)
+                {
+                    windows.Add(FuDockingLayoutManager.RegisteredWindowsNames[windowID]);
+                }
             }
 
             foreach (var child in Children)
             {
-                windows.AddRange(child.GetAllWindowsDefinitions());
+                windows.AddRange(child.GetAllWindowsNames(getOnlyAutoInstantiated));
             }
 
             return windows;
 
         }
+
+        internal FuDockingLayoutDefinition GetCopy()
+        {
+            FuDockingLayoutDefinition clone = new FuDockingLayoutDefinition(Name, ID, Proportion, Orientation);
+            clone.WindowsDefinition = new List<ushort>(WindowsDefinition);
+            clone.Children = new List<FuDockingLayoutDefinition>();
+            foreach (var child in Children)
+            {
+                clone.Children.Add(child.GetCopy());
+            }
+            return clone;
+        }
     }
 
-    //Enum for setting the orientation of a dock space
+    /// <summary>
+    /// Enum for setting the orientation of a dock space
+    /// </summary>
     public enum UIDockSpaceOrientation
     {
-        //None orientation
+        /// <summary>
+        /// None orientation
+        /// </summary>
         None,
-        //Horizontal orientation
+        /// <summary>
+        /// Horizontal orientation
+        /// </summary>
         Horizontal,
-        //Vertical orientation
+        /// <summary>
+        /// Vertical orientation
+        /// </summary>
         Vertical
     }
 }

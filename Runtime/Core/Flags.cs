@@ -63,7 +63,11 @@
         /// <summary>
         /// Can this window be instantied multiple times at once ? (draw multiple instance of this window)
         /// </summary>
-        AllowMultipleWindow = 16
+        AllowMultipleWindow = 16,
+        /// <summary>
+        /// Can this window be closed
+        /// </summary>
+        NoClosable = 32
     }
 
     /// <summary>

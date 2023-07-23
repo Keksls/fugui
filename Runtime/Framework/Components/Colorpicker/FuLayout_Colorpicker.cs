@@ -1,11 +1,15 @@
-﻿using Fu.Core;
-using ImGuiNET;
+﻿using ImGuiNET;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
     public partial class FuLayout
     {
+        private static Dictionary<string, Vector4> _pickersColors = new Dictionary<string, Vector4>();
+        private static Dictionary<string, bool> _pickersEditedStates = new Dictionary<string, bool>();
+        //private static bool _colorPickerEdited = false;
+
         ///<summary>
         /// Displays a color picker widget that allows the user to select a color in the RGB color space.
         ///</summary>
@@ -27,14 +31,14 @@ namespace Fu.Framework
             // Convert the vector3 color value to a vector4 value
             Vector4 col = color;
             // Use the custom color picker function to display the widget and get the result
-            bool edited = _customColorPicker(text, false, ref col, FuFrameStyle.Default);
-            // If the color was edited, update the vector3 value with the new color
-            if (edited)
+            if (_customColorPicker(text, false, ref col, FuFrameStyle.Default))
             {
+                // If the color was edited, update the vector3 value with the new color
                 color = (Vector3)col;
+                // Return whether the color was edited
+                return true;
             }
-            // Return whether the color was edited
-            return edited;
+            return false;
         }
 
         ///<summary>
@@ -60,14 +64,14 @@ namespace Fu.Framework
             // Convert the vector3 color value to a vector4 value
             Vector4 col = color;
             // Use the custom color picker function to display the widget and get the result
-            bool edited = _customColorPicker(text, false, ref col, style);
-            // If the color was edited, update the vector3 value with the new color
-            if (edited)
+            if (_customColorPicker(text, false, ref col, style))
             {
+                // If the color was edited, update the vector3 value with the new color
                 color = (Vector3)col;
+                // Return whether the color was edited
+                return true;
             }
-            // Return whether the color was edited
-            return edited;
+            return false;
         }
 
         /// <summary>
@@ -80,7 +84,6 @@ namespace Fu.Framework
         /// <returns>true if value has been edited</returns>
         protected virtual bool _customColorPicker(string text, bool alpha, ref Vector4 color, FuFrameStyle style)
         {
-            bool edited = false;
             beginElement(ref text, style);
             // return if item must no be draw
             if (!_drawElement)
@@ -88,12 +91,24 @@ namespace Fu.Framework
                 return false;
             }
 
+            // register color so we can ref inside the popup lambda callback
+            if (!_pickersColors.ContainsKey(text))
+            {
+                _pickersColors.Add(text, color);
+            }
+            _pickersColors[text] = color;
+            // register edited states so we can predict Activation / Deractivation states from lambda callback
+            if (!_pickersEditedStates.ContainsKey(text))
+            {
+                _pickersEditedStates.Add(text, false);
+            }
+
             // set padding
             Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f * Fugui.CurrentContext.Scale, 8f * Fugui.CurrentContext.Scale));
 
             float height = 18f * Fugui.CurrentContext.Scale;
             float width = ImGui.GetContentRegionAvail().x;
-            float rounding = 0f;
+            float rounding = FuThemeManager.CurrentTheme.FrameRounding;
             var drawList = ImGui.GetWindowDrawList();
 
             Vector2 min = ImGui.GetCursorScreenPos();
@@ -108,16 +123,16 @@ namespace Fu.Framework
             {
                 // draw alpha 1
                 float alphaWidth = color.w * (max.x - min.x);
-                drawList.AddRectFilled(new Vector2(min.x, max.y - 4 * Fugui.CurrentContext.Scale), new Vector2(min.x + alphaWidth, max.y), ImGui.GetColorU32(Vector4.one), rounding);
+                drawList.AddRectFilled(new Vector2(min.x, max.y - 4 * Fugui.CurrentContext.Scale), new Vector2(min.x + alphaWidth, max.y), ImGui.GetColorU32(Vector4.one), rounding, ImDrawFlags.RoundCornersBottomLeft);
                 if (color.w < 1.0f)
                 {
                     // draw alpha 0
-                    drawList.AddRectFilled(new Vector2(min.x + alphaWidth, max.y - 4 * Fugui.CurrentContext.Scale), new Vector2(max.x, max.y), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), rounding);
+                    drawList.AddRectFilled(new Vector2(min.x + alphaWidth, max.y - 4 * Fugui.CurrentContext.Scale), new Vector2(max.x, max.y), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), rounding, ImDrawFlags.RoundCornersBottomRight);
                 }
             }
 
             // draw frame
-            drawList.AddRect(min, max, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Border)), rounding, ImDrawFlags.None, 1f);
+            drawList.AddRect(min, max, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Border)), rounding, ImDrawFlags.RoundCornersDefault, 1f);
             // fake draw the element
             ImGui.Dummy(max - min + Vector2.one * 2f);
             _elementHoverFramedEnabled = true;
@@ -126,42 +141,7 @@ namespace Fu.Framework
 
             // set states for this element
             setBaseElementState(text, min, max - min, true, false);
-
             displayToolTip(_lastItemHovered);
-            if (_lastItemClickedButton == FuMouseButton.Left)
-            {
-                ImGui.OpenPopup("ColorPicker" + text);
-            }
-
-            if (alpha)
-            {
-                ImGui.SetNextWindowSize(new Vector2(404f * Fugui.CurrentContext.Scale, 212f * Fugui.CurrentContext.Scale));
-            }
-            else
-            {
-                ImGui.SetNextWindowSize(new Vector2(404f * Fugui.CurrentContext.Scale, 224f * Fugui.CurrentContext.Scale));
-            }
-            if (ImGui.BeginPopup("ColorPicker" + text, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
-            {
-                // Draw the color picker
-                ImGui.SetNextItemWidth(184f * Fugui.CurrentContext.Scale);
-                edited = Fugui.Colorpicker("##picker" + text, ref color, false, true, alpha, alpha);
-                if (CurrentPopUpID != "ColorPicker" + text)
-                {
-                    CurrentPopUpWindowID = FuWindow.CurrentDrawingWindow?.ID;
-                    CurrentPopUpID = "ColorPicker" + text;
-                }
-                // Set CurrentPopUpRect to ImGui item rect
-                CurrentPopUpRect = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
-                ImGui.EndPopup();
-            }
-            else if (CurrentPopUpID == "ColorPicker" + text)
-            {
-                CurrentPopUpWindowID = null;
-                CurrentPopUpID = null;
-            }
-            
-            Fugui.PopStyle();
 
             // set mouse cursor
             if (_lastItemHovered && !LastItemDisabled)
@@ -171,6 +151,45 @@ namespace Fu.Framework
 
             endElement(style);
 
+            Vector2 size = new Vector2(404f * Fugui.CurrentContext.Scale, 224f * Fugui.CurrentContext.Scale);
+            if (alpha)
+            {
+                size = new Vector2(404f * Fugui.CurrentContext.Scale, 212f * Fugui.CurrentContext.Scale);
+            }
+
+            string popupID = "ColorPicker" + text;
+            if (_lastItemClickedButton == FuMouseButton.Left)
+            {
+                OpenPopUp(popupID, () =>
+                {
+                    // Draw the color picker
+                    ImGui.SetNextItemWidth(184f * Fugui.CurrentContext.Scale);
+                    Vector4 col = _pickersColors[text];
+                    if (Fugui.Colorpicker("##picker" + text, ref col, false, true, alpha, alpha))
+                    {
+                        if (!_pickersEditedStates[text])
+                        {
+                            _pickersEditedStates[text] = true;
+                            _lastItemJustActivated = true;
+                        }
+                        _pickersColors[text] = col;
+                    }
+                    else if (_pickersEditedStates[text] && !ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                    {
+                        _pickersEditedStates[text] = false;
+                        _lastItemJustDeactivated = true;
+                    }
+                }, size);
+            }
+            DrawPopup(popupID);
+            if (_pickersEditedStates[text])
+            {
+                color = _pickersColors[text];
+            }
+
+            Fugui.PopStyle();
+
+            bool edited = _pickersEditedStates[text];
             return edited;
         }
     }

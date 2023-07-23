@@ -45,6 +45,17 @@ namespace Fu.Core
         internal override void EndRender()
         {
             Fugui.IsRendering = false;
+
+            if(!RenderPrepared)
+            {
+                return;
+            }
+
+            // cancel drag drop for this context if left click is up this frame and it's not the first frame of the current drag drop operation
+            if (_isDraggingPayload && !_firstFrameDragging && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+            {
+                CancelDragDrop();
+            }
         }
 
         /// <summary>
@@ -62,8 +73,8 @@ namespace Fu.Core
 #if !UIMGUI_REMOVE_IMGUIZMO
             ImGuizmoNET.ImGuizmo.BeginFrame();
 #endif
-            renderPrepared = true;
-            return renderPrepared;
+            RenderPrepared = true;
+            return RenderPrepared;
         }
     }
 }

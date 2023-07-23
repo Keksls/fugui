@@ -15,12 +15,14 @@ namespace Fu
         private static FuDockingLayoutDefinition _hoveredNode = null;
         private static FuDockingLayoutDefinition _lastFrameHoveredNode = null;
         private static Rect _currentWindowRect = new Rect();
+        private static FuWindowName _selectedWindowDefinition = FuSystemWindowsNames.None;
+
         public static void DrawDockSpacelayoutCreator()
         {
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             _currentWindowRect = new Rect(ImGui.GetCursorScreenPos(), ImGui.GetContentRegionAvail());
 
-            if (FuDockingLayoutManager.CurrentLayout == null)
+            if (FuDockingLayoutManager.CurrentLayout == null && FuDockingLayoutManager.Layouts.Count == 0)
             {
                 FuDockingLayoutManager.createNewLayout();
             }
@@ -34,21 +36,38 @@ namespace Fu
             // draw context menu
             if (_hoveredNode != null)
             {
-                var items = FuContextMenuBuilder.Start()
-                    .AddItem("Horizontal", () => { SetDockNodeOrientation(_hoveredNode, UIDockSpaceOrientation.Horizontal); })
-                    .AddItem("Vertical", () => { SetDockNodeOrientation(_hoveredNode, UIDockSpaceOrientation.Vertical); })
-                    .AddSeparator()
-                    .AddItem("Remove", () =>
+                var builder = FuContextMenuBuilder.Start()
+                     .AddItem("Horizontal", () => { SetDockNodeOrientation(_hoveredNode, UIDockSpaceOrientation.Horizontal); })
+                     .AddItem("Vertical", () => { SetDockNodeOrientation(_hoveredNode, UIDockSpaceOrientation.Vertical); })
+                     .AddItem("Remove", () =>
+                     {
+                         FuDockingLayoutDefinition parent = null;
+                         GetParentNodeOnNode(FuDockingLayoutManager.CurrentLayout, _hoveredNode, ref parent);
+                         if (parent != null)
+                         {
+                             SetDockNodeOrientation(parent, UIDockSpaceOrientation.None);
+                         }
+                     })
+                     .AddSeparator()
+                     .BeginChild("Windows");
+
+                foreach (var windowName in FuDockingLayoutManager.RegisteredWindowsNames.Values)
+                {
+                    builder.AddItem((_hoveredNode.WindowsDefinition.Contains(windowName.ID) ? "V " : "  ") + windowName.Name, () =>
                     {
-                        FuDockingLayoutDefinition parent = null;
-                        GetParentNodeOnNode(FuDockingLayoutManager.CurrentLayout, _hoveredNode, ref parent);
-                        if (parent != null)
+                        if (_hoveredNode.WindowsDefinition.Contains(windowName.ID))
                         {
-                            SetDockNodeOrientation(parent, UIDockSpaceOrientation.None);
+                            _hoveredNode.WindowsDefinition.Remove(windowName.ID);
                         }
-                    })
-                    .Build();
-                PushContextMenuItems(items);
+                        else
+                        {
+                            _hoveredNode.WindowsDefinition.Add(windowName.ID);
+                        }
+                    });
+                }
+                builder.EndChild();
+
+                PushContextMenuItems(builder.Build());
                 TryOpenContextMenuOnWindowClick();
                 PopContextMenuItems();
             }
@@ -105,6 +124,14 @@ namespace Fu
             if (node.Orientation == UIDockSpaceOrientation.Horizontal || node.Orientation == UIDockSpaceOrientation.Vertical)
             {
                 DrawSeparator(node, new Rect(min, max - min), drawList);
+            }
+
+            // write windows names
+            ImGui.SetCursorScreenPos(min + padding * 2f);
+            foreach (var windowName in node.WindowsDefinition)
+            {
+                ImGui.SetCursorScreenPos(new Vector2(min.x + padding.x * 2f, ImGui.GetCursorScreenPos().y));
+                ImGui.Text(FuDockingLayoutManager.RegisteredWindowsNames[windowName].Name);
             }
 
             int i = 0;
@@ -257,94 +284,73 @@ namespace Fu
                 GetParentNodeOnNode(child, target, ref parent);
             }
         }
-        #endregion
 
-        #region Old UI
-        /// <summary>
-        /// Creates a UI panel that contains the dock space manager and the layout manager
-        /// </summary>
-        public static void DrawDockSpaceManager()
+        private static void DrawLayoutConfigPanel()
         {
-            using (FuLayout loadSave_layout = new FuLayout())
+            using (FuLayout layout = new FuLayout())
             {
-                loadSave_layout.Collapsable("Dockspace management", () =>
+                PushFont(FontType.Bold);
+                layout.FramedText("Docking Layouts", 0.5f);
+                PopFont();
+            }
+
+            bool saveAvailable = true;
+            using (FuGrid grid = new FuGrid("_layoutManagement_grid"))
+            {
+                string layoutName = FuDockingLayoutManager.CurrentLayout?.Name ?? "Nothing selected";
+                grid.Combobox("Available layouts", FuDockingLayoutManager.Layouts.Keys.ToList(), (index) =>
                 {
-                    bool saveAvailable = true;
-
-                    using (FuGrid _layoutManagement_grid = new FuGrid("_layoutManagement_grid"))
-                    {
-                        _layoutManagement_grid.NextColumn();
-                        _layoutManagement_grid.Text("Select a FuGui Layout Configuration in the list to edit. You can also create a new one and associate windows defination to layout and dockspaces. If you create a new one or edit an existing FuGui Layout, please clic on 'Save layout' button to save changes.");
-                        _layoutManagement_grid.Combobox("Available layouts", FuDockingLayoutManager.Layouts.Keys.ToList(), (index) =>
-                        {
-                            var key = FuDockingLayoutManager.Layouts.Keys.ToList()[index];
-                            FuDockingLayoutManager.CurrentLayout = FuDockingLayoutManager.Layouts[key];
-                            FuDockingLayoutManager.CurrentLayoutName = key;
-                        },
-                        () =>
-                        {
-                            return FuDockingLayoutManager.CurrentLayoutName;
-                        });
-
-                        string layoutName = FuDockingLayoutManager.CurrentLayoutName;
-                        if (_layoutManagement_grid.TextInput("Edit layout name", ref layoutName))
-                        {
-                            FuDockingLayoutManager.CurrentLayoutName = layoutName;
-                        }
-                        saveAvailable = FuDockingLayoutManager.checkSelectedName();
-
-                        if (!saveAvailable)
-                        {
-                            _layoutManagement_grid.NextColumn();
-                            _layoutManagement_grid.SmartText("<color=red>Current layout name is not allowed. Please enter a valid and unused file name, using only alphanumeric characters and underscores or dashes. The file name must end with <b>.flg</b>.</color>");
-                        }
-
-                        using (FuGrid _buttonsAction_grid = new FuGrid("_buttonsAction_grid", new FuGridDefinition(3), FuGridFlag.Default))
-                        {
-                            // create button
-                            if (_buttonsAction_grid.Button("Create a new FuGui layout", FuButtonStyle.Highlight))
-                            {
-                                FuDockingLayoutManager.createNewLayout();
-                            }
-
-                            // save button and behaviors
-                            if (!saveAvailable)
-                            {
-                                _buttonsAction_grid.DisableNextElement();
-                            }
-
-                            if (_buttonsAction_grid.Button("Save selected layout", FuButtonStyle.Info))
-                            {
-                                FuDockingLayoutManager.saveSelectedLayout();
-                            }
-
-                            // delete button and behaviors
-                            if (string.IsNullOrEmpty(FuDockingLayoutManager.CurrentLayoutName))
-                            {
-                                _buttonsAction_grid.DisableNextElement();
-                            }
-
-                            if (_buttonsAction_grid.Button("Delete selected layout", FuButtonStyle.Danger))
-                            {
-                                FuDockingLayoutManager.deleteSelectedLayout();
-                            }
-                        }
-                    }
+                    var key = FuDockingLayoutManager.Layouts.Keys.ToList()[index];
+                    FuDockingLayoutManager.CurrentLayout = FuDockingLayoutManager.Layouts[key];
+                    FuDockingLayoutManager.CurrentLayout.Name = key;
+                    Fugui.RefreshWindowsInstances(FuSystemWindowsNames.DockSpaceManager);
+                },
+                () =>
+                {
+                    return layoutName;
                 });
 
-                if (FuDockingLayoutManager.CurrentLayout != null)
+                if (FuDockingLayoutManager.CurrentLayout == null)
                 {
-                    loadSave_layout.Collapsable("Dockspace configuration", () =>
-                    {
-                        using (FuPanel dockSpaceList_panel = new FuPanel("dockSpaceList_panel"))
-                        {
-                            using (FuLayout dockSpaceList_layout = new FuLayout())
-                            {
-                                ShowTreeView(dockSpaceList_layout, FuDockingLayoutManager.CurrentLayout, true);
-                                FuDockingLayoutManager.RefreshDockSpaces();
-                            }
-                        }
-                    });
+                    grid.DisableNextElement();
+                }
+                if (grid.TextInput("Edit layout name", ref layoutName))
+                {
+                    FuDockingLayoutManager.CurrentLayout.Name = layoutName;
+                }
+                saveAvailable = FuDockingLayoutManager.checkLayoutName(layoutName);
+
+                if (!saveAvailable)
+                {
+                    grid.NextColumn();
+                    grid.SmartText("<color=red>Current layout name is not allowed. Please enter a valid and unused file name, using only alphanumeric characters and underscores or dashes.</color>");
+                }
+            }
+
+            using (FuGrid grid = new FuGrid("_buttonsAction_grid", new FuGridDefinition(3), FuGridFlag.Default))
+            {
+                // create button
+                if (grid.Button("New##fdl", FuButtonStyle.Highlight))
+                {
+                    FuDockingLayoutManager.createNewLayout();
+                }
+
+                // save button and behaviors
+                if (!saveAvailable || FuDockingLayoutManager.CurrentLayout == null)
+                {
+                    grid.DisableNextElement();
+                }
+
+                if (grid.Button("Save##fdl", FuButtonStyle.Info))
+                {
+                    string selectedName = FuDockingLayoutManager.CurrentLayout.Name;
+                    FuDockingLayoutManager.saveSelectedLayout();
+                    FuDockingLayoutManager.CurrentLayout = FuDockingLayoutManager.Layouts[selectedName];
+                }
+
+                if (grid.Button("Delete##fdl", FuButtonStyle.Danger))
+                {
+                    FuDockingLayoutManager.deleteSelectedLayout();
                 }
             }
         }
@@ -365,253 +371,133 @@ namespace Fu
             }
         }
 
-        /// <summary>
-        /// Displays the specified dock space definition in a tree view using ImGui.
-        /// The tree view allows the user to view and edit the properties of the dock space, such as its name, ID, proportion, and orientation.
-        /// The tree view also allows the user to view and edit the child dock spaces of the current dock space.
-        /// </summary>
-        /// <param name="layout">The layout to use for displaying the tree view</param>
-        /// <param name="dockSpaceDefinition">The dock space definition to show in the tree view</param>
-        /// <param name="root">Flag to set the root node</param>
-        private static void ShowTreeView(FuLayout layout, FuDockingLayoutDefinition dockSpaceDefinition, bool root = false)
-        {
-            if (root)
-            {
-                ImGui.SetNextItemOpen(true);
-            }
-
-            if (ImGui.TreeNode("DockSpace : " + dockSpaceDefinition.ID))
-            {
-                using (FuGrid gridInfo = new FuGrid("gridInfo" + dockSpaceDefinition.ID, FuGridDefinition.DefaultAuto))
-                {
-                    if (dockSpaceDefinition.Name == "None")
-                    {
-                        dockSpaceDefinition.Name = "Dockspace";
-                    }
-
-                    if (gridInfo.TextInput("Name" + dockSpaceDefinition.ID, ref dockSpaceDefinition.Name))
-                    {
-                        //Dockspace names changed, refresh other UI component
-                        FuDockingLayoutManager.RefreshDockSpaces();
-                    }
-
-                    string tempID = dockSpaceDefinition.ID.ToString();
-                    gridInfo.DisableNextElement();
-                    gridInfo.TextInput("Dockspace Id" + dockSpaceDefinition.ID, ref tempID, FuFrameStyle.Default);
-
-                    if (dockSpaceDefinition.Orientation != UIDockSpaceOrientation.None)
-                    {
-                        gridInfo.Slider("Proportion" + dockSpaceDefinition.ID, ref dockSpaceDefinition.Proportion, 0f, 1f);
-                    }
-
-                    if (dockSpaceDefinition.WindowsDefinition.Count > 0)
-                    {
-                        gridInfo.ListBox("Binded windows", () =>
-                        {
-                            foreach (ushort windowID in dockSpaceDefinition.WindowsDefinition)
-                            {
-                                ImGui.Selectable(FuDockingLayoutManager.RegisteredWindowsNames[windowID].Name);
-                            }
-                        }, FuElementSize.FullSize);
-                    }
-                }
-
-                if (dockSpaceDefinition.Children != null)
-                {
-                    // This code checks the value of the 'orientation' enum and performs a specific action based on its value :
-                    // None : Delete all children and set orientation to None
-                    // Horizontal : Create 2 childs (left and right) and set orientation to Horizontal
-                    // Vertical : Create 2 childs (top and buttom) and set orientation to Vertical
-                    layout.ButtonsGroup<UIDockSpaceOrientation>("Orientation_" + dockSpaceDefinition.ID, (enumSelection) =>
-                    {
-                        switch ((UIDockSpaceOrientation)enumSelection)
-                        {
-                            default:
-                            case UIDockSpaceOrientation.None:
-                                DockSpaceDefinitionClearChildren(dockSpaceDefinition);
-                                break;
-                            case UIDockSpaceOrientation.Horizontal:
-                                if (dockSpaceDefinition.Children.Count == 0 && dockSpaceDefinition.Orientation == UIDockSpaceOrientation.None)
-                                {
-                                    DockSpaceDefinitionClearChildren(dockSpaceDefinition);
-
-                                    dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Horizontal;
-                                    uint nextID = FuDockingLayoutManager.CurrentLayout.GetTotalChildren();
-
-                                    FuDockingLayoutDefinition leftPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitH_Left", nextID + 1);
-                                    FuDockingLayoutDefinition rightPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitH_Right", nextID + 2);
-
-                                    dockSpaceDefinition.Children.Add(leftPart);
-                                    dockSpaceDefinition.Children.Add(rightPart);
-                                }
-                                break;
-                            case UIDockSpaceOrientation.Vertical:
-                                {
-                                    DockSpaceDefinitionClearChildren(dockSpaceDefinition);
-
-                                    dockSpaceDefinition.Orientation = UIDockSpaceOrientation.Vertical;
-                                    uint nextID = FuDockingLayoutManager.CurrentLayout.GetTotalChildren();
-
-                                    FuDockingLayoutDefinition topPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitV_Top", nextID + 1);
-                                    FuDockingLayoutDefinition bottomPart = new FuDockingLayoutDefinition(dockSpaceDefinition.Name + "_SplitV_Bottom", nextID + 2);
-
-                                    dockSpaceDefinition.Children.Add(topPart);
-                                    dockSpaceDefinition.Children.Add(bottomPart);
-                                }
-                                break;
-                        }
-
-                        //Dockspace list has changed, refresh other UI component
-                        FuDockingLayoutManager.RefreshDockSpaces();
-                    }, () => dockSpaceDefinition.Orientation);
-
-                    // REcursive display for children
-                    foreach (FuDockingLayoutDefinition child in dockSpaceDefinition.Children)
-                    {
-                        layout.Separator();
-                        ShowTreeView(layout, child);
-                    }
-                }
-
-                ImGui.TreePop();
-            }
-        }
-
+        private static bool _windowNamesMustSaveLayouts = false;
         /// <summary>
         /// Draw the UI of the Windows Definition Manager
         /// </summary>
         public static void DrawWindowsDefinitionManager()
         {
+            DrawLayoutConfigPanel();
+
+            bool canSave = true;
             using (FuLayout layout = new FuLayout())
             {
-                layout.Collapsable("Manage Windows definitions", () =>
+                PushFont(FontType.Bold);
+                layout.FramedText("Windows Definitions", 0.5f);
+                PopFont();
+
+                var windows = FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList();
+                using (FuGrid grid = new FuGrid("windowsDefinition_grid"))
                 {
-                    using (FuGrid grid = new FuGrid("windowsDefinition_grid"))
+                    windows.Remove(FuSystemWindowsNames.None);
+                    windows.Remove(FuSystemWindowsNames.WindowsDefinitionManager);
+                    windows.Remove(FuSystemWindowsNames.DockSpaceManager);
+                    windows.Remove(FuSystemWindowsNames.FuguiSettings);
+
+                    if (_selectedWindowDefinition.Equals(FuSystemWindowsNames.None) && windows.Count > 0)
                     {
-                        grid.Combobox("Windows definition", FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList(), (index) => { FuDockingLayoutManager.SelectedWindowDefinition = FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList()[index]; }, () => { return FuDockingLayoutManager.SelectedWindowDefinition; });
-
-                        string windowName = FuDockingLayoutManager.WindowsToAdd.Name;
-                        if (grid.TextInput("Window name", ref windowName))
-                        {
-                            FuDockingLayoutManager.WindowsToAdd.SetName(windowName);
-                        }
-
-                        bool autoInstantiate = FuDockingLayoutManager.WindowsToAdd.AutoInstantiateWindowOnlayoutSet;
-                        if (grid.Toggle("Auto Instantiate on layout set", ref autoInstantiate))
-                        {
-                            FuDockingLayoutManager.WindowsToAdd.SetAutoInstantiateOnLayoutSet(autoInstantiate);
-                        }
-
-                        int idleFPS = FuDockingLayoutManager.WindowsToAdd.IdleFPS;
-                        if (grid.Slider("Auto Instantiate on layout set", ref idleFPS, -1, 144))
-                        {
-                            FuDockingLayoutManager.WindowsToAdd.SetIdleFPS((short)idleFPS);
-                        }
-
-                        if (!FuDockingLayoutManager.WindowsToAdd.Equals(FuSystemWindowsNames.None))
-                        {
-                            if (FuDockingLayoutManager.RegisteredWindowsNames.Values.Contains(FuDockingLayoutManager.WindowsToAdd))
-                            {
-                                layout.SmartText(string.Format($"<color=red>The name <b>'{FuDockingLayoutManager.WindowsToAdd}'</b> is already present in the current FuGui windows definition !</color>"));
-                            }
-                            else
-                            {
-                                if (!Fugui.IsAlphaNumericWithSpaces(FuDockingLayoutManager.WindowsToAdd.Name))
-                                {
-                                    layout.SmartText(string.Format($"<color=red>The name <b>'{FuDockingLayoutManager.WindowsToAdd}'</b> is not a valid name for a FuGui window !</color>"));
-                                }
-                                else
-                                {
-                                    layout.Spacing();
-                                    if (layout.Button("Add new FuGui window definition", FuButtonStyle.Success))
-                                    {
-                                        if (!FuDockingLayoutManager.RegisteredWindowsNames.Values.Contains(FuDockingLayoutManager.WindowsToAdd))
-                                        {
-                                            int newIndex = FuDockingLayoutManager.RegisteredWindowsNames.Max(x => x.Key) + 1;
-                                            FuDockingLayoutManager.RegisteredWindowsNames.Add((ushort)(FuDockingLayoutManager.RegisteredWindowsNames.Keys.Last() + 1), FuDockingLayoutManager.WindowsToAdd);
-
-                                            foreach (KeyValuePair<ushort, FuWindowName> pair in FuDockingLayoutManager.RegisteredWindowsNames)
-                                            {
-                                                pair.Value.SetName(RemoveSpaceAndCapitalize(pair.Value.Name));
-                                            }
-
-                                            FuDockingLayoutManager.writeToFile(Settings.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager.RegisteredWindowsNames));
-                                            FuDockingLayoutManager.WindowsToAdd = FuSystemWindowsNames.None;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (!FuDockingLayoutManager.WindowsToAdd.Equals(FuSystemWindowsNames.None))
-                        {
-                            if (layout.Button(string.Format($"Remove {FuDockingLayoutManager.SelectedWindowDefinition}"), FuButtonStyle.Danger))
-                            {
-                                if (FuDockingLayoutManager.RegisteredWindowsNames.Values.Contains(FuDockingLayoutManager.SelectedWindowDefinition))
-                                {
-                                    ushort keyToDelete = ushort.MaxValue;
-
-                                    foreach (KeyValuePair<ushort, FuWindowName> item in FuDockingLayoutManager.RegisteredWindowsNames)
-                                    {
-                                        if (item.Value.Equals(FuDockingLayoutManager.SelectedWindowDefinition))
-                                        {
-                                            keyToDelete = item.Key;
-                                            break;
-                                        }
-                                    }
-
-                                    if (keyToDelete < ushort.MaxValue)
-                                    {
-                                        FuDockingLayoutManager.RegisteredWindowsNames.Remove(keyToDelete);
-                                        FuDockingLayoutManager.writeToFile(Settings.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager.RegisteredWindowsNames));
-                                        FuDockingLayoutManager.SelectedWindowDefinition = FuSystemWindowsNames.None;
-                                    }
-                                }
-                            }
-                        }
+                        _selectedWindowDefinition = windows[0];
                     }
-                });
 
-                if (FuDockingLayoutManager.CurrentLayout != null)
-                {
-                    layout.Collapsable("Bind Windows definition to DockSpace", () =>
-                    {
-                        using (FuGrid tempGrid = new FuGrid("bindWinDefToDockSpace_grid", new FuGridDefinition(2, new int[] { 150 })))
+                    grid.Combobox("Windows definition", windows,
+                        (index) =>
                         {
-                            for (int i = 0; i < FuDockingLayoutManager.RegisteredWindowsNames.Count; i++)
+                            _selectedWindowDefinition = windows[index];
+                        }, () =>
+                        {
+                            return _selectedWindowDefinition;
+                        });
+
+                    string windowName = _selectedWindowDefinition.Name;
+                    grid.SetNextElementToolTipWithLabel("The name (title and ID) of the window");
+                    if (grid.TextInput("Window name", ref windowName))
+                    {
+                        _selectedWindowDefinition.SetName(windowName);
+                        FuDockingLayoutManager.RegisteredWindowsNames[_selectedWindowDefinition.ID] = _selectedWindowDefinition;
+                    }
+
+                    if (FuDockingLayoutManager.RegisteredWindowsNames.Values.Where(wd => wd.Name == _selectedWindowDefinition.Name).Count() > 1)
+                    {
+                        grid.NextColumn();
+                        grid.SmartText(string.Format($"<color=red>The name <b>'{_selectedWindowDefinition}'</b> is already present in the current FuGui windows definition !</color>"));
+                        canSave = false;
+                    }
+                    else if (!IsAlphaNumericWithSpaces(_selectedWindowDefinition.Name) || !char.IsLetter(_selectedWindowDefinition.Name[0]))
+                    {
+                        grid.NextColumn();
+                        grid.SmartText(string.Format($"<color=red>The name <b>'{_selectedWindowDefinition}'</b> is not a valid name for a FuGui window !</color>"));
+                        canSave = false;
+                    }
+
+                    bool autoInstantiate = _selectedWindowDefinition.AutoInstantiateWindowOnlayoutSet;
+                    grid.SetNextElementToolTipWithLabel("Whatever you want to instantiate this window whenever a layout that contains it is set");
+                    if (grid.Toggle("Auto Instance", ref autoInstantiate))
+                    {
+                        _selectedWindowDefinition.SetAutoInstantiateOnLayoutSet(autoInstantiate);
+                        FuDockingLayoutManager.RegisteredWindowsNames[_selectedWindowDefinition.ID] = _selectedWindowDefinition;
+                    }
+
+                    int idleFPS = _selectedWindowDefinition.IdleFPS;
+                    grid.SetNextElementToolTipWithLabel("Target FPS to set when window is in Idle state.\n-1 will use Fugui settings value.\n0 will shut down window until it switch to ");
+                    if (grid.Slider("Idle FPS", ref idleFPS, -1, 144))
+                    {
+                        _selectedWindowDefinition.SetIdleFPS((short)idleFPS);
+                        FuDockingLayoutManager.RegisteredWindowsNames[_selectedWindowDefinition.ID] = _selectedWindowDefinition;
+                    }
+                }
+
+                using (FuGrid grid = new FuGrid("_buttonsAction_grid", new FuGridDefinition(3), FuGridFlag.Default))
+                {
+                    // create button
+                    if (grid.Button("New##wn", FuButtonStyle.Highlight))
+                    {
+                        ushort newIndex = (ushort)(FuDockingLayoutManager.RegisteredWindowsNames.Max(x => x.Key) + 1);
+                        FuDockingLayoutManager.RegisteredWindowsNames.Add(newIndex, new FuWindowName(newIndex, "WindowName", true, -1));
+
+                        _selectedWindowDefinition = FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList().Last();
+                    }
+
+                    // delete button
+                    if (grid.Button("Delete##wn", FuButtonStyle.Danger))
+                    {
+                        FuDockingLayoutManager.RegisteredWindowsNames.Remove(_selectedWindowDefinition.ID);
+                        windows.Remove(_selectedWindowDefinition);
+
+                        // remove window from all layout
+                        foreach(var fdlayout in FuDockingLayoutManager.Layouts.Values)
+                        {
+                            fdlayout.RemoveWindowsDefinitionInChildren(_selectedWindowDefinition.ID);
+                        }
+                        _windowNamesMustSaveLayouts = true;
+                        _selectedWindowDefinition = windows.Count > 0 ? windows[0] : FuSystemWindowsNames.None;
+                    }
+
+                    // save button
+                    if (!canSave)
+                    {
+                        grid.DisableNextElements();
+                    }
+                    if (grid.Button("Save##wn", FuButtonStyle.Info))
+                    {
+                        foreach (KeyValuePair<ushort, FuWindowName> pair in FuDockingLayoutManager.RegisteredWindowsNames)
+                        {
+                            pair.Value.SetName(RemoveSpaceAndCapitalize(pair.Value.Name));
+                        }
+
+                        FuDockingLayoutManager.writeToFile(Settings.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager.RegisteredWindowsNames));
+
+                        if(_windowNamesMustSaveLayouts)
+                        {
+                            foreach (var fdlayout in FuDockingLayoutManager.Layouts.Values)
                             {
-                                KeyValuePair<ushort, FuWindowName> item = FuDockingLayoutManager.RegisteredWindowsNames.ElementAt(i);
-
-                                if (item.Value.Equals(FuSystemWindowsNames.None))
-                                {
-                                    continue;
-                                }
-
-                                if (FuDockingLayoutManager.DefinedDockSpaces != null)
-                                {
-                                    tempGrid.Combobox(item.Value.Name, FuDockingLayoutManager.DefinedDockSpaces.Values.ToList(), (index) =>
-                                    {
-                                        var value = FuDockingLayoutManager.DefinedDockSpaces.Values.ToList()[index];
-                                        if (value != null)
-                                        {
-                                            if (value == "None")
-                                            {
-                                                FuDockingLayoutManager.unbindWindowToDockspace(item.Key);
-                                            }
-                                            else
-                                            {
-                                                FuDockingLayoutManager.bindWindowToDockspace(item.Key, value);
-                                            }
-                                        }
-                                    },
-                                    () =>
-                                    {
-                                        return FuDockingLayoutManager.getBindedLayout(item.Key);
-                                    });
-                                }
+                                FuDockingLayoutManager.saveLayoutFile(fdlayout);
                             }
-                        };
-                    });
+                            _windowNamesMustSaveLayouts = false;
+                        }
+
+                        var names = FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList();
+                        _selectedWindowDefinition = names.Count > FuSystemWindowsNames.FuguiReservedLastID ? names[FuSystemWindowsNames.FuguiReservedLastID] : FuSystemWindowsNames.None;
+                    }
                 }
             }
         }

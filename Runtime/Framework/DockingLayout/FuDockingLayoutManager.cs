@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -17,12 +15,8 @@ namespace Fu.Framework
     public static class FuDockingLayoutManager
     {
         #region Variables
-        internal static string LayoutFileName = "default_layout.flg";
         internal static Dictionary<ushort, FuWindowName> RegisteredWindowsNames;
-        internal static FuWindowName WindowsToAdd = FuSystemWindowsNames.None;
-        internal static FuWindowName SelectedWindowDefinition = FuSystemWindowsNames.None;
         internal static FuDockingLayoutDefinition CurrentLayout;
-        public static string CurrentLayoutName { get; internal set; } = "";
         internal static Dictionary<int, string> DefinedDockSpaces;
         internal static ExtensionFilter FlgExtensionFilter;
         public static Dictionary<string, FuDockingLayoutDefinition> Layouts { get; private set; }
@@ -32,6 +26,7 @@ namespace Fu.Framework
         public static bool IsSettingLayout { get; private set; }
         public static event Action OnDockLayoutSet;
         public static event Action OnDockLayoutReloaded;
+        public const string FUGUI_DOCKING_LAYOUT_EXTENTION = "fdl";
         #endregion
 
         /// <summary>
@@ -46,7 +41,7 @@ namespace Fu.Framework
             FlgExtensionFilter = new ExtensionFilter
             {
                 Name = "Fugui Layout Configuration",
-                Extensions = new string[1] { "flg" }
+                Extensions = new string[1] { FUGUI_DOCKING_LAYOUT_EXTENTION }
             };
 
             // create dockaspace windows definitions
@@ -101,7 +96,7 @@ namespace Fu.Framework
             // iterate on each file into folder
             foreach (string file in Directory.GetFiles(folderPath))
             {
-                string fileName = Path.GetFileName(file);
+                string fileName = Path.GetFileNameWithoutExtension(file);
                 FuDockingLayoutDefinition tempLayout = FuDockingLayoutDefinition.ReadFromFile(file);
 
                 if (tempLayout != null)
@@ -115,12 +110,10 @@ namespace Fu.Framework
             {
                 KeyValuePair<string, FuDockingLayoutDefinition> firstLayoutInfo = Layouts.ElementAt(0);
                 CurrentLayout = firstLayoutInfo.Value;
-                CurrentLayoutName = firstLayoutInfo.Key;
             }
             else
             {
                 CurrentLayout = null;
-                CurrentLayoutName = string.Empty;
             }
 
             OnDockLayoutReloaded?.Invoke();
@@ -226,10 +219,6 @@ namespace Fu.Framework
         {
             if (!Layouts.ContainsKey(layoutName))
             {
-                layoutName += ".flg";
-            }
-            if (!Layouts.ContainsKey(layoutName))
-            {
                 return;
             }
 
@@ -267,7 +256,6 @@ namespace Fu.Framework
             {
                 if (layout == null)
                 {
-                    //setDefaultLayout();
                     setDockSpaceConfigurationLayout(layoutName);
                 }
                 else
@@ -296,7 +284,6 @@ namespace Fu.Framework
                     createDocking(windows, dockSpaceDefinition);
                     selectFirstTabOnEachDockSpaces(windows, dockSpaceDefinition);
                     ImGuiDocking.DockBuilderFinish(MainID);
-                    CurrentLayoutName = layoutName;
                     CurrentLayout = dockSpaceDefinition;
                     endSettingLayout();
                 });
@@ -443,7 +430,6 @@ namespace Fu.Framework
                 ImGuiDocking.DockBuilderDockWindow(windows[FuSystemWindowsNames.WindowsDefinitionManager].ID, right);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
-                CurrentLayoutName = layoutName;
                 CurrentLayout = null;
                 endSettingLayout();
             });
@@ -492,8 +478,8 @@ namespace Fu.Framework
             {
                 if (item.Key > FuSystemWindowsNames.FuguiReservedLastID)
                 {
-                    sb.AppendLine("        private static FuWindowName _" + item.Value + " = new FuWindowName(" + item.Key + ", \"" + item.Value + "\", " + item.Value.AutoInstantiateWindowOnlayoutSet.ToString() + ", " + item.Value.IdleFPS + ");")
-                        .AppendLine("        public static FuWindowName " + item.Value + " { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _" + item.Value + "; }");
+                    sb.AppendLine("        private static FuWindowName _" + Fugui.RemoveSpaceAndCapitalize(item.Value.Name) + " = new FuWindowName(" + item.Key + ", \"" + item.Value + "\", " + item.Value.AutoInstantiateWindowOnlayoutSet.ToString().ToLower() + ", " + item.Value.IdleFPS + ");")
+                        .AppendLine("        public static FuWindowName " + Fugui.RemoveSpaceAndCapitalize(item.Value.Name) + " { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _" + Fugui.RemoveSpaceAndCapitalize(item.Value.Name) + "; }");
                 }
             }
 
@@ -504,10 +490,10 @@ namespace Fu.Framework
                 .AppendLine("            {");
             foreach (var item in values)
             {
-                sb.AppendLine("                _" + item.Value + ",");
+                sb.AppendLine("                _" + Fugui.RemoveSpaceAndCapitalize(item.Value.ToString()) + ",");
             }
 
-            // close scop
+            // close scopes
             sb.AppendLine("            };")
                 .AppendLine("        }")
                 .AppendLine("    }")
@@ -581,8 +567,8 @@ namespace Fu.Framework
         /// </summary>
         internal static void createNewLayout()
         {
-            int count = Layouts.Where(file => file.Key.StartsWith("New layout")).Count();
-            string newFileName = "New_layout_" + count + ".flg";
+            int count = Layouts.Where(file => file.Key.StartsWith("Layout_")).Count();
+            string newFileName = "Layout_" + count;
 
             if (!Layouts.ContainsKey(newFileName))
             {
@@ -590,7 +576,6 @@ namespace Fu.Framework
 
                 FuDockingLayoutDefinition newLayout = Layouts[newFileName];
                 CurrentLayout = newLayout;
-                CurrentLayoutName = newFileName;
             }
         }
 
@@ -599,7 +584,7 @@ namespace Fu.Framework
         /// </summary>
         internal static void deleteSelectedLayout()
         {
-            if (!string.IsNullOrEmpty(CurrentLayoutName))
+            if (CurrentLayout != null)
             {
                 // get folder path
                 string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
@@ -609,18 +594,24 @@ namespace Fu.Framework
                 {
                     try
                     {
-                        string filePathToDelete = Path.Combine(folderPath, CurrentLayoutName);
+                        string filePathToDelete = Path.Combine(folderPath, CurrentLayout.Name) + "." + FUGUI_DOCKING_LAYOUT_EXTENTION;
 
                         if (File.Exists(filePathToDelete))
                         {
-                            Fugui.ShowYesNoModal("This action cannot be rollbacked. Are you sure you want to continue ?", confirmDeleteSelectedLayoutFile, FuModalSize.ExtraLarge);
+                            Fugui.ShowModal("Delete Docking Layout", () =>
+                            {
+                                using (FuLayout layout = new FuLayout())
+                                {
+                                    layout.TextWrapped("This action cannot be rollbacked. Are you sure you want to continue ?");
+                                }
+                            }, FuModalSize.Medium, new FuModalButton("Yes", confirmDeleteSelectedLayoutFile, FuButtonStyle.Danger),
+                            new FuModalButton("No", null, FuButtonStyle.Default));
                         }
-
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogWarning(ex.GetBaseException().Message);
-                        Fugui.Notify("Error", ex.GetBaseException().Message, StateType.Danger);
+                        Debug.LogWarning(ex.Message);
+                        Fugui.Notify("Error", ex.Message, StateType.Danger);
                     }
                 }
             }
@@ -630,12 +621,13 @@ namespace Fu.Framework
         /// Callbacked used for user response after delete layout file
         /// </summary>
         /// <param name="result">User result</param>
-        private static void confirmDeleteSelectedLayoutFile(bool result)
+        private static void confirmDeleteSelectedLayoutFile()
         {
             try
             {
                 string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
-                File.Delete(Path.Combine(folderPath, CurrentLayoutName));
+                File.Delete(Path.Combine(folderPath, CurrentLayout.Name + "." + FUGUI_DOCKING_LAYOUT_EXTENTION));
+                Fugui.Notify("Layout deleted", type: StateType.Success, duration: 2f);
             }
             catch (Exception ex)
             {
@@ -655,52 +647,7 @@ namespace Fu.Framework
         {
             if (CurrentLayout != null)
             {
-                // get folder path
-                string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
-
-                // create folder if not exists
-                if (!Directory.Exists(folderPath))
-                {
-                    try
-                    {
-                        // try to create directory if not exists
-                        Directory.CreateDirectory(folderPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        Fugui.Notify("Error", ex.GetBaseException().Message, StateType.Danger);
-
-                        return;
-                    }
-                }
-
-                string fileName = Path.Combine(folderPath, CurrentLayoutName);
-
-                // If file already exists, ask question
-                if (File.Exists(fileName))
-                {
-                    Fugui.ShowYesNoModal(CurrentLayoutName + " already exits. Are you sure you want to overwrite it ?", confirmSaveLayoutFileAlreadyExists, FuModalSize.Large);
-                }
-                else
-                {
-                    //Save file
-                    saveLayoutFile();
-
-                    //Reload layouts
-                    LoadLayouts();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Callbacked used for user response after overwrite layout file
-        /// </summary>
-        /// <param name="result">User result</param>
-        private static void confirmSaveLayoutFileAlreadyExists(bool result)
-        {
-            if (result)
-            {
-                saveLayoutFile();
+                saveLayoutFile(CurrentLayout);
 
                 //Reload layouts
                 LoadLayouts();
@@ -710,7 +657,7 @@ namespace Fu.Framework
         /// <summary>
         /// Used to format selected layout to FuGui layout configuration file 
         /// </summary>
-        private static void saveLayoutFile()
+        internal static void saveLayoutFile(FuDockingLayoutDefinition dockingLayout)
         {
             // get folder path
             string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
@@ -732,17 +679,15 @@ namespace Fu.Framework
                 }
             }
 
-            string fileName = Path.Combine(folderPath, CurrentLayoutName);
-            File.WriteAllText(fileName, FuDockingLayoutDefinition.Serialize(CurrentLayout));
+            string fileName = Path.Combine(folderPath, dockingLayout.Name) + "." + FUGUI_DOCKING_LAYOUT_EXTENTION;
+            File.WriteAllText(fileName, FuDockingLayoutDefinition.Serialize(dockingLayout));
+            Fugui.Notify("Layout saved", type: StateType.Success, duration: 2f);
         }
 
-        internal static bool checkSelectedName()
+        internal static bool checkLayoutName(string layoutName)
         {
-            string pattern = @"^[a-zA-Z0-9_-]+\.flg$";
-
-            return (!string.IsNullOrEmpty(CurrentLayoutName) && Regex.IsMatch(CurrentLayoutName, pattern));
+            return layoutName.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
         }
-
         #endregion
     }
 }

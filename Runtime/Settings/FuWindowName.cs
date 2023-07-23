@@ -27,6 +27,14 @@ namespace Fu
             _idleFPS = idleFPS;
         }
 
+        public FuWindowName(FuWindowName windowName)
+        {
+            _id = windowName.ID;
+            _name = windowName.Name;
+            _autoInstantiateWindowOnlayoutSet = windowName.AutoInstantiateWindowOnlayoutSet;
+            _idleFPS = windowName.IdleFPS;
+        }
+
         public void SetAutoInstantiateOnLayoutSet(bool autoInstantiateWindowOnlayoutSet)
         {
             _autoInstantiateWindowOnlayoutSet = autoInstantiateWindowOnlayoutSet;

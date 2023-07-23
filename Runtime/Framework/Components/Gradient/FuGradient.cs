@@ -20,8 +20,6 @@ public class FuGradient
     private Texture2D _horizontalTexture;
     // The vertical texture for the gradient.
     private Texture2D _verticalTexture;
-    // The size of the gradient texture.
-    private int _textureSize = 50;
     #endregion
 
     #region Constructors
@@ -60,6 +58,8 @@ public class FuGradient
     ///</summary>
     ///<param name="keys">The color keys for the gradient.</param>
     ///<param name="blendMode">The blend mode for the gradient.</param>
+    ///<param name="relativeMin">The value represented when time = 0. If bigger or equal to RelativeMax, gradient will not take this in account</param>
+    ///<param name="relativeMax">The value represented when time = 1. If smaller or equal to RelativeMin, gradient will not take this in account</param>
     public FuGradient(FuGradientColorKey[] keys, FuGradientBlendMode blendMode = FuGradientBlendMode.Continious)
     {
         _keys = new List<FuGradientColorKey>();
@@ -202,7 +202,7 @@ public class FuGradient
     ///</summary>
     ///<param name="time">The time of the color key.</param>
     ///<param name="color">The color of the color key.</param>
-    public void AddColorKey(float time, Color color)
+    public int AddColorKey(float time, Color color)
     {
         // Create a new color key with the given time and color
         FuGradientColorKey tempKey = new FuGradientColorKey(time, color);
@@ -210,6 +210,7 @@ public class FuGradient
         // Assume that the new key hasn't been added to the list yet
         bool added = false;
 
+        int keyIndex = 0;
         // Loop through the existing color keys to find the position to add the new key
         for (int i = 0; i < _keys.Count; i++)
         {
@@ -218,6 +219,7 @@ public class FuGradient
             {
                 // Insert the new key before the current key
                 _keys.Insert(i, tempKey);
+                keyIndex = i;
                 added = true;
                 break;
             }
@@ -230,7 +232,9 @@ public class FuGradient
         }
 
         // Regenerate the gradient textures with the new color key added
-        GenerateGradientTextures(_textureSize);
+        UpdateGradientTextures();
+
+        return keyIndex;
     }
 
     ///<summary>
@@ -245,7 +249,7 @@ public class FuGradient
         {
             _keys.RemoveAt(index);
             // generates the gradient textures after the key is removed.
-            GenerateGradientTextures(_textureSize);
+            UpdateGradientTextures();
         }
     }
 
@@ -268,7 +272,7 @@ public class FuGradient
             AddColorKey(time, tempColor);
 
             // Regenerate the gradient textures.
-            GenerateGradientTextures(_textureSize);
+            UpdateGradientTextures();
         }
     }
 
@@ -285,7 +289,7 @@ public class FuGradient
             // Replace the existing key with a new key that has the same time and the new color
             _keys[index] = new FuGradientColorKey(_keys[index].Time, color);
             // Generate gradient textures with the updated key values
-            GenerateGradientTextures(_textureSize);
+            UpdateGradientTextures();
 
         }
     }
@@ -315,55 +319,12 @@ public class FuGradient
     }
 
     ///<summary>
-    ///Generates the gradient textures for the gradient.
-    ///</summary>
-    ///<param name="size">The size of the texture to generate.</param>
-    private void GenerateGradientTextures(int size)
-    {
-        // Set the class variable _textureSize to the provided size
-        _textureSize = size;
-
-        // Create two new texture objects with the specified sizes
-        _horizontalTexture = new Texture2D(size, 1);
-        _verticalTexture = new Texture2D(1, size);
-
-        // Set the wrap mode of the texture objects to clamp
-        _horizontalTexture.wrapMode = TextureWrapMode.Clamp;
-        _verticalTexture.wrapMode = TextureWrapMode.Clamp;
-
-        // Create an array of colors with the specified size
-        Color[] colors = new Color[size];
-
-        // Loop through each pixel of the texture and set the corresponding color
-        for (int i = 0; i < size; i++)
-        {
-            colors[i] = Evaluate((float)i / (size - 1));
-        }
-
-        // Set the pixels of the texture objects to the array of colors
-        _horizontalTexture.SetPixels(colors);
-        _verticalTexture.SetPixels(colors);
-
-        // Apply the texture changes
-        _horizontalTexture.Apply();
-        _verticalTexture.Apply();
-    }
-
-    ///<summary>
     ///Gets the gradient texture for the gradient.
     ///</summary>
-    ///<param name="size">The size of the texture to retrieve.</param>
     ///<param name="vertical">Whether to retrieve the vertical or horizontal texture.</param>
     ///<returns>The gradient texture.</returns>
-    public Texture2D GetGradientTexture(int size, bool vertical = false)
+    public Texture2D GetGradientTexture(bool vertical = false)
     {
-        // Check if the provided size is different than the class variable _textureSize
-        if (size != _textureSize)
-        {
-            // If so, generate new gradient textures based on the provided size
-            GenerateGradientTextures(size);
-        }
-
         // Return the corresponding texture based on the provided orientation
         return vertical ? _verticalTexture : _horizontalTexture;
     }
@@ -384,7 +345,44 @@ public class FuGradient
     public void SetBlendMode(FuGradientBlendMode blendMode)
     {
         BlendMode = blendMode;
-        GenerateGradientTextures(_textureSize);
+        UpdateGradientTextures();
     }
+
+    ///<summary>
+    ///Generates the gradient textures for the gradient.
+    ///</summary>
+    public void UpdateGradientTextures()
+    {
+        if (_horizontalTexture == null || _verticalTexture == null)
+        {
+            // Create two new texture objects with the specified sizes
+            _horizontalTexture = new Texture2D(512, 1);
+            _verticalTexture = new Texture2D(1, 512);
+
+            // Set the wrap mode of the texture objects to clamp
+            _horizontalTexture.wrapMode = TextureWrapMode.Clamp;
+            _verticalTexture.wrapMode = TextureWrapMode.Clamp;
+
+        }
+        // Create an array of colors with the specified size
+        Color[] colors = new Color[512];
+
+        // Loop through each pixel of the texture and set the corresponding color
+        for (int i = 0; i < colors.Length; i++)
+        {
+            colors[i] = Evaluate((float)i / (colors.Length - 1));
+        }
+
+        // Set the pixels of the texture objects to the array of colors
+        _horizontalTexture.SetPixels(colors);
+        _verticalTexture.SetPixels(colors);
+
+        // Apply the texture changes
+        _horizontalTexture.Apply();
+        _verticalTexture.Apply();
+    }
+    #endregion
+
+    #region Private Utils
     #endregion
 }

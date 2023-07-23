@@ -116,14 +116,22 @@ namespace Fu
                 Vector2 modalSize = new Vector2(_currentBodySize.x, _currentBodySize.y + _currentFooterheight + _currentTitleHeight);
                 _currentModalPos = new Vector2(container.Size.x / 2f - modalSize.x / 2f, container.Size.y / 2f - modalSize.y / 2f);
                 Vector2 modalStartPos = new Vector2(container.Size.x / 2f - (modalSize.x * 0.01f) / 2f, 64f);
-                ImGui.SetNextWindowSize(Vector2.Lerp(modalSize * 0.01f, modalSize, _enlapsed / Settings.ModalAnimationDuration), ImGuiCond.Always);
-                ImGui.SetNextWindowPos(Vector2.Lerp(modalStartPos, _currentModalPos, _enlapsed / Settings.ModalAnimationDuration), ImGuiCond.Always);
-
+                if (_enlapsed < 1f)
+                {
+                    ImGui.SetNextWindowSize(Vector2.Lerp(modalSize * 0.01f, modalSize, _enlapsed / Settings.ModalAnimationDuration), ImGuiCond.Always);
+                    ImGui.SetNextWindowPos(Vector2.Lerp(modalStartPos, _currentModalPos, _enlapsed / Settings.ModalAnimationDuration), ImGuiCond.Always);
+                }
+                else
+                {
+                    ImGui.SetNextWindowSize(modalSize, ImGuiCond.Always);
+                    ImGui.SetNextWindowPos(_currentModalPos, ImGuiCond.Always);
+                }
+                ImGui.SetNextWindowFocus();
                 // beggin modal
                 if (ImGui.BeginPopupModal(_modalTitle, ref _showModal, ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     // draw modal title
-                    drawTitle(_modalTitle);
+                    DrawTitle(_modalTitle);
 
                     ImDrawListPtr drawList = ImGui.GetWindowDrawList();
                     // draw body BG
@@ -141,10 +149,7 @@ namespace Fu
                         {
                             float cursorY = ImGui.GetCursorScreenPos().y;
                             ImGui.Dummy(Vector2.zero);
-                            using (FuLayout layout = new FuLayout())
-                            {
-                                _modalBody();
-                            }
+                            _modalBody();
                             ImGui.Dummy(Vector2.zero);
                             // get body height for this frame
                             _currentBodyHeight = ImGui.GetCursorScreenPos().y - cursorY;
@@ -152,14 +157,14 @@ namespace Fu
                     }
 
                     // draw footer
-                    drawFooter();
+                    DrawFooter();
 
                     //end the modal
                     ImGui.EndPopup();
                 }
 
                 // animate the modal
-                animateModal();
+                AnimateModal();
             }
         }
 
@@ -167,13 +172,12 @@ namespace Fu
         /// draw the modal title
         /// </summary>
         /// <param name="title">title text to draw on the modal</param>
-        private static void drawTitle(string title)
+        private static void DrawTitle(string title)
         {
             float cursorPos = ImGui.GetCursorScreenPos().y;
             using (FuLayout layout = new FuLayout())
             {
-                layout.Dummy(ImGui.GetContentRegionAvail().x / 2f - ImGui.CalcTextSize(title).x / 2f);
-                layout.SameLine();
+                layout.CenterNextItem(title);
                 layout.Text(title);
             }
             _currentTitleHeight = ImGui.GetCursorScreenPos().y - cursorPos;
@@ -182,7 +186,7 @@ namespace Fu
         /// <summary>
         /// draw the buttons footer
         /// </summary>
-        private static void drawFooter()
+        private static void DrawFooter()
         {
             // Return if there are no modal buttons
             if (_modalButtons.Length == 0)
@@ -192,7 +196,6 @@ namespace Fu
 
             // Set the cursor position
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y));
-            float cursorPos = ImGui.GetCursorScreenPos().y;
             ImGui.Dummy(Vector2.zero);
             using (FuLayout layout = new FuLayout())
             {
@@ -215,13 +218,13 @@ namespace Fu
 
             // Create a dummy element for spacing
             ImGui.Dummy(Vector2.zero);
-            _currentFooterheight = ImGui.GetCursorScreenPos().y - cursorPos;
-        }
+            _currentFooterheight = (int)ImGui.GetCursorScreenPos().y - (int)(_currentModalPos.y + _currentTitleHeight + _currentBodySize.y);
+             }
 
         /// <summary>
         /// Update the modal open animation avancement
         /// </summary>
-        private static void animateModal()
+        private static void AnimateModal()
         {
             if (_enlapsed > Settings.ModalAnimationDuration)
             {
@@ -256,6 +259,30 @@ namespace Fu
         }
 
         /// <summary>
+        /// Show a modal with yes and no buttons
+        /// </summary>
+        /// <param name="title">Title of the modal</param>
+        /// <param name="body">body callback of the modal</param>
+        /// <param name="callback">Callback to be called when the yes button is pressed</param>
+        /// <param name="yesButtonText">text of the yes button</param>
+        /// <param name="noButtonText">text of the no button</param>
+        public static void ShowYesNoModal(string title, Action body, Action<bool> callback, FuModalSize modalSize, string yesButtonText = "Yes", string noButtonText = "No")
+        {
+            //call the ShowModal method with the title and buttons
+            ShowModal(title, body, modalSize,
+                new FuModalButton(yesButtonText, () =>
+                {
+                    CloseModal();
+                    callback?.Invoke(true);
+                }, FuButtonStyle.Default),
+                new FuModalButton(noButtonText, () =>
+                {
+                    CloseModal();
+                    callback?.Invoke(false);
+                }, FuButtonStyle.Default));
+        }
+
+        /// <summary>
         /// show a modal box
         /// </summary>
         /// <param name="title">title of the modal</param>
@@ -263,7 +290,7 @@ namespace Fu
         /// <param name="modalSize">size of the modal</param>
         /// <param name="icon">icon of the modal box</param>
         /// <param name="color">color of the icon</param>
-        private static void showBox(string title, Action body, FuModalSize modalSize, Texture2D icon, Color color, params FuModalButton[] buttons)
+        private static void ShowBox(string title, Action body, FuModalSize modalSize, Texture2D icon, Color color, params FuModalButton[] buttons)
         {
             //call the ShowModal method with the title, body, and buttons
             ShowModal(title, () =>
@@ -290,9 +317,9 @@ namespace Fu
         /// <param name="modalSize">size of the modal</param>
         /// <param name="icon">icon of the modal box</param>
         /// <param name="color">color of the icon</param>
-        private static void showBox(string title, string body, FuModalSize modalSize, Texture2D icon, Color color, params FuModalButton[] buttons)
+        private static void ShowBox(string title, string body, FuModalSize modalSize, Texture2D icon, Color color, params FuModalButton[] buttons)
         {
-            showBox(title, () =>
+            ShowBox(title, () =>
             {
                 using (FuLayout layout = new FuLayout())
                 {
@@ -309,7 +336,7 @@ namespace Fu
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowInfo(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.InfoIcon, FuTextStyle.Info.Text, buttons);
+            ShowBox(title, body, modalSize, Fugui.Settings.InfoIcon, FuTextStyle.Info.Text, buttons);
         }
 
         /// <summary>
@@ -320,7 +347,7 @@ namespace Fu
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowInfo(string title, string body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.InfoIcon, FuTextStyle.Info.Text, buttons);
+            ShowBox(title, body, modalSize, Fugui.Settings.InfoIcon, FuTextStyle.Info.Text, buttons);
         }
 
         /// <summary>
@@ -331,7 +358,7 @@ namespace Fu
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowDanger(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.DangerIcon, FuTextStyle.Danger.Text, buttons);
+            ShowBox(title, body, modalSize, Fugui.Settings.DangerIcon, FuTextStyle.Danger.Text, buttons);
         }
 
         /// <summary>
@@ -342,7 +369,7 @@ namespace Fu
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowDanger(string title, string body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.DangerIcon, FuTextStyle.Danger.Text, buttons);
+            ShowBox(title, body, modalSize, Fugui.Settings.DangerIcon, FuTextStyle.Danger.Text, buttons);
         }
 
         /// <summary>
@@ -353,7 +380,7 @@ namespace Fu
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowWarning(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.WarningIcon, FuTextStyle.Warning.Text, buttons);
+            ShowBox(title, body, modalSize, Fugui.Settings.WarningIcon, FuTextStyle.Warning.Text, buttons);
         }
 
         /// <summary>
@@ -364,7 +391,7 @@ namespace Fu
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowWarning(string title, string body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.WarningIcon, FuTextStyle.Warning.Text, buttons);
+            ShowBox(title, body, modalSize, Fugui.Settings.WarningIcon, FuTextStyle.Warning.Text, buttons);
         }
 
         /// <summary>
@@ -375,7 +402,7 @@ namespace Fu
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowSuccess(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.SuccessIcon, FuTextStyle.Success.Text, buttons);
+            ShowBox(title, body, modalSize, Fugui.Settings.SuccessIcon, FuTextStyle.Success.Text, buttons);
         }
 
         /// <summary>
@@ -386,7 +413,7 @@ namespace Fu
         /// <param name="modalSize">Size of the modal</param>
         public static void ShowSuccess(string title, string body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
-            showBox(title, body, modalSize, Fugui.Settings.SuccessIcon, FuTextStyle.Success.Text, buttons);
+            ShowBox(title, body, modalSize, Fugui.Settings.SuccessIcon, FuTextStyle.Success.Text, buttons);
         }
         #endregion
     }

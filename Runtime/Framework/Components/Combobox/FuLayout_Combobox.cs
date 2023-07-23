@@ -17,9 +17,9 @@ namespace Fu.Framework
         /// <param name="text">The label text to be displayed next to the combobox</param>
         /// <param name="itemChange">The action that will be called when the selected item changes</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not linked to an object's field</param>
-        public void ComboboxEnum<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter = null) where TEnum : struct, IConvertible
+        public void ComboboxEnum<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter = null, FuComboboxPopupPosition popupPosition = FuComboboxPopupPosition.BottomLeftAlign) where TEnum : struct, IConvertible
         {
-            ComboboxEnum<TEnum>(text, itemChange, itemGetter, FuElementSize.FullSize, Vector2.zero, FuButtonStyle.Default);
+            ComboboxEnum<TEnum>(text, itemChange, itemGetter, FuElementSize.FullSize, Vector2.zero, FuButtonStyle.Default, popupPosition);
         }
 
         /// <summary>
@@ -96,11 +96,11 @@ namespace Fu.Framework
             int selectedIndex = FuSelectableBuilder.GetSelectedIndex(text, items, itemGetter);
 
             // draw the combobox
-            Combobox(text, items[selectedIndex].ToString(), () =>
+            Combobox(text, items.Count > 0 ? items[selectedIndex].ToString() : "No Items", () =>
             {
                 for (int i = 0; i < items.Count; i++)
                 {
-                    if (ImGui.Selectable(items[i].ToString(), selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
+                    if (ImGui.Selectable(Fugui.AddSpacesBeforeUppercase(items[i].ToString()), selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
                     {
                         // Update the selected index and invoke the item change action
                         selectedIndex = i;
@@ -193,10 +193,15 @@ namespace Fu.Framework
                 {
                     popupSize.x = btnSize.x;
                 }
+                else if(popupSize.x == -1f)
+                {
+                    popupSize.x = 0f;
+                }
                 if (popupSize.y <= 0f)
                 {
                     popupSize.y = -1f;
                 }
+                Rect lastFramePopupRect = GetPopupLastFrameRect(getUniqueID(popupID));
                 // calculate position
                 switch (popupPosition)
                 {
@@ -212,17 +217,17 @@ namespace Fu.Framework
 
                     // Top Left
                     case FuComboboxPopupPosition.TopLeftAlign:
-                        pos = new Vector2(btnMin.x, btnMin.y - CurrentPopUpRect.size.y - 2f);
+                        pos = new Vector2(btnMin.x, btnMin.y - lastFramePopupRect.size.y - 2f);
                         break;
 
                     // Bottom Right
                     case FuComboboxPopupPosition.TopRightAlign:
-                        pos = new Vector2(btnMin.x - (popupSize.x - btnSize.x), btnMin.y - CurrentPopUpRect.size.y - 2f);
+                        pos = new Vector2(btnMin.x - (popupSize.x - btnSize.x), btnMin.y - lastFramePopupRect.size.y - 2f);
                         break;
                 }
 
                 // clamp height of the popup
-                if (popupSize.y == -1f && CurrentPopUpRect.size.y > COMBOBOX_POPUP_MAXIMUM_HEIGHT)
+                if (popupSize.y == -1f && lastFramePopupRect.size.y >= COMBOBOX_POPUP_MAXIMUM_HEIGHT)
                 {
                     popupSize.y = COMBOBOX_POPUP_MAXIMUM_HEIGHT;
                 }
@@ -294,6 +299,7 @@ namespace Fu.Framework
                 {
                     popupSize.y = -1f;
                 }
+                Rect lastFramePopupRect = GetPopupLastFrameRect(getUniqueID(popupID));
                 // calculate position
                 switch (popupPosition)
                 {
@@ -309,17 +315,17 @@ namespace Fu.Framework
 
                     // Top Left
                     case FuComboboxPopupPosition.TopLeftAlign:
-                        pos = new Vector2(btnMin.x, btnMin.y - CurrentPopUpRect.size.y - 2f);
+                        pos = new Vector2(btnMin.x, btnMin.y - lastFramePopupRect.size.y - 2f);
                         break;
 
                     // Bottom Right
                     case FuComboboxPopupPosition.TopRightAlign:
-                        pos = new Vector2(btnMin.x - (popupSize.x - btnSize.x), btnMin.y - CurrentPopUpRect.size.y - 2f);
+                        pos = new Vector2(btnMin.x - (popupSize.x - btnSize.x), btnMin.y - lastFramePopupRect.size.y - 2f);
                         break;
                 }
 
                 // clamp height of the popup
-                if (popupSize.y == -1f && CurrentPopUpRect.size.y > COMBOBOX_POPUP_MAXIMUM_HEIGHT)
+                if (popupSize.y == -1f && lastFramePopupRect.size.y >= COMBOBOX_POPUP_MAXIMUM_HEIGHT)
                 {
                     popupSize.y = COMBOBOX_POPUP_MAXIMUM_HEIGHT;
                 }

@@ -22,8 +22,8 @@ namespace Fu
                 PopFont();
 
                 // Fugui Logo
-                HorizontalAlignNextElement(128f, FuElementAlignement.Center);
-                layout.Image("fLogo", Settings.FuguiLogo, new Vector2(128f, 128f));
+                HorizontalAlignNextElement(64f, FuElementAlignement.Center);
+                layout.Image("fLogo", Settings.FuguiLogo, new Vector2(64f, 64f));
 
                 // buttons
                 FuStyle.Unpadded.Push(true);
@@ -44,7 +44,7 @@ namespace Fu
                     {
                         using (FuGrid grid = new FuGrid("fsG", FuGridFlag.AutoToolTipsOnLabels))
                         {
-                            grid.DrawObject(Settings);
+                            grid.DrawObject("FuguiSettings", Settings);
                         }
                     });
 

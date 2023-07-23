@@ -13,6 +13,14 @@ public class CameraWindow : MonoBehaviour
         registerCameraViewWindow();
     }
 
+    private void Start()
+    {
+        if(FuDockingLayoutManager.Layouts.Count == 0)
+        {
+            Camera.enabled = false;
+        }
+    }
+
     /// <summary>
     /// register the camera window and its overlays
     /// </summary>

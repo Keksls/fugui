@@ -81,8 +81,8 @@ namespace Fu.Framework
         [FuHidden]
         public Vector4[] Colors;
 
-        public static Enum ThemeExtension { get; private set; }
-        public static int ThemeExtensionCount { get; private set; }
+        public static Enum ThemeExtension { get; private set; } = null;
+        public static int ThemeExtensionCount { get; private set; } = 0;
 
         /// <summary>
         /// Instantiate a new FuguiTheme instance. Default values are Dark theme
@@ -471,16 +471,16 @@ namespace Fu.Framework
                 style.Colors[i] = Colors[i];
             }
 
-            // set missing colors
-            FuTheme defaultTheme = new FuTheme("defaultTmp");
-            defaultTheme.SetAsDefaultDarkTheme();
-            for (int i = (int)ImGuiCol.COUNT; i < (int)FuColors.COUNT; i++)
-            {
-                if (Colors[i] == Vector4.zero)
-                {
-                    Colors[i] = defaultTheme.Colors[i];
-                }
-            }
+            //// set missing colors
+            //FuTheme defaultTheme = new FuTheme("defaultTmp");
+            //defaultTheme.SetAsDefaultDarkTheme();
+            //for (int i = (int)ImGuiCol.COUNT; i < (int)FuColors.COUNT; i++)
+            //{
+            //    if (Colors[i] == Vector4.zero)
+            //    {
+            //        Colors[i] = defaultTheme.Colors[i];
+            //    }
+            //}
         }
 
         public override string ToString()

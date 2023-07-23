@@ -55,32 +55,51 @@ namespace Fu.Framework
         /// <param name="theme">Theme to set</param>
         public static void SetTheme(FuTheme theme, bool allContexts = true)
         {
-            if (allContexts)
+            if (CurrentTheme == null)
             {
-                // get current context id
-                int currentContextID = Fugui.CurrentContext.ID;
-                // apply theme on each contexts
-                foreach (FuContext context in Fugui.Contexts.Values)
-                {
-                    context.SetAsCurrent();
-                    theme.Apply(context.Scale);
-                }
-                // set current last context
-                Fugui.GetContext(currentContextID)?.SetAsCurrent();
+                // we have no theme yet, Fugui just start, we have not started to draw anything, let's set theme directly
+                setTheme(theme, allContexts);
             }
             else
             {
-                theme.Apply(Fugui.CurrentContext.Scale);
+                // Fugui has start, we have no way to know where we are in the render workflow. 
+                // Let's wait to apply theme before starting to draw a frame, let's finish the current frame with old theme
+                Fugui.ExecuteInMainThread(() =>
+                {
+                    setTheme(theme, allContexts);
+                });
             }
 
-            CurrentTheme = theme;
-            // call OnThemeSet on each structs that inherit from 
-            foreach (Type structType in _uiElementStyleTypes)
+            void setTheme(FuTheme theme, bool allContexts)
             {
-                var myFunctionMethod = structType.GetMethod("OnThemeSet", BindingFlags.NonPublic | BindingFlags.Static);
-                myFunctionMethod.Invoke(null, null);
+                if (allContexts && Fugui.Contexts.Count > 1)
+                {
+                    // get current context id
+                    int currentContextID = Fugui.CurrentContext.ID;
+                    // apply theme on each contexts
+                    foreach (FuContext context in Fugui.Contexts.Values)
+                    {
+                        context.SetAsCurrent();
+                        theme.Apply(context.Scale);
+                    }
+                    // set current last context
+                    Fugui.GetContext(currentContextID)?.SetAsCurrent();
+                }
+                else
+                {
+                    theme.Apply(Fugui.CurrentContext.Scale);
+                }
+
+                CurrentTheme = theme;
+                // call OnThemeSet on each structs that inherit from 
+                foreach (Type structType in _uiElementStyleTypes)
+                {
+                    var myFunctionMethod = structType.GetMethod("OnThemeSet", BindingFlags.NonPublic | BindingFlags.Static);
+                    myFunctionMethod.Invoke(null, null);
+                }
+                OnThemeSet?.Invoke(CurrentTheme);
+                Fugui.ForceDrawAllWindows(2);
             }
-            OnThemeSet?.Invoke(CurrentTheme);
         }
 
         #region Public Utils
@@ -222,9 +241,10 @@ namespace Fu.Framework
             {
                 // read json data from file
                 string json = File.ReadAllText(filePath);
-				// deserialize json data
-				theme = JsonUtility.FromJson<FuTheme>(json);
-			}
+                // deserialize json data
+                theme = JsonUtility.FromJson<FuTheme>(json);
+                theme.UpdateThemeWithExtension();
+            }
             catch (Exception ex)
             {
                 // something gone wrong, let's invoke Fugui Exception event
@@ -314,10 +334,15 @@ namespace Fu.Framework
         public static void ExtendThemes(Enum themesExtension)
         {
             FuTheme.ExtendThemes(themesExtension);
-			foreach (FuTheme theme in Themes.Values)
-			{
+            foreach (FuTheme theme in Themes.Values)
+            {
                 theme.UpdateThemeWithExtension();
-			}
+            }
+            LoadAllThemes();
+            if (GetTheme(CurrentTheme.ThemeName, out FuTheme currentTheme))
+            {
+                SetTheme(currentTheme);
+            }
         }
 
         /// <summary>

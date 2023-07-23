@@ -5,7 +5,7 @@ namespace Fu.Framework
     public partial class FuGrid
     {
         /// <summary>
-        /// Display a Horizontaly centered text (centered according to minimum line height)
+        /// Display a Verticaly centered text (centered according to minimum line height)
         /// </summary>
         /// <param name="text">text to draw</param>
         /// <param name="style">Text Style</param>
@@ -22,7 +22,7 @@ namespace Fu.Framework
                 return;
             }
 
-            // horizontaly center Label
+            // verticaly center Label
             float textHeight = ImGui.CalcTextSize(text).y;
             if (textHeight < _minLineHeight)
             {
@@ -31,6 +31,8 @@ namespace Fu.Framework
             }
             // draw text
             ImGui.Text(text);
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectSize(), false, false);
             // handle tooltip
             if (_currentToolTipsOnLabels)
             {
@@ -59,6 +61,8 @@ namespace Fu.Framework
 
             // draw text
             ImGui.TextWrapped(text);
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectSize(), false, false);
             // handle tooltip
             if (_currentToolTipsOnLabels)
             {
@@ -94,6 +98,8 @@ namespace Fu.Framework
             }
             // draw text
             _customText(text);
+            // set states for this element
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             // handle tooltip
             if (_currentToolTipsOnLabels)
             {

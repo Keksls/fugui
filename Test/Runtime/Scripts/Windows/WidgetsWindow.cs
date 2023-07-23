@@ -52,11 +52,9 @@ public class WidgetsWindow : MonoBehaviour
     bool spinnerDoubleColor = false;
     Vector2 spinnerV2Size = new Vector2(64f, 20f);
     float spinnerFrequency = 6f;
-    FuGradient gradient;
 
     void Awake()
     {
-        gradient = new FuGradient();
         registerUIWidgetsWindow();
     }
 
@@ -136,10 +134,10 @@ public class WidgetsWindow : MonoBehaviour
 
             grid.ButtonsGroup<FuToggleFlags>("Buttons Group", (flag) => { Debug.Log(flag + " selected"); });
             grid.SetNextElementToolTip("About", "Accelerate", "Arch", "Arrow Down");
-            grid.ButtonsGroup("Default", new List<string>() { Icons.About + "##0", Icons.Accelerate + "##0", Icons.Arch + "##0", Icons.ArrowDown + "##0" }, (index) => { }, null, FuButtonsGroupFlags.Default);
-            grid.ButtonsGroup("Left", new List<string>() { Icons.About + "##1", Icons.Accelerate + "##1", Icons.Arch + "##1", Icons.ArrowDown + "##1" }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft);
-            grid.ButtonsGroup("Auto size", new List<string>() { Icons.About + "##2", Icons.Accelerate + "##2", Icons.Arch + "##2", Icons.ArrowDown + "##2" }, (index) => { }, null, FuButtonsGroupFlags.AutoSizeButtons);
-            grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About + "##3", Icons.Accelerate + "##3", Icons.Arch + "##3", Icons.ArrowDown + "##3" }, (index) => { }, null, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
+            grid.ButtonsGroup("Default", new List<string>() { Icons.About + "##0", Icons.Accelerate + "##0", Icons.Arch + "##0", Icons.ArrowDown + "##0" }, (index) => { }, null, 0f, FuButtonsGroupFlags.Default);
+            grid.ButtonsGroup("Left", new List<string>() { Icons.About + "##1", Icons.Accelerate + "##1", Icons.Arch + "##1", Icons.ArrowDown + "##1" }, (index) => { }, null, 0f, FuButtonsGroupFlags.AlignLeft);
+            grid.ButtonsGroup("Auto size", new List<string>() { Icons.About + "##2", Icons.Accelerate + "##2", Icons.Arch + "##2", Icons.ArrowDown + "##2" }, (index) => { }, null, 0f, FuButtonsGroupFlags.AutoSizeButtons);
+            grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About + "##3", Icons.Accelerate + "##3", Icons.Arch + "##3", Icons.ArrowDown + "##3" }, (index) => { }, null, 0f, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
 
             if (!_enableWidgets)
             {
@@ -187,9 +185,7 @@ public class WidgetsWindow : MonoBehaviour
                         grid.ImageButton("Image button blue", Fugui.Settings.FuguiLogo, Vector2.one * 32f, Color.blue);
                         break;
 
-                    // Colors and Gradient
                     case 2:
-                        grid.Gradient("gradient", ref gradient);
                         grid.ColorPicker("picker", ref colorV3);
                         grid.ColorPicker("picker with alpha", ref colorV4);
                         grid.Separator();

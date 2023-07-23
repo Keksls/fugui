@@ -18,10 +18,13 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="text">text / ID of the gradient</param>
         /// <param name="gradient">gradient to edit</param>
-        /// <param name="width">width of the gradient picker popup</param>
-        /// <param name="height">height of the gradient preview on popup</param>
+        /// <param name="addKeyOnGradientClick">if enabled, allow the user to add a key on gradient click</param>
+        /// <param name="allowAlpha">Whatever the gradient allow transparency on color keys</param>
+        /// <param name="relativeMin">The value represented when time = 0. If bigger or equal to RelativeMax, gradient will not take this in account</param>
+        /// <param name="relativeMax">The value represented when time = 1. If smaller or equal to RelativeMin, gradient will not take this in account</param>
         /// <returns>whatever the gradient has been edited this frame</returns>
-        public virtual bool Gradient(string text, ref FuGradient gradient, float width = 256f, float height = 24f)
+        public virtual bool Gradient(string text, ref FuGradient gradient, bool addKeyOnGradientClick = true, bool allowAlpha = true,
+            float relativeMin = 0, float relativeMax = 0)
         {
             beginElement(ref text);
             string ppID = text + "gpPp";
@@ -32,7 +35,9 @@ namespace Fu.Framework
             Vector2 mousePos = ImGui.GetMousePos();
             Vector2 startPos = ImGui.GetCursorScreenPos();
             Rect gradientRect = new Rect(startPos, new Vector2(ImGui.GetContentRegionAvail().x, 18f * Fugui.CurrentContext.Scale));
-            Texture2D gradientTexture = gradient.GetGradientTexture((int)gradientRect.size.x);
+            gradientRect.xMax -= 2 * Fugui.CurrentContext.Scale;
+            gradientRect.yMax -= 2 * Fugui.CurrentContext.Scale;
+            Texture2D gradientTexture = gradient.GetGradientTexture();
 
             // Draw tile background
             Fugui.DrawTilesBackground(drawList, startPos, gradientRect.size);
@@ -75,46 +80,116 @@ namespace Fu.Framework
             // callback to draw popup
             void drawPicker()
             {
-                Spacing();
+                // Gradient editor title
+                Fugui.Push(ImGuiStyleVar.FramePadding, new Vector4(4f, 4f));
+                FramedText("Gradient Editor", 0.5f);
+                Fugui.PopStyle();
+
                 Spacing();
                 SameLine();
                 BeginGroup();
-                _gradientUpdated = _customGradientPicker(text, width, height);
+                _gradientUpdated = _customGradientPicker(text, addKeyOnGradientClick, allowAlpha, relativeMin, relativeMax);
                 EndGroup();
                 SameLine();
-                Spacing();
                 Spacing();
             }
 
             // draw the popup if needed
-            DrawPopup(ppID, new Vector2(width + (FuThemeManager.CurrentTheme.ItemSpacing.x * 2f * Fugui.CurrentContext.Scale), 0f), Vector2.zero);
+            DrawPopup(ppID, new Vector2(320f, 0f), Vector2.zero);
             gradient = _currentGradient;
 
             // return whatever the gradient was edited this frame
             return _gradientUpdated;
         }
 
-        private bool _customGradientPicker(string text, float width, float height)
+        private bool _customGradientPicker(string text, bool addKeyOnGradientClick, bool allowAlpha, float relativeMin = 0, float relativeMax = 0)
         {
             text = "##" + text;
             bool edited = false;
             float colorKeySize = COLOR_KEY_SIZE * Fugui.CurrentContext.Scale;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
 
-            // draw blending mode combobox
-            using (FuGrid grid = new FuGrid(text + "grd"))
+            FuLayout layout = new FuLayout();
+            // Draw Header
+            // TODO : Add Fugui icons and use it to draw buttons glyphs
+
+            // Add a new color key
+            if (layout.Button("+##addKey" + text, new FuElementSize(24f, 0f)))
             {
-                grid.SetNextElementToolTipWithLabel("However you want this gradient to blend color values");
-                grid.ComboboxEnum<FuGradientBlendMode>("Blending", (index) =>
+                // get selected key
+                if (_currentGradient.GetKey(_selectedColorKeyIndex, out FuGradientColorKey selectedKey))
                 {
-                    _currentGradient.SetBlendMode((FuGradientBlendMode)index);
-                }, () => _currentGradient.BlendMode);
+                    float selectedTime = selectedKey.Time;
+
+                    // get neighbor key
+                    int neighborIndex = _selectedColorKeyIndex + 1;
+                    if (_currentGradient.GetKeysCount() <= neighborIndex)
+                    {
+                        neighborIndex = _selectedColorKeyIndex - 1;
+                    }
+                    if (_currentGradient.GetKey(neighborIndex, out FuGradientColorKey neighborKey))
+                    {
+                        float neighborTime = neighborKey.Time;
+
+                        // Add new key at avg time
+                        float newKeyTime = (selectedTime + neighborTime) / 2f;
+                        _selectedColorKeyIndex = _currentGradient.AddColorKey(newKeyTime, _currentGradient.Evaluate(newKeyTime));
+                        edited = true;
+                    }
+                }
+
             }
+            layout.SameLine();
+
+            // Remove selected color key
+            if (layout.Button("-##remKey" + text, new FuElementSize(24f, 0f)))
+            {
+                _currentGradient.RemoveColorKey(_selectedColorKeyIndex);
+                edited = true;
+                _selectedColorKeyIndex--;
+                if (_selectedColorKeyIndex < 0)
+                {
+                    _selectedColorKeyIndex = 0;
+                }
+            }
+            layout.SameLine();
+
+            // draw Key index
+            ImGui.SetNextItemWidth(64f);
+            Fugui.MoveY(2f);
+            int keyIndex = _selectedColorKeyIndex + 1;
+            if (ImGui.DragInt("##kNdx" + text, ref keyIndex, 0.1f, 1, _currentGradient.GetKeysCount(), "%d / " + _currentGradient.GetKeysCount()))
+            {
+                _selectedColorKeyIndex = keyIndex - 1;
+            }
+            layout.SameLine();
+
+            // set the blending mode
+            layout.SetNextElementToolTipWithLabel("However you want this gradient to blend color values");
+            layout.ComboboxEnum<FuGradientBlendMode>("Blending", (index) =>
+            {
+                _currentGradient.SetBlendMode((FuGradientBlendMode)index);
+            }, () => _currentGradient.BlendMode, new Vector2(GetAvailableWidth() - 36f * Fugui.CurrentContext.Scale, 0f), Vector2.zero, FuButtonStyle.Default);
+            layout.SameLine();
+            layout.Combobox("##GpStng" + text, "...", () =>
+            {
+                if (ImGui.Selectable("Reset gradient"))
+                {
+                    Debug.Log("TODO : Implement gradient reset");
+                }
+                if (ImGui.Selectable("Invert gradient"))
+                {
+                    Debug.Log("TODO : Implement gradient invert");
+                }
+            }, FuElementSize.FullSize, new Vector2(102f, -1f), FuButtonStyle.Default);
+            Fugui.PopContextMenuItems();
+            Fugui.PopContextMenuItems();
+            layout.Separator();
 
             Vector2 mousePos = ImGui.GetMousePos();
             Vector2 startPos = ImGui.GetCursorScreenPos();
-            Rect gradientRect = new Rect(startPos, new Vector2(width, height));
-            Texture2D gradientTexture = _currentGradient.GetGradientTexture((int)width);
+            Rect gradientRect = new Rect(startPos, new Vector2(ImGui.GetContentRegionAvail().x - 4f, 32f));
+            Texture2D gradientTexture = _currentGradient.GetGradientTexture();
 
             // Draw tile background
             Fugui.DrawTilesBackground(drawList, startPos, gradientRect.size);
@@ -129,10 +204,6 @@ namespace Fu.Framework
                 FuWindow.CurrentDrawingWindow.Container.ImGuiImage(gradientTexture, gradientRect.size, Color.white);
             }
 
-            // draw invisible button to prevent draw popup and handle native ImGui state on gradient image and carrets
-            ImGui.SetCursorScreenPos(startPos);
-            ImGui.InvisibleButton(text + "nvsbB", new Vector2(width, height + colorKeySize + 4f));
-
             bool isAnyKeyHovered = false;
             // Draw the color keys
             for (int i = 0; i < _currentGradient.GetKeysCount(); i++)
@@ -141,6 +212,8 @@ namespace Fu.Framework
                 {
                     Vector2 keyPos = new Vector2(gradientRect.x + key.Time * gradientRect.width, gradientRect.yMax);
                     Rect colorKeyRect = new Rect(gradientRect.x + key.Time * gradientRect.width - colorKeySize / 2, gradientRect.yMax + 4, colorKeySize, colorKeySize);
+                    ImGui.SetCursorScreenPos(colorKeyRect.min);
+                    ImGui.InvisibleButton(text + "ck" + i, colorKeyRect.size);
 
                     // get key states
                     bool hovered = isItemHovered(colorKeyRect.position, colorKeyRect.size);
@@ -148,7 +221,11 @@ namespace Fu.Framework
                     bool active = _selectedColorKeyIndex == i;
 
                     // draw Line
-                    drawList.AddLine(keyPos - new Vector2(0f, gradientRect.height), keyPos, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Knob)), active ? 3f : 1f);
+                    //drawList.AddLine(keyPos - new Vector2(0f, gradientRect.height), keyPos, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Knob)), active ? 3f : 1f);
+                    if (active)
+                    {
+                        drawList.AddLine(keyPos - new Vector2(0f, gradientRect.height), keyPos, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Knob)), 1f);
+                    }
 
                     // set tooltip and start drag on mouse douse
                     if (hovered)
@@ -175,7 +252,7 @@ namespace Fu.Framework
                     }
                     else
                     {
-                        Fugui.DrawCarret_Top(drawList, colorKeyRect.position + (Vector2.one * colorKeySize * 0.25f), colorKeySize * 0.5f, colorKeySize * 0.5f, caretColor);
+                        Fugui.DrawCarret_Top(drawList, colorKeyRect.position + (Vector2.one * colorKeySize * 0.25f), colorKeySize * 0.5f, colorKeySize * 0.5f, key.Color/*Color caretColor*/);
                     }
 
                     // remove on right click
@@ -192,7 +269,7 @@ namespace Fu.Framework
             }
 
             // Handle mouse events
-            if (!isDraggingColorKey)
+            if (!isDraggingColorKey && addKeyOnGradientClick)
             {
                 if (!isAnyKeyHovered && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                 {
@@ -225,15 +302,57 @@ namespace Fu.Framework
                 }
             }
 
-            // display color picker if needed
+            // display color picker and key time if needed
             if (_selectedColorKeyIndex >= 0)
             {
                 if (_currentGradient.GetKey(_selectedColorKeyIndex, out FuGradientColorKey key))
                 {
-                    Vector4 col = key.Color;
-                    if (ColorPicker(text + "cp", ref col))
+                    layout.Separator();
+                    using (FuGrid grid = new FuGrid(text + "grdPkrFtrGrd", new FuGridDefinition(2, new float[] { 0.5f, 0.5f })))
                     {
-                        _currentGradient.SetKeyColor(_selectedColorKeyIndex, col);
+                        grid.NextColumn();
+                        layout.Text("Color");
+                        layout.SameLine();
+                        // color with Alpha
+                        if (allowAlpha)
+                        {
+                            Vector4 col = key.Color;
+                            if (layout.ColorPicker(text + "cp", ref col))
+                            {
+                                _currentGradient.SetKeyColor(_selectedColorKeyIndex, col);
+                            }
+                        }
+                        // color without Alpha
+                        else
+                        {
+                            Vector3 col = (Vector4)key.Color;
+                            if (layout.ColorPicker(text + "cp", ref col))
+                            {
+                                Vector4 newCol = (Vector4)col;
+                                newCol.w = 1f;
+                                _currentGradient.SetKeyColor(_selectedColorKeyIndex, newCol);
+                            }
+                        }
+                        grid.NextColumn();
+                        layout.Text("Location");
+                        layout.SameLine();
+                        if (relativeMin >= relativeMax)
+                        {
+                            float time = key.Time * 100f;
+                            if (layout.Drag("##drag" + text, ref time, string.Empty, 0f, 100f, 0.01f, "%.1f %%"))
+                            {
+                                _currentGradient.SetKeyTime(_selectedColorKeyIndex, time / 100f);
+                            }
+                        }
+                        else
+                        {
+                            float relativeTime = Mathf.Lerp(relativeMin, relativeMax, key.Time);
+                            if (layout.Drag("##drag" + text, ref relativeTime, string.Empty, relativeMin, relativeMax, format: "%.2f"))
+                            {
+                                float time = (relativeTime - relativeMin) / (relativeMax - relativeMin);
+                                _currentGradient.SetKeyTime(_selectedColorKeyIndex, time);
+                            }
+                        }
                     }
                 }
             }
@@ -243,6 +362,7 @@ namespace Fu.Framework
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
+            layout.Dispose();
 
             return edited;
         }

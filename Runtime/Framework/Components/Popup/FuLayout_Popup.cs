@@ -2,20 +2,15 @@
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Fu.Framework
 {
     public partial class FuLayout
     {
-        private class FuPopupData
-        {
-            public Action UI;
-            public Action OnClose;
-            public bool OpenThisFrame = false;
-            public bool CloseThisFrame = false;
-            public Vector2 Size;
-        }
+        // the index of the current popup
+        private static int _currentPopupIndex = 0;
         private static Dictionary<string, FuPopupData> _registeredPopups = new Dictionary<string, FuPopupData>();
 
         /// <summary>
@@ -79,6 +74,7 @@ namespace Fu.Framework
             // add to dic
             FuPopupData data = new FuPopupData()
             {
+                LastFrameRender = ImGui.GetFrameCount(),
                 OpenThisFrame = true,
                 CloseThisFrame = false,
                 Size = size,
@@ -115,6 +111,7 @@ namespace Fu.Framework
         /// <param name="pos">position of the popup</param>
         public void DrawPopup(string id, Vector2 size, Vector2 pos)
         {
+            // get unique ID for this popup
             id = getUniqueID(id);
             if (_registeredPopups.TryGetValue(id, out FuPopupData data))
             {
@@ -151,23 +148,40 @@ namespace Fu.Framework
                 if (ImGui.BeginPopupContextWindow(id))
                 {
                     data.OpenThisFrame = false;
-                    IsInsidePopUp = true;
-                    // execute the callback
-                    data.UI?.Invoke();
-                    // Set the IsInsidePopUp flag to false
-                    IsInsidePopUp = false;
+                    data.LastFrameRender = ImGui.GetFrameCount();
 
-                    // Check if the CurrentPopUpID is not equal to the given text
-                    if (CurrentPopUpID != id)
+                    // push popup to stack
+                    if (data.PopupIndex == -1)
                     {
-                        // Set the CurrentPopUpWindowID to the current drawing window ID
-                        CurrentPopUpWindowID = FuWindow.CurrentDrawingWindow?.ID;
-                        // Set the CurrentPopUpID to the given text
-                        CurrentPopUpID = id;
+                        data.PopupIndex = _currentPopupIndex++;
+                        Fugui.PopUpWindowsIDs.Add(FuWindow.CurrentDrawingWindow?.ID);
+                        Fugui.PopUpIDs.Add(id);
+                        Fugui.IsPopupDrawing.Add(true);
+                        Fugui.IsPopupFocused.Add(true);
+                        Fugui.PopUpRects.Add(new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize()));
                     }
-                    // Set CurrentPopUpRect to ImGui item rect
-                    CurrentPopUpRect = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
-                    ImGui.EndPopup();
+                    Fugui.IsPopupDrawing[data.PopupIndex] = true;
+                    Fugui.IsPopupFocused[data.PopupIndex] = ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows | ImGuiFocusedFlags.NoPopupHierarchy);
+
+                    try
+                    {
+                        // execute the callback
+                        data.UI?.Invoke();
+
+                        // update popup value on stack
+                        Fugui.IsPopupDrawing[data.PopupIndex] = false;
+                        Fugui.PopUpRects[data.PopupIndex] = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+                    }
+                    catch (Exception ex)
+                    {
+                        ImGui.EndPopup();
+                        _closePopup(id);
+                        Fugui.Fire_OnUIException(ex);
+                    }
+                    finally
+                    {
+                        ImGui.EndPopup();
+                    }
                 }
                 else
                 {
@@ -178,6 +192,27 @@ namespace Fu.Framework
                     _closePopup(id);
                 }
             }
+        }
+
+        /// <summary>
+        /// get the Rect of a specific popup on last frame
+        /// </summary>
+        /// <param name="id">ID of the popup to get Rect on</param>
+        /// <returns>The rect of the popup at the end of the last frame</returns>
+        public Rect GetPopupLastFrameRect(string id)
+        {
+            if (_registeredPopups.TryGetValue(id, out FuPopupData data))
+            {
+                if (data.PopupIndex >= 0 && data.PopupIndex < Fugui.PopUpRects.Count)
+                {
+                    return Fugui.PopUpRects[data.PopupIndex];
+                }
+                else
+                {
+                    return new Rect(Vector2.zero, data.Size);
+                }
+            }
+            return default;
         }
 
         /// <summary>
@@ -192,36 +227,69 @@ namespace Fu.Framework
             }
         }
 
-        private void _closePopup(string id)
+        /// <summary>
+        /// Close the popup message
+        /// </summary>
+        private static void _closePopup(string id)
         {
-            // Check if the CurrentPopUpID is not equal to the given text
-            if (CurrentPopUpID != id)
-            {
-                // Set the CurrentPopUpWindowID to the current drawing window ID
-                CurrentPopUpWindowID = FuWindow.CurrentDrawingWindow?.ID;
-                // Set the CurrentPopUpID to the given text
-                CurrentPopUpID = id;
-            }
-
-            // Set the IsInsidePopUp flag to false
-            IsInsidePopUp = false;
-            // Check if the CurrentPopUpID is equal to the given text
-            if (CurrentPopUpID == id)
-            {
-                // Set the CurrentPopUpWindowID to null
-                CurrentPopUpWindowID = null;
-                // Set the CurrentPopUpID to null
-                CurrentPopUpID = null;
-            }
             // invoke the OnClose callback
             if (_registeredPopups.ContainsKey(id))
             {
+                var data = _registeredPopups[id];
+
+                // pop popup from stack
+                Fugui.PopUpWindowsIDs.RemoveAt(data.PopupIndex);
+                Fugui.PopUpIDs.RemoveAt(data.PopupIndex);
+                Fugui.IsPopupDrawing.RemoveAt(data.PopupIndex);
+                Fugui.PopUpRects.RemoveAt(data.PopupIndex);
+                Fugui.IsPopupFocused.RemoveAt(data.PopupIndex);
+
+                // update PopupIndex of each deeper popups
+                foreach (var popupData in _registeredPopups.Values)
+                {
+                    if (popupData.PopupIndex > data.PopupIndex)
+                    {
+                        popupData.PopupIndex--;
+                    }
+                }
+
+                // downsample static popup stack index
+                _currentPopupIndex--;
+
+                // invoke popup's onClose event if there is one
                 _registeredPopups[id].OnClose?.Invoke();
             }
             // remove from dic
             _registeredPopups.Remove(id);
-            // clear popup Rect
-            CurrentPopUpRect = default;
         }
+
+        /// <summary>
+        /// Smart clean of the popup stack (must be call on start of each frame)
+        /// </summary>
+        public static void CleanPopupStack()
+        {
+            List<string> popupIDs = _registeredPopups.Keys.ToList();
+            int lastFrameCount = ImGui.GetFrameCount() - 1;
+            foreach (string popupID in popupIDs)
+            {
+                if (_registeredPopups[popupID].LastFrameRender < lastFrameCount)
+                {
+                    _closePopup(popupID);
+                }
+            }
+        }
+
+        #region private class
+        private class FuPopupData
+        {
+            public int LastFrameRender = 0;
+            public int PopupIndex = -1;
+            public Action UI;
+            public Action OnClose;
+            public bool OpenThisFrame = false;
+            public bool CloseThisFrame = false;
+            public Vector2 Size;
+        }
+        #endregion
     }
 }

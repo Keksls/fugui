@@ -1,7 +1,6 @@
-﻿using UnityEngine;
+﻿using ImGuiNET;
 using System.Runtime.CompilerServices;
-using ImGuiNET;
-using System.Windows.Forms;
+using UnityEngine;
 
 namespace Fu.Framework
 {
@@ -41,11 +40,11 @@ namespace Fu.Framework
             }
             else if (_size.x > 0)
             {
-                _size.x *= Fugui.CurrentContext.Scale;
+                size.x *= Fugui.CurrentContext.Scale;
             }
             if (_size.y > 0)
             {
-                _size.y *= Fugui.CurrentContext.Scale;
+                size.y *= Fugui.CurrentContext.Scale;
             }
             return size;
         }

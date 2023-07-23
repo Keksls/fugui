@@ -19,6 +19,8 @@ namespace Fu.Core
         public bool IsExternalizable { get; private set; }
         // A flag indicating whether the window can be docked
         public bool IsDockable { get; private set; }
+        // A flag indicating whether the window can be closed
+        public bool IsClosable { get; private set; }
         // A flag indicating whether the window is interactible
         public bool IsInterractif { get; private set; }
         // A flag indicating whether other windows can dock over this window
@@ -56,6 +58,7 @@ namespace Fu.Core
             IsExternalizable = !flags.HasFlag(FuWindowFlags.NoExternalization);
             IsDockable = !flags.HasFlag(FuWindowFlags.NoDocking);
             IsInterractif = !flags.HasFlag(FuWindowFlags.NoInterractions);
+            IsClosable = !flags.HasFlag(FuWindowFlags.NoClosable);
             NoDockingOverMe = !flags.HasFlag(FuWindowFlags.NoDockingOverMe);
             AllowMultipleWindow = flags.HasFlag(FuWindowFlags.AllowMultipleWindow);
             _uiWindowType = typeof(FuWindow);
@@ -236,6 +239,19 @@ namespace Fu.Core
         {
             // Assign the specified value to the IsDockable field
             IsDockable = isDockable;
+            // Return the current UIWindowDefinition object
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the closability of the UI window.
+        /// </summary>
+        /// <param name="isDockable">A boolean value indicating whether the UI window can be closed.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetClosable(bool isClosable)
+        {
+            // Assign the specified value to the isClosable field
+            IsClosable = isClosable;
             // Return the current UIWindowDefinition object
             return this;
         }

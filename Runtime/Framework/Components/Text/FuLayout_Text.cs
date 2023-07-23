@@ -35,7 +35,7 @@ namespace Fu.Framework
 
             ImGui.Text(text); //display the text
             // set states for this element
-            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectSize(), false, false);
             if (_currentToolTipsOnLabels) //if the current tooltips should be displayed on labels
             {
                 displayToolTip(); //display the current tooltips
@@ -221,7 +221,7 @@ namespace Fu.Framework
                             {
                                 color = col;
                             }
-                            if(LastItemDisabled)
+                            if (LastItemDisabled)
                             {
                                 color *= 0.5f;
                             }
@@ -635,22 +635,21 @@ namespace Fu.Framework
                 return false;
             }
 
-            bool clicked = _internalClickableText(text, style);
+            bool clicked = _internalClickableText(text, style, out Rect textRect);
             // set states for this element
-            setBaseElementState(id, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
+            setBaseElementState(id, textRect.min, textRect.size, true, false);
             if (_currentToolTipsOnLabels)
             {
-                displayToolTip(_lastItemHovered);
+                displayToolTip();
             }
             endElement(style);
             return clicked;
         }
 
-        private bool _internalClickableText(string text, FuTextStyle style)
+        private bool _internalClickableText(string text, FuTextStyle style, out Rect textRect)
         {
-            Vector2 rectMin = ImGui.GetCursorScreenPos() - new Vector2(4f, 0f);
-            Vector2 rectMax = rectMin + ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding;
-            bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
+            textRect = new Rect(ImGui.GetCursorScreenPos() - new Vector2(4f, 0f), ImGui.CalcTextSize(text) + FuThemeManager.CurrentTheme.FramePadding);
+            bool hovered = isItemHovered(textRect.min, textRect.size);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
             bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !LastItemDisabled;
 

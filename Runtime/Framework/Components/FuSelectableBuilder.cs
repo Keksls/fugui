@@ -35,7 +35,7 @@ namespace Fu.Framework
                 foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
                 {
                     values.Add(enumValue.ToInt32(CultureInfo.InvariantCulture));
-                    selectables.Add(Fugui.AddSpacesBeforeUppercase(enumValue.ToString()));
+                    selectables.Add(enumValue.ToString());
                 }
                 // add values to dic
                 _selectablesValues.Add(type, values);
@@ -69,7 +69,6 @@ namespace Fu.Framework
                 string selectedItemString = itemGetter.Invoke();
                 if (!string.IsNullOrEmpty(selectedItemString))
                 {
-                    selectedItemString = Fugui.AddSpacesBeforeUppercase(selectedItemString);
                     foreach (var item in items)
                     {
                         if (item.ToString() == selectedItemString)

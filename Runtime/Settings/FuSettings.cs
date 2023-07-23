@@ -24,10 +24,15 @@ namespace Fu.Core
         [FuTooltip("Path of the folder that will store the Fugui layouts.")]
         public string FUGUI_DOCKSPACE_FOLDER_PATH = "Assets\\Runtime\\Settings\\Layout\\";
 
-        [Tooltip("A boolean value indicating whether UI windows should be internalized on mouse release.")]
-        [FuTooltip("A boolean value indicating whether UI windows should be internalized on mouse release.")]
+        [Tooltip("A boolean value indicating whether you want to enable windows externalizations.")]
+        [FuTooltip("A boolean value indicating whether you want to enable windows externalizations.")]
         [FuToggle]
-        public bool InternalizeOnMouseRelease = true;
+        public bool EnableExternalizations = true;
+
+        [Tooltip("A boolean value indicating whether you want to show Fugui settings window if there is no valid layout to set.")]
+        [FuTooltip("A boolean value indicating whether you want to show Fugui settings window if there is no valid layout to set.")]
+        [FuToggle]
+        public bool DisplaySettingsIfNoLayout = true;
 
         [Tooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are not being manipulated.")]

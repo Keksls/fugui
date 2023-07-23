@@ -77,7 +77,7 @@ namespace Fu
                 {
                     using (FuGrid grid = new FuGrid("FuguiThemeVariablesGrid", FuGridFlag.LinesBackground | FuGridFlag.AutoToolTipsOnLabels))
                     {
-                        if (grid.DrawObject(FuThemeManager.CurrentTheme))
+                        if (grid.DrawObject("FuguiTheme", FuThemeManager.CurrentTheme))
                         {
                             FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
                             ForceDrawAllWindows();
@@ -91,14 +91,16 @@ namespace Fu
                     {
                         for (int i = 0; i < (int)FuColors.COUNT; i++)
                         {
-                            Vector4 selectedColor = FuThemeManager.CurrentTheme.Colors[i];
-                            string colorName = ((FuColors)i).ToString();
-                            colorName = AddSpacesBeforeUppercase(colorName);
-                            if (grid.ColorPicker(colorName, ref selectedColor))
+                            if (FuThemeManager.CurrentTheme.Colors.Length > i)
                             {
-                                FuThemeManager.CurrentTheme.Colors[i] = selectedColor;
-                                FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
-                                ForceDrawAllWindows();
+                                Vector4 selectedColor = FuThemeManager.CurrentTheme.Colors[i];
+                                string colorName = ((FuColors)i).ToString();
+                                colorName = AddSpacesBeforeUppercase(colorName);
+                                if (grid.ColorPicker(colorName, ref selectedColor))
+                                {
+                                    FuThemeManager.CurrentTheme.Colors[i] = selectedColor;
+                                    FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
+                                }
                             }
                         }
 
@@ -112,7 +114,6 @@ namespace Fu
                             {
                                 FuThemeManager.CurrentTheme.Colors[(int)FuColors.COUNT + i] = selectedColor;
                                 FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
-                                ForceDrawAllWindows();
                             }
                         }
                     }

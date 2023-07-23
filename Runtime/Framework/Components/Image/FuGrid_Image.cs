@@ -71,7 +71,7 @@ namespace Fu.Framework
                 return false;
             }
             drawElementLabel(text, FuTextStyle.Default);
-            return base.ImageButton(text, texture, size);
+            return base.ImageButton(text, texture, size, color);
         }
     }
 }

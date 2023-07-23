@@ -27,7 +27,7 @@ namespace Fu.Framework
             }
         }
 
-        public abstract bool Draw(FuGrid grid, object objectInstance);
+        public abstract bool Draw(string objectID, FuGrid grid, object objectInstance);
     }
 
     public class FuImageField : FuField
@@ -47,7 +47,7 @@ namespace Fu.Framework
             }
         }
 
-        public override bool Draw(FuGrid grid, object objectInstance)
+        public override bool Draw(string objectID, FuGrid grid, object objectInstance)
         {
             if (_texture == null)
             {
@@ -61,7 +61,7 @@ namespace Fu.Framework
             {
                 grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
-            grid.Image(FieldName, _texture, _size, _color);
+            grid.Image(FieldName + "##" + objectID, _texture, _size, _color);
             return false;
         }
     }
@@ -71,7 +71,7 @@ namespace Fu.Framework
         {
         }
 
-        public override bool Draw(FuGrid grid, object objectInstance)
+        public override bool Draw(string objectID, FuGrid grid, object objectInstance)
         {
             if (Disabled)
             {
@@ -88,7 +88,7 @@ namespace Fu.Framework
                 Values.Add(Fugui.AddSpacesBeforeUppercase(Value.ToString()));
             }
             bool updated = false;
-            grid.Combobox(FieldName, Values, (index) =>
+            grid.Combobox(FieldName + "##" + objectID, Values, (index) =>
             {
                 string newValue = Values[index].Replace(" ", "");
                 _fieldInfo.SetValue(objectInstance, Enum.Parse(_fieldInfo.FieldType, newValue));
@@ -104,7 +104,7 @@ namespace Fu.Framework
         {
         }
 
-        public override bool Draw(FuGrid grid, object objectInstance)
+        public override bool Draw(string objectID, FuGrid grid, object objectInstance)
         {
             if (Disabled)
             {
@@ -115,7 +115,7 @@ namespace Fu.Framework
                 grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             bool isChecked = (bool)_fieldInfo.GetValue(objectInstance);
-            bool updated = grid.CheckBox(FieldName, ref isChecked);
+            bool updated = grid.CheckBox(FieldName + "##" + objectID, ref isChecked);
             if (updated)
             {
                 _fieldInfo.SetValue(objectInstance, isChecked);
@@ -130,7 +130,7 @@ namespace Fu.Framework
         {
         }
 
-        public override bool Draw(FuGrid grid, object objectInstance)
+        public override bool Draw(string objectID, FuGrid grid, object objectInstance)
         {
             if (Disabled)
             {
@@ -141,7 +141,7 @@ namespace Fu.Framework
                 grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             bool isChecked = (bool)_fieldInfo.GetValue(objectInstance);
-            bool updated = grid.Toggle(FieldName, ref isChecked);
+            bool updated = grid.Toggle(FieldName + "##" + objectID, ref isChecked);
             if (updated)
             {
                 _fieldInfo.SetValue(objectInstance, isChecked);
@@ -156,7 +156,7 @@ namespace Fu.Framework
         {
         }
 
-        public override bool Draw(FuGrid grid, object objectInstance)
+        public override bool Draw(string objectID, FuGrid grid, object objectInstance)
         {
             if (Disabled)
             {
@@ -166,7 +166,7 @@ namespace Fu.Framework
             {
                 grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
-            grid.Text(FieldName);
+            grid.Text(FieldName + "##" + objectID);
             object value = _fieldInfo.GetValue(objectInstance);
             grid.Text(value.ToString());
             return false;
@@ -189,7 +189,7 @@ namespace Fu.Framework
             }
         }
 
-        public override bool Draw(FuGrid grid, object objectInstance)
+        public override bool Draw(string objectID, FuGrid grid, object objectInstance)
         {
             if (Disabled)
             {
@@ -200,7 +200,7 @@ namespace Fu.Framework
                 grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
             }
             string value = (string)_fieldInfo.GetValue(objectInstance);
-            bool updated = grid.TextInput(FieldName, _hint, ref value, _lenght, _height, 0f);
+            bool updated = grid.TextInput(FieldName + "##" + objectID, _hint, ref value, _lenght, _height, 0f);
             if (updated)
             {
                 _fieldInfo.SetValue(objectInstance, value);
@@ -235,7 +235,7 @@ namespace Fu.Framework
             }
         }
 
-        public override bool Draw(FuGrid grid, object objectInstance)
+        public override bool Draw(string objectID, FuGrid grid, object objectInstance)
         {
             if (Disabled)
             {
@@ -250,7 +250,7 @@ namespace Fu.Framework
             {
                 case NumericFieldType.Byte:
                     int bval = (byte)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Slider(FieldName, ref bval, (int)Mathf.Max(byte.MinValue, _min), (int)Mathf.Min(byte.MaxValue, _max));
+                    updated = grid.Slider(FieldName + "##" + objectID, ref bval, (int)Mathf.Max(byte.MinValue, _min), (int)Mathf.Min(byte.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, (byte)bval);
@@ -259,7 +259,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.Short:
                     int sval = (short)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Slider(FieldName, ref sval, (int)Mathf.Max(short.MinValue, _min), (short)Mathf.Min(byte.MaxValue, _max));
+                    updated = grid.Slider(FieldName + "##" + objectID, ref sval, (int)Mathf.Max(short.MinValue, _min), (short)Mathf.Min(byte.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, (short)sval);
@@ -268,7 +268,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.UShort:
                     int usval = (ushort)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Slider(FieldName, ref usval, (int)Mathf.Max(ushort.MinValue, _min), (int)Mathf.Min(ushort.MaxValue, _max));
+                    updated = grid.Slider(FieldName + "##" + objectID, ref usval, (int)Mathf.Max(ushort.MinValue, _min), (int)Mathf.Min(ushort.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, (short)usval);
@@ -277,7 +277,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.Int:
                     int ival = (int)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Slider(FieldName, ref ival, (int)Mathf.Max(int.MinValue, _min), (int)Mathf.Min(int.MaxValue, _max));
+                    updated = grid.Slider(FieldName + "##" + objectID, ref ival, (int)Mathf.Max(int.MinValue, _min), (int)Mathf.Min(int.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, ival);
@@ -286,7 +286,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.Float:
                     float fval = (float)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Slider(FieldName, ref fval, (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                    updated = grid.Slider(FieldName + "##" + objectID, ref fval, (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, fval);
@@ -295,7 +295,7 @@ namespace Fu.Framework
 
                 default:
                     grid.SetNextElementToolTipWithLabel("can't draw an object of type " + _fieldInfo.FieldType.ToString() + " using a slider.");
-                    grid.Text(_fieldInfo.FieldType.ToString());
+                    grid.Text(_fieldInfo.FieldType.ToString() + "##objectID");
                     return false;
             }
             return updated;
@@ -341,7 +341,7 @@ namespace Fu.Framework
             return _labels[index];
         }
 
-        public override bool Draw(FuGrid grid, object objectInstance)
+        public override bool Draw(string objectID, FuGrid grid, object objectInstance)
         {
             if (Disabled)
             {
@@ -356,7 +356,7 @@ namespace Fu.Framework
             {
                 case NumericFieldType.Byte:
                     int bval = (byte)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Drag(FieldName, getLabel(0), ref bval, (int)Mathf.Max(byte.MinValue, _min), (int)Mathf.Min(byte.MaxValue, _max));
+                    updated = grid.Drag(FieldName + "##" + objectID, getLabel(0), ref bval, (int)Mathf.Max(byte.MinValue, _min), (int)Mathf.Min(byte.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, (byte)bval);
@@ -365,7 +365,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.Short:
                     int sval = (short)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Drag(FieldName, getLabel(0), ref sval, (int)Mathf.Max(short.MinValue, _min), (short)Mathf.Min(byte.MaxValue, _max));
+                    updated = grid.Drag(FieldName + "##" + objectID, getLabel(0), ref sval, (int)Mathf.Max(short.MinValue, _min), (short)Mathf.Min(byte.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, (short)sval);
@@ -374,7 +374,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.UShort:
                     int usval = (ushort)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Drag(FieldName, getLabel(0), ref usval, (int)Mathf.Max(ushort.MinValue, _min), (int)Mathf.Min(ushort.MaxValue, _max));
+                    updated = grid.Drag(FieldName + "##" + objectID, getLabel(0), ref usval, (int)Mathf.Max(ushort.MinValue, _min), (int)Mathf.Min(ushort.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, (short)usval);
@@ -383,7 +383,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.Int:
                     int ival = (int)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Drag(FieldName, getLabel(0), ref ival, (int)Mathf.Max(int.MinValue, _min), (int)Mathf.Min(int.MaxValue, _max));
+                    updated = grid.Drag(FieldName + "##" + objectID, getLabel(0), ref ival, (int)Mathf.Max(int.MinValue, _min), (int)Mathf.Min(int.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, ival);
@@ -392,7 +392,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.Float:
                     float fval = (float)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Drag(FieldName, ref fval, getLabel(0), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                    updated = grid.Drag(FieldName + "##" + objectID, ref fval, getLabel(0), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, fval);
@@ -401,7 +401,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.Vector2:
                     Vector2 v2val = (Vector2)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Drag(FieldName, ref v2val, getLabel(0), getLabel(1), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                    updated = grid.Drag(FieldName + "##" + objectID, ref v2val, getLabel(0), getLabel(1), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, v2val);
@@ -410,7 +410,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.Vector3:
                     Vector3 v3val = (Vector3)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Drag(FieldName, ref v3val, getLabel(0), getLabel(1), getLabel(2), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                    updated = grid.Drag(FieldName + "##" + objectID, ref v3val, getLabel(0), getLabel(1), getLabel(2), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, v3val);
@@ -419,7 +419,7 @@ namespace Fu.Framework
 
                 case NumericFieldType.Vector4:
                     Vector4 v4val = (Vector4)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.Drag(FieldName, ref v4val, getLabel(0), getLabel(1), getLabel(2), getLabel(3), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                    updated = grid.Drag(FieldName + "##" + objectID, ref v4val, getLabel(0), getLabel(1), getLabel(2), getLabel(3), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, v4val);
@@ -429,7 +429,7 @@ namespace Fu.Framework
                 case NumericFieldType.None:
                 default:
                     grid.SetNextElementToolTipWithLabel("can't draw an object of type " + _fieldInfo.FieldType.ToString() + " using a drag.");
-                    grid.Text(_fieldInfo.FieldType.ToString());
+                    grid.Text(_fieldInfo.FieldType.ToString() + "##" + objectID);
                     return false;
             }
             return updated;
@@ -448,7 +448,7 @@ namespace Fu.Framework
             }
         }
 
-        public override bool Draw(FuGrid grid, object objectInstance)
+        public override bool Draw(string objectID, FuGrid grid, object objectInstance)
         {
             if (Disabled)
             {
@@ -462,7 +462,7 @@ namespace Fu.Framework
             if (alpha)
             {
                 Vector4 value = (Vector4)_fieldInfo.GetValue(objectInstance);
-                updated = grid.ColorPicker(FieldName, ref value);
+                updated = grid.ColorPicker(FieldName + "##" + objectID, ref value);
                 if (updated)
                 {
                     _fieldInfo.SetValue(objectInstance, value);
@@ -471,7 +471,7 @@ namespace Fu.Framework
             else
             {
                 Vector3 value = (Vector3)_fieldInfo.GetValue(objectInstance);
-                updated = grid.ColorPicker(FieldName, ref value);
+                updated = grid.ColorPicker(FieldName + "##" + objectID, ref value);
                 if (updated)
                 {
                     _fieldInfo.SetValue(objectInstance, value);

@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Fu.Framework;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu
@@ -75,6 +76,81 @@ namespace Fu
                 new Vector2(pos.x, pos.y + (containerHeight / 2f)),
                 new Vector2(pos.x + carretSize, pos.y + (containerHeight / 2f) + (carretSize / 2f)),
                 ImGui.GetColorU32(color));
+        }
+
+        /// <summary>
+        /// Draws a notification bubble with text
+        /// </summary>
+        /// <param name="drawList">Drawing list to add the bubble to.</param>
+        /// <param name="pos">Position of the bubble</param>
+        /// <param name="radius">Radius of the bubble</param>
+        /// <param name="text">Text to display</param>
+        /// <param name="backgroundColor">Color of the background</param>
+        /// <param name="textColor">Color of the text</param>
+        public static void DrawBubble(ImDrawListPtr drawList, Vector2 pos, float radius, string text, Color backgroundColor, Color textColor)
+        {
+            drawList.AddCircleFilled(
+                pos,
+                radius,
+                ImGui.GetColorU32(backgroundColor));
+
+            //Calc for center text in the notification bubble
+            Vector2 textSize = ImGui.CalcTextSize(text);
+            pos.y -= textSize.y / 2f + 1f;
+            pos.x -= textSize.x / 2f;
+
+            drawList.AddText(
+                pos,
+                ImGui.GetColorU32(textColor),
+                text);
+        }
+
+        /// <summary>
+        /// Draws a notification bubble with text
+        /// </summary>
+        /// <param name="drawList">Drawing list to add the bubble to.</param>
+        /// <param name="pos">Position of the bubble</param>
+        /// <param name="radius">Radius of the bubble</param>
+        /// <param name="text">Text to display</param>
+        /// <param name="backgroundColor">Color of the background</param>
+        /// <param name="textColor">Color of the text</param>
+        /// <param name="tooltipStyle">Fustyle of the tooltip text</param>
+        /// <param name="tooltip">TooltipText</param>
+        public static void DrawBubbleWithTooltip(ImDrawListPtr drawList, Vector2 pos, float radius, string text, Color backgroundColor, Color textColor, FuTextStyle tooltipStyle, string tooltip = "")
+        {
+            drawList.AddCircleFilled(
+                pos,
+                radius,
+                ImGui.GetColorU32(backgroundColor));
+
+            //Calc for center text in the notification bubble
+            Vector2 textSize = ImGui.CalcTextSize(text);
+            pos.y -= textSize.y / 2f + 1f;
+            pos.x -= textSize.x / 2f;
+
+            drawList.AddText(
+                pos,
+                ImGui.GetColorU32(textColor),
+                text);
+
+            //Show tooltip
+            Vector2 tooltipRectMin = pos;
+            Vector2 tooltipRectMax = pos;
+            tooltipRectMin.x -= radius;
+            tooltipRectMax.x += radius;
+            tooltipRectMin.y -= radius;
+            tooltipRectMax.y += radius;
+
+            if (!string.IsNullOrEmpty(tooltip) && ImGui.IsMouseHoveringRect(tooltipRectMin, tooltipRectMax))
+            {
+                tooltipStyle.Push(true);
+                Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
+                Fugui.PushDefaultFont();
+                ImGui.SetTooltip(tooltip);
+                Fugui.PopFont();
+                Fugui.PopStyle();
+                tooltipStyle.Pop();
+            }
         }
 
         /// <summary>

@@ -8,7 +8,17 @@
     "excludePlatforms": [],
     "allowUnsafeCode": true,
     "overrideReferences": false,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        "System.Runtime.CompilerServices.Unsafe.dll",
+        "ImGui.NET.dll",
+        "ImGuizmo.NET.dll",
+        "ImNodes.NET.dll",
+        "ImPlot.NET.dll",
+        "OpenTK.dll",
+        "Triangle.dll",
+        "Ookii.Dialogs.dll",
+        "Newtonsoft.Json.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],

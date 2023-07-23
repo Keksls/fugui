@@ -18,7 +18,7 @@ namespace Fu
 {
     public static partial class Fugui
     {
-        #region Variablels
+        #region Variables
         /// <summary>
         /// The current Context Fugui is drawing on
         /// </summary>
@@ -64,6 +64,10 @@ namespace Fu
         /// </summary>
         public static bool IsRendering { get; internal set; } = false;
         /// <summary>
+        /// A boolean value indicating whether a window has been render this frame
+        /// </summary>
+        public static bool HasRenderWindowThisFrame { get; internal set; } = false;
+        /// <summary>
         /// FuGui Controller instance
         /// </summary>
         internal static FuController Controller;
@@ -79,6 +83,26 @@ namespace Fu
         /// counter of font push
         /// </summary>
         internal static int NbPushFont { get; private set; } = 0;
+        /// <summary>
+        /// The ID of the window in wich a popup is open (if there is some)
+        /// </summary>
+        internal static List<string> PopUpWindowsIDs { get; private set; } = new List<string>();
+        /// <summary>
+        /// The ID of the currently open pop-up (if there is some)
+        /// </summary>
+        internal static List<string> PopUpIDs { get; private set; } = new List<string>();
+        /// <summary>
+        /// The Rect of the currently open pop-up (if there is some)
+        /// </summary>
+        internal static List<Rect> PopUpRects { get; private set; } = new List<Rect>();
+        /// <summary>
+        /// A flag indicating whether the layout is inside a pop-up.
+        /// </summary>
+        internal static List<bool> IsPopupDrawing { get; private set; } = new List<bool>();
+        /// <summary>
+        /// A flag indicating whether the popup has focus
+        /// </summary>
+        internal static List<bool> IsPopupFocused { get; private set; } = new List<bool>();
         // The dictionary of external windows
         private static Dictionary<string, FuExternalWindowContainer> _externalWindows;
         // The dictionary of external windows
@@ -91,6 +115,10 @@ namespace Fu
         private static bool _renderThreadStarted = false;
         // counter of Fugui Contexts
         private static int _contextID = 0;
+        // counter of Fugui Contexts
+        private static Queue<Action> _afterDefaultRenderStack = new Queue<Action>();
+        // stack of action we will want to execute into unity main thread
+        private static Queue<Action> _executeInMainThreadActionsStack = new Queue<Action>();
         #endregion
 
         #region Events
@@ -103,6 +131,15 @@ namespace Fu
         /// </summary>
         /// <param name="ex">exception of the event</param>
         internal static void Fire_OnUIException(Exception ex) => OnUIException?.Invoke(ex);
+        /// <summary>
+        /// Event invoken whenever a FuWindow is externalized from main container to external window container
+        /// </summary>
+        public static event Action<FuWindow> OnWindowExternalized;
+        /// <summary>
+        /// Fire the Event invoken whenever a FuWindow is externalized from main container to external window container
+        /// </summary>
+        /// <param name="window">FuWindow that has just been externalized</param>
+        internal static void Fire_OnWindowExternalized(FuWindow window) => OnWindowExternalized?.Invoke(window);
         #endregion
 
         static Fugui()
@@ -149,8 +186,8 @@ namespace Fu
         /// </summary>
         public static void Update()
         {
-            // prepare debug new frame
 #if FUDEBUG
+            // prepare debug new frame
             newFrame();
 #endif
 
@@ -163,6 +200,13 @@ namespace Fu
                 WorldMousePosition = _worldMousePosition;
             }
 
+            // execute mainThread actions stack
+            while (_executeInMainThreadActionsStack.Count > 0)
+            {
+                _executeInMainThreadActionsStack.Dequeue()?.Invoke();
+            }
+
+            // externalize windows
             if (_windowsToExternalize.Count > 0 && _canAddWindow)
             {
                 // start openTK render loop thread if not already started
@@ -189,6 +233,7 @@ namespace Fu
                 window.OnInitialized += () =>
                 {
                     _canAddWindow = true;
+                    ExecuteInMainThread(() => Fugui.Fire_OnWindowExternalized(imguiWindow));
                 };
                 lock (_externalWindows)
                 {
@@ -233,6 +278,15 @@ namespace Fu
 
         #region public Utils
         /// <summary>
+        /// Execute an action into main thread, will be raised on next Fugui.Update call
+        /// </summary>
+        /// <param name="callback">callback you want to raise into unity's main thread</param>
+        public static void ExecuteInMainThread(Action callback)
+        {
+            _executeInMainThreadActionsStack.Enqueue(callback);
+        }
+
+        /// <summary>
         /// Execute a callback after a quick async waiting routine
         /// </summary>
         /// <param name="callback">callback to execute</param>
@@ -260,8 +314,11 @@ namespace Fu
         /// <param name="uiWindow">The UI window to be externalized.</param>
         public static void AddExternalWindow(FuWindow uiWindow)
         {
-            // Add the IMGUI window to the queue of windows to be externalized
-            _windowsToExternalize.Enqueue(uiWindow);
+            if (Settings.EnableExternalizations)
+            {
+                // Add the IMGUI window to the queue of windows to be externalized
+                _windowsToExternalize.Enqueue(uiWindow);
+            }
         }
 
         /// <summary>
@@ -287,6 +344,15 @@ namespace Fu
             }
             // Close the external window and remove it from the list
             _externalWindows[id].Close();
+        }
+
+        /// <summary>
+        /// Is there some external windows open right now ?
+        /// </summary>
+        /// <returns>true if there is at least one external window</returns>
+        public static bool HasExternalWindow()
+        {
+            return _externalWindows.Count > 0;
         }
 
         /// <summary>
@@ -457,15 +523,15 @@ namespace Fu
                     // Add the window to the dictionary and increment the window added counter
                     windows.Add(winDef.WindowName, window);
                     nbWIndowAdded++;
-                    // Invoke the callback if all windows are added
-                    if (nbWIndowAdded == nbWIndowToAdd)
-                    {
-                        callback(windows);
-                    }
                     // Force window to draw first frame
                     window.ForceDraw();
                     // Unsubscribe from the OnReady event
                     window.OnInitialized -= onWindowReady;
+                    // Invoke the callback if all windows are added
+                    if (nbWIndowAdded == nbWIndowToAdd)
+                    {
+                        callback?.Invoke(windows);
+                    }
                 };
                 // create the UIWindow
                 if (winDef.CreateUIWindow(out FuWindow win))
@@ -601,6 +667,15 @@ namespace Fu
         {
             // Render default context
             DefaultContext.Render();
+            // execute after defautl renderer render actions
+            if (DefaultContext.RenderPrepared)
+            {
+                while (_afterDefaultRenderStack.Count > 0)
+                {
+                    _afterDefaultRenderStack.Dequeue()?.Invoke();
+                }
+            }
+
             DefaultContext.EndRender();
             // render any other contexts
             foreach (var context in Contexts)
@@ -609,6 +684,7 @@ namespace Fu
                 {
                     if (context.Value.PrepareRender())
                     {
+                        HasRenderWindowThisFrame = false;
                         context.Value.Render();
                         context.Value.EndRender();
                     }
@@ -616,8 +692,11 @@ namespace Fu
             }
             // clear context menu stack in case dev forgot to pop something OR exception raise between push and pop
             ClearContextMenuStack();
+            // clean popup stack to prevent popup to stay on stack if they close unexpectedly
+            FuLayout.CleanPopupStack();
             // prepare a new frame after all render, so we can use ImGui methods outside FuguiContext.OnLayout events
             DefaultContext.PrepareRender();
+            HasRenderWindowThisFrame = false;
         }
 
         /// <summary>
@@ -930,6 +1009,18 @@ namespace Fu
 
         #region public Utils
         /// <summary>
+        /// Execute a callback after each window of default context has render
+        /// </summary>
+        /// <param name="callback"></param>
+        public static void ExecuteAfterRenderWindows(Action callback)
+        {
+            if (callback != null)
+            {
+                _afterDefaultRenderStack.Enqueue(callback);
+            }
+        }
+
+        /// <summary>
         /// Adds spaces before uppercase letters in the input string.
         /// </summary>
         /// <param name="input">The input string.</param>
@@ -1001,11 +1092,12 @@ namespace Fu
         /// <summary>
         /// Each open window will be draw next frame
         /// </summary>
-        public static void ForceDrawAllWindows()
+        /// <param name="nbFrames">number of frames to force drawing</param>
+        public static void ForceDrawAllWindows(int nbFrames = 1)
         {
             foreach (FuWindow window in UIWindows.Values)
             {
-                window.ForceDraw();
+                window.ForceDraw(nbFrames);
             }
         }
 
@@ -1076,6 +1168,341 @@ namespace Fu
         public static unsafe int ListClipperDisplayEnd()
         {
             return _clipper->DisplayEnd;
+        }
+
+        /// <summary>
+        /// Get Whatever fugui want to capture a user input at this frame
+        /// </summary>
+        /// <param name="onlyCurrentContext">Whatever you want to check only the current Fugui context</param>
+        /// <returns>true if Fugui want to capture user inputs this frame</returns>
+        public static bool GetWantCaptureInputs(bool onlyCurrentContext)
+        {
+            switch (onlyCurrentContext)
+            {
+                default:
+                case true:
+                    ImGuiIOPtr io = CurrentContext != null ? CurrentContext.IO : ImGui.GetIO();
+                    return io.WantTextInput;
+
+                case false:
+                    bool wantCapture = false;
+                    foreach (FuContext context in Contexts.Values)
+                    {
+                        wantCapture |= context.IO.WantTextInput;
+                    }
+                    return wantCapture;
+            }
+        }
+
+        /// <summary>
+        /// Check Whatever a Key is Down for some given FuWIndowNames.
+        /// If WindowNames array is empty, Fugui will check for any windows of any containers
+        /// </summary>
+        /// <param name="key">Key to check down state</param>
+        /// <param name="windowsNames">windows names to check key satet on (you can leave this empty, it will check on any windows of any containers)</param>
+        /// <returns>true if the key is pressed into the given scope</returns>
+        public static bool GetKeyDown(FuKeysCode key, params FuWindowName[] windowsNames)
+        {
+            bool isDown = false;
+            if (windowsNames == null || windowsNames.Length == 0)
+            {
+                isDown |= MainContainer.Keyboard.GetKeyDown(key);
+                if (!isDown)
+                {
+                    foreach (var externalWindowContainer in _externalWindows.Values)
+                    {
+                        if (externalWindowContainer.Keyboard.GetKeyDown(key))
+                        {
+                            isDown = true;
+                            break;
+                        }
+                    }
+                }
+                if (!isDown)
+                {
+                    foreach (var threeDWindowContainer in _3DWindows.Values)
+                    {
+                        if (threeDWindowContainer.Keyboard.GetKeyDown(key))
+                        {
+                            isDown = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (FuWindowName windowName in windowsNames)
+                {
+                    foreach (var window in UIWindows)
+                    {
+                        if (window.Value == null || window.Value.Keyboard == null)
+                        {
+                            continue;
+                        }
+                        if (window.Value.WindowName.Equals(windowName))
+                        {
+                            if (window.Value.Keyboard.GetKeyDown(key))
+                            {
+                                isDown = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return isDown;
+        }
+
+        /// <summary>
+        /// Check Whatever a Key is Pressed for some given FuWIndowNames.
+        /// If WindowNames array is empty, Fugui will check for any windows of any containers
+        /// </summary>
+        /// <param name="key">Key to check down state</param>
+        /// <param name="windowsNames">windows names to check key satet on (you can leave this empty, it will check on any windows of any containers)</param>
+        /// <returns>true if the key is pressed into the given scope</returns>
+        public static bool GetKeyPressed(FuKeysCode key, params FuWindowName[] windowsNames)
+        {
+            bool isPressed = false;
+            if (windowsNames == null || windowsNames.Length == 0)
+            {
+                isPressed |= MainContainer.Keyboard.GetKeyPressed(key);
+                if (!isPressed)
+                {
+                    foreach (var externalWindowContainer in _externalWindows.Values)
+                    {
+                        if (externalWindowContainer.Keyboard.GetKeyPressed(key))
+                        {
+                            isPressed = true;
+                            break;
+                        }
+                    }
+                }
+                if (!isPressed)
+                {
+                    foreach (var threeDWindowContainer in _3DWindows.Values)
+                    {
+                        if (threeDWindowContainer.Keyboard.GetKeyPressed(key))
+                        {
+                            isPressed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (FuWindowName windowName in windowsNames)
+                {
+                    foreach (var window in UIWindows)
+                    {
+                        if (window.Value == null || window.Value.Keyboard == null)
+                        {
+                            continue;
+                        }
+                        if (window.Value.WindowName.Equals(windowName))
+                        {
+                            if (window.Value.Keyboard.GetKeyPressed(key))
+                            {
+                                isPressed = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return isPressed;
+        }
+
+        /// <summary>
+        /// Check Whatever a Key is Up for some given FuWIndowNames.
+        /// If WindowNames array is empty, Fugui will check for any windows of any containers
+        /// </summary>
+        /// <param name="key">Key to check down state</param>
+        /// <param name="windowsNames">windows names to check key satet on (you can leave this empty, it will check on any windows of any containers)</param>
+        /// <returns>true if the key is pressed into the given scope</returns>
+        public static bool GetKeyUp(FuKeysCode key, params FuWindowName[] windowsNames)
+        {
+            bool isUp = false;
+            if (windowsNames == null || windowsNames.Length == 0)
+            {
+                isUp |= MainContainer.Keyboard.GetKeyUp(key);
+                if (!isUp)
+                {
+                    foreach (var externalWindowContainer in _externalWindows.Values)
+                    {
+                        if (externalWindowContainer.Keyboard.GetKeyUp(key))
+                        {
+                            isUp = true;
+                            break;
+                        }
+                    }
+                }
+                if (!isUp)
+                {
+                    foreach (var threeDWindowContainer in _3DWindows.Values)
+                    {
+                        if (threeDWindowContainer.Keyboard.GetKeyUp(key))
+                        {
+                            isUp = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (FuWindowName windowName in windowsNames)
+                {
+                    foreach (var window in UIWindows)
+                    {
+                        if (window.Value == null || window.Value.Keyboard == null)
+                        {
+                            continue;
+                        }
+                        if (window.Value.WindowName.Equals(windowName))
+                        {
+                            if (window.Value.Keyboard.GetKeyUp(key))
+                            {
+                                isUp = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return isUp;
+        }
+        #endregion
+
+        #region Popup Utils
+        /// <summary>
+        /// Whatever a popup is open from a specific window
+        /// </summary>
+        /// <param name="window">window to check</param>
+        /// <returns>true if a popup if open from this window</returns>
+        public static bool WindowHasPopupOpen(FuWindow window)
+        {
+            foreach (string popupWindowID in PopUpWindowsIDs)
+            {
+                if (window.ID == popupWindowID)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Get whatever a world position (container-relative) is inside an open popup
+        /// </summary>
+        /// <param name="worldPosition">world position (container-relative) to check</param>
+        /// <returns>true if the position is inside some currently open popup</returns>
+        public static bool IsInsideAnyPopup(Vector2 worldPosition)
+        {
+            foreach (Rect popupRect in PopUpRects)
+            {
+                if (popupRect.Contains(worldPosition))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Whatever fugui is currently drawing inside a popup
+        /// </summary>
+        /// <returns>true if we are drawing on a popup</returns>
+        public static bool IsDrawingInsidePopup()
+        {
+            foreach (bool isDrawing in IsPopupDrawing)
+            {
+                if (isDrawing)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Whatever there is currently at least one popup open
+        /// </summary>
+        /// <returns>true if there is at least one popup open</returns>
+        public static bool IsThereAnyOpenPopup()
+        {
+            return PopUpIDs.Count > 0;
+        }
+
+        /// <summary>
+        /// Whatever the current drawing popup has focus
+        /// </summary>
+        /// <returns>true if the current drawing popup has focus</returns>
+        public static bool IsDrawingPopupFocused()
+        {
+            for (int i = 0; i < IsPopupFocused.Count; i++)
+            {
+                if (IsPopupDrawing[i] && IsPopupFocused[i])
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        #endregion
+
+        #region Drag Drop
+        /// <summary>
+        /// Must be placed just after an UI element so this one can be dragged
+        /// </summary>
+        /// <param name="payloadID">Unique ID of the payload for the drag drop operation (must be same as used in BeginDragDropTarget method)</param>
+        /// <param name="dragDropFlags">lags for this drag drop operation (see ImGuiDragDropFlags on google)</param>
+        /// <param name="onDraggingUICallback">Callback called each frame while a drag drop operation. Use it to draw the preview drag drop window UI)</param>
+        /// <param name="payload">payload to set, will be passed to the target on Drop frame</param>
+        public static void BeginDragDropSource(string payloadID, ImGuiDragDropFlags dragDropFlags, Action onDraggingUICallback, object payload)
+        {
+            CurrentContext.BeginDragDropSource(payloadID, dragDropFlags, onDraggingUICallback, payload);
+        }
+
+        /// <summary>
+        /// Must be placed just after an UI element so this can be dropped
+        /// </summary>
+        /// <typeparam name="T">Type of the drag drop payload to get (must be same as set as 'payload' arg in BeginDragDropSource method)</typeparam>
+        /// <param name="payloadID">Unique ID of the payload for the drag drop operation (must be same as used in BeginDragDropTarget method)</param>
+        /// <param name="onDropCallback">Callback called whenever the user drop the dragging payload on this UI element</param>
+        public static void BeginDragDropTarget<T>(string payloadID, Action<T> onDropCallback)
+        {
+            CurrentContext.BeginDragDropTarget<T>(payloadID, onDropCallback);
+        }
+
+        /// <summary>
+        /// Cancel a drag drop operation related to the given payloadID
+        /// </summary>
+        /// <param name="payloadID">ID of the payload to cancel (keep null to cancel any current drag drop operation)</param>
+        public static void CancelDragDrop(string payloadID = null)
+        {
+            CurrentContext.CancelDragDrop(payloadID);
+        }
+
+        /// <summary>
+        /// Get the current drag drop payload (null if there is no drag drop operation for now)
+        /// </summary>
+        /// <typeparam name="T">Type of the current payload</typeparam>
+        /// <returns>return the current drag drop payload if there is one</returns>
+        public static T GetDragDropPayload<T>()
+        {
+            return CurrentContext.GetDragDropPayload<T>();
+        }
+
+        /// <summary>
+        /// Whatever we are performing a drag drop operation right now with the given payloadID
+        /// </summary>
+        /// <param name="payloadID">ID of the payload (Drag Drop data ID) to check</param>
+        /// <returns>true if user if performing a drag drop operation for the given payload ID</returns>
+        public static bool IsDraggingPayload(string payloadID)
+        {
+            return CurrentContext.IsDraggingPayload(payloadID);
         }
         #endregion
     }

@@ -112,6 +112,8 @@
         BackgroundWarning = 81,
         BackgroundSuccess = 82,
 
-        COUNT = 83
+        HoveredWindowTab = 83,
+
+        COUNT = 84
     }
 }

@@ -242,7 +242,7 @@ namespace Fu.Framework
 
             // draw text
             size.x -= textWidthOffset;
-            _customTextClipped(size, text, pos + textOffset, padding, label_size, align, style.TextStyle);
+            _customTextClipped(size, Fugui.AddSpacesBeforeUppercase(text), pos + textOffset, padding, label_size, align, style.TextStyle);
 
             // display the tooltip if necessary
             displayToolTip();

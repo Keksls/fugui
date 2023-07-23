@@ -34,6 +34,7 @@ namespace Fu.Framework
         // A dictionary to store grid descriptions for different types
         private static Dictionary<Type, FuObjectDescription> _objectsDescriptions = new Dictionary<Type, FuObjectDescription>();
         protected string _ID;
+        private bool disposed = false;
         #endregion
 
         /// <summary>
@@ -215,12 +216,17 @@ namespace Fu.Framework
         /// </summary>
         public override void Dispose()
         {
+            if (disposed)
+            {
+                return;
+            }
             base.Dispose();
             if (_gridCreated)
             {
                 ImGuiNative.igEndTable();
             }
             Fugui.PopStyle();
+            disposed = true;
         }
         #endregion
 
@@ -229,9 +235,10 @@ namespace Fu.Framework
         /// Draw the object instance
         /// </summary>
         /// <typeparam name="T">Type of the object to draw</typeparam>
+        /// <param name="objectID">ID of the object to draw</param>
         /// <param name="objectInstance">object instance to draw</param>
         /// <returns>true if some value has just been edited</returns>
-        public bool DrawObject<T>(T objectInstance)
+        public bool DrawObject<T>(string objectID, T objectInstance)
         {
             Type type = typeof(T);
             // type already registered
@@ -241,7 +248,7 @@ namespace Fu.Framework
                 _objectsDescriptions.Add(type, new FuObjectDescription());
             }
             // draw object into this grid
-            return _objectsDescriptions[type].DrawObject<T>(this, objectInstance);
+            return _objectsDescriptions[type].DrawObject<T>(objectID, this, objectInstance);
         }
         #endregion
 

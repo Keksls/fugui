@@ -111,7 +111,7 @@ namespace Fu.Core.DearImGui.Texture
         public unsafe void InitializeFontAtlas(ImGuiIOPtr io)
         {
             // ignore this font atlas if already exists
-            if(_atlasTexture.ContainsKey(Fugui.CurrentContext.FontScale))
+            if (_atlasTexture.ContainsKey(Fugui.CurrentContext.FontScale))
             {
                 return;
             }
@@ -148,6 +148,9 @@ namespace Fu.Core.DearImGui.Texture
             atlas.Apply();
 
             _atlasTexture.Add(Fugui.CurrentContext.FontScale, atlas);
+
+            // register atlas texture
+            RegisterTexture(_atlasTexture[Fugui.CurrentContext.FontScale]);
         }
 #endif
         public unsafe void Shutdown()
@@ -182,7 +185,7 @@ namespace Fu.Core.DearImGui.Texture
 
         public void PrepareFrame(ImGuiIOPtr io)
         {
-            IntPtr id = RegisterTexture(_atlasTexture[Fugui.CurrentContext.FontScale]);
+            IntPtr id = GetTextureId(_atlasTexture[Fugui.CurrentContext.FontScale]);
             io.Fonts.SetTexID(id);
         }
 
@@ -214,10 +217,17 @@ namespace Fu.Core.DearImGui.Texture
 
         private IntPtr RegisterTexture(UTexture texture)
         {
-            IntPtr id = texture.GetNativeTexturePtr();
-            _textures[id] = texture;
-            _textureIds[texture] = id;
-            return id;
+            if (_textureIds.ContainsKey(texture))
+            {
+                return GetTextureId(texture);
+            }
+            else
+            {
+                IntPtr id = new IntPtr(_textures.Count + 1);
+                _textures.Add(id, texture);
+                _textureIds.Add(texture, id);
+                return id;
+            }
         }
     }
 }

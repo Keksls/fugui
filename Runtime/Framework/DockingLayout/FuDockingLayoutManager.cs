@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -16,17 +17,17 @@ namespace Fu.Framework
     public static class FuDockingLayoutManager
     {
         #region Variables
-        internal static string _layoutFileName = "default_layout.flg";
-        internal static Dictionary<ushort, string> _fuguiWindows;
-        internal static string _windowsToAdd = string.Empty;
-        internal static string _selectedWindowDefinition = string.Empty;
+        internal static string LayoutFileName = "default_layout.flg";
+        internal static Dictionary<ushort, FuWindowName> RegisteredWindowsNames;
+        internal static FuWindowName WindowsToAdd = FuSystemWindowsNames.None;
+        internal static FuWindowName SelectedWindowDefinition = FuSystemWindowsNames.None;
         internal static FuDockingLayoutDefinition CurrentLayout;
         public static string CurrentLayoutName { get; internal set; } = "";
-        internal static Dictionary<int, string> _definedDockSpaces;
-        internal static ExtensionFilter _flgExtensionFilter;
+        internal static Dictionary<int, string> DefinedDockSpaces;
+        internal static ExtensionFilter FlgExtensionFilter;
         public static Dictionary<string, FuDockingLayoutDefinition> Layouts { get; private set; }
         /// <summary>
-        /// Whatever we already are setting Layer right now
+        /// Whatever we are setting a layout right now
         /// </summary>
         public static bool IsSettingLayout { get; private set; }
         public static event Action OnDockLayoutSet;
@@ -42,17 +43,17 @@ namespace Fu.Framework
             LoadLayouts();
 
             // create layout file extention filter
-            _flgExtensionFilter = new ExtensionFilter
+            FlgExtensionFilter = new ExtensionFilter
             {
                 Name = "Fugui Layout Configuration",
                 Extensions = new string[1] { "flg" }
             };
 
             // create dockaspace windows definitions
-            new FuWindowDefinition(FuSystemWindowsNames.DockSpaceManager, (window) => Fugui.DrawDockSpaceManager());
+            new FuWindowDefinition(FuSystemWindowsNames.DockSpaceManager, (window) => Fugui.DrawDockSpacelayoutCreator());
             new FuWindowDefinition(FuSystemWindowsNames.WindowsDefinitionManager, (window) => Fugui.DrawWindowsDefinitionManager());
 
-            _fuguiWindows = null;
+            RegisteredWindowsNames = null;
         }
 
         /// <summary>
@@ -61,10 +62,10 @@ namespace Fu.Framework
         /// <param name="windowsNames">names of the windows (mostly FuWindowsNames.GetAll())</param>
         public static void Initialize(List<FuWindowName> windowsNames)
         {
-            _fuguiWindows = new Dictionary<ushort, string>();
+            RegisteredWindowsNames = new Dictionary<ushort, FuWindowName>();
             foreach (FuWindowName windowName in windowsNames)
             {
-                _fuguiWindows.Add(windowName.ID, windowName.Name);
+                RegisteredWindowsNames.Add(windowName.ID, windowName);
             }
         }
 
@@ -135,7 +136,7 @@ namespace Fu.Framework
         {
             if (CurrentLayout != null)
             {
-                _definedDockSpaces = getDictionaryFromDockSpace(CurrentLayout);
+                DefinedDockSpaces = getDictionaryFromDockSpace(CurrentLayout);
             }
         }
 
@@ -190,9 +191,9 @@ namespace Fu.Framework
         /// <param name="success">whatever the window has been docked</param>
         private static void tryAutoDockWindow(FuWindow window, FuDockingLayoutDefinition dockSpaceDefinition, ref bool success)
         {
-            foreach (KeyValuePair<ushort, string> winDef in dockSpaceDefinition.WindowsDefinition)
+            foreach (ushort windowID in dockSpaceDefinition.WindowsDefinition)
             {
-                if (window.WindowName.ID == winDef.Key)
+                if (window.WindowName.ID == windowID)
                 {
                     ImGuiDocking.DockBuilderDockWindow(window.ID, dockSpaceDefinition.ID);
                     success = true;
@@ -223,7 +224,7 @@ namespace Fu.Framework
         /// <param name="layoutName">The name of the layout to be set.</param>
         public static void SetLayout(string layoutName)
         {
-            if(!Layouts.ContainsKey(layoutName))
+            if (!Layouts.ContainsKey(layoutName))
             {
                 layoutName += ".flg";
             }
@@ -242,9 +243,9 @@ namespace Fu.Framework
         public static void SetLayout(FuDockingLayoutDefinition layout, string layoutName)
         {
             // check whatever the layout manager knows the custom application windows names
-            if (_fuguiWindows == null)
+            if (RegisteredWindowsNames == null)
             {
-                Debug.Log("Can't set sayout because Layout Manager is not Initialized." + Environment.NewLine +
+                Debug.Log("Can't set layout because Layout Manager is not Initialized." + Environment.NewLine +
                     "Please call FuDockingLayoutManager.Initialize() befose setting a layout.");
                 return;
             }
@@ -282,20 +283,23 @@ namespace Fu.Framework
         /// <param name="dockSpaceDefinition">The FuguiDockSpaceDefinition to use for creating the layout</param>
         private static void createDynamicLayout(FuDockingLayoutDefinition dockSpaceDefinition, string layoutName)
         {
-            List<FuWindowName> windowsToGet = dockSpaceDefinition.GetAllWindowsDefinitions();
+            List<FuWindowName> windowsToGet = dockSpaceDefinition.GetAllWindowsNames(true);
 
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
             Fugui.CreateWindowsAsync(windowsToGet, (windows) =>
             {
-                uint MainID = Fugui.MainContainer.Dockspace_id;
-                dockSpaceDefinition.ID = MainID;
+                Fugui.ExecuteAfterRenderWindows(() =>
+                {
+                    uint MainID = Fugui.MainContainer.Dockspace_id;
+                    dockSpaceDefinition.ID = MainID;
 
-                createDocking(windows, dockSpaceDefinition);
-
-                ImGuiDocking.DockBuilderFinish(MainID);
-                CurrentLayoutName = layoutName;
-                CurrentLayout = dockSpaceDefinition;
-                endSettingLayout();
+                    createDocking(windows, dockSpaceDefinition);
+                    selectFirstTabOnEachDockSpaces(windows, dockSpaceDefinition);
+                    ImGuiDocking.DockBuilderFinish(MainID);
+                    CurrentLayoutName = layoutName;
+                    CurrentLayout = dockSpaceDefinition;
+                    endSettingLayout();
+                });
             });
         }
 
@@ -335,16 +339,34 @@ namespace Fu.Framework
 
             if (layout.WindowsDefinition.Count > 0)
             {
-                foreach (KeyValuePair<ushort, string> winDef in layout.WindowsDefinition)
+                foreach (ushort windowID in layout.WindowsDefinition)
                 {
-                    if (windows.ContainsKey(new FuWindowName(winDef.Key, winDef.Value)))
-                        ImGuiDocking.DockBuilderDockWindow(windows[new FuWindowName(winDef.Key, winDef.Value)].ID, layout.ID);
+                    if (windows.ContainsKey(RegisteredWindowsNames[windowID]))
+                    {
+                        ImGuiDocking.DockBuilderDockWindow(windows[RegisteredWindowsNames[windowID]].ID, layout.ID);
+                    }
                 }
             }
 
             foreach (FuDockingLayoutDefinition child in layout.Children)
             {
                 createDocking(windows, child);
+            }
+        }
+
+        private static void selectFirstTabOnEachDockSpaces(Dictionary<FuWindowName, FuWindow> windows, FuDockingLayoutDefinition layout)
+        {
+            if (layout.WindowsDefinition.Count > 0)
+            {
+                var instances = Fugui.GetWindowInstances(RegisteredWindowsNames[layout.WindowsDefinition[0]]);
+                if (instances.Count > 0)
+                {
+                    instances[0].ForceFocusOnNextFrame();
+                }
+            }
+            foreach (FuDockingLayoutDefinition child in layout.Children)
+            {
+                selectFirstTabOnEachDockSpaces(windows, child);
             }
         }
 
@@ -453,7 +475,7 @@ namespace Fu.Framework
         /// <param name="className">name of the enum</param>
         /// <param name="values">values of the enum</param>
         /// <returns>string that represent source code</returns>
-        internal static string generateEnum(string className, Dictionary<ushort, string> values)
+        internal static string generateEnum(string className, Dictionary<ushort, FuWindowName> values)
         {
             var sb = new StringBuilder();
             // enum namespace and declaration
@@ -470,7 +492,7 @@ namespace Fu.Framework
             {
                 if (item.Key > FuSystemWindowsNames.FuguiReservedLastID)
                 {
-                    sb.AppendLine("        private static FuWindowName _" + item.Value + " = new FuWindowName(" + item.Key + ", \"" + item.Value + "\");")
+                    sb.AppendLine("        private static FuWindowName _" + item.Value + " = new FuWindowName(" + item.Key + ", \"" + item.Value + "\", " + item.Value.AutoInstantiateWindowOnlayoutSet.ToString() + ", " + item.Value.IdleFPS + ");")
                         .AppendLine("        public static FuWindowName " + item.Value + " { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _" + item.Value + "; }");
                 }
             }
@@ -497,21 +519,21 @@ namespace Fu.Framework
         /// <summary>
         /// Method that binds a window definition to a dock space by its name 
         /// </summary>
-        /// <param name="windowDefID">The unique identifier of the window definition to bind</param>
+        /// <param name="windowID">The unique identifier of the window definition to bind</param>
         /// <param name="dockspaceName">The name of the dock space to bind the window definition to</param>
-        internal static void bindWindowToDockspace(ushort windowDefID, string dockspaceName)
+        internal static void bindWindowToDockspace(ushort windowID, string dockspaceName)
         {
             if (CurrentLayout != null)
             {
-                CurrentLayout.RemoveWindowsDefinitionInChildren(windowDefID);
+                CurrentLayout.RemoveWindowsDefinitionInChildren(windowID);
 
                 FuDockingLayoutDefinition tempDockSpace = CurrentLayout.SearchInChildren(dockspaceName);
 
                 if (tempDockSpace != null)
                 {
-                    if (!tempDockSpace.WindowsDefinition.ContainsKey(windowDefID))
+                    if (!tempDockSpace.WindowsDefinition.Contains(windowID))
                     {
-                        tempDockSpace.WindowsDefinition.Add(windowDefID, _fuguiWindows[windowDefID]);
+                        tempDockSpace.WindowsDefinition.Add(windowID);
                     }
                 }
             }

@@ -30,6 +30,14 @@ namespace Fu.Core
                 {
                     OnAddToContainer?.Invoke(this);
                 }
+
+                // release focus if this window is focued
+                if (InputFocusedWindow == this)
+                {
+                    // this will release focus on next frame
+                    NbInputFocusedWindow = 0;
+                    InputFocusedWindow = null;
+                }
             }
         }
 
@@ -62,11 +70,31 @@ namespace Fu.Core
         public FuMouseState Mouse { get; private set; }
         public FuKeyboardState Keyboard { get; private set; }
         public Dictionary<string, FuOverlay> Overlays { get; private set; }
+        private static FuWindow _inputFocusedWindow;
+        public static FuWindow InputFocusedWindow
+        {
+            get { return _inputFocusedWindow; }
+            internal set { _inputFocusedWindow = value; }
+        }
+        private static int _nbInputFocusedWindow;
+        public static int NbInputFocusedWindow
+        {
+            get { return _nbInputFocusedWindow; }
+            internal set
+            {
+                _nbInputFocusedWindow = value;
+                if (_nbInputFocusedWindow <= 0 && InputFocusedWindow != null)
+                {
+                    InputFocusedWindow._releaseFocusNextFrame = true;
+                }
+            }
+        }
 
         // states flags
         public bool HasFocus { get; internal set; }
         public bool IsOpened { get { return _open; } internal set { _open = value; } }
         public bool IsDockable { get; private set; }
+        public bool IsClosable { get; private set; }
         public bool NoDockingOverMe { get; private set; }
         public bool IsExternalizable { get; private set; }
         public bool IsInitialized { get; private set; }
@@ -80,6 +108,7 @@ namespace Fu.Core
         public bool IsBusy { get; internal set; }
         public bool IsInterractable { get; set; }
         public bool IsVisible { get; private set; }
+        public bool DrawingForced { get { return _forceRedraw > 0; } }
 
         // events
         public event Action<FuWindow> OnResize;
@@ -93,6 +122,7 @@ namespace Fu.Core
         public event Action<FuWindow> OnAddToContainer;
         public event Action<FuWindow> OnPreDraw;
         public event Action<FuWindow> OnPostDraw;
+        public event Action<FuWindow> OnBodyDraw;
 
         // private fields
         internal ImGuiWindowFlags _windowFlags;
@@ -104,7 +134,7 @@ namespace Fu.Core
         private Vector2Int _lastFrameSize;
         private Vector2Int _lastFramePos;
         private bool _lastFrameVisible;
-        private float _leaveThreshold = 0.8f;
+        private readonly float _leaveThreshold = 0.8f;
         internal float _targetDeltaTimeMs = 1;
         internal float _lastRenderTime = 0;
         private bool _open = true;
@@ -114,6 +144,7 @@ namespace Fu.Core
         private static int _nbColorPushOnFrameStart = 0;
         private static int _nbStylePushOnFrameStart = 0;
         private static int _nbFontPushOnFrameStart = 0;
+        internal bool _releaseFocusNextFrame = false;
 
         // static fields
         public static FuWindow CurrentDrawingWindow { get; private set; }
@@ -197,6 +228,7 @@ namespace Fu.Core
             IsDockable = windowDefinition.IsDockable;
             IsExternalizable = windowDefinition.IsExternalizable;
             IsInterractable = windowDefinition.IsInterractif;
+            IsClosable = windowDefinition.IsClosable;
             Size = windowDefinition.Size;
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
@@ -209,7 +241,6 @@ namespace Fu.Core
             {
                 overlay.AnchorWindow(this);
             }
-            ForceDraw(10);
         }
 
         /// <summary>
@@ -234,6 +265,7 @@ namespace Fu.Core
             IsInitialized = true;
             IsBusy = false;
             _sendReadyNextFrame = true;
+            ForceDraw();
         }
 
         #region Drawing
@@ -252,8 +284,16 @@ namespace Fu.Core
             Vector2Int newFrameSize = Size;
             Vector2Int newFramePos = LocalPosition;
 
+            // release input focused window if needed
+            if (_releaseFocusNextFrame)
+            {
+                InputFocusedWindow = null;
+                _releaseFocusNextFrame = false;
+            }
+
             // update mouse buttons states
-            updateMouseState();
+            Mouse.UpdateState(this);
+            Keyboard.UpdateState();
 
             // we need to draw ImGui Window component (Begin/End)
             if (!IsDocked)
@@ -294,6 +334,7 @@ namespace Fu.Core
                     {
                         IsDragging = true;
                     }
+                    Fugui.ForceDrawAllWindows();
                 }
 
                 // handle ImGui window resize
@@ -305,6 +346,7 @@ namespace Fu.Core
                         _localRect = new Rect(_localPosition, _size);
                     }
                     Fire_OnResize();
+                    Fugui.ForceDrawAllWindows();
                 }
             }
             _ignoreTransformThisFrame = false;
@@ -332,8 +374,31 @@ namespace Fu.Core
             bool createChild = IsDocked && IsUnityContext;
             // invoke pre draw event
             OnPreDraw?.Invoke(this);
-            // set current theme frame padding
-            if (ImGui.Begin(ID, ref _open, _windowFlags))
+
+            // set tab color of hovered window
+            if (IsHovered)
+            {
+                Fugui.Push(ImGuiCol.TabActive, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCol.TabUnfocusedActive, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
+            }
+            else
+            {
+                Fugui.Push(ImGuiCol.TabActive, FuThemeManager.GetColor(FuColors.TabActive));
+                Fugui.Push(ImGuiCol.TabUnfocusedActive, FuThemeManager.GetColor(FuColors.TabUnfocusedActive));
+            }
+
+            // try to start drawing window, according to the closable flag state
+            bool nativeWantDrawWindow;
+            if (IsClosable)
+            {
+                nativeWantDrawWindow = ImGui.Begin(ID, ref _open, _windowFlags);
+            }
+            else
+            {
+                nativeWantDrawWindow = ImGui.Begin(ID, _windowFlags);
+            }
+            // draw the window body
+            if (nativeWantDrawWindow)
             {
                 bool docked = ImGuiNative.igIsWindowDocked() != 0;
                 if (docked != IsDocked)
@@ -342,10 +407,11 @@ namespace Fu.Core
                     if (IsDocked)
                     {
                         Fire_OnDock();
+                        Fugui.ForceDrawAllWindows();
                     }
                     else
                     {
-                        Fire_OnUnDock();
+                        Fugui.ForceDrawAllWindows();
                     }
                     Fire_OnResized();
                 }
@@ -369,10 +435,10 @@ namespace Fu.Core
                 if (createChild)
                 {
                     Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
-                    Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0.0039216f
+                    Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0039216f
                     ImGui.BeginChild(ID + "ctnr", Vector2.zero, false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
                     {
-                        tryDrawUI();
+                        TryDrawUI();
                     }
                     ImGui.EndChild();
                     Fugui.PopColor();
@@ -381,7 +447,7 @@ namespace Fu.Core
                 // Do draw UI if needed
                 else
                 {
-                    tryDrawUI();
+                    TryDrawUI();
                 }
 
                 // if not docked, get size according to window size api
@@ -398,17 +464,54 @@ namespace Fu.Core
                 // whatever window is hovered
                 IsHovered = (LocalRect.Contains(Container.LocalMousePos) &&
                     ImGuiNative.igIsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup) != 0) ||
-                    FuLayout.CurrentPopUpWindowID == ID;
+                    Fugui.WindowHasPopupOpen(this);
+
+                // increase window hover state according to input focused window IF we are not dragging any payload
+                if (_inputFocusedWindow != null && !Fugui.CurrentContext._isDraggingPayload)
+                {
+                    if (_inputFocusedWindow != this)
+                    {
+                        IsHovered = false;
+                    }
+                    else
+                    {
+                        IsHovered = true;
+                    }
+                }
+
+                // prevent input if imgui is using mouse to resize docking area
+                if (IsHovered)
+                {
+                    // TODO : Wrapp imguiInternal.h so we can check if imgui want to resize something and prevent input on resising window
+                    // because we have no acces to ImguiInternal.h for now (not wrapper by cimgui and Imgui.NET), we are pushed to do this ugly trick
+                    // so for now, all we can do is to check if the current mouse cursor is a resizing one, if it is, prevent input for this window
+                    ImGuiMouseCursor currentMouseCursor = ImGui.GetMouseCursor();
+                    switch (currentMouseCursor)
+                    {
+                        case ImGuiMouseCursor.ResizeAll:
+                        case ImGuiMouseCursor.ResizeNS:
+                        case ImGuiMouseCursor.ResizeEW:
+                        case ImGuiMouseCursor.ResizeNESW:
+                        case ImGuiMouseCursor.ResizeNWSE:
+                            IsHovered = false;
+                            break;
+                    }
+                }
 
                 // draw debug data
-                drawDebugPanel();
+                DrawDebugPanel();
                 ImGui.End();
                 IsVisible = true;
             }
             else
             {
                 IsVisible = false;
+                IsHovered = false;
             }
+
+            // restore tab color of hovered window
+            Fugui.PopColor(2);
+
             // handle visible state (whatever ImGui draw the window this frame)
             if (_lastFrameVisible != IsVisible)
             {
@@ -417,23 +520,30 @@ namespace Fu.Core
             _lastFrameVisible = IsVisible;
             // invoke post draw event
             OnPostDraw?.Invoke(this);
+            if (_forceRedraw > 0)
+            {
+                _forceRedraw--;
+            }
+            // if we need to send that we are ready this frame, let's invoke event
+            if (_sendReadyNextFrame)
+            {
+                _sendReadyNextFrame = false;
+                OnInitialized?.Invoke(this);
+            }
         }
 
         /// <summary>
         /// draw UI if needed
         /// </summary>
-        private void tryDrawUI()
+        private void TryDrawUI()
         {
             // save working area size and position
             _workingAreaSize = new Vector2Int((int)ImGui.GetContentRegionAvail().x, (int)(ImGui.GetContentRegionAvail().y - TopBarHeight));
             _workingAreaPosition = new Vector2Int((int)ImGui.GetCursorScreenPos().x, (int)(ImGui.GetCursorScreenPos().y + TopBarHeight)) - _localPosition;
             if (MustBeDraw())
             {
+                Fugui.HasRenderWindowThisFrame = true;
                 CurrentDrawingWindow = this;
-                if (_forceRedraw > 0)
-                {
-                    _forceRedraw--;
-                }
                 // draw topBar if needed
                 if (TopBarHeight > 0f && UITopBar != null)
                 {
@@ -449,6 +559,9 @@ namespace Fu.Core
 
                 // draw user UI callback
                 UI?.Invoke(this);
+
+                // invoke body draw event 
+                OnBodyDraw?.Invoke(this);
 
                 // pop missing push
                 int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
@@ -470,13 +583,7 @@ namespace Fu.Core
                 // save whatever ImGui want capture Keyboard
                 WantCaptureKeyboard = ImGui.GetIO().WantTextInput;
                 // draw overlays
-                drawOverlays();
-                // if we need to send that we are ready this frame, let's invoke event
-                if (_sendReadyNextFrame)
-                {
-                    _sendReadyNextFrame = false;
-                    OnInitialized?.Invoke(this);
-                }
+                DrawOverlays();
 
                 // update FPS and deltaTime
                 DeltaTime = Fugui.Time - _lastRenderTime;
@@ -490,7 +597,7 @@ namespace Fu.Core
         /// <summary>
         /// Draw the windows Debug Panel
         /// </summary>
-        internal virtual void drawDebugPanel()
+        internal virtual void DrawDebugPanel()
         {
             if (!Fugui.Settings.DrawDebugPanel)
             {
@@ -501,12 +608,25 @@ namespace Fu.Core
             ImGui.Dummy(Vector2.one);
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
             Fugui.Push(ImGuiCol.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
-            ImGui.BeginChild(ID + "d", new Vector2(196f, 282f));
+            ImGui.BeginChild(ID + "d", new Vector2(196f, 202f));
             {
                 // states
                 ImGui.Text("State : " + State);
-                ImGui.Text("FPS : " + (int)CurrentFPS + " (" + (DeltaTime * 1000f).ToString("f2") + " ms)");
-                ImGui.Text("Target : " + TargetFPS + "  (" + ((int)(_targetDeltaTimeMs * 1000)).ToString() + " ms)"); ImGui.Dummy(new Vector2(4f, 0f));
+                if (!this.HasJustBeenDraw && State == FuWindowState.Idle && float.IsInfinity(_targetDeltaTimeMs))
+                {
+                    CurrentFPS = 0;
+                    DeltaTime = 0f;
+                }
+                ImGui.Text("FPS : " + Mathf.RoundToInt(CurrentFPS) + " (" + (DeltaTime * 1000f).ToString("f2") + " ms)");
+
+                string target = "infinity";
+                if (!float.IsInfinity(_targetDeltaTimeMs))
+                {
+                    target = ((int)(_targetDeltaTimeMs * 1000)).ToString() + " ms";
+                }
+                ImGui.Text("Target : " + TargetFPS + "  (" + target + ")");
+                ImGui.Dummy(new Vector2(4f, 0f));
+
                 // pos and size
                 ImGui.Text("w Mouse : " + Fugui.WorldMousePosition);
                 ImGui.Text("l Mouse : " + Mouse.Position);
@@ -541,6 +661,10 @@ namespace Fu.Core
         public void ForceDraw(int nbFrames = 1)
         {
             _forceRedraw += nbFrames;
+            if (_forceRedraw > 10)
+            {
+                _forceRedraw = 10;
+            }
         }
 
         /// <summary>
@@ -552,28 +676,15 @@ namespace Fu.Core
             switch (IsUnityContext)
             {
                 case true:
-                    return Fugui.Time > _lastRenderTime + _targetDeltaTimeMs
+                    return (Fugui.Time > _lastRenderTime + _targetDeltaTimeMs && ((!Fugui.HasRenderWindowThisFrame && WindowName.IdleFPS != -1) || Fugui.HasRenderWindowThisFrame))
                         || _forceRedraw > 0
                         || (IsInterractable && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
 
                 case false:
-                    return Fugui.Time > _lastRenderTime + _targetDeltaTimeMs
+                    return (Fugui.Time > _lastRenderTime + _targetDeltaTimeMs && ((!Fugui.HasRenderWindowThisFrame && WindowName.IdleFPS != -1) || Fugui.HasRenderWindowThisFrame))
                         || _forceRedraw > 0
                         || LocalRect.Contains(Container.LocalMousePos);
             }
-        }
-
-        /// <summary>
-        /// Update current mouse state for this window
-        /// </summary>
-        private void updateMouseState()
-        {
-            // set mouse buttons state
-            Mouse.ButtonStates[0].SetState(IsHovered && ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Left) != 0);
-            Mouse.ButtonStates[1].SetState(IsHovered && ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Right) != 0);
-            // set mouse pos and wheel
-            Mouse.SetPosition(this);
-            Mouse.SetWheel(new Vector2(Container.Context.IO.MouseWheelH, Container.Context.IO.MouseWheel));
         }
         #endregion
 
@@ -662,7 +773,7 @@ namespace Fu.Core
         /// </summary>
         public void Externalize()
         {
-            if (!IsExternalizable || IsExternal)
+            if (!IsExternalizable || IsExternal || !Fugui.Settings.EnableExternalizations)
             {
                 return;
             }
@@ -680,7 +791,7 @@ namespace Fu.Core
         /// <returns>true if need to externalize</returns>
         public bool WantToLeave()
         {
-            if (!IsDragging || IsBusy || !IsExternalizable || IsExternal)
+            if (!IsDragging || IsBusy || !IsExternalizable || IsExternal || !Fugui.Settings.EnableExternalizations)
             {
                 return false;
             }
@@ -705,7 +816,7 @@ namespace Fu.Core
         /// <returns>true if need to enter the given container</returns>
         public bool WantToEnter(IFuWindowContainer container)
         {
-            if (!IsDragging || IsBusy || !IsExternalizable || !IsExternal || !CanInternalize)
+            if (IsUnityContext || IsBusy || !IsExternalizable || !IsExternal || !CanInternalize)
             {
                 return false;
             }
@@ -758,7 +869,7 @@ namespace Fu.Core
         /// <summary>
         /// Draws all the UI overlays in the list.
         /// </summary>
-        private void drawOverlays()
+        private void DrawOverlays()
         {
             // Iterate through all the overlays in the list
             foreach (FuOverlay overlay in Overlays.Values)
@@ -785,14 +896,14 @@ namespace Fu.Core
         public void Close(Action callback)
         {
             // on removeFromContainer delegate
-            Action<FuWindow> onremovedFromContainerDelegate = null;
-            onremovedFromContainerDelegate = (window) =>
+            void onremovedFromContainerDelegate(FuWindow window)
             {
                 window.OnRemovedFromContainer -= onremovedFromContainerDelegate;
                 Fugui.TryRemoveUIWindow(this);
                 OnClosed?.Invoke(this);
                 callback?.Invoke();
-            };
+            }
+
             OnRemovedFromContainer += onremovedFromContainerDelegate;
 
             if (!TryRemoveFromContainer())
@@ -873,13 +984,16 @@ namespace Fu.Core
         {
             State = state;
             ForceDraw();
-            if (State == FuWindowState.Manipulating)
+            switch (State)
             {
-                TargetFPS = Fugui.Settings.ManipulatingFPS;
-            }
-            else if (State == FuWindowState.Idle)
-            {
-                TargetFPS = Fugui.Settings.IdleFPS;
+                default:
+                case FuWindowState.Idle:
+                    TargetFPS = WindowName.IdleFPS == -1 ? Fugui.Settings.IdleFPS : WindowName.IdleFPS;
+                    break;
+
+                case FuWindowState.Manipulating:
+                    TargetFPS = Fugui.Settings.ManipulatingFPS;
+                    break;
             }
         }
         #endregion

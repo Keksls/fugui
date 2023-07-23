@@ -42,8 +42,9 @@ namespace Fu.Framework
         /// <param name="style">style of the drag (FrameStyle)</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         /// <returns>true if value changes</returns>
-        public override bool Drag(string text, ref Vector2 value, string v1String, string v2String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
+        public override bool Drag(string text, ref Vector2 value, string v1String, string v2String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
             if (!_gridCreated)
             {
@@ -51,7 +52,7 @@ namespace Fu.Framework
             }
             drawElementLabel(text, style.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-            return base.Drag(text, ref value, v1String, v2String, min, max, style, speed, format);
+            return base.Drag(text, ref value, v1String, v2String, min, max, style, speed, format, disabledInputs);
         }
 
         /// <summary>
@@ -68,8 +69,9 @@ namespace Fu.Framework
         /// <param name="style">style of the drag (FrameStyle)</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         /// <returns>true if value changes</returns>
-        public override bool Drag(string text, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
+        public override bool Drag(string text, ref Vector3 value, string v1String, string v2String, string v3String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
             if (!_gridCreated)
             {
@@ -77,7 +79,7 @@ namespace Fu.Framework
             }
             drawElementLabel(text, style.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-            return base.Drag(text, ref value, v1String, v2String, v3String, min, max, style, speed, format);
+            return base.Drag(text, ref value, v1String, v2String, v3String, min, max, style, speed, format, disabledInputs);
         }
 
         /// <summary>
@@ -95,8 +97,9 @@ namespace Fu.Framework
         /// <param name="style">style of the drag (FrameStyle)</param>
         ///<param name="speed">Speed of the drag step</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
+        ///<param name="disabledInputs">an array of boolean that represent whatever each drag input are enabled</param>
         /// <returns>true if value changes</returns>
-        public override bool Drag(string text, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null)
+        public override bool Drag(string text, ref Vector4 value, string v1String, string v2String, string v3String, string v4String, float min, float max, FuFrameStyle style, float speed = 0.1f, string format = null, params bool[] disabledInputs)
         {
             if (!_gridCreated)
             {
@@ -104,7 +107,7 @@ namespace Fu.Framework
             }
             drawElementLabel(text, style.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-            return base.Drag(text, ref value, v1String, v2String, v3String, v4String, min, max, style, speed, format);
+            return base.Drag(text, ref value, v1String, v2String, v3String, v4String, min, max, style, speed, format, disabledInputs);
         }
 
         /// <summary>

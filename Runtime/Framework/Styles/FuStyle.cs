@@ -9,7 +9,7 @@ namespace Fu.Framework
         private FuTextStyle _textStyle;
         private FuFrameStyle _frameStyle;
         private FuPanelStyle _containerStyle;
-        private Vector2 _framePadding;
+        public Vector2 FramePadding { get; private set; }
         public Vector2 WindowPadding { get; private set; }
 
         #region Pressets
@@ -62,7 +62,7 @@ namespace Fu.Framework
             _textStyle = textStyle;
             _frameStyle = frameStyle;
             _containerStyle = containerStyle;
-            _framePadding = framePadding;
+            FramePadding = framePadding;
             WindowPadding = windowPadding;
         }
         #endregion
@@ -72,7 +72,7 @@ namespace Fu.Framework
             _frameStyle.Push(enabled);
             _containerStyle.Push(enabled);
             _textStyle.Push(enabled);
-            Fugui.Push(ImGuiStyleVar.FramePadding, _framePadding * Fugui.CurrentContext.Scale);
+            Fugui.Push(ImGuiStyleVar.FramePadding, FramePadding * Fugui.CurrentContext.Scale);
             Fugui.Push(ImGuiStyleVar.WindowPadding, WindowPadding * Fugui.CurrentContext.Scale);
         }
 
@@ -96,7 +96,7 @@ namespace Fu.Framework
                 _containerStyle = FuPanelStyle.Default,
                 _frameStyle = FuFrameStyle.Default,
                 _textStyle = FuTextStyle.Default,
-                _framePadding = new Vector2(6f, 1f),
+                FramePadding = new Vector2(6f, 1f),
                 WindowPadding = new Vector2(2f, 2f)
             };
 
@@ -106,7 +106,7 @@ namespace Fu.Framework
                 _containerStyle = FuPanelStyle.Transparent,
                 _frameStyle = FuFrameStyle.Default,
                 _textStyle = FuTextStyle.Default,
-                _framePadding = new Vector2(6f, 1f),
+                FramePadding = new Vector2(6f, 1f),
                 WindowPadding = new Vector2(2f, 2f)
             };
 
@@ -116,7 +116,7 @@ namespace Fu.Framework
                 _containerStyle = FuPanelStyle.Transparent,
                 _frameStyle = FuFrameStyle.Default,
                 _textStyle = FuTextStyle.Default,
-                _framePadding = new Vector2(6f, 1f),
+                FramePadding = new Vector2(6f, 1f),
                 WindowPadding = new Vector2(0f, 0f)
             };
 
@@ -126,7 +126,7 @@ namespace Fu.Framework
                 _containerStyle = FuPanelStyle.Default,
                 _frameStyle = FuFrameStyle.Default,
                 _textStyle = FuTextStyle.Default,
-                _framePadding = new Vector2(6f, 1f),
+                FramePadding = new Vector2(6f, 1f),
                 WindowPadding = new Vector2(0f, 0f)
             };
 
@@ -136,7 +136,7 @@ namespace Fu.Framework
                 _containerStyle = FuPanelStyle.Default,
                 _frameStyle = FuFrameStyle.Default,
                 _textStyle = FuTextStyle.Default,
-                _framePadding = new Vector2(6f, 4f),
+                FramePadding = new Vector2(6f, 4f),
                 WindowPadding = new Vector2(8f, 8f)
             };
 
@@ -146,7 +146,7 @@ namespace Fu.Framework
                 _containerStyle = FuPanelStyle.Transparent,
                 _frameStyle = FuFrameStyle.Default,
                 _textStyle = FuTextStyle.Default,
-                _framePadding = new Vector2(6f, 4f),
+                FramePadding = new Vector2(6f, 4f),
                 WindowPadding = new Vector2(8f, 8f)
             };
         }

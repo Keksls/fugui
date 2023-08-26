@@ -1,4 +1,4 @@
-using ImGuiNET;
+using Fu.Core;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -71,11 +71,11 @@ namespace Fu.Framework
         {
             if (enabled)
             {
-                Fugui.Push(ImGuiCol.Text, Text);
+                Fugui.Push(ImGuiCols.Text, Text);
             }
             else
             {
-                Fugui.Push(ImGuiCol.Text, DisabledText);
+                Fugui.Push(ImGuiCols.Text, DisabledText);
             }
         }
 

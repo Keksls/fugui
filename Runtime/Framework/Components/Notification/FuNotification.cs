@@ -142,7 +142,7 @@ namespace Fu.Framework
 
                     if (string.IsNullOrEmpty(Title))
                     {
-                        grid.TextWrapped(Message, TextColor);
+                        grid.Text(Message, TextColor, FuTextWrapping.Wrapp);
                     }
                     else
                     {
@@ -169,7 +169,7 @@ namespace Fu.Framework
                     ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 4f);
                     using (FuLayout grid = new FuLayout())
                     {
-                        grid.TextWrapped(Message);
+                        grid.Text(Message, FuTextWrapping.Wrapp);
                     }
                 }
 

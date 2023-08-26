@@ -11,7 +11,7 @@ namespace Fu.Core
         public static FuWindowName Inspector { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Inspector; }
         private static FuWindowName _Widgets = new FuWindowName(11, "Widgets", true, -1);
         public static FuWindowName Widgets { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Widgets; }
-        private static FuWindowName _MainCameraView = new FuWindowName(9, "Main Camera View", true, -1);
+        private static FuWindowName _MainCameraView = new FuWindowName(9, "3D View", true, -1);
         public static FuWindowName MainCameraView { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _MainCameraView; }
         private static FuWindowName _Popups = new FuWindowName(10, "Popups", true, -1);
         public static FuWindowName Popups { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Popups; }

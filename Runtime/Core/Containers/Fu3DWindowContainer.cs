@@ -309,7 +309,7 @@ namespace Fu.Core
                 return false;
             }
             // TODO : add ID to image button
-            return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
+            return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCols.Button], color);
         }
         #endregion
 

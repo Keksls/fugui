@@ -323,12 +323,12 @@ public class WidgetsWindow : MonoBehaviour
 
         layout.TextURL("This is a hyperkling text URL", "https://framagit.org/Hydrocode/fugui");
 
-        layout.TextWrapped("This text is wrapped because its too long.This text is wrapped because its too long.This text is wrapped because its too long.");
+        layout.Text("This text is wrapped because its too long.This text is wrapped because its too long.This text is wrapped because its too long.", FuTextWrapping.Wrapp);
 
         layout.FramedText("This is a frammed text");
 
         layout.SetNextElementToolTipWithLabel("This is a 128px clipped text, it's clipped");
-        layout.TextClipped("This is a 128px clipped text, it's clipped", 128f);
+        layout.Text("This is a 128px clipped text, it's clipped", new Vector2(128f, 0f), FuTextWrapping.Clip);
 
         if (layout.ClickableText("This text can be clicked"))
         {

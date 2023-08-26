@@ -123,6 +123,8 @@ namespace Fu.Core
         public event Action<FuWindow> OnPreDraw;
         public event Action<FuWindow> OnPostDraw;
         public event Action<FuWindow> OnBodyDraw;
+        public event Action<FuWindow> OnHoverIn;
+        public event Action<FuWindow> OnHoverOut;
 
         // private fields
         internal ImGuiWindowFlags _windowFlags;
@@ -378,15 +380,17 @@ namespace Fu.Core
             // set tab color of hovered window
             if (IsHovered)
             {
-                Fugui.Push(ImGuiCol.TabActive, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
-                Fugui.Push(ImGuiCol.TabUnfocusedActive, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCols.TabActive, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCols.TabUnfocusedActive, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
             }
             else
             {
-                Fugui.Push(ImGuiCol.TabActive, FuThemeManager.GetColor(FuColors.TabActive));
-                Fugui.Push(ImGuiCol.TabUnfocusedActive, FuThemeManager.GetColor(FuColors.TabUnfocusedActive));
+                Fugui.Push(ImGuiCols.TabActive, FuThemeManager.GetColor(FuColors.TabActive));
+                Fugui.Push(ImGuiCols.TabUnfocusedActive, FuThemeManager.GetColor(FuColors.TabUnfocusedActive));
             }
 
+            // get last frame Hovered state
+            bool _lastFrameHovered = IsHovered;
             // try to start drawing window, according to the closable flag state
             bool nativeWantDrawWindow;
             if (IsClosable)
@@ -435,7 +439,7 @@ namespace Fu.Core
                 if (createChild)
                 {
                     Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
-                    Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0039216f
+                    Fugui.Push(ImGuiCols.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCols.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0039216f
                     ImGui.BeginChild(ID + "ctnr", Vector2.zero, false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
                     {
                         TryDrawUI();
@@ -462,41 +466,7 @@ namespace Fu.Core
                 newFramePos = new Vector2Int((int)pos.x, (int)pos.y);
                 HasFocus = ImGuiNative.igIsWindowFocused(ImGuiFocusedFlags.None) != 0;
                 // whatever window is hovered
-                IsHovered = (LocalRect.Contains(Container.LocalMousePos) &&
-                    ImGuiNative.igIsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup) != 0) ||
-                    Fugui.WindowHasPopupOpen(this);
-
-                // increase window hover state according to input focused window IF we are not dragging any payload
-                if (_inputFocusedWindow != null && !Fugui.CurrentContext._isDraggingPayload)
-                {
-                    if (_inputFocusedWindow != this)
-                    {
-                        IsHovered = false;
-                    }
-                    else
-                    {
-                        IsHovered = true;
-                    }
-                }
-
-                // prevent input if imgui is using mouse to resize docking area
-                if (IsHovered)
-                {
-                    // TODO : Wrapp imguiInternal.h so we can check if imgui want to resize something and prevent input on resising window
-                    // because we have no acces to ImguiInternal.h for now (not wrapper by cimgui and Imgui.NET), we are pushed to do this ugly trick
-                    // so for now, all we can do is to check if the current mouse cursor is a resizing one, if it is, prevent input for this window
-                    ImGuiMouseCursor currentMouseCursor = ImGui.GetMouseCursor();
-                    switch (currentMouseCursor)
-                    {
-                        case ImGuiMouseCursor.ResizeAll:
-                        case ImGuiMouseCursor.ResizeNS:
-                        case ImGuiMouseCursor.ResizeEW:
-                        case ImGuiMouseCursor.ResizeNESW:
-                        case ImGuiMouseCursor.ResizeNWSE:
-                            IsHovered = false;
-                            break;
-                    }
-                }
+                processHoverState();
 
                 // draw debug data
                 DrawDebugPanel();
@@ -507,6 +477,19 @@ namespace Fu.Core
             {
                 IsVisible = false;
                 IsHovered = false;
+            }
+
+            // hovered state just changed, handle fire onHover events
+            if (_lastFrameHovered != IsHovered)
+            {
+                if (IsHovered)
+                {
+                    OnHoverIn?.Invoke(this);
+                }
+                else
+                {
+                    OnHoverOut?.Invoke(this);
+                }
             }
 
             // restore tab color of hovered window
@@ -529,6 +512,45 @@ namespace Fu.Core
             {
                 _sendReadyNextFrame = false;
                 OnInitialized?.Invoke(this);
+            }
+        }
+
+        private void processHoverState()
+        {
+            IsHovered = (LocalRect.Contains(Container.LocalMousePos) &&
+                                ImGuiNative.igIsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup) != 0) ||
+                                Fugui.WindowHasPopupOpen(this);
+
+            // increase window hover state according to input focused window IF we are not dragging any payload
+            if (_inputFocusedWindow != null && !Fugui.CurrentContext._isDraggingPayload)
+            {
+                if (_inputFocusedWindow != this)
+                {
+                    IsHovered = false;
+                }
+                else
+                {
+                    IsHovered = true;
+                }
+            }
+
+            // prevent input if imgui is using mouse to resize docking area
+            if (IsHovered)
+            {
+                // TODO : Wrapp imguiInternal.h so we can check if imgui want to resize something and prevent input on resising window
+                // because we have no acces to ImguiInternal.h for now (not wrapper by cimgui and Imgui.NET), we are pushed to do this ugly trick
+                // so for now, all we can do is to check if the current mouse cursor is a resizing one, if it is, prevent input for this window
+                ImGuiMouseCursor currentMouseCursor = ImGui.GetMouseCursor();
+                switch (currentMouseCursor)
+                {
+                    case ImGuiMouseCursor.ResizeAll:
+                    case ImGuiMouseCursor.ResizeNS:
+                    case ImGuiMouseCursor.ResizeEW:
+                    case ImGuiMouseCursor.ResizeNESW:
+                    case ImGuiMouseCursor.ResizeNWSE:
+                        IsHovered = false;
+                        break;
+                }
             }
         }
 
@@ -607,7 +629,7 @@ namespace Fu.Core
             ImGui.SetCursorPos(new Vector2(0f, 32f));
             ImGui.Dummy(Vector2.one);
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
-            Fugui.Push(ImGuiCol.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
+            Fugui.Push(ImGuiCols.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
             ImGui.BeginChild(ID + "d", new Vector2(196f, 202f));
             {
                 // states

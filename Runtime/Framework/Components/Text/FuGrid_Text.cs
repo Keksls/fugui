@@ -1,15 +1,18 @@
 ﻿using ImGuiNET;
+using UnityEngine;
 
 namespace Fu.Framework
 {
     public partial class FuGrid
     {
         /// <summary>
-        /// Display a Verticaly centered text (centered according to minimum line height)
+        /// Displays a text string with the specified style.
         /// </summary>
-        /// <param name="text">text to draw</param>
-        /// <param name="style">Text Style</param>
-        public override void Text(string text, FuTextStyle style)
+        /// <param name="text">The string to display.</param>
+        /// <param name="style">The style to apply to the text.</param>
+        /// <param name="size">size of the text</param>
+        /// <param name="wrapping">However you want to wrapp the text</param>
+        public override void Text(string text, FuTextStyle style, Vector2 size, FuTextWrapping wrapping = FuTextWrapping.None)
         {
             if (!_gridCreated)
             {
@@ -30,37 +33,7 @@ namespace Fu.Framework
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() + padding - 1f);
             }
             // draw text
-            ImGui.Text(text);
-            // set states for this element
-            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectSize(), false, false);
-            // handle tooltip
-            if (_currentToolTipsOnLabels)
-            {
-                displayToolTip();
-            }
-            endElement(style);
-        }
-
-        /// <summary>
-        /// Display a wrapped auto lineBreak text
-        /// </summary>
-        /// <param name="text">text to draw</param>
-        /// <param name="style">Text Style</param>
-        public override void TextWrapped(string text, FuTextStyle style)
-        {
-            if (!_gridCreated)
-            {
-                return;
-            }
-            beginElement(ref text, style, true);
-            // return if item must no be draw
-            if (!_drawElement)
-            {
-                return;
-            }
-
-            // draw text
-            ImGui.TextWrapped(text);
+            _text(text, wrapping, size);
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectSize(), false, false);
             // handle tooltip

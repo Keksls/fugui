@@ -131,6 +131,19 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// return the color of the current theme that match with the given enum parameter
+        /// </summary>
+        /// <param name="color">color enum to get value of</param>
+        /// <param name="alphaMult">alpha multiplicator of the color</param>
+        /// <returns>color value as Vector4</returns>
+        public static Vector4 GetColor(FuColors color, float alphaMult)
+        {
+            Vector4 colorV4 = CurrentTheme.Colors[(int)color];
+            colorV4.w *= alphaMult;
+            return colorV4;
+        }
+
+        /// <summary>
         /// return the color of the current theme extension that match with the given enum parameter
         /// </summary>
         /// <param name="color">color enum to get value of</param>

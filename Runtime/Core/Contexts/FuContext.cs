@@ -4,6 +4,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
@@ -265,21 +266,38 @@ namespace Fu.Core
         {
             // get font config from FuguiManager Settings
             FontConfig fontConf = Fugui.Settings.FontConfig;
-            // whatever we need to add Icons to fontAtlas
-            bool addIcons = !string.IsNullOrEmpty(fontConf.IconsFontName);
+            // get global font file path
+            string fontPath = Path.Combine(Application.streamingAssetsPath, fontConf.FontsFolder);
             // clear existing font atlas data
             IO.Fonts.Clear(); // Previous FontDefault reference no longer valid.
                               // destroy default font pointer
             IO.NativePtr->FontDefault = default; // NULL uses Fonts[0]
 
-            // declare glythRangePointor in case we need to add Icons to the font atlas
-            IntPtr glyphRangePtr = IntPtr.Zero;
-            if (addIcons)
+            // concatenate Fugui and Custom icons config data
+            IconConfig[] iconsConfs = fontConf.FuguiIcons.Concat(fontConf.CustomIcons).Where(ic =>
+            File.Exists(Path.Combine(fontPath, ic.IconsFontName))).ToArray();
+
+            // prepare all icons confs data (range glyph pointors and files path)
+            foreach (IconConfig iconConf in iconsConfs)
             {
+                // get and set file path
+                iconConf.IconFilePath = Path.Combine(fontPath, iconConf.IconsFontName);
+                // verify whatever icon font file exist
+                if (!File.Exists(iconConf.IconFilePath))
+                {
+                    Debug.LogError(iconConf.IconFilePath + " does not exists");
+                    IO.Fonts.AddFontDefault();
+                    IO.Fonts.Build();
+                    return;
+                }
+
+                // reset glythRangePointors before processing ranges
+                iconConf.GlyphRangePtr = IntPtr.Zero;
+
                 // get native imguiGlyphRangeBuilder ptr
                 ImFontGlyphRangesBuilder* builder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
                 // add any glyph between min and max icon range
-                for (ushort i = fontConf.StartIconsGlyph; i <= fontConf.EndIconsGlyph; i++)
+                for (ushort i = iconConf.StartGlyph; i <= iconConf.EndGlyph; i++)
                 {
                     ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, i);
                 }
@@ -290,7 +308,7 @@ namespace Fu.Core
                 // native build ranges
                 ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(builder, vecPtr);
                 // get range and keep it into managed scope (glyphRangePtr is static, because imgui lazy use glyphRangePtr)
-                glyphRangePtr = vecPtr->Data;
+                iconConf.GlyphRangePtr = vecPtr->Data;
             }
 
             // get default native fontConfig ptr
@@ -302,10 +320,8 @@ namespace Fu.Core
             iconConfigPtr.GlyphOffset = Fugui.Settings.FontIconsOffset;
 
             // get and process Folder and Files Paths
-            string fontPath = Path.Combine(Application.streamingAssetsPath, fontConf.FontsFolder);
             string regularFile = Path.Combine(fontPath, fontConf.RegularFontName);
             string boldFile = Path.Combine(fontPath, fontConf.BoldFontName);
-            string iconFile = Path.Combine(fontPath, fontConf.IconsFontName);
 
             if (!File.Exists(regularFile))
             {
@@ -323,14 +339,6 @@ namespace Fu.Core
                 return;
             }
 
-            if (!File.Exists(iconFile))
-            {
-                Debug.LogError(iconFile + " does not exists");
-                IO.Fonts.AddFontDefault();
-                IO.Fonts.Build();
-                return;
-            }
-
             // add default font
             registerFont(fontConf.DefaultSize);
             // save default font reference
@@ -339,6 +347,47 @@ namespace Fu.Core
             foreach (int size in fontConf.AdditionnalFontSizes)
             {
                 registerFont(size);
+            }
+
+            // add font helper icons if needed
+            if (fontConf.ImportFontHelperIcons)
+            {
+                // get and set file path
+                fontConf.FontHelperIcons.IconFilePath = Path.Combine(fontPath, fontConf.FontHelperIcons.IconsFontName);
+
+                // verify whatever icon font file exist
+                if (!File.Exists(fontConf.FontHelperIcons.IconFilePath))
+                {
+                    Debug.LogError(fontConf.FontHelperIcons.IconFilePath + " does not exists");
+                }
+                else
+                {
+                    // reset glythRangePointors before processing ranges
+                    fontConf.FontHelperIcons.GlyphRangePtr = IntPtr.Zero;
+
+                    // get native imguiGlyphRangeBuilder ptr
+                    ImFontGlyphRangesBuilder* builder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
+                    // add any glyph between min and max icon range
+                    for (ushort i = fontConf.FontHelperIcons.StartGlyph; i <= fontConf.FontHelperIcons.EndGlyph; i++)
+                    {
+                        ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, i);
+                    }
+                    // create default imVector struct ref
+                    ImVector vec = default;
+                    // get vector ptr
+                    ImVector* vecPtr = &vec;
+                    // native build ranges
+                    ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(builder, vecPtr);
+                    // get range and keep it into managed scope (glyphRangePtr is static, because imgui lazy use glyphRangePtr)
+                    fontConf.FontHelperIcons.GlyphRangePtr = vecPtr->Data;
+
+                    // add regular
+                    ImFontPtr fontHelper = IO.Fonts.AddFontFromFileTTF(regularFile, 18 * FontScale);
+                    // add icons to font
+                    IO.Fonts.AddFontFromFileTTF(fontConf.FontHelperIcons.IconFilePath, (18 + fontConf.FontHelperIcons.FontIconsSizeOffset) * FontScale, iconConfigPtr, fontConf.FontHelperIcons.GlyphRangePtr);
+                    // save font ptr
+                    fontConf.FontHelperIcons.FontPtr = fontHelper;
+                }
             }
 
             // ImGui build font atlas
@@ -353,9 +402,10 @@ namespace Fu.Core
 
                     // add regular + icon font
                     ImFontPtr fontRegular = IO.Fonts.AddFontFromFileTTF(regularFile, size * FontScale);
-                    if (addIcons)
+
+                    foreach (IconConfig iconsConf in iconsConfs)
                     {
-                        IO.Fonts.AddFontFromFileTTF(iconFile, (size - Fugui.Settings.FontIconsSizeOffset) * FontScale, iconConfigPtr, glyphRangePtr);
+                        IO.Fonts.AddFontFromFileTTF(iconsConf.IconFilePath, (size + iconsConf.FontIconsSizeOffset) * FontScale, iconConfigPtr, iconsConf.GlyphRangePtr);
                     }
                     Fonts[size].Regular = fontRegular;
 
@@ -363,9 +413,12 @@ namespace Fu.Core
                     if (fontConf.AddBold)
                     {
                         ImFontPtr fontBold = IO.Fonts.AddFontFromFileTTF(boldFile, size * FontScale);
-                        if (addIcons && fontConf.AddIconsToBold)
+                        if (fontConf.AddIconsToBold)
                         {
-                            IO.Fonts.AddFontFromFileTTF(iconFile, (size - Fugui.Settings.FontIconsSizeOffset) * FontScale, iconConfigPtr, glyphRangePtr);
+                            foreach (IconConfig iconsConf in iconsConfs)
+                            {
+                                IO.Fonts.AddFontFromFileTTF(iconsConf.IconFilePath, (size + iconsConf.FontIconsSizeOffset) * FontScale, iconConfigPtr, iconsConf.GlyphRangePtr);
+                            }
                         }
                         Fonts[size].Bold = fontBold;
                     }
@@ -481,4 +534,18 @@ namespace Fu.Core
         UnityContext = 0,
         ExternalContext = 1
     }
+
+    enum ImGuiFreeTypeBuilderFlags
+    {
+        NoHinting = 1 << 0,   // Disable hinting. This generally generates 'blurrier' bitmap glyphs when the glyph are rendered in any of the anti-aliased modes.
+        NoAutoHint = 1 << 1,   // Disable auto-hinter.
+        ForceAutoHint = 1 << 2,   // Indicates that the auto-hinter is preferred over the font's native hinter.
+        LightHinting = 1 << 3,   // A lighter hinting algorithm for gray-level modes. Many generated glyphs are fuzzier but better resemble their original shape. This is achieved by snapping glyphs to the pixel grid only vertically (Y-axis), as is done by Microsoft's ClearType and Adobe's proprietary font renderer. This preserves inter-glyph spacing in horizontal text.
+        MonoHinting = 1 << 4,   // Strong hinting algorithm that should only be used for monochrome output.
+        Bold = 1 << 5,   // Styling: Should we artificially embolden the font?
+        Oblique = 1 << 6,   // Styling: Should we slant the font, emulating italic style?
+        Monochrome = 1 << 7,   // Disable anti-aliasing. Combine this with MonoHinting for best results!
+        LoadColor = 1 << 8,   // Enable FreeType color-layered glyphs
+        Bitmap = 1 << 9    // Enable FreeType bitmap glyphs
+    };
 }

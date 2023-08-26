@@ -261,11 +261,6 @@ namespace Fu.Core
         [FuTooltip("Fugui Themes folder (must be inside streaming assetes folder)")]
         public string LayoutsFolder = "Fugui/Layouts";
 
-        [Tooltip("size offset of icons glyphs in font. Be carefull, it this value exceed font size, it may crash on awake")]
-        [FuTooltip("size offset of icons glyphs in font. \nBe carefull, it this value exceed font size, it may crash on awake")]
-        [FuSlider(-16f, 16f)]
-        public float FontIconsSizeOffset = 4;
-
         [Tooltip("pos offset of icons glyphs in font.")]
         [FuTooltip("pos offset of icons glyphs in font.")]
         public Vector2 FontIconsOffset = Vector2.zero;

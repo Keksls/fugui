@@ -1,3 +1,4 @@
+using Fu.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -114,15 +115,15 @@ namespace Fu.Framework
         {
             if (enabled)
             {
-                Fugui.Push(ImGuiCol.Button, Button); // push the enabled button color onto the stack
-                Fugui.Push(ImGuiCol.ButtonHovered, ButtonHovered); // push the enabled button hovered color onto the stack
-                Fugui.Push(ImGuiCol.ButtonActive, ButtonActive); // push the enabled button active color onto the stack
+                Fugui.Push(ImGuiCols.Button, Button); // push the enabled button color onto the stack
+                Fugui.Push(ImGuiCols.ButtonHovered, ButtonHovered); // push the enabled button hovered color onto the stack
+                Fugui.Push(ImGuiCols.ButtonActive, ButtonActive); // push the enabled button active color onto the stack
             }
             else
             {
-                Fugui.Push(ImGuiCol.Button, DisabledButton); // push the disabled button color onto the stack
-                Fugui.Push(ImGuiCol.ButtonHovered, DisabledButton); // push the disabled button hovered color onto the stack
-                Fugui.Push(ImGuiCol.ButtonActive, DisabledButton); // push the disabled button active color onto the stack
+                Fugui.Push(ImGuiCols.Button, DisabledButton); // push the disabled button color onto the stack
+                Fugui.Push(ImGuiCols.ButtonHovered, DisabledButton); // push the disabled button hovered color onto the stack
+                Fugui.Push(ImGuiCols.ButtonActive, DisabledButton); // push the disabled button active color onto the stack
             }
             Fugui.Push(ImGuiStyleVar.FramePadding, _framePadding * Fugui.CurrentContext.Scale); // push the frame padding onto the stack
             Fugui.Push(ImGuiStyleVar.FrameBorderSize, 0.5f * Fugui.CurrentContext.Scale); // push the frame border size onto the stack

@@ -744,9 +744,9 @@ namespace Fu
         /// <param name="imCol">ImGui color to push</param>
         /// <param name="color">colot value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Push(ImGuiCol imCol, Vector4 color)
+        public static void Push(ImGuiCols imCol, Vector4 color)
         {
-            ImGuiNative.igPushStyleColor_Vec4(imCol, color);
+            ImGuiNative.igPushStyleColor_Vec4((ImGuiCol)imCol, color);
             NbPushColor++;
         }
 

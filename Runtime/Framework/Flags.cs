@@ -18,6 +18,25 @@ namespace Fu.Framework
     }
 
     /// <summary>
+    /// However you want to wrapp text
+    /// </summary>
+    public enum FuTextWrapping
+    {
+        /// <summary>
+        /// Classic text, no clipping, no wrapping. Just hide outside of container
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Clip text and end it with '...'
+        /// </summary>
+        Clip = 1,
+        /// <summary>
+        /// Wrapp the text to display it all
+        /// </summary>
+        Wrapp = 2,
+    }
+
+    /// <summary>
     /// Define Fugui mouse buttons
     /// </summary>
     public enum FuComboboxPopupPosition

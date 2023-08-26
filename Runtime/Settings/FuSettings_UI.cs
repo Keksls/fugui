@@ -27,11 +27,18 @@ namespace Fu
 
                 // buttons
                 FuStyle.Unpadded.Push(true);
-                using (FuGrid grid = new FuGrid("fsAG", new FuGridDefinition(1, new float[] { 1f / 1f })))
+                using (FuGrid grid = new FuGrid("fsAG", new FuGridDefinition(2, new float[] { 1f / 2f })))
                 {
                     if (grid.Button("Docking Layout", FuButtonStyle.Highlight))
                     {
                         FuDockingLayoutManager.SetConfigurationLayout();
+                    }
+                    if (grid.Button("Font Helper", FuButtonStyle.Highlight))
+                    {
+                        var winDef = new FuWindowDefinition(FuSystemWindowsNames.None, flags: FuWindowFlags.AllowMultipleWindow);
+                        winDef.SetCustomWindowType<FontHelper>();
+                        winDef.CreateUIWindow(out FuWindow window);
+                        window.TryAddToContainer(Fugui.MainContainer);
                     }
                 }
                 FuStyle.Unpadded.Pop();

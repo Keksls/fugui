@@ -83,33 +83,6 @@ namespace Fu.Framework
         /// <param name="text">text of the button</param>
         /// <param name="size">size of the button</param>
         /// <param name="padding">padding of the text inside the button</param>
-        /// <param name="style">style of the button</param>
-        /// <returns>true if clicked</returns>
-        public bool Button(string text, FuElementSize size, Vector2 padding, FuButtonStyle style)
-        {
-            return Button(text, size.BrutSize, padding, Vector2.zero, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, style);
-        }
-
-        /// <summary>
-        /// Render a button with the given style and size
-        /// </summary>
-        /// <param name="text">text of the button</param>
-        /// <param name="size">size of the button</param>
-        /// <param name="padding">padding of the text inside the button</param>
-        /// <param name="gradientStrenght">strenght of the button gradient (typicaly the one of the theme)</param>
-        /// <param name="style">style of the button</param>
-        /// <returns>true if clicked</returns>
-        public bool Button(string text, FuElementSize size, Vector2 padding, FuButtonStyle style, float gradientStrenght)
-        {
-            return Button(text, size.BrutSize, padding, Vector2.zero, gradientStrenght, style);
-        }
-
-        /// <summary>
-        /// Render a button with the given style and size
-        /// </summary>
-        /// <param name="text">text of the button</param>
-        /// <param name="size">size of the button</param>
-        /// <param name="padding">padding of the text inside the button</param>
         /// <param name="textOffset">offset of the text inside the button</param>
         /// <param name="style">style of the button</param>
         /// <returns>true if clicked</returns>
@@ -242,7 +215,9 @@ namespace Fu.Framework
 
             // draw text
             size.x -= textWidthOffset;
-            _customTextClipped(size, Fugui.AddSpacesBeforeUppercase(text), pos + textOffset, padding, label_size, align, style.TextStyle);
+
+            // draw text at the right location
+            EnboxedText(text, pos, size, padding, textOffset, align, FuTextWrapping.Clip);
 
             // display the tooltip if necessary
             displayToolTip();

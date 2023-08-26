@@ -82,7 +82,7 @@ namespace Fu.Framework
             {
                 // Gradient editor title
                 Fugui.Push(ImGuiStyleVar.FramePadding, new Vector4(4f, 4f));
-                FramedText("Gradient Editor", 0.5f);
+                FramedText("Gradient Editor");
                 Fugui.PopStyle();
 
                 Spacing();
@@ -169,9 +169,9 @@ namespace Fu.Framework
             layout.ComboboxEnum<FuGradientBlendMode>("Blending", (index) =>
             {
                 _currentGradient.SetBlendMode((FuGradientBlendMode)index);
-            }, () => _currentGradient.BlendMode, new Vector2(GetAvailableWidth() - 36f * Fugui.CurrentContext.Scale, 0f), Vector2.zero, FuButtonStyle.Default);
+            }, () => _currentGradient.BlendMode, new Vector2(GetAvailableWidth() - 52f * Fugui.CurrentContext.Scale, 0f), Vector2.zero, FuButtonStyle.Default);
             layout.SameLine();
-            layout.Combobox("##GpStng" + text, "...", () =>
+            layout.Combobox("##GpStng" + text, FuIcons.Fu_Dots_H_Duotone, () =>
             {
                 if (ImGui.Selectable("Reset gradient"))
                 {

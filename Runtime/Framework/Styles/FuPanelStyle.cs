@@ -1,4 +1,4 @@
-using ImGuiNET;
+using Fu.Core;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -45,8 +45,8 @@ namespace Fu.Framework
         /// </summary>
         public void Push(bool enabled)
         {
-            Fugui.Push(ImGuiCol.ChildBg, _bgColor);
-            Fugui.Push(ImGuiCol.Border, _borderColor);
+            Fugui.Push(ImGuiCols.ChildBg, _bgColor);
+            Fugui.Push(ImGuiCols.Border, _borderColor);
         }
 
         /// <summary>

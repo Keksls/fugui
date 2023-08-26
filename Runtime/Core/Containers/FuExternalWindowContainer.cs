@@ -115,7 +115,7 @@ namespace Fu.Core
             // force not to be Always tabBar for external windows
             io.ConfigDockingAlwaysTabBar = false;
             // get GL background color
-            _backgroundColor = ImGui.GetStyle().Colors[(int)ImGuiCol.WindowBg];
+            _backgroundColor = ImGui.GetStyle().Colors[(int)ImGuiCols.WindowBg];
             // set ImGui backendFlags as Vertex Offset enabled for mesh rendering
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
             // set OpenTk / ImGui input Key mapping
@@ -420,7 +420,7 @@ namespace Fu.Core
                 return false;
             }
             // TODO : add ID to image button
-            return ImGui.ImageButton("", GetTextureID(texture), size, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f), ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
+            return ImGui.ImageButton("", GetTextureID(texture), size, UnityEngine.Vector2.zero, new UnityEngine.Vector2(1f, -1f), ImGui.GetStyle().Colors[(int)ImGuiCols.Button], color);
         }
         #endregion
 

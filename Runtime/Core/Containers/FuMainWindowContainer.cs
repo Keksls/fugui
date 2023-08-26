@@ -416,7 +416,7 @@ namespace Fu.Core
                 ImGui.Dummy(size);
                 return false;
             }
-            return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
+            return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCols.Button], color);
         }
         #endregion
 
@@ -459,7 +459,7 @@ namespace Fu.Core
             // draw footer
             if (_footerHeight > 0f)
             {
-                Fugui.Push(ImGuiCol.WindowBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
+                Fugui.Push(ImGuiCols.WindowBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
                 ImGui.SetNextWindowPos(new Vector2(0f, _size.y - _footerHeight));
                 ImGui.SetNextWindowSize(new Vector2(_size.x, _footerHeight));
                 ImGui.SetNextWindowViewport(viewPortID);

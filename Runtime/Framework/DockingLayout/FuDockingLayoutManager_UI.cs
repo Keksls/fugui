@@ -1,8 +1,6 @@
-﻿using Codice.Client.BaseCommands;
-using Fu.Core;
+﻿using Fu.Core;
 using Fu.Framework;
 using ImGuiNET;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -290,7 +288,7 @@ namespace Fu
             using (FuLayout layout = new FuLayout())
             {
                 PushFont(FontType.Bold);
-                layout.FramedText("Docking Layouts", 0.5f);
+                layout.FramedText("Docking Layouts");
                 PopFont();
             }
 
@@ -383,7 +381,7 @@ namespace Fu
             using (FuLayout layout = new FuLayout())
             {
                 PushFont(FontType.Bold);
-                layout.FramedText("Windows Definitions", 0.5f);
+                layout.FramedText("Windows Definitions");
                 PopFont();
 
                 var windows = FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList();

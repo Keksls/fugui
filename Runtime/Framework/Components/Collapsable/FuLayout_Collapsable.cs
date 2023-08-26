@@ -283,7 +283,12 @@ namespace Fu.Framework
             // draw text
             size.x -= leftPartUIWidth;
             size.x -= rightPartUIWidth;
-            _customTextClipped(size, text, pos + new Vector2(leftPartUIWidth, 0f), padding, label_size, align, style.TextStyle);
+
+            Vector2 finalCursorPos = ImGui.GetCursorScreenPos();
+            ImGui.SetCursorScreenPos(pos + new Vector2(leftPartUIWidth, 0f) + padding);
+            _text(text, FuTextWrapping.Clip, size - (padding * 2f), false);
+            ImGui.SetCursorScreenPos(finalCursorPos);
+            //_customTextClipped(size, text, pos + new Vector2(leftPartUIWidth, 0f), padding, label_size, align, style.TextStyle);
 
             // draw carret
             Color caretColor = LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text;

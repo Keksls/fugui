@@ -16,7 +16,7 @@ namespace Fu.Framework
     {
         #region Variables
         internal static Dictionary<ushort, FuWindowName> RegisteredWindowsNames;
-        internal static FuDockingLayoutDefinition CurrentLayout;
+        public static FuDockingLayoutDefinition CurrentLayout { get; internal set; }
         internal static Dictionary<int, string> DefinedDockSpaces;
         internal static ExtensionFilter FlgExtensionFilter;
         public static Dictionary<string, FuDockingLayoutDefinition> Layouts { get; private set; }
@@ -94,7 +94,7 @@ namespace Fu.Framework
             Layouts = new Dictionary<string, FuDockingLayoutDefinition>();
 
             // iterate on each file into folder
-            foreach (string file in Directory.GetFiles(folderPath))
+            foreach (string file in Directory.GetFiles(folderPath, "*.fdl"))
             {
                 string fileName = Path.GetFileNameWithoutExtension(file);
                 FuDockingLayoutDefinition tempLayout = FuDockingLayoutDefinition.ReadFromFile(file);
@@ -602,7 +602,7 @@ namespace Fu.Framework
                             {
                                 using (FuLayout layout = new FuLayout())
                                 {
-                                    layout.TextWrapped("This action cannot be rollbacked. Are you sure you want to continue ?");
+                                    layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrapp);
                                 }
                             }, FuModalSize.Medium, new FuModalButton("Yes", confirmDeleteSelectedLayoutFile, FuButtonStyle.Danger),
                             new FuModalButton("No", null, FuButtonStyle.Default));

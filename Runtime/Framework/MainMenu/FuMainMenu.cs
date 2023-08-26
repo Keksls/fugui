@@ -1,3 +1,4 @@
+using Fu.Core;
 using Fu.Framework;
 using ImGuiNET;
 using System;
@@ -158,10 +159,10 @@ namespace Fu
             Push(ImGuiStyleVar.FramePadding, new Vector2(4f, 4f));
             Push(ImGuiStyleVar.ItemSpacing, new Vector2(4f, 4f));
             Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 4f));
-            Push(ImGuiCol.Header, FuThemeManager.GetColor(FuColors.HeaderHovered));
-            Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.MainMenuText));
-            Push(ImGuiCol.PopupBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
-            Push(ImGuiCol.Separator, FuThemeManager.GetColor(FuColors.MainMenuText) * 0.33f);
+            Push(ImGuiCols.Header, FuThemeManager.GetColor(FuColors.HeaderHovered));
+            Push(ImGuiCols.Text, FuThemeManager.GetColor(FuColors.MainMenuText));
+            Push(ImGuiCols.PopupBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
+            Push(ImGuiCols.Separator, FuThemeManager.GetColor(FuColors.MainMenuText) * 0.33f);
             // Begin the main menu bar
             if (ImGui.BeginMainMenuBar())
             {

@@ -2,7 +2,6 @@ using Fu;
 using Fu.Core;
 using Fu.Framework;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -19,7 +18,7 @@ public class FuguiDemoScene : MonoBehaviour
         new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, (window) =>
         {
             Fugui.DrawSettings();
-        }, flags: FuWindowFlags.AllowMultipleWindow);
+        }, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
 
         // register DockingLayoutManager events
         FuDockingLayoutManager.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
@@ -40,8 +39,7 @@ public class FuguiDemoScene : MonoBehaviour
         // set default layout (will create UIWindows instances)
         if (FuDockingLayoutManager.Layouts.Count > 0)
         {
-            string firstLayoutName = FuDockingLayoutManager.Layouts.Keys.ToList()[0];
-            FuDockingLayoutManager.SetLayout(firstLayoutName);
+            FuDockingLayoutManager.SetLayout("DemoScene");
         }
     }
 

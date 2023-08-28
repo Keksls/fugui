@@ -452,7 +452,7 @@ namespace Fu.Framework
         private bool _internalClickableText(string text, FuTextStyle style, out Rect textRect, FuTextWrapping wrapping)
         {
             textRect = new Rect(ImGui.GetCursorScreenPos() - new Vector2(4f, 0f), CalcTextSize(text, wrapping) + FuThemeManager.CurrentTheme.FramePadding);
-            bool hovered = isItemHovered(textRect.min, textRect.size);
+            bool hovered = IsItemHovered(textRect.min, textRect.size);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
             bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !LastItemDisabled;
 

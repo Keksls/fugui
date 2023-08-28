@@ -382,9 +382,9 @@ namespace Fu.Core
                     fontConf.FontHelperIcons.GlyphRangePtr = vecPtr->Data;
 
                     // add regular
-                    ImFontPtr fontHelper = IO.Fonts.AddFontFromFileTTF(regularFile, 18 * FontScale);
+                    //ImFontPtr fontHelper = IO.Fonts.AddFontFromFileTTF(regularFile, (18 + fontConf.FontHelperIcons.FontIconsSizeOffset) * FontScale);
                     // add icons to font
-                    IO.Fonts.AddFontFromFileTTF(fontConf.FontHelperIcons.IconFilePath, (18 + fontConf.FontHelperIcons.FontIconsSizeOffset) * FontScale, iconConfigPtr, fontConf.FontHelperIcons.GlyphRangePtr);
+                    ImFontPtr fontHelper = IO.Fonts.AddFontFromFileTTF(fontConf.FontHelperIcons.IconFilePath, (18 + fontConf.FontHelperIcons.FontIconsSizeOffset) * FontScale, null, fontConf.FontHelperIcons.GlyphRangePtr);
                     // save font ptr
                     fontConf.FontHelperIcons.FontPtr = fontHelper;
                 }

@@ -174,6 +174,16 @@ namespace Fu
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
             MainContainer = new FuMainWindowContainer(DefaultContext);
 
+            // register Fugui Settings Window
+            new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, (window) =>
+            {
+                Fugui.DrawSettings();
+            }, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
+
+            // register FontHelper Window
+            var winDef = new FuWindowDefinition(FuSystemWindowsNames.FontHelper, flags: FuWindowFlags.AllowMultipleWindow);
+            winDef.SetCustomWindowType<FontHelper>();
+
             // initialize debug tool if debug is enabled
 #if FUDEBUG
             initDebugTool();

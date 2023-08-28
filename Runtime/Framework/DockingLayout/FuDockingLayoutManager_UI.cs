@@ -462,7 +462,7 @@ namespace Fu
                         windows.Remove(_selectedWindowDefinition);
 
                         // remove window from all layout
-                        foreach(var fdlayout in FuDockingLayoutManager.Layouts.Values)
+                        foreach (var fdlayout in FuDockingLayoutManager.Layouts.Values)
                         {
                             fdlayout.RemoveWindowsDefinitionInChildren(_selectedWindowDefinition.ID);
                         }
@@ -484,7 +484,7 @@ namespace Fu
 
                         FuDockingLayoutManager.writeToFile(Settings.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager.RegisteredWindowsNames));
 
-                        if(_windowNamesMustSaveLayouts)
+                        if (_windowNamesMustSaveLayouts)
                         {
                             foreach (var fdlayout in FuDockingLayoutManager.Layouts.Values)
                             {
@@ -494,7 +494,7 @@ namespace Fu
                         }
 
                         var names = FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList();
-                        _selectedWindowDefinition = names.Count > FuSystemWindowsNames.FuguiReservedLastID ? names[FuSystemWindowsNames.FuguiReservedLastID] : FuSystemWindowsNames.None;
+                        _selectedWindowDefinition = names.Count > 0 ? names[0] : FuSystemWindowsNames.None;
                     }
                 }
             }

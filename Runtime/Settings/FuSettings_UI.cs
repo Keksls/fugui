@@ -1,6 +1,7 @@
 ﻿using Fu.Core;
 using Fu.Framework;
 using ImGuiNET;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu
@@ -35,10 +36,14 @@ namespace Fu
                     }
                     if (grid.Button("Font Helper", FuButtonStyle.Highlight))
                     {
-                        var winDef = new FuWindowDefinition(FuSystemWindowsNames.None, flags: FuWindowFlags.AllowMultipleWindow);
-                        winDef.SetCustomWindowType<FontHelper>();
-                        winDef.CreateUIWindow(out FuWindow window);
-                        window.TryAddToContainer(Fugui.MainContainer);
+                        // set custom layout
+                        var dld = new FuDockingLayoutDefinition();
+                        dld.Proportion = 0f;
+                        dld.Orientation = UIDockSpaceOrientation.None;
+                        dld.Children = new List<FuDockingLayoutDefinition>();
+                        dld.WindowsDefinition = new List<ushort>();
+                        dld.WindowsDefinition.Add(FuSystemWindowsNames.FontHelper.ID);
+                        FuDockingLayoutManager.SetLayout(dld, "");
                     }
                 }
                 FuStyle.Unpadded.Pop();

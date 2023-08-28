@@ -177,9 +177,9 @@ namespace Fu.Framework
                     // Calculate the position of the knob
                     float knobPos = (x + knobRadius) + (width - knobRadius * 2f) * (value - min) / (max - min);
                     // Check if the mouse is hovering over the slider
-                    bool isLineHovered = isItemHovered(new Vector2(x, y - hoverPaddingY - lineHeight), new Vector2(width, hoverPaddingY * 2f + lineHeight * 2f));
+                    bool isLineHovered = IsItemHovered(new Vector2(x, y - hoverPaddingY - lineHeight), new Vector2(width, hoverPaddingY * 2f + lineHeight * 2f));
                     // Check if the mouse is hovering over the knob
-                    bool isKnobHovered = isItemHovered(new Vector2(knobPos - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
+                    bool isKnobHovered = IsItemHovered(new Vector2(knobPos - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
                     // Check if slider is dragging
                     bool isDragging = _draggingSliders.Contains(text);
                     // Calculate colors

@@ -14,12 +14,6 @@ public class FuguiDemoScene : MonoBehaviour
 
     private void Awake()
     {
-        // register Fugui Settings Window
-        new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, (window) =>
-        {
-            Fugui.DrawSettings();
-        }, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
-
         // register DockingLayoutManager events
         FuDockingLayoutManager.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
         FuDockingLayoutManager.OnDockLayoutSet += DockingLayoutManager_OnDockLayoutSet;

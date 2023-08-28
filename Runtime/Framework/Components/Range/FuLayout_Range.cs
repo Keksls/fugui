@@ -169,8 +169,8 @@ namespace Fu.Framework
                 float knobPosMin = (x + knobRadius) + (width - knobRadius * 2f) * (valueMin - min) / (max - min);
                 float knobPosMax = (x + knobRadius) + (width - knobRadius * 2f) * (valueMax - min) / (max - min);
                 // Check if the mouse is hovering over the knob
-                bool isKnobMinHovered = isItemHovered(new Vector2(knobPosMin - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
-                bool isKnobMaxHovered = isItemHovered(new Vector2(knobPosMax - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
+                bool isKnobMinHovered = IsItemHovered(new Vector2(knobPosMin - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
+                bool isKnobMaxHovered = IsItemHovered(new Vector2(knobPosMax - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
                 // Check if slider is dragging
                 bool isDraggingMin = _draggingSliders.Contains(knobMinID);
                 bool isDraggingMax = _draggingSliders.Contains(knobMaxID);

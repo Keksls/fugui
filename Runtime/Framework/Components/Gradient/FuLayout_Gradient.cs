@@ -56,7 +56,7 @@ namespace Fu.Framework
             drawList.AddRect(gradientRect.min, gradientRect.max, ImGui.GetColorU32(ImGuiCol.Border));
 
             // check whatever the preview is hovered
-            bool hovered = isItemHovered(startPos, gradientRect.size);
+            bool hovered = IsItemHovered(startPos, gradientRect.size);
             if (hovered)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
@@ -216,7 +216,7 @@ namespace Fu.Framework
                     ImGui.InvisibleButton(text + "ck" + i, colorKeyRect.size);
 
                     // get key states
-                    bool hovered = isItemHovered(colorKeyRect.position, colorKeyRect.size);
+                    bool hovered = IsItemHovered(colorKeyRect.position, colorKeyRect.size);
                     isAnyKeyHovered |= hovered;
                     bool active = _selectedColorKeyIndex == i;
 
@@ -273,7 +273,7 @@ namespace Fu.Framework
             {
                 if (!isAnyKeyHovered && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                 {
-                    if (isItemHovered(startPos, gradientRect.size))
+                    if (IsItemHovered(startPos, gradientRect.size))
                     {
                         // Add a new color key
                         float t = Mathf.Clamp01((mousePos.x - gradientRect.x) / gradientRect.width);

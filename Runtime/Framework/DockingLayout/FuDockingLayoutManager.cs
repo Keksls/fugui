@@ -260,7 +260,7 @@ namespace Fu.Framework
                 }
                 else
                 {
-                    createDynamicLayout(layout, layoutName);
+                    createDynamicLayout(layout);
                 }
             });
         }
@@ -269,7 +269,7 @@ namespace Fu.Framework
         /// Method that creates a dynamic layout based on the specified UIDockSpaceDefinition. It first retrieves a list of all the windows definitions associated with the dock space and its children recursively, then creates those windows asynchronously, and finally invokes a callback function to complete the layout creation process.
         /// </summary>
         /// <param name="dockSpaceDefinition">The FuguiDockSpaceDefinition to use for creating the layout</param>
-        private static void createDynamicLayout(FuDockingLayoutDefinition dockSpaceDefinition, string layoutName)
+        private static void createDynamicLayout(FuDockingLayoutDefinition dockSpaceDefinition)
         {
             List<FuWindowName> windowsToGet = dockSpaceDefinition.GetAllWindowsNames(true);
 
@@ -476,7 +476,7 @@ namespace Fu.Framework
             // iterate on values to write static values
             foreach (var item in values)
             {
-                if (item.Key > FuSystemWindowsNames.FuguiReservedLastID)
+                if (item.Key > 0)
                 {
                     sb.AppendLine("        private static FuWindowName _" + Fugui.RemoveSpaceAndCapitalize(item.Value.Name) + " = new FuWindowName(" + item.Key + ", \"" + item.Value + "\", " + item.Value.AutoInstantiateWindowOnlayoutSet.ToString().ToLower() + ", " + item.Value.IdleFPS + ");")
                         .AppendLine("        public static FuWindowName " + Fugui.RemoveSpaceAndCapitalize(item.Value.Name) + " { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _" + Fugui.RemoveSpaceAndCapitalize(item.Value.Name) + "; }");

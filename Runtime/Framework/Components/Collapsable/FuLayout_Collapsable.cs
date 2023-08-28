@@ -190,7 +190,7 @@ namespace Fu.Framework
                 Mathf.Max(4.0f, region_max.x - ImGuiNative.igGetCursorPosX()),
                 label_size.y + padding.y * 2f);
 
-            bool hovered = isItemHovered(pos, size);
+            bool hovered = IsItemHovered(pos, size);
 
             // custom process is mouse is hover full button rect
             bool hoverCustomUI = false;

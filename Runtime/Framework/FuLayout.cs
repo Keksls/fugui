@@ -403,6 +403,46 @@ namespace Fu.Framework
         {
             ImGuiNative.igEndGroup();
         }
+
+        /// <summary>
+        /// Clean check whatever an item is hovered
+        /// </summary>
+        /// <param name="pos">screen position of the item to check</param>
+        /// <param name="size">size of the item to check</param>
+        /// <returns>true ifhovered</returns>
+        public bool IsItemHovered(Vector2 pos, Vector2 size)
+        {
+            // a popup is drawing
+            if (Fugui.IsDrawingInsidePopup())
+            {
+                // the drawing popup has NOT the focus
+                if (!Fugui.IsDrawingPopupFocused())
+                {
+                    return false;
+                }
+            }
+            // we are not drawing inside a popup but there is some
+            else if (Fugui.IsThereAnyOpenPopup())
+            {
+                return false;
+            }
+
+            bool hovered;
+            Vector2 mousePos = ImGui.GetMousePos();
+            // the element is drawed inside a window
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                // get hover state on window
+                hovered = FuWindow.CurrentDrawingWindow.IsHovered && mousePos.x > pos.x && mousePos.x < pos.x + size.x && mousePos.y > pos.y && mousePos.y < pos.y + size.y;
+            }
+            else
+            {
+                // get hover state
+                hovered = mousePos.x > pos.x && mousePos.x < pos.x + size.x && mousePos.y > pos.y && mousePos.y < pos.y + size.y;
+            }
+
+            return hovered;
+        }
         #endregion
 
         #region Center Item
@@ -605,7 +645,7 @@ namespace Fu.Framework
             if (LastItemDisabled)
             {
                 // get hover state
-                _lastItemHovered = isItemHovered(pos, size);
+                _lastItemHovered = IsItemHovered(pos, size);
                 // the item is disabled but it was the last active
                 if (_activeItem == uniqueID)
                 {
@@ -615,7 +655,7 @@ namespace Fu.Framework
             }
 
             // get hover state
-            _lastItemHovered = isItemHovered(pos, size);
+            _lastItemHovered = IsItemHovered(pos, size);
 
             // get click state
             if (clickable && _lastItemHovered)
@@ -649,46 +689,6 @@ namespace Fu.Framework
             _lastItemActive = _activeItem == uniqueID;
             // get update state
             _lastItemUpdate = updated;
-        }
-
-        /// <summary>
-        /// Clean check whatever an item is hovered
-        /// </summary>
-        /// <param name="pos">screen position of the item to check</param>
-        /// <param name="size">size of the item to check</param>
-        /// <returns>true ifhovered</returns>
-        protected bool isItemHovered(Vector2 pos, Vector2 size)
-        {
-            // a popup is drawing
-            if (Fugui.IsDrawingInsidePopup())
-            {
-                // the drawing popup has NOT the focus
-                if (!Fugui.IsDrawingPopupFocused())
-                {
-                    return false;
-                }
-            }
-            // we are not drawing inside a popup but there is some
-            else if (Fugui.IsThereAnyOpenPopup())
-            {
-                return false;
-            }
-
-            bool hovered;
-            Vector2 mousePos = ImGui.GetMousePos();
-            // the element is drawed inside a window
-            if (FuWindow.CurrentDrawingWindow != null)
-            {
-                // get hover state on window
-                hovered = FuWindow.CurrentDrawingWindow.IsHovered && mousePos.x > pos.x && mousePos.x < pos.x + size.x && mousePos.y > pos.y && mousePos.y < pos.y + size.y;
-            }
-            else
-            {
-                // get hover state
-                hovered = mousePos.x > pos.x && mousePos.x < pos.x + size.x && mousePos.y > pos.y && mousePos.y < pos.y + size.y;
-            }
-
-            return hovered;
         }
     }
     #endregion

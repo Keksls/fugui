@@ -34,7 +34,7 @@ MonoBehaviour:
     IconsFontName: Helper_Icons.ttf
     StartGlyph: 61184
     EndGlyph: 61384
-    FontIconsSizeOffset: 0
-    IconFilePath: I:/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/icons.ttf
+    FontIconsSizeOffset: 18
+    IconFilePath: D:/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/Fugui Icons.ttf
   AddBold: 0
   AddIconsToBold: 0

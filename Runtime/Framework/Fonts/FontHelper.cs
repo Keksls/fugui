@@ -10,14 +10,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Fu.Framework
 {
     public class FontHelper : FuWindow
     {
         Face _font;
-        FuGlyph[] _glyphs;
+        List<FuGlyph> _glyphs = new List<FuGlyph>();
         FuGlyph _editingGlyph = null;
         List<FuGlyph> _selectedGlyphs = new List<FuGlyph>();
         private string _newFontName = "Fugui Icons";
@@ -49,25 +48,29 @@ namespace Fu.Framework
             fontPath = Path.Combine(fontPath, Fugui.Settings.FontConfig.FontHelperIcons.IconsFontName);
 
             // load glyphs and bind FuGlyph from font glyphs data
+            _glyphs.Clear();
             _font = new Face(new Library(), fontPath);
+            // get first glyph index
             uint charIndex = _font.GetFirstChar(out uint glyphIndex);
-            _glyphs = new FuGlyph[_font.GlyphCount];
-            int i = 0;
-            _glyphs[i] = new FuGlyph()
+            _glyphs.Add(new FuGlyph()
             {
                 BaseChar = (char)charIndex,
                 BaseGlyphIndex = glyphIndex,
                 Name = "Icon " + charIndex.ToString("X2")
-            };
-            for (; i < _font.GlyphCount; i++)
+            });
+
+            while (glyphIndex != 0)
             {
                 charIndex = _font.GetNextChar(charIndex, out glyphIndex);
-                _glyphs[i] = new FuGlyph()
+                if (charIndex != 0)
                 {
-                    BaseChar = (char)charIndex,
-                    BaseGlyphIndex = glyphIndex,
-                    Name = "Icon " + charIndex.ToString("X2")
-                };
+                    _glyphs.Add(new FuGlyph()
+                    {
+                        BaseChar = (char)charIndex,
+                        BaseGlyphIndex = glyphIndex,
+                        Name = "Icon " + charIndex.ToString("X2")
+                    });
+                }
             }
         }
 
@@ -79,7 +82,8 @@ namespace Fu.Framework
 
             ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
             uint glyph_col = ImGui.GetColorU32(ImGuiCol.Text);
-            _cellSize = _cellSize == -1f ? fontPtr.FontSize : _cellSize;
+            uint glyph_col_secondary = ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Text, 0.5f));
+            _cellSize = _cellSize == -1f ? 18 + fontConf.FontIconsSizeOffset : _cellSize;
             float cell_spacing = ImGui.GetStyle().ItemSpacing.y;
             Vector2 base_pos = ImGui.GetCursorScreenPos();
 
@@ -87,8 +91,13 @@ namespace Fu.Framework
             {
                 if (ImGui.BeginChild("fntHlprGlphCntnr", new Vector2(ImGui.GetContentRegionAvail().x - 320f, -1f)))
                 {
-                    for (int i = 0; i < _glyphs.Length; i++)
+                    for (int i = 0; i < _glyphs.Count; i++)
                     {
+                        if (_duotoneBaseOffset > 0 && i > _glyphs.Count / 2)
+                        {
+                            break;
+                        }
+
                         // get current FuGlyph data
                         FuGlyph fuGlyph = _glyphs[i];
 
@@ -114,6 +123,15 @@ namespace Fu.Framework
                             continue;
 
                         fontPtr.RenderChar(draw_list, _cellSize, p1, glyph_col, fuGlyph.BaseChar);
+
+                        if (_duotoneBaseOffset > 0)
+                        {
+                            ImFontGlyph* glyph2 = fontPtr.FindGlyphNoFallback((char)(fuGlyph.BaseChar + _duotoneBaseOffset)).NativePtr;
+                            if ((IntPtr)glyph2 != IntPtr.Zero)
+                            {
+                                fontPtr.RenderChar(draw_list, _cellSize, p1, glyph_col_secondary, (char)(fuGlyph.BaseChar + _duotoneBaseOffset));
+                            }
+                        }
 
                         if (hovered)
                         {
@@ -150,10 +168,15 @@ namespace Fu.Framework
 
                 ImGui.SameLine();
 
-                if(ImGui.BeginChild("fntHlprNwFntCntnr"))
+                if (ImGui.BeginChild("fntHlprNwFntCntnr"))
                 {
                     using (FuGrid grid = new FuGrid("fntHlprNwFntGrd"))
                     {
+                        grid.NextColumn();
+                        grid.Text("Nb Glyphs");
+                        grid.NextColumn();
+                        grid.Text(_glyphs.Count.ToString());
+
                         int cs = (int)_cellSize;
                         if (grid.Slider("size", ref cs, 10, 96))
                         {

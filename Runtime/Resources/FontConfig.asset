@@ -32,9 +32,9 @@ MonoBehaviour:
   ImportFontHelperIcons: 1
   FontHelperIcons:
     IconsFontName: Helper_Icons.ttf
-    StartGlyph: 61184
-    EndGlyph: 61384
+    StartGlyph: 57344
+    EndGlyph: 65000
     FontIconsSizeOffset: 18
-    IconFilePath: D:/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/Fugui Icons.ttf
+    IconFilePath: D:/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/Helper_Icons.ttf
   AddBold: 0
   AddIconsToBold: 0

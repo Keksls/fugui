@@ -168,7 +168,7 @@ namespace Fu
             _renderThreadStarted = false;
 
             // create Default Fugui Context and initialize themeManager
-            DefaultContext = CreateUnityContext(mainContainerUICamera, 1f, 1f, FuThemeManager.Initialize);
+            DefaultContext = CreateUnityContext(mainContainerUICamera, Settings.UIScale, Settings.UIScale, FuThemeManager.Initialize);
             DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake

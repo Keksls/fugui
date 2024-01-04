@@ -28,13 +28,18 @@ MonoBehaviour:
     EndGlyph: 60643
     FontIconsSizeOffset: 2
     IconFilePath: C:/Workspace/Dragonfly/DragonflyPlayer/Assets/StreamingAssets\Fugui/Fonts/current/FuguiIcons.otf
-  CustomIcons: []
-  ImportFontHelperIcons: 1
+  CustomIcons:
+  - IconsFontName: icons.ttf
+    StartGlyph: 57344
+    EndGlyph: 65000
+    FontIconsSizeOffset: 2
+    IconFilePath: C:/Users/vrdtm/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/icons.ttf
+  ImportFontHelperIcons: 0
   FontHelperIcons:
     IconsFontName: Helper_Icons.ttf
     StartGlyph: 57344
     EndGlyph: 65000
     FontIconsSizeOffset: 18
-    IconFilePath: D:/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/Helper_Icons.ttf
+    IconFilePath: C:/Users/vrdtm/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/Helper_Icons.ttf
   AddBold: 0
   AddIconsToBold: 0

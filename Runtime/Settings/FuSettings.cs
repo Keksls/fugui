@@ -52,6 +52,12 @@ namespace Fu.Core
         [FuSlider(1, 90)]
         public int IdleCameraFPS = 4;
 
+        [Tooltip("The global UI Scale.")]
+        [FuTooltip("The global UI Scale.")]
+        [Range(0.5f, 2.5f)]
+        [FuSlider(0.5f, 2.5f)]
+        public float UIScale = 1f;
+
         [Tooltip("The number of FPS to be used when the UI windows are being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are being manipulated.")]
         [Range(1f, 100f)]

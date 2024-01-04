@@ -72,7 +72,7 @@ namespace Fu.Core
             Camera.cullingMask = 0;
 
             // Create RenderTexture
-            RenderTexture = new RenderTexture(Camera.pixelWidth, Camera.pixelHeight, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
+            RenderTexture = new RenderTexture(Camera.pixelWidth, Camera.pixelHeight, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
             RenderTexture.antiAliasing = 8;
             RenderTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
             RenderTexture.useDynamicScale = true;

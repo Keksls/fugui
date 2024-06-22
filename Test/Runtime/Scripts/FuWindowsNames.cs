@@ -22,7 +22,6 @@ namespace Fu.Core
                 _None,
                 _WindowsDefinitionManager,
                 _FuguiSettings,
-                _FontHelper,
                 _DockSpaceManager,
                 _Tree,
                 _Inspector,

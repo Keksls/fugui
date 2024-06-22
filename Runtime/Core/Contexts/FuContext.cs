@@ -34,8 +34,8 @@ namespace Fu.Core
         public bool AutoUpdateMouse = true;
         public bool AutoUpdateKeyboard = true;
         public bool Started { get; private set; }
-        public float Scale { get; private set; }
-        public float FontScale { get; private set; }
+        public float Scale { get; protected set; }
+        public float FontScale { get; protected set; }
         public bool RenderPrepared { get; protected set; } = false;
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
         internal FontSet DefaultFont { get; private set; }
@@ -137,11 +137,11 @@ namespace Fu.Core
             _nbFontPushOnFrameStart = Fugui.NbPushFont;
             try
             {
-                FuStyle.Default.Push(true);
-                Fugui.Push(ImGuiStyleVar.FramePadding, FuThemeManager.CurrentTheme.FramePadding);
+                //FuStyle.Default.Push(true);
+                //Fugui.Push(ImGuiStyleVar.FramePadding, FuThemeManager.CurrentTheme.FramePadding);
                 OnRender?.Invoke();
-                Fugui.PopStyle();
-                FuStyle.Default.Pop();
+                //Fugui.PopStyle();
+                //FuStyle.Default.Pop();
                 OnLastRender?.Invoke();
             }
             catch (Exception ex)
@@ -270,165 +270,150 @@ namespace Fu.Core
             string fontPath = Path.Combine(Application.streamingAssetsPath, fontConf.FontsFolder);
             // clear existing font atlas data
             IO.Fonts.Clear(); // Previous FontDefault reference no longer valid.
-                              // destroy default font pointer
+            // destroy default font pointer
             IO.NativePtr->FontDefault = default; // NULL uses Fonts[0]
+            // clear fonts
+            Fonts.Clear();
+            // clear default font
+            DefaultFont = null;
 
-            // concatenate Fugui and Custom icons config data
-            IconConfig[] iconsConfs = fontConf.FuguiIcons.Concat(fontConf.CustomIcons).Where(ic =>
-            File.Exists(Path.Combine(fontPath, ic.IconsFontName))).ToArray();
-
-            // prepare all icons confs data (range glyph pointors and files path)
-            foreach (IconConfig iconConf in iconsConfs)
+            // generate each fonts
+            foreach (FontSizeConfig font in fontConf.Fonts)
             {
-                // get and set file path
-                iconConf.IconFilePath = Path.Combine(fontPath, iconConf.IconsFontName);
-                // verify whatever icon font file exist
-                if (!File.Exists(iconConf.IconFilePath))
+                // add font to font set context's dictionary
+                Fonts[font.Size] = new FontSet(font.Size);
+
+                // get and add Regular subfonts
+                SubFontConfig[] subFonts = font.SubFonts_Regular.Where(f => File.Exists(fontPath + @"\" + f.FileName)).ToArray();
+                if (processSubFont(font, subFonts, out ImFontPtr fontPtrRegular))
                 {
-                    Debug.LogError(iconConf.IconFilePath + " does not exists");
-                    IO.Fonts.AddFontDefault();
-                    IO.Fonts.Build();
-                    return;
+                    Fonts[font.Size].Regular = fontPtrRegular;
                 }
 
-                // reset glythRangePointors before processing ranges
-                iconConf.GlyphRangePtr = IntPtr.Zero;
-
-                // get native imguiGlyphRangeBuilder ptr
-                ImFontGlyphRangesBuilder* builder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
-                // add any glyph between min and max icon range
-                for (ushort i = iconConf.StartGlyph; i <= iconConf.EndGlyph; i++)
+                // get and add Bold subfonts
+                subFonts = font.SubFonts_Bold.Where(f => File.Exists(fontPath + @"\" + f.FileName)).ToArray();
+                if (processSubFont(font, subFonts, out ImFontPtr fontPtrBold))
                 {
-                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, i);
+                    Fonts[font.Size].Bold = fontPtrRegular;
                 }
-                // create default imVector struct ref
-                ImVector vec = default;
-                // get vector ptr
-                ImVector* vecPtr = &vec;
-                // native build ranges
-                ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(builder, vecPtr);
-                // get range and keep it into managed scope (glyphRangePtr is static, because imgui lazy use glyphRangePtr)
-                iconConf.GlyphRangePtr = vecPtr->Data;
-            }
 
-            // get default native fontConfig ptr
-            ImFontConfig* conf = ImGuiNative.ImFontConfig_ImFontConfig();
-            // keep ptr into scope throw manager struct
-            ImFontConfigPtr iconConfigPtr = new ImFontConfigPtr(conf);
-            // merge icon with last added font
-            iconConfigPtr.MergeMode = true;
-            iconConfigPtr.GlyphOffset = Fugui.Settings.FontIconsOffset;
-
-            // get and process Folder and Files Paths
-            string regularFile = Path.Combine(fontPath, fontConf.RegularFontName);
-            string boldFile = Path.Combine(fontPath, fontConf.BoldFontName);
-
-            if (!File.Exists(regularFile))
-            {
-                Debug.LogError(regularFile + " does not exists");
-                IO.Fonts.AddFontDefault();
-                IO.Fonts.Build();
-                return;
-            }
-
-            if (!File.Exists(boldFile))
-            {
-                Debug.LogError(boldFile + " does not exists");
-                IO.Fonts.AddFontDefault();
-                IO.Fonts.Build();
-                return;
-            }
-
-            // add default font
-            registerFont(fontConf.DefaultSize);
-            // save default font reference
-            DefaultFont = Fonts[fontConf.DefaultSize];
-            // add additionnal fonts sizes
-            foreach (int size in fontConf.AdditionnalFontSizes)
-            {
-                registerFont(size);
-            }
-
-            // add font helper icons if needed
-            if (fontConf.ImportFontHelperIcons)
-            {
-                // get and set file path
-                fontConf.FontHelperIcons.IconFilePath = Path.Combine(fontPath, fontConf.FontHelperIcons.IconsFontName);
-
-                // verify whatever icon font file exist
-                if (!File.Exists(fontConf.FontHelperIcons.IconFilePath))
+                // get and add Italic subfonts
+                subFonts = font.SubFonts_Italic.Where(f => File.Exists(fontPath + @"\" + f.FileName)).ToArray();
+                if (processSubFont(font, subFonts, out ImFontPtr fontPtrItalic))
                 {
-                    Debug.LogError(fontConf.FontHelperIcons.IconFilePath + " does not exists");
+                    Fonts[font.Size].Italic = fontPtrItalic;
                 }
-                else
-                {
-                    // reset glythRangePointors before processing ranges
-                    fontConf.FontHelperIcons.GlyphRangePtr = IntPtr.Zero;
 
-                    // get native imguiGlyphRangeBuilder ptr
-                    ImFontGlyphRangesBuilder* builder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
-                    // add any glyph between min and max icon range
-                    for (ushort i = fontConf.FontHelperIcons.StartGlyph; i <= fontConf.FontHelperIcons.EndGlyph; i++)
+                // set  as default if needed
+                if (font.Size == fontConf.DefaultSize)
+                {
+                    DefaultFont = Fonts[font.Size];
+                }
+            }
+
+            bool processSubFont(FontSizeConfig font, SubFontConfig[] subFonts, out ImFontPtr fontPtr)
+            {
+                // ignore this font if there is no sub fonts
+                if (subFonts.Length == 0)
+                {
+                    return false;
+                }
+
+                // set fontPtr as default
+                fontPtr = default;
+
+                // add all subfonts
+                int subFontIndex = 0;
+                foreach (SubFontConfig subFont in subFonts)
+                {
+                    // determinate whatever this subFont use default glyph ranges (basicaly latin glyph ranges)
+                    bool useDefaultGlyphRange = subFont.StartGlyph == 0 && subFont.EndGlyph == 0 && subFont.CustomGlyphRanges.Length == 0;
+
+                    #region Prepare Glyphs Ranges
+                    // prepare glyph ranges if needed
+                    if (!useDefaultGlyphRange)
                     {
-                        ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, i);
-                    }
-                    // create default imVector struct ref
-                    ImVector vec = default;
-                    // get vector ptr
-                    ImVector* vecPtr = &vec;
-                    // native build ranges
-                    ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(builder, vecPtr);
-                    // get range and keep it into managed scope (glyphRangePtr is static, because imgui lazy use glyphRangePtr)
-                    fontConf.FontHelperIcons.GlyphRangePtr = vecPtr->Data;
+                        // reset glythRangePointors before processing ranges
+                        subFont.GlyphRangePtr = IntPtr.Zero;
 
-                    // add regular
-                    //ImFontPtr fontHelper = IO.Fonts.AddFontFromFileTTF(regularFile, (18 + fontConf.FontHelperIcons.FontIconsSizeOffset) * FontScale);
-                    // add icons to font
-                    ImFontPtr fontHelper = IO.Fonts.AddFontFromFileTTF(fontConf.FontHelperIcons.IconFilePath, (18 + fontConf.FontHelperIcons.FontIconsSizeOffset) * FontScale, null, fontConf.FontHelperIcons.GlyphRangePtr);
-                    // save font ptr
-                    fontConf.FontHelperIcons.FontPtr = fontHelper;
+                        // get native imguiGlyphRangeBuilder ptr
+                        ImFontGlyphRangesBuilder* builder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
+                        // add glyph chars from custom array if it's binded
+                        if (subFont.CustomGlyphRanges.Length > 0)
+                        {
+                            // add any glyph between min and max glyph range
+                            for (int i = 0; i <= subFont.CustomGlyphRanges.Length; i++)
+                            {
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, subFont.CustomGlyphRanges[i]);
+                            }
+                        }
+                        // add glyph chars from start and end bounds
+                        else
+                        {
+                            // add any glyph between min and max glyph range
+                            for (ushort i = subFont.StartGlyph; i <= subFont.EndGlyph; i++)
+                            {
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, i);
+                            }
+                        }
+                        // create default imVector struct ref
+                        ImVector vec = default;
+                        // get vector ptr
+                        ImVector* vecPtr = &vec;
+                        // native build ranges
+                        ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(builder, vecPtr);
+                        // get range and keep it into managed scope (glyphRangePtr is static, because imgui lazy use glyphRangePtr)
+                        subFont.GlyphRangePtr = vecPtr->Data;
+                    }
+                    #endregion
+
+                    #region Prepare Font Config
+                    // get default native fontConfig ptr
+                    ImFontConfig* conf = ImGuiNative.ImFontConfig_ImFontConfig();
+                    // keep ptr into scope throw manager struct
+                    subFont.FontConfigPtr = new ImFontConfigPtr(conf);
+                    // set config on merge mode
+                    subFont.FontConfigPtr.MergeMode = subFontIndex > 0;
+                    subFont.FontConfigPtr.GlyphOffset = subFont.GlyphOffset;
+                    #endregion
+
+                    // get font file path
+                    string fontFilePath = fontPath + @"\" + subFont.FileName;
+                    // add regular + icon font
+                    ImFontPtr tmpFontPtr = default;
+
+                    // add font from file without custom glyph ranges
+                    if (useDefaultGlyphRange)
+                    {
+                        tmpFontPtr = IO.Fonts.AddFontFromFileTTF(fontFilePath, (font.Size + subFont.SizeOffset) * FontScale, subFont.FontConfigPtr);
+                    }
+                    // add font from file using custom glyph ranges
+                    else
+                    {
+                        tmpFontPtr = IO.Fonts.AddFontFromFileTTF(fontFilePath, (font.Size + subFont.SizeOffset) * FontScale, subFont.FontConfigPtr, subFont.GlyphRangePtr);
+                    }
+
+                    // save font ptr if it's first time we process it
+                    if (subFontIndex == 0)
+                    {
+                        fontPtr = tmpFontPtr;
+                    }
+                    // increment subFont index
+                    subFontIndex++;
                 }
+
+                // return the main font pointer
+                return true;
+            }
+
+            // add default font if non has been loaded
+            if (Fonts.Count == 0)
+            {
+                IO.Fonts.AddFontDefault();
             }
 
             // ImGui build font atlas
             IO.Fonts.Build();
-
-            // Register a single size font (Bold + Regular + Icons)
-            unsafe void registerFont(int size)
-            {
-                if (!Fonts.ContainsKey(size))
-                {
-                    Fonts[size] = new FontSet(size);
-
-                    // add regular + icon font
-                    ImFontPtr fontRegular = IO.Fonts.AddFontFromFileTTF(regularFile, size * FontScale);
-
-                    foreach (IconConfig iconsConf in iconsConfs)
-                    {
-                        IO.Fonts.AddFontFromFileTTF(iconsConf.IconFilePath, (size + iconsConf.FontIconsSizeOffset) * FontScale, iconConfigPtr, iconsConf.GlyphRangePtr);
-                    }
-                    Fonts[size].Regular = fontRegular;
-
-                    // add bold font
-                    if (fontConf.AddBold)
-                    {
-                        ImFontPtr fontBold = IO.Fonts.AddFontFromFileTTF(boldFile, size * FontScale);
-                        if (fontConf.AddIconsToBold)
-                        {
-                            foreach (IconConfig iconsConf in iconsConfs)
-                            {
-                                IO.Fonts.AddFontFromFileTTF(iconsConf.IconFilePath, (size + iconsConf.FontIconsSizeOffset) * FontScale, iconConfigPtr, iconsConf.GlyphRangePtr);
-                            }
-                        }
-                        Fonts[size].Bold = fontBold;
-                    }
-                    // if we don't want bold font, let's set regular size ptr as bold
-                    else
-                    {
-                        Fonts[size].Bold = fontRegular;
-                    }
-                }
-            }
         }
 
         #region Drag Drop
@@ -515,6 +500,13 @@ namespace Fu.Core
             return _isDraggingPayload && _draggingPayloadID == payloadID;
         }
         #endregion
+
+        /// <summary>
+        /// Set the scale of this context
+        /// </summary>
+        /// <param name="scale">global scale of this context</param>
+        /// <param name="fontScale">font scale of this context</param>
+        public abstract void SetScale(float scale, float fontScale);
     }
 
     internal class FontSet
@@ -522,6 +514,7 @@ namespace Fu.Core
         public int Size;
         public ImFontPtr Regular;
         public ImFontPtr Bold;
+        public ImFontPtr Italic;
 
         internal FontSet(int size)
         {

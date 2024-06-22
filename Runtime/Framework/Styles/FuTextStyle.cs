@@ -72,16 +72,25 @@ namespace Fu.Framework
             if (enabled)
             {
                 Fugui.Push(ImGuiCols.Text, Text);
+                Fugui.Push(ImGuiCols.DuotonePrimaryColor, Text);
+                Color secondary = Text;
+                secondary.a = 0.4f;
+                Fugui.Push(ImGuiCols.DuotoneSecondaryColor, secondary);
             }
             else
             {
                 Fugui.Push(ImGuiCols.Text, DisabledText);
+                Color color = Text;
+                color.a = 0.7f;
+                Fugui.Push(ImGuiCols.DuotonePrimaryColor, color);
+                color.a = 0.2f;
+                Fugui.Push(ImGuiCols.DuotoneSecondaryColor, color);
             }
         }
 
         public void Pop()
         {
-            Fugui.PopColor();
+            Fugui.PopColor(3);
         }
 
         /// <summary>

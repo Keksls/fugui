@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -25,17 +26,21 @@ namespace Fu.Framework
         /// </summary>
         public static bool IsSettingLayout { get; private set; }
         public static event Action OnDockLayoutSet;
+        public static event Action OnBeforeDockLayoutSet;
         public static event Action OnDockLayoutReloaded;
+        public static event Action OnCurrentDockLayoutUpdated;
         public const string FUGUI_DOCKING_LAYOUT_EXTENTION = "fdl";
         #endregion
 
+        #region Initialization
         /// <summary>
         /// static ctor of this class
         /// </summary>
         static FuDockingLayoutManager()
         {
+            Layouts = new Dictionary<string, FuDockingLayoutDefinition>();
             //Load layouts
-            LoadLayouts();
+            LoadLayouts(Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder));
 
             // create layout file extention filter
             FlgExtensionFilter = new ExtensionFilter
@@ -63,16 +68,15 @@ namespace Fu.Framework
                 RegisteredWindowsNames.Add(windowName.ID, windowName);
             }
         }
+        #endregion
 
+        #region Loading files
         /// <summary>
         /// Load all layouts from files
         /// </summary>
         /// <returns>number of loaded layouts</returns>
-        private static int LoadLayouts()
+        public static int LoadLayouts(string folderPath)
         {
-            // get folder path
-            string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
-
             // create folder if not exists
             if (!Directory.Exists(folderPath))
             {
@@ -91,46 +95,29 @@ namespace Fu.Framework
 
             List<string> files = Directory.GetFiles(folderPath).ToList();
 
-            Layouts = new Dictionary<string, FuDockingLayoutDefinition>();
-
             // iterate on each file into folder
             foreach (string file in Directory.GetFiles(folderPath, "*.fdl"))
             {
                 string fileName = Path.GetFileNameWithoutExtension(file);
                 FuDockingLayoutDefinition tempLayout = FuDockingLayoutDefinition.ReadFromFile(file);
 
-                if (tempLayout != null)
+                if (tempLayout != null && !Layouts.ContainsKey(fileName))
                 {
                     Layouts.Add(fileName, tempLayout);
                 }
             }
 
             // Select first layout
-            if (Layouts.Count > 0)
+            if (CurrentLayout == null && Layouts.Count > 0)
             {
                 KeyValuePair<string, FuDockingLayoutDefinition> firstLayoutInfo = Layouts.ElementAt(0);
                 CurrentLayout = firstLayoutInfo.Value;
-            }
-            else
-            {
-                CurrentLayout = null;
             }
 
             OnDockLayoutReloaded?.Invoke();
 
             // return number of themes loaded
             return Layouts.Count;
-        }
-
-        /// <summary>
-        /// static method for refreshing dockspace dictionary
-        /// </summary>
-        internal static void RefreshDockSpaces()
-        {
-            if (CurrentLayout != null)
-            {
-                DefinedDockSpaces = getDictionaryFromDockSpace(CurrentLayout);
-            }
         }
 
         /// <summary>
@@ -158,7 +145,9 @@ namespace Fu.Framework
 
             return dictionary;
         }
+        #endregion
 
+        #region Auto Docking
         /// <summary>
         /// Try to dock the window to current DockingLayoutDefinition
         /// </summary>
@@ -182,11 +171,11 @@ namespace Fu.Framework
         /// <param name="window">window to dock</param>
         /// <param name="dockSpaceDefinition">dockspaceDefinition to iterate on</param>
         /// <param name="success">whatever the window has been docked</param>
-        private static void tryAutoDockWindow(FuWindow window, FuDockingLayoutDefinition dockSpaceDefinition, ref bool success)
+        private static unsafe void tryAutoDockWindow(FuWindow window, FuDockingLayoutDefinition dockSpaceDefinition, ref bool success)
         {
             foreach (ushort windowID in dockSpaceDefinition.WindowsDefinition)
             {
-                if (window.WindowName.ID == windowID)
+                if (window.WindowName.ID == windowID && ImGuiDocking.DockBuilderGetNode(dockSpaceDefinition.ID).NativePtr != null)
                 {
                     ImGuiDocking.DockBuilderDockWindow(window.ID, dockSpaceDefinition.ID);
                     success = true;
@@ -202,34 +191,38 @@ namespace Fu.Framework
                 tryAutoDockWindow(window, child, ref success);
             }
         }
+        #endregion
 
+        #region Applying layouts
         /// <summary>
         /// Sets the layout of the DockingLayout manager.
         /// </summary>
         public static void SetConfigurationLayout()
         {
-            SetLayout(null, "FuguiConfigurationLayout");
+            SetLayout((FuDockingLayoutDefinition)null, false);
         }
 
         /// <summary>
         /// Sets the layout of the UI windows to the specified layout.
         /// </summary>
         /// <param name="layoutName">The name of the layout to be set.</param>
-        public static void SetLayout(string layoutName)
+        /// <param name="getOnlyAutoInstantiated">Whatever you only want windows in this layout that will auto instantiated by layout</param>
+        public static void SetLayout(string layoutName, bool getOnlyAutoInstantiated = true)
         {
             if (!Layouts.ContainsKey(layoutName))
             {
                 return;
             }
 
-            SetLayout(Layouts[layoutName], layoutName);
+            SetLayout(Layouts[layoutName], getOnlyAutoInstantiated);
         }
 
         /// <summary>
         /// Sets the layout of the UI windows to the specified layout.
         /// </summary>
         /// <param name="layout">The layout to be set.</param>
-        public static void SetLayout(FuDockingLayoutDefinition layout, string layoutName)
+        /// <param name="getOnlyAutoInstantiated">Whatever you only want windows in this layout that will auto instantiated by layout</param>
+        public static void SetLayout(FuDockingLayoutDefinition layout, bool getOnlyAutoInstantiated = true)
         {
             // check whatever the layout manager knows the custom application windows names
             if (RegisteredWindowsNames == null)
@@ -245,6 +238,7 @@ namespace Fu.Framework
                 return;
             }
 
+            OnBeforeDockLayoutSet?.Invoke();
             Fugui.ShowPopupMessage("Setting Layout...");
             IsSettingLayout = true;
 
@@ -256,11 +250,11 @@ namespace Fu.Framework
             {
                 if (layout == null)
                 {
-                    setDockSpaceConfigurationLayout(layoutName);
+                    setDockSpaceConfigurationLayout();
                 }
                 else
                 {
-                    createDynamicLayout(layout);
+                    createDynamicLayout(layout, getOnlyAutoInstantiated);
                 }
             });
         }
@@ -269,9 +263,10 @@ namespace Fu.Framework
         /// Method that creates a dynamic layout based on the specified UIDockSpaceDefinition. It first retrieves a list of all the windows definitions associated with the dock space and its children recursively, then creates those windows asynchronously, and finally invokes a callback function to complete the layout creation process.
         /// </summary>
         /// <param name="dockSpaceDefinition">The FuguiDockSpaceDefinition to use for creating the layout</param>
-        private static void createDynamicLayout(FuDockingLayoutDefinition dockSpaceDefinition)
+        /// <param name="getOnlyAutoInstantiated">Whatever you only want windows in this layout that will auto instantiated by layout</param>
+        private static void createDynamicLayout(FuDockingLayoutDefinition dockSpaceDefinition, bool getOnlyAutoInstantiated)
         {
-            List<FuWindowName> windowsToGet = dockSpaceDefinition.GetAllWindowsNames(true);
+            List<FuWindowName> windowsToGet = dockSpaceDefinition.GetAllWindowsNames(getOnlyAutoInstantiated);
 
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
             Fugui.CreateWindowsAsync(windowsToGet, (windows) =>
@@ -282,7 +277,7 @@ namespace Fu.Framework
                     dockSpaceDefinition.ID = MainID;
 
                     createDocking(windows, dockSpaceDefinition);
-                    selectFirstTabOnEachDockSpaces(windows, dockSpaceDefinition);
+                    selectFirstTabOnEachDockSpaces(dockSpaceDefinition);
                     ImGuiDocking.DockBuilderFinish(MainID);
                     CurrentLayout = dockSpaceDefinition;
                     endSettingLayout();
@@ -295,7 +290,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="windows">The windows created</param>
         /// <param name="layout">The UIDockSpaceDefinition object representing the layout to create</param>
-        private static void createDocking(Dictionary<FuWindowName, FuWindow> windows, FuDockingLayoutDefinition layout)
+        private static void createDocking(List<(FuWindowName, FuWindow)> windows, FuDockingLayoutDefinition layout)
         {
             switch (layout.Orientation)
             {
@@ -328,9 +323,10 @@ namespace Fu.Framework
             {
                 foreach (ushort windowID in layout.WindowsDefinition)
                 {
-                    if (windows.ContainsKey(RegisteredWindowsNames[windowID]))
+                    var ids = windows.Where(w => w.Item1.Equals(RegisteredWindowsNames[windowID])).Select(w => w.Item2.ID);
+                    foreach (string id in ids)
                     {
-                        ImGuiDocking.DockBuilderDockWindow(windows[RegisteredWindowsNames[windowID]].ID, layout.ID);
+                        ImGuiDocking.DockBuilderDockWindow(id, layout.ID);
                     }
                 }
             }
@@ -341,7 +337,12 @@ namespace Fu.Framework
             }
         }
 
-        private static void selectFirstTabOnEachDockSpaces(Dictionary<FuWindowName, FuWindow> windows, FuDockingLayoutDefinition layout)
+        /// <summary>
+        /// Get and force focus to select each first tab on each dock spaces (first window of each nodes)
+        /// </summary>
+        /// <param name="windows">windows to check</param>
+        /// <param name="layout">applyed layout</param>
+        private static void selectFirstTabOnEachDockSpaces(FuDockingLayoutDefinition layout)
         {
             if (layout.WindowsDefinition.Count > 0)
             {
@@ -353,7 +354,7 @@ namespace Fu.Framework
             }
             foreach (FuDockingLayoutDefinition child in layout.Children)
             {
-                selectFirstTabOnEachDockSpaces(windows, child);
+                selectFirstTabOnEachDockSpaces(child);
             }
         }
 
@@ -405,7 +406,7 @@ namespace Fu.Framework
         /// <summary>
         /// Sets the "dockspace configuration" layout for the UI windows.
         /// </summary>
-        private static void setDockSpaceConfigurationLayout(string layoutName)
+        private static void setDockSpaceConfigurationLayout()
         {
             List<FuWindowName> windowsToGet = new List<FuWindowName>
             {
@@ -426,15 +427,20 @@ namespace Fu.Framework
                 uint left;
                 uint right;
                 ImGuiDocking.DockBuilderSplitNode(Dockspace_id, ImGuiDir.Left, 0.7f, out left, out right);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuSystemWindowsNames.DockSpaceManager].ID, left);
-                ImGuiDocking.DockBuilderDockWindow(windows[FuSystemWindowsNames.WindowsDefinitionManager].ID, right);
+
+                var id = windows.First(w => w.Item1.Equals(FuSystemWindowsNames.DockSpaceManager)).Item2.ID;
+                ImGuiDocking.DockBuilderDockWindow(id, left);
+                id = windows.First(w => w.Item1.Equals(FuSystemWindowsNames.DockSpaceManager)).Item2.ID;
+                ImGuiDocking.DockBuilderDockWindow(id, right);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 
                 CurrentLayout = null;
                 endSettingLayout();
             });
         }
+        #endregion
 
+        #region Files generation
         /// <summary>
         /// Write some string content into a file
         /// </summary>
@@ -501,7 +507,9 @@ namespace Fu.Framework
 
             return sb.ToString();
         }
+        #endregion
 
+        #region Binding helpers
         /// <summary>
         /// Method that binds a window definition to a dock space by its name 
         /// </summary>
@@ -560,6 +568,7 @@ namespace Fu.Framework
                 CurrentLayout.RemoveWindowsDefinitionInChildren(windowDefID);
             }
         }
+        #endregion
 
         #region Create / Save / Delete
         /// <summary>
@@ -580,21 +589,43 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// get first available layout name NOT already used
+        /// </summary>
+        /// <param name="name">name to check</param>
+        /// <returns>lowest layout name (ended by _X if needed)</returns>
+        public static string GetAvailableLayoutName(string name)
+        {
+            if (!Layouts.ContainsKey(name))
+            {
+                return name;
+            }
+
+            string avail = null;
+            int id = 0;
+            while (avail == null)
+            {
+                if (!Layouts.ContainsKey(name + "_" + id))
+                {
+                    avail = name + "_" + id;
+                }
+                id++;
+            }
+            return avail;
+        }
+
+        /// <summary>
         /// Delete currentlky selected layout
         /// </summary>
-        internal static void deleteSelectedLayout()
+        public static void DeleteLayout(string folderPath, string layoutName, Action callback = null)
         {
-            if (CurrentLayout != null)
+            if (Layouts.ContainsKey(layoutName))
             {
-                // get folder path
-                string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
-
                 // create folder if not exists
                 if (Directory.Exists(folderPath))
                 {
                     try
                     {
-                        string filePathToDelete = Path.Combine(folderPath, CurrentLayout.Name) + "." + FUGUI_DOCKING_LAYOUT_EXTENTION;
+                        string filePathToDelete = Path.Combine(folderPath, layoutName) + "." + FUGUI_DOCKING_LAYOUT_EXTENTION;
 
                         if (File.Exists(filePathToDelete))
                         {
@@ -602,10 +633,16 @@ namespace Fu.Framework
                             {
                                 using (FuLayout layout = new FuLayout())
                                 {
-                                    layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrapp);
+                                    layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrap);
                                 }
-                            }, FuModalSize.Medium, new FuModalButton("Yes", confirmDeleteSelectedLayoutFile, FuButtonStyle.Danger),
-                            new FuModalButton("No", null, FuButtonStyle.Default));
+                                if (Fugui.MainContainer.Keyboard.GetKeyDown(FuKeysCode.Enter))
+                                {
+                                    confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback);
+                                    Fugui.CloseModal();
+                                }
+                            }, FuModalSize.Medium,
+                            new FuModalButton("Yes", () => confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback), FuButtonStyle.Danger, FuKeysCode.Enter),
+                            new FuModalButton("No", null, FuButtonStyle.Default, FuKeysCode.Escape));
                         }
                     }
                     catch (Exception ex)
@@ -621,12 +658,12 @@ namespace Fu.Framework
         /// Callbacked used for user response after delete layout file
         /// </summary>
         /// <param name="result">User result</param>
-        private static void confirmDeleteSelectedLayoutFile()
+        private static void confirmDeleteSelectedLayoutFile(string folderPath, string layoutName, Action callback)
         {
             try
             {
-                string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
-                File.Delete(Path.Combine(folderPath, CurrentLayout.Name + "." + FUGUI_DOCKING_LAYOUT_EXTENTION));
+                File.Delete(Path.Combine(folderPath, layoutName + "." + FUGUI_DOCKING_LAYOUT_EXTENTION));
+                Layouts.Remove(layoutName);
                 Fugui.Notify("Layout deleted", type: StateType.Success, duration: 2f);
             }
             catch (Exception ex)
@@ -636,32 +673,15 @@ namespace Fu.Framework
             }
             finally
             {
-                LoadLayouts();
-            }
-        }
-
-        /// <summary>
-        /// Save selected layout
-        /// </summary>
-        internal static void saveSelectedLayout()
-        {
-            if (CurrentLayout != null)
-            {
-                saveLayoutFile(CurrentLayout);
-
-                //Reload layouts
-                LoadLayouts();
+                callback?.Invoke();
             }
         }
 
         /// <summary>
         /// Used to format selected layout to FuGui layout configuration file 
         /// </summary>
-        internal static void saveLayoutFile(FuDockingLayoutDefinition dockingLayout)
+        public static void SaveLayoutFile(string folderPath, FuDockingLayoutDefinition dockingLayout)
         {
-            // get folder path
-            string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder);
-
             // create folder if not exists
             if (!Directory.Exists(folderPath))
             {
@@ -687,6 +707,269 @@ namespace Fu.Framework
         internal static bool checkLayoutName(string layoutName)
         {
             return layoutName.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
+        }
+        #endregion
+
+        #region Generate Current Layout
+        /// <summary>
+        /// Get the definition of the current layout
+        /// </summary>
+        /// <returns>current custom FuDockingLayoutDefinition OR null if failed</returns>
+        public static void GenerateCurrentLayout(Action<FuDockingLayoutDefinition> callback)
+        {
+            Thread thread = new Thread(() =>
+            {
+                // declare working variables
+                HashSet<uint> dockNodeDone = new HashSet<uint>();
+                List<dockSpaceData> dockSpaceDatas = new List<dockSpaceData>();
+                Vector2 windowOffset = new Vector2(2f, 2f);
+
+                // display popup message
+                Fugui.ShowPopupMessage("Saving Layout...");
+
+                // Save Focused windows
+                List<FuWindow> FocusedWindows = new List<FuWindow>();
+                foreach (FuWindow win in Fugui.UIWindows.Values)
+                {
+                    if (win.IsVisible)
+                    {
+                        FocusedWindows.Add(win);
+                    }
+                }
+
+                // force focus all windows one after another
+                int startFrame = ImGui.GetFrameCount();
+                foreach (FuWindow win in Fugui.UIWindows.Values)
+                {
+                    win.ForceFocusOnNextFrame();
+                    win.ForceDraw();
+                    while (ImGui.GetFrameCount() <= startFrame + 2)
+                    {
+                        Thread.Sleep(10);
+                    }
+                }
+
+                // restore focused windows one after another
+                startFrame = ImGui.GetFrameCount();
+                foreach (FuWindow win in FocusedWindows)
+                {
+                    win.ForceFocusOnNextFrame();
+                    win.ForceDraw();
+                    while (ImGui.GetFrameCount() <= startFrame + 2)
+                    {
+                        Thread.Sleep(10);
+                    }
+                }
+
+                // get open windows rects by dock nodes
+                foreach (FuWindow window in Fugui.UIWindows.Values)
+                {
+                    if (window.IsDocked && window.IsOpened)
+                    {
+                        if (dockNodeDone.Contains(window.CurrentDockID))
+                        {
+                            continue;
+                        }
+
+                        dockNodeDone.Add(window.CurrentDockID);
+                        dockSpaceDatas.Add(new dockSpaceData()
+                        {
+                            Rect = new Rect(window.LocalPosition, window.Size + windowOffset),
+                            WindowNames = new List<FuWindowName>()
+                        });
+                        foreach (FuWindow win in Fugui.UIWindows.Values)
+                        {
+                            if (win.IsDocked && win.CurrentDockID == window.CurrentDockID)
+                            {
+                                dockSpaceDatas[dockSpaceDatas.Count - 1].WindowNames.Add(win.WindowName);
+                            }
+                        }
+                    }
+                }
+
+                int nbTry = 0;
+                // determinate binary tree
+                while (dockSpaceDatas.Count > 1 && nbTry < 100)
+                {
+                    // order dockSpaceDatas by Rect surface
+                    dockSpaceDatas = dockSpaceDatas.OrderBy(x => x.Rect.size.x * x.Rect.size.y).ToList();
+
+                    for (int i = 0; i < dockSpaceDatas.Count; i++)
+                    {
+                        // get first leaf
+                        dockSpaceData leaf = dockSpaceDatas[i];
+
+                        // prepare parent dockSpaceData
+                        dockSpaceData parentDockSpace = new dockSpaceData();
+
+                        // find neighbour
+                        dockSpaceData neighbour = null;
+
+                        // check right neighbour that have same height
+                        foreach (dockSpaceData otherLeaf in dockSpaceDatas)
+                        {
+                            if (otherLeaf.Rect.min.x == leaf.Rect.min.x + leaf.Rect.size.x && otherLeaf.Rect.min.y == leaf.Rect.min.y && otherLeaf.Rect.size.y == leaf.Rect.size.y)
+                            {
+                                neighbour = otherLeaf;
+                                parentDockSpace.Rect = new Rect(new Vector2(Mathf.Min(leaf.Rect.min.x, neighbour.Rect.min.x), leaf.Rect.min.y), new Vector2(leaf.Rect.size.x + neighbour.Rect.size.x, leaf.Rect.size.y));
+                                parentDockSpace.SplitSpaceRatio = leaf.Rect.size.x / parentDockSpace.Rect.size.x;
+                                parentDockSpace.Dir = UIDockSpaceOrientation.Horizontal;
+                                parentDockSpace.Children = new List<dockSpaceData>()
+                        {
+                            leaf,
+                            neighbour
+                        };
+                                break;
+                            }
+                        }
+                        // check left neighbour that have same height
+                        if (neighbour == null)
+                        {
+                            foreach (dockSpaceData otherLeaf in dockSpaceDatas)
+                            {
+                                if (otherLeaf.Rect.min.x + otherLeaf.Rect.size.x == leaf.Rect.min.x && otherLeaf.Rect.min.y == leaf.Rect.min.y && otherLeaf.Rect.size.y == leaf.Rect.size.y)
+                                {
+                                    neighbour = otherLeaf;
+                                    parentDockSpace.Rect = new Rect(new Vector2(Mathf.Min(leaf.Rect.min.x, neighbour.Rect.min.x), leaf.Rect.min.y), new Vector2(leaf.Rect.size.x + neighbour.Rect.size.x, leaf.Rect.size.y));
+                                    parentDockSpace.SplitSpaceRatio = neighbour.Rect.size.x / parentDockSpace.Rect.size.x;
+                                    parentDockSpace.Dir = UIDockSpaceOrientation.Horizontal;
+                                    parentDockSpace.Children = new List<dockSpaceData>()
+                            {
+                                neighbour,
+                                leaf
+                            };
+                                    break;
+                                }
+                            }
+                        }
+                        // check top neighbour that have same width
+                        if (neighbour == null)
+                        {
+                            foreach (dockSpaceData otherLeaf in dockSpaceDatas)
+                            {
+                                if (otherLeaf.Rect.min.x == leaf.Rect.min.x && otherLeaf.Rect.min.y + otherLeaf.Rect.size.y == leaf.Rect.min.y && otherLeaf.Rect.size.x == leaf.Rect.size.x)
+                                {
+                                    neighbour = otherLeaf;
+                                    parentDockSpace.Rect = new Rect(new Vector2(leaf.Rect.min.x, Mathf.Min(leaf.Rect.min.y, neighbour.Rect.min.y)), new Vector2(leaf.Rect.size.x, leaf.Rect.size.y + neighbour.Rect.size.y));
+                                    parentDockSpace.SplitSpaceRatio = neighbour.Rect.size.y / parentDockSpace.Rect.size.y;
+                                    parentDockSpace.Dir = UIDockSpaceOrientation.Vertical;
+                                    parentDockSpace.Children = new List<dockSpaceData>()
+                            {
+                                neighbour,
+                                leaf
+                            };
+                                    break;
+                                }
+                            }
+                        }
+                        // check bottom neighbour that have same width
+                        if (neighbour == null)
+                        {
+                            foreach (dockSpaceData otherLeaf in dockSpaceDatas)
+                            {
+                                if (otherLeaf.Rect.min.x == leaf.Rect.min.x && otherLeaf.Rect.min.y == leaf.Rect.min.y + leaf.Rect.size.y && otherLeaf.Rect.size.x == leaf.Rect.size.x)
+                                {
+                                    neighbour = otherLeaf;
+                                    parentDockSpace.Rect = new Rect(new Vector2(leaf.Rect.min.x, Mathf.Min(leaf.Rect.min.y, neighbour.Rect.min.y)), new Vector2(leaf.Rect.size.x, leaf.Rect.size.y + neighbour.Rect.size.y));
+                                    parentDockSpace.SplitSpaceRatio = leaf.Rect.size.y / parentDockSpace.Rect.size.y;
+                                    parentDockSpace.Dir = UIDockSpaceOrientation.Vertical;
+                                    parentDockSpace.Children = new List<dockSpaceData>()
+                            {
+                                leaf,
+                                neighbour
+                            };
+                                    break;
+                                }
+                            }
+                        }
+
+                        // replace the two leafs by parent in list and set them as children
+                        if (neighbour != null)
+                        {
+                            dockSpaceDatas.Remove(leaf);
+                            dockSpaceDatas.Remove(neighbour);
+                            dockSpaceDatas.Add(parentDockSpace);
+                            break;
+                        }
+                        else
+                        {
+                            // no neighbour found, this leaf is a root
+                            dockSpaceDatas.Remove(leaf);
+                            dockSpaceDatas.Add(leaf);
+                        }
+                    }
+                    nbTry++;
+                }
+
+                // we failed retriving layout, let's return null layout
+                if (dockSpaceDatas.Count > 1)
+                {
+                    Fugui.ClosePopupMessage();
+                    callback?.Invoke(null);
+                    return;
+                }
+
+                // get root node
+                dockSpaceData rootDockNode = dockSpaceDatas[0];
+
+                // recursively convert dockSpaceData to DockingLayoutDefinition
+                FuDockingLayoutDefinition rootDockingLayoutDefinition = new FuDockingLayoutDefinition("TempLayout", 0);
+                convertDockSpaceDataToDockingLayoutDefinition(rootDockNode, rootDockingLayoutDefinition);
+                Fugui.ClosePopupMessage();
+
+                // callback that return generated layout
+                callback?.Invoke(rootDockingLayoutDefinition.Children[0]);
+            });
+            thread.Start();
+        }
+
+        /// <summary>
+        /// Convert a dockSpaceData to a DockingLayoutDefinition recursively all children
+        /// </summary>
+        /// <param name="dockSpaceData">source dockspacedata</param>
+        /// <param name="parent">target FuDockingLayoutDefinition</param>
+        private static void convertDockSpaceDataToDockingLayoutDefinition(dockSpaceData dockSpaceData, FuDockingLayoutDefinition parent)
+        {
+            // create new DockingLayoutDefinition
+            FuDockingLayoutDefinition newDockingLayoutDefinition = new FuDockingLayoutDefinition("DockSpace_" + dockSpaceData.Rect.ToString(), 0);
+            newDockingLayoutDefinition.ID = Fugui.MainContainer.Dockspace_id;
+            newDockingLayoutDefinition.Name = "DockSpace_" + dockSpaceData.Rect.ToString();
+            newDockingLayoutDefinition.Orientation = dockSpaceData.Dir;
+            newDockingLayoutDefinition.Proportion = dockSpaceData.SplitSpaceRatio;
+
+            // add windows
+            if (dockSpaceData.WindowNames != null)
+            {
+                foreach (FuWindowName windowName in dockSpaceData.WindowNames)
+                {
+                    newDockingLayoutDefinition.WindowsDefinition.Add(windowName.ID);
+                }
+            }
+            else
+            {
+                newDockingLayoutDefinition.WindowsDefinition = new List<ushort>();
+            }
+
+            // add to parent
+            parent.Children.Add(newDockingLayoutDefinition);
+
+            // recursively convert children
+            if (dockSpaceData.Children != null)
+            {
+                foreach (dockSpaceData child in dockSpaceData.Children)
+                {
+                    convertDockSpaceDataToDockingLayoutDefinition(child, newDockingLayoutDefinition);
+                }
+            }
+        }
+
+        private class dockSpaceData
+        {
+            public float SplitSpaceRatio;
+            public UIDockSpaceOrientation Dir;
+            public List<dockSpaceData> Children;
+            public Rect Rect;
+            public List<FuWindowName> WindowNames;
         }
         #endregion
     }

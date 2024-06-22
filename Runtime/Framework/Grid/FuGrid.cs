@@ -1,7 +1,6 @@
 ﻿using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -22,7 +21,7 @@ namespace Fu.Framework
         // Flag to indicate if labels should always have tooltip
         private bool _alwaysAutoTooltipsOnLabels = false;
         // Flag to indicate if the grid has been created
-        private bool _gridCreated = false;
+        internal bool _gridCreated = false;
         // The minimum line height for elements in the grid
         private float _minLineHeight = 20f;
         // The Y padding to draw on top of the next element of the list
@@ -45,7 +44,7 @@ namespace Fu.Framework
         /// <param name="rowsPadding">spaces in pixel between rows</param>
         /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public FuGrid(string ID, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f, float width = -1f) : base()
+        public FuGrid(string ID, FuGridFlag flags = FuGridFlag.Default, float cellPadding = -1f, float rowsPadding = -1f, float outterPadding = 4f, float width = -1f) : base()
         {
             _ID = ID;
             _autoDrawLabel = !flags.HasFlag(FuGridFlag.NoAutoLabels);
@@ -64,7 +63,7 @@ namespace Fu.Framework
         /// <param name="rowsPadding">spaces in pixel between rows</param>
         /// <param name="cellPadding">spaces in pixel between cells</param>
         /// <param name="outterPadding">grid outter padding. Represent the space at the Left and Right of the Grid</param>
-        public FuGrid(string ID, FuGridDefinition gridDef, FuGridFlag flags = FuGridFlag.Default, float cellPadding = 8f, float rowsPadding = 2f, float outterPadding = 4f, float width = -1f) : base()
+        public FuGrid(string ID, FuGridDefinition gridDef, FuGridFlag flags = FuGridFlag.Default, float cellPadding = -1f, float rowsPadding = -1f, float outterPadding = 4f, float width = -1f) : base()
         {
             _ID = ID;
             _autoDrawLabel = !flags.HasFlag(FuGridFlag.NoAutoLabels);
@@ -142,7 +141,15 @@ namespace Fu.Framework
         /// <param name="rowPadding">rows padding</param>
         private void setGrid(bool linesBg, float cellPadding, float rowPadding, float outterPadding, float width)
         {
-            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(cellPadding * Fugui.CurrentContext.Scale, rowPadding * Fugui.CurrentContext.Scale));
+            if (cellPadding < 0f)
+            {
+                cellPadding = FuThemeManager.CellPadding.x;
+            }
+            if (rowPadding < 0f)
+            {
+                rowPadding = FuThemeManager.CellPadding.y;
+            }
+            ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
             _gridCreated = _currentGridDef.SetupTable(_ID, cellPadding, outterPadding, linesBg, ref _isResponsivelyResized, width);
         }
         #endregion
@@ -225,7 +232,7 @@ namespace Fu.Framework
             {
                 ImGuiNative.igEndTable();
             }
-            Fugui.PopStyle();
+            ImGui.PopStyleVar();
             disposed = true;
         }
         #endregion

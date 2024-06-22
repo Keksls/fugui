@@ -15,7 +15,7 @@ namespace Fu.Framework
         public Color DisabledButton { get; private set; }
         // additional styles
         public FuTextStyle TextStyle { get; private set; }
-        private Vector2 _framePadding;
+        public Vector2 FramePadding { get; private set; }
 
         #region Pressets
         static FuButtonStyle _defaultButtonStyle;
@@ -81,7 +81,7 @@ namespace Fu.Framework
             ButtonActive = buttonActive;
             DisabledButton = buttonDisabled;
             TextStyle = textStyle;
-            _framePadding = framePadding;
+            FramePadding = framePadding;
         }
         #endregion
 
@@ -125,8 +125,8 @@ namespace Fu.Framework
                 Fugui.Push(ImGuiCols.ButtonHovered, DisabledButton); // push the disabled button hovered color onto the stack
                 Fugui.Push(ImGuiCols.ButtonActive, DisabledButton); // push the disabled button active color onto the stack
             }
-            Fugui.Push(ImGuiStyleVar.FramePadding, _framePadding * Fugui.CurrentContext.Scale); // push the frame padding onto the stack
-            Fugui.Push(ImGuiStyleVar.FrameBorderSize, 0.5f * Fugui.CurrentContext.Scale); // push the frame border size onto the stack
+            Fugui.Push(ImGuiStyleVar.FramePadding, FramePadding); // push the frame padding onto the stack
+            Fugui.Push(ImGuiStyleVar.FrameBorderSize, 0.5f); // push the frame border size onto the stack
             TextStyle.Push(enabled); // push the text style onto the stack
         }
 
@@ -149,7 +149,7 @@ namespace Fu.Framework
             // default button style
             _defaultButtonStyle = new FuButtonStyle()
             {
-                _framePadding = new Vector2(8f, 4f),
+                FramePadding = new Vector2(8f, 4f),
                 Button = FuThemeManager.GetColor(FuColors.Button),
                 ButtonHovered = FuThemeManager.GetColor(FuColors.ButtonHovered),
                 ButtonActive = FuThemeManager.GetColor(FuColors.ButtonActive),
@@ -159,7 +159,7 @@ namespace Fu.Framework
             // transparent button style
             _transparent = new FuButtonStyle()
             {
-                _framePadding = new Vector2(8f, 4f),
+                FramePadding = new Vector2(8f, 4f),
                 Button = Vector4.zero,
                 ButtonHovered = Vector4.zero,
                 ButtonActive = Vector4.zero,
@@ -169,7 +169,7 @@ namespace Fu.Framework
             // blue button style
             _highlightButtonStyle = new FuButtonStyle()
             {
-                _framePadding = new Vector2(8f, 4f),
+                FramePadding = new Vector2(8f, 4f),
                 Button = FuThemeManager.GetColor(FuColors.Highlight),
                 ButtonHovered = FuThemeManager.GetColor(FuColors.HighlightHovered),
                 ButtonActive = FuThemeManager.GetColor(FuColors.HighlightActive),
@@ -179,7 +179,7 @@ namespace Fu.Framework
             // selected
             _selectedButtonStyle = new FuButtonStyle()
             {
-                _framePadding = new Vector2(8f, 4f),
+                FramePadding = new Vector2(8f, 4f),
                 Button = FuThemeManager.GetColor(FuColors.Selected),
                 ButtonHovered = FuThemeManager.GetColor(FuColors.SelectedHovered),
                 ButtonActive = FuThemeManager.GetColor(FuColors.SelectedActive),
@@ -189,7 +189,7 @@ namespace Fu.Framework
             // danger
             _dangerButtonStyle = new FuButtonStyle()
             {
-                _framePadding = new Vector2(8f, 4f),
+                FramePadding = new Vector2(8f, 4f),
                 Button = FuThemeManager.GetColor(FuColors.BackgroundDanger),
                 ButtonHovered = FuThemeManager.GetColor(FuColors.BackgroundDanger) * 0.9f,
                 ButtonActive = FuThemeManager.GetColor(FuColors.BackgroundDanger) * 0.8f,
@@ -199,7 +199,7 @@ namespace Fu.Framework
             // info
             _infoButtonStyle = new FuButtonStyle()
             {
-                _framePadding = new Vector2(8f, 4f),
+                FramePadding = new Vector2(8f, 4f),
                 Button = FuThemeManager.GetColor(FuColors.BackgroundInfo),
                 ButtonHovered = FuThemeManager.GetColor(FuColors.BackgroundInfo) * 0.9f,
                 ButtonActive = FuThemeManager.GetColor(FuColors.BackgroundInfo) * 0.8f,
@@ -209,7 +209,7 @@ namespace Fu.Framework
             // success
             _successButtonStyle = new FuButtonStyle()
             {
-                _framePadding = new Vector2(8f, 4f),
+                FramePadding = new Vector2(8f, 4f),
                 Button = FuThemeManager.GetColor(FuColors.BackgroundSuccess),
                 ButtonHovered = FuThemeManager.GetColor(FuColors.BackgroundSuccess) * 0.9f,
                 ButtonActive = FuThemeManager.GetColor(FuColors.BackgroundSuccess) * 0.8f,
@@ -219,7 +219,7 @@ namespace Fu.Framework
             // warning
             _warningButtonStyle = new FuButtonStyle()
             {
-                _framePadding = new Vector2(8f, 4f),
+                FramePadding = new Vector2(8f, 4f),
                 Button = FuThemeManager.GetColor(FuColors.BackgroundWarning),
                 ButtonHovered = FuThemeManager.GetColor(FuColors.BackgroundWarning) * 0.9f,
                 ButtonActive = FuThemeManager.GetColor(FuColors.BackgroundWarning) * 0.8f,
@@ -229,7 +229,7 @@ namespace Fu.Framework
             // collapsable
             _collapsableButtonStyle = new FuButtonStyle()
             {
-                _framePadding = new Vector2(8f, 3f),
+                FramePadding = new Vector2(8f, 3f),
                 Button = FuThemeManager.GetColor(FuColors.Collapsable),
                 ButtonHovered = FuThemeManager.GetColor(FuColors.CollapsableHovered),
                 ButtonActive = FuThemeManager.GetColor(FuColors.CollapsableActive),

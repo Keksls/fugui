@@ -119,7 +119,7 @@ namespace Fu.Framework
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
-            
+
             bool colValue = flags.HasFlag(FuToggleFlags.SwitchState) ? false : value;
             Vector4 BGColor = colValue ? FuThemeManager.GetColor(FuColors.Selected) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg];
             Vector4 KnobColor = FuThemeManager.GetColor(FuColors.Knob);
@@ -140,6 +140,11 @@ namespace Fu.Framework
                 BGColor = colValue ? FuThemeManager.GetColor(FuColors.SelectedHovered) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBgHovered];
             }
             Vector4 BorderColor = BGColor * 0.66f;
+
+            if (!value && !flags.HasFlag(FuToggleFlags.SwitchState))
+            {
+                BorderColor = FuThemeManager.GetColor(FuColors.Text, LastItemDisabled ? 0.2f : 0.4f);
+            }
 
             // draw background
             drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(BGColor), 99);

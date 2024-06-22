@@ -11,7 +11,8 @@ namespace Fu
         private static bool _notifyPanelOpen = true;
         private static List<FuguiNotification> _notifications = new List<FuguiNotification>();
         private static Vector2 _notificationPadding = new Vector2(8f, 8f);
-        private static Vector2 _panelSize = new Vector2(256f, 256f);
+        private static Vector2 _panelSize = new Vector2(256f + 8f, 256f);
+        private static bool _hasSpawn = false;
 
         /// <summary>
         /// Notify the user with a notification PopUp
@@ -27,6 +28,16 @@ namespace Fu
             {
                 duration = Settings.NotificationDefaultDuration;
             }
+
+            // do not add notif if already exists
+            foreach (FuguiNotification notification in _notifications)
+            {
+                if (notification.Title == title && notification.Message == message && notification.Type == type)
+                {
+                    notification.AddStackedNotification(duration);
+                    return;
+                }
+            }
             // check whatever title and message are null
             if (string.IsNullOrEmpty(title) && string.IsNullOrEmpty(message))
             {
@@ -35,6 +46,7 @@ namespace Fu
             }
             // add notification object to list
             _notifications.Add(new FuguiNotification(title, message, type, duration));
+            _hasSpawn = false;
         }
 
         /// <summary>
@@ -48,6 +60,7 @@ namespace Fu
             // do not do anything if there is nothing to draw
             if (_notifications.Count == 0)
             {
+                _hasSpawn = false;
                 return;
             }
 
@@ -60,6 +73,11 @@ namespace Fu
             // place the notifyPanel
             ImGui.SetNextWindowSize(_panelSize, ImGuiCond.Always);
             ImGui.SetNextWindowPos(panelPosition, ImGuiCond.Always);
+            if (!_hasSpawn)
+            {
+                ImGui.SetNextWindowFocus();
+                _hasSpawn = true;
+            }
             // set style and color of the notifyPanel
             Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
             Push(ImGuiCols.WindowBg, Vector4.zero);
@@ -68,7 +86,7 @@ namespace Fu
             ImGui.Begin("notifyPanel", ref _notifyPanelOpen, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize);
             {
                 // get the notifyPanel draw list
-                ImDrawListPtr drawList = ImGui.GetForegroundDrawList();
+                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
                 // get the current position of the drawing cursor (to get computed height of the wole panel
                 float cursorPos = ImGui.GetCursorScreenPos().y;
                 // iterate on notifications list to draw theme
@@ -82,7 +100,7 @@ namespace Fu
                     }
                 }
                 // calculate notifyPanel size according to the cursorPosition offset
-                _panelSize = new Vector2(Settings.NotifyPanelWidth, ImGui.GetCursorScreenPos().y - cursorPos + 8f);
+                _panelSize = new Vector2(Settings.NotifyPanelWidth * container.Context.Scale, ImGui.GetCursorScreenPos().y - cursorPos + 8f);
             }
             // end drawing the notifyPanel
             ImGui.End();
@@ -112,28 +130,28 @@ namespace Fu
                     localPosition = Vector2.zero; // position at top left corner
                     break;
                 case FuOverlayAnchorLocation.TopCenter:
-                    localPosition = new Vector2((container.Size.x - _panelSize.x - _notificationPadding.x) * 0.5f, _notificationPadding.y); // position at top center
+                    localPosition = new Vector2((container.Size.x - _panelSize.x - _notificationPadding.x * container.Context.Scale) * 0.5f, _notificationPadding.y * container.Context.Scale); // position at top center
                     break;
                 case FuOverlayAnchorLocation.TopRight:
-                    localPosition = new Vector2(container.Size.x - _panelSize.x - _notificationPadding.x, _notificationPadding.y); // position at top right corner
+                    localPosition = new Vector2(container.Size.x - _panelSize.x - _notificationPadding.x * container.Context.Scale, _notificationPadding.y * container.Context.Scale); // position at top right corner
                     break;
                 case FuOverlayAnchorLocation.MiddleLeft:
-                    localPosition = new Vector2(_notificationPadding.x, (container.Size.y - _panelSize.y - _notificationPadding.y) * 0.5f); // position at middle left side
+                    localPosition = new Vector2(_notificationPadding.x * container.Context.Scale, (container.Size.y - _panelSize.y - _notificationPadding.y) * 0.5f); // position at middle left side
                     break;
                 case FuOverlayAnchorLocation.MiddleCenter:
-                    localPosition = new Vector2((container.Size.x - _panelSize.x - _notificationPadding.x) * 0.5f, (container.Size.y - _panelSize.y - _notificationPadding.y) * 0.5f); // position at middle center
+                    localPosition = new Vector2((container.Size.x - _panelSize.x - _notificationPadding.x * container.Context.Scale) * 0.5f, (container.Size.y - _panelSize.y - _notificationPadding.y * container.Context.Scale) * 0.5f); // position at middle center
                     break;
                 case FuOverlayAnchorLocation.MiddleRight:
-                    localPosition = new Vector2(container.Size.x - _panelSize.x - _notificationPadding.x, (container.Size.y - _panelSize.y - _notificationPadding.y) * 0.5f); // position at middle right side
+                    localPosition = new Vector2(container.Size.x - _panelSize.x - _notificationPadding.x, (container.Size.y - _panelSize.y - _notificationPadding.y * container.Context.Scale) * 0.5f); // position at middle right side
                     break;
                 case FuOverlayAnchorLocation.BottomLeft:
-                    localPosition = new Vector2(_notificationPadding.x, container.Size.y - _panelSize.y - _notificationPadding.y); // position at bottom left corner
+                    localPosition = new Vector2(_notificationPadding.x * container.Context.Scale, container.Size.y - _panelSize.y - _notificationPadding.y * container.Context.Scale); // position at bottom left corner
                     break;
                 case FuOverlayAnchorLocation.BottomCenter:
-                    localPosition = new Vector2((container.Size.x - _panelSize.x - _notificationPadding.x) * 0.5f, container.Size.y - _panelSize.y - _notificationPadding.y); // position at bottom center
+                    localPosition = new Vector2((container.Size.x - _panelSize.x - _notificationPadding.x * container.Context.Scale) * 0.5f, container.Size.y - _panelSize.y - _notificationPadding.y * container.Context.Scale); // position at bottom center
                     break;
                 case FuOverlayAnchorLocation.BottomRight:
-                    localPosition = new Vector2(container.Size.x - _panelSize.x - _notificationPadding.x, container.Size.y - _panelSize.y - _notificationPadding.y); // position at bottom right corner
+                    localPosition = new Vector2(container.Size.x - _panelSize.x - _notificationPadding.x * container.Context.Scale, container.Size.y - _panelSize.y - _notificationPadding.y * container.Context.Scale); // position at bottom right corner
                     break;
             }
             return localPosition;

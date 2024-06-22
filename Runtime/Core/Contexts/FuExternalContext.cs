@@ -1,6 +1,8 @@
 using Fu.Framework;
 using ImGuiNET;
 using System;
+using System.Linq;
+using UnityEngine;
 
 namespace Fu.Core
 {
@@ -46,7 +48,7 @@ namespace Fu.Core
         {
             Fugui.IsRendering = false;
 
-            if(!RenderPrepared)
+            if (!RenderPrepared)
             {
                 return;
             }
@@ -75,6 +77,30 @@ namespace Fu.Core
 #endif
             RenderPrepared = true;
             return RenderPrepared;
+        }
+
+        /// <summary>
+        /// Set the scale of this context
+        /// </summary>
+        /// <param name="scale">global context scale</param>
+        /// <param name="fontScale">context font scale (usualy same value as context scale)</param>
+        public override void SetScale(float scale, float fontScale)
+        {
+            float oldScale = Scale;
+            // set scale
+            Scale = scale;
+            FontScale = fontScale;
+
+            // update font scale
+            LoadFonts();
+            FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
+
+            // scale windows sizes for windows NOT docked, visible and in this context
+            Fugui.UIWindows.Where(win => win.Value.Container.Context == this && win.Value.IsVisible && !win.Value.IsDocked).ToList()
+                .ForEach((win) =>
+                {
+                    win.Value.Size = new Vector2Int((int)(win.Value.Size.x * (scale / oldScale)), (int)(win.Value.Size.y * (scale / oldScale)));
+                });
         }
     }
 }

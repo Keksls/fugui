@@ -31,9 +31,9 @@ namespace Fu.Framework
         /// </summary>
         Clip = 1,
         /// <summary>
-        /// Wrapp the text to display it all
+        /// Wrap the text to display it all
         /// </summary>
-        Wrapp = 2,
+        Wrap = 2,
     }
 
     /// <summary>

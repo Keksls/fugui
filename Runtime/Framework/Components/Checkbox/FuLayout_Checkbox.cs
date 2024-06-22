@@ -61,6 +61,7 @@ namespace Fu.Framework
             // reduce border strenght
             Fugui.Push(ImGuiCols.Border, FuThemeManager.GetColor(FuColors.Border) * 0.5f);
             ImGui.PushID(text);
+            Fugui.MoveY(-2f);
             if (LastItemDisabled)
             {
                 bool value = isChecked; // Create a temporary variable to hold the value of isChecked

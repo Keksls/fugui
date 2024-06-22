@@ -2,14 +2,15 @@
 using Fu.Framework;
 using ImGuiNET;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
 namespace Fu
 {
+    // TODO : finalize and fiabilize this + clean, comment and summary
     public static partial class Fugui
     {
-        #region New UI
         private static FuDockingLayoutDefinition _hoveredNode = null;
         private static FuDockingLayoutDefinition _lastFrameHoveredNode = null;
         private static Rect _currentWindowRect = new Rect();
@@ -318,6 +319,16 @@ namespace Fu
                 }
                 saveAvailable = FuDockingLayoutManager.checkLayoutName(layoutName);
 
+                if (FuDockingLayoutManager.CurrentLayout != null)
+                {
+                    int type = (int)FuDockingLayoutManager.CurrentLayout.LayoutType;
+                    if (grid.Slider("Layout type (byte)", ref type, 0, 254))
+                    {
+                        FuDockingLayoutManager.CurrentLayout.LayoutType = (byte)type;
+                        saveAvailable = true;
+                    }
+                }
+
                 if (!saveAvailable)
                 {
                     grid.NextColumn();
@@ -342,13 +353,13 @@ namespace Fu
                 if (grid.Button("Save##fdl", FuButtonStyle.Info))
                 {
                     string selectedName = FuDockingLayoutManager.CurrentLayout.Name;
-                    FuDockingLayoutManager.saveSelectedLayout();
+                    FuDockingLayoutManager.SaveLayoutFile(Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder), FuDockingLayoutManager.CurrentLayout);
                     FuDockingLayoutManager.CurrentLayout = FuDockingLayoutManager.Layouts[selectedName];
                 }
 
                 if (grid.Button("Delete##fdl", FuButtonStyle.Danger))
                 {
-                    FuDockingLayoutManager.deleteSelectedLayout();
+                    FuDockingLayoutManager.DeleteLayout(Path.Combine(Application.streamingAssetsPath, Settings.LayoutsFolder), FuDockingLayoutManager.CurrentLayout.Name);
                 }
             }
         }
@@ -488,7 +499,7 @@ namespace Fu
                         {
                             foreach (var fdlayout in FuDockingLayoutManager.Layouts.Values)
                             {
-                                FuDockingLayoutManager.saveLayoutFile(fdlayout);
+                                FuDockingLayoutManager.SaveLayoutFile(Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder), fdlayout);
                             }
                             _windowNamesMustSaveLayouts = false;
                         }
@@ -499,6 +510,5 @@ namespace Fu
                 }
             }
         }
-        #endregion
     }
 }

@@ -13,6 +13,10 @@ namespace Fu.Framework
         /// </summary>
         public static bool IsInsidePanel = false;
         /// <summary>
+        /// A rect that store the current panel clipping rect (if we are inside a panel)
+        /// </summary>
+        public static Rect CurrentPanelRect = default;
+        /// <summary>
         /// The current layout style for the panel.
         /// </summary>
         private FuStyle _currentStyle;
@@ -94,7 +98,11 @@ namespace Fu.Framework
             // Calculate the width of the panel. If a width was not specified, use the available width in the content region.
             if (width <= 0)
             {
-                width = ImGui.GetContentRegionAvail().x - width;
+                width = ImGui.GetContentRegionAvail().x - (width *  Fugui.CurrentContext.Scale);
+            }
+            else
+            {
+                width *= Fugui.CurrentContext.Scale;
             }
             width -= _currentStyle.WindowPadding.x * 2f;
             width = Mathf.Max(1f, Mathf.Clamp(width, 1f, ImGui.GetContentRegionAvail().x));
@@ -102,7 +110,11 @@ namespace Fu.Framework
             // Calculate the height of the panel. If a height was not specified, use the available height in the content region.
             if (height <= 0)
             {
-                height = ImGui.GetContentRegionAvail().y - height;
+                height = ImGui.GetContentRegionAvail().y + height * Fugui.CurrentContext.Scale;
+            }
+            else
+            {
+                height *= Fugui.CurrentContext.Scale;
             }
             height -= _currentStyle.WindowPadding.y * 2f;
             height = Mathf.Max(1f, Mathf.Clamp(height, 1f, ImGui.GetContentRegionAvail().y));
@@ -115,6 +127,8 @@ namespace Fu.Framework
             }
             // push style if created
             _currentStyle.Push(true);
+
+            Vector2 panelPosition = ImGui.GetCursorScreenPos();
             // draw imgui child panel
             _panelCreated = ImGui.BeginChild(_ID, new Vector2(width, height), border, flag);
             if (!_panelCreated)
@@ -140,6 +154,9 @@ namespace Fu.Framework
             }
             Clipper = _clippingDict[clippingID];
             Clipper.NewFrame(_useClipper);
+
+            // get and store current panel rect
+            CurrentPanelRect = _panelCreated ? new Rect(panelPosition, ImGui.GetContentRegionAvail()) : default;
         }
 
         /// <summary>

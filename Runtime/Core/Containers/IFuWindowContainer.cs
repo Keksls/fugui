@@ -15,7 +15,6 @@ namespace Fu.Core
         public FuContext Context { get; }
         public Vector2Int Position { get; }
         public Vector2Int Size { get; }
-        public float Scale { get; }
         public FuKeyboardState Keyboard { get; }
         public FuMouseState Mouse { get; }
 

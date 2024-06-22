@@ -1,7 +1,7 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Unity.Plastic.Newtonsoft.Json;
 
 namespace Fu.Framework
 {
@@ -33,6 +33,14 @@ namespace Fu.Framework
         ///</summary>
         [JsonProperty]
         public List<ushort> WindowsDefinition;
+        /// <summary>
+        /// Whatever this layout auto hide topbars
+        /// </summary>
+        public bool AutoHideTopBar;
+        /// <summary>
+        /// Custom var that you can use to store a flag that identify the type of this layout (create your own enum if needed)
+        /// </summary>
+        public byte LayoutType;
 
         public FuDockingLayoutDefinition()
         {

@@ -10,10 +10,36 @@ namespace Fu.Core
         #region Variables
         // ID of the Overlay
         public string ID { get; private set; }
+        // unscaled private size of  the Overlay
+        private Vector2Int _size;
+        // unscaled public size of  the Overlay
+        public Vector2Int UnscaledSize => _size;
         // Size of the Overlay
-        public Vector2Int Size { get; set; }
+        public Vector2Int Size
+        {
+            get
+            {
+                return new Vector2Int((int)(_size.x * Fugui.CurrentContext.Scale), (int)(_size.y * Fugui.CurrentContext.Scale));
+            }
+            set
+            {
+                _size = value;
+            }
+        }
+        // unscaled private Offset of the anchor point from the top-left corner of the overlay
+        private Vector2Int _anchorOffset;
         // Offset of the anchor point from the top-left corner of the overlay
-        public Vector2Int AnchorOffset { get; set; }
+        public Vector2Int AnchorOffset
+        {
+            get
+            {
+                return new Vector2Int((int)(_anchorOffset.x * Fugui.CurrentContext.Scale), (int)(_anchorOffset.y * Fugui.CurrentContext.Scale));
+            }
+            set
+            {
+                _anchorOffset = value;
+            }
+        }
         // Custom UI display function for the overlay
         public Action<FuOverlay> UI { get; private set; }
         // Whenever the Overlay will render just right now
@@ -23,9 +49,9 @@ namespace Fu.Core
         // Public variable that store local Rect of this overlay
         public Rect LocalRect { get; private set; }
         // Public variable that store local Rect of this overlay
-        public Rect WorldRect { get => new Rect(LocalRect.x + UIWindow.LocalRect.x, LocalRect.y + UIWindow.LocalRect.y, LocalRect.width, LocalRect.height); }
+        public Rect WorldRect { get => new Rect(LocalRect.x + Window.LocalRect.x, LocalRect.y + Window.LocalRect.y, LocalRect.width, LocalRect.height); }
         // Public variable for the UIWindow instance
-        public FuWindow UIWindow { get; private set; }
+        public FuWindow Window { get; private set; }
         // Minimum Size of the UI window to display this overlay
         public Vector2Int MinimumWindowSize { get; private set; }
 
@@ -41,7 +67,6 @@ namespace Fu.Core
         private FuOverlayAnchorLocation _anchorLocation;
         // Private variable to track the collapsed state of the window
         private bool _collapsed;
-
         // Private variable to track the hover state of the drag button
         private bool _dragButtonHovered = false;
         // Private variable to track the dragging state of the window
@@ -72,6 +97,8 @@ namespace Fu.Core
         private static int _nbColorPushOnFrameStart = 0;
         private static int _nbStylePushOnFrameStart = 0;
         private static int _nbFontPushOnFrameStart = 0;
+        // whatever the overlay need to be drawn
+        private bool _isVisible = true;
         #endregion
 
         /// <summary>
@@ -86,7 +113,7 @@ namespace Fu.Core
             // Set the ID of the window
             ID = id;
             // Set the size of the window
-            Size = new Vector2Int((int)((float)size.x * Fugui.CurrentContext.Scale), (int)((float)size.y * Fugui.CurrentContext.Scale));
+            _size = size;
             // Set the UI display function
             UI = ui;
             // Set the default anchor offset
@@ -114,9 +141,27 @@ namespace Fu.Core
             _defaultAnchorLocation = FuOverlayAnchorLocation.TopLeft;
             _defaultAnchorOffset = Vector2Int.zero;
             _overlayStyle = FuStyle.Overlay;
+            // show the overlay
+            _isVisible = true;
         }
 
         #region Public Utils
+        /// <summary>
+        /// Show the overlay. It will be drawn until you call Hide()
+        /// </summary>
+        public void Show()
+        {
+            _isVisible = true;
+        }
+
+        /// <summary>
+        /// Hide the overlay. It will not be dranw until you call Show()
+        /// </summary>
+        public void Hide()
+        {
+            _isVisible = false;
+        }
+
         /// <summary>
         /// Anchor this overlay to a WindoDefinition. 
         /// Once the according winDef will create a UIWindow, Anchor will be added to UIWindow
@@ -182,7 +227,7 @@ namespace Fu.Core
             _dragOffset = Vector2.zero;
 
             // set anchored window
-            UIWindow = window;
+            Window = window;
 
             // set drag button position if set on Auto
             if (_dragButtonPosition == FuOverlayDragPosition.Auto)
@@ -243,9 +288,9 @@ namespace Fu.Core
         /// </summary>
         /// <param name="rect">Rectangle describing the overlay within the window</param>
         public void SetLocalRect(Rect rect)
-		{
+        {
             LocalRect = rect;
-		}
+        }
         #endregion
 
         /// <summary>
@@ -253,6 +298,11 @@ namespace Fu.Core
         /// </summary>
         internal void Draw()
         {
+            if(!_isVisible)
+            {
+                return;
+            }
+
             // count nb push at render begin
             _nbColorPushOnFrameStart = Fugui.NbPushColor;
             _nbStylePushOnFrameStart = Fugui.NbPushStyle;
@@ -265,7 +315,7 @@ namespace Fu.Core
                 _drawSnapGrid = false;
             }
 
-            if (UIWindow.WorkingAreaSize.x < MinimumWindowSize.x || UIWindow.WorkingAreaSize.y < MinimumWindowSize.y)
+            if (Window.WorkingAreaSize.x < MinimumWindowSize.x || Window.WorkingAreaSize.y < MinimumWindowSize.y)
             {
                 return;
             }
@@ -280,51 +330,51 @@ namespace Fu.Core
                 case FuOverlayDragPosition.Top:
                     if (_collapsed)
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x, _retractButtonWidth));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x, _retractButtonWidth));
                     }
                     else
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x, Size.y + _retractButtonWidth));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x, Size.y + _retractButtonWidth));
                     }
                     break;
                 case FuOverlayDragPosition.Right:
                     if (_collapsed)
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition + new Vector2(Size.x, 0f), new Vector2(_retractButtonWidth, Size.y));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition + new Vector2(Size.x, 0f), new Vector2(_retractButtonWidth, Size.y));
                     }
                     else
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x + _retractButtonWidth, Size.y));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x + _retractButtonWidth, Size.y));
                     }
                     break;
                 case FuOverlayDragPosition.Bottom:
                     if (_collapsed)
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition + new Vector2(0f, Size.y), new Vector2(Size.x, _retractButtonWidth));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition + new Vector2(0f, Size.y), new Vector2(Size.x, _retractButtonWidth));
                     }
                     else
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x, Size.y + _retractButtonWidth));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x, Size.y + _retractButtonWidth));
                     }
                     break;
                 case FuOverlayDragPosition.Left:
                     if (_collapsed)
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(_retractButtonWidth, Size.y));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(_retractButtonWidth, Size.y));
                     }
                     else
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x + _retractButtonWidth, Size.y));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x + _retractButtonWidth, Size.y));
                     }
                     break;
                 default:
                     if (_collapsed)
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(_retractButtonWidth, _retractButtonWidth));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(_retractButtonWidth, _retractButtonWidth));
                     }
                     else
                     {
-                        LocalRect = new Rect(screenPos - UIWindow.LocalPosition, new Vector2(Size.x, Size.y));
+                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x, Size.y));
                     }
                     break;
             }
@@ -347,7 +397,7 @@ namespace Fu.Core
                 Fugui.PopColor();
 
                 // force render window next frame in case we are dragging but ùouse is out of window
-                UIWindow.ForceDraw();
+                Window.ForceDraw();
             }
 
             // force child to have no rounding
@@ -546,28 +596,28 @@ namespace Fu.Core
                     localPosition = AnchorOffset; // position at top left corner
                     break;
                 case FuOverlayAnchorLocation.TopCenter:
-                    localPosition = new Vector2((UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, AnchorOffset.y); // position at top center
+                    localPosition = new Vector2((Window.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, AnchorOffset.y); // position at top center
                     break;
                 case FuOverlayAnchorLocation.TopRight:
-                    localPosition = new Vector2(UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x, AnchorOffset.y); // position at top right corner
+                    localPosition = new Vector2(Window.WorkingAreaSize.x - Size.x - AnchorOffset.x, AnchorOffset.y); // position at top right corner
                     break;
                 case FuOverlayAnchorLocation.MiddleLeft:
-                    localPosition = new Vector2(AnchorOffset.x, (UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle left side
+                    localPosition = new Vector2(AnchorOffset.x, (Window.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle left side
                     break;
                 case FuOverlayAnchorLocation.MiddleCenter:
-                    localPosition = new Vector2((UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, (UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle center
+                    localPosition = new Vector2((Window.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, (Window.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle center
                     break;
                 case FuOverlayAnchorLocation.MiddleRight:
-                    localPosition = new Vector2(UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x, (UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle right side
+                    localPosition = new Vector2(Window.WorkingAreaSize.x - Size.x - AnchorOffset.x, (Window.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle right side
                     break;
                 case FuOverlayAnchorLocation.BottomLeft:
-                    localPosition = new Vector2(AnchorOffset.x, UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom left corner
+                    localPosition = new Vector2(AnchorOffset.x, Window.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom left corner
                     break;
                 case FuOverlayAnchorLocation.BottomCenter:
-                    localPosition = new Vector2((UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom center
+                    localPosition = new Vector2((Window.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, Window.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom center
                     break;
                 case FuOverlayAnchorLocation.BottomRight:
-                    localPosition = new Vector2(UIWindow.WorkingAreaSize.x - Size.x - AnchorOffset.x, UIWindow.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom right corner
+                    localPosition = new Vector2(Window.WorkingAreaSize.x - Size.x - AnchorOffset.x, Window.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom right corner
                     break;
             }
 
@@ -583,7 +633,7 @@ namespace Fu.Core
                 // store not snapped drag offset
                 unsnappedDragPosition = localPosition + _dragOffset;
                 // clamp unsnapped drag position
-                unsnappedDragPosition = clampPosition(unsnappedDragPosition) + UIWindow.LocalPosition + UIWindow.WorkingAreaPosition;
+                unsnappedDragPosition = clampPosition(unsnappedDragPosition) + Window.LocalPosition + Window.WorkingAreaPosition;
                 // snap drag offset to grid
                 _dragOffset.x = (float)Math.Floor(_dragOffset.x / _dragStep) * _dragStep;
                 _dragOffset.y = (float)Math.Floor(_dragOffset.y / _dragStep) * _dragStep;
@@ -595,7 +645,7 @@ namespace Fu.Core
             localPosition = clampPosition(localPosition);
 
             // return container relative position
-            return localPosition + UIWindow.LocalPosition + UIWindow.WorkingAreaPosition;
+            return localPosition + Window.LocalPosition + Window.WorkingAreaPosition;
         }
 
         /// <summary>
@@ -606,10 +656,10 @@ namespace Fu.Core
         private Vector2 clampPosition(Vector2 localPosition)
         {
             float windowPadding = 4f;
-            if (localPosition.x + Size.x + windowPadding + _retractButtonWidth > UIWindow.WorkingAreaSize.x)
-                localPosition.x = UIWindow.WorkingAreaSize.x - Size.x - windowPadding - _retractButtonWidth;
-            if (localPosition.y + Size.y + windowPadding > UIWindow.WorkingAreaSize.y)
-                localPosition.y = UIWindow.WorkingAreaSize.y - Size.y - windowPadding;
+            if (localPosition.x + Size.x + windowPadding + _retractButtonWidth > Window.WorkingAreaSize.x)
+                localPosition.x = Window.WorkingAreaSize.x - Size.x - windowPadding - _retractButtonWidth;
+            if (localPosition.y + Size.y + windowPadding > Window.WorkingAreaSize.y)
+                localPosition.y = Window.WorkingAreaSize.y - Size.y - windowPadding;
             if (localPosition.x < windowPadding)
                 localPosition.x = windowPadding;
             if (localPosition.y < windowPadding)
@@ -627,18 +677,18 @@ namespace Fu.Core
             uint color = ImGui.GetColorU32(_gridColor);
 
             // Calculate the number of columns and rows in the snap grid
-            int cols = (int)(UIWindow.WorkingAreaSize.x / _dragStep) + 1;
-            int rows = (int)(UIWindow.WorkingAreaSize.y / _dragStep) + 1;
+            int cols = (int)(Window.WorkingAreaSize.x / _dragStep) + 1;
+            int rows = (int)(Window.WorkingAreaSize.y / _dragStep) + 1;
 
             // Calculate the starting position of the snap grid
-            Vector2 startPos = UIWindow.LocalPosition + UIWindow.WorkingAreaPosition;
+            Vector2 startPos = Window.LocalPosition + Window.WorkingAreaPosition;
 
             // Draw the vertical lines of the snap grid
             for (int x = 0; x < cols; x++)
             {
                 // Calculate the start and end points of the line
                 Vector2 p1 = new Vector2(x * _dragStep, -_dragStep);
-                Vector2 p2 = new Vector2(x * _dragStep, UIWindow.WorkingAreaSize.y + _dragStep);
+                Vector2 p2 = new Vector2(x * _dragStep, Window.WorkingAreaSize.y + _dragStep);
                 // Add the line to the draw list
                 drawList.AddLine(p1 + startPos, p2 + startPos, color, _gridWidth);
             }
@@ -648,7 +698,7 @@ namespace Fu.Core
             {
                 // Calculate the start and end points of the line
                 Vector2 p1 = new Vector2(-_dragStep, y * _dragStep);
-                Vector2 p2 = new Vector2(UIWindow.WorkingAreaSize.x + _dragStep, y * _dragStep);
+                Vector2 p2 = new Vector2(Window.WorkingAreaSize.x + _dragStep, y * _dragStep);
                 // Add the line to the draw list
                 drawList.AddLine(p1 + startPos, p2 + startPos, color, _gridWidth);
             }

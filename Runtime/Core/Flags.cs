@@ -67,7 +67,11 @@
         /// <summary>
         /// Can this window be closed
         /// </summary>
-        NoClosable = 32
+        NoClosable = 32,
+        /// <summary>
+        /// do NOT register windows definition to Fugui core on constructor
+        /// </summary>
+        NoAutoRegisterWindowDefinition = 64
     }
 
     /// <summary>

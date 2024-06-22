@@ -21,12 +21,10 @@ namespace Fu.Core
         public Camera Camera { get; private set; }
         private GameObject _panelGameObject;
         public int FuguiContextID { get { return _fuguiContext.ID; } }
-        public float Scale => _scale;
         public FuMouseState Mouse => _mouseState;
         public FuKeyboardState Keyboard => _keyboardState;
         private FuMouseState _mouseState;
         private FuKeyboardState _keyboardState;
-        private float _scale;
         private Vector2Int _localMousePos;
         private Vector2Int _size;
         private FuUnityContext _fuguiContext;
@@ -46,7 +44,6 @@ namespace Fu.Core
             ID = "3DContext_" + _3DContextindex;
 
             _localMousePos = new Vector2Int(-1, -1);
-            _scale = Fugui.Settings.Windows3DSuperSampling;
 
             // remove the window from it's old container if has one
             window.TryRemoveFromContainer();
@@ -72,7 +69,7 @@ namespace Fu.Core
             Camera.cullingMask = 0;
 
             // Create RenderTexture
-            RenderTexture = new RenderTexture(Camera.pixelWidth, Camera.pixelHeight, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
+            RenderTexture = new RenderTexture(Camera.pixelWidth, Camera.pixelHeight, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
             RenderTexture.antiAliasing = 8;
             RenderTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
             RenderTexture.useDynamicScale = true;
@@ -134,9 +131,9 @@ namespace Fu.Core
             _panelGameObject = new GameObject(ID + "_Panel");
             _panelGameObject.transform.SetParent(Camera.transform);
             FuPanelMesh rectangleMesh = _panelGameObject.AddComponent<FuPanelMesh>();
-            float round = FuThemeManager.CurrentTheme.WindowRounding * _scale;
+            float round = FuThemeManager.WindowRounding * Context.Scale;
             MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
-            collider.sharedMesh = rectangleMesh.CreateMesh(Window.Size.x / _scale, Window.Size.y / _scale, 1f / 1000f * Fugui.Settings.Windows3DScale, round, round, round, round, Fugui.Settings.UIPanelWidth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial);
+            collider.sharedMesh = rectangleMesh.CreateMesh(Window.Size.x / Context.Scale, Window.Size.y / Context.Scale, 1f / 1000f * Fugui.Settings.Windows3DScale, round, round, round, round, Fugui.Settings.UIPanelWidth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial);
             int layer = (int)Mathf.Log(Fugui.Settings.UILayer.value, 2);
             _panelGameObject.layer = layer;
             foreach (Transform child in Camera.transform)
@@ -187,7 +184,7 @@ namespace Fu.Core
                 Window.ForceDraw();
             }
 
-            Vector2 scaledMousePosition = inputState.MousePosition * (1000f / Fugui.Settings.Windows3DScale) * Scale;
+            Vector2 scaledMousePosition = inputState.MousePosition * (1000f / Fugui.Settings.Windows3DScale) * Context.Scale;
             // calculate IO mouse pos
             _localMousePos = new Vector2Int((int)scaledMousePosition.x, (int)scaledMousePosition.y);
             if (inputState.Hovered)

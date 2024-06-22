@@ -16,33 +16,35 @@ namespace Fu.Core.DearImGui
     public class FontConfig : ScriptableObject
     {
         public int DefaultSize = 14;
-        public int[] AdditionnalFontSizes = new int[] { 12, 16 };
+        public FontSizeConfig[] Fonts;
         [Header("The font folder must be paced into StreamingAssets")]
         public string FontsFolder = "Fugui/fonts/current/";
-        public string RegularFontName = "regular.ttf";
-        public string BoldFontName = "bold.ttf";
-        public IconConfig[] FuguiIcons;
-        public IconConfig[] CustomIcons;
-
-        // used by font helper
-        public bool ImportFontHelperIcons;
-        public IconConfig FontHelperIcons;
-
-        public bool AddBold = true;
-        public bool AddIconsToBold = false;
     }
 
     [Serializable]
-    public class IconConfig
+    public class FontSizeConfig
     {
-        public string IconsFontName = "icons.ttf";
+        public int Size = 14;
+        public ImFontPtr FontPtr;
+        public SubFontConfig[] SubFonts_Regular;
+        public SubFontConfig[] SubFonts_Bold;
+        public SubFontConfig[] SubFonts_Italic;
+    }
+
+    [Serializable]
+    public class SubFontConfig
+    {
+        public string FileName = "icons.ttf";
+        [HideInInspector]
+        public string FilePath;
         public ushort StartGlyph = '\uE000';
         public ushort EndGlyph = '\uF8FF';
-        public float FontIconsSizeOffset = 0f;
+        public ushort[] CustomGlyphRanges;
         [HideInInspector]
         public IntPtr GlyphRangePtr;
         [HideInInspector]
-        public string IconFilePath;
-        public ImFontPtr FontPtr;
+        public ImFontConfigPtr FontConfigPtr;
+        public float SizeOffset = 0f;
+        public Vector2 GlyphOffset = Vector2.zero;
     }
 }

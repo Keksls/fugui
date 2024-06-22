@@ -92,7 +92,7 @@ namespace Fu
                 ImGui.OpenPopup(_modalTitle); //open the modal with the stored title
 
                 // claculate y padding
-                float yPadding = FuThemeManager.CurrentTheme.FramePadding.y * 2f + FuThemeManager.CurrentTheme.WindowPadding.y * 2f;
+                float yPadding = FuThemeManager.FramePadding.y * 2f + FuThemeManager.WindowPadding.y * 2f;
                 // calculate footer height
                 if (_currentFooterheight == 0f)
                 {
@@ -126,7 +126,7 @@ namespace Fu
                     ImGui.SetNextWindowSize(modalSize, ImGuiCond.Always);
                     ImGui.SetNextWindowPos(_currentModalPos, ImGuiCond.Always);
                 }
-                ImGui.SetNextWindowFocus();
+                //ImGui.SetNextWindowFocus();
                 // beggin modal
                 if (ImGui.BeginPopupModal(_modalTitle, ref _showModal, ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
@@ -219,7 +219,7 @@ namespace Fu
             // Create a dummy element for spacing
             ImGui.Dummy(Vector2.zero);
             _currentFooterheight = (int)ImGui.GetCursorScreenPos().y - (int)(_currentModalPos.y + _currentTitleHeight + _currentBodySize.y);
-             }
+        }
 
         /// <summary>
         /// Update the modal open animation avancement

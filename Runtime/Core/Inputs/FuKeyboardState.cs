@@ -110,7 +110,7 @@ namespace Fu.Core
 
                 // window is NOT nul, so it's a window related keyboard, let's bind it according to current input focused window
                 case not null:
-                    if (_window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window)
+                    if ((_window.State == FuWindowState.Manipulating && FuWindow.InputFocusedWindow == null) || FuWindow.InputFocusedWindow == _window)
                     {
                         for (int key = 0; key < _keysStates.Length; key++)
                         {

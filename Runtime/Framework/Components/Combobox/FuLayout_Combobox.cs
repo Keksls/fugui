@@ -148,9 +148,9 @@ namespace Fu.Framework
             // draw combobox button
             string popupID = text + "pu";
             float carretWidth = 16f * Fugui.CurrentContext.Scale;
-            if (_customButton(selectedItemText + "##" + text, size.BrutSize, FuThemeManager.CurrentTheme.FramePadding, Vector2.zero, style, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth))
+            if (_customButton(selectedItemText + "##" + text, size.BrutSize, FuThemeManager.FramePadding, Vector2.zero, style, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth))
             {
-                OpenPopUp(popupID, () =>
+                Fugui.OpenPopUp(popupID, () =>
                 {
                     Spacing();
                     Spacing();
@@ -161,10 +161,11 @@ namespace Fu.Framework
                     SameLine();
                     Spacing();
                     Spacing();
-                });
+                },
+                isComboBoxPopup: true);
             }
             // get popup open state
-            bool opened = IsPopupOpen(popupID);
+            bool opened = Fugui.IsPopupOpen(popupID);
 
             // get button rect info
             Vector2 btnMin = ImGui.GetItemRectMin();
@@ -193,7 +194,7 @@ namespace Fu.Framework
                 {
                     popupSize.x = btnSize.x;
                 }
-                else if(popupSize.x == -1f)
+                else if (popupSize.x == -1f)
                 {
                     popupSize.x = 0f;
                 }
@@ -201,7 +202,7 @@ namespace Fu.Framework
                 {
                     popupSize.y = -1f;
                 }
-                Rect lastFramePopupRect = GetPopupLastFrameRect(getUniqueID(popupID));
+                Rect lastFramePopupRect = Fugui.GetPopupLastFrameRect(Fugui.GetUniquePopupID(popupID));
                 // calculate position
                 switch (popupPosition)
                 {
@@ -232,7 +233,7 @@ namespace Fu.Framework
                     popupSize.y = COMBOBOX_POPUP_MAXIMUM_HEIGHT;
                 }
                 // draw the popup
-                DrawPopup(popupID, popupSize, pos);
+                Fugui.DrawPopup(popupID, popupSize, pos);
             }
         }
 
@@ -252,9 +253,9 @@ namespace Fu.Framework
             // draw combobox button
             string popupID = text + "pu";
             float carretWidth = 16f * Fugui.CurrentContext.Scale;
-            if (_customButton(selectedItemText + "##" + text, size.BrutSize, FuThemeManager.CurrentTheme.FramePadding, Vector2.zero, style, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth))
+            if (_customButton(selectedItemText + "##" + text, size.BrutSize, FuThemeManager.FramePadding, Vector2.zero, style, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth))
             {
-                OpenPopUp(popupID, () =>
+                Fugui.OpenPopUp(popupID, () =>
                 {
                     Spacing();
                     Spacing();
@@ -265,10 +266,11 @@ namespace Fu.Framework
                     SameLine();
                     Spacing();
                     Spacing();
-                });
+                },
+                isComboBoxPopup: true);
             }
             // get popup open state
-            bool opened = IsPopupOpen(popupID);
+            bool opened = Fugui.IsPopupOpen(popupID);
 
             // get button rect info
             Vector2 btnMin = ImGui.GetItemRectMin();
@@ -299,7 +301,7 @@ namespace Fu.Framework
                 {
                     popupSize.y = -1f;
                 }
-                Rect lastFramePopupRect = GetPopupLastFrameRect(getUniqueID(popupID));
+                Rect lastFramePopupRect = Fugui.GetPopupLastFrameRect(Fugui.GetUniquePopupID(popupID));
                 // calculate position
                 switch (popupPosition)
                 {
@@ -330,7 +332,7 @@ namespace Fu.Framework
                     popupSize.y = COMBOBOX_POPUP_MAXIMUM_HEIGHT;
                 }
                 // draw the popup
-                DrawPopup(popupID, popupSize, pos);
+                Fugui.DrawPopup(popupID, popupSize, pos);
             }
         }
         #endregion

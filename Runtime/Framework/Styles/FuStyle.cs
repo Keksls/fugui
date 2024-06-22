@@ -14,6 +14,13 @@ namespace Fu.Framework
 
         #region Pressets
         // default layout style
+        static FuStyle _contentGridStyle;
+        /// <summary>
+        /// Default style, use panel, frame, text default styles, (6,1) frame padding, (2,2) window padding
+        /// </summary>
+        public static FuStyle Content { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _contentGridStyle; } }
+
+        // panel layout style
         static FuStyle _defaultGridStyle;
         /// <summary>
         /// Default style, use panel, frame, text default styles, (6,1) frame padding, (2,2) window padding
@@ -72,8 +79,8 @@ namespace Fu.Framework
             _frameStyle.Push(enabled);
             _containerStyle.Push(enabled);
             _textStyle.Push(enabled);
-            Fugui.Push(ImGuiStyleVar.FramePadding, FramePadding * Fugui.CurrentContext.Scale);
-            Fugui.Push(ImGuiStyleVar.WindowPadding, WindowPadding * Fugui.CurrentContext.Scale);
+            Fugui.Push(ImGuiStyleVar.FramePadding, FramePadding);
+            Fugui.Push(ImGuiStyleVar.WindowPadding, WindowPadding);
         }
 
         public void Pop()
@@ -90,14 +97,24 @@ namespace Fu.Framework
         /// </summary>
         private static void OnThemeSet()
         {
-            // default layout style
-            _defaultGridStyle = new FuStyle()
+            // content layout style
+            _contentGridStyle = new FuStyle()
             {
                 _containerStyle = FuPanelStyle.Default,
                 _frameStyle = FuFrameStyle.Default,
                 _textStyle = FuTextStyle.Default,
                 FramePadding = new Vector2(6f, 1f),
                 WindowPadding = new Vector2(2f, 2f)
+            };
+
+            // default layout style
+            _defaultGridStyle = new FuStyle()
+            {
+                _containerStyle = FuPanelStyle.Default,
+                _frameStyle = FuFrameStyle.Default,
+                _textStyle = FuTextStyle.Default,
+                FramePadding = FuThemeManager.CurrentTheme.FramePadding,
+                WindowPadding = FuThemeManager.CurrentTheme.WindowPadding
             };
 
             // no background layout style

@@ -181,8 +181,8 @@ public class WidgetsWindow : MonoBehaviour
                         grid.Image("64 x 64 (red)", Fugui.Settings.FuguiLogo, Vector2.one * 64f, Color.red);
                         grid.Image("128 x 128", Fugui.Settings.FuguiLogo, Vector2.one * 128f);
                         grid.Separator();
-                        grid.ImageButton("Image button", Fugui.Settings.FuguiLogo, Vector2.one * 32f);
-                        grid.ImageButton("Image button blue", Fugui.Settings.FuguiLogo, Vector2.one * 32f, Color.blue);
+                        grid.ImageButton("Image button", Fugui.Settings.FuguiLogo, Vector2.one * 32f, Vector2.zero);
+                        grid.ImageButton("Image button blue", Fugui.Settings.FuguiLogo, Vector2.one * 32f, Color.blue, Vector2.zero, false);
                         break;
 
                     case 2:
@@ -323,7 +323,7 @@ public class WidgetsWindow : MonoBehaviour
 
         layout.TextURL("This is a hyperkling text URL", "https://framagit.org/Hydrocode/fugui");
 
-        layout.Text("This text is wrapped because its too long.This text is wrapped because its too long.This text is wrapped because its too long.", FuTextWrapping.Wrapp);
+        layout.Text("This text is wrapped because its too long.This text is wrapped because its too long.This text is wrapped because its too long.", FuTextWrapping.Wrap);
 
         layout.FramedText("This is a frammed text");
 

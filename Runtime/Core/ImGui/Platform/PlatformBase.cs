@@ -80,9 +80,8 @@ namespace Fu.Core.DearImGui.Platform
 
         protected void UpdateCursor(ImGuiIOPtr io, ImGuiMouseCursor cursor)
         {
-            // TODO : Uncomment once integrated
-            //if (!Dragonfly.Cursors.IsDefaultCursor())
-            //    return;
+            if (Fugui.IsCursorLocked)
+                return;
 
             if (cursor == ImGuiMouseCursor.Arrow && ImGui.IsAnyItemHovered())
                 cursor = ImGuiMouseCursor.Hand;
@@ -91,7 +90,12 @@ namespace Fu.Core.DearImGui.Platform
                 cursor = ImGuiMouseCursor.None;
             }
 
-            if (_lastCursor == cursor) return;
+            if (_lastCursor == cursor && !Fugui.CursorsJustUnlocked)
+            {
+                Fugui.CursorsJustUnlocked = false;
+                return;
+            }
+            Fugui.CursorsJustUnlocked = false;
             if ((io.ConfigFlags & ImGuiConfigFlags.NoMouseCursorChange) != 0) return;
 
             _lastCursor = cursor;

@@ -53,7 +53,7 @@ namespace Fu.Core
             // Assign the specified values to the corresponding fields
             WindowName = windowName;
             UI = ui;
-            Position = pos.HasValue ? pos.Value : new Vector2Int(256, 256);
+            Position = pos.HasValue ? pos.Value : new Vector2Int(-1, -1);
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
             IsExternalizable = !flags.HasFlag(FuWindowFlags.NoExternalization);
             IsDockable = !flags.HasFlag(FuWindowFlags.NoDocking);
@@ -63,7 +63,10 @@ namespace Fu.Core
             AllowMultipleWindow = flags.HasFlag(FuWindowFlags.AllowMultipleWindow);
             _uiWindowType = typeof(FuWindow);
             Overlays = new Dictionary<string, FuOverlay>();
-            Fugui.RegisterWindowDefinition(this);
+            if (!flags.HasFlag(FuWindowFlags.NoAutoRegisterWindowDefinition))
+            {
+                Fugui.RegisterWindowDefinition(this);
+            }
         }
 
         #region Overlays

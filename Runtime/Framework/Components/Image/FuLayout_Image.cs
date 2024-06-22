@@ -13,9 +13,10 @@ namespace Fu.Framework
         /// <param name="texture">Texture2D to draw</param>
         /// <param name="size">size of the image</param>
         /// <param name="addBorder">if true, add a frame border around the image</param>
-        public bool Image(string text, Texture2D texture, FuElementSize size, bool addBorder = false)
+        /// <param name="isClickable">make the image clickable and change the cursor if hovered</param>
+        public bool Image(string text, Texture2D texture, FuElementSize size, bool addBorder = false, bool isClickable = true)
         {
-            return Image(text, texture, size, Vector4.one, addBorder);
+            return Image(text, texture, size, Vector4.one, addBorder, isClickable);
         }
 
         /// <summary>
@@ -25,9 +26,10 @@ namespace Fu.Framework
         /// <param name="texture">RenderTexture to draw</param>
         /// <param name="size">size of the RenderTexture</param>
         /// <param name="addBorder">if true, add a frame border around the image</param>
-        public bool Image(string text, RenderTexture texture, FuElementSize size, bool addBorder = false)
+        /// <param name="isClickable">make the image clickable and change the cursor if hovered</param>
+        public bool Image(string text, RenderTexture texture, FuElementSize size, bool addBorder = false, bool isClickable = true)
         {
-            return Image(text, texture, size, Vector4.one, addBorder);
+            return Image(text, texture, size, Vector4.one, addBorder, isClickable);
         }
 
         /// <summary>
@@ -38,7 +40,8 @@ namespace Fu.Framework
         /// <param name="size">size of the image</param>
         /// <param name="color">color of the image</param>
         /// <param name="addBorder">if true, add a frame border around the image</param>
-        public virtual bool Image(string text, Texture2D texture, FuElementSize size, Vector4 color, bool addBorder = false)
+        /// <param name="isClickable">make the image clickable and change the cursor if hovered</param>
+        public virtual bool Image(string text, Texture2D texture, FuElementSize size, Vector4 color, bool addBorder = false, bool isClickable = true)
         {
             beginElement(ref text);
             // return if item must no be draw
@@ -60,9 +63,9 @@ namespace Fu.Framework
             }
 
             // set states for this element
-            setBaseElementState(text, ImGui.GetItemRectMin(), ImGui.GetItemRectSize(), true, false);
+            setBaseElementState(text, ImGui.GetItemRectMin(), ImGui.GetItemRectSize(), isClickable, false);
             displayToolTip();
-            if (_lastItemHovered)
+            if (_lastItemHovered && isClickable)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
@@ -83,7 +86,8 @@ namespace Fu.Framework
         /// <param name="size">size of the RenderTexture</param>
         /// <param name="color">color of the image</param>
         /// <param name="addBorder">if true, add a frame border around the image</param>
-        public virtual bool Image(string text, RenderTexture texture, FuElementSize size, Vector4 color, bool addBorder = false)
+        /// <param name="isClickable">make the image clickable and change the cursor if hovered</param>
+        public virtual bool Image(string text, RenderTexture texture, FuElementSize size, Vector4 color, bool addBorder = false, bool isClickable = true)
         {
             beginElement(ref text);
             // return if item must no be draw
@@ -104,8 +108,8 @@ namespace Fu.Framework
                 FuWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size.GetSize(), color);
             }
             // set states for this element
-            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
-            if (_lastItemHovered)
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, isClickable, false);
+            if (_lastItemHovered && isClickable)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
@@ -126,8 +130,26 @@ namespace Fu.Framework
         /// <param name="texture">Texture2D to draw</param>
         /// <param name="size">size of the image</param>
         /// <param name="color">tint color of the image</param>
+        /// <param name="imagePadding">padding of the image inside the button</param>
+        /// <param name="border">Whatever you want to draw borders</param>
         /// <returns>true if clicked</returns>
-        public virtual bool ImageButton(string text, Texture2D texture, FuElementSize size, Vector4 color)
+        public virtual bool ImageButton(string text, Texture2D texture, FuElementSize size, Vector4 color, Vector2 imagePadding, bool border)
+        {
+            return ImageButton(text, texture, size, color, imagePadding, border, FuButtonStyle.Default);
+        }
+
+        /// <summary>
+        /// Draw an image button (clickable image)
+        /// </summary>
+        /// <param name="text">ID/Label of the Image</param>
+        /// <param name="texture">Texture2D to draw</param>
+        /// <param name="size">size of the image</param>
+        /// <param name="color">tint color of the image</param>
+        /// <param name="imagePadding">padding of the image inside the button</param>
+        /// <param name="border">Whatever you want to draw borders</param>
+        /// <param name="style">the style of the image button</param>
+        /// <returns>true if clicked</returns>
+        public virtual bool ImageButton(string text, Texture2D texture, FuElementSize size, Vector4 color, Vector2 imagePadding, bool border, FuButtonStyle style)
         {
             beginElement(ref text);
             // return if item must no be draw
@@ -136,7 +158,8 @@ namespace Fu.Framework
                 return false;
             }
 
-            Vector2 padding = FuThemeManager.CurrentTheme.FramePadding;
+            imagePadding *= Fugui.CurrentContext.Scale;
+            Vector2 padding = FuThemeManager.FramePadding;
             padding.x = Mathf.Min(padding.x, padding.y);
             padding.y = padding.x;
             Vector2 btnSize = size.BrutSize;
@@ -177,22 +200,24 @@ namespace Fu.Framework
 
             // compute image size
             imgSize.y = btnSize.y;
-            imgSize.x = texture.width * imgRatio;
+            imgSize.x = texture.width * imgRatio * Fugui.CurrentContext.Scale;
 
             Vector2 centerImageOffset = (btnSize - imgSize) / 2f;
             centerImageOffset.x = Mathf.Max(0f, centerImageOffset.x);
             centerImageOffset.y = Mathf.Max(0f, centerImageOffset.y);
 
             imgSize -= (padding * 2f);
+            imgSize -= (imagePadding * 2f);
 
-            bool clicked = _customButton("##imb" + text, btnSize, padding, Vector2.zero, FuButtonStyle.Default, FuThemeManager.CurrentTheme.ButtonsGradientStrenght);
+            bool clicked = _customButton("##imb" + text, btnSize, padding, Vector2.zero, style, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, border);
 
             if (LastItemDisabled)
             {
                 color *= 0.75f;
             }
 
-            ImGui.SetCursorScreenPos(ImGui.GetItemRectMin() + padding + centerImageOffset);
+            Vector2 btnPos = ImGui.GetItemRectMin();
+            ImGui.SetCursorScreenPos(btnPos + padding + imagePadding + centerImageOffset);
             if (FuWindow.CurrentDrawingWindow == null)
             {
                 Fugui.MainContainer.ImGuiImage(texture, imgSize, color);
@@ -201,6 +226,8 @@ namespace Fu.Framework
             {
                 FuWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, imgSize, color);
             }
+            ImGui.SetCursorScreenPos(btnPos);
+            ImGui.Dummy(size);
 
             endElement();
             return clicked && !LastItemDisabled;
@@ -212,11 +239,11 @@ namespace Fu.Framework
         /// <param name="text">ID/Label of the Image</param>
         /// <param name="texture">Texture2D to draw</param>
         /// <param name="size">size of the image</param>
-        /// <param name="color">tint color of the button</param>
+        /// <param name="imagePadding">padding of the image inside the button</param>
         /// <returns>true if clicked</returns>
-        public virtual bool ImageButton(string text, Texture2D texture, FuElementSize size)
+        public virtual bool ImageButton(string text, Texture2D texture, FuElementSize size, Vector2 imagePadding)
         {
-            return ImageButton(text, texture, size, Color.white);
+            return ImageButton(text, texture, size, Color.white, imagePadding, true);
         }
     }
 }

@@ -1,9 +1,9 @@
-using UnityEngine;
-using System.Collections.Generic;
-using System;
-using System.Reflection;
-using System.IO;
 using Fu.Core;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using UnityEngine;
 
 namespace Fu.Framework
 {
@@ -15,6 +15,63 @@ namespace Fu.Framework
         public static Dictionary<string, FuTheme> Themes { get; private set; }
         private static List<Type> _uiElementStyleTypes;
         public const string DEFAULT_FUGUI_THEME_NAME = "DarkSky";
+        #endregion
+
+        #region Current Theme Variables
+        public static Vector2 WindowPadding { get; private set; }
+        public static Vector2 WindowMinSize { get; private set; }
+        public static Vector2 FramePadding { get; private set; }
+        public static Vector2 ItemSpacing { get; private set; }
+        public static Vector2 ItemInnerSpacing { get; private set; }
+        public static Vector2 CellPadding { get; private set; }
+        public static float WindowRounding { get; private set; }
+        public static float WindowBorderSize { get; private set; }
+        public static float ChildRounding { get; private set; }
+        public static float ChildBorderSize { get; private set; }
+        public static float PopupRounding { get; private set; }
+        public static float PopupBorderSize { get; private set; }
+        public static float FrameRounding { get; private set; }
+        public static float FrameBorderSize { get; private set; }
+        public static float IndentSpacing { get; private set; }
+        public static float ColumnsMinSpacing { get; private set; }
+        public static float ScrollbarSize { get; private set; }
+        public static float ScrollbarRounding { get; private set; }
+        public static float GrabMinSize { get; private set; }
+        public static float GrabRounding { get; private set; }
+        public static float TabRounding { get; private set; }
+        public static float TabBorderSize { get; private set; }
+        public static float TabMinWidthForCloseButton { get; private set; }
+
+        /// <summary>
+        /// Update variables with current theme scale
+        /// </summary>
+        internal static void CurrentThemeUpdate()
+        {
+            float scale = Fugui.CurrentContext.Scale;
+            WindowPadding = CurrentTheme.WindowPadding * scale;
+            WindowRounding = CurrentTheme.WindowRounding * scale;
+            WindowBorderSize = CurrentTheme.WindowBorderSize * scale;
+            WindowMinSize = CurrentTheme.WindowMinSize * scale;
+            ChildRounding = CurrentTheme.ChildRounding * scale;
+            ChildBorderSize = CurrentTheme.ChildBorderSize * scale;
+            PopupRounding = CurrentTheme.PopupRounding * scale;
+            PopupBorderSize = CurrentTheme.PopupBorderSize * scale;
+            FramePadding = CurrentTheme.FramePadding * scale;
+            FrameRounding = CurrentTheme.FrameRounding * scale;
+            FrameBorderSize = CurrentTheme.FrameBorderSize * scale;
+            ItemSpacing = CurrentTheme.ItemSpacing * scale;
+            ItemInnerSpacing = CurrentTheme.ItemInnerSpacing * scale;
+            CellPadding = CurrentTheme.CellPadding * scale;
+            IndentSpacing = CurrentTheme.IndentSpacing * scale;
+            ColumnsMinSpacing = CurrentTheme.ColumnsMinSpacing * scale;
+            ScrollbarSize = CurrentTheme.ScrollbarSize * scale;
+            ScrollbarRounding = CurrentTheme.ScrollbarRounding * scale;
+            GrabMinSize = CurrentTheme.GrabMinSize * scale;
+            GrabRounding = CurrentTheme.GrabRounding * scale;
+            TabRounding = CurrentTheme.TabRounding * scale;
+            TabBorderSize = CurrentTheme.TabBorderSize * scale;
+            TabMinWidthForCloseButton = CurrentTheme.TabMinWidthForCloseButton * scale;
+        }
         #endregion
 
         static FuThemeManager()
@@ -91,6 +148,7 @@ namespace Fu.Framework
                 }
 
                 CurrentTheme = theme;
+                CurrentThemeUpdate();
                 // call OnThemeSet on each structs that inherit from 
                 foreach (Type structType in _uiElementStyleTypes)
                 {

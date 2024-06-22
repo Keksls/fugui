@@ -294,6 +294,20 @@ public class FuGradient
         }
     }
 
+    /// <summary>
+    /// Set all keys at time
+    /// </summary>
+    /// <param name="keys">keys to set</param>
+    public void SetKeys(FuGradientColorKey[] keys)
+    {
+        _keys.Clear();
+        foreach (var key in keys)
+        {
+            _keys.Add(key);
+        }
+        UpdateGradientTextures();
+    }
+
     ///<summary>
     ///Gets a color key from the gradient.
     ///</summary>
@@ -380,6 +394,23 @@ public class FuGradient
         // Apply the texture changes
         _horizontalTexture.Apply();
         _verticalTexture.Apply();
+    }
+
+    /// <summary>
+    /// Invert the keys time of this gradient
+    /// </summary>
+    public void Invert()
+    {
+        List<FuGradientColorKey> newKeys = new List<FuGradientColorKey>();
+        int nbKeys = _keys.Count;
+        for (int i = nbKeys - 1; i >= 0; i--)
+        {
+            newKeys.Add(new FuGradientColorKey(1f - _keys[i].Time, _keys[i].Color));
+        }
+        _keys.Clear();
+        _keys = new List<FuGradientColorKey>();
+        _keys.AddRange(newKeys);
+        UpdateGradientTextures();
     }
     #endregion
 

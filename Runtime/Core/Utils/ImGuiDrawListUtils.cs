@@ -18,7 +18,6 @@ namespace Fu.Core
         {
             ImDrawCmdSize = (long)Unsafe.SizeOf<ImDrawCmd>();
             ImDrawVertSize = (long)Unsafe.SizeOf<ImDrawVert>();
-
         }
 
         public static DrawData GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr)
@@ -31,19 +30,19 @@ namespace Fu.Core
                 string name = imDrawDataPtr.CmdListsRange[i]._OwnerName;
 
                 // prevent icons name to switch render (for some reason, ImGui copy the name like 'name/name##pathID' when name contain Icon)
-                if (name.StartsWith("??? ") && name.Contains("/"))
+                if (name.StartsWith("???"))
                 {
                     if (!_unIconnizedTitleMapping.ContainsKey(name))
                     {
-                        string escapedTitle = name.Remove(0, 4).Split('/')[0]; // get icon escaped title
+                        string escapedTitle = name.Remove(0, 3).Split('/')[0]; // get icon escaped title
                         // search csharp formated window title
                         string csharpeEquivalentTitle = string.Empty;
                         foreach (string windowTitle in windows.Keys)
                         {
                             // icon escaped csharp formated title match excaped native formated title
-                            if (windowTitle.Remove(0, 2) == escapedTitle)
+                            if (windowTitle.Remove(0, 1) == escapedTitle)
                             {
-                                csharpeEquivalentTitle = name.Replace("??? ", windowTitle.Substring(0, 2));
+                                csharpeEquivalentTitle = name.Replace("???", windowTitle.Substring(0, 1));
                             }
                         }
 
@@ -66,7 +65,7 @@ namespace Fu.Core
                 {
                     if (windows.ContainsKey(name.Split('/')[0])) // it's a window's child
                     {
-                        if (windows[name.Split('/')[0]].IsDocked) // the window is docked
+                        if (windows[name.Split('/')[0]].IsImguiDocked) // the window is docked
                         {
                             if (name.Split('/').Length <= 2) // it's a direct window's child (so it may be the forced child used to store vtx)
                             {
@@ -137,7 +136,7 @@ namespace Fu.Core
     /// Represent a memory copy of an ImGui DrawList.
     /// It need to be a class because we store it on x frames, and it will significatively incrase GC.Collect() time if we keep it too long.
     /// </summary>
-    public unsafe class DrawList
+    public class DrawList
     {
         // ImGui DrawList stuffs
         // for each buffer, we store buffer data as array, a pointor of the first array element
@@ -182,7 +181,7 @@ namespace Fu.Core
         /// Bind the curretn drawList with an ImGui ImDrawListPtr
         /// </summary>
         /// <param name="drawList">ImGui drawList ptr handle</param>
-        public void Bind(ImDrawListPtr drawList)
+        public unsafe void Bind(ImDrawListPtr drawList)
         {
             // save cmd buffer
             _cmdBuffer = new ImDrawCmd[drawList.CmdBuffer.Size]; // allocate manager memory
@@ -227,7 +226,7 @@ namespace Fu.Core
     /// <summary>
     /// Class that represent all DrawList for a frame
     /// </summary>
-    public unsafe class DrawData
+    public class DrawData
     {
         public List<DrawList> DrawLists;
         public int TotalVtxCount;

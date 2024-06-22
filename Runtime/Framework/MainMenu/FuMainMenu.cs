@@ -10,6 +10,14 @@ namespace Fu
     public static partial class Fugui
     {
         /// <summary>
+        /// Whatever the main menu is currently disabled (will disable each menu items)
+        /// </summary>
+        public static bool IsMainMenuDisabled { get; private set; }
+        /// <summary>
+        /// Event fired after main menu draw, The rect given is the available rect after menu items
+        /// </summary>
+        public static event Action<Rect> OnMainMenuDraw;
+        /// <summary>
         /// menu items of the main menu
         /// </summary>
         private static readonly Dictionary<string, MainMenuItem> _mainMenuItems = new Dictionary<string, MainMenuItem>();
@@ -26,12 +34,23 @@ namespace Fu
         /// <param name="shortcut">The optional shortcut key for the menu item.</param>
         /// <param name="enabled">The optional enabled/disabled status of the menu item. Defaults to true.</param>
         /// <param name="selected">The optional selected/unselected status of the menu item. Defaults to false.</param>
-        public static void RegisterMainMenuItem(string name, Action callback, string parentName = null, string shortcut = null, bool enabled = true, bool selected = false, Func<string> funcName = null)
+        /// <param name="funcName">Function that compute the name (use it for dynamic name, keep null to use name as string var)</param>
+        /// <param name="predrawCallback">optional callback action to be executed before drawing the item.</param>
+        /// <param name="postdrawCallback">optional callback action to be executed after drawing the item.</param>
+        public static void RegisterMainMenuItem(string name, Action callback, string parentName = null, string shortcut = null, bool enabled = true, bool selected = false, Func<string> funcName = null, Action predrawCallback = null, Action postdrawCallback = null)
         {
+            // check whatever item name is null
+            if (string.IsNullOrEmpty(name))
+            {
+                Debug.LogError($"Menu item name is null");
+                return;
+            }
+
             // Check if a menu item with the same name has already been registered
             if (_mainMenuItems.ContainsKey(name))
             {
-                throw new Exception($"Menu item with name '{name}' is already registered");
+                Debug.LogError($"Menu item with name '{name}' is already registered");
+                return;
             }
 
             // Try to get the parent menu item, if one was specified
@@ -46,12 +65,13 @@ namespace Fu
                 // parent foes not exists
                 if (!_mainMenuItems.TryGetValue(parentName, out parent))
                 {
-                    throw new Exception($"Parent menu item with name '{parentName}' was not found");
+                    Debug.LogError($"Parent menu item with name '{parentName}' was not found");
+                    return;
                 }
             }
 
             // Create a new MenuItem object with the provided parameters
-            var menuItem = new MainMenuItem(name, shortcut, enabled, selected, callback, parent, funcName);
+            var menuItem = new MainMenuItem(name, shortcut, enabled, selected, callback, parent, funcName, predrawCallback, postdrawCallback);
 
             // Add the menu item to the collection of registered menu items
             _mainMenuItems.Add(name, menuItem);
@@ -64,7 +84,7 @@ namespace Fu
         public static void UnregisterMainMenuItem(string name)
         {
             // Check if a menu item with the same name has already been registered
-            if (_mainMenuItems.ContainsKey(name))
+            if (!string.IsNullOrEmpty(name) && _mainMenuItems.ContainsKey(name))
             {
                 MainMenuItem menuToRemove = _mainMenuItems[name];
 
@@ -88,7 +108,7 @@ namespace Fu
         public static void EnableMainMenuItem(string name)
         {
             // Check if a menu item with the same name has already been registered
-            if (_mainMenuItems.ContainsKey(name))
+            if (!string.IsNullOrEmpty(name) && _mainMenuItems.ContainsKey(name))
             {
                 _mainMenuItems[name].Enabled = true;
             }
@@ -144,6 +164,22 @@ namespace Fu
         }
 
         /// <summary>
+        /// Force disabling all items in main menu
+        /// </summary>
+        public static void DisableMainMenu()
+        {
+            IsMainMenuDisabled = true;
+        }
+
+        /// <summary>
+        /// Enable main menu items
+        /// </summary>
+        public static void EnableMainMenu()
+        {
+            IsMainMenuDisabled = false;
+        }
+
+        /// <summary>
         /// Draws the main menu bar and all top-level menu items.
         /// </summary>
         public static void RenderMainMenu()
@@ -166,6 +202,7 @@ namespace Fu
             // Begin the main menu bar
             if (ImGui.BeginMainMenuBar())
             {
+                Vector2 startPos = ImGui.GetCursorScreenPos();
                 // Draw all top-level menu items
                 foreach (var item in _mainMenuItems.Values)
                 {
@@ -175,6 +212,7 @@ namespace Fu
                     }
                 }
 
+                OnMainMenuDraw?.Invoke(new Rect(ImGui.GetItemRectMax() - startPos, ImGui.GetContentRegionAvail()));
                 // End the main menu bar
                 ImGui.EndMainMenuBar();
             }
@@ -201,8 +239,12 @@ namespace Fu
             Push(ImGuiStyleVar.WindowPadding, new Vector2(12f, 12f));
             if (item.Children != null && item.Children.Count > 0)
             {
+                item.PreDrawCallback?.Invoke();
+                // draw secondary duotone glyph if needed
+                DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList());
+
                 // Begin a submenu if the menu item has children
-                if (ImGui.BeginMenu(item.Parent == null ? "  " + itemText + "   " : itemText, item.Enabled))
+                if (ImGui.BeginMenu(item.Parent == null ? "  " + itemText + "   " : itemText, item.Enabled && !IsMainMenuDisabled))
                 {
                     // Draw all children of the menu item
                     foreach (var child in item.Children)
@@ -210,6 +252,10 @@ namespace Fu
                         drawMainMenuItem(child);
                     }
                     ImGui.EndMenu();
+                }
+                else
+                {
+                    item.PostDrawCallback?.Invoke();
                 }
             }
             else
@@ -219,10 +265,18 @@ namespace Fu
                     // Draw a separator line if the menu item is a separator
                     ImGui.Separator();
                 }
-                else if (ImGui.MenuItem(item.Parent == null ? "  " + itemText + "   " : itemText, item.Shortcut, item.Selected, item.Enabled))
+                else
                 {
-                    // Draw a regular menu item and execute its callback action if clicked
-                    item.Callback?.Invoke();
+                    item.PreDrawCallback?.Invoke();
+                    // draw secondary duotone glyph if needed
+                    DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList());
+
+                    if (ImGui.MenuItem(item.Parent == null ? "  " + itemText + "   " : itemText, item.Shortcut, item.Selected, item.Enabled && !IsMainMenuDisabled))
+                    {
+                        // Draw a regular menu item and execute its callback action if clicked
+                        item.Callback?.Invoke();
+                    }
+                    item.PostDrawCallback?.Invoke();
                 }
             }
             if (item.Parent != null)

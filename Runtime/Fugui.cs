@@ -68,6 +68,10 @@ namespace Fu
         /// </summary>
         public static bool HasRenderWindowThisFrame { get; internal set; } = false;
         /// <summary>
+        /// Whatever Fugui is allowed to set mouse cursor icon
+        /// </summary>
+        public static bool IsCursorLocked { get; internal set; } = false;
+        /// <summary>
         /// FuGui Controller instance
         /// </summary>
         internal static FuController Controller;
@@ -103,6 +107,10 @@ namespace Fu
         /// A flag indicating whether the popup has focus
         /// </summary>
         internal static List<bool> IsPopupFocused { get; private set; } = new List<bool>();
+        /// <summary>
+        /// Whatever cursors has just been unlocked
+        /// </summary>
+        internal static bool CursorsJustUnlocked = false;
         // The dictionary of external windows
         private static Dictionary<string, FuExternalWindowContainer> _externalWindows;
         // The dictionary of external windows
@@ -115,10 +123,21 @@ namespace Fu
         private static bool _renderThreadStarted = false;
         // counter of Fugui Contexts
         private static int _contextID = 0;
-        // counter of Fugui Contexts
+        // queue of callback to execute BEFORE default render
+        private static Queue<Action> _beforeDefaultRenderStack = new Queue<Action>();
+        // queue of callback to execute AFTER default render
         private static Queue<Action> _afterDefaultRenderStack = new Queue<Action>();
         // stack of action we will want to execute into unity main thread
         private static Queue<Action> _executeInMainThreadActionsStack = new Queue<Action>();
+
+        private static float _targetScale = -1f;
+        private static float _targetFontScale = -1f;
+
+        #endregion
+
+        #region Constants
+        private const ushort MIN_DUOTONE_GLYPH_RANGE = 60543;
+        private const ushort MAX_DUOTONE_GLYPH_RANGE = 63743;
         #endregion
 
         #region Events
@@ -140,6 +159,76 @@ namespace Fu
         /// </summary>
         /// <param name="window">FuWindow that has just been externalized</param>
         internal static void Fire_OnWindowExternalized(FuWindow window) => OnWindowExternalized?.Invoke(window);
+
+        #region Global Windows Events
+        /// <summary>
+        /// Whenever a window is resized
+        /// </summary>
+        public static event Action<FuWindow> OnWindowResized;
+        /// <summary>
+        /// Whenever a window is closed
+        /// </summary>
+        public static event Action<FuWindow> OnWindowClosed;
+        /// <summary>
+        /// Whenever a window is docked
+        /// </summary>
+        public static event Action<FuWindow> OnWindowDocked;
+        /// <summary>
+        /// Whenever a window is undocked
+        /// </summary>
+        public static event Action<FuWindow> OnWindowUnDocked;
+        /// <summary>
+        /// Whenever a window is added to a container
+        /// </summary>
+        public static event Action<FuWindow> OnWindowAddToContainer;
+        /// <summary>
+        /// Whenever a window is removed from a container
+        /// </summary>
+        public static event Action<FuWindow> OnWindowRemovedFromContainer;
+
+        /// <summary>
+        /// Fire event whenever a window is resized
+        /// </summary>
+        internal static void Fire_OnWindowResized(FuWindow window)
+        {
+            OnWindowResized?.Invoke(window);
+        }
+        /// <summary>
+        /// Fire event whenever a window is closed
+        /// </summary>
+        internal static void Fire_OnWindowClosed(FuWindow window)
+        {
+            OnWindowClosed?.Invoke(window);
+        }
+        /// <summary>
+        /// Fire event whenever a window is docked
+        /// </summary>
+        internal static void Fire_OnWindowDocked(FuWindow window)
+        {
+            OnWindowDocked?.Invoke(window);
+        }
+        /// <summary>
+        /// Fire event whenever a window is undocked
+        /// </summary>
+        internal static void Fire_OnWindowUnDocked(FuWindow window)
+        {
+            OnWindowUnDocked?.Invoke(window);
+        }
+        /// <summary>
+        /// Fire event whenever a window is added to a container
+        /// </summary>
+        internal static void Fire_OnWindowAddToContainer(FuWindow window)
+        {
+            OnWindowAddToContainer?.Invoke(window);
+        }
+        /// <summary>
+        /// Fire event whenever a window is removed from a container
+        /// </summary>
+        internal static void Fire_OnWindowRemovedFromContainer(FuWindow window)
+        {
+            OnWindowRemovedFromContainer?.Invoke(window);
+        }
+        #endregion
         #endregion
 
         static Fugui()
@@ -168,7 +257,7 @@ namespace Fu
             _renderThreadStarted = false;
 
             // create Default Fugui Context and initialize themeManager
-            DefaultContext = CreateUnityContext(mainContainerUICamera, Settings.UIScale, Settings.UIScale, FuThemeManager.Initialize);
+            DefaultContext = CreateUnityContext(mainContainerUICamera, 1f, 1f, FuThemeManager.Initialize);
             DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
@@ -177,17 +266,14 @@ namespace Fu
             // register Fugui Settings Window
             new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, (window) =>
             {
-                Fugui.DrawSettings();
+                DrawSettings();
             }, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
-
-            // register FontHelper Window
-            var winDef = new FuWindowDefinition(FuSystemWindowsNames.FontHelper, flags: FuWindowFlags.AllowMultipleWindow);
-            winDef.SetCustomWindowType<FontHelper>();
 
             // initialize debug tool if debug is enabled
 #if FUDEBUG
             initDebugTool();
 #endif
+
         }
 
         /// <summary>
@@ -208,6 +294,10 @@ namespace Fu
             if (GetCursorPos(out _worldMousePosition))
             {
                 WorldMousePosition = _worldMousePosition;
+            }
+            else
+            {
+                Debug.Log("fail");
             }
 
             // execute mainThread actions stack
@@ -287,6 +377,23 @@ namespace Fu
         #endregion
 
         #region public Utils
+        /// <summary>
+        /// Lock fugui auto set cursor icons
+        /// </summary>
+        public static void LockCursors()
+        {
+            IsCursorLocked = true;
+        }
+
+        /// <summary>
+        /// Unlock fugui auto set cursor icons
+        /// </summary>
+        public static void UnlockCursors()
+        {
+            IsCursorLocked = false;
+            CursorsJustUnlocked = true;
+        }
+
         /// <summary>
         /// Execute an action into main thread, will be raised on next Fugui.Update call
         /// </summary>
@@ -484,9 +591,9 @@ namespace Fu
         {
             CreateWindowsAsync(new List<FuWindowName>() { windowToGet }, (windows) =>
             {
-                if (windows.ContainsKey(windowToGet))
+                if (windows.Count > 0 && windows[0].Item1.Equals(windowToGet))
                 {
-                    callback?.Invoke(windows[windowToGet]);
+                    callback?.Invoke(windows[0].Item2);
                 }
                 else
                 {
@@ -501,7 +608,7 @@ namespace Fu
         /// <param name="windowsToGet">A list of window names to be created.</param>
         /// <param name="callback">A callback to be invoked after all windows are created, passing a dictionary of the created windows.</param>
         /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
-        public static void CreateWindowsAsync(List<FuWindowName> windowsToGet, Action<Dictionary<FuWindowName, FuWindow>> callback, bool autoAddToMainContainer = true)
+        public static void CreateWindowsAsync(List<FuWindowName> windowsToGet, Action<List<(FuWindowName, FuWindow)>> callback, bool autoAddToMainContainer = true)
         {
             // Initialize counters for the number of windows to add and the number of windows added
             int nbWIndowToAdd = 0;
@@ -522,7 +629,7 @@ namespace Fu
             }
 
             // Initialize a dictionary of UI windows
-            Dictionary<FuWindowName, FuWindow> windows = new Dictionary<FuWindowName, FuWindow>();
+            List<(FuWindowName, FuWindow)> windows = new List<(FuWindowName, FuWindow)>();
             // Iterate over the window definitions
             foreach (FuWindowDefinition winDef in winDefs)
             {
@@ -531,7 +638,7 @@ namespace Fu
                 onWindowReady = (window) =>
                 {
                     // Add the window to the dictionary and increment the window added counter
-                    windows.Add(winDef.WindowName, window);
+                    windows.Add(new(winDef.WindowName, window));
                     nbWIndowAdded++;
                     // Force window to draw first frame
                     window.ForceDraw();
@@ -550,6 +657,7 @@ namespace Fu
                     {
                         // Subscribe to the OnReady event of the window
                         win.OnInitialized += onWindowReady;
+                        win.Size = new Vector2Int((int)(winDef.Size.x * MainContainer.Context.Scale), (int)(winDef.Size.y * MainContainer.Context.Scale));
                         // add UIWindow to main container
                         win.TryAddToContainer(MainContainer);
                     }
@@ -675,9 +783,26 @@ namespace Fu
         /// </summary>
         public static void Render()
         {
+            // clear context menu stack in case dev forgot to pop something OR exception raise between push and pop
+            ClearContextMenuStack();
+            // clean popup stack to prevent popup to stay on stack if they close unexpectedly
+            CleanPopupStack();
+            // no one has render for now
+            HasRenderWindowThisFrame = false;
+
+            // prepare a new frame for default render
+            DefaultContext.PrepareRender();
+            // execute after default renderer render actions
+            if (DefaultContext.RenderPrepared)
+            {
+                while (_beforeDefaultRenderStack.Count > 0)
+                {
+                    _beforeDefaultRenderStack.Dequeue()?.Invoke();
+                }
+            }
             // Render default context
             DefaultContext.Render();
-            // execute after defautl renderer render actions
+            // execute after default renderer render actions
             if (DefaultContext.RenderPrepared)
             {
                 while (_afterDefaultRenderStack.Count > 0)
@@ -685,8 +810,13 @@ namespace Fu
                     _afterDefaultRenderStack.Dequeue()?.Invoke();
                 }
             }
-
+            if (_targetScale != -1f)
+            {
+                DefaultContext.SetScale(_targetScale, _targetFontScale);
+            }
+            // end render default context
             DefaultContext.EndRender();
+
             // render any other contexts
             foreach (var context in Contexts)
             {
@@ -696,17 +826,17 @@ namespace Fu
                     {
                         HasRenderWindowThisFrame = false;
                         context.Value.Render();
+                        if (_targetScale != -1f)
+                        {
+                            context.Value.SetScale(_targetScale, _targetFontScale);
+                        }
                         context.Value.EndRender();
                     }
                 }
             }
-            // clear context menu stack in case dev forgot to pop something OR exception raise between push and pop
-            ClearContextMenuStack();
-            // clean popup stack to prevent popup to stay on stack if they close unexpectedly
-            FuLayout.CleanPopupStack();
-            // prepare a new frame after all render, so we can use ImGui methods outside FuguiContext.OnLayout events
-            DefaultContext.PrepareRender();
-            HasRenderWindowThisFrame = false;
+
+            // prevent rescaling each frames
+            _targetScale = -1f;
         }
 
         /// <summary>
@@ -768,7 +898,7 @@ namespace Fu
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Push(ImGuiStyleVar imVar, Vector2 value)
         {
-            ImGuiNative.igPushStyleVar_Vec2(imVar, value);
+            ImGuiNative.igPushStyleVar_Vec2(imVar, value * CurrentContext.Scale);
             NbPushStyle++;
         }
 
@@ -780,7 +910,7 @@ namespace Fu
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Push(ImGuiStyleVar imVar, float value)
         {
-            ImGuiNative.igPushStyleVar_Float(imVar, value);
+            ImGuiNative.igPushStyleVar_Float(imVar, value * CurrentContext.Scale);
             NbPushStyle++;
         }
 
@@ -823,7 +953,12 @@ namespace Fu
         #endregion
 
         #region Fonts
-        public static void PushFont(int size, FontType type)
+        /// <summary>
+        /// Push the current font
+        /// </summary>
+        /// <param name="size">size of the font</param>
+        /// <param name="type">type of the font</param>
+        public static void PushFont(int size, FontType type = FontType.Regular)
         {
             if (!CurrentContext.Fonts.ContainsKey(size))
             {
@@ -839,15 +974,25 @@ namespace Fu
                 case FontType.Bold:
                     ImGui.PushFont(CurrentContext.Fonts[size].Bold);
                     break;
+                case FontType.Italic:
+                    ImGui.PushFont(CurrentContext.Fonts[size].Italic);
+                    break;
             }
             NbPushFont++;
         }
 
+        /// <summary>
+        /// Push the current font type
+        /// </summary>
+        /// <param name="type">type of the font</param>
         public static void PushFont(FontType type)
         {
             PushFont(CurrentContext.DefaultFont.Size, type);
         }
 
+        /// <summary>
+        /// Pop the current font
+        /// </summary>
         public static void PopFont()
         {
             if (NbPushFont > 0)
@@ -857,6 +1002,10 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Pop the n current fonts
+        /// </summary>
+        /// <param name="nbPop">number of fonts to pop</param>
         public static void PopFont(int nbPop)
         {
             for (int i = 0; i < nbPop; i++)
@@ -865,6 +1014,9 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Push the defaut font to current
+        /// </summary>
         public static void PushDefaultFont()
         {
             ImGui.PushFont(CurrentContext.DefaultFont.Regular);
@@ -1017,6 +1169,144 @@ namespace Fu
         }
         #endregion
 
+        #region Font Utils
+        /// <summary>
+        /// Get text size according to it's wrapping behaviour
+        /// </summary>
+        /// <param name="text">text to get size of</param>
+        /// <param name="wrapping">however the text need to be wrapped</param>
+        /// <returns>Size of the text</returns>
+        public static Vector2 CalcTextSize(string text, FuTextWrapping wrapping)
+        {
+            return CalcTextSize(text, wrapping, Vector2.zero);
+        }
+
+        /// <summary>
+        /// Get text size according to it's wrapping behaviour
+        /// </summary>
+        /// <param name="text">text to get size of</param>
+        /// <param name="wrapping">however the text need to be wrapped</param>
+        /// <param name="maxSize">maximum size (for clipping or wrapping). Keep Vector2.zero to use maximum available region</param>
+        /// <returns>Size of the text</returns>
+        public static Vector2 CalcTextSize(string text, FuTextWrapping wrapping, Vector2 maxSize)
+        {
+            if ((text.Length == 1 || Fugui.GetUntagedText(text).Length == 1) && Fugui.IsDuoToneChar(text[0]))
+            {
+                // get secondaty char
+                char secondary = (char)(((ushort)text[0]) + 1);
+                // get both char sized
+                Vector2 primarySize = ImGui.CalcTextSize(text[0].ToString());
+                Vector2 secondarySize = ImGui.CalcTextSize(secondary.ToString());
+                // get full icon size
+                return new Vector2(Mathf.Max(primarySize.x, secondarySize.x), Mathf.Max(primarySize.y, secondarySize.y));
+            }
+
+            Vector2 textSize;
+            switch (wrapping)
+            {
+                default:
+                case FuTextWrapping.None:
+                    textSize = ImGui.CalcTextSize(text, true);
+                    break;
+
+                case FuTextWrapping.Clip:
+                    textSize = ImGui.CalcTextSize(text, true);
+                    textSize.x = Mathf.Min(textSize.x, maxSize.x == 0f ? ImGui.GetContentRegionAvail().x : maxSize.x);
+                    break;
+
+                case FuTextWrapping.Wrap:
+                    textSize = ImGui.CalcTextSize(text, true, maxSize.x == -1f ? ImGui.GetContentRegionAvail().x : maxSize.x);
+                    if (maxSize.y > 0f && textSize.y > maxSize.y)
+                    {
+                        textSize.y = maxSize.y;
+                    }
+                    break;
+            }
+            return textSize;
+        }
+
+        /// <summary>
+        /// Check whatever a Char gyph is a Duotone Icon glyph
+        /// </summary>
+        /// <param name="character">char to check</param>
+        /// <returns>true if it should be a duotone icon glyph char</returns>
+        public static bool IsDuoToneChar(char character)
+        {
+            ushort charUS = (ushort)character;
+            return charUS >= MIN_DUOTONE_GLYPH_RANGE && charUS <= MAX_DUOTONE_GLYPH_RANGE;
+        }
+
+        /// <summary>
+        /// Render the secondary duotone glyph on top of a text
+        /// </summary>
+        /// <param name="text">text that will or have been draw outside</param>
+        /// <param name="textPos">position of the text</param>
+        /// <param name="drawList">drawList that draw the text</param>
+        public static void DrawDuotoneSecondaryGlyph(string text, Vector2 textPos, ImDrawListPtr drawList)
+        {
+            // look for duoTone icons within text
+            for (int i = 0; i < text.Length; i++)
+            {
+                // this char is Duotone, let's render secondary Glyph
+                if (IsDuoToneChar(text[i]))
+                {
+                    // get preText string
+                    char[] preTextCharArray = new char[i];
+                    for (int j = 0; j < i; j++)
+                    {
+                        preTextCharArray[j] = text[i];
+                    }
+                    string preText = new string(preTextCharArray);
+                    // get pretext size
+                    Vector2 size = CalcTextSize(preText, FuTextWrapping.None);
+                    // place virtual cursor to right position
+                    textPos.x += size.x;
+                    uint secondaryColor = GetSecondaryDuotoneColor();
+
+                    // render secondary glyph
+                    drawList.AddText(textPos, secondaryColor, ((char)(((ushort)text[i]) + 1)).ToString());
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Return the current primary duotone glyph color
+        /// </summary>
+        /// <returns>primary duotone color</returns>
+        public static uint GetPrimaryDuotoneColor(bool disabled)
+        {
+            // get primary and secondary colors
+            Vector4 primaryColorV4 = ImGui.GetStyle().Colors[(int)ImGuiCols.DuotonePrimaryColor];
+            uint primaryColor = ImGui.GetColorU32(primaryColorV4);
+            // replace by default colors if needed
+            uint themePrimaryColor = ImGui.GetColorU32(FuThemeManager.GetColor((FuColors)ImGuiCols.DuotonePrimaryColor));
+            if (primaryColor == themePrimaryColor)
+            {
+                primaryColor = ImGui.GetColorU32(FuThemeManager.GetColor(disabled ? FuColors.TextDisabled : FuColors.Text));
+            }
+            return primaryColor;
+        }
+
+        /// <summary>
+        /// Return the current secondary duotone glyph color
+        /// </summary>
+        /// <returns>secondary duotone color</returns>
+        public static uint GetSecondaryDuotoneColor()
+        {
+            // get primary and secondary colors
+            Vector4 secondaryColorV4 = ImGui.GetStyle().Colors[(int)ImGuiCols.DuotoneSecondaryColor];
+            uint secondaryColor = ImGui.GetColorU32(secondaryColorV4);
+            // replace by default colors if needed
+            uint themeSecondaryColor = ImGui.GetColorU32(FuThemeManager.GetColor((FuColors)ImGuiCols.DuotoneSecondaryColor));
+            if (secondaryColor == themeSecondaryColor)
+            {
+                secondaryColor = ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Text, 0.5f));
+            }
+            return secondaryColor;
+        }
+        #endregion
+
         #region public Utils
         /// <summary>
         /// Execute a callback after each window of default context has render
@@ -1027,6 +1317,18 @@ namespace Fu
             if (callback != null)
             {
                 _afterDefaultRenderStack.Enqueue(callback);
+            }
+        }
+
+        /// <summary>
+        /// Execute a callback after each window of default context has render
+        /// </summary>
+        /// <param name="callback"></param>
+        public static void ExecuteBeforeRenderWindows(Action callback)
+        {
+            if (callback != null)
+            {
+                _beforeDefaultRenderStack.Enqueue(callback);
             }
         }
 
@@ -1513,6 +1815,33 @@ namespace Fu
         public static bool IsDraggingPayload(string payloadID)
         {
             return CurrentContext.IsDraggingPayload(payloadID);
+        }
+        #endregion
+
+        #region Scaling
+        /// <summary>
+        /// Set the scale of all context
+        /// </summary>
+        /// <param name="scale">global all context scale</param>
+        /// <param name="fontScale">context all font scale (usualy same value as context scale)</param>
+        public static void SetScale(float scale, float fontScale)
+        {
+            if (scale <= 0f)
+            {
+                Debug.LogError("Fugui global scale must be greater than 0");
+                return;
+            }
+            if (scale > 5f)
+            {
+                Debug.LogError("Fugui global scale must be less than 10");
+                return;
+            }
+
+            ExecuteInMainThread(() =>
+            {
+                _targetScale = scale;
+                _targetFontScale = fontScale;
+            });
         }
         #endregion
     }

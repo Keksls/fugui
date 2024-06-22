@@ -88,7 +88,7 @@ namespace Fu.Framework
             // Set the width of the input field and create it
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             var oldVal = value; // Store the old value in case the input field is disabled
-            if(disabled)
+            if (disabled)
             {
                 ImGui.BeginDisabled();
             }
@@ -173,7 +173,7 @@ namespace Fu.Framework
                 return false;
             }
 
-            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f) * Fugui.CurrentContext.Scale);
+            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(2f, 0f) * Fugui.CurrentContext.Scale);
             bool valueChanged = false;
             // Calculate the column width for the table
             float colWidth = ImGui.GetContentRegionAvail().x * 0.5f;
@@ -189,13 +189,13 @@ namespace Fu.Framework
                 // Create a draggable float for the first value in the table, using the specified ID and value string
                 valueChanged |= dragFloat(text + "val1", ref value.x, v1String, min, max, speed, format, disabledInputs.Length > 0 ? disabledInputs[0] : false);
                 // Draw a hover frame around the element if it is hovered
-                drawHoverFrame();
+                DrawHoverFrame();
                 // Move to the second column
                 ImGui.TableNextColumn();
                 // Create a draggable float for the second value in the table, using the specified ID and value string
                 valueChanged |= dragFloat(text + "val2", ref value.y, v2String, min, max, speed, format, disabledInputs.Length > 1 ? disabledInputs[1] : false);
                 // Draw a hover frame around the element if it is hovered
-                drawHoverFrame();
+                DrawHoverFrame();
                 // End the table
                 ImGui.EndTable();
             }
@@ -275,7 +275,7 @@ namespace Fu.Framework
 
             bool valueChanged = false;
             float colWidth = ImGui.GetContentRegionAvail().x / 3f;
-            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f) * Fugui.CurrentContext.Scale);
+            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(2f, 0f) * Fugui.CurrentContext.Scale);
             if (ImGui.BeginTable(text + "dragTable", 3))
             {
                 // Set up the three columns in the table
@@ -288,27 +288,26 @@ namespace Fu.Framework
 
                 // Drag the first value
                 valueChanged |= dragFloat(text + "val1", ref value.x, v1String, min, max, speed, format, disabledInputs.Length > 0 ? disabledInputs[0] : false);
-                drawHoverFrame();
+                DrawHoverFrame();
 
                 // Begin the second column
                 ImGui.TableNextColumn();
 
                 // Drag the second value
                 valueChanged |= dragFloat(text + "val2", ref value.y, v2String, min, max, speed, format, disabledInputs.Length > 1 ? disabledInputs[1] : false);
-                drawHoverFrame();
+                DrawHoverFrame();
 
                 // Begin the third column
                 ImGui.TableNextColumn();
 
                 // Drag the third value
                 valueChanged |= dragFloat(text + "val3", ref value.z, v3String, min, max, speed, format, disabledInputs.Length > 2 ? disabledInputs[2] : false);
-                drawHoverFrame();
+                DrawHoverFrame();
 
                 // End the table
                 ImGui.EndTable();
             }
             Fugui.PopStyle();
-
             // reset last item ID (has been change before to use a unique ID per dragFloat)
             _lastItemID = text;
             // set states for this element
@@ -383,8 +382,8 @@ namespace Fu.Framework
             }
 
             bool valueChanged = false;
-            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(4f, 0f) * Fugui.CurrentContext.Scale);
             float colWidth = ImGui.GetContentRegionAvail().x * 0.25f;
+            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(2f, 0f) * Fugui.CurrentContext.Scale);
             if (ImGui.BeginTable(text + "dragTable", 4))
             {
                 // Set up four columns with equal widths
@@ -396,16 +395,16 @@ namespace Fu.Framework
                 // Move to the first column
                 ImGui.TableNextColumn();
                 valueChanged |= dragFloat(text + "val1", ref value.x, v1String, min, max, speed, format, disabledInputs.Length > 0 ? disabledInputs[0] : false); // Drag float for the first value
-                drawHoverFrame();
+                DrawHoverFrame();
                 ImGui.TableNextColumn();
                 valueChanged |= dragFloat(text + "val2", ref value.y, v2String, min, max, speed, format, disabledInputs.Length > 1 ? disabledInputs[1] : false); // Drag float for the second value
-                drawHoverFrame();
+                DrawHoverFrame();
                 ImGui.TableNextColumn();
                 valueChanged |= dragFloat(text + "val3", ref value.z, v3String, min, max, speed, format, disabledInputs.Length > 2 ? disabledInputs[2] : false); // Drag float for the third value
-                drawHoverFrame();
+                DrawHoverFrame();
                 ImGui.TableNextColumn();
                 valueChanged |= dragFloat(text + "val4", ref value.w, v4String, min, max, speed, format, disabledInputs.Length > 3 ? disabledInputs[3] : false); // Drag float for the fourth value
-                drawHoverFrame();
+                DrawHoverFrame();
                 ImGui.EndTable();
             }
             Fugui.PopStyle();

@@ -470,17 +470,6 @@ namespace Fu.Framework
             {
                 style.Colors[i] = Colors[i];
             }
-
-            //// set missing colors
-            //FuTheme defaultTheme = new FuTheme("defaultTmp");
-            //defaultTheme.SetAsDefaultDarkTheme();
-            //for (int i = (int)ImGuiCol.COUNT; i < (int)FuColors.COUNT; i++)
-            //{
-            //    if (Colors[i] == Vector4.zero)
-            //    {
-            //        Colors[i] = defaultTheme.Colors[i];
-            //    }
-            //}
         }
 
         public override string ToString()

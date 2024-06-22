@@ -25,10 +25,12 @@ namespace Fu.Core
                 if (value == null)
                 {
                     OnRemovedFromContainer?.Invoke(this);
+                    Fugui.Fire_OnWindowRemovedFromContainer(this);
                 }
                 else
                 {
                     OnAddToContainer?.Invoke(this);
+                    Fugui.Fire_OnWindowAddToContainer(this);
                 }
 
                 // release focus if this window is focued
@@ -105,6 +107,7 @@ namespace Fu.Core
         public bool IsHovered { get; internal set; }
         public bool IsHoveredContent { get { return IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup && !Mouse.IsHoverTopBar; } }
         public bool IsDocked { get; internal set; }
+        internal bool IsImguiDocked => (IsDocked || (IsDockable && Fugui.Settings.ConfigDockingAlwaysTabBar)) && IsUnityContext;
         public bool IsBusy { get; internal set; }
         public bool IsInterractable { get; set; }
         public bool IsVisible { get; private set; }
@@ -129,6 +132,7 @@ namespace Fu.Core
         // private fields
         internal ImGuiWindowFlags _windowFlags;
         private bool _forceLocationNextFrame = false;
+        private bool _forceSizeNextFrame = false;
         private bool _forceFocusNextFrame = false;
         private int _forceRedraw = 0;
         private bool _sendReadyNextFrame = false;
@@ -153,17 +157,29 @@ namespace Fu.Core
         #endregion
 
         #region Window Location
+        // unscaled private The height of the window topBar (optional)
+        private float _topBarHeight;
         // The height of the window topBar (optional)
-        public float TopBarHeight { get; private set; }
+        public float TopBarHeight
+        {
+            get
+            {
+                return _topBarHeight * (Container?.Context.Scale ?? 1f);
+            }
+            set
+            {
+                _topBarHeight = value;
+            }
+        }
         internal Vector2Int _size;
         public Vector2Int Size
         {
             get { return _size; }
             set
             {
-                _size = new Vector2Int((int)(value.x * (Container?.Scale ?? 1f)), (int)(value.y * (Container?.Scale ?? 1f)));
+                _size = value;
                 _localRect = new Rect(_localPosition, _size);
-                _forceLocationNextFrame = true;
+                _forceSizeNextFrame = true;
             }
         }
         private Vector2Int _workingAreaSize;
@@ -231,7 +247,6 @@ namespace Fu.Core
             IsExternalizable = windowDefinition.IsExternalizable;
             IsInterractable = windowDefinition.IsInterractif;
             IsClosable = windowDefinition.IsClosable;
-            Size = windowDefinition.Size;
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
             TopBarHeight = windowDefinition.TopBarHeight;
@@ -253,12 +268,21 @@ namespace Fu.Core
         {
             Keyboard = new FuKeyboardState(Container.Context.IO, this);
             _forceLocationNextFrame = true;
+            _forceSizeNextFrame = true;
             Mouse = new FuMouseState();
             DrawList = new DrawList();
             ChildrenDrawLists = new Dictionary<string, DrawList>();
             _lastFrameSize = Size;
             _lastFramePos = LocalPosition;
-            _windowFlags = ImGuiWindowFlags.NoCollapse;
+            // prevent to replace window flag if there is some
+            if (_windowFlags == ImGuiWindowFlags.None)
+            {
+                _windowFlags = ImGuiWindowFlags.NoCollapse;
+            }
+            if (!IsDockable)
+            {
+                _windowFlags |= ImGuiWindowFlags.NoDocking;
+            }
             // assume that we are Idle
             State = FuWindowState.Idle;
             TargetFPS = Fugui.Settings.IdleFPS;
@@ -267,6 +291,11 @@ namespace Fu.Core
             IsInitialized = true;
             IsBusy = false;
             _sendReadyNextFrame = true;
+            // place window in center of container if location is -1 -1
+            if (LocalPosition == new Vector2Int(-1, -1))
+            {
+                LocalPosition = new Vector2Int((Container.Size.x - Size.x) / 2, (Container.Size.y - Size.y) / 2);
+            }
             ForceDraw();
         }
 
@@ -301,14 +330,47 @@ namespace Fu.Core
             if (!IsDocked)
             {
                 if (Container.ForcePos() || _forceLocationNextFrame)
-                {
-                    ImGui.SetNextWindowPos(LocalPosition);
+                {     // it's a floating dock node window, because user set 'ConfigDockingAlwaysTabBar' to true in settings
+                    if (IsImguiDocked && CurrentDockID != 0)
+                    {
+                        unsafe
+                        {
+                            ImGuiDockNode* node = NativeDocking.igDockBuilderGetNode(CurrentDockID);
+                            if (new IntPtr(node) != IntPtr.Zero && NativeDocking.ImGuiDockNode_IsFloatingNode(node) != 0)
+                            {
+                                NativeDocking.igDockBuilderSetNodePos(CurrentDockID, LocalPosition);
+                                NativeDocking.igDockBuilderFinish(CurrentDockID);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ImGui.SetNextWindowPos(LocalPosition, ImGuiCond.Always);
+                    }
+                    _forceLocationNextFrame = false;
                 }
-                if (_forceLocationNextFrame)
+                if (_forceSizeNextFrame)
                 {
-                    ImGui.SetNextWindowSize(Size);
+                    // it's a floating dock node window, because user set 'ConfigDockingAlwaysTabBar' to true in settings
+                    if (IsImguiDocked && CurrentDockID != 0)
+                    {
+                        unsafe
+                        {
+                            ImGuiDockNode* node = NativeDocking.igDockBuilderGetNode(CurrentDockID);
+                            if (new IntPtr(node) != IntPtr.Zero && NativeDocking.ImGuiDockNode_IsFloatingNode(node) != 0)
+                            {
+                                NativeDocking.igDockBuilderSetNodeSize(CurrentDockID, Size);
+                                NativeDocking.igDockBuilderFinish(CurrentDockID);
+                            }
+                        }
+                    }
+                    // it's a regular window
+                    else
+                    {
+                        ImGui.SetNextWindowSize(Size);
+                    }
                 }
-                _forceLocationNextFrame = false;
+                _forceSizeNextFrame = false;
             }
             if (_forceFocusNextFrame)
             {
@@ -332,7 +394,7 @@ namespace Fu.Core
                     LocalPosition = newFramePos;
                     HasMovedThisFrame = true;
                     Fire_OnDrag();
-                    if (!IsDragging && Mouse.IsPressed(0))
+                    if (!IsDragging && Container.Mouse.IsPressed(FuMouseButton.Left))
                     {
                         IsDragging = true;
                     }
@@ -342,7 +404,7 @@ namespace Fu.Core
                 // handle ImGui window resize
                 if (_lastFrameSize != newFrameSize)
                 {
-                    if (!_forceLocationNextFrame || IsDocked)
+                    if (!_forceSizeNextFrame || IsDocked)
                     {
                         _size = newFrameSize;
                         _localRect = new Rect(_localPosition, _size);
@@ -354,7 +416,7 @@ namespace Fu.Core
             _ignoreTransformThisFrame = false;
 
             // drag state
-            if (IsDragging && !Mouse.IsPressed(0))
+            if (IsDragging && !Container.Mouse.IsPressed(FuMouseButton.Left))
             {
                 IsDragging = false;
             }
@@ -369,11 +431,8 @@ namespace Fu.Core
         /// </summary>
         /// <param name="newFrameSize"></param>
         /// <param name="newFramePos"></param>
-        public virtual void DrawWindowBody(ref Vector2Int newFrameSize, ref Vector2Int newFramePos)
+        public virtual unsafe void DrawWindowBody(ref Vector2Int newFrameSize, ref Vector2Int newFramePos)
         {
-            // if we are in main window container and this window is docked, we must surround UI by ImGuiChild
-            // Child will have name that will be used by DrawCmd to store idx and vtx without recompute DrawList
-            bool createChild = IsDocked && IsUnityContext;
             // invoke pre draw event
             OnPreDraw?.Invoke(this);
 
@@ -388,6 +447,7 @@ namespace Fu.Core
                 Fugui.Push(ImGuiCols.TabActive, FuThemeManager.GetColor(FuColors.TabActive));
                 Fugui.Push(ImGuiCols.TabUnfocusedActive, FuThemeManager.GetColor(FuColors.TabUnfocusedActive));
             }
+            Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(6f, 4f));
 
             // get last frame Hovered state
             bool _lastFrameHovered = IsHovered;
@@ -405,6 +465,11 @@ namespace Fu.Core
             if (nativeWantDrawWindow)
             {
                 bool docked = ImGuiNative.igIsWindowDocked() != 0;
+                // prevent floating node to fake docked state
+                if (docked)
+                {
+                    docked = NativeDocking.ImGuiDockNode_IsFloatingNode(NativeDocking.igDockBuilderGetNode(ImGui.GetWindowDockID())) == 0;
+                }
                 if (docked != IsDocked)
                 {
                     IsDocked = docked;
@@ -421,14 +486,17 @@ namespace Fu.Core
                 }
 
                 // if docked, get size according to avail w and h
-                if (IsDocked)
+                if (IsImguiDocked || IsDocked)
                 {
-                    // get size of this window
                     CurrentDockID = ImGuiNative.igGetWindowDockID();
-                    ImGuiDockNodePtr node = ImGuiDocking.DockBuilderGetNode(CurrentDockID);
-                    ImRect rect = node.Rect();
-                    var size = rect.Max - rect.Min;
-                    newFrameSize = new Vector2Int((int)size.x, (int)size.y);
+                    if (IsDocked)
+                    {
+                        // get size of this window
+                        ImGuiDockNodePtr node = ImGuiDocking.DockBuilderGetNode(CurrentDockID);
+                        ImRect rect = node.Rect();
+                        var size = rect.Max - rect.Min;
+                        newFrameSize = new Vector2Int((int)size.x, (int)size.y);
+                    }
                 }
                 else
                 {
@@ -436,7 +504,7 @@ namespace Fu.Core
                 }
 
                 // Draw UI container. this is needed to store drawList even if window is not render
-                if (createChild)
+                if (IsImguiDocked)
                 {
                     Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
                     Fugui.Push(ImGuiCols.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCols.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0039216f
@@ -471,6 +539,7 @@ namespace Fu.Core
                 // draw debug data
                 DrawDebugPanel();
                 ImGui.End();
+                Fugui.PopStyle();
                 IsVisible = true;
             }
             else
@@ -580,7 +649,9 @@ namespace Fu.Core
                 _nbFontPushOnFrameStart = Fugui.NbPushFont;
 
                 // draw user UI callback
+                FuStyle.Default.Push(true);
                 UI?.Invoke(this);
+                FuStyle.Content.Pop();
 
                 // invoke body draw event 
                 OnBodyDraw?.Invoke(this);
@@ -731,6 +802,7 @@ namespace Fu.Core
             if (!_ignoreResizeForThisFrame)
             {
                 OnResized?.Invoke(this);
+                Fugui.Fire_OnWindowResized(this);
             }
         }
 
@@ -751,6 +823,7 @@ namespace Fu.Core
             OnDock?.Invoke(this);
             OnResize?.Invoke(this);
             OnDrag?.Invoke(this);
+            Fugui.Fire_OnWindowDocked(this);
         }
 
         /// <summary>
@@ -761,6 +834,7 @@ namespace Fu.Core
             OnUnDock?.Invoke(this);
             OnResize?.Invoke(this);
             OnDrag?.Invoke(this);
+            Fugui.Fire_OnWindowUnDocked(this);
         }
         #endregion
 
@@ -923,6 +997,7 @@ namespace Fu.Core
                 window.OnRemovedFromContainer -= onremovedFromContainerDelegate;
                 Fugui.TryRemoveUIWindow(this);
                 OnClosed?.Invoke(this);
+                Fugui.Fire_OnWindowClosed(this);
                 callback?.Invoke();
             }
 
@@ -932,6 +1007,7 @@ namespace Fu.Core
             {
                 Fugui.TryRemoveUIWindow(this);
                 OnClosed?.Invoke(this);
+                Fugui.Fire_OnWindowClosed(this);
                 callback?.Invoke();
             }
         }

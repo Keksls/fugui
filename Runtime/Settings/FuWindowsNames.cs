@@ -12,7 +12,5 @@ namespace Fu.Core
         public static FuWindowName FuguiSettings { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _FuguiSettings; }
         protected static FuWindowName _DockSpaceManager = new FuWindowName(ushort.MaxValue - 4, "DockSpace Manager", true, -1);
         public static FuWindowName DockSpaceManager { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _DockSpaceManager; }
-        protected static FuWindowName _FontHelper = new FuWindowName(ushort.MaxValue - 5, "Font Icons Helper", true, -1);
-        public static FuWindowName FontHelper { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _FontHelper; }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using Fu.Core;
 using Fu.Framework;
 using ImGuiNET;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu
@@ -28,22 +27,11 @@ namespace Fu
 
                 // buttons
                 FuStyle.Unpadded.Push(true);
-                using (FuGrid grid = new FuGrid("fsAG", new FuGridDefinition(2, new float[] { 1f / 2f })))
+                using (FuGrid grid = new FuGrid("fsAG", new FuGridDefinition(1, new float[] { 1f / 1f })))
                 {
                     if (grid.Button("Docking Layout", FuButtonStyle.Highlight))
                     {
                         FuDockingLayoutManager.SetConfigurationLayout();
-                    }
-                    if (grid.Button("Font Helper", FuButtonStyle.Highlight))
-                    {
-                        // set custom layout
-                        var dld = new FuDockingLayoutDefinition();
-                        dld.Proportion = 0f;
-                        dld.Orientation = UIDockSpaceOrientation.None;
-                        dld.Children = new List<FuDockingLayoutDefinition>();
-                        dld.WindowsDefinition = new List<ushort>();
-                        dld.WindowsDefinition.Add(FuSystemWindowsNames.FontHelper.ID);
-                        FuDockingLayoutManager.SetLayout(dld, "");
                     }
                 }
                 FuStyle.Unpadded.Pop();

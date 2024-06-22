@@ -124,6 +124,7 @@ MonoBehaviour:
     FUGUI_WINDOWS_DEF_ENUM_PATH: Assets\Scripts\UI\FuWindowsNames.cs
     FUGUI_DOCKSPACE_FOLDER_PATH: Assets\StreamingAssets\Fugui\Layout\
     EnableExternalizations: 0
+    DisplaySettingsIfNoLayout: 1
     IdleFPS: 1
     ManipulatingFPS: 28
     IdleCameraFPS: 2
@@ -137,7 +138,7 @@ MonoBehaviour:
     DrawDebugPanel: 0
     ModalAnimationDuration: 0.2
     ElementsAnimationDuration: 0.1
-    NotidyAnimlationDuration: 0.15
+    NotifyAnimlationDuration: 0.15
     ExternalizationKey: 
     InternalizationKey: 
     MaximizeIcon: {fileID: 2800000, guid: 29b96c3657f037d479544d03c83b829d, type: 3}
@@ -147,7 +148,8 @@ MonoBehaviour:
     LeftIcon: {fileID: 2800000, guid: 2d092e4968abaea428c3a12ea1abbf7c, type: 3}
     RightIcon: {fileID: 2800000, guid: e43a48c6f5b887f4b8dc9078fe467bdf, type: 3}
     CenterIcon: {fileID: 2800000, guid: 88d6d9ba964f11e41aa111b8b482cbe5, type: 3}
-    OpenGLNonReadableTexture: {fileID: 2800000, guid: 86e79ee31b0415048851a462666eea0d, type: 3}
+    OpenGLNonReadableTexture: {fileID: 2800000, guid: 86e79ee31b0415048851a462666eea0d,
+      type: 3}
     InfoIcon: {fileID: 2800000, guid: 04c00c04e0f871c4fb92d618c431717a, type: 3}
     WarningIcon: {fileID: 2800000, guid: 4d5c887232331e04b87d503925340957, type: 3}
     DangerIcon: {fileID: 2800000, guid: 11f3a4d594ed7b244948b9cc632faffc, type: 3}
@@ -170,11 +172,10 @@ MonoBehaviour:
     DisplayTabBarButton: 1
     TabBarButtonRight: 1
     LayoutsFolder: Fugui/Layouts
-    FontIconsSizeOffset: 2
     FontIconsOffset: {x: 0, y: -1}
     RendererType: 0
     PlatformType: 0
-    ImGuiConfig: 64
+    ImGuiConfig: 49216
     DoubleClickTime: 0.3
     DoubleClickMaxDist: 6
     DragThreshold: 6

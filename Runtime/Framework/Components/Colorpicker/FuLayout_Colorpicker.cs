@@ -108,7 +108,7 @@ namespace Fu.Framework
 
             float height = 18f * Fugui.CurrentContext.Scale;
             float width = ImGui.GetContentRegionAvail().x;
-            float rounding = FuThemeManager.CurrentTheme.FrameRounding;
+            float rounding = FuThemeManager.FrameRounding;
             var drawList = ImGui.GetWindowDrawList();
 
             Vector2 min = ImGui.GetCursorScreenPos();
@@ -136,7 +136,7 @@ namespace Fu.Framework
             // fake draw the element
             ImGui.Dummy(max - min + Vector2.one * 2f);
             _elementHoverFramedEnabled = true;
-            drawHoverFrame();
+            DrawHoverFrame();
             _elementHoverFramedEnabled = false;
 
             // set states for this element
@@ -151,16 +151,16 @@ namespace Fu.Framework
 
             endElement(style);
 
-            Vector2 size = new Vector2(404f * Fugui.CurrentContext.Scale, 224f * Fugui.CurrentContext.Scale);
+            Vector2 size = new Vector2(404f, 224f + FuThemeManager.WindowPadding.y * 2f);
             if (alpha)
             {
-                size = new Vector2(404f * Fugui.CurrentContext.Scale, 212f * Fugui.CurrentContext.Scale);
+                size = new Vector2(404f, 212f + FuThemeManager.WindowPadding.y * 2f);
             }
 
             string popupID = "ColorPicker" + text;
             if (_lastItemClickedButton == FuMouseButton.Left)
             {
-                OpenPopUp(popupID, () =>
+                Fugui.OpenPopUp(popupID, () =>
                 {
                     // Draw the color picker
                     ImGui.SetNextItemWidth(184f * Fugui.CurrentContext.Scale);
@@ -181,7 +181,7 @@ namespace Fu.Framework
                     }
                 }, size);
             }
-            DrawPopup(popupID);
+            Fugui.DrawPopup(popupID);
             if (_pickersEditedStates[text])
             {
                 color = _pickersColors[text];

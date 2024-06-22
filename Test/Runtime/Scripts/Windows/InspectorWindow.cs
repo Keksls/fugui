@@ -113,7 +113,7 @@ public class InspectorWindow : MonoBehaviour
                         Fugui.PushFont(18, FontType.Regular);
                         if (layout.ClickableText(Icons.MenuDots))
                         {
-                            layout.OpenPopUp(cameraSettingsPopupID, () =>
+                            Fugui.OpenPopUp(cameraSettingsPopupID, () =>
                             {
                                 layout.Spacing();
                                 using (FuGrid grid = new FuGrid("cmStngGrd", width: 196f, outterPadding:8f))
@@ -124,7 +124,7 @@ public class InspectorWindow : MonoBehaviour
                             });
                         }
                         Fugui.PopFont();
-                        layout.DrawPopup(cameraSettingsPopupID);
+                        Fugui.DrawPopup(cameraSettingsPopupID);
                     });
                 }
             }

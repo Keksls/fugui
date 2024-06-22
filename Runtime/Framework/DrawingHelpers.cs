@@ -159,7 +159,7 @@ namespace Fu
         /// <param name="strenght">quantity of pixels to move on X from here</param>
         public static void MoveX(float strenght)
         {
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + strenght * Fugui.CurrentContext.Scale);
+            ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x + strenght * Fugui.CurrentContext.Scale, ImGui.GetCursorScreenPos().y));
         }
 
         /// <summary>
@@ -168,7 +168,43 @@ namespace Fu
         /// <param name="strenght">quantity of pixels to move on Y from here</param>
         public static void MoveY(float strenght)
         {
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + strenght * Fugui.CurrentContext.Scale);
+            ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, ImGui.GetCursorScreenPos().y + strenght * CurrentContext.Scale));
+        }
+
+        /// <summary>
+        /// Move the current drawing X position of strenght
+        /// </summary>
+        /// <param name="strenght">quantity of pixels to move on X from here</param>
+        public static void MoveXUnscaled(float strenght)
+        {
+            ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x + strenght, ImGui.GetCursorScreenPos().y));
+        }
+
+        /// <summary>
+        /// Move the current drawing Y position of strenght
+        /// </summary>
+        /// <param name="strenght">quantity of pixels to move on Y from here</param>
+        public static void MoveYUnscaled(float strenght)
+        {
+            ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, ImGui.GetCursorScreenPos().y + strenght));
+        }
+
+        /// <summary>
+        /// Move the current drawing X position to new local pos
+        /// </summary>
+        /// <param name="x">Local X position</param>
+        public static void SetLocalX(float x)
+        {
+            ImGui.SetCursorPosX(x * Fugui.CurrentContext.Scale);
+        }
+
+        /// <summary>
+        /// Move the current drawing Y position to new local pos
+        /// </summary>
+        /// <param name="y">Local Y position</param>
+        public static void SetLocalY(float y)
+        {
+            ImGui.SetCursorPosY(y * Fugui.CurrentContext.Scale);
         }
 
         ///<summary>
@@ -208,6 +244,27 @@ namespace Fu
                     drawList.AddRectFilled(topLeft, bottomRight, color);
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Draw a gradient rect
+        /// Used as Button background
+        /// </summary>
+        /// <param name="pos">position of the rect</param>
+        /// <param name="size">Size of the background</param>
+        /// <param name="gradientStrenght">strenght of the gradient (> 0 && < 1)</param>
+        /// <param name="rounding">Rect rounding</param>
+        /// <param name="drawList">drawList to use to draw the rect</param>
+        /// <param name="color">The color of the rect</param>
+        public static unsafe void DrawGradientRect(Vector2 pos, Vector2 size, float gradientStrenght, float rounding, ImDrawListPtr drawList, Vector4 color)
+        {
+            Vector4 bg2f = new Vector4(color.x * gradientStrenght, color.y * gradientStrenght, color.z * gradientStrenght, color.w);
+            // draw button frame
+            int vert_start_idx = drawList.VtxBuffer.Size;
+            drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(color), rounding);
+            int vert_end_idx = drawList.VtxBuffer.Size;
+            ImGuiInternal.igShadeVertsLinearColorGradientKeepAlpha(drawList.NativePtr, vert_start_idx, vert_end_idx, pos, new Vector2(pos.x, pos.y + size.y), ImGuiNative.igGetColorU32_Vec4(color), ImGuiNative.igGetColorU32_Vec4(bg2f));
         }
     }
 }

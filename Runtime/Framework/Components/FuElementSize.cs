@@ -8,6 +8,7 @@ namespace Fu.Framework
     {
         private Vector2 _size;
         public Vector2 BrutSize => _size;
+        public Vector2 ScaledSize => new Vector2(_size.x > 0f ? _size.x * Fugui.CurrentContext.Scale : _size.x, _size.y > 0f ? _size.y * Fugui.CurrentContext.Scale : _size.y);
 
         #region Presset
         static FuElementSize _autoSize = new FuElementSize(Vector2.zero);
@@ -33,8 +34,12 @@ namespace Fu.Framework
         public Vector2 GetSize()
         {
             Vector2 size = _size;
-            
-            if (_size.x < 0)
+
+            if (_size.x < -1f)
+            {
+                size.x = ImGui.GetContentRegionAvail().x + (_size.x * Fugui.CurrentContext.Scale);
+            }
+            else if (_size.x < 0f)
             {
                 size.x = ImGui.GetContentRegionAvail().x;
             }

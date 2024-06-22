@@ -44,6 +44,14 @@ namespace Fu.Framework
         /// The list of child menu items, if any.
         /// </summary>
         public List<MainMenuItem> Children { get; }
+        /// <summary>
+        /// The callback action to be executed before drawing the item.
+        /// </summary>
+        public Action PreDrawCallback { get; private set; }
+        /// <summary>
+        /// The callback action to be executed after drawing the item.
+        /// </summary>
+        public Action PostDrawCallback { get; private set; }
 
         /// <summary>
         /// Creates a new menu item with the provided name, shortcut key, enabled/disabled status,
@@ -56,7 +64,10 @@ namespace Fu.Framework
         /// <param name="selected">The optional selected/unselected status of the menu item. Defaults to false.</param>
         /// <param name="callback">The callback action to be executed when the menu item is selected.</param>
         /// <param name="parent">The optional parent menu item.</param>
-        public MainMenuItem(string name, string shortcut, bool enabled, bool selected, Action callback, MainMenuItem parent, Func<string> funcName)
+        /// <param name="funcName">Function that compute the name (use it for dynamic name, keep null to use name as string var)</param>
+        /// <param name="predrawCallback">optional callback action to be executed before drawing the item.</param>
+        /// <param name="postdrawCallback">optional callback action to be executed after drawing the item.</param>
+        public MainMenuItem(string name, string shortcut, bool enabled, bool selected, Action callback, MainMenuItem parent, Func<string> funcName, Action predrawCallback, Action postdrawCallback)
         {
             Name = name;
             Shortcut = shortcut;
@@ -70,6 +81,8 @@ namespace Fu.Framework
                 parent.Children.Add(this);
             }
             NameFunc = funcName;
+            PreDrawCallback = predrawCallback;
+            PostDrawCallback = postdrawCallback;
         }
 
         /// <summary>

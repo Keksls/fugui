@@ -1,5 +1,4 @@
 ﻿//#define FUGUI_USE_TEXTUREARRAY
-using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -9,7 +8,6 @@ using Unity.Collections.LowLevel.Unsafe;
 #endif
 using UnityEngine;
 using UTexture = UnityEngine.Texture;
-using System.Runtime.InteropServices;
 
 namespace Fu.Core.DearImGui.Texture
 {
@@ -151,6 +149,24 @@ namespace Fu.Core.DearImGui.Texture
 
             // register atlas texture
             RegisterTexture(_atlasTexture[Fugui.CurrentContext.FontScale]);
+        }
+
+        /// <summary>
+        /// Clear font atlas from font manager
+        /// </summary>
+        /// <param name="oldScale">scale to remove from texture manager</param>
+        public void ClearFontAtlas(float oldScale)
+        {
+            if (_atlasTexture.ContainsKey(oldScale))
+            {
+                return;
+            }
+            IntPtr textureID = _textureIds[_atlasTexture[oldScale]];
+            _textures.Remove(textureID);
+            _textureIds.Remove(_atlasTexture[oldScale]);
+            UnityEngine.Object.Destroy(_atlasTexture[oldScale]);
+            _atlasTexture.Remove(oldScale);
+
         }
 #endif
         public unsafe void Shutdown()

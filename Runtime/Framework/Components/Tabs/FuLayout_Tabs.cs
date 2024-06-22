@@ -17,7 +17,7 @@ namespace Fu.Framework
             // draw tab bg color
             Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 size = ImGui.GetContentRegionAvail();
-            size.y = ImGui.CalcTextSize("Ap").y + (FuThemeManager.CurrentTheme.FramePadding.y * Fugui.CurrentContext.Scale * 2f);
+            size.y = ImGui.CalcTextSize("Ap").y + (FuThemeManager.FramePadding.y * Fugui.CurrentContext.Scale * 2f);
             ImGui.GetWindowDrawList().AddRectFilled(pos, pos + size, ImGui.GetColorU32(ImGuiCol.TitleBg));
 
             // draw the tab bar

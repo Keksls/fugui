@@ -66,7 +66,7 @@ namespace Fu.Core
             _currentImageUV = Vector2.one;
 
             // create the render texture
-            _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);
+            _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
             _rTexture.antiAliasing = 8;
             _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
             _rTexture.useDynamicScale = true;
@@ -89,7 +89,6 @@ namespace Fu.Core
             UI = (window) =>
             {
                 Vector2 cursorPos = ImGui.GetCursorScreenPos();
-                //ImGui.GetWindowDrawList().AddImage(Container.GetTextureID(_rTexture), cursorPos, cursorPos + WorkingAreaSize, Vector2.zero, _currentImageUV);
                 Container.ImGuiImage(_rTexture, WorkingAreaSize);
                 ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this);

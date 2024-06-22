@@ -12,14 +12,15 @@ namespace Fu.Framework
         /// <param name="size">Size of the image</param>
         /// <param name="color">color of the image</param>
         /// <param name="addBorder">if true, add a frame border around the image</param>
-        public override bool Image(string text, Texture2D texture, FuElementSize size, Vector4 color, bool addBorder = false)
+        /// <param name="isClickable">make the image clickable and change the cursor if hovered</param>
+        public override bool Image(string text, Texture2D texture, FuElementSize size, Vector4 color, bool addBorder = false, bool isClickable = true)
         {
             if (!_gridCreated)
             {
                 return false;
             }
             drawElementLabel(text, FuTextStyle.Default);
-            return base.Image(text, texture, size, color, addBorder);
+            return base.Image(text, texture, size, color, addBorder, isClickable);
         }
 
         /// <summary>
@@ -30,14 +31,15 @@ namespace Fu.Framework
         /// <param name="size">Size of the image</param>
         /// <param name="color">color of the image</param>
         /// <param name="addBorder">if true, add a frame border around the image</param>
-        public override bool Image(string text, RenderTexture texture, FuElementSize size, Vector4 color, bool addBorder = false)
+        /// <param name="isClickable">make the image clickable and change the cursor if hovered</param>
+        public override bool Image(string text, RenderTexture texture, FuElementSize size, Vector4 color, bool addBorder = false, bool isClickable = true)
         {
             if (!_gridCreated)
             {
                 return false;
             }
             drawElementLabel(text, FuTextStyle.Default);
-            return base.Image(text, texture, size, color, addBorder);
+            return base.Image(text, texture, size, color, addBorder, isClickable);
         }
 
         /// <summary>
@@ -46,15 +48,16 @@ namespace Fu.Framework
         /// <param name="text">ID/Label of the image</param>
         /// <param name="texture">Texture to draw</param>
         /// <param name="size">Size of the image</param>
+        /// <param name="imagePadding">padding of the image inside the button</param>
         /// <returns>true if clicked</returns>
-        public override bool ImageButton(string text, Texture2D texture, FuElementSize size)
+        public override bool ImageButton(string text, Texture2D texture, FuElementSize size, Vector2 imagePadding)
         {
             if (!_gridCreated)
             {
                 return false;
             }
             drawElementLabel(text, FuTextStyle.Default);
-            return base.ImageButton(text, texture, size);
+            return base.ImageButton(text, texture, size, imagePadding);
         }
 
         /// <summary>
@@ -63,15 +66,18 @@ namespace Fu.Framework
         /// <param name="text">ID/Label of the image</param>
         /// <param name="texture">Texture to draw</param>
         /// <param name="size">Size of the image</param>
+        /// <param name="color">tint color of the texture</param>
+        /// <param name="imagePadding">padding of the image inside the button</param>
+        /// <param name="border">Whatever you want to draw borders</param>
         /// <returns>true if clicked</returns>
-        public override bool ImageButton(string text, Texture2D texture, FuElementSize size, Vector4 color)
+        public override bool ImageButton(string text, Texture2D texture, FuElementSize size, Vector4 color, Vector2 imagePadding, bool border)
         {
             if (!_gridCreated)
             {
                 return false;
             }
             drawElementLabel(text, FuTextStyle.Default);
-            return base.ImageButton(text, texture, size, color);
+            return base.ImageButton(text, texture, size, color, imagePadding, border);
         }
     }
 }

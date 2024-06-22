@@ -5,11 +5,12 @@ namespace Fu.Framework
 {
     public struct FuModalSize
     {
-        public Vector2 Size { get; private set; }
+        private Vector2 _size;
+        public Vector2 Size { get { return _size * Fugui.CurrentContext.Scale; } set { _size = value; } }
 
         public FuModalSize(Vector2 size)
         {
-            Size = size;
+            _size = size;
         }
 
         #region Presset

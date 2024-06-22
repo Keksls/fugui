@@ -7,19 +7,19 @@ namespace Fu.Framework
     public struct FuFrameStyle : IFuElementStyle
     {
         // enabled
-        internal Color Frame;
-        internal Color HoveredFrame;
-        internal Color ActiveFrame;
-        internal Color CheckMark;
-        internal Color Border;
-        internal Color Shadow;
+        public Color Frame;
+        public Color HoveredFrame;
+        public Color ActiveFrame;
+        public Color CheckMark;
+        public Color Border;
+        public Color Shadow;
         // disabled
-        internal Color DisabledFrame;
-        internal Color DisabledCheckMark;
-        internal Color DisabledBorder;
-        internal Color DisabledShadow;
+        public Color DisabledFrame;
+        public Color DisabledCheckMark;
+        public Color DisabledBorder;
+        public Color DisabledShadow;
         // text
-        internal FuTextStyle TextStyle;
+        public FuTextStyle TextStyle;
 
         #region Pressets
         // default button style

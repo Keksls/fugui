@@ -52,12 +52,6 @@ namespace Fu.Core
         [FuSlider(1, 90)]
         public int IdleCameraFPS = 4;
 
-        [Tooltip("The global UI Scale.")]
-        [FuTooltip("The global UI Scale.")]
-        [Range(0.5f, 2.5f)]
-        [FuSlider(0.5f, 2.5f)]
-        public float UIScale = 1f;
-
         [Tooltip("The number of FPS to be used when the UI windows are being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are being manipulated.")]
         [Range(1f, 100f)]
@@ -119,7 +113,7 @@ namespace Fu.Core
         [FuTooltip("Duration of the Notify activation/desactivation animation in seconds")]
         [Range(0f, 0.5f)]
         [FuSlider(0f, 0.5f)]
-        public float NotidyAnimlationDuration = 0.15f;
+        public float NotifyAnimlationDuration = 0.15f;
 
         [Tooltip("A list of key codes used to trigger externalization of UI windows.")]
         [FuTooltip("A list of key codes used to trigger externalization of UI windows.")]
@@ -300,6 +294,12 @@ namespace Fu.Core
         [Range(0.01f, 64f)]
         [FuSlider(0.1f, 64f)]
         public float DragThreshold = 6.0f;
+
+        [Tooltip("Distance threshold before considering we performe a click. (default=3.0f)")]
+        [FuTooltip("Distance threshold before considering we performe a click. (default=3.0f)")]
+        [Range(0.01f, 64f)]
+        [FuSlider(0.1f, 64f)]
+        public float ClickMaxDist = 3.0f;
 
         [Tooltip("When holding a key/button, time before it starts repeating, in seconds. (default=0.250f)")]
         [FuTooltip("When holding a key/button, time before it starts repeating, in seconds. (default=0.250f)")]

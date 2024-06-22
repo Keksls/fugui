@@ -13,8 +13,8 @@ namespace Fu.Core
         /// <summary>
         /// button states by buttons (0 is left, 1 is right)
         /// </summary>
-        internal FuKeyState[] ButtonStates;
-        private readonly FuKeyState[] _virtualButtonStates;
+        internal FuButtonState[] ButtonStates;
+        private readonly FuButtonState[] _virtualButtonStates;
         private Vector2 _movement;
         public Vector2 Movement { get { return _movement; } }
         private Vector2 _wheel;
@@ -38,15 +38,15 @@ namespace Fu.Core
             _movement = Vector2.zero;
             _wheel = Vector2.zero;
 
-            ButtonStates = new FuKeyState[3];
-            ButtonStates[0] = new FuKeyState(0);
-            ButtonStates[1] = new FuKeyState(1);
-            ButtonStates[2] = new FuKeyState(2);
+            ButtonStates = new FuButtonState[3];
+            ButtonStates[0] = new FuButtonState(0);
+            ButtonStates[1] = new FuButtonState(1);
+            ButtonStates[2] = new FuButtonState(2);
 
-            _virtualButtonStates = new FuKeyState[3];
-            _virtualButtonStates[0] = new FuKeyState(0);
-            _virtualButtonStates[1] = new FuKeyState(1);
-            _virtualButtonStates[2] = new FuKeyState(2);
+            _virtualButtonStates = new FuButtonState[3];
+            _virtualButtonStates[0] = new FuButtonState(0);
+            _virtualButtonStates[1] = new FuButtonState(1);
+            _virtualButtonStates[2] = new FuButtonState(2);
         }
 
         /// <summary>
@@ -100,9 +100,9 @@ namespace Fu.Core
             bool btn1State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Right) != 0;
             bool btn2State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Middle) != 0;
 
-            ButtonStates[0].SetState(btn0State);
-            ButtonStates[1].SetState(btn1State);
-            ButtonStates[2].SetState(btn2State);
+            ButtonStates[0].SetState(btn0State, _position);
+            ButtonStates[1].SetState(btn1State, _position);
+            ButtonStates[2].SetState(btn2State, _position);
 
             // check whatever mouse is hover any overlay
             container.OnEachWindow((window) =>
@@ -113,6 +113,10 @@ namespace Fu.Core
             });
         }
 
+        /// <summary>
+        /// set current mouse data
+        /// </summary>
+        /// <param name="window">window to set mouse position and button states on</param>
         internal void UpdateState(FuWindow window)
         {
             bool btn0State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Left) != 0;
@@ -120,9 +124,9 @@ namespace Fu.Core
             bool btn2State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Middle) != 0;
 
             // set brut states, without handling focus/hover and clicked window
-            _virtualButtonStates[0].SetState(btn0State);
-            _virtualButtonStates[1].SetState(btn1State);
-            _virtualButtonStates[2].SetState(btn2State);
+            _virtualButtonStates[0].SetState(btn0State, Vector2Int.zero);
+            _virtualButtonStates[1].SetState(btn1State, Vector2Int.zero);
+            _virtualButtonStates[2].SetState(btn2State, Vector2Int.zero);
 
             // check if a button is Down this frame if this window is hover and no window has been clicked for now
             if ((FuWindow.InputFocusedWindow == null || FuWindow.InputFocusedWindow == window) && window.IsHovered)
@@ -156,9 +160,9 @@ namespace Fu.Core
             // no window has been pressed for now, let's just set states regulary
             if (FuWindow.InputFocusedWindow == null)
             {
-                ButtonStates[0].SetState(window.IsHovered && btn0State);
-                ButtonStates[1].SetState(window.IsHovered && btn1State);
-                ButtonStates[2].SetState(window.IsHovered && btn2State);
+                ButtonStates[0].SetState(window.IsHovered && btn0State, _position);
+                ButtonStates[1].SetState(window.IsHovered && btn1State, _position);
+                ButtonStates[2].SetState(window.IsHovered && btn2State, _position);
             }
             // a window is pressed, only this one should retrieve mouse inputs
             else
@@ -166,16 +170,16 @@ namespace Fu.Core
                 // we are the pressed window
                 if (FuWindow.InputFocusedWindow == window)
                 {
-                    ButtonStates[0].SetState(btn0State);
-                    ButtonStates[1].SetState(btn1State);
-                    ButtonStates[2].SetState(btn2State);
+                    ButtonStates[0].SetState(btn0State, _position);
+                    ButtonStates[1].SetState(btn1State, _position);
+                    ButtonStates[2].SetState(btn2State, _position);
                 }
                 // we are another window, let's not handle inputs
                 else
                 {
-                    ButtonStates[0].SetState(false);
-                    ButtonStates[1].SetState(false);
-                    ButtonStates[2].SetState(false);
+                    ButtonStates[0].SetState(false, _position);
+                    ButtonStates[1].SetState(false, _position);
+                    ButtonStates[2].SetState(false, _position);
                 }
             }
 
@@ -224,6 +228,34 @@ namespace Fu.Core
                 return false;
             }
             return ButtonStates[(int)mouseButton].IsPressed;
+        }
+
+        /// <summary>
+        /// is a mouse button is currently pressed
+        /// </summary>
+        /// <param name="mouseButton">Mouse button to check</param>
+        /// <returns>true if pressed</returns>
+        public bool IsClicked(FuMouseButton mouseButton)
+        {
+            if (mouseButton == FuMouseButton.None)
+            {
+                return false;
+            }
+            return ButtonStates[(int)mouseButton].IsUp && ButtonStates[(int)mouseButton].PressedMovement.magnitude <= Fugui.Settings.ClickMaxDist;
+        }
+
+        /// <summary>
+        /// Get the movement the mouse has done since button is Down and Up (durring the Press operation)
+        /// </summary>
+        /// <param name="mouseButton">Mouse button to check</param>
+        /// <returns>Vector2Int that represent the mouse movement</returns>
+        public Vector2Int GetPressedMovement(FuMouseButton mouseButton)
+        {
+            if (mouseButton == FuMouseButton.None)
+            {
+                return default;
+            }
+            return ButtonStates[(int)mouseButton].PressedMovement;
         }
     }
 }

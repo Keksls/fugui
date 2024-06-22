@@ -10,8 +10,6 @@ namespace Fu.Framework
     public partial class FuLayout
     {
         private static StringBuilder _textChunkStringBuilder = new StringBuilder();
-        private const ushort MIN_DUOTONE_GLYPH_RANGE = 60543;
-        private const ushort MAX_DUOTONE_GLYPH_RANGE = 63743;
 
         #region Text
         /// <summary>
@@ -298,7 +296,7 @@ namespace Fu.Framework
         /// <param name="wrapping">However you want to wrapp the text</param>
         public void FramedText(string text, float alignment = 0.5f, FuTextWrapping wrapping = FuTextWrapping.Clip)
         {
-            _customFramedText(text, alignment, new Vector2(-1f, 0f), FuFrameStyle.Default, wrapping);
+            _customFramedText(text, alignment, new Vector2(-1f, 0f), FuFrameStyle.Default, wrapping, 0f, 0f);
         }
 
         /// <summary>
@@ -309,7 +307,7 @@ namespace Fu.Framework
         /// <param name="wrapping">However you want to wrapp the text</param>
         public void FramedText(string text, FuElementSize size, float alignment = 0.5f, FuTextWrapping wrapping = FuTextWrapping.Clip)
         {
-            _customFramedText(text, alignment, size, FuFrameStyle.Default, wrapping);
+            _customFramedText(text, alignment, size, FuFrameStyle.Default, wrapping, 0f, 0f);
         }
 
         /// <summary>
@@ -319,9 +317,9 @@ namespace Fu.Framework
         /// <param name="size">size of the frame</param>
         /// <param name="style">style of the frame and text</param>
         /// <param name="wrapping">However you want to wrapp the text</param>
-        public void FramedText(string text, FuElementSize size, FuFrameStyle style, float alignment = 0.5f, FuTextWrapping wrapping = FuTextWrapping.Clip)
+        public void FramedText(string text, FuElementSize size, FuFrameStyle style, float alignment = 0.5f, FuTextWrapping wrapping = FuTextWrapping.Clip, float leftPadding = 0f, float rightPadding = 0f)
         {
-            _customFramedText(text, alignment, size, style, wrapping);
+            _customFramedText(text, alignment, size, style, wrapping, leftPadding, rightPadding);
         }
 
         /// <summary>
@@ -331,7 +329,7 @@ namespace Fu.Framework
         /// <param name="size">size of the frame</param>
         /// <param name="style">style of the frame and text</param>
         /// <param name="wrapping">However you want to wrapp the text</param>
-        private void _customFramedText(string text, float alignment, Vector2 size, FuFrameStyle style, FuTextWrapping wrapping)
+        private void _customFramedText(string text, float alignment, Vector2 size, FuFrameStyle style, FuTextWrapping wrapping, float leftPadding, float rightPadding)
         {
             beginElement(ref text, style, true);
             if (!_drawElement)
@@ -341,7 +339,7 @@ namespace Fu.Framework
 
             Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 padding = ImGui.GetStyle().FramePadding;
-            Vector2 textSize = CalcTextSize(text, wrapping, size);
+            Vector2 textSize = Fugui.CalcTextSize(text, wrapping, size);
 
             // calc item size
             Vector2 region_max = default;
@@ -358,14 +356,14 @@ namespace Fu.Framework
 
             // draw frame
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-            drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.FrameBg, 1f), FuThemeManager.CurrentTheme.FrameRounding);
-            drawList.AddRect(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), FuThemeManager.CurrentTheme.FrameRounding);
+            drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.FrameBg, 1f), FuThemeManager.FrameRounding);
+            drawList.AddRect(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), FuThemeManager.FrameRounding);
 
             // draw text
-            EnboxedText(text, pos, size, padding, Vector2.zero, new Vector2(alignment, 0.5f), wrapping);
+            EnboxedText(text, pos + new Vector2(leftPadding, 0f), size - new Vector2(leftPadding + rightPadding, 0f), padding, Vector2.zero, new Vector2(alignment, 0.5f), wrapping);
 
             // fake dummy
-            Rect rect = new Rect(pos, CalcTextSize(text, wrapping, size - (padding * 2f)));
+            Rect rect = new Rect(pos, Fugui.CalcTextSize(text, wrapping, size - (padding * 2f)));
             ImGui.Dummy(size);
             bool hovered;
             if (FuWindow.CurrentDrawingWindow != null)
@@ -401,11 +399,31 @@ namespace Fu.Framework
         /// <param name="wrapping">text wrapping behaviour</param>
         public void EnboxedText(string text, Vector2 boxPos, Vector2 boxSize, Vector2 padding, Vector2 offset, Vector2 alignment, FuTextWrapping wrapping)
         {
+            offset *= Fugui.CurrentContext.Scale;
             Vector2 maxTextSize = boxSize - (padding * 2f);
-            Vector2 textSize = CalcTextSize(text, wrapping, maxTextSize);
+            Vector2 textSize = Fugui.CalcTextSize(text, wrapping, maxTextSize);
             Vector2 text_offset = maxTextSize - textSize;
             Vector2 text_pos = boxPos + padding + offset + new Vector2(Mathf.Lerp(0f, text_offset.x, Mathf.Clamp01(alignment.x)), Mathf.Lerp(0f, text_offset.y, Mathf.Clamp01(alignment.y)));
             _text(text, wrapping, maxTextSize, text_pos, false);
+        }
+
+        /// <summary>
+        /// Get the position of a text that would be inside a the given box
+        /// </summary>
+        /// <param name="text">text to draw</param>
+        /// <param name="boxPos">position of the box</param>
+        /// <param name="boxSize">size of the box</param>
+        /// <param name="padding">padding of the text rect inside the box</param>
+        /// <param name="offset">offset of the text (optional)</param>
+        /// <param name="alignment">alignement of the text</param>
+        /// <param name="wrapping">text wrapping behaviour</param>
+        public Vector2 GetEnboxedTextPosition(string text, Vector2 boxPos, Vector2 boxSize, Vector2 padding, Vector2 offset, Vector2 alignment, FuTextWrapping wrapping)
+        {
+            offset *= Fugui.CurrentContext.Scale;
+            Vector2 maxTextSize = boxSize - (padding * 2f);
+            Vector2 textSize = Fugui.CalcTextSize(text, wrapping, maxTextSize);
+            Vector2 text_offset = maxTextSize - textSize;
+            return boxPos + padding + offset + new Vector2(Mathf.Lerp(0f, text_offset.x, Mathf.Clamp01(alignment.x)), Mathf.Lerp(0f, text_offset.y, Mathf.Clamp01(alignment.y)));
         }
         #endregion
 
@@ -451,7 +469,7 @@ namespace Fu.Framework
 
         private bool _internalClickableText(string text, FuTextStyle style, out Rect textRect, FuTextWrapping wrapping)
         {
-            textRect = new Rect(ImGui.GetCursorScreenPos() - new Vector2(4f, 0f), CalcTextSize(text, wrapping) + FuThemeManager.CurrentTheme.FramePadding);
+            textRect = new Rect(ImGui.GetCursorScreenPos() - new Vector2(4f, 0f), Fugui.CalcTextSize(text, wrapping) + FuThemeManager.FramePadding);
             bool hovered = IsItemHovered(textRect.min, textRect.size);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
             bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !LastItemDisabled;
@@ -502,7 +520,7 @@ namespace Fu.Framework
         /// <returns>whatever the text is clicked</returns>
         public virtual void TextURL(string text, string URL, FuTextStyle style, FuTextWrapping wrapping = FuTextWrapping.None)
         {
-            beginElement(ref text, null, true);
+            beginElement(ref text, style, true);
             // return if item must no be draw
             if (!_drawElement)
             {
@@ -510,7 +528,7 @@ namespace Fu.Framework
             }
 
             Vector2 rectMin = ImGui.GetCursorScreenPos() - new Vector2(4f, 0f);
-            Vector2 rectMax = rectMin + CalcTextSize(text, wrapping) + FuThemeManager.CurrentTheme.FramePadding;
+            Vector2 rectMax = rectMin + Fugui.CalcTextSize(text, wrapping) + FuThemeManager.FramePadding;
             bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
             bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !LastItemDisabled;
@@ -560,7 +578,7 @@ namespace Fu.Framework
             {
                 displayToolTip();
             }
-            endElement();
+            endElement(style);
         }
         #endregion
 
@@ -663,7 +681,7 @@ namespace Fu.Framework
             Vector2 size = _customTextClipped(maxSize, text, pos, padding, text_size, alignment, style);
             Rect rect = new Rect(pos, size);
             ImGui.Dummy(size);
-            bool hovered = false;
+            bool hovered;
             if (FuWindow.CurrentDrawingWindow != null)
             {
                 hovered = ImGui.IsMouseHoveringRect(rect.min, rect.max) && FuWindow.CurrentDrawingWindow.IsHoveredContent;
@@ -797,7 +815,7 @@ namespace Fu.Framework
                     return;
                 }
 
-                if (IsDuoToneChar(text[i]))
+                if (Fugui.IsDuoToneChar(text[i]))
                 {
                     _renderTextChunk();
                     _renderDuotone(text[i]);
@@ -816,7 +834,7 @@ namespace Fu.Framework
                             }
                             break;
 
-                        case FuTextWrapping.Wrapp:
+                        case FuTextWrapping.Wrap:
                             switch (text[i])
                             {
                                 case ' ':
@@ -859,7 +877,12 @@ namespace Fu.Framework
                     case FuTextWrapping.Clip:
                         if (currentPosition.x + chunkSize.x > maxX)
                         {
-                            ImRect rect = new ImRect(currentPosition, new Vector2(maxX, GetAvailableHeight() + position.y));
+                            float h = GetAvailableHeight();
+                            if (h <= 0f)
+                            {
+                                h = ImGui.GetTextLineHeightWithSpacing();
+                            }
+                            ImRect rect = new ImRect(currentPosition, new Vector2(maxX, h + position.y));
 
                             // get dots size
                             Vector2 dotsSize = ImGui.CalcTextSize("...");
@@ -878,7 +901,7 @@ namespace Fu.Framework
                         break;
 
                     // prevent drawing next line if wrap text is out of max size height
-                    case FuTextWrapping.Wrapp:
+                    case FuTextWrapping.Wrap:
                         if (fullTextHeight > maxSize.y)
                         {
                             cancel = true;
@@ -904,29 +927,9 @@ namespace Fu.Framework
 
                 _beginDrawText(iconSize);
 
-                float colorAlphaMult = LastItemDisabled ? 0.66f : 1f;
-                // get primary and secondary colors
-                Vector4 primaryColorV4 = ImGui.GetStyle().Colors[(int)ImGuiCols.DuotonePrimaryColor];
-                primaryColorV4.w *= colorAlphaMult;
-                Vector4 secondaryColorV4 = ImGui.GetStyle().Colors[(int)ImGuiCols.DuotoneSecondaryColor];
-                secondaryColorV4.w *= colorAlphaMult;
-                uint primaryColor = ImGui.GetColorU32(primaryColorV4);
-                uint secondaryColor = ImGui.GetColorU32(secondaryColorV4);
-                // replace by default colors if needed
-                uint themePrimaryColor = ImGui.GetColorU32(FuThemeManager.GetColor((FuColors)ImGuiCols.DuotonePrimaryColor, colorAlphaMult));
-                uint themeSecondaryColor = ImGui.GetColorU32(FuThemeManager.GetColor((FuColors)ImGuiCols.DuotonePrimaryColor, colorAlphaMult));
-                if (primaryColor == themePrimaryColor)
-                {
-                    primaryColor = ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Text, colorAlphaMult));
-                }
-                if (secondaryColor == themeSecondaryColor)
-                {
-                    secondaryColor = ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Text, 0.4f * colorAlphaMult));
-                }
-
                 // render primary and secondary glyphs
-                drawList.AddText(currentPosition, primaryColor, icon.ToString());
-                drawList.AddText(currentPosition, secondaryColor, secondary.ToString());
+                drawList.AddText(currentPosition, Fugui.GetPrimaryDuotoneColor(LastItemDisabled), icon.ToString());
+                drawList.AddText(currentPosition, Fugui.GetSecondaryDuotoneColor(), secondary.ToString());
 
                 _endDrawText(iconSize);
             }
@@ -938,7 +941,7 @@ namespace Fu.Framework
                     default:
                         break;
 
-                    case FuTextWrapping.Wrapp:
+                    case FuTextWrapping.Wrap:
                         if (currentPosition.x + size.x > maxX && size.x < maxSize.x)
                         {
                             currentPosition.x = position.x;
@@ -987,73 +990,5 @@ namespace Fu.Framework
                 }
             }
         }
-
-        #region Utils
-        /// <summary>
-        /// Get text size according to it's wrapping behaviour
-        /// </summary>
-        /// <param name="text">text to get size of</param>
-        /// <param name="wrapping">however the text need to be wrapped</param>
-        /// <returns>Size of the text</returns>
-        public Vector2 CalcTextSize(string text, FuTextWrapping wrapping)
-        {
-            return CalcTextSize(text, wrapping, Vector2.zero);
-        }
-
-        /// <summary>
-        /// Get text size according to it's wrapping behaviour
-        /// </summary>
-        /// <param name="text">text to get size of</param>
-        /// <param name="wrapping">however the text need to be wrapped</param>
-        /// <param name="maxSize">maximum size (for clipping or wrapping). Keep Vector2.zero to use maximum available region</param>
-        /// <returns>Size of the text</returns>
-        public Vector2 CalcTextSize(string text, FuTextWrapping wrapping, Vector2 maxSize)
-        {
-            if ((text.Length == 1 || Fugui.GetUntagedText(text).Length == 1) && IsDuoToneChar(text[0]))
-            {
-                // get secondaty char
-                char secondary = (char)(((ushort)text[0]) + 1);
-                // get both char sized
-                Vector2 primarySize = ImGui.CalcTextSize(text[0].ToString());
-                Vector2 secondarySize = ImGui.CalcTextSize(secondary.ToString());
-                // get full icon size
-                return new Vector2(Mathf.Max(primarySize.x, secondarySize.x), Mathf.Max(primarySize.y, secondarySize.y));
-            }
-
-            Vector2 textSize;
-            switch (wrapping)
-            {
-                default:
-                case FuTextWrapping.None:
-                    textSize = ImGui.CalcTextSize(text, true);
-                    break;
-
-                case FuTextWrapping.Clip:
-                    textSize = ImGui.CalcTextSize(text, true);
-                    textSize.x = Mathf.Min(textSize.x, maxSize.x == 0f ? GetAvailableWidth() : maxSize.x);
-                    break;
-
-                case FuTextWrapping.Wrapp:
-                    textSize = ImGui.CalcTextSize(text, true, maxSize.x == -1f ? GetAvailableWidth() : maxSize.x);
-                    if (maxSize.y > 0f && textSize.y > maxSize.y)
-                    {
-                        textSize.y = maxSize.y;
-                    }
-                    break;
-            }
-            return textSize;
-        }
-
-        /// <summary>
-        /// Check whatever a Char gyph is a Duotone Icon glyph
-        /// </summary>
-        /// <param name="character">char to check</param>
-        /// <returns>true if it should be a duotone icon glyph char</returns>
-        public bool IsDuoToneChar(char character)
-        {
-            ushort charUS = (ushort)character;
-            return charUS >= MIN_DUOTONE_GLYPH_RANGE && charUS <= MAX_DUOTONE_GLYPH_RANGE;
-        }
-        #endregion
     }
 }

@@ -84,7 +84,7 @@ namespace Fu.Framework
                 _colorActive = FuThemeManager.GetColor(FuColors.CollapsableActive),
                 _disabledColor = FuThemeManager.GetColor(FuColors.CollapsableDisabled),
                 _text = FuTextStyle.Default,
-                _layout = FuStyle.Default
+                _layout = FuStyle.Content
             };
         }
     }

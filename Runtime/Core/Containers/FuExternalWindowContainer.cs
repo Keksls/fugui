@@ -29,7 +29,6 @@ namespace Fu.Core
         UnityEngine.Vector2Int IFuWindowContainer.Position { get => _worldPosition; }
         UnityEngine.Vector2Int IFuWindowContainer.Size { get => _size; }
         public FuContext Context => _fuguiContext;
-        public float Scale => 1f;
         public FuMouseState Mouse => _fuMouseState;
         public FuKeyboardState Keyboard => _fuKeyboardState;
 

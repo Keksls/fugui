@@ -1,5 +1,6 @@
 ﻿using Fu.Core;
 using ImGuiNET;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -22,9 +23,9 @@ namespace Fu.Framework
         /// <param name="allowAlpha">Whatever the gradient allow transparency on color keys</param>
         /// <param name="relativeMin">The value represented when time = 0. If bigger or equal to RelativeMax, gradient will not take this in account</param>
         /// <param name="relativeMax">The value represented when time = 1. If smaller or equal to RelativeMin, gradient will not take this in account</param>
+        /// <param name="defaultGradientValues">the values to set for reseting this gradient</param>
         /// <returns>whatever the gradient has been edited this frame</returns>
-        public virtual bool Gradient(string text, ref FuGradient gradient, bool addKeyOnGradientClick = true, bool allowAlpha = true,
-            float relativeMin = 0, float relativeMax = 0)
+        public virtual bool Gradient(string text, ref FuGradient gradient, bool addKeyOnGradientClick = true, bool allowAlpha = true, float relativeMin = 0, float relativeMax = 0, FuGradientColorKey[] defaultGradientValues = null)
         {
             beginElement(ref text);
             string ppID = text + "gpPp";
@@ -66,7 +67,7 @@ namespace Fu.Framework
             ImGui.SetCursorScreenPos(startPos);
             if (ImGui.InvisibleButton(text + "nvsbB", gradientRect.size))
             {
-                OpenPopUp(ppID, drawPicker);
+                Fugui.OpenPopUp(ppID, drawPicker);
             }
 
             // set element states
@@ -88,21 +89,21 @@ namespace Fu.Framework
                 Spacing();
                 SameLine();
                 BeginGroup();
-                _gradientUpdated = _customGradientPicker(text, addKeyOnGradientClick, allowAlpha, relativeMin, relativeMax);
+                _gradientUpdated = _customGradientPicker(text, addKeyOnGradientClick, allowAlpha, relativeMin, relativeMax, defaultGradientValues);
                 EndGroup();
                 SameLine();
                 Spacing();
             }
 
             // draw the popup if needed
-            DrawPopup(ppID, new Vector2(320f, 0f), Vector2.zero);
+            Fugui.DrawPopup(ppID, new Vector2(320f, 0f), Vector2.zero);
             gradient = _currentGradient;
 
             // return whatever the gradient was edited this frame
             return _gradientUpdated;
         }
 
-        private bool _customGradientPicker(string text, bool addKeyOnGradientClick, bool allowAlpha, float relativeMin = 0, float relativeMax = 0)
+        private bool _customGradientPicker(string text, bool addKeyOnGradientClick, bool allowAlpha, float relativeMin, float relativeMax, FuGradientColorKey[] defaultGradientValues)
         {
             text = "##" + text;
             bool edited = false;
@@ -171,15 +172,27 @@ namespace Fu.Framework
                 _currentGradient.SetBlendMode((FuGradientBlendMode)index);
             }, () => _currentGradient.BlendMode, new Vector2(GetAvailableWidth() - 52f * Fugui.CurrentContext.Scale, 0f), Vector2.zero, FuButtonStyle.Default);
             layout.SameLine();
-            layout.Combobox("##GpStng" + text, FuIcons.Fu_Dots_H_Duotone, () =>
+            layout.Combobox("##GpStng" + text, FuIcons.Fu_Gear_Duotone, () =>
             {
                 if (ImGui.Selectable("Reset gradient"))
                 {
+                    if (defaultGradientValues == null)
+                    {
+                        _currentGradient.SetKeys(new FuGradientColorKey[]{
+                        new FuGradientColorKey(0f, Color.black),
+                        new FuGradientColorKey(1f, Color.white)
+                        });
+                    }
+                    else
+                    {
+                        _currentGradient.SetKeys(defaultGradientValues);
+                    }
+
                     Debug.Log("TODO : Implement gradient reset");
                 }
                 if (ImGui.Selectable("Invert gradient"))
                 {
-                    Debug.Log("TODO : Implement gradient invert");
+                    _currentGradient.Invert();
                 }
             }, FuElementSize.FullSize, new Vector2(102f, -1f), FuButtonStyle.Default);
             Fugui.PopContextMenuItems();
@@ -227,11 +240,12 @@ namespace Fu.Framework
                         drawList.AddLine(keyPos - new Vector2(0f, gradientRect.height), keyPos, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Knob)), 1f);
                     }
 
-                    // set tooltip and start drag on mouse douse
+                    // set tooltip
+                    SetToolTip(text + "key" + i, string.Format("Time: {0:F2}\nColor: ({1:F2}, {2:F2}, {3:F2})", key.Time, key.Color.r, key.Color.g, key.Color.b), hovered, !LastItemDisabled, FuTextStyle.Default);
+
+                    // start drag on mouse down
                     if (hovered)
                     {
-                        SetToolTip(text + "key" + i, string.Format("Time: {0:F2}\nColor: ({1:F2}, {2:F2}, {3:F2})", key.Time, key.Color.r, key.Color.g, key.Color.b), FuTextStyle.Default);
-
                         if (!isDraggingColorKey && ImGui.IsMouseDown(ImGuiMouseButton.Left))
                         {
                             isDraggingColorKey = true;
@@ -295,7 +309,7 @@ namespace Fu.Framework
             {
                 if (_currentGradient.GetKey(_selectedColorKeyIndex, out FuGradientColorKey key))
                 {
-                    SetToolTip(text + "key" + _selectedColorKeyIndex, string.Format("Time: {0:F2}\nColor: ({1:F2}, {2:F2}, {3:F2})", key.Time, key.Color.r, key.Color.g, key.Color.b), FuTextStyle.Default);
+                    SetToolTip(text + "key" + _selectedColorKeyIndex, string.Format("Time: {0:F2}\nColor: ({1:F2}, {2:F2}, {3:F2})", key.Time, key.Color.r, key.Color.g, key.Color.b), true);
                     float t = Mathf.Clamp01((mousePos.x - gradientRect.x) / gradientRect.width);
                     _currentGradient.SetKeyTime(_selectedColorKeyIndex, t);
                     edited = true;

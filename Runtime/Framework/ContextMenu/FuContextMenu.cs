@@ -9,6 +9,10 @@ namespace Fu
 {
     public static partial class Fugui
     {
+        /// <summary>
+        /// Whatever the context menu is currently disabled (will disable each menu items)
+        /// </summary>
+        public static bool IsContextMenuDisabled { get; private set; }
         public static bool IsContextMenuOpen { get; private set; } = false;
         private const string CONTEXT_MENU_NAME = "ContextMenuPopup";
         private static List<FuContextMenuItem>[] _contextMenuItemsStack = new List<FuContextMenuItem>[10];
@@ -205,7 +209,7 @@ namespace Fu
             Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
             Push(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 8f));
             // draw the context menu
-            if (ImGui.BeginPopupContextWindow(CONTEXT_MENU_NAME))
+            if (ImGui.BeginPopup(CONTEXT_MENU_NAME))
             {
                 IsContextMenuOpen = true;
                 // draw the items
@@ -235,7 +239,7 @@ namespace Fu
                 }
                 else
                 {
-                    bool enabled = menuItem.Enabled?.Invoke() ?? true;
+                    bool enabled = (menuItem.Enabled?.Invoke() ?? true) && !IsContextMenuDisabled;
                     if (!enabled)
                     {
                         Push(ImGuiCols.Text, FuThemeManager.GetColor(FuColors.TextDisabled));
@@ -243,6 +247,9 @@ namespace Fu
                     // whatever the item is a parent (contain children)
                     if (menuItem.Children.Count > 0)
                     {
+                        // draw secondary duotone glyph if needed
+                        DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList());
+
                         // draw the parent and bind children if parent is open
                         if (ImGui.BeginMenu(menuItem.Label, enabled))
                         {
@@ -252,11 +259,18 @@ namespace Fu
                         }
                     }
                     // whatever the item is a 'leaf' (no child)
-                    else if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, enabled))
+                    else
                     {
-                        // invoke the callback action of the item if clicked and close the context menu
-                        menuItem.ClickAction?.Invoke();
-                        CloseContextMenu();
+                        // draw secondary duotone glyph if needed
+                        DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList());
+
+                        // draw menu item
+                        if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, enabled))
+                        {
+                            // invoke the callback action of the item if clicked and close the context menu
+                            menuItem.ClickAction?.Invoke();
+                            CloseContextMenu();
+                        }
                     }
                     if (!enabled)
                     {
@@ -318,6 +332,22 @@ namespace Fu
         #endregion
 
         #region Public utils
+        /// <summary>
+        /// Force disabling all items in cotext menu
+        /// </summary>
+        public static void DisableContextMenu()
+        {
+            IsContextMenuDisabled = true;
+        }
+
+        /// <summary>
+        /// Enable context menu items
+        /// </summary>
+        public static void EnableContextMenu()
+        {
+            IsContextMenuDisabled = false;
+        }
+
         /// <summary>
         /// Reset the context menu data and clean the stack. 
         /// </summary>

@@ -13,33 +13,313 @@ MonoBehaviour:
   m_Name: FontConfig
   m_EditorClassIdentifier: 
   DefaultSize: 14
-  AdditionnalFontSizes: 0a0000000c000000100000001200000014000000
+  Fonts:
+  - Size: 14
+    SubFonts_Regular:
+    - FileName: regular.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Bold:
+    - FileName: bold.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Italic:
+    - FileName: italic.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+  - Size: 10
+    SubFonts_Regular:
+    - FileName: regular.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Bold:
+    - FileName: bold.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Italic:
+    - FileName: italic.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+  - Size: 12
+    SubFonts_Regular:
+    - FileName: regular.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Bold:
+    - FileName: bold.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Italic: []
+  - Size: 16
+    SubFonts_Regular:
+    - FileName: regular.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Bold:
+    - FileName: bold.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Italic: []
+  - Size: 18
+    SubFonts_Regular:
+    - FileName: regular.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Bold:
+    - FileName: bold.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Italic: []
+  - Size: 20
+    SubFonts_Regular:
+    - FileName: regular.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Bold:
+    - FileName: bold.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 57645
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 60644
+      EndGlyph: 61044
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Italic: []
+  - Size: 36
+    SubFonts_Regular:
+    - FileName: regular.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    SubFonts_Bold: []
+    SubFonts_Italic:
+    - FileName: italic.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
   FontsFolder: Fugui/Fonts/current/
-  RegularFontName: regular.ttf
-  BoldFontName: bold.ttf
-  FuguiIcons:
-  - IconsFontName: FuguiIcons.otf
-    StartGlyph: 57344
-    EndGlyph: 57444
-    FontIconsSizeOffset: 2
-    IconFilePath: I:/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/FuguiIcons.otf
-  - IconsFontName: FuguiIcons.otf
-    StartGlyph: 60543
-    EndGlyph: 60643
-    FontIconsSizeOffset: 2
-    IconFilePath: C:/Workspace/Dragonfly/DragonflyPlayer/Assets/StreamingAssets\Fugui/Fonts/current/FuguiIcons.otf
-  CustomIcons:
-  - IconsFontName: icons.ttf
-    StartGlyph: 57344
-    EndGlyph: 65000
-    FontIconsSizeOffset: 2
-    IconFilePath: C:/Users/vrdtm/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/icons.ttf
-  ImportFontHelperIcons: 0
-  FontHelperIcons:
-    IconsFontName: Helper_Icons.ttf
-    StartGlyph: 57344
-    EndGlyph: 65000
-    FontIconsSizeOffset: 18
-    IconFilePath: C:/Users/vrdtm/Fugui/Assets/StreamingAssets\Fugui/Fonts/current/Helper_Icons.ttf
-  AddBold: 0
-  AddIconsToBold: 0

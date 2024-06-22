@@ -122,7 +122,7 @@ namespace Fu.Framework
                 case FuSliderFlags.LeftDrag:
                     drawDrag(text, ref value, min, max, isInt);
                     _elementHoverFramedEnabled = true;
-                    drawHoverFrame();
+                    DrawHoverFrame();
                     x += dragWidth + (8f * Fugui.CurrentContext.Scale);
                     ImGui.SameLine();
                     drawSlider(text, ref value, min, max, isInt, knobRadius, hoverPaddingY, lineHeight, width, x, y);
@@ -162,7 +162,7 @@ namespace Fu.Framework
                 ImGui.PopItemWidth();
                 displayToolTip();
                 _elementHoverFramedEnabled = true;
-                drawHoverFrame();
+                DrawHoverFrame();
             }
 
             // function that draw the slider

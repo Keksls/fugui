@@ -107,7 +107,7 @@ public class FuguiDemoScene : MonoBehaviour
             string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
             if (!Fugui.IsMainMenuRegisteredItem(menuName))
             {
-                Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value, layoutDefinition.Key), "Layout");
+                Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
             }
         }
     }

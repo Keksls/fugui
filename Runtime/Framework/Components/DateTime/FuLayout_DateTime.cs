@@ -22,7 +22,7 @@ namespace Fu.Framework
             string dtValue = currentDate.ToString("MMMM") + " " + currentDate.Day + " " + currentDate.ToString("yyyy");
             if (Button(dtValue))
             {
-                OpenPopUp(ppID, drawPicker);
+                Fugui.OpenPopUp(ppID, drawPicker);
             }
 
             void drawPicker()
@@ -38,7 +38,7 @@ namespace Fu.Framework
                 Spacing();
             }
 
-            DrawPopup(ppID);
+            Fugui.DrawPopup(ppID);
             currentDate = _currentDateTimeValue;
 
             return _datetimeUpdated;
@@ -73,13 +73,13 @@ namespace Fu.Framework
 
             // calculate button size
             Vector2 btnSize = ImGui.CalcTextSize("99");
-            btnSize += (Fugui.CurrentContext.Scale * FuThemeManager.CurrentTheme.FramePadding);
+            btnSize += (Fugui.CurrentContext.Scale * FuThemeManager.FramePadding);
             btnSize.y = btnSize.x;
             #endregion
 
             // ========================= CALENDAR HEADER
             // Last month
-            if (_customButton("<##dtp", Vector2.zero, FuThemeManager.CurrentTheme.FramePadding, Vector2.zero, FuButtonStyle.Default, FuThemeManager.CurrentTheme.ButtonsGradientStrenght))
+            if (_customButton("<##dtp", Vector2.zero, FuThemeManager.FramePadding, Vector2.zero, FuButtonStyle.Default, FuThemeManager.CurrentTheme.ButtonsGradientStrenght))
             {
                 // Previous month button clicked
                 if (--month < 1)
@@ -127,7 +127,7 @@ namespace Fu.Framework
 
             // Next month
             ImGui.SameLine();
-            if (_customButton(">##dtp", Vector2.zero, FuThemeManager.CurrentTheme.FramePadding, Vector2.zero, FuButtonStyle.Default, FuThemeManager.CurrentTheme.ButtonsGradientStrenght))
+            if (_customButton(">##dtp", Vector2.zero, FuThemeManager.FramePadding, Vector2.zero, FuButtonStyle.Default, FuThemeManager.CurrentTheme.ButtonsGradientStrenght))
             {
                 // Next month button clicked
                 if (++month > 12)

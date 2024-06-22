@@ -5,6 +5,7 @@ using Fu.Core.DearImGui.Texture;
 using Fu.Framework;
 using ImGuiNET;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -100,6 +101,12 @@ namespace Fu.Core
         /// </summary>
         internal override bool PrepareRender()
         {
+            // render is already prepared
+            if (RenderPrepared)
+            {
+                return true;
+            }
+
             Fugui.IsRendering = true;
             // set this contextr as current
             Fugui.SetCurrentContext(this);
@@ -193,6 +200,35 @@ namespace Fu.Core
             _platform?.Shutdown(io);
             _platform = platform;
             _platform?.Initialize(io, "Unity " + Fugui.Settings.PlatformType.ToString());
+        }
+
+        /// <summary>
+        /// Set the scale of this context
+        /// </summary>
+        /// <param name="scale">global context scale</param>
+        /// <param name="fontScale">context font scale (usualy same value as context scale)</param>
+        public override void SetScale(float scale, float fontScale)
+        {
+            // store old scale
+            float oldScale = Scale;
+
+            // set scale
+            Scale = scale;
+            FontScale = fontScale;
+
+            // update font scale
+            TextureManager.ClearFontAtlas(oldScale);
+            LoadFonts();
+            // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
+            TextureManager.InitializeFontAtlas(IO);
+            FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
+
+            // scale windows sizes for windows NOT docked, visible and in this context
+            Fugui.UIWindows.Where(win => win.Value.Container.Context == this && win.Value.IsVisible && !win.Value.IsDocked).ToList()
+                .ForEach((win) =>
+                {
+                    win.Value.Size = new Vector2Int((int)(win.Value.Size.x * (scale / oldScale)), (int)(win.Value.Size.y * (scale / oldScale)));
+                });
         }
     }
 }

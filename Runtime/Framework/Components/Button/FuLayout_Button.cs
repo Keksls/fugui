@@ -15,7 +15,7 @@ namespace Fu.Framework
         /// <returns>true if clicked</returns>
         public bool Button(string text)
         {
-            return Button(text, FuElementSize.FullSize.BrutSize, FuThemeManager.CurrentTheme.FramePadding, Vector2.zero, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, FuButtonStyle.Default);
+            return Button(text, FuElementSize.FullSize.BrutSize, FuThemeManager.FramePadding, Vector2.zero, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, FuButtonStyle.Default);
         }
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace Fu.Framework
         /// <returns>true if clicked</returns>
         public bool Button(string text, FuElementSize size)
         {
-            return Button(text, size.BrutSize, FuThemeManager.CurrentTheme.FramePadding, Vector2.zero, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, FuButtonStyle.Default);
+            return Button(text, size.BrutSize, FuThemeManager.FramePadding, Vector2.zero, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, FuButtonStyle.Default);
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace Fu.Framework
         /// <returns>true if clicked</returns>
         public bool Button(string text, FuElementSize size, FuButtonStyle style)
         {
-            return Button(text, size.BrutSize, FuThemeManager.CurrentTheme.FramePadding, Vector2.zero, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, style);
+            return Button(text, size.BrutSize, FuThemeManager.FramePadding, Vector2.zero, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, style);
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Fu.Framework
         /// <returns>true if clicked</returns>
         public bool Button(string text, FuButtonStyle style)
         {
-            return Button(text, FuElementSize.FullSize.BrutSize, FuThemeManager.CurrentTheme.FramePadding, Vector2.zero, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, style);
+            return Button(text, FuElementSize.FullSize.BrutSize, FuThemeManager.FramePadding, Vector2.zero, FuThemeManager.CurrentTheme.ButtonsGradientStrenght, style);
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace Fu.Framework
             }
 
             // draw the button
-            bool clicked = _customButton(text, size.BrutSize, padding, textOffset, style, gradientStrenght, bordered, alignment);
+            bool clicked = _customButton(text, size.ScaledSize, padding, textOffset, style, gradientStrenght, bordered, alignment);
 
             // end the element
             endElement(style);
@@ -133,17 +133,23 @@ namespace Fu.Framework
         /// <returns>true if clicked</returns>
         private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght, bool bordered = true, float alignment = -1f, float textWidthOffset = 0f)
         {
-            // scale padding
-            padding *= Fugui.CurrentContext.Scale;
-
             // clamp gradient strenght
             gradientStrenght = 1f - Mathf.Clamp(gradientStrenght, 0.1f, 1f);
-
             // calc label size
-            Vector2 label_size = ImGui.CalcTextSize(text, true);
-
+            Vector2 label_size = Fugui.CalcTextSize(text, FuTextWrapping.Clip);
+            ImGuiStylePtr imStyle = ImGui.GetStyle();
             // get the current cursor pos so we draw at the right place
             Vector2 pos = ImGui.GetCursorScreenPos();
+
+            // get default padding if needed
+            if (padding.x < 0f)
+            {
+                padding.x = imStyle.FramePadding.x;
+            }
+            if (padding.y < 0f)
+            {
+                padding.y = imStyle.FramePadding.y;
+            }
 
             // calc item size
             Vector2 region_max = default;
@@ -159,15 +165,13 @@ namespace Fu.Framework
                 size.y = Mathf.Max(4.0f, region_max.y - ImGuiNative.igGetCursorPosY() + size.y);
 
             // draw a dummy button to update cursor and get states
-            bool clicked = ImGui.InvisibleButton(text, size, ImGuiButtonFlags.None) && !LastItemDisabled;
-            setBaseElementState(text, pos, size, true, clicked);
+            ImGui.Dummy(size);
+            setBaseElementState(text, pos, size, true, false, true);
 
             // get current draw list
             ImDrawListPtr drawList = ImGuiNative.igGetWindowDrawList();
-            ImGuiStylePtr imStyle = ImGui.GetStyle();
 
             // get colors
-            ImRect bb = new ImRect() { Min = ImGui.GetItemRectMin(), Max = ImGui.GetItemRectMax() };
             Vector4 bg1f = style.Button;
             if (LastItemDisabled)
             {
@@ -185,12 +189,7 @@ namespace Fu.Framework
             // draw gradient button
             if (gradientStrenght > 0f)
             {
-                Vector4 bg2f = new Vector4(bg1f.x * gradientStrenght, bg1f.y * gradientStrenght, bg1f.z * gradientStrenght, bg1f.w);
-                // draw button frame
-                int vert_start_idx = drawList.VtxBuffer.Size;
-                drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), imStyle.FrameRounding);
-                int vert_end_idx = drawList.VtxBuffer.Size;
-                ImGuiInternal.igShadeVertsLinearColorGradientKeepAlpha(drawList.NativePtr, vert_start_idx, vert_end_idx, pos, bb.GetBL(), ImGuiNative.igGetColorU32_Vec4(bg1f), ImGuiNative.igGetColorU32_Vec4(bg2f));
+                Fugui.DrawGradientRect(pos, size, gradientStrenght, imStyle.FrameRounding, drawList, bg1f);
             }
             // draw frame button
             else
@@ -201,7 +200,7 @@ namespace Fu.Framework
             // draw border
             if (imStyle.FrameBorderSize > 0.0f && bordered)
             {
-                drawList.AddRect(bb.Min, bb.Max, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), imStyle.FrameRounding, 0, imStyle.FrameBorderSize);
+                drawList.AddRect(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), imStyle.FrameRounding, 0, imStyle.FrameBorderSize);
             }
 
             // calculate alignment

@@ -67,7 +67,7 @@ namespace Fu.Framework
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, false);
             // draw text input frame and tooltip
             _elementHoverFramedEnabled = true;
-            drawHoverFrame();
+            DrawHoverFrame();
             displayToolTip(false, true);
 
             // draw button
@@ -111,10 +111,7 @@ namespace Fu.Framework
                 catch { }
             }
             // display ... button tooltip
-            if (LastItemHovered)
-            {
-                SetToolTip(LastItemID, "Click to select file / folder.\nRight click to open folder.", FuTextStyle.Default);
-            }
+            SetToolTip(LastItemID, "Click to select file / folder.\nRight click to open folder.", LastItemHovered, !LastItemDisabled, FuTextStyle.Default);
 
             _elementHoverFramedEnabled = true;
             endElement(style);

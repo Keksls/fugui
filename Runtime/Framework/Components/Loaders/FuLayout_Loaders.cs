@@ -72,7 +72,7 @@ namespace Fu.Framework
                 return;
             }
 
-            Vector2 padding = FuThemeManager.CurrentTheme.FramePadding;
+            Vector2 padding = FuThemeManager.FramePadding;
             float centerX = ImGui.GetCursorScreenPos().x + size / 2 + padding.x;
             float centerY = ImGui.GetCursorScreenPos().y + size / 2 + padding.y;
             float radius = size / 2;

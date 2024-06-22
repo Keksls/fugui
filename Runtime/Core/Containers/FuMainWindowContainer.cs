@@ -36,10 +36,18 @@ namespace Fu.Core
         /// The ID of the dockspace.
         /// </summary>
         public uint Dockspace_id { get; private set; } = uint.MaxValue;
-        // get the scale of this container (fixed to 100% for now, must be DPi aware => just get DPI using context.IO and divide by 96 : not tested)
-        public float Scale => 1f;
+        /// <summary>
+        /// Get Mouse data for this container
+        /// </summary>
         public FuMouseState Mouse => _fuMouseState;
+        /// <summary>
+        /// Get Keyboard data for this container
+        /// </summary>
         public FuKeyboardState Keyboard => _fuKeyboardState;
+        /// <summary>
+        /// Whenever all windows are rendered, but before Modals, ContextMenu, Notify, etc
+        /// </summary>
+        public event Action OnPostRenderWindows;
 
         private FuMouseState _fuMouseState;
         private FuKeyboardState _fuKeyboardState;
@@ -158,7 +166,8 @@ namespace Fu.Core
 
             // all mouses has moved, let's update mouse and container pos
             _mousePos = newMousePos;
-            _worldPosition = Fugui.WorldMousePosition - _mousePos;
+
+            _worldPosition = Screen.mainWindowPosition;
             _lastFrameWorldMousePos = Fugui.WorldMousePosition;
         }
 
@@ -201,11 +210,65 @@ namespace Fu.Core
         /// <summary>
         /// Render a specific FuWindow
         /// </summary>
-        /// <param name="UIWindow"></param>
-        public void RenderFuWindow(FuWindow UIWindow)
+        /// <param name="window"></param>
+        public void RenderFuWindow(FuWindow window)
         {
+            // we clamp size and position BEFORE drawing window to allow dev to set size and pos inside the drawing callback
+            // prevent clamping if window is dragging to avoid clipping
+            if (!window.IsDragging && !window.IsDocked && !window.IsResizing)
+            {
+                // clamp window size
+                Vector2Int size = window.Size;
+                if (size.x < (int)(64f * Fugui.CurrentContext.Scale))
+                {
+                    size.x = (int)(64f * Fugui.CurrentContext.Scale);
+                }
+                if (size.y < (int)(64f * Fugui.CurrentContext.Scale))
+                {
+                    size.y = (int)(64f * Fugui.CurrentContext.Scale);
+                }
+                if (size.x > Size.x)
+                {
+                    size.x = Size.x;
+                }
+                if (size.y > Size.y)
+                {
+                    size.y = Size.y;
+                }
+                if (window.Size.x != size.x || window.Size.y != size.y)
+                {
+                    window.Size = size;
+                }
+
+                // clamp window position
+                Vector2Int pos = window.LocalPosition;
+
+                // ensure that at least 32 x 32 pixels of the header of the window is visible
+                if (pos.y > Size.y - (int)(32f * Fugui.CurrentContext.Scale))
+                {
+                    pos.y = Size.y - (int)(64f * Fugui.CurrentContext.Scale);
+                }
+                if (pos.x > Size.x - (int)(32f * Fugui.CurrentContext.Scale))
+                {
+                    pos.x = Size.x - (int)(64f * Fugui.CurrentContext.Scale);
+                }
+                if (pos.x < -window.Size.x - (int)(32f * Fugui.CurrentContext.Scale))
+                {
+                    pos.x = -window.Size.x + (int)(64f * Fugui.CurrentContext.Scale);
+                }
+                if (pos.y < -window.Size.y - (int)(32f * Fugui.CurrentContext.Scale))
+                {
+                    pos.y = -window.Size.y + (int)(64f * Fugui.CurrentContext.Scale);
+                }
+
+                if (window.LocalPosition.x != pos.x || window.LocalPosition.y != pos.y)
+                {
+                    window.LocalPosition = pos;
+                }
+            }
+
             // Do draw window
-            UIWindow.DrawWindow();
+            window.DrawWindow();
         }
 
         /// <summary>
@@ -240,6 +303,9 @@ namespace Fu.Core
                     _toExternalizeWindows.Enqueue(window);
                 }
             }
+
+            // invoke OnPostRenderWindows event
+            OnPostRenderWindows?.Invoke();
 
             // render notifications
             Fugui.RenderContextMenu();
@@ -428,21 +494,20 @@ namespace Fu.Core
         {
             // draw main menu
             Fugui.RenderMainMenu();
-            float mainMenuHeight = 24f;
+            float mainMenuHeight = 24f * Context.Scale;
             // draw main menu separator
-            ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - 1f), new Vector2(_size.x, mainMenuHeight - 1f), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.HeaderHovered)));
+            ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - Context.Scale), new Vector2(_size.x, mainMenuHeight - Context.Scale), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.HeaderHovered)));
 
             // draw main dockspace
             uint viewPortID = 0;
             ImGuiDockNodeFlags dockspace_flags = Fugui.Settings.DockingFlags;
+            if (FuDockingLayoutManager.CurrentLayout != null && FuDockingLayoutManager.CurrentLayout.AutoHideTopBar)
+            {
+                dockspace_flags |= ImGuiDockNodeFlags.AutoHideTabBar;
+            }
             ImGui.SetNextWindowPos(new Vector2(0f, mainMenuHeight));
-            ImGui.SetNextWindowSize(new Vector2(_size.x, _size.y - mainMenuHeight - Mathf.Max(0f, _footerHeight)));
+            ImGui.SetNextWindowSize(new Vector2(_size.x, _size.y - mainMenuHeight - Mathf.Max(0f, _footerHeight * Context.Scale)));
             ImGui.SetNextWindowViewport(viewPortID);
-            Fugui.Push(ImGuiStyleVar.WindowRounding, 0.0f);
-            Fugui.Push(ImGuiStyleVar.WindowBorderSize, 0.0f);
-            Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
-            Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
-            Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
             // We are using the UIWindowFlags_NoDocking flag to make the parent window not dockable into,
             // because it would be confusing to have two docking targets within each others.
             ImGuiWindowFlags window_flags = ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove |
@@ -459,9 +524,14 @@ namespace Fu.Core
             // draw footer
             if (_footerHeight > 0f)
             {
+                Fugui.Push(ImGuiStyleVar.WindowRounding, 0.0f);
+                Fugui.Push(ImGuiStyleVar.WindowBorderSize, 0.0f);
+                Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
+                Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
+                Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
                 Fugui.Push(ImGuiCols.WindowBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
-                ImGui.SetNextWindowPos(new Vector2(0f, _size.y - _footerHeight));
-                ImGui.SetNextWindowSize(new Vector2(_size.x, _footerHeight));
+                ImGui.SetNextWindowPos(new Vector2(0f, _size.y - (_footerHeight * Context.Scale)));
+                ImGui.SetNextWindowSize(new Vector2(_size.x, (_footerHeight * Context.Scale)));
                 ImGui.SetNextWindowViewport(viewPortID);
                 if (ImGui.Begin("FuguiFooter", window_flags))
                 {
@@ -469,8 +539,8 @@ namespace Fu.Core
                     ImGui.End();
                 }
                 Fugui.PopColor();
+                Fugui.PopStyle(4);
             }
-            Fugui.PopStyle(5);
         }
         #endregion
     }

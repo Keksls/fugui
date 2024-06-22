@@ -106,7 +106,7 @@ namespace Fu.Framework
         public FuGridDefinition(float colWidth)
         {
             NbColumns = 0;
-            ColumnWidth = (int)colWidth;
+            ColumnWidth = (int)(colWidth * Fugui.CurrentContext.Scale);
             MinSecondColumnSize = -1;
             ColumnsWidth = null;
             GridType = FuGridType.FlexibleCols;
@@ -127,7 +127,7 @@ namespace Fu.Framework
         internal bool SetupTable(string gridName, float cellPadding, float outterPadding, bool linesBg, ref bool isResponsivelyResized, float width = -1)
         {
             outterPadding *= Fugui.CurrentContext.Scale;
-            cellPadding *= Fugui.CurrentContext.Scale;
+            //cellPadding *= Fugui.CurrentContext.Scale;
             isResponsivelyResized = false;
             // prepare columns width
             float[] colWidth;
@@ -153,9 +153,13 @@ namespace Fu.Framework
                         float targetUnscaledWidth = ColumnsWidth[i];
                         if (targetUnscaledWidth < 0f)
                         {
-                            targetUnscaledWidth = currentRemaningWidth - targetUnscaledWidth;
+                            targetUnscaledWidth = currentRemaningWidth + (targetUnscaledWidth * Fugui.CurrentContext.Scale) - cellPadding;
+                            colWidth[i] = targetUnscaledWidth;
                         }
-                        colWidth[i] = targetUnscaledWidth * Fugui.CurrentContext.Scale;
+                        else
+                        {
+                            colWidth[i] = targetUnscaledWidth * Fugui.CurrentContext.Scale;
+                        }
                         currentRemaningWidth -= (colWidth[i] + cellPadding);
                     }
                     if (NbColumns == 2 && MinSecondColumnSize > 0 && ColumnsWidth.Length > 0)
@@ -166,6 +170,10 @@ namespace Fu.Framework
                             colWidth = new float[2];
                             colWidth[0] = Math.Max(16f, availWidth - (MinSecondColumnSize * Fugui.CurrentContext.Scale));
                             colWidth[1] = Math.Max(16f, availWidth - colWidth[0]);
+                        }
+                        else if (colWidth.Length == 1)
+                        {
+                            colWidth = new float[2] { colWidth[0], currentRemaningWidth };
                         }
                     }
 
@@ -211,8 +219,7 @@ namespace Fu.Framework
                 // can not be forced to responsive
                 case FuGridType.FlexibleCols:
                     // get nb of columns
-                    float scaledColWidth = ColumnWidth * Fugui.CurrentContext.Scale;
-                    nbCols = Mathf.FloorToInt(availWidth / (scaledColWidth + cellPadding * 2f));
+                    nbCols = Mathf.FloorToInt(availWidth / (ColumnWidth + cellPadding * 2f));
                     if (nbCols < 1)
                     {
                         nbCols = 1;
@@ -227,6 +234,20 @@ namespace Fu.Framework
 
             // try to create the table
             ImGuiNative.igSetCursorPosX(ImGuiNative.igGetCursorPosX() + outterPadding);
+            // prevent creating grid if it's a grid inside another grid and the parent grid has fail been open
+            if (FuLayout.CurrentDrawerPath.Count > 1)
+            {
+                int drawerIndex = 0;
+                foreach (FuLayout drawer in FuLayout.CurrentDrawerPath)
+                {
+                    if (drawerIndex > 0 && drawer is FuGrid && !((FuGrid)drawer)._gridCreated)
+                    {
+                        return false;
+                    }
+                    drawerIndex++;
+                }
+            }
+            // create table
             bool tableCreated = ImGui.BeginTable(gridName, nbCols, linesBg ? ImGuiTableFlags.RowBg : ImGuiTableFlags.None, new Vector2(availWidth, 0f));
             if (!tableCreated)
             {

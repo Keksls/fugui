@@ -115,8 +115,20 @@ namespace Fu.Framework
         private bool _internalTextInput(string id, string hint, ref string text, uint size, float height, float width, FuInputTextFlags flags)
         {
             bool edited;
+            if (width == 0)
+            {
+                width = ImGui.GetContentRegionAvail().x;
+            }
+            else if (width < 0)
+            {
+                width = ImGui.GetContentRegionAvail().x + width * Fugui.CurrentContext.Scale;
+            }
+            else
+            {
+                width *= Fugui.CurrentContext.Scale;
+            }
             // Set the width of the next item to the width of the available content region
-            ImGui.SetNextItemWidth(width <= 0 ? ImGui.GetContentRegionAvail().x : width);
+            ImGui.SetNextItemWidth(width);
             // prevent user for editing the value if the element is disabled
             if (LastItemDisabled)
             {

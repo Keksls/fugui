@@ -27,7 +27,7 @@ namespace Fu.Core
             // bind current draw lists
             for (int i = 0; i < imDrawDataPtr.CmdListsCount; i++)
             {
-                string name = imDrawDataPtr.CmdListsRange[i]._OwnerName;
+                string name = imDrawDataPtr.CmdLists[i]._OwnerName;
 
                 // prevent icons name to switch render (for some reason, ImGui copy the name like 'name/name##pathID' when name contain Icon)
                 if (name.StartsWith("???"))
@@ -75,14 +75,14 @@ namespace Fu.Core
                             else // it's a child lvl 2+, so child of child, we need to store it too
                             {
                                 // it's a child of a windows, we must store it.
-                                windows[name.Split('/')[0]].ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdListsRange[i]);
+                                windows[name.Split('/')[0]].ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdLists[i]);
                                 continue;
                             }
                         }
                         else // the window is not docked
                         {
                             // it's a child of a windows, we must store it.
-                            windows[name.Split('/')[0]].ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdListsRange[i]);
+                            windows[name.Split('/')[0]].ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdLists[i]);
                         }
                     }
                 }
@@ -96,7 +96,7 @@ namespace Fu.Core
                         // dispose window draw list GH handles (free memory)
                         windows[name].DrawList.Dispose();
                         // copy cmd, idx and vtx buffers
-                        windows[name].DrawList.Bind(imDrawDataPtr.CmdListsRange[i]);
+                        windows[name].DrawList.Bind(imDrawDataPtr.CmdLists[i]);
                         // window is stored, it's not just draw anymore
                         windows[name].HasJustBeenDraw = false;
                         // add window draw list to current drawData
@@ -121,7 +121,7 @@ namespace Fu.Core
                 else
                 {
                     // it's nothing to do with an UIWindow, let store it without any edition
-                    cmd.AddDrawList(new DrawList(imDrawDataPtr.CmdListsRange[i]));
+                    cmd.AddDrawList(new DrawList(imDrawDataPtr.CmdLists[i]));
                 }
             }
 
@@ -290,7 +290,7 @@ namespace Fu.Core
             Clear();
             for (int i = 0; i < imDrawData.CmdListsCount; i++)
             {
-                AddDrawList(new DrawList(imDrawData.CmdListsRange[i]));
+                AddDrawList(new DrawList(imDrawData.CmdLists[i]));
             }
             FramebufferScale = imDrawData.FramebufferScale;
             DisplayPos = imDrawData.DisplayPos;

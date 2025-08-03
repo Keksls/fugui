@@ -6,9 +6,6 @@ using UnityEngine.Assertions;
 
 namespace Fu.Core.DearImGui.Platform
 {
-    /// <summary>
-    /// TODO: Write all methods a this base class usage.
-    /// </summary>
     internal class PlatformBase : IPlatform
     {
         protected readonly IniSettingsAsset _iniSettings;
@@ -24,12 +21,20 @@ namespace Fu.Core.DearImGui.Platform
             _iniSettings = iniSettings;
         }
 
-        public virtual bool Initialize(ImGuiIOPtr io, string platformName)
+        /// <summary>
+        /// Initialize the platform backend.
+        /// </summary>
+        /// <param name="io"> ImGuiIOPtr instance to set up the platform backend.</param>
+        /// <param name="pio"> ImGuiPlatformIOPtr instance to set up the platform backend.</param>
+        /// <param name="platformName"> Name of the platform, used for debugging purposes.</param>
+        /// <returns> True if the platform backend was successfully initialized, false otherwise.</returns>
+        public virtual bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName)
         {
             io.SetBackendPlatformName("Unity Input System");
             io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 
-            if ((Fugui.Settings.ImGuiConfig & ImGuiConfigFlags.NavEnableSetMousePos) != 0)
+            if ((Fugui.Settings.ImGuiConfig & ImGuiConfigFlags.NavEnableKeyboard) != 0 ||
+                (Fugui.Settings.ImGuiConfig & ImGuiConfigFlags.NavEnableGamepad) != 0)
             {
                 io.BackendFlags |= ImGuiBackendFlags.HasSetMousePos;
                 io.WantSetMousePos = true;
@@ -45,8 +50,8 @@ namespace Fu.Core.DearImGui.Platform
                 PlatformCallbacks.SetClipboardFunctions(PlatformCallbacks.GetClipboardTextCallback, PlatformCallbacks.SetClipboardTextCallback);
             }
 
-            _callbacks.Assign(io);
-            io.ClipboardUserData = IntPtr.Zero;
+            _callbacks.Assign(pio);
+            pio.Platform_ClipboardUserData = IntPtr.Zero;
 
             if (_iniSettings != null)
             {
@@ -56,6 +61,13 @@ namespace Fu.Core.DearImGui.Platform
             return true;
         }
 
+        /// <summary>
+        /// Prepare the frame for rendering.
+        /// </summary>
+        /// <param name="io"> ImGuiIOPtr instance to prepare the frame.</param>
+        /// <param name="displayRect"> The display rectangle for the frame, used to set the display size.</param>
+        /// <param name="updateMouse"> Whether to update mouse input for the frame.</param>
+        /// <param name="updateKeyboard"> Whether to update keyboard input for the frame.</param>
         public virtual void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
         {
             Assert.IsTrue(io.Fonts.IsBuilt(), "Font atlas not built! Generally built by the renderer. Missing call to renderer NewFrame() function?");
@@ -71,13 +83,22 @@ namespace Fu.Core.DearImGui.Platform
             }
         }
 
-        public virtual void Shutdown(ImGuiIOPtr io)
+        /// <summary>
+        /// Shutdown the platform backend.
+        /// </summary>
+        /// <param name="io"> ImGuiIOPtr instance to shut down the platform backend.</param>
+        /// <param name="pio"> ImGuiPlatformIOPtr instance to shut down the platform backend.</param>
+        public virtual void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
         {
             io.SetBackendPlatformName(null);
-
-            _callbacks.Unset(io);
+            _callbacks.Unset(pio);
         }
 
+        /// <summary>
+        /// Update the cursor based on the current ImGui state.
+        /// </summary>
+        /// <param name="io"> ImGuiIOPtr instance to update the cursor.</param>
+        /// <param name="cursor"> The current ImGui mouse cursor type.</param>
         protected void UpdateCursor(ImGuiIOPtr io, ImGuiMouseCursor cursor)
         {
             if (Fugui.IsCursorLocked)

@@ -12,10 +12,10 @@ namespace Fu.Core.DearImGui.Platform
 			{
 				case InputType.InputManager:
 					return true;
-#if HAS_INPUTSYSTEM
+
 				case InputType.InputSystem:
 					return true;
-#endif
+
 				default:
 					return false;
 			}
@@ -28,10 +28,8 @@ namespace Fu.Core.DearImGui.Platform
 			{
 				case InputType.InputManager:
 					return new InputManagerPlatform(cursors, iniSettings);
-#if HAS_INPUTSYSTEM
 				case InputType.InputSystem:
 					return new InputSystemPlatform(cursors, iniSettings);
-#endif
 				default:
 					Debug.LogError($"[DearImGui] {type} platform not available.");
 					return null;

@@ -33,7 +33,7 @@ public class FuguiDemoScene : MonoBehaviour
         // set default layout (will create UIWindows instances)
         if (FuDockingLayoutManager.Layouts.Count > 0)
         {
-            FuDockingLayoutManager.SetLayout("DemoScene");
+            //FuDockingLayoutManager.SetLayout("DemoScene");
         }
     }
 
@@ -86,7 +86,7 @@ public class FuguiDemoScene : MonoBehaviour
         // instantiate test 3D window
         Fugui.CreateWindowAsync(FuSystemWindowsNames.FuguiSettings, (window) =>
         {
-            Fugui.Add3DWindow(window, new Vector3(0f, -2f, 0f), Quaternion.Euler(Vector3.up * 180f));
+            //Fugui.Add3DWindow(window, new Vector3(0f, -2f, 0f), Quaternion.Euler(Vector3.up * 180f));
         }, false);
     }
 

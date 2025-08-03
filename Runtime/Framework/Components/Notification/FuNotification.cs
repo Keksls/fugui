@@ -150,7 +150,7 @@ namespace Fu.Framework
             Vector2 collapsedSize = _removing ? new Vector2(width, 1f) : new Vector2(32f, Height);
             Vector2 size = Vector2.Lerp(collapsedSize, fullSize, _animationEnlapsed / Fugui.Settings.NotifyAnimlationDuration);
             Fugui.MoveXUnscaled(lineWidth);
-            ImGui.BeginChild("notificationPanel" + i, size, false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+            if(ImGui.BeginChild("notificationPanel" + i, size, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 ImDrawListPtr drawList = ImGui.GetWindowDrawList();
                 // draw rect background
@@ -217,7 +217,7 @@ namespace Fu.Framework
                 // draw border rect
                 drawList.AddRect(panelPos, (ImGui.GetCursorScreenPos() + ImGui.GetContentRegionAvail()), ImGui.GetColorU32(BGColor.Button), 0f, ImDrawFlags.None, borderWidth);
             }
-            ImGui.EndChild();
+            ImGuiNative.igEndChild();
             Fugui.PopStyle();
             Height = Mathf.Max(Height, Fugui.Settings.NotifyIconSize + 8f * Fugui.CurrentContext.Scale);
             return toRemove;

@@ -2,6 +2,7 @@
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
 //#define FUDEBUG 
 using Fu.Core;
+using Fu.Core.DearImGui.Renderer;
 using Fu.Framework;
 using ImGuiNET;
 using System;
@@ -13,6 +14,8 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace Fu
 {
@@ -112,15 +115,7 @@ namespace Fu
         /// </summary>
         internal static bool CursorsJustUnlocked = false;
         // The dictionary of external windows
-        private static Dictionary<string, FuExternalWindowContainer> _externalWindows;
-        // The dictionary of external windows
         private static Dictionary<string, Fu3DWindowContainer> _3DWindows;
-        // The queue of windows to be externalized
-        private static Queue<FuWindow> _windowsToExternalize;
-        // A boolean value indicating whether a new window can be added
-        private static bool _canAddWindow = false;
-        // A boolean value indicating whether the render thread has started
-        private static bool _renderThreadStarted = false;
         // counter of Fugui Contexts
         private static int _contextID = 0;
         // queue of callback to execute BEFORE default render
@@ -237,9 +232,7 @@ namespace Fu
             UIWindows = new Dictionary<string, FuWindow>();
             UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
             // init dic and queue
-            _externalWindows = new Dictionary<string, FuExternalWindowContainer>();
             _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
-            _windowsToExternalize = new Queue<FuWindow>();
             // prepare context menu
             ResetContextMenu(true);
         }
@@ -251,13 +244,8 @@ namespace Fu
         /// <param name="mainContainerUICamera">Camera that will display UI of main container</param>
         public static void Initialize(Camera mainContainerUICamera)
         {
-            // we can now add window
-            _canAddWindow = true;
-            // assume that render thread is not already started
-            _renderThreadStarted = false;
-
             // create Default Fugui Context and initialize themeManager
-            DefaultContext = CreateUnityContext(mainContainerUICamera, 1f, 1f, FuThemeManager.Initialize);
+            DefaultContext = CreateUnityContext(mainContainerUICamera, Settings.GlobalScale, Settings.FontGlobalScale, FuThemeManager.Initialize);
             DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
@@ -305,41 +293,6 @@ namespace Fu
             {
                 _executeInMainThreadActionsStack.Dequeue()?.Invoke();
             }
-
-            // externalize windows
-            if (_windowsToExternalize.Count > 0 && _canAddWindow)
-            {
-                // start openTK render loop thread if not already started
-                if (!_renderThreadStarted)
-                {
-                    _renderThreadStarted = true;
-                    Thread openTKRenderThread = new Thread(openTKRenderLoop);
-                    openTKRenderThread.IsBackground = true;
-                    openTKRenderThread.Start();
-                }
-
-                _canAddWindow = false;
-                FuWindow imguiWindow = _windowsToExternalize.Dequeue();
-
-                // create new window
-                FuExternalWindowContainer window = new FuExternalWindowContainer(imguiWindow, Settings.ExternalWindowFlags);
-                window.Closed += (sender, args) =>
-                {
-                    lock (_externalWindows)
-                    {
-                        _externalWindows.Remove(imguiWindow.ID);
-                    }
-                };
-                window.OnInitialized += () =>
-                {
-                    _canAddWindow = true;
-                    ExecuteInMainThread(() => Fugui.Fire_OnWindowExternalized(imguiWindow));
-                };
-                lock (_externalWindows)
-                {
-                    _externalWindows.Add(imguiWindow.ID, window);
-                }
-            }
         }
 
         /// <summary>
@@ -347,15 +300,6 @@ namespace Fu
         /// </summary>
         public static void Dispose()
         {
-            // Close all external windows
-            foreach (FuExternalWindowContainer window in _externalWindows.Values)
-            {
-                window.Close();
-            }
-            // Clear the list of external windows
-            _externalWindows.Clear();
-            // Set the render thread flag to false
-            _renderThreadStarted = false;
             // Dispose Fugui Contexts
             var ids = Contexts.Keys.ToList();
             foreach (int contextID in ids)
@@ -423,53 +367,6 @@ namespace Fu
         {
             yield return new WaitForSeconds(sleep); // <= remove that shit
             callback?.Invoke();
-        }
-
-        /// <summary>
-        /// Adds an UI window to be externalized.
-        /// </summary>
-        /// <param name="uiWindow">The UI window to be externalized.</param>
-        public static void AddExternalWindow(FuWindow uiWindow)
-        {
-            if (Settings.EnableExternalizations)
-            {
-                // Add the IMGUI window to the queue of windows to be externalized
-                _windowsToExternalize.Enqueue(uiWindow);
-            }
-        }
-
-        /// <summary>
-        /// Removes an external window with the specified Window.
-        /// </summary>
-        /// <param name="uiWindow">The external window to be removed.</param>
-        internal static void RemoveExternalWindow(FuWindow uiWindow)
-        {
-            // Close the external window and remove it from the list
-            RemoveExternalWindow(uiWindow.ID);
-        }
-
-        /// <summary>
-        /// Removes an external window with the specified ID.
-        /// </summary>
-        /// <param name="id">The ID of the external window to be removed.</param>
-        internal static void RemoveExternalWindow(string id)
-        {
-            // Check if an external window with the specified ID exists
-            if (!_externalWindows.ContainsKey(id))
-            {
-                return;
-            }
-            // Close the external window and remove it from the list
-            _externalWindows[id].Close();
-        }
-
-        /// <summary>
-        /// Is there some external windows open right now ?
-        /// </summary>
-        /// <returns>true if there is at least one external window</returns>
-        public static bool HasExternalWindow()
-        {
-            return _externalWindows.Count > 0;
         }
 
         /// <summary>
@@ -814,8 +711,9 @@ namespace Fu
             {
                 DefaultContext.SetScale(_targetScale, _targetFontScale);
             }
-            // end render default context
-            DefaultContext.EndRender();
+
+            // check if render graph is enabled
+            bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
 
             // render any other contexts
             foreach (var context in Contexts)
@@ -830,49 +728,12 @@ namespace Fu
                         {
                             context.Value.SetScale(_targetScale, _targetFontScale);
                         }
-                        context.Value.EndRender();
                     }
                 }
             }
 
             // prevent rescaling each frames
             _targetScale = -1f;
-        }
-
-        /// <summary>
-        /// Thread that handle External OpenTK container graphics contexts render
-        /// </summary>
-        private static void openTKRenderLoop()
-        {
-            // Loop while the render thread is started
-            while (_renderThreadStarted)
-            {
-                lock (_externalWindows)
-                {
-                    // Iterate through all external windows
-                    foreach (FuExternalWindowContainer window in _externalWindows.Values)
-                    {
-                        try
-                        {
-                            // Try to create the context for the window
-                            window.TryCreateContext();
-
-                            // Render the GL for the window
-                            window.GLRender();
-
-                            // Try to destroy the context for the window
-                            window.TryDestroyContext();
-                        }
-                        catch (Exception ex)
-                        {
-                            // Log any errors that occur
-                            Debug.LogError(ex);
-                        }
-                    }
-                }
-                // Sleep for the specified number of ticks
-                Thread.Sleep(new TimeSpan(Settings.ExternalManipulatingTicks));
-            }
         }
         #endregion
 
@@ -1049,7 +910,7 @@ namespace Fu
                 return null;
 
             // create and add context
-            FuUnityContext context = new FuUnityContext(index, scale, fontScale, onInitialize, camera, Settings.Render);
+            FuUnityContext context = new FuUnityContext(index, scale, fontScale, onInitialize, camera);
             Contexts.Add(index, context);
 
             return context;
@@ -1155,16 +1016,6 @@ namespace Fu
             {
                 CurrentContext = null;
                 ImGui.SetCurrentContext(IntPtr.Zero);
-
-#if !UIMGUI_REMOVE_IMPLOT
-                ImPlotNET.ImPlot.SetImGuiContext(IntPtr.Zero);
-#endif
-#if !UIMGUI_REMOVE_IMGUIZMO
-                ImGuizmoNET.ImGuizmo.SetImGuiContext(IntPtr.Zero);
-#endif
-#if !UIMGUI_REMOVE_IMNODES
-                imnodesNET.imnodes.SetImGuiContext(IntPtr.Zero);
-#endif
             }
         }
         #endregion
@@ -1521,17 +1372,6 @@ namespace Fu
                 isDown |= MainContainer.Keyboard.GetKeyDown(key);
                 if (!isDown)
                 {
-                    foreach (var externalWindowContainer in _externalWindows.Values)
-                    {
-                        if (externalWindowContainer.Keyboard.GetKeyDown(key))
-                        {
-                            isDown = true;
-                            break;
-                        }
-                    }
-                }
-                if (!isDown)
-                {
                     foreach (var threeDWindowContainer in _3DWindows.Values)
                     {
                         if (threeDWindowContainer.Keyboard.GetKeyDown(key))
@@ -1581,17 +1421,6 @@ namespace Fu
                 isPressed |= MainContainer.Keyboard.GetKeyPressed(key);
                 if (!isPressed)
                 {
-                    foreach (var externalWindowContainer in _externalWindows.Values)
-                    {
-                        if (externalWindowContainer.Keyboard.GetKeyPressed(key))
-                        {
-                            isPressed = true;
-                            break;
-                        }
-                    }
-                }
-                if (!isPressed)
-                {
                     foreach (var threeDWindowContainer in _3DWindows.Values)
                     {
                         if (threeDWindowContainer.Keyboard.GetKeyPressed(key))
@@ -1639,17 +1468,6 @@ namespace Fu
             if (windowsNames == null || windowsNames.Length == 0)
             {
                 isUp |= MainContainer.Keyboard.GetKeyUp(key);
-                if (!isUp)
-                {
-                    foreach (var externalWindowContainer in _externalWindows.Values)
-                    {
-                        if (externalWindowContainer.Keyboard.GetKeyUp(key))
-                        {
-                            isUp = true;
-                            break;
-                        }
-                    }
-                }
                 if (!isUp)
                 {
                     foreach (var threeDWindowContainer in _3DWindows.Values)

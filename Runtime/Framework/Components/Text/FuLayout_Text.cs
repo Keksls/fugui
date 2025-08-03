@@ -344,7 +344,7 @@ namespace Fu.Framework
             // calc item size
             Vector2 region_max = default;
             if (size.x < 0.0f || size.y < 0.0f)
-                region_max = ImGui.GetContentRegionMax();
+                region_max = ImGui.GetContentRegionAvail() + ImGui.GetCursorScreenPos() - ImGui.GetWindowPos();
             if (size.x == 0.0f)
                 size.x = textSize.x + padding.x * 2f;
             else if (size.x < 0.0f)

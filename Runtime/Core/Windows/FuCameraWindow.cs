@@ -1,7 +1,7 @@
 using ImGuiNET;
 using System;
 using UnityEngine;
-using UnityEngine.Rendering.PostProcessing;
+using UnityEngine.Rendering.Universal;
 
 namespace Fu.Core
 {
@@ -41,8 +41,8 @@ namespace Fu.Core
         private FuRaycaster _raycaster;
         private UnityEngine.Experimental.Rendering.GraphicsFormat _currentTextureFormat;
         private int _currentTextureDepth = 24;
-        private PostProcessLayer _postProcessLayer;
-        private PostProcessLayer.Antialiasing _defaultAntiAliasing;
+        private UniversalAdditionalCameraData _postProcessLayer;
+        private AntialiasingMode _defaultAntiAliasing;
         private bool _defaultCameraMSAA = false;
         private Vector2 _currentImageUV;
 
@@ -53,10 +53,10 @@ namespace Fu.Core
             Camera = windowDefinition.Camera;
 
             // get post process data
-            _postProcessLayer = Camera.GetComponent<PostProcessLayer>();
+            _postProcessLayer = Camera.GetComponent<UniversalAdditionalCameraData>();
             if (_postProcessLayer != null)
             {
-                _defaultAntiAliasing = _postProcessLayer.antialiasingMode;
+                _defaultAntiAliasing = _postProcessLayer.antialiasing;
             }
             _defaultCameraMSAA = Camera.allowMSAA;
             // set default MSAA friendly texture format
@@ -101,32 +101,16 @@ namespace Fu.Core
 
         private void FuCameraWindow_OnAddToContainer(FuWindow window)
         {
-            if (window.IsUnityContext)
+            // set default post process data
+            if (_postProcessLayer != null)
             {
-                // set default post process data
-                if (_postProcessLayer != null)
-                {
-                    _postProcessLayer.antialiasingMode = _defaultAntiAliasing;
-                }
-                Camera.allowMSAA = _defaultCameraMSAA;
-                // set default MSAA friendly texture format
-                _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
-                _currentTextureDepth = 24;
-                _currentImageUV = Vector2.one;
+                _postProcessLayer.antialiasing = _defaultAntiAliasing;
             }
-            else
-            {
-                // set default post process data
-                if (_postProcessLayer != null)
-                {
-                    _postProcessLayer.antialiasingMode = PostProcessLayer.Antialiasing.SubpixelMorphologicalAntialiasing;
-                }
-                Camera.allowMSAA = false;
-                // set OpenTK Friendly texture format
-                _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB;
-                _currentTextureDepth = 0;
-                _currentImageUV = new Vector2(1f, -1f);
-            }
+            Camera.allowMSAA = _defaultCameraMSAA;
+            // set default MSAA friendly texture format
+            _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
+            _currentTextureDepth = 24;
+            _currentImageUV = Vector2.one;
 
             // recreate render texture
             _rTexture.Release();
@@ -151,7 +135,7 @@ namespace Fu.Core
             // set default post process data
             if (_postProcessLayer != null)
             {
-                _postProcessLayer.antialiasingMode = _defaultAntiAliasing;
+                _postProcessLayer.antialiasing = _defaultAntiAliasing;
             }
             Camera.allowMSAA = _defaultCameraMSAA;
         }
@@ -171,32 +155,34 @@ namespace Fu.Core
             ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().x - 232f, 16f));
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
             Fugui.Push(ImGuiCols.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
-            ImGui.BeginChild(ID + "cs", new Vector2(224f, 96f));
-            // super sampling
-            if (ImGui.RadioButton("x0.5", _superSampling == 0.5f))
+            if (ImGui.BeginChild(ID + "cs", new Vector2(224f, 96f)))
             {
-                SuperSampling = 0.5f;
+                // super sampling
+                if (ImGui.RadioButton("x0.5", _superSampling == 0.5f))
+                {
+                    SuperSampling = 0.5f;
+                }
+                ImGui.SameLine();
+                if (ImGui.RadioButton("x1", _superSampling == 1f))
+                {
+                    SuperSampling = 1f;
+                }
+                ImGui.SameLine();
+                if (ImGui.RadioButton("x1.5", _superSampling == 1.5f))
+                {
+                    SuperSampling = 1.5f;
+                }
+                ImGui.SameLine();
+                if (ImGui.RadioButton("x2", _superSampling == 2f))
+                {
+                    SuperSampling = 2f;
+                }
+                // states
+                ImGui.Text("State : " + State);
+                ImGui.Text("FPS : " + (int)CurrentCameraFPS + " (" + (CameraDeltaTime * 1000f).ToString("f2") + " ms)");
+                ImGui.Text("Target : " + TargetCameraFPS + "  (" + ((int)(_targetCameraDeltaTimeMs * 1000)).ToString() + " ms)"); ImGui.Dummy(new Vector2(4f, 0f));
             }
-            ImGui.SameLine();
-            if (ImGui.RadioButton("x1", _superSampling == 1f))
-            {
-                SuperSampling = 1f;
-            }
-            ImGui.SameLine();
-            if (ImGui.RadioButton("x1.5", _superSampling == 1.5f))
-            {
-                SuperSampling = 1.5f;
-            }
-            ImGui.SameLine();
-            if (ImGui.RadioButton("x2", _superSampling == 2f))
-            {
-                SuperSampling = 2f;
-            }
-            // states
-            ImGui.Text("State : " + State);
-            ImGui.Text("FPS : " + (int)CurrentCameraFPS + " (" + (CameraDeltaTime * 1000f).ToString("f2") + " ms)");
-            ImGui.Text("Target : " + TargetCameraFPS + "  (" + ((int)(_targetCameraDeltaTimeMs * 1000)).ToString() + " ms)"); ImGui.Dummy(new Vector2(4f, 0f));
-            ImGui.EndChild();
+            ImGuiNative.igEndChild();
             Fugui.PopColor();
             Fugui.PopStyle();
         }

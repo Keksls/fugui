@@ -1,55 +1,295 @@
-﻿using UnityEngine.Rendering;
-#if HAS_URP
-using UnityEngine.Rendering.Universal;
+﻿using Fu.Core.DearImGui.Texture;
+using ImGuiNET;
+using System;
+using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
-#endif
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.Universal;
 
 namespace Fu.Core.DearImGui.Renderer
 {
-#if HAS_URP
-	public class RenderImGui : ScriptableRendererFeature
-	{
-		private class CommandBufferPass : ScriptableRenderPass
-		{
-			public CommandBuffer commandBuffer;
+    public class FuguiRenderGraphFeature : ScriptableRendererFeature
+    {
+        private class FuguiRenderGraphPass : ScriptableRenderPass
+        {
+            #region Variables
+            private Material _material;
+            private Mesh _mesh;
+            private int _textureID;
+            private int _prevSubMeshCount = 1;
+            private TextureManager _textureManager;
+            private MaterialPropertyBlock _materialProperties;
+            // Skip all checks and validation when updating the mesh.
+            private const MeshUpdateFlags NoMeshChecks = MeshUpdateFlags.DontNotifyMeshUsers |
+                MeshUpdateFlags.DontRecalculateBounds |
+                MeshUpdateFlags.DontResetBoneBounds |
+                MeshUpdateFlags.DontValidateIndices;
+            // Color sent with TexCoord1 semantics because otherwise Color attribute would be reordered to come before UVs.
+            private static VertexAttributeDescriptor[] _vertexAttributes = new[]
+            {
+                new VertexAttributeDescriptor(VertexAttribute.Position , VertexAttributeFormat.Float32, 2), // ¨Pos
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2), // UV
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UInt32, 1), // Color
+            };
+            #endregion
 
-			public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
-			{
-				context.ExecuteCommandBuffer(commandBuffer);
-			}
-		}
+            /// <summary>
+            /// Creates a new Fugui Render Graph Pass.
+            /// </summary>
+            /// <param name="shader"> Shader to use for rendering Fugui.</param>
+            public FuguiRenderGraphPass(Shader shader)
+            {
+                _textureID = Shader.PropertyToID("_Texture");
+                _materialProperties = new MaterialPropertyBlock();
+                _material = new Material(shader)
+                {
+                    hideFlags = HideFlags.HideAndDontSave & ~HideFlags.DontUnloadUnusedAsset
+                };
+                _mesh = new Mesh
+                {
+                    name = "FuguiMesh"
+                };
+                _mesh.MarkDynamic();
+            }
 
-		[HideInInspector]
-		public Camera Camera;
-		public CommandBuffer CommandBuffer;
-		public RenderPassEvent RenderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
+            /// <summary>
+            /// Records the render graph pass for rendering Fugui.
+            /// </summary>
+            /// <param name="renderGraph"> The render graph to record the pass into.</param>
+            /// <param name="frameData"> The frame data containing the active color texture.</param>
+            public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
+            {
+                // get the active color texture from the frame data
+                var data = frameData.Get<UniversalResourceData>();
+                var target = data.activeColorTexture;
 
-		private CommandBufferPass _commandBufferPass;
+                // create the builder for the raster render pass
+                using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_RenderGraph_Pass", out var passData);
+                builder.SetRenderAttachment(target, 0);
+                builder.AllowPassCulling(false);
 
-		public override void Create()
-		{
-			_commandBufferPass = new CommandBufferPass()
-			{
-				commandBuffer = CommandBuffer,
-				renderPassEvent = RenderPassEvent,
-			};
-		}
+                // set the pass data
+                builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                {
+                    // ensure the Fugui context is started
+                    if (Fugui.DefaultContext == null || !Fugui.DefaultContext.Started)
+                    {
+                        return;
+                    }
 
-		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
-		{
-			if (CommandBuffer == null) return;
-			if (Camera != renderingData.cameraData.camera) return;
+                    // render the default context
+                    Fugui.DefaultContext.EndRender();
+                    _textureManager = Fugui.DefaultContext.TextureManager;
+                    RenderDrawLists(ctx.cmd, Fugui.DefaultContext.DrawData);
 
-			_commandBufferPass.renderPassEvent = RenderPassEvent;
-			_commandBufferPass.commandBuffer = CommandBuffer;
+                    // render any other contexts
+                    foreach (var context in Fugui.Contexts)
+                    {
+                        if (context.Key != 0 && context.Value.Started)
+                        {
+                            context.Value.EndRender();
+                            // TODO : SET TEXTURE MANAGER FOR CONTEXT
+                            RenderDrawLists(ctx.cmd, context.Value.DrawData);
+                        }
+                    }
+                });
+            }
 
-			renderer.EnqueuePass(_commandBufferPass);
-		}
-	}
-#else
-	public class RenderImGui : UnityEngine.ScriptableObject
-	{
-		public CommandBuffer CommandBuffer;
-	}
+            /// <summary>
+            /// Renders the draw lists using the provided command buffer and draw data.
+            /// </summary>
+            /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
+            /// <param name="drawData"></ param>
+            public void RenderDrawLists(RasterCommandBuffer commandBuffer, DrawData drawData)
+            {
+                Vector2 fbOSize = drawData.DisplaySize * drawData.FramebufferScale;
+
+                // Avoid rendering when minimized.
+                if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
+
+                UpdateMesh(drawData);
+                commandBuffer.BeginSample(Constants.ExecuteDrawCommandsMarker);
+                CreateDrawCommands(commandBuffer, drawData, fbOSize);
+                commandBuffer.EndSample(Constants.ExecuteDrawCommandsMarker);
+            }
+
+            /// <summary>
+            /// Creates the draw commands for rendering Fugui using the provided command buffer and draw data.
+            /// </summary>
+            /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
+            /// <param name="drawData"> The draw data containing the information to render.</param>
+            /// <param name="fbSize"> The framebuffer size to use for rendering.</param>
+            private void CreateDrawCommands(RasterCommandBuffer commandBuffer, DrawData drawData, Vector2 fbSize)
+            {
+                IntPtr prevTextureId = IntPtr.Zero;
+                Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
+                    drawData.DisplayPos.x, drawData.DisplayPos.y);
+                Vector4 clipScale = new Vector4(drawData.FramebufferScale.x, drawData.FramebufferScale.y,
+                    drawData.FramebufferScale.x, drawData.FramebufferScale.y);
+
+                commandBuffer.SetViewport(new Rect(0f, 0f, fbSize.x, fbSize.y));
+                commandBuffer.SetViewProjectionMatrices(
+                    Matrix4x4.Translate(new Vector3(0.5f / fbSize.x, 0.5f / fbSize.y, 0f)), // Small adjustment to improve text.
+                    Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
+
+                int subOf = 0;
+                for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
+                {
+                    DrawList drawList = drawData.DrawLists[n];
+                    for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i, ++subOf)
+                    {
+                        ImDrawCmd drawCmd = drawList.CmdBuffer[i];
+                        if (drawCmd.UserCallback != IntPtr.Zero)
+                        {
+                            Debug.Log("unhandled user callback");
+                        }
+                        else
+                        {
+                            // Project scissor rectangle into framebuffer space and skip if fully outside.
+                            Vector4 clipSize = drawCmd.ClipRect - clipOffset;
+                            Vector4 clip = Vector4.Scale(clipSize, clipScale);
+
+                            if (clip.x >= fbSize.x || clip.y >= fbSize.y || clip.z < 0f || clip.w < 0f) continue;
+
+                            if (prevTextureId != drawCmd.TextureId)
+                            {
+                                prevTextureId = drawCmd.TextureId;
+
+                                // TODO: Implement ImDrawCmdPtr.GetTexID().
+                                bool hasTexture = _textureManager.TryGetTexture(prevTextureId, out UnityEngine.Texture texture);
+
+                                //Assert.IsTrue(hasTexture, $"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
+                                if (!hasTexture)
+                                {
+                                    Debug.LogError($"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
+                                }
+                                else
+                                {
+                                    _materialProperties.SetTexture(_textureID, texture);
+                                }
+                            }
+                            commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
+                            commandBuffer.DrawMesh(_mesh, Matrix4x4.identity, _material, subOf, 0, _materialProperties);
+                        }
+                    }
+                }
+                commandBuffer.DisableScissorRect();
+            }
+
+            /// <summary>
+            /// Updates the mesh with the provided draw data.
+            /// </summary>
+            /// <param name="drawData"> The draw data containing the vertex and index buffers.</param>
+            private void UpdateMesh(DrawData drawData)
+            {
+                // Number of submeshes is the same as the nr of ImDrawCmd.
+                int subMeshCount = 0;
+                for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
+                {
+                    subMeshCount += drawData.DrawLists[n].CmdBuffer.Length;
+                }
+
+                if (_prevSubMeshCount != subMeshCount)
+                {
+                    // Occasionally crashes when changing subMeshCount without clearing first.
+                    _mesh.Clear(true);
+                    _mesh.subMeshCount = _prevSubMeshCount = subMeshCount;
+                }
+                _mesh.SetVertexBufferParams(drawData.TotalVtxCount, _vertexAttributes);
+                _mesh.SetIndexBufferParams(drawData.TotalIdxCount, IndexFormat.UInt16);
+
+                //  Upload data into mesh.
+                int vtxOf = 0;
+                int idxOf = 0;
+                List<SubMeshDescriptor> descriptors = new List<SubMeshDescriptor>();
+
+                for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
+                {
+                    DrawList drawList = drawData.DrawLists[n];
+
+                    unsafe
+                    {
+                        // TODO: Convert NativeArray to C# array or list (remove collections).
+                        NativeArray<ImDrawVert> vtxArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ImDrawVert>(
+                            (void*)drawList.VtxPtr, drawList.VtxBuffer.Length, Allocator.None);
+                        NativeArray<ushort> idxArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ushort>(
+                            (void*)drawList.IdxPtr, drawList.IdxBuffer.Length, Allocator.None);
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                        NativeArrayUnsafeUtility
+                            .SetAtomicSafetyHandle(ref vtxArray, AtomicSafetyHandle.GetTempMemoryHandle());
+                        NativeArrayUnsafeUtility
+                            .SetAtomicSafetyHandle(ref idxArray, AtomicSafetyHandle.GetTempMemoryHandle());
 #endif
+                        // Upload vertex/index data.
+                        _mesh.SetVertexBufferData(vtxArray, 0, vtxOf, vtxArray.Length, 0, NoMeshChecks);
+                        _mesh.SetIndexBufferData(idxArray, 0, idxOf, idxArray.Length, NoMeshChecks);
+
+                        // Define subMeshes.
+                        for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i)
+                        {
+                            ImDrawCmd cmd = drawList.CmdBuffer[i];
+                            SubMeshDescriptor descriptor = new SubMeshDescriptor
+                            {
+                                topology = MeshTopology.Triangles,
+                                indexStart = idxOf + (int)cmd.IdxOffset,
+                                indexCount = (int)cmd.ElemCount,
+                                baseVertex = vtxOf + (int)cmd.VtxOffset,
+                            };
+                            descriptors.Add(descriptor);
+                        }
+
+                        vtxOf += vtxArray.Length;
+                        idxOf += idxArray.Length;
+                    }
+                }
+
+                _mesh.SetSubMeshes(descriptors, NoMeshChecks);
+                _mesh.UploadMeshData(false);
+            }
+
+            /// <summary>
+            /// Data structure to hold the render pass data for the Fugui Render Graph Pass.
+            /// </summary>
+            private class PassData
+            {
+                public TextureHandle colorTarget;
+            }
+        }
+
+        public RenderPassEvent PassEvent = RenderPassEvent.AfterRenderingPostProcessing;
+        public Shader _shader;
+        public int _cameraLayer = 5; // 5 is default unity UI layer
+
+        /// <summary>
+        /// Creates the Fugui Render Graph Pass with the specified shader.
+        /// </summary>
+        public override void Create()
+        {
+        }
+
+        /// <summary>
+        /// Adds the Fugui Render Graph Pass to the renderer's render passes.
+        /// </summary>
+        /// <param name="renderer"> The scriptable renderer to which the pass will be added.</param>
+        /// <param name="renderingData"> The rendering data containing information about the current rendering state.</param>
+        public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
+        {
+            var camera = renderingData.cameraData.camera;
+
+            if (camera.gameObject.layer != _cameraLayer)
+                return;
+
+            // Créer une nouvelle instance de la pass pour cette caméra
+            var pass = new FuguiRenderGraphPass(_shader)
+            {
+                renderPassEvent = PassEvent
+            };
+
+            renderer.EnqueuePass(pass);
+        }
+    }
 }

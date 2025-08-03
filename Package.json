@@ -1,7 +1,7 @@
 {
   "name": "com.keksls.fugui",
-  "version": "0.1.1",
-  "displayName": "Fugui",
+  "version": "0.1.2",
+  "displayName": "Fugui Unity6",
   "description": "Imediate GUI Framework for Unity based on https://github.com/ocornut/imgui.",
   "keywords": [
     "fugui",

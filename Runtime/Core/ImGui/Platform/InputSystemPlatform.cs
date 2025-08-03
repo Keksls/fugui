@@ -1,210 +1,267 @@
-﻿#if HAS_INPUTSYSTEM
+﻿using Fu.Core.DearImGui.Assets;
 using ImGuiNET;
 using System.Collections.Generic;
-using UImGui.Assets;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Controls;
 
-namespace UImGui.Platform
+namespace Fu.Core.DearImGui.Platform
 {
-	// Implemented features:
-	// [x] Platform: Clipboard support.
-	// [x] Platform: Mouse cursor shape and visibility. Disable with io.ConfigFlags |= ImGuiConfigFlags.NoMouseCursorChange.
-	// [x] Platform: Keyboard arrays indexed using InputSystem.Key codes, e.g. ImGui.IsKeyPressed(Key.Space).
-	// [x] Platform: Gamepad support. Enabled with io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad.
-	// [~] Platform: IME support.
-	// [~] Platform: INI settings support.
+    /// <summary>
+    /// Platform bindings for ImGui in Unity in charge of: mouse/keyboard/gamepad inputs, cursor shape, timing, windowing.
+    /// </summary>
+    internal sealed class InputSystemPlatform : PlatformBase
+    {
+        private readonly List<char> _textInput = new List<char>();
+        private int[] _mainKeys;
+        private Keyboard _keyboard = null;
 
-	/// <summary>
-	/// Platform bindings for ImGui in Unity in charge of: mouse/keyboard/gamepad inputs, cursor shape, timing, windowing.
-	/// </summary>
-	internal sealed class InputSystemPlatform : PlatformBase
-	{
-		private readonly List<char> _textInput = new List<char>();
+        public InputSystemPlatform(CursorShapesAsset cursorShapes, IniSettingsAsset iniSettings) :
+            base(cursorShapes, iniSettings)
+        { }
 
-		private int[] _mainKeys;
+        /// <summary>
+        /// Initialize the ImGui input system, setting up event listeners and configuring ImGui IO.
+        /// </summary>
+        /// <param name="io"> ImGui IO pointer.</param>
+        /// <param name="platformName"> Name of the platform, used for logging or identification.</param>
+        /// <returns> True if initialization was successful, false otherwise.</returns>
+        public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName)
+        {
+            InputSystem.onDeviceChange += OnDeviceChange;
+            base.Initialize(io, pio, platformName);
 
-		private Keyboard _keyboard = null;
+            io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 
-		public InputSystemPlatform(CursorShapesAsset cursorShapes, IniSettingsAsset iniSettings) :
-			base(cursorShapes, iniSettings)
-		{ }
+            unsafe
+            {
+                PlatformCallbacks.SetClipboardFunctions(PlatformCallbacks.GetClipboardTextCallback, PlatformCallbacks.SetClipboardTextCallback);
+            }
 
-		public override bool Initialize(ImGuiIOPtr io, UIOConfig config, string platformName)
-		{
-			InputSystem.onDeviceChange += OnDeviceChange;
-			base.Initialize(io, config, platformName);
+            SetupKeyboard(io, Keyboard.current);
 
-			io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
+            return true;
+        }
 
-			unsafe
-			{
-				PlatformCallbacks.SetClipboardFunctions(PlatformCallbacks.GetClipboardTextCallback, PlatformCallbacks.SetClipboardTextCallback);
-			}
+        /// <summary>
+        /// Shutdown the ImGui input system, unregistering event listeners and cleaning up resources.
+        /// </summary>
+        /// <param name="io"> ImGui IO pointer.</param>
+        /// <param name="pio"> ImGui Platform IO pointer.</param>
+        public override void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
+        {
+            base.Shutdown(io, pio);
+            InputSystem.onDeviceChange -= OnDeviceChange;
+        }
 
-			SetupKeyboard(io, Keyboard.current);
+        /// <summary>
+        /// Prepare the ImGui frame with the current input state.
+        /// </summary>
+        /// <param name="io"> ImGui IO pointer.</param>
+        /// <param name="displayRect"> The display rectangle for the ImGui context.</param>
+        /// <param name="updateMouse"> Whether to update the mouse state.</param>
+        /// <param name="updateKeyboard"> Whether to update the keyboard state.</param>
+        public override void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
+        {
+            base.PrepareFrame(io, displayRect, updateMouse, updateKeyboard);
 
-			return true;
-		}
+            if (updateKeyboard)
+                UpdateKeyboard(io, Keyboard.current);
+            if (updateMouse)
+                UpdateMouse(io, Mouse.current);
 
-		public override void Shutdown(ImGuiIOPtr io)
-		{
-			base.Shutdown(io);
-			InputSystem.onDeviceChange -= OnDeviceChange;
-		}
+            UpdateCursor(io, ImGui.GetMouseCursor());
+            UpdateGamepad(io, Gamepad.current);
+        }
 
-		public override void PrepareFrame(ImGuiIOPtr io, Rect displayRect)
-		{
-			base.PrepareFrame(io, displayRect);
+        /// <summary>
+        /// Update the ImGui input state with the current mouse state.
+        /// </summary>
+        /// <param name="io"> ImGui IO pointer.</param>
+        /// <param name="mouse"> The current mouse instance.</param>
+        private static void UpdateMouse(ImGuiIOPtr io, Mouse mouse)
+        {
+            if (mouse == null) return;
 
-			UpdateKeyboard(io, Keyboard.current);
-			UpdateMouse(io, Mouse.current);
-			UpdateCursor(io, ImGui.GetMouseCursor());
-			UpdateGamepad(io, Gamepad.current);
-		}
+            // Update position and visibility
+            if (io.WantSetMousePos)
+            {
+                mouse.WarpCursorPosition(Utils.ImGuiToScreen(io.MousePos));
+            }
 
-		private static void UpdateMouse(ImGuiIOPtr io, Mouse mouse)
-		{
-			if (mouse == null) return;
+            // Cursor position
+            io.AddMousePosEvent(mouse.position.x.ReadValue(), io.DisplaySize.y - mouse.position.y.ReadValue());
 
-			// Set Unity mouse position if requested.
-			if (io.WantSetMousePos)
-			{
-				mouse.WarpCursorPosition(Utils.ImGuiToScreen(io.MousePos));
-			}
+            // Scroll (120 = 1 "tick" Windows)
+            Vector2 mouseScroll = mouse.scroll.ReadValue() / 120f;
+            io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
 
-			io.MousePos = Utils.ScreenToImGui(mouse.position.ReadValue());
+            // Buttons (0 = left, 1 = right, 2 = middle)
+            io.AddMouseButtonEvent(0, mouse.leftButton.isPressed);
+            io.AddMouseButtonEvent(1, mouse.rightButton.isPressed);
+            io.AddMouseButtonEvent(2, mouse.middleButton.isPressed);
 
-			Vector2 mouseScroll = mouse.scroll.ReadValue() / 120f;
-			io.MouseWheel = mouseScroll.y;
-			io.MouseWheelH = mouseScroll.x;
+            // Optional : support for additional mouse buttons (X1, X2)
+            io.AddMouseButtonEvent(3, mouse.backButton?.isPressed ?? false);  // X1
+            io.AddMouseButtonEvent(4, mouse.forwardButton?.isPressed ?? false); // X2
+        }
 
-			io.MouseDown[0] = mouse.leftButton.isPressed;
-			io.MouseDown[1] = mouse.rightButton.isPressed;
-			io.MouseDown[2] = mouse.middleButton.isPressed;
-		}
+        /// <summary>
+        /// Update the ImGui input state with the current gamepad state.
+        /// </summary>
+        /// <param name="io"> ImGui IO pointer.</param>
+        /// <param name="gamepad"> The current gamepad instance.</param>
+        private static void UpdateGamepad(ImGuiIOPtr io, Gamepad gamepad)
+        {
+            // Check if gamepad is available and if gamepad navigation is enabled.
+            if (gamepad == null || (io.ConfigFlags & ImGuiConfigFlags.NavEnableGamepad) == 0)
+            {
+                io.BackendFlags &= ~ImGuiBackendFlags.HasGamepad;
+                return;
+            }
 
-		private static void UpdateGamepad(ImGuiIOPtr io, Gamepad gamepad)
-		{
-			io.BackendFlags = gamepad == null ?
-				io.BackendFlags & ~ImGuiBackendFlags.HasGamepad :
-				io.BackendFlags | ImGuiBackendFlags.HasGamepad;
+            io.BackendFlags |= ImGuiBackendFlags.HasGamepad;
 
-			if (gamepad == null || (io.ConfigFlags & ImGuiConfigFlags.NavEnableGamepad) == 0) return;
+            // Face buttons
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadFaceDown, gamepad.buttonSouth.isPressed, gamepad.buttonSouth.ReadValue()); // A / Cross
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadFaceRight, gamepad.buttonEast.isPressed, gamepad.buttonEast.ReadValue());  // B / Circle
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadFaceLeft, gamepad.buttonWest.isPressed, gamepad.buttonWest.ReadValue());  // X / Square
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadFaceUp, gamepad.buttonNorth.isPressed, gamepad.buttonNorth.ReadValue());// Y / Triangle
 
-			io.NavInputs[(int)ImGuiNavInput.Activate] = gamepad.buttonSouth.ReadValue(); // A / Cross
-			io.NavInputs[(int)ImGuiNavInput.Cancel] = gamepad.buttonEast.ReadValue(); // B / Circle
-			io.NavInputs[(int)ImGuiNavInput.Menu] = gamepad.buttonWest.ReadValue(); // X / Square
-			io.NavInputs[(int)ImGuiNavInput.Input] = gamepad.buttonNorth.ReadValue(); // Y / Triangle
+            // D-Pad
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadDpadLeft, gamepad.dpad.left.isPressed, gamepad.dpad.left.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadDpadRight, gamepad.dpad.right.isPressed, gamepad.dpad.right.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadDpadUp, gamepad.dpad.up.isPressed, gamepad.dpad.up.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadDpadDown, gamepad.dpad.down.isPressed, gamepad.dpad.down.ReadValue());
 
-			io.NavInputs[(int)ImGuiNavInput.DpadLeft] = gamepad.dpad.left.ReadValue(); // D-Pad Left
-			io.NavInputs[(int)ImGuiNavInput.DpadRight] = gamepad.dpad.right.ReadValue(); // D-Pad Right
-			io.NavInputs[(int)ImGuiNavInput.DpadUp] = gamepad.dpad.up.ReadValue(); // D-Pad Up
-			io.NavInputs[(int)ImGuiNavInput.DpadDown] = gamepad.dpad.down.ReadValue(); // D-Pad Down
+            // Shoulders
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadL1, gamepad.leftShoulder.isPressed, gamepad.leftShoulder.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadR1, gamepad.rightShoulder.isPressed, gamepad.rightShoulder.ReadValue());
 
-			io.NavInputs[(int)ImGuiNavInput.FocusPrev] = gamepad.leftShoulder.ReadValue(); // LB / L1
-			io.NavInputs[(int)ImGuiNavInput.FocusNext] = gamepad.rightShoulder.ReadValue(); // RB / R1
-			io.NavInputs[(int)ImGuiNavInput.TweakSlow] = gamepad.leftShoulder.ReadValue(); // LB / L1
-			io.NavInputs[(int)ImGuiNavInput.TweakFast] = gamepad.rightShoulder.ReadValue(); // RB / R1
+            // Triggers (analog)
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadL2, gamepad.leftTrigger.ReadValue() > 0f, gamepad.leftTrigger.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadR2, gamepad.rightTrigger.ReadValue() > 0f, gamepad.rightTrigger.ReadValue());
 
-			io.NavInputs[(int)ImGuiNavInput.LStickLeft] = gamepad.leftStick.left.ReadValue();
-			io.NavInputs[(int)ImGuiNavInput.LStickRight] = gamepad.leftStick.right.ReadValue();
-			io.NavInputs[(int)ImGuiNavInput.LStickUp] = gamepad.leftStick.up.ReadValue();
-			io.NavInputs[(int)ImGuiNavInput.LStickDown] = gamepad.leftStick.down.ReadValue();
-		}
+            // Sticks click
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadL3, gamepad.leftStickButton.isPressed, gamepad.leftStickButton.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadR3, gamepad.rightStickButton.isPressed, gamepad.rightStickButton.ReadValue());
 
-		private void SetupKeyboard(ImGuiIOPtr io, Keyboard keyboard)
-		{
-			if (_keyboard != null)
-			{
-				for (int i = 0; i < (int)ImGuiKey.COUNT; ++i)
-				{
-					io.KeyMap[i] = -1;
-				}
+            // Left Stick directions
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadLStickLeft, gamepad.leftStick.left.ReadValue() > 0f, gamepad.leftStick.left.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadLStickRight, gamepad.leftStick.right.ReadValue() > 0f, gamepad.leftStick.right.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadLStickUp, gamepad.leftStick.up.ReadValue() > 0f, gamepad.leftStick.up.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadLStickDown, gamepad.leftStick.down.ReadValue() > 0f, gamepad.leftStick.down.ReadValue());
 
-				_keyboard.onTextInput -= _textInput.Add;
-			}
+            // Right Stick directions
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadRStickLeft, gamepad.rightStick.left.ReadValue() > 0f, gamepad.rightStick.left.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadRStickRight, gamepad.rightStick.right.ReadValue() > 0f, gamepad.rightStick.right.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadRStickUp, gamepad.rightStick.up.ReadValue() > 0f, gamepad.rightStick.up.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadRStickDown, gamepad.rightStick.down.ReadValue() > 0f, gamepad.rightStick.down.ReadValue());
 
-			_keyboard = keyboard;
+            // Start / Back
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadStart, gamepad.startButton.isPressed, gamepad.startButton.ReadValue());
+            io.AddKeyAnalogEvent(ImGuiKey.GamepadBack, gamepad.selectButton.isPressed, gamepad.selectButton.ReadValue());
+        }
 
-			// Map and store new keys by assigning io.KeyMap and setting value of array.
-			_mainKeys = new int[] {
-				// Letter keys mapped by display name to avoid being layout agnostic (used as shortcuts).
-				io.KeyMap[(int)ImGuiKey.A] = (int)((KeyControl)keyboard["#(a)"]).keyCode, // For text edit CTRL+A: select all.
-				io.KeyMap[(int)ImGuiKey.C] = (int)((KeyControl)keyboard["#(c)"]).keyCode, // For text edit CTRL+C: copy.
-				io.KeyMap[(int)ImGuiKey.V] = (int)((KeyControl)keyboard["#(v)"]).keyCode, // For text edit CTRL+V: paste.
-				io.KeyMap[(int)ImGuiKey.X] = (int)((KeyControl)keyboard["#(x)"]).keyCode, // For text edit CTRL+X: cut.
-				io.KeyMap[(int)ImGuiKey.Y] = (int)((KeyControl)keyboard["#(y)"]).keyCode, // For text edit CTRL+Y: redo.
-				io.KeyMap[(int)ImGuiKey.Z] = (int)((KeyControl)keyboard["#(z)"]).keyCode, // For text edit CTRL+Z: undo.
+        /// <summary>
+        /// Setup the keyboard input for ImGui.
+        /// </summary>
+        /// <param name="io"> ImGui IO pointer.</param>
+        /// <param name="keyboard"> The current keyboard instance.</param>
+        private void SetupKeyboard(ImGuiIOPtr io, Keyboard keyboard)
+        {
+            if (_keyboard != null)
+            {
+                _keyboard.onTextInput -= _textInput.Add;
+            }
 
-				io.KeyMap[(int)ImGuiKey.Tab] = (int)Key.Tab,
+            _keyboard = keyboard;
+            _keyboard.onTextInput += _textInput.Add;
 
-				io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)Key.LeftArrow,
-				io.KeyMap[(int)ImGuiKey.RightArrow] = (int)Key.RightArrow,
-				io.KeyMap[(int)ImGuiKey.UpArrow] = (int)Key.UpArrow,
-				io.KeyMap[(int)ImGuiKey.DownArrow] = (int)Key.DownArrow,
+            // Stocker uniquement les touches que tu veux suivre dans UpdateKeyboard()
+            _mainKeys = new int[] {
+                (int)Key.A, (int)Key.C, (int)Key.V, (int)Key.X, (int)Key.Y, (int)Key.Z,
+                (int)Key.Tab, (int)Key.LeftArrow, (int)Key.RightArrow,
+                (int)Key.UpArrow, (int)Key.DownArrow, (int)Key.PageUp, (int)Key.PageDown,
+                (int)Key.Home, (int)Key.End, (int)Key.Insert, (int)Key.Delete,
+                (int)Key.Backspace, (int)Key.Space, (int)Key.Escape, (int)Key.Enter,
+                (int)Key.NumpadEnter
+            };
+        }
 
-				io.KeyMap[(int)ImGuiKey.PageUp] = (int)Key.PageUp,
-				io.KeyMap[(int)ImGuiKey.PageDown] = (int)Key.PageDown,
+        /// <summary>
+        /// Update the ImGui input state with the current keyboard state.
+        /// </summary>
+        /// <param name="io"> ImGui IO pointer.</param>
+        /// <param name="keyboard"> The current keyboard instance.</param>
+        private void UpdateKeyboard(ImGuiIOPtr io, Keyboard keyboard)
+        {
+            if (keyboard == null) return;
 
-				io.KeyMap[(int)ImGuiKey.Home] = (int)Key.Home,
-				io.KeyMap[(int)ImGuiKey.End] = (int)Key.End,
-				io.KeyMap[(int)ImGuiKey.Insert] = (int)Key.Insert,
-				io.KeyMap[(int)ImGuiKey.Delete] = (int)Key.Delete,
-				io.KeyMap[(int)ImGuiKey.Backspace] = (int)Key.Backspace,
+            // Remplacer les touches principales
+            io.AddKeyEvent(ImGuiKey.A, keyboard[Key.A].isPressed);
+            io.AddKeyEvent(ImGuiKey.C, keyboard[Key.C].isPressed);
+            io.AddKeyEvent(ImGuiKey.V, keyboard[Key.V].isPressed);
+            io.AddKeyEvent(ImGuiKey.X, keyboard[Key.X].isPressed);
+            io.AddKeyEvent(ImGuiKey.Y, keyboard[Key.Y].isPressed);
+            io.AddKeyEvent(ImGuiKey.Z, keyboard[Key.Z].isPressed);
 
-				io.KeyMap[(int)ImGuiKey.Space] = (int)Key.Space,
-				io.KeyMap[(int)ImGuiKey.Escape] = (int)Key.Escape,
-				io.KeyMap[(int)ImGuiKey.Enter] = (int)Key.Enter,
-				io.KeyMap[(int)ImGuiKey.KeyPadEnter] = (int)Key.NumpadEnter,
-			};
-			_keyboard.onTextInput += _textInput.Add;
-		}
+            io.AddKeyEvent(ImGuiKey.Tab, keyboard[Key.Tab].isPressed);
+            io.AddKeyEvent(ImGuiKey.LeftArrow, keyboard[Key.LeftArrow].isPressed);
+            io.AddKeyEvent(ImGuiKey.RightArrow, keyboard[Key.RightArrow].isPressed);
+            io.AddKeyEvent(ImGuiKey.UpArrow, keyboard[Key.UpArrow].isPressed);
+            io.AddKeyEvent(ImGuiKey.DownArrow, keyboard[Key.DownArrow].isPressed);
+            io.AddKeyEvent(ImGuiKey.PageUp, keyboard[Key.PageUp].isPressed);
+            io.AddKeyEvent(ImGuiKey.PageDown, keyboard[Key.PageDown].isPressed);
+            io.AddKeyEvent(ImGuiKey.Home, keyboard[Key.Home].isPressed);
+            io.AddKeyEvent(ImGuiKey.End, keyboard[Key.End].isPressed);
+            io.AddKeyEvent(ImGuiKey.Insert, keyboard[Key.Insert].isPressed);
+            io.AddKeyEvent(ImGuiKey.Delete, keyboard[Key.Delete].isPressed);
+            io.AddKeyEvent(ImGuiKey.Backspace, keyboard[Key.Backspace].isPressed);
+            io.AddKeyEvent(ImGuiKey.Space, keyboard[Key.Space].isPressed);
+            io.AddKeyEvent(ImGuiKey.Escape, keyboard[Key.Escape].isPressed);
+            io.AddKeyEvent(ImGuiKey.Enter, keyboard[Key.Enter].isPressed);
+            io.AddKeyEvent(ImGuiKey.KeypadEnter, keyboard[Key.NumpadEnter].isPressed);
 
-		private void UpdateKeyboard(ImGuiIOPtr io, Keyboard keyboard)
-		{
-			if (keyboard == null) return;
+            // Modifiers
+            io.AddKeyEvent(ImGuiKey.LeftShift, keyboard[Key.LeftShift].isPressed);
+            io.AddKeyEvent(ImGuiKey.RightShift, keyboard[Key.RightShift].isPressed);
+            io.AddKeyEvent(ImGuiKey.LeftCtrl, keyboard[Key.LeftCtrl].isPressed);
+            io.AddKeyEvent(ImGuiKey.RightCtrl, keyboard[Key.RightCtrl].isPressed);
+            io.AddKeyEvent(ImGuiKey.LeftAlt, keyboard[Key.LeftAlt].isPressed);
+            io.AddKeyEvent(ImGuiKey.RightAlt, keyboard[Key.RightAlt].isPressed);
+            io.AddKeyEvent(ImGuiKey.LeftSuper, keyboard[Key.LeftMeta].isPressed);
+            io.AddKeyEvent(ImGuiKey.RightSuper, keyboard[Key.RightMeta].isPressed);
 
-			// main keys
-			for (int keyIndex = 0; keyIndex < _mainKeys.Length; keyIndex++)
-			{
-				int key = _mainKeys[keyIndex];
-				io.KeysDown[key] = keyboard[(Key)key].isPressed;
-			}
+            // Text input
+            for (int i = 0; i < _textInput.Count; i++)
+            {
+                io.AddInputCharacter(_textInput[i]);
+            }
 
-			// Keyboard modifiers.
-			io.KeyShift = keyboard[Key.LeftShift].isPressed || keyboard[Key.RightShift].isPressed;
-			io.KeyCtrl = keyboard[Key.LeftCtrl].isPressed || keyboard[Key.RightCtrl].isPressed;
-			io.KeyAlt = keyboard[Key.LeftAlt].isPressed || keyboard[Key.RightAlt].isPressed;
-			io.KeySuper = keyboard[Key.LeftMeta].isPressed || keyboard[Key.RightMeta].isPressed;
+            _textInput.Clear();
+        }
 
-			// Text input.
-			for (int i = 0, iMax = _textInput.Count; i < iMax; ++i)
-			{
-				io.AddInputCharacter(_textInput[i]);
-			}
+        /// <summary>
+        /// Handle device changes, specifically for keyboard layout changes or device changes.
+        /// </summary>
+        /// <param name="device"> The input device that changed.</param>
+        /// <param name="chang e"> The type of change that occurred.</param>
+        private void OnDeviceChange(InputDevice device, InputDeviceChange change)
+        {
+            if (device is Keyboard keyboard)
+            {
+                // Keyboard layout change, remap main keys.
+                if (change == InputDeviceChange.ConfigurationChanged)
+                {
+                    SetupKeyboard(ImGui.GetIO(), keyboard);
+                }
 
-			_textInput.Clear();
-		}
-
-		private void OnDeviceChange(InputDevice device, InputDeviceChange change)
-		{
-			if (device is Keyboard keyboard)
-			{
-				// Keyboard layout change, remap main keys.
-				if (change == InputDeviceChange.ConfigurationChanged)
-				{
-					SetupKeyboard(ImGui.GetIO(), keyboard);
-				}
-
-				// Keyboard device changed, setup again.
-				if (Keyboard.current != _keyboard)
-				{
-					SetupKeyboard(ImGui.GetIO(), Keyboard.current);
-				}
-			}
-		}
-	}
+                // Keyboard device changed, setup again.
+                if (Keyboard.current != _keyboard)
+                {
+                    SetupKeyboard(ImGui.GetIO(), Keyboard.current);
+                }
+            }
+        }
+    }
 }
-#endif

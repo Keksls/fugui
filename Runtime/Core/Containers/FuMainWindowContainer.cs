@@ -57,8 +57,6 @@ namespace Fu.Core
         private Action _footerUI = null;
         // The world position of the container.
         private Vector2Int _worldPosition;
-        // A queue of windows to be externalized.
-        private Queue<FuWindow> _toExternalizeWindows;
         // A queue of windows to be removed.
         private Queue<FuWindow> _toRemoveWindows;
         // A queue of windows to be added.
@@ -86,7 +84,6 @@ namespace Fu.Core
             // Initialize the windows dictionary
             Windows = new Dictionary<string, FuWindow>();
             // Initialize the queues for windows
-            _toExternalizeWindows = new Queue<FuWindow>();
             _toRemoveWindows = new Queue<FuWindow>();
             _toAddWindows = new Queue<FuWindow>();
 
@@ -110,13 +107,6 @@ namespace Fu.Core
             // update mouse state
             _fuMouseState.UpdateState(this);
             _fuKeyboardState.UpdateState();
-
-            // externalize windows
-            while (_toExternalizeWindows.Count > 0)
-            {
-                FuWindow window = _toExternalizeWindows.Dequeue();
-                window.Externalize();
-            }
 
             // remove windows
             while (_toRemoveWindows.Count > 0)
@@ -155,7 +145,7 @@ namespace Fu.Core
             _size = new Vector2Int(Screen.width, Screen.height);
 
             // get unity local mouse position
-            Vector2Int newMousePos = new Vector2Int((int)Input.mousePosition.x, _size.y - (int)Input.mousePosition.y);
+            Vector2Int newMousePos = new Vector2Int((int)Context.IO.MousePos.x, (int)Context.IO.MousePos.y); // new Vector2Int((int)Fugui.WorldMousePosition.x, _size.y - (int)Fugui.WorldMousePosition.y);
 
             // world mouse has moved but local mouse don't move acordingly
             // let's ignore container pos to avoid glitching when lose focus if exeternal window are shown
@@ -165,7 +155,7 @@ namespace Fu.Core
             }
 
             // all mouses has moved, let's update mouse and container pos
-            _mousePos = newMousePos;
+            _mousePos = newMousePos;// newMousePos;
 
             _worldPosition = Screen.mainWindowPosition;
             _lastFrameWorldMousePos = Fugui.WorldMousePosition;
@@ -278,30 +268,14 @@ namespace Fu.Core
         {
             DrawMainDockSpace();
 
-            // whatever the user want to externalize a window this frame
-            _canExternalizeThisFrame = Fugui.Settings.ExternalizationKey.Count == 0;
-            foreach (KeyCode key in Fugui.Settings.ExternalizationKey)
-            {
-                if (Input.GetKey(key))
-                {
-                    _canExternalizeThisFrame = true;
-                    break;
-                }
-            }
-
             // render every windows into this container
-            bool leftButtonState = Input.GetMouseButton(0);
+            bool leftButtonState = ImGui.GetIO().MouseDown[0];
             foreach (FuWindow window in Windows.Values)
             {
                 // update window state
                 window.UpdateState(leftButtonState);
                 // check whatever window must be draw
                 RenderFuWindow(window);
-                // add to externalize list
-                if (_canExternalizeThisFrame && window.WantToLeave())
-                {
-                    _toExternalizeWindows.Enqueue(window);
-                }
             }
 
             // invoke OnPostRenderWindows event

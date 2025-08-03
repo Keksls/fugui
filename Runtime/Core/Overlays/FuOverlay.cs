@@ -298,7 +298,7 @@ namespace Fu.Core
         /// </summary>
         internal void Draw()
         {
-            if(!_isVisible)
+            if (!_isVisible)
             {
                 return;
             }
@@ -393,7 +393,7 @@ namespace Fu.Core
                 ImGui.SetCursorScreenPos(unsnappedDragPosition);
                 Fugui.Push(ImGuiCols.ChildBg, new Vector4(0.1f, 0.1f, 0.1f, 0.25f));
                 ImGui.BeginChild(ID + "draginGhost", _collapsed ? new Vector2(12f, Size.y) : new Vector2(12f + Size.x, Size.y));
-                ImGui.EndChild();
+                ImGuiNative.igEndChild();
                 Fugui.PopColor();
 
                 // force render window next frame in case we are dragging but ùouse is out of window
@@ -441,16 +441,16 @@ namespace Fu.Core
                     Fugui.Push(ImGuiCols.BorderShadow, Vector4.zero);
                 }
                 OnPreRender?.Invoke();
-                ImGui.BeginChild(ID, Size, true, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+                if (ImGui.BeginChild(ID, Size, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     UI?.Invoke(this);
+                    OnPostRender?.Invoke();
+                    if (_noBackground)
+                    {
+                        Fugui.PopColor(3);
+                    }
+                    _overlayStyle.Pop();
                 }
-                OnPostRender?.Invoke();
-                if (_noBackground)
-                {
-                    Fugui.PopColor(3);
-                }
-                _overlayStyle.Pop();
                 ImGuiNative.igEndChild();
             }
             Fugui.PopStyle();
@@ -527,10 +527,10 @@ namespace Fu.Core
             // draw retract button
             ImGui.SetCursorScreenPos(retractPos);
             ImGui.BeginChild(ID + "collapsable", retractButtonSize);
-            ImGui.EndChild();
+            ImGuiNative.igEndChild();
             Fugui.PopColor();
             // whatever the retract button is retracted
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.ChildWindows))
+            if (ImGui.IsItemHovered())
             {
                 _dragButtonHovered = true;
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);

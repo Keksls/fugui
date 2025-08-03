@@ -115,16 +115,6 @@ namespace Fu.Core
         [FuSlider(0f, 0.5f)]
         public float NotifyAnimlationDuration = 0.15f;
 
-        [Tooltip("A list of key codes used to trigger externalization of UI windows.")]
-        [FuTooltip("A list of key codes used to trigger externalization of UI windows.")]
-        [FuHidden]
-        public List<KeyCode> ExternalizationKey;
-
-        [Tooltip("A list of key codes used to trigger internalization of UI windows.")]
-        [FuTooltip("A list of key codes used to trigger internalization of UI windows.")]
-        [FuHidden]
-        public List<OpenTK.Input.Key> InternalizationKey;
-
         [Tooltip("The icon to be used for the maximize button.")]
         [FuTooltip("The icon to be used for the maximize button.")]
         [FuImage]
@@ -319,6 +309,12 @@ namespace Fu.Core
         [FuSlider(0.1f, 4f)]
         public float FontGlobalScale = 1.0f;
 
+        [Tooltip("Global scale. (default=1.0f)")]
+        [FuTooltip("Global scale. (default=1.0f)")]
+        [Range(0.1f, 4f)]
+        [FuSlider(0.1f, 4f)]
+        public float GlobalScale = 1.0f;
+
         [Tooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
         [FuTooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
         [FuToggle]
@@ -392,12 +388,6 @@ namespace Fu.Core
         [FuHidden]
         public CursorShapesAsset CursorShapes = null;
 
-        // URP renderer, not used for now. Keep it for URP eventualy
-        // unHide this is using URP
-        [HideInInspector]
-        [FuHidden]
-        public RenderImGui Render;
-
         /// <summary>
         /// Apply Imgui IO config variables to the given Imgui IO
         /// </summary>
@@ -419,6 +409,7 @@ namespace Fu.Core
             io.DisplayFramebufferScale = DisplayFramebufferScale;
             io.MouseDrawCursor = MouseDrawCursor;
 
+            io.ConfigDockingAlwaysTabBar = false;
             io.ConfigDockingNoSplit = ConfigDockingNoSplit;
             io.ConfigDockingAlwaysTabBar = ConfigDockingAlwaysTabBar;
             io.ConfigDockingTransparentPayload = ConfigDockingTransparentPayload;

@@ -204,7 +204,7 @@ namespace Fu.Framework
 
             // calc item size
             Vector2 padding = new Vector2(FuThemeManager.FramePadding.x, paddingY);
-            Vector2 region_max = ImGui.GetContentRegionMax();
+            Vector2 region_max = ImGui.GetContentRegionAvail() + ImGui.GetCursorScreenPos() - ImGui.GetWindowPos();
             Vector2 size = new Vector2(
                 Mathf.Max(4.0f, region_max.x - ImGuiNative.igGetCursorPosX()),
                 label_size.y + padding.y * 2f);

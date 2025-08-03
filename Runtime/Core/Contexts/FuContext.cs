@@ -1,5 +1,4 @@
 using Fu.Core.DearImGui;
-using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -15,6 +14,7 @@ namespace Fu.Core
     {
         public int ID;
         public ImGuiIOPtr IO;
+        public ImGuiPlatformIOPtr PlatformIO;
         public IntPtr ImGuiContext;
         public IntPtr ImNodesContext;
         public IntPtr ImPlotContext;
@@ -36,6 +36,7 @@ namespace Fu.Core
         public bool Started { get; private set; }
         public float Scale { get; protected set; }
         public float FontScale { get; protected set; }
+        public DrawData DrawData { get; protected set; } = new DrawData();
         public bool RenderPrepared { get; protected set; } = false;
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
         internal FontSet DefaultFont { get; private set; }
@@ -70,17 +71,12 @@ namespace Fu.Core
         protected void initialize(Action onInitialize)
         {
             ImGuiContext = ImGui.CreateContext();
-#if !UIMGUI_REMOVE_IMPLOT
-            ImPlotContext = ImPlotNET.ImPlot.CreateContext();
-#endif
-#if !UIMGUI_REMOVE_IMNODES
-            ImNodesContext = imnodesNET.imnodes.CreateContext();
-#endif
             FuContext lastDFContext = Fugui.CurrentContext;
             IntPtr currentContext = ImGuiNative.igGetCurrentContext();
             Fugui.SetCurrentContext(this);
             ImGuiNative.igSetCurrentContext(ImGuiContext);
             IO = ImGui.GetIO();
+            PlatformIO = ImGui.GetPlatformIO();
             onInitialize?.Invoke();
             sub_initialize();
             if (lastDFContext != null)
@@ -170,6 +166,9 @@ namespace Fu.Core
                 ImGuiNative.igRender();
             }
             OnPostRender?.Invoke();
+
+            // keep draw data for this context while rendering
+            DrawData = ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData());
         }
 
         /// <summary>
@@ -180,7 +179,7 @@ namespace Fu.Core
         /// <summary>
         /// End the context render. Don't call it, Fugui layout handle it for you
         /// </summary>
-        internal abstract void EndRender();
+        internal abstract bool EndRender();
 
         /// <summary>
         /// Destroy this context. Don't call it, Fugui layout handle it for you
@@ -194,16 +193,6 @@ namespace Fu.Core
         {
             Fugui.CurrentContext = this;
             ImGui.SetCurrentContext(ImGuiContext);
-
-#if !UIMGUI_REMOVE_IMPLOT
-            ImPlotNET.ImPlot.SetImGuiContext(ImGuiContext);
-#endif
-#if !UIMGUI_REMOVE_IMGUIZMO
-            ImGuizmoNET.ImGuizmo.SetImGuiContext(ImGuiContext);
-#endif
-#if !UIMGUI_REMOVE_IMNODES
-            imnodesNET.imnodesNative.imnodes_SetImGuiContext(ImGuiContext);
-#endif
         }
 
         /// <summary>
@@ -313,6 +302,8 @@ namespace Fu.Core
 
             bool processSubFont(FontSizeConfig font, SubFontConfig[] subFonts, out ImFontPtr fontPtr)
             {
+                fontPtr = default;
+
                 // ignore this font if there is no sub fonts
                 if (subFonts.Length == 0)
                 {

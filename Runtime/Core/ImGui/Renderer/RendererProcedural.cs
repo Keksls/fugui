@@ -1,8 +1,7 @@
-﻿using ImGuiNET;
-using System;
-using System.Runtime.InteropServices;
-using Fu.Core.DearImGui.Assets;
+﻿using Fu.Core.DearImGui.Assets;
 using Fu.Core.DearImGui.Texture;
+using ImGuiNET;
+using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
@@ -16,12 +15,12 @@ using Object = UnityEngine.Object;
 
 namespace Fu.Core.DearImGui.Renderer
 {
-	/// <summary>
-	/// Renderer bindings in charge of producing instructions for rendering ImGui draw data.
-	/// Uses DrawProceduralIndirect to build geometry from a buffer of vertex data.
-	/// </summary>
-	/// <remarks>Requires shader model 4.5 level hardware.</remarks>
-	internal sealed class RendererProcedural : IRenderer
+    /// <summary>
+    /// Renderer bindings in charge of producing instructions for rendering ImGui draw data.
+    /// Uses DrawProceduralIndirect to build geometry from a buffer of vertex data.
+    /// </summary>
+    /// <remarks>Requires shader model 4.5 level hardware.</remarks>
+    internal sealed class RendererProcedural : IRenderer
 	{
 		private readonly Shader _shader;
 		private readonly int _textureID;
@@ -245,5 +244,84 @@ namespace Fu.Core.DearImGui.Renderer
 			}
 			cmd.DisableScissorRect();
 		}
-	}
+
+        #region RasterGraph Rendering
+        public void RenderDrawLists(RasterCommandBuffer commandBuffer, DrawData drawData)
+        {
+            Vector2 fbSize = drawData.DisplaySize * drawData.FramebufferScale;
+
+            // Avoid rendering when minimized.
+            if (fbSize.x <= 0f || fbSize.y <= 0f || drawData.TotalVtxCount == 0) return;
+
+            UpdateBuffers(drawData);
+
+            commandBuffer.BeginSample(Constants.ExecuteDrawCommandsMarker);
+
+            CreateDrawCommands(commandBuffer, drawData, fbSize);
+
+            commandBuffer.EndSample(Constants.ExecuteDrawCommandsMarker);
+        }
+
+        private void CreateDrawCommands(RasterCommandBuffer cmd, DrawData drawData, Vector2 fbSize)
+        {
+            IntPtr prevTextureId = IntPtr.Zero;
+            Vector4 clipOffst = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
+                drawData.DisplayPos.x, drawData.DisplayPos.y);
+            Vector4 clipScale = new Vector4(drawData.FramebufferScale.x, drawData.FramebufferScale.y,
+                drawData.FramebufferScale.x, drawData.FramebufferScale.y);
+
+            _material.SetBuffer(_verticesID, _vertexBuffer); // Bind vertex buffer.
+
+            cmd.SetViewport(new Rect(0f, 0f, fbSize.x, fbSize.y));
+            cmd.SetViewProjectionMatrices(
+                Matrix4x4.Translate(new Vector3(0.5f / fbSize.x, 0.5f / fbSize.y, 0f)), // Small adjustment to improve text.
+                Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
+
+            int vtxOf = 0;
+            int argOf = 0;
+            for (int commandListIndex = 0, nMax = drawData.CmdListsCount; commandListIndex < nMax; ++commandListIndex)
+            {
+                DrawList drawList = drawData.DrawLists[commandListIndex];
+                for (int commandIndex = 0, iMax = drawList.CmdBuffer.Length; commandIndex < iMax; ++commandIndex, argOf += 5 * 4)
+                {
+                    ImDrawCmd drawCmd = drawList.CmdBuffer[commandIndex];
+                    if (drawCmd.UserCallback != IntPtr.Zero)
+                    {
+                        Debug.Log("unhandled user callback");
+                        //UserDrawCallback userDrawCallback = Marshal.GetDelegateForFunctionPointer<UserDrawCallback>(drawCmd.UserCallback);
+                        //userDrawCallback(drawList, drawCmd);
+                    }
+                    else
+                    {
+                        // Project scissor rectangle into framebuffer space and skip if fully outside.
+                        Vector4 clipSize = drawCmd.ClipRect - clipOffst;
+                        Vector4 clip = Vector4.Scale(clipSize, clipScale);
+
+                        if (clip.x >= fbSize.x || clip.y >= fbSize.y || clip.z < 0f || clip.w < 0f) continue;
+
+                        if (prevTextureId != drawCmd.TextureId)
+                        {
+                            prevTextureId = drawCmd.TextureId;
+
+                            // TODO: Implement ImDrawCmdPtr.GetTexID().
+                            bool hasTexture = _textureManager.TryGetTexture(prevTextureId, out UnityEngine.Texture texture);
+                            Assert.IsTrue(hasTexture, $"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
+
+                            _materialProperties.SetTexture(_textureID, texture);
+                        }
+
+                        // Base vertex location not automatically added to SV_VertexID.
+                        _materialProperties.SetInt(_baseVertexID, vtxOf + (int)drawCmd.VtxOffset);
+
+                        cmd.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
+                        cmd.DrawProceduralIndirect(_indexBuffer, Matrix4x4.identity, _material, -1,
+                            MeshTopology.Triangles, _argumentsBuffer, argOf, _materialProperties);
+                    }
+                }
+                vtxOf += drawList.VtxBuffer.Length;
+            }
+            cmd.DisableScissorRect();
+        }
+        #endregion
+    }
 }

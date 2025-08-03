@@ -21,7 +21,6 @@ namespace Fu.Core
             internal set
             {
                 _container = value;
-                IsUnityContext = !(value is FuExternalWindowContainer);
                 if (value == null)
                 {
                     OnRemovedFromContainer?.Invoke(this);
@@ -102,12 +101,11 @@ namespace Fu.Core
         public bool IsInitialized { get; private set; }
         public bool IsExternal { get; internal set; }
         public bool IsResizing { get; private set; }
-        public bool IsUnityContext { get; private set; }
         public bool IsDragging { get; internal set; }
         public bool IsHovered { get; internal set; }
         public bool IsHoveredContent { get { return IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup && !Mouse.IsHoverTopBar; } }
         public bool IsDocked { get; internal set; }
-        internal bool IsImguiDocked => (IsDocked || (IsDockable && Fugui.Settings.ConfigDockingAlwaysTabBar)) && IsUnityContext;
+        internal bool IsImguiDocked => (IsDocked || (IsDockable && Fugui.Settings.ConfigDockingAlwaysTabBar));
         public bool IsBusy { get; internal set; }
         public bool IsInterractable { get; set; }
         public bool IsVisible { get; private set; }
@@ -508,11 +506,11 @@ namespace Fu.Core
                 {
                     Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
                     Fugui.Push(ImGuiCols.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCols.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0039216f
-                    ImGui.BeginChild(ID + "ctnr", Vector2.zero, false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+                    if (ImGui.BeginChild(ID + "ctnr", Vector2.zero, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                     {
                         TryDrawUI();
                     }
-                    ImGui.EndChild();
+                    ImGuiNative.igEndChild();
                     Fugui.PopColor();
                     Fugui.PopStyle();
                 }
@@ -584,6 +582,9 @@ namespace Fu.Core
             }
         }
 
+        /// <summary>
+        /// Process the hover state of this window.
+        /// </summary>
         private void processHoverState()
         {
             IsHovered = (LocalRect.Contains(Container.LocalMousePos) &&
@@ -701,7 +702,7 @@ namespace Fu.Core
             ImGui.Dummy(Vector2.one);
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
             Fugui.Push(ImGuiCols.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
-            ImGui.BeginChild(ID + "d", new Vector2(196f, 202f));
+            if(ImGui.BeginChild(ID + "d", new Vector2(196f, 202f)))
             {
                 // states
                 ImGui.Text("State : " + State);
@@ -734,7 +735,7 @@ namespace Fu.Core
                 ImGui.Text("hovered : " + IsHovered);
                 ImGui.Text("dl child : " + ChildrenDrawLists.Count);
             }
-            ImGui.EndChild();
+            ImGuiNative.igEndChild();
             Fugui.PopColor();
             Fugui.PopStyle();
 
@@ -766,18 +767,9 @@ namespace Fu.Core
         /// <returns>true if we must draw this UI this frame</returns>
         public bool MustBeDraw()
         {
-            switch (IsUnityContext)
-            {
-                case true:
-                    return (Fugui.Time > _lastRenderTime + _targetDeltaTimeMs && ((!Fugui.HasRenderWindowThisFrame && WindowName.IdleFPS != -1) || Fugui.HasRenderWindowThisFrame))
-                        || _forceRedraw > 0
-                        || (IsInterractable && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
-
-                case false:
-                    return (Fugui.Time > _lastRenderTime + _targetDeltaTimeMs && ((!Fugui.HasRenderWindowThisFrame && WindowName.IdleFPS != -1) || Fugui.HasRenderWindowThisFrame))
-                        || _forceRedraw > 0
-                        || LocalRect.Contains(Container.LocalMousePos);
-            }
+            return (Fugui.Time > _lastRenderTime + _targetDeltaTimeMs && ((!Fugui.HasRenderWindowThisFrame && WindowName.IdleFPS != -1) || Fugui.HasRenderWindowThisFrame))
+                || _forceRedraw > 0
+                || (IsInterractable && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
         }
         #endregion
 
@@ -860,73 +852,6 @@ namespace Fu.Core
             IsBusy = true;
             ForceDraw(10);
             return Container?.TryRemoveWindow(ID) ?? false;
-        }
-        #endregion
-
-        #region Viewports
-        /// <summary>
-        /// Externalize this window
-        /// </summary>
-        public void Externalize()
-        {
-            if (!IsExternalizable || IsExternal || !Fugui.Settings.EnableExternalizations)
-            {
-                return;
-            }
-
-            if (TryRemoveFromContainer())
-            {
-                Fugui.AddExternalWindow(this);
-                IsExternal = true;
-            }
-        }
-
-        /// <summary>
-        /// Whatever this window want to leave from it container
-        /// </summary>
-        /// <returns>true if need to externalize</returns>
-        public bool WantToLeave()
-        {
-            if (!IsDragging || IsBusy || !IsExternalizable || IsExternal || !Fugui.Settings.EnableExternalizations)
-            {
-                return false;
-            }
-
-            if (WorldPosition.x < Container.Position.x - (Size.x * _leaveThreshold))
-                return true;
-            if (WorldPosition.x > Container.Position.x + Container.Size.x - (Size.x * (1f - _leaveThreshold)))
-                return true;
-
-            if (WorldPosition.y < Container.Position.y - (Size.y * _leaveThreshold))
-                return true;
-            if (WorldPosition.y > Container.Position.y + Container.Size.y - (Size.y * (1f - _leaveThreshold)))
-                return true;
-
-            return false;
-        }
-
-        /// <summary>
-        /// Whatever this window cant to enter into a given container
-        /// </summary>
-        /// <param name="container">container to check entry on</param>
-        /// <returns>true if need to enter the given container</returns>
-        public bool WantToEnter(IFuWindowContainer container)
-        {
-            if (IsUnityContext || IsBusy || !IsExternalizable || !IsExternal || !CanInternalize)
-            {
-                return false;
-            }
-
-            if (WorldPosition.x < container.Position.x)
-                return false;
-            if (WorldPosition.x + Size.x > container.Position.x + container.Size.x)
-                return false;
-            if (WorldPosition.y < container.Position.y)
-                return false;
-            if (WorldPosition.y + Size.y > container.Position.y + container.Size.y)
-                return false;
-
-            return true;
         }
         #endregion
 

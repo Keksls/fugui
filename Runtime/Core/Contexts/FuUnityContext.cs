@@ -18,11 +18,9 @@ namespace Fu.Core
         private IRenderer _renderer;
         private IPlatform _platform;
         private CommandBuffer _renderCommandBuffer;
-        private RenderImGui _renderFeature = null;
 
-        public FuUnityContext(int index, float scale, float fontScale, Action onInitialize, Camera camera, RenderImGui renderFeature) : base(index, scale, fontScale, onInitialize)
+        public FuUnityContext(int index, float scale, float fontScale, Action onInitialize, Camera camera) : base(index, scale, fontScale, onInitialize)
         {
-            _renderFeature = renderFeature;
             TextureManager = new TextureManager();
             Camera = camera;
             initialize(onInitialize);
@@ -36,54 +34,30 @@ namespace Fu.Core
             Fugui.SetCurrentContext(this);
 
             SetRenderer(null, IO);
-            SetPlatform(null, IO);
+            SetPlatform(null, IO, PlatformIO);
 
             TextureManager.Shutdown();
 
             Fugui.SetCurrentContext(null);
 
-            if (RenderUtility.IsUsingURP())
-            {
-                if (_renderFeature != null)
-                {
-#if HAS_URP
-                    _renderFeature.Camera = null;
-#endif
-                    _renderFeature.CommandBuffer = null;
-                }
-            }
-            else
-            {
-                if (Camera != null)
-                {
-                    Camera.RemoveCommandBuffer(CameraEvent.AfterEverything, _renderCommandBuffer);
-                }
-            }
-
             if (_renderCommandBuffer != null)
             {
-                RenderUtility.ReleaseCommandBuffer(_renderCommandBuffer);
+                _renderCommandBuffer.Release();
             }
 
             _renderCommandBuffer = null;
 
             ImGui.DestroyContext(ImGuiContext);
-#if !UIMGUI_REMOVE_IMPLOT
-            ImPlotNET.ImPlot.DestroyContext(ImPlotContext);
-#endif
-#if !UIMGUI_REMOVE_IMNODES
-            imnodesNET.imnodes.DestroyContext(ImNodesContext);
-#endif
         }
 
         /// <summary>
         /// End the context render. Don't call it, Fugui layout handle it for you
         /// </summary>
-        internal override void EndRender()
+        internal override bool EndRender()
         {
             Fugui.IsRendering = false;
             if (!RenderPrepared)
-                return;
+                return false;
 
             // cancel drag drop for this context if left click is up this frame and it's not the first frame of the current drag drop operation
             if (_isDraggingPayload && !_firstFrameDragging && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
@@ -92,8 +66,7 @@ namespace Fu.Core
             }
 
             RenderPrepared = false;
-            _renderCommandBuffer.Clear();
-            _renderer.RenderDrawLists(_renderCommandBuffer, ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData()));
+            return true;
         }
 
         /// <summary>
@@ -123,9 +96,6 @@ namespace Fu.Core
 
             // start new imgui frame
             ImGui.NewFrame();
-#if !UIMGUI_REMOVE_IMGUIZMO
-            ImGuizmoNET.ImGuizmo.BeginFrame();
-#endif
             // assume we are prepared
             RenderPrepared = true;
             return RenderPrepared;
@@ -136,29 +106,17 @@ namespace Fu.Core
         /// </summary>
         protected override void sub_initialize()
         {
-            if (_renderFeature == null && RenderUtility.IsUsingURP())
-            {
-                throw new Exception("render feature must be set if using URP");
-            }
+            _renderCommandBuffer = new CommandBuffer();
 
-            _renderCommandBuffer = RenderUtility.GetCommandBuffer(Constants.UImGuiCommandBuffer);
-
-            if (RenderUtility.IsUsingURP())
-            {
-#if HAS_URP
-                _renderFeature.Camera = Camera;
-#endif
-                _renderFeature.CommandBuffer = _renderCommandBuffer;
-            }
-            else if (!RenderUtility.IsUsingHDRP())
-            {
-                Camera.AddCommandBuffer(CameraEvent.AfterEverything, _renderCommandBuffer);
-            }
+            //if (!RenderUtility.IsUsingURP())
+            //{
+            //    Camera.AddCommandBuffer(CameraEvent.AfterEverything, _renderCommandBuffer);
+            //}
 
             Fugui.SetCurrentContext(this);
 
             IPlatform platform = PlatformUtility.Create(Fugui.Settings.PlatformType, Fugui.Settings.CursorShapes, null);
-            SetPlatform(platform, IO);
+            SetPlatform(platform, IO, PlatformIO);
             if (_platform == null)
             {
                 throw new Exception("imgui platform is null");
@@ -195,11 +153,12 @@ namespace Fu.Core
         /// </summary>
         /// <param name="platform">platform (Input system) to use</param>
         /// <param name="io">IO of the ImGui context</param>
-        private void SetPlatform(IPlatform platform, ImGuiIOPtr io)
+        /// <param name="pio">Platform IO of the ImGui context</param>
+        private void SetPlatform(IPlatform platform, ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
         {
-            _platform?.Shutdown(io);
+            _platform?.Shutdown(io, pio);
             _platform = platform;
-            _platform?.Initialize(io, "Unity " + Fugui.Settings.PlatformType.ToString());
+            _platform?.Initialize(io, pio, "Unity " + Fugui.Settings.PlatformType.ToString());
         }
 
         /// <summary>

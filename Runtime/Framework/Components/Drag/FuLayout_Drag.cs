@@ -181,9 +181,9 @@ namespace Fu.Framework
             if (ImGui.BeginTable(text + "dragTable", 2))
             {
                 // Set up the first column with the given ID and width
-                ImGui.TableSetupColumn(text + "col1", ImGuiTableColumnFlags.None, colWidth);
+                ImGui.TableSetupColumn(text + "col1", ImGuiTableColumnFlags.WidthFixed, colWidth);
                 // Set up the second column with the given ID and width
-                ImGui.TableSetupColumn(text + "col2", ImGuiTableColumnFlags.None, colWidth);
+                ImGui.TableSetupColumn(text + "col2", ImGuiTableColumnFlags.WidthFixed, colWidth);
                 // Move to the first column
                 ImGui.TableNextColumn();
                 // Create a draggable float for the first value in the table, using the specified ID and value string
@@ -279,9 +279,9 @@ namespace Fu.Framework
             if (ImGui.BeginTable(text + "dragTable", 3))
             {
                 // Set up the three columns in the table
-                ImGui.TableSetupColumn(text + "col1", ImGuiTableColumnFlags.None, colWidth);
-                ImGui.TableSetupColumn(text + "col2", ImGuiTableColumnFlags.None, colWidth);
-                ImGui.TableSetupColumn(text + "col3", ImGuiTableColumnFlags.None, colWidth);
+                ImGui.TableSetupColumn(text + "col1", ImGuiTableColumnFlags.WidthFixed, colWidth);
+                ImGui.TableSetupColumn(text + "col2", ImGuiTableColumnFlags.WidthFixed, colWidth);
+                ImGui.TableSetupColumn(text + "col3", ImGuiTableColumnFlags.WidthFixed, colWidth);
 
                 // Begin the first column
                 ImGui.TableNextColumn();
@@ -387,10 +387,10 @@ namespace Fu.Framework
             if (ImGui.BeginTable(text + "dragTable", 4))
             {
                 // Set up four columns with equal widths
-                ImGui.TableSetupColumn(text + "col1", ImGuiTableColumnFlags.None, colWidth);
-                ImGui.TableSetupColumn(text + "col2", ImGuiTableColumnFlags.None, colWidth);
-                ImGui.TableSetupColumn(text + "col3", ImGuiTableColumnFlags.None, colWidth);
-                ImGui.TableSetupColumn(text + "col4", ImGuiTableColumnFlags.None, colWidth);
+                ImGui.TableSetupColumn(text + "col1", ImGuiTableColumnFlags.WidthFixed, colWidth);
+                ImGui.TableSetupColumn(text + "col2", ImGuiTableColumnFlags.WidthFixed, colWidth);
+                ImGui.TableSetupColumn(text + "col3", ImGuiTableColumnFlags.WidthFixed, colWidth);
+                ImGui.TableSetupColumn(text + "col4", ImGuiTableColumnFlags.WidthFixed, colWidth);
 
                 // Move to the first column
                 ImGui.TableNextColumn();

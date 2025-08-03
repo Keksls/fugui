@@ -13,8 +13,6 @@ namespace Fu.Core
         // Camera used to render main UI container
         [SerializeField]
         private Camera _uiCamera;
-        // The current OpenTK toolkit
-        private OpenTK.Toolkit _currentOpenTKToolkit;
         [SerializeField]
         private bool _logErrors = true;
         #endregion
@@ -25,9 +23,6 @@ namespace Fu.Core
             // store Fugui settings
             Fugui.Controller = this;
             Fugui.Settings = _settings;
-
-            // init OpenTK, prevent UI Window externalization
-            _currentOpenTKToolkit = OpenTK.Toolkit.Init();
 
             // prepare FuGui before start using it
             Fugui.Initialize(_uiCamera);
@@ -64,7 +59,6 @@ namespace Fu.Core
             // let's update main container inputs and internal stuff
             Fugui.MainContainer.Update();
 
-            // render all Fugui Contexts
             Fugui.Render();
         }
 
@@ -102,8 +96,6 @@ namespace Fu.Core
         /// </summary>
         public void Dispose()
         {
-            // Dispose the current OpenTK toolkit
-            _currentOpenTKToolkit.Dispose();
             Fugui.Dispose();
         }
         #endregion

@@ -30,10 +30,10 @@ namespace Fu.Core
             // get and store FuKeysCode.MIN as int to avoid multiple cast at runtime
             if (_minKeyValue == 0)
             {
-                _minKeyValue = (int)FuKeysCode.MIN;
+                _minKeyValue = (int)FuKeysCode.NamedKey_BEGIN;
             }
             // bind keys states and store it into an array
-            _keysStates = new FuKeyState[(int)FuKeysCode.MAX - (int)FuKeysCode.MIN];
+            _keysStates = new FuKeyState[(int)FuKeysCode.NamedKey_END - (int)FuKeysCode.NamedKey_BEGIN];
             for (int key = 0; key < _keysStates.Length; key++)
             {
                 _keysStates[key] = new FuKeyState(key + _minKeyValue);
@@ -104,7 +104,7 @@ namespace Fu.Core
                 case null:
                     for (int key = 0; key < _keysStates.Length; key++)
                     {
-                        _keysStates[key].SetState(_io.KeysDown[key + _minKeyValue]);
+                        _keysStates[key].SetState(_io.KeysData[key].Down == 1);
                     }
                     break;
 
@@ -114,7 +114,7 @@ namespace Fu.Core
                     {
                         for (int key = 0; key < _keysStates.Length; key++)
                         {
-                            bool keyState = _io.KeysDown[key + _minKeyValue];
+                            bool keyState = _io.KeysData[key].Down == 1;
 
                             // the key has just been pressed this frame => KeyDown
                             if (!_keysStates[key].IsPressed && keyState)

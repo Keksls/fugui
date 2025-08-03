@@ -98,7 +98,7 @@ namespace Fu.Framework
             // Calculate the width of the panel. If a width was not specified, use the available width in the content region.
             if (width <= 0)
             {
-                width = ImGui.GetContentRegionAvail().x - (width *  Fugui.CurrentContext.Scale);
+                width = ImGui.GetContentRegionAvail().x - (width * Fugui.CurrentContext.Scale);
             }
             else
             {
@@ -120,17 +120,22 @@ namespace Fu.Framework
             height = Mathf.Max(1f, Mathf.Clamp(height, 1f, ImGui.GetContentRegionAvail().y));
 
             // Create the panel frag
-            ImGuiWindowFlags flag = ImGuiWindowFlags.ChildWindow | ImGuiWindowFlags.AlwaysUseWindowPadding;
+            ImGuiWindowFlags flag = ImGuiWindowFlags.ChildWindow;
+            ImGuiChildFlags childFlag = ImGuiChildFlags.AlwaysUseWindowPadding;
             if (!scrollable)
             {
                 flag |= ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+            }
+            if (border)
+            {
+                childFlag |= ImGuiChildFlags.Borders;
             }
             // push style if created
             _currentStyle.Push(true);
 
             Vector2 panelPosition = ImGui.GetCursorScreenPos();
             // draw imgui child panel
-            _panelCreated = ImGui.BeginChild(_ID, new Vector2(width, height), border, flag);
+            _panelCreated = ImGui.BeginChild(_ID, new Vector2(width, height), childFlag, flag);
             if (!_panelCreated)
             {
                 // push style if created
@@ -183,13 +188,13 @@ namespace Fu.Framework
                     Fugui.PopFont(nbMissingFont);
                 }
 
-                ImGui.EndChild();
                 IsInsidePanel = false;
                 _currentStyle.Pop();
                 Clipper.EndFrame();
                 _clippingDict[_ID + FuWindow.CurrentDrawingWindow?.ID] = Clipper;
                 Clipper = null;
             }
+            ImGuiNative.igEndChild();
         }
     }
 }

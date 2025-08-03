@@ -33,31 +33,25 @@ namespace Fu.Core
         internal override void Destroy()
         {
             ImGui.DestroyContext(ImGuiContext);
-#if !UIMGUI_REMOVE_IMPLOT
-            ImPlotNET.ImPlot.DestroyContext(ImPlotContext);
-#endif
-#if !UIMGUI_REMOVE_IMNODES
-            imnodesNET.imnodes.DestroyContext(ImNodesContext);
-#endif
         }
 
         /// <summary>
         /// End the context render. Don't call it, Fugui layout handle it for you
         /// </summary>
-        internal override void EndRender()
+        internal override bool EndRender()
         {
             Fugui.IsRendering = false;
 
             if (!RenderPrepared)
-            {
-                return;
-            }
+                return false;
 
             // cancel drag drop for this context if left click is up this frame and it's not the first frame of the current drag drop operation
             if (_isDraggingPayload && !_firstFrameDragging && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
             {
                 CancelDragDrop();
             }
+
+            return true;
         }
 
         /// <summary>
@@ -72,9 +66,6 @@ namespace Fu.Core
                 return false;
             }
             ImGui.NewFrame();
-#if !UIMGUI_REMOVE_IMGUIZMO
-            ImGuizmoNET.ImGuizmo.BeginFrame();
-#endif
             RenderPrepared = true;
             return RenderPrepared;
         }

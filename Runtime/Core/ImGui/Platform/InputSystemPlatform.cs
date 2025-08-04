@@ -29,8 +29,7 @@ namespace Fu.Core.DearImGui.Platform
         {
             InputSystem.onDeviceChange += OnDeviceChange;
             base.Initialize(io, pio, platformName);
-
-            io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
+            Fugui.Settings.ApplyTo(io);
 
             unsafe
             {
@@ -92,7 +91,7 @@ namespace Fu.Core.DearImGui.Platform
             io.AddMousePosEvent(mouse.position.x.ReadValue(), io.DisplaySize.y - mouse.position.y.ReadValue());
 
             // Scroll (120 = 1 "tick" Windows)
-            Vector2 mouseScroll = mouse.scroll.ReadValue() / 120f;
+            Vector2 mouseScroll = mouse.scroll.ReadValue() * Fugui.Settings.ScrollPower;
             io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
 
             // Buttons (0 = left, 1 = right, 2 = middle)

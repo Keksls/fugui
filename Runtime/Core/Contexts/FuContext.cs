@@ -133,11 +133,7 @@ namespace Fu.Core
             _nbFontPushOnFrameStart = Fugui.NbPushFont;
             try
             {
-                //FuStyle.Default.Push(true);
-                //Fugui.Push(ImGuiStyleVar.FramePadding, FuThemeManager.CurrentTheme.FramePadding);
                 OnRender?.Invoke();
-                //Fugui.PopStyle();
-                //FuStyle.Default.Pop();
                 OnLastRender?.Invoke();
             }
             catch (Exception ex)

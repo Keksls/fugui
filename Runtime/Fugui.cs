@@ -233,6 +233,8 @@ namespace Fu
             UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
             // init dic and queue
             _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
+            // handle native ImGui assert handler
+            ImGuiAssertHandler.Install();   
             // prepare context menu
             ResetContextMenu(true);
         }

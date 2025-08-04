@@ -15,7 +15,6 @@ namespace Fu.Core
     {
         public Camera Camera;
         public TextureManager TextureManager;
-        private IRenderer _renderer;
         private IPlatform _platform;
         private CommandBuffer _renderCommandBuffer;
 
@@ -33,7 +32,6 @@ namespace Fu.Core
         {
             Fugui.SetCurrentContext(this);
 
-            SetRenderer(null, IO);
             SetPlatform(null, IO, PlatformIO);
 
             TextureManager.Shutdown();
@@ -122,30 +120,12 @@ namespace Fu.Core
                 throw new Exception("imgui platform is null");
             }
 
-            SetRenderer(RenderUtility.Create(Fugui.Settings.RendererType, Fugui.Settings.Shaders, TextureManager), IO);
-            if (_renderer == null)
-            {
-                throw new Exception("imgui renderer is null");
-            }
-
             LoadFonts();
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
             FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
 
             SetDefaultImGuiIniFilePath(null);
-        }
-
-        /// <summary>
-        /// Set a IRenderer to render ImGui into main container (Unity context)
-        /// </summary>
-        /// <param name="renderer">Renderer to use</param>
-        /// <param name="io">IO of the ImGui context</param>
-        private void SetRenderer(IRenderer renderer, ImGuiIOPtr io)
-        {
-            _renderer?.Shutdown(io);
-            _renderer = renderer;
-            _renderer?.Initialize(io);
         }
 
         /// <summary>

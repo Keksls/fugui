@@ -41,7 +41,7 @@ namespace Fu.Framework
         /// <param name="height">The optional height of the panel. Defaults to 0.</param>
         /// <param name="width">The optional width of the panel. Defaults to 0.</param>
         /// <param name="flags">Behaviour flags of this panel.</param>
-        public FuPanel(string id, bool useClipper = true, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
+        public FuPanel(string id, bool useClipper = false, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
         {
             _ID = id;
             _useClipper = useClipper;
@@ -58,7 +58,7 @@ namespace Fu.Framework
         /// <param name="height">The optional height of the panel. Defaults to 0.</param>
         /// <param name="width">The optional width of the panel. Defaults to 0.</param>
         /// <param name="flags">Behaviour flags of this panel.</param>
-        public FuPanel(string id, FuStyle style, bool useClipper = true, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
+        public FuPanel(string id, FuStyle style, bool useClipper = false, float height = 0, float width = 0, FuPanelFlags flags = FuPanelFlags.Default)
         {
             _ID = id;
             _useClipper = useClipper;
@@ -188,13 +188,15 @@ namespace Fu.Framework
                     Fugui.PopFont(nbMissingFont);
                 }
 
+                ImGuiNative.igEndChild();
                 IsInsidePanel = false;
                 _currentStyle.Pop();
                 Clipper.EndFrame();
                 _clippingDict[_ID + FuWindow.CurrentDrawingWindow?.ID] = Clipper;
                 Clipper = null;
             }
-            ImGuiNative.igEndChild();
+            else
+                ImGuiNative.igEndChild();
         }
     }
 }

@@ -108,8 +108,8 @@ namespace Fu
                             _colorpickerPalette[n] = Marshal.PtrToStructure<Vector4>(payload.Data);
                         }
                     }
+                    ImGui.EndDragDropTarget();
                 }
-                ImGui.EndDragDropTarget();
                 ImGui.PopID();
             }
             ImGui.EndGroup();

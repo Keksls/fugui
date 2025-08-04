@@ -1,4 +1,4 @@
-using Fu.Core;
+using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -8,6 +8,8 @@ namespace Fu.Framework
     {
         // enabled
         internal Color Text;
+        // enabled
+        internal Color LinkText;
         // disabled
         internal Color DisabledText;
 
@@ -61,9 +63,10 @@ namespace Fu.Framework
         public static FuTextStyle Success { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _successTextStyle; } }
         #endregion
 
-        public FuTextStyle(Color text, Color disabledText)
+        public FuTextStyle(Color text, Color linkText, Color disabledText)
         {
             Text = text;
+            LinkText = linkText;
             DisabledText = disabledText;
         }
 
@@ -71,26 +74,19 @@ namespace Fu.Framework
         {
             if (enabled)
             {
-                Fugui.Push(ImGuiCols.Text, Text);
-                Fugui.Push(ImGuiCols.DuotonePrimaryColor, Text);
-                Color secondary = Text;
-                secondary.a = 0.4f;
-                Fugui.Push(ImGuiCols.DuotoneSecondaryColor, secondary);
+                Fugui.Push(ImGuiCol.Text, Text);
+                Fugui.Push(ImGuiCol.TextLink, LinkText);
             }
             else
             {
-                Fugui.Push(ImGuiCols.Text, DisabledText);
-                Color color = Text;
-                color.a = 0.7f;
-                Fugui.Push(ImGuiCols.DuotonePrimaryColor, color);
-                color.a = 0.2f;
-                Fugui.Push(ImGuiCols.DuotoneSecondaryColor, color);
+                Fugui.Push(ImGuiCol.Text, DisabledText);
+                Fugui.Push(ImGuiCol.TextLink, DisabledText);
             }
         }
 
         public void Pop()
         {
-            Fugui.PopColor(3);
+            Fugui.PopColor(2);
         }
 
         /// <summary>
@@ -103,36 +99,42 @@ namespace Fu.Framework
             _defaultTextStyle = new FuTextStyle()
             {
                 Text = FuThemeManager.GetColor(FuColors.Text),
+                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
                 DisabledText = FuThemeManager.GetColor(FuColors.TextDisabled)
             };
             // default text style
             _defaultDeactivated = new FuTextStyle()
             {
                 Text = FuThemeManager.GetColor(FuColors.Text) * 0.66f,
+                LinkText = FuThemeManager.GetColor(FuColors.TextLink) * 0.66f,
                 DisabledText = FuThemeManager.GetColor(FuColors.TextDisabled) * 0.66f
             };
             // selected text style
             _selectedTextStyle = new FuTextStyle()
             {
                 Text = FuThemeManager.GetColor(FuColors.SelectedText),
+                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
                 DisabledText = FuThemeManager.GetColor(FuColors.SelectedText) * 0.5f
             };
             // highlight text style
             _highlightTextStyle = new FuTextStyle()
             {
                 Text = FuThemeManager.GetColor(FuColors.HighlightText),
+                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
                 DisabledText = FuThemeManager.GetColor(FuColors.HighlightTextDisabled)
             };
             // highlight text style
             _successTextStyle = new FuTextStyle()
             {
                 Text = FuThemeManager.GetColor(FuColors.TextSuccess),
+                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
                 DisabledText = FuThemeManager.GetColor(FuColors.TextSuccess) * 0.5f
             };
             // highlight text style
             _dangerTextStyle = new FuTextStyle()
             {
                 Text = FuThemeManager.GetColor(FuColors.TextDanger),
+                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
                 DisabledText = FuThemeManager.GetColor(FuColors.TextDanger) * 0.5f
             };
             // highlight text style
@@ -145,6 +147,7 @@ namespace Fu.Framework
             _warningTextStyle = new FuTextStyle()
             {
                 Text = FuThemeManager.GetColor(FuColors.TextWarning),
+                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
                 DisabledText = FuThemeManager.GetColor(FuColors.TextWarning) * 0.5f
             };
         }

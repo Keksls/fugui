@@ -217,7 +217,7 @@ namespace Fu.Framework
                             {
                                 color *= 0.5f;
                             }
-                            Fugui.Push(ImGuiCols.Text, color);
+                            Fugui.Push(ImGuiCol.Text, color);
                             nbColorPush++;
                         }
                     }
@@ -492,7 +492,7 @@ namespace Fu.Framework
                     textColor *= 0.9f;
                 }
             }
-            Fugui.Push(ImGuiCols.Text, textColor);
+            Fugui.Push(ImGuiCol.Text, textColor);
             _text(text, wrapping, Vector2.zero);
             Fugui.PopColor();
             return clicked;
@@ -533,7 +533,7 @@ namespace Fu.Framework
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
             bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !LastItemDisabled;
 
-            Color textColor = LastItemDisabled ? style.DisabledText : style.Text;
+            Color textColor = LastItemDisabled ? style.DisabledText : style.LinkText;
             if (!LastItemDisabled)
             {
                 if (active)
@@ -545,7 +545,7 @@ namespace Fu.Framework
                     textColor *= 0.9f;
                 }
             }
-            Fugui.Push(ImGuiCols.Text, textColor);
+            Fugui.Push(ImGuiCol.Text, textColor);
             _text(text, wrapping, Vector2.zero);
             if (hovered)
             {
@@ -929,7 +929,7 @@ namespace Fu.Framework
 
                 // render primary and secondary glyphs
                 drawList.AddText(currentPosition, Fugui.GetPrimaryDuotoneColor(LastItemDisabled), icon.ToString());
-                drawList.AddText(currentPosition, Fugui.GetSecondaryDuotoneColor(), secondary.ToString());
+                drawList.AddText(currentPosition, Fugui.GetSecondaryDuotoneColor(LastItemDisabled), secondary.ToString());
 
                 _endDrawText(iconSize);
             }

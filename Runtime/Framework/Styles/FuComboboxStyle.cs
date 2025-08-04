@@ -57,15 +57,15 @@ namespace Fu.Framework
             ButtonStyle.Push(enabled);
             if (enabled)
             {
-                Fugui.Push(ImGuiCols.FrameBg, _frame);
-                Fugui.Push(ImGuiCols.FrameBgHovered, _frameHovered);
-                Fugui.Push(ImGuiCols.FrameBgActive, _frameActive);
+                Fugui.Push(ImGuiCol.FrameBg, _frame);
+                Fugui.Push(ImGuiCol.FrameBgHovered, _frameHovered);
+                Fugui.Push(ImGuiCol.FrameBgActive, _frameActive);
             }
             else
             {
-                Fugui.Push(ImGuiCols.FrameBg, _frameDisabled);
-                Fugui.Push(ImGuiCols.FrameBgHovered, _frameDisabled);
-                Fugui.Push(ImGuiCols.FrameBgActive, _frameDisabled);
+                Fugui.Push(ImGuiCol.FrameBg, _frameDisabled);
+                Fugui.Push(ImGuiCol.FrameBgHovered, _frameDisabled);
+                Fugui.Push(ImGuiCol.FrameBgActive, _frameDisabled);
             }
         }
         /// <summary>

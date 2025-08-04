@@ -78,7 +78,7 @@ namespace Fu.Framework
                     SendNewPath(currentPath, true);
                 }
             }
-            Fugui.Push(ImGuiCols.Text, hasUndo ? FuThemeManager.GetColor(FuColors.Text) : FuThemeManager.GetColor(FuColors.TextDisabled));
+            Fugui.Push(ImGuiCol.Text, hasUndo ? FuThemeManager.GetColor(FuColors.Text) : FuThemeManager.GetColor(FuColors.TextDisabled));
             // draw undo icon
             EnboxedText("<##" + ID, undoRect.position, undoRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.None);
             Fugui.PopColor();
@@ -109,7 +109,7 @@ namespace Fu.Framework
                     SendNewPath(lastPath);
                 }
             }
-            Fugui.Push(ImGuiCols.Text, hasRedo ? FuThemeManager.GetColor(FuColors.Text) : FuThemeManager.GetColor(FuColors.TextDisabled));
+            Fugui.Push(ImGuiCol.Text, hasRedo ? FuThemeManager.GetColor(FuColors.Text) : FuThemeManager.GetColor(FuColors.TextDisabled));
             // draw redo icon
             EnboxedText(">##" + ID, redoRect.position, redoRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.None);
             Fugui.PopColor();

@@ -154,7 +154,7 @@ namespace Fu
                 }
 
                 // draw popup
-                if (ImGui.BeginPopup(id))
+                if (ImGui.BeginPopup(id, ImGuiWindowFlags.AlwaysAutoResize))
                 {
                     data.OpenThisFrame = false;
                     data.LastFrameRender = ImGui.GetFrameCount();

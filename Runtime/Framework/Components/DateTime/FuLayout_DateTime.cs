@@ -106,7 +106,7 @@ namespace Fu.Framework
                     }
                     index++;
                 }
-            }, new FuElementSize(82f, 0f), new Vector2(82f, 256f), FuButtonStyle.Default);
+            }, new FuElementSize(82f * Fugui.CurrentContext.Scale, 0f), new Vector2(82f * Fugui.CurrentContext.Scale, 256f * Fugui.CurrentContext.Scale), FuButtonStyle.Default);
 
             ImGui.SameLine();
             // Year input

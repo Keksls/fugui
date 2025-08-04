@@ -1,4 +1,4 @@
-using Fu.Core;
+using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -37,21 +37,21 @@ namespace Fu.Framework
         {
             if (enabled)
             {
-                Fugui.Push(ImGuiCols.FrameBg, Frame);
-                Fugui.Push(ImGuiCols.FrameBgHovered, HoveredFrame);
-                Fugui.Push(ImGuiCols.FrameBgActive, ActiveFrame);
-                Fugui.Push(ImGuiCols.CheckMark, CheckMark);
-                Fugui.Push(ImGuiCols.Border, Border);
-                Fugui.Push(ImGuiCols.BorderShadow, Shadow);
+                Fugui.Push(ImGuiCol.FrameBg, Frame);
+                Fugui.Push(ImGuiCol.FrameBgHovered, HoveredFrame);
+                Fugui.Push(ImGuiCol.FrameBgActive, ActiveFrame);
+                Fugui.Push(ImGuiCol.CheckMark, CheckMark);
+                Fugui.Push(ImGuiCol.Border, Border);
+                Fugui.Push(ImGuiCol.BorderShadow, Shadow);
             }
             else
             {
-                Fugui.Push(ImGuiCols.FrameBg, DisabledFrame);
-                Fugui.Push(ImGuiCols.FrameBgHovered, DisabledFrame);
-                Fugui.Push(ImGuiCols.FrameBgActive, DisabledFrame);
-                Fugui.Push(ImGuiCols.CheckMark, DisabledCheckMark);
-                Fugui.Push(ImGuiCols.Border, DisabledBorder);
-                Fugui.Push(ImGuiCols.BorderShadow, DisabledShadow);
+                Fugui.Push(ImGuiCol.FrameBg, DisabledFrame);
+                Fugui.Push(ImGuiCol.FrameBgHovered, DisabledFrame);
+                Fugui.Push(ImGuiCol.FrameBgActive, DisabledFrame);
+                Fugui.Push(ImGuiCol.CheckMark, DisabledCheckMark);
+                Fugui.Push(ImGuiCol.Border, DisabledBorder);
+                Fugui.Push(ImGuiCol.BorderShadow, DisabledShadow);
             }
             TextStyle.Push(enabled);
         }

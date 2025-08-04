@@ -391,7 +391,7 @@ namespace Fu.Core
                 }
                 // set unsnapped position
                 ImGui.SetCursorScreenPos(unsnappedDragPosition);
-                Fugui.Push(ImGuiCols.ChildBg, new Vector4(0.1f, 0.1f, 0.1f, 0.25f));
+                Fugui.Push(ImGuiCol.ChildBg, new Vector4(0.1f, 0.1f, 0.1f, 0.25f));
                 ImGui.BeginChild(ID + "draginGhost", _collapsed ? new Vector2(12f, Size.y) : new Vector2(12f + Size.x, Size.y));
                 ImGuiNative.igEndChild();
                 Fugui.PopColor();
@@ -436,9 +436,9 @@ namespace Fu.Core
                 _overlayStyle.Push(true);
                 if (_noBackground)
                 {
-                    Fugui.Push(ImGuiCols.ChildBg, Vector4.zero);
-                    Fugui.Push(ImGuiCols.Border, Vector4.zero);
-                    Fugui.Push(ImGuiCols.BorderShadow, Vector4.zero);
+                    Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
+                    Fugui.Push(ImGuiCol.Border, Vector4.zero);
+                    Fugui.Push(ImGuiCol.BorderShadow, Vector4.zero);
                 }
                 OnPreRender?.Invoke();
                 if (ImGui.BeginChild(ID, Size, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
@@ -483,17 +483,17 @@ namespace Fu.Core
             // set draggingColor
             if (_draging)
             {
-                Fugui.Push(ImGuiCols.ChildBg, FuThemeManager.GetColor(FuColors.ButtonActive));
+                Fugui.Push(ImGuiCol.ChildBg, FuThemeManager.GetColor(FuColors.ButtonActive));
             }
             // set hovered color
             else if (_dragButtonHovered)
             {
-                Fugui.Push(ImGuiCols.ChildBg, FuThemeManager.GetColor(FuColors.ButtonHovered));
+                Fugui.Push(ImGuiCol.ChildBg, FuThemeManager.GetColor(FuColors.ButtonHovered));
             }
             // set default color
             else
             {
-                Fugui.Push(ImGuiCols.ChildBg, FuThemeManager.GetColor(FuColors.Button));
+                Fugui.Push(ImGuiCol.ChildBg, FuThemeManager.GetColor(FuColors.Button));
             }
 
             // get retract button position

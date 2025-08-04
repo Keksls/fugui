@@ -234,7 +234,7 @@ namespace Fu
             // init dic and queue
             _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
             // handle native ImGui assert handler
-            ImGuiAssertHandler.Install();   
+            ImGuiAssertHandler.Install();
             // prepare context menu
             ResetContextMenu(true);
         }
@@ -747,8 +747,26 @@ namespace Fu
         /// <param name="imCol">ImGui color to push</param>
         /// <param name="color">colot value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Push(ImGuiCols imCol, Vector4 color)
+        public static void Push(ImGuiCol imCol, Vector4 color)
         {
+            ImGuiNative.igPushStyleColor_Vec4(imCol, color);
+            NbPushColor++;
+        }
+
+        /// <summary>
+        /// Push a color style to ImGui color stack
+        /// </summary>
+        /// <param name="imCol">ImGui color to push</param>
+        /// <param name="color">colot value</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Push(FuColors imCol, Vector4 color)
+        {
+            if ((int)imCol >= (int)ImGuiCol.COUNT)
+            {
+                Debug.LogError("You are trying to push a color that is not in ImGuiCol enum, use ImGuiCol instead.");
+                return;
+            }
+
             ImGuiNative.igPushStyleColor_Vec4((ImGuiCol)imCol, color);
             NbPushColor++;
         }
@@ -1095,7 +1113,8 @@ namespace Fu
         /// <param name="text">text that will or have been draw outside</param>
         /// <param name="textPos">position of the text</param>
         /// <param name="drawList">drawList that draw the text</param>
-        public static void DrawDuotoneSecondaryGlyph(string text, Vector2 textPos, ImDrawListPtr drawList)
+        /// <param name="disabled">if true, render the secondary glyph in disabled color</param>
+        public static void DrawDuotoneSecondaryGlyph(string text, Vector2 textPos, ImDrawListPtr drawList, bool disabled)
         {
             // look for duoTone icons within text
             for (int i = 0; i < text.Length; i++)
@@ -1114,7 +1133,7 @@ namespace Fu
                     Vector2 size = CalcTextSize(preText, FuTextWrapping.None);
                     // place virtual cursor to right position
                     textPos.x += size.x;
-                    uint secondaryColor = GetSecondaryDuotoneColor();
+                    uint secondaryColor = GetSecondaryDuotoneColor(disabled);
 
                     // render secondary glyph
                     drawList.AddText(textPos, secondaryColor, ((char)(((ushort)text[i]) + 1)).ToString());
@@ -1126,37 +1145,72 @@ namespace Fu
         /// <summary>
         /// Return the current primary duotone glyph color
         /// </summary>
+        /// <param name="disabled">if true, return the disabled duotone color</param>
         /// <returns>primary duotone color</returns>
         public static uint GetPrimaryDuotoneColor(bool disabled)
         {
-            // get primary and secondary colors
-            Vector4 primaryColorV4 = ImGui.GetStyle().Colors[(int)ImGuiCols.DuotonePrimaryColor];
-            uint primaryColor = ImGui.GetColorU32(primaryColorV4);
-            // replace by default colors if needed
-            uint themePrimaryColor = ImGui.GetColorU32(FuThemeManager.GetColor((FuColors)ImGuiCols.DuotonePrimaryColor));
-            if (primaryColor == themePrimaryColor)
+            // Get current ImGui text color (from style)
+            Vector4 currentTextColor = ImGui.GetStyle().Colors[(int)FuColors.Text];
+
+            // Get FuGui theme reference text color
+            Vector4 themeTextColor = FuThemeManager.GetColor(FuColors.Text);
+
+            // If ImGui style uses a custom color (i.e., it's different from the theme)
+            if (!ColorsAreEqual(currentTextColor, themeTextColor))
             {
-                primaryColor = ImGui.GetColorU32(FuThemeManager.GetColor(disabled ? FuColors.TextDisabled : FuColors.Text));
+                return ImGui.GetColorU32(currentTextColor);
             }
-            return primaryColor;
+
+            // Else return duotone from theme (disabled or not)
+            var color = FuThemeManager.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotonePrimaryColor);
+            return ImGui.GetColorU32(color);
         }
 
         /// <summary>
         /// Return the current secondary duotone glyph color
         /// </summary>
+        /// <param name="disabled">if true, return the disabled color</param>
         /// <returns>secondary duotone color</returns>
-        public static uint GetSecondaryDuotoneColor()
+        public static uint GetSecondaryDuotoneColor(bool disabled)
         {
-            // get primary and secondary colors
-            Vector4 secondaryColorV4 = ImGui.GetStyle().Colors[(int)ImGuiCols.DuotoneSecondaryColor];
-            uint secondaryColor = ImGui.GetColorU32(secondaryColorV4);
-            // replace by default colors if needed
-            uint themeSecondaryColor = ImGui.GetColorU32(FuThemeManager.GetColor((FuColors)ImGuiCols.DuotoneSecondaryColor));
-            if (secondaryColor == themeSecondaryColor)
+            // Get current ImGui text color (possibly overridden)
+            Vector4 currentTextColor = ImGui.GetStyle().Colors[(int)FuColors.Text];
+
+            // Get FuGui theme base text color
+            Vector4 themeTextColor = FuThemeManager.GetColor(FuColors.Text);
+
+            // If user has pushed a custom text color
+            if (!ColorsAreEqual(currentTextColor, themeTextColor))
             {
-                secondaryColor = ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.Text, 0.5f));
+                // Extrapolate secondary duotone based on currentTextColor * 0.9
+                Vector4 extrapolated = new Vector4(
+                    currentTextColor.x * 0.9f,
+                    currentTextColor.y * 0.9f,
+                    currentTextColor.z * 0.9f,
+                    currentTextColor.w
+                );
+
+                return ImGui.GetColorU32(extrapolated);
             }
-            return secondaryColor;
+
+            // Fallback to theme duotone or disabled color
+            var color = FuThemeManager.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotoneSecondaryColor);
+            return ImGui.GetColorU32(color);
+        }
+
+        /// <summary>
+        /// Check if two colors are equal within a tolerance
+        /// </summary>
+        /// <param name="a"> first color</param>
+        /// <param name="b"> second color</param>
+        /// <param name="tolerance"> tolerance for color comparison</param>
+        /// <returns> true if colors are equal within the tolerance</returns>
+        public static bool ColorsAreEqual(Vector4 a, Vector4 b, float tolerance = 0.001f)
+        {
+            return MathF.Abs(a.x - b.x) < tolerance &&
+                   MathF.Abs(a.y - b.y) < tolerance &&
+                   MathF.Abs(a.z - b.z) < tolerance &&
+                   MathF.Abs(a.w - b.w) < tolerance;
         }
         #endregion
 

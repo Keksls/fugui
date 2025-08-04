@@ -436,13 +436,13 @@ namespace Fu.Core
             // set tab color of hovered window
             if (IsHovered)
             {
-                Fugui.Push(ImGuiCols.TabActive, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
-                Fugui.Push(ImGuiCols.TabUnfocusedActive, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCol.TabSelected, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCol.TabDimmedSelected, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
             }
             else
             {
-                Fugui.Push(ImGuiCols.TabActive, FuThemeManager.GetColor(FuColors.TabActive));
-                Fugui.Push(ImGuiCols.TabUnfocusedActive, FuThemeManager.GetColor(FuColors.TabUnfocusedActive));
+                Fugui.Push(ImGuiCol.TabSelected, FuThemeManager.GetColor(FuColors.TabSelected));
+                Fugui.Push(ImGuiCol.TabDimmedSelected, FuThemeManager.GetColor(FuColors.TabDimmedSelected));
             }
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(6f, 4f));
 
@@ -508,7 +508,7 @@ namespace Fu.Core
                 if (IsImguiDocked)
                 {
                     Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
-                    Fugui.Push(ImGuiCols.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCols.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0039216f
+                    Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0039216f
                     if (ImGui.BeginChild(ID + "ctnr", Vector2.zero, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                     {
                         TryDrawUI();
@@ -706,7 +706,7 @@ namespace Fu.Core
             ImGui.SetCursorPos(new Vector2(0f, 32f));
             ImGui.Dummy(Vector2.one);
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
-            Fugui.Push(ImGuiCols.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
+            Fugui.Push(ImGuiCol.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
             if (ImGui.BeginChild(ID + "d", new Vector2(196f, 202f)))
             {
                 // states

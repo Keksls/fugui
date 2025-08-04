@@ -154,7 +154,7 @@ namespace Fu.Core
 
             ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().x - 232f, 16f));
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
-            Fugui.Push(ImGuiCols.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
+            Fugui.Push(ImGuiCol.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
             if (ImGui.BeginChild(ID + "cs", new Vector2(224f, 96f)))
             {
                 // super sampling

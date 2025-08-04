@@ -61,8 +61,6 @@ namespace Fu.Core
         private Queue<FuWindow> _toRemoveWindows;
         // A queue of windows to be added.
         private Queue<FuWindow> _toAddWindows;
-        // A flag indicating whether externalization is allowed this frame.
-        private bool _canExternalizeThisFrame = false;
         // The mouse position relative to the container.
         private Vector2Int _mousePos;
         // The mouse position in world space from the previous frame.
@@ -456,7 +454,7 @@ namespace Fu.Core
                 ImGui.Dummy(size);
                 return false;
             }
-            return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCols.Button], color);
+            return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
         }
         #endregion
 
@@ -503,7 +501,7 @@ namespace Fu.Core
                 Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
                 Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
                 Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
-                Fugui.Push(ImGuiCols.WindowBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
+                Fugui.Push(ImGuiCol.WindowBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
                 ImGui.SetNextWindowPos(new Vector2(0f, _size.y - (_footerHeight * Context.Scale)));
                 ImGui.SetNextWindowSize(new Vector2(_size.x, (_footerHeight * Context.Scale)));
                 ImGui.SetNextWindowViewport(viewPortID);

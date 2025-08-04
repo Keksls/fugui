@@ -195,10 +195,10 @@ namespace Fu
             Push(ImGuiStyleVar.FramePadding, new Vector2(4f, 4f));
             Push(ImGuiStyleVar.ItemSpacing, new Vector2(4f, 4f));
             Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 4f));
-            Push(ImGuiCols.Header, FuThemeManager.GetColor(FuColors.HeaderHovered));
-            Push(ImGuiCols.Text, FuThemeManager.GetColor(FuColors.MainMenuText));
-            Push(ImGuiCols.PopupBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
-            Push(ImGuiCols.Separator, FuThemeManager.GetColor(FuColors.MainMenuText) * 0.33f);
+            Push(ImGuiCol.Header, FuThemeManager.GetColor(FuColors.HeaderHovered));
+            Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.MainMenuText));
+            Push(ImGuiCol.PopupBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
+            Push(ImGuiCol.Separator, FuThemeManager.GetColor(FuColors.MainMenuText) * 0.33f);
             // Begin the main menu bar
             if (ImGui.BeginMainMenuBar())
             {
@@ -241,7 +241,7 @@ namespace Fu
             {
                 item.PreDrawCallback?.Invoke();
                 // draw secondary duotone glyph if needed
-                DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList());
+                DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), IsMainMenuDisabled || !item.Enabled);
 
                 // Begin a submenu if the menu item has children
                 if (ImGui.BeginMenu(item.Parent == null ? "  " + itemText + "   " : itemText, item.Enabled && !IsMainMenuDisabled))
@@ -269,7 +269,7 @@ namespace Fu
                 {
                     item.PreDrawCallback?.Invoke();
                     // draw secondary duotone glyph if needed
-                    DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList());
+                    DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), IsMainMenuDisabled || !item.Enabled);
 
                     if (ImGui.MenuItem(item.Parent == null ? "  " + itemText + "   " : itemText, item.Shortcut, item.Selected, item.Enabled && !IsMainMenuDisabled))
                     {

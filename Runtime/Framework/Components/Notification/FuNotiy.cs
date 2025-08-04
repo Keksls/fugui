@@ -80,7 +80,7 @@ namespace Fu
             }
             // set style and color of the notifyPanel
             Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
-            Push(ImGuiCols.WindowBg, Vector4.zero);
+            Push(ImGuiCol.WindowBg, Vector4.zero);
             Push(ImGuiStyleVar.WindowBorderSize, 0f);
             // start drawing the notifyPanel
             ImGui.Begin("notifyPanel", ref _notifyPanelOpen, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize);

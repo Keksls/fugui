@@ -43,15 +43,15 @@ namespace Fu.Framework
         {
             if (enabled)
             {
-                Fugui.Push(ImGuiCols.Header, _color);
-                Fugui.Push(ImGuiCols.HeaderHovered, _colorHovered);
-                Fugui.Push(ImGuiCols.HeaderActive, _colorActive);
+                Fugui.Push(ImGuiCol.Header, _color);
+                Fugui.Push(ImGuiCol.HeaderHovered, _colorHovered);
+                Fugui.Push(ImGuiCol.HeaderActive, _colorActive);
             }
             else
             {
-                Fugui.Push(ImGuiCols.Header, _disabledColor);
-                Fugui.Push(ImGuiCols.HeaderHovered, _disabledColor);
-                Fugui.Push(ImGuiCols.HeaderActive, _disabledColor);
+                Fugui.Push(ImGuiCol.Header, _disabledColor);
+                Fugui.Push(ImGuiCol.HeaderHovered, _disabledColor);
+                Fugui.Push(ImGuiCol.HeaderActive, _disabledColor);
             }
             _text.Push(enabled);
             _layout.Push(enabled);

@@ -22,7 +22,7 @@ namespace Fu.Framework
                 id = id + "##" + FuWindow.CurrentDrawingWindow.ID;
             }
 
-            if(!string.IsNullOrEmpty(groupID))
+            if (!string.IsNullOrEmpty(groupID))
             {
                 if (_collapsablesGroupOpenStates.ContainsKey(groupID))
                 {
@@ -85,6 +85,15 @@ namespace Fu.Framework
         /// <param name="text">The identifier of the element.</param>
         /// <param name="innerUI">The content to display within the collapsable element.</param>
         /// <param name="style">The style to apply to the element.</param>
+        /// <param name="defaultOpen">Whether the collapsable should be open by default.</param>
+        /// <param name="drawCarret">Whether to draw a caret icon indicating the collapsable state.</param>
+        /// <param name="groupID">Optional group ID to manage collapsable states within a group.</param>
+        /// <param name="indent"> The indentation to apply to the content within the collapsable element.</param>
+        /// <param name="leftPartCustomUI"> Optional custom UI to display on the left side of the collapsable header.</param>
+        /// <param name="leftPartCustomUIWidth">Width of the left custom UI part.</param>
+        /// <param name="paddingY">Padding to apply vertically to the collapsable header.</param>
+        /// <param name="rightPartCustomUI">Optional custom UI to display on the right side of the collapsable header.</param>
+        /// <param name="rightPartCustomUIWidth">Width of the right custom UI part.</param>
         public void Collapsable(string text, Action innerUI, FuButtonStyle style, float indent = 16f, bool defaultOpen = true, float leftPartCustomUIWidth = 0f, Action leftPartCustomUI = null, float rightPartCustomUIWidth = 0f, Action rightPartCustomUI = null, bool drawCarret = true, string groupID = null, float paddingY = 4f)
         {
             // check value
@@ -172,9 +181,11 @@ namespace Fu.Framework
             {
                 // add natural spacing after lines
                 ImGui.Spacing();
-                ImGui.Indent(indent * Fugui.CurrentContext.Scale);
+                if (indent != 0)
+                    ImGui.Indent(indent * Fugui.CurrentContext.Scale);
                 innerUI();
-                ImGui.Indent(-indent * Fugui.CurrentContext.Scale);
+                if (indent != 0)
+                    ImGui.Indent(-indent * Fugui.CurrentContext.Scale);
             }
         }
 
@@ -192,7 +203,7 @@ namespace Fu.Framework
         {
             // clamp gradient strenght
             float gradientStrenght = 1f - Mathf.Clamp(FuThemeManager.CurrentTheme.CollapsableGradientStrenght, 0.1f, 1f);
-
+            leftPartUIWidth *= Fugui.CurrentContext.Scale;
             // add carret width to left part offset
             float carretWidth = drawCarret ? 24f * Fugui.CurrentContext.Scale : 0f;
 

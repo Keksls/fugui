@@ -67,13 +67,13 @@ public class WidgetsWindow : MonoBehaviour
                 layout.CenterNextItem("Check Fugui's git page.");
                 layout.Text("Check Fugui's ");
                 layout.SameLine();
-                layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui", FuTextStyle.Info);
+                layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui");
                 layout.Toggle("##toggleDisable", ref _enableWidgets, "Widgets Disabled", "Widgets Enabled", FuToggleFlags.MaximumTextSize);
 
                 using (new FuPanel("widgetsDemoPanel", FuStyle.Unpadded))
                 {
                     layout.Collapsable("Sliders", drawSliders);
-                    layout.Collapsable("Basics Widgets", () => { drawBasics(layout); });
+                    layout.Collapsable("Basics Widgets", () => { drawBasics(layout); }, 0);
                     layout.Collapsable("Texts", () => { drawTexts(layout); });
                     layout.Collapsable("Buttons", () => { drawButtons(layout); });
                     layout.Collapsable("Drags", drawDrags);
@@ -98,7 +98,7 @@ public class WidgetsWindow : MonoBehaviour
             grid.Knob("knob Dot", ref floatValKnob, 0f, 100f, FuKnobVariant.Dot);
             grid.Knob("knob Space", ref floatValKnob, 0f, 100f, FuKnobVariant.Space);
             grid.Knob("knob WiperOnly", ref floatValKnob, 0f, 100f, FuKnobVariant.WiperOnly);
-            grid.Knob("knob Space", ref floatValKnob, 0f, 100f, FuKnobVariant.Tick);
+            grid.Knob("knob Tick", ref floatValKnob, 0f, 100f, FuKnobVariant.Tick);
             grid.Knob("knob Wiper", ref floatValKnob, 0f, 100f, FuKnobVariant.Wiper);
             grid.Knob("knob Stepped", ref floatValKnob, 0f, 100f, FuKnobVariant.Stepped, 10, 10f, "%1.f");
             if (!_enableWidgets)
@@ -188,46 +188,42 @@ public class WidgetsWindow : MonoBehaviour
                     case 2:
                         grid.ColorPicker("picker", ref colorV3);
                         grid.ColorPicker("picker with alpha", ref colorV4);
-                        grid.Separator();
-                        grid.Text("direct picker");
-                        grid.NextColumn();
-                        Fugui.Colorpicker("testPicker", ref colorV4);
                         break;
 
                     case 3:
-                        if (layout.RadioButton("c 1", radioButtonGroup1Index == 0))
+                        if (grid.RadioButton("c 1", radioButtonGroup1Index == 0))
                         {
                             radioButtonGroup1Index = 0;
                         }
-                        layout.SameLine();
-                        if (layout.RadioButton("c 2", radioButtonGroup1Index == 1))
+                        grid.SameLine();
+                        if (grid.RadioButton("c 2", radioButtonGroup1Index == 1))
                         {
                             radioButtonGroup1Index = 1;
                         }
-                        layout.SameLine();
-                        if (layout.RadioButton("c 3", radioButtonGroup1Index == 2))
+                        grid.SameLine();
+                        if (grid.RadioButton("c 3", radioButtonGroup1Index == 2))
                         {
                             radioButtonGroup1Index = 2;
                         }
-                        layout.SameLine();
-                        if (layout.RadioButton("c 4", radioButtonGroup1Index == 3))
+                        grid.SameLine();
+                        if (grid.RadioButton("c 4", radioButtonGroup1Index == 3))
                         {
                             radioButtonGroup1Index = 3;
                         }
 
-                        if (layout.RadioButton("c 1##1", radioButtonGroup2Index == 0))
+                        if (grid.RadioButton("c 1##1", radioButtonGroup2Index == 0))
                         {
                             radioButtonGroup2Index = 0;
                         }
-                        if (layout.RadioButton("c 2##1", radioButtonGroup2Index == 1))
+                        if (grid.RadioButton("c 2##1", radioButtonGroup2Index == 1))
                         {
                             radioButtonGroup2Index = 1;
                         }
-                        if (layout.RadioButton("c 3##1", radioButtonGroup2Index == 2))
+                        if (grid.RadioButton("c 3##1", radioButtonGroup2Index == 2))
                         {
                             radioButtonGroup2Index = 2;
                         }
-                        if (layout.RadioButton("c 4##1", radioButtonGroup2Index == 3))
+                        if (grid.RadioButton("c 4##1", radioButtonGroup2Index == 3))
                         {
                             radioButtonGroup2Index = 3;
                         }

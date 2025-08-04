@@ -242,13 +242,13 @@ namespace Fu
                     bool enabled = (menuItem.Enabled?.Invoke() ?? true) && !IsContextMenuDisabled;
                     if (!enabled)
                     {
-                        Push(ImGuiCols.Text, FuThemeManager.GetColor(FuColors.TextDisabled));
+                        Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.TextDisabled));
                     }
                     // whatever the item is a parent (contain children)
                     if (menuItem.Children.Count > 0)
                     {
                         // draw secondary duotone glyph if needed
-                        DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList());
+                        DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
 
                         // draw the parent and bind children if parent is open
                         if (ImGui.BeginMenu(menuItem.Label, enabled))
@@ -262,7 +262,7 @@ namespace Fu
                     else
                     {
                         // draw secondary duotone glyph if needed
-                        DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList());
+                        DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
 
                         // draw menu item
                         if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, enabled))

@@ -28,40 +28,40 @@ namespace Fu.Framework
             {
                 if (isChecked)
                 {
-                    Fugui.Push(ImGuiCols.CheckMark, FuThemeManager.GetColor(FuColors.Knob) * 0.5f);
-                    Fugui.Push(ImGuiCols.FrameBg, FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
-                    Fugui.Push(ImGuiCols.FrameBgHovered, FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
-                    Fugui.Push(ImGuiCols.FrameBgActive, FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
+                    Fugui.Push(ImGuiCol.CheckMark, FuThemeManager.GetColor(FuColors.Knob) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBg, FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgHovered, FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgActive, FuThemeManager.GetColor(FuColors.CheckMark) * 0.5f);
                 }
                 else
                 {
-                    Fugui.Push(ImGuiCols.CheckMark, FuThemeManager.GetColor(FuColors.Knob) * 0.5f);
-                    Fugui.Push(ImGuiCols.FrameBg, FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
-                    Fugui.Push(ImGuiCols.FrameBgHovered, FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
-                    Fugui.Push(ImGuiCols.FrameBgActive, FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
+                    Fugui.Push(ImGuiCol.CheckMark, FuThemeManager.GetColor(FuColors.Knob) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBg, FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgHovered, FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgActive, FuThemeManager.GetColor(FuColors.FrameBg) * 0.5f);
                 }
             }
             else
             {
                 if (isChecked)
                 {
-                    Fugui.Push(ImGuiCols.CheckMark, FuThemeManager.GetColor(FuColors.Knob));
-                    Fugui.Push(ImGuiCols.FrameBg, FuThemeManager.GetColor(FuColors.CheckMark));
-                    Fugui.Push(ImGuiCols.FrameBgHovered, FuThemeManager.GetColor(FuColors.CheckMark) * 0.9f);
-                    Fugui.Push(ImGuiCols.FrameBgActive, FuThemeManager.GetColor(FuColors.CheckMark) * 0.8f);
+                    Fugui.Push(ImGuiCol.CheckMark, FuThemeManager.GetColor(FuColors.Knob));
+                    Fugui.Push(ImGuiCol.FrameBg, FuThemeManager.GetColor(FuColors.CheckMark));
+                    Fugui.Push(ImGuiCol.FrameBgHovered, FuThemeManager.GetColor(FuColors.CheckMark) * 0.9f);
+                    Fugui.Push(ImGuiCol.FrameBgActive, FuThemeManager.GetColor(FuColors.CheckMark) * 0.8f);
                 }
                 else
                 {
-                    Fugui.Push(ImGuiCols.CheckMark, FuThemeManager.GetColor(FuColors.Knob));
-                    Fugui.Push(ImGuiCols.FrameBg, FuThemeManager.GetColor(FuColors.FrameBg));
-                    Fugui.Push(ImGuiCols.FrameBgHovered, FuThemeManager.GetColor(FuColors.FrameBgHovered));
-                    Fugui.Push(ImGuiCols.FrameBgActive, FuThemeManager.GetColor(FuColors.FrameBgActive));
+                    Fugui.Push(ImGuiCol.CheckMark, FuThemeManager.GetColor(FuColors.Knob));
+                    Fugui.Push(ImGuiCol.FrameBg, FuThemeManager.GetColor(FuColors.FrameBg));
+                    Fugui.Push(ImGuiCol.FrameBgHovered, FuThemeManager.GetColor(FuColors.FrameBgHovered));
+                    Fugui.Push(ImGuiCol.FrameBgActive, FuThemeManager.GetColor(FuColors.FrameBgActive));
                 }
             }
             // reduce border strenght
-            Fugui.Push(ImGuiCols.Border, FuThemeManager.GetColor(FuColors.Border) * 0.5f);
+            Fugui.Push(ImGuiCol.Border, FuThemeManager.GetColor(FuColors.Border) * 0.5f);
             ImGui.PushID(text);
-            Fugui.MoveY(-2f);
+            //Fugui.MoveY(-2f);
             if (LastItemDisabled)
             {
                 bool value = isChecked; // Create a temporary variable to hold the value of isChecked

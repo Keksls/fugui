@@ -28,7 +28,6 @@ namespace Fu.Framework
         public static event Action OnDockLayoutSet;
         public static event Action OnBeforeDockLayoutSet;
         public static event Action OnDockLayoutReloaded;
-        public static event Action OnCurrentDockLayoutUpdated;
         public const string FUGUI_DOCKING_LAYOUT_EXTENTION = "fdl";
         #endregion
 

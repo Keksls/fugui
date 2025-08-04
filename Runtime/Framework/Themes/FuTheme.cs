@@ -226,9 +226,21 @@ namespace Fu.Framework
             Colors[(int)FuColors.ResizeGripActive] = new Vector4(0.250980406999588f, 0.250980406999588f, 0.250980406999588f, 1.0f);
             Colors[(int)FuColors.Tab] = new Vector4(34f / 255f, 34f / 255f, 34f / 255f, 1.0f);
             Colors[(int)FuColors.TabHovered] = new Vector4(0.250980406999588f, 0.250980406999588f, 0.250980406999588f, 1.0f);
-            Colors[(int)FuColors.TabActive] = new Vector4(46f / 255f, 46f / 255f, 46f / 255f, 1.0f);
-            Colors[(int)FuColors.TabUnfocused] = new Vector4(34f / 255f, 34f / 255f, 34f / 255f, 1.0f);
-            Colors[(int)FuColors.TabUnfocusedActive] = new Vector4(46f / 255f, 46f / 255f, 46f / 255f, 1.0f);
+            Colors[(int)FuColors.TabSelectedOverline] = new Vector4(55.2f / 255f, 55.2f / 255f, 55.2f / 255f, 1.0f);
+            Colors[(int)FuColors.TabDimmed] = new Vector4(20.4f / 255f, 20.4f / 255f, 20.4f / 255f, 1.0f);
+            Colors[(int)FuColors.TabDimmedSelected] = new Vector4(27.6f / 255f, 27.6f / 255f, 27.6f / 255f, 1.0f);
+            Colors[(int)FuColors.TabDimmedSelectedOverline] = new Vector4(36.8f / 255f, 36.8f / 255f, 36.8f / 255f, 1.0f);
+
+            Colors[(int)FuColors.TabSelected] = new Vector4(46f / 255f, 46f / 255f, 46f / 255f, 1.0f);
+            Colors[(int)FuColors.TableHeaderBg] = new Vector4(0.0f, 0.0f, 0.0f, 0.5199999809265137f);
+            Colors[(int)FuColors.TableBorderStrong] = new Vector4(0.0f, 0.0f, 0.0f, 0.5199999809265137f);
+            Colors[(int)FuColors.TableBorderLight] = new Vector4(0.2784313857555389f, 0.2784313857555389f, 0.2784313857555389f, 0.2899999916553497f);
+            Colors[(int)FuColors.TableRowBg] = new Vector4(1.0f, 1.0f, 1.0f, 1f / 255f);
+            Colors[(int)FuColors.TableRowBgAlt] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+            Colors[(int)FuColors.TextLink] = new Vector4(0.31764706f, 0.83137256f, 0.9137255f, 1.0f);
+            Colors[(int)FuColors.NavCursor] = new Vector4(0.2f, 0.8f, 1.0f, 0.7f);
+            Colors[(int)FuColors.HoveredWindowTab] = new Vector4(0.8f, 0.4f, 0.2f, 1.0f);
+
             Colors[(int)FuColors.PlotLines] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
             Colors[(int)FuColors.PlotLinesHovered] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
             Colors[(int)FuColors.PlotHistogram] = new Vector4(1.0f, 0.0f, 0.0f, 1.0f);
@@ -240,7 +252,8 @@ namespace Fu.Framework
             Colors[(int)FuColors.TableRowBgAlt] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
             Colors[(int)FuColors.TextSelectedBg] = new Vector4(0.2000000029802322f, 0.2196078449487686f, 0.2274509817361832f, 1.0f);
             Colors[(int)FuColors.DragDropTarget] = new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
-            Colors[(int)FuColors.NavHighlight] = new Vector4(0.3294117748737335f, 0.6666666865348816f, 0.8588235378265381f, 1.0f);
+            Colors[(int)FuColors.TextLink] = new Vector4(81f / 255f, 212f / 255f, 233f / 255f, 1f); // même couleur que TextInfo
+            Colors[(int)FuColors.NavCursor] = new Vector4(0.2f, 0.8f, 1f, 0.7f);
             Colors[(int)FuColors.NavWindowingHighlight] = new Vector4(0.1764705926179886f, 0.407843142747879f, 0.5372549295425415f, 1.0f);
             Colors[(int)FuColors.NavWindowingDimBg] = new Vector4(0.09411764889955521f, 0.09411764889955521f, 0.09411764889955521f, 0.7843137383460999f);
             Colors[(int)FuColors.ModalWindowDimBg] = new Vector4(0.09411764889955521f, 0.09411764889955521f, 0.09411764889955521f, 0.7843137383460999f);
@@ -281,11 +294,14 @@ namespace Fu.Framework
             Colors[(int)FuColors.BackgroundInfo] = new Vector4(81f / 255f, 212f / 255f, 233f / 255f, 1f);
             Colors[(int)FuColors.BackgroundSuccess] = new Vector4(97f / 255f, 217f / 255f, 124f / 255f, 1f);
             Colors[(int)FuColors.BackgroundWarning] = new Vector4(255f / 255f, 199f / 255f, 30f / 255f, 1f);
+            
+            Colors[(int)FuColors.DuotonePrimaryColor] = new Vector4(1f / 255f, 122f / 255f, 1f, 1f);
+            Colors[(int)FuColors.DuotoneSecondaryColor] = new Vector4(1f / 255f * 0.9f, 122f / 255f * 0.9f, 1f * 0.9f, 1f);
 
-			for (int i = (int)FuColors.COUNT; i < colorsCount; i++)
-			{
+            for (int i = (int)FuColors.COUNT; i < colorsCount; i++)
+            {
                 Colors[i] = Vector4.one;
-			}
+            }
         }
 
         /// <summary>
@@ -365,9 +381,10 @@ namespace Fu.Framework
             Colors[(int)FuColors.ResizeGripActive] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
             Colors[(int)FuColors.Tab] = new Vector4(0.16f, 0.16f, 0.16f, 0.00f);
             Colors[(int)FuColors.TabHovered] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
-            Colors[(int)FuColors.TabActive] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
-            Colors[(int)FuColors.TabUnfocused] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
-            Colors[(int)FuColors.TabUnfocusedActive] = new Vector4(0.87f, 0.87f, 0.87f, 1.00f);
+            Colors[(int)FuColors.TabSelectedOverline] = new Vector4(1.0f, 0.828f, 0.084f, 1.0f);
+            Colors[(int)FuColors.TabDimmed] = new Vector4(0.096f, 0.096f, 0.096f, 0.0f);
+            Colors[(int)FuColors.TabDimmedSelected] = new Vector4(0.6f, 0.414f, 0.042f, 0.6f);
+            Colors[(int)FuColors.TabDimmedSelectedOverline] = new Vector4(0.8f, 0.552f, 0.056f, 0.8f);
             Colors[(int)FuColors.DockingPreview] = new Vector4(1.00f, 0.82f, 0.46f, 0.69f);
             Colors[(int)FuColors.DockingEmptyBg] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
             Colors[(int)FuColors.PlotLines] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -376,12 +393,23 @@ namespace Fu.Framework
             Colors[(int)FuColors.PlotHistogramHovered] = new Vector4(1.00f, 0.60f, 0.00f, 1.00f);
             Colors[(int)FuColors.TextSelectedBg] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
             Colors[(int)FuColors.DragDropTarget] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
-            Colors[(int)FuColors.NavHighlight] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)FuColors.TabDimmedSelected] = new Vector4(0.6f, 0.414f, 0.042f, 1.0f);
+            Colors[(int)FuColors.TabDimmedSelectedOverline] = new Vector4(0.8f, 0.552f, 0.056f, 1.0f);
             Colors[(int)FuColors.NavWindowingHighlight] = new Vector4(1.00f, 1.00f, 1.00f, 0.70f);
             Colors[(int)FuColors.NavWindowingDimBg] = new Vector4(0.87f, 0.87f, 0.87f, 1.00f);
             Colors[(int)FuColors.ModalWindowDimBg] = new Vector4(0.20f, 0.20f, 0.20f, 0.35f);
             Colors[(int)FuColors.DockingEmptyBg] = Colors[(int)FuColors.FrameBg];
             Colors[(int)FuColors.DockingPreview] = Color.white;
+
+            Colors[(int)FuColors.TabSelected] = new Vector4(1.00f, 0.69f, 0.07f, 1.00f);
+            Colors[(int)FuColors.TableHeaderBg] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            Colors[(int)FuColors.TableBorderStrong] = new Vector4(0.9f, 0.9f, 0.9f, 1.0f);
+            Colors[(int)FuColors.TableBorderLight] = new Vector4(0.7f, 0.7f, 0.7f, 0.5f);
+            Colors[(int)FuColors.TableRowBg] = new Vector4(1.0f, 1.0f, 1.0f, 0.015f);
+            Colors[(int)FuColors.TableRowBgAlt] = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+            Colors[(int)FuColors.TextLink] = new Vector4(0.31764706f, 0.83137256f, 0.9137255f, 1.0f);
+            Colors[(int)FuColors.NavCursor] = new Vector4(0.2f, 0.8f, 1.0f, 0.7f);
+            Colors[(int)FuColors.HoveredWindowTab] = new Vector4(1.0f, 0.5f, 0.2f, 1.0f);
 
             // custom colors
             Colors[(int)FuColors.Highlight] = new Vector4(1f / 255f, 122f / 255f, 1f, 1f);
@@ -418,6 +446,9 @@ namespace Fu.Framework
             Colors[(int)FuColors.BackgroundInfo] = new Vector4(23f / 255f, 162f / 255f, 184f / 255f, 1f);
             Colors[(int)FuColors.BackgroundSuccess] = new Vector4(40f / 255f, 167f / 255f, 69f / 255f, 1f);
             Colors[(int)FuColors.BackgroundWarning] = new Vector4(255f / 255f, 193f / 255f, 7f / 255f, 1f);
+
+            Colors[(int)FuColors.DuotonePrimaryColor] = new Vector4(1f / 255f, 122f / 255f, 1f, 1f);
+            Colors[(int)FuColors.DuotoneSecondaryColor] = new Vector4(1f / 255f * 0.9f, 122f / 255f * 0.9f, 1f * 0.9f, 1f);
 
             for (int i = (int)FuColors.COUNT; i < colorsCount; i++)
             {

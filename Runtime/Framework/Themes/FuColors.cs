@@ -4,116 +4,105 @@
     {
         Text = 0,
         TextDisabled = 1,
-
         WindowBg = 2,
         ChildBg = 3,
         PopupBg = 4,
-
         Border = 5,
         BorderShadow = 6,
-
         FrameBg = 7,
         FrameBgHovered = 8,
         FrameBgActive = 9,
-
         TitleBg = 10,
         TitleBgActive = 11,
         TitleBgCollapsed = 12,
-
         MenuBarBg = 13,
-
         ScrollbarBg = 14,
         ScrollbarGrab = 15,
         ScrollbarGrabHovered = 16,
         ScrollbarGrabActive = 17,
-
         CheckMark = 18,
         SliderGrab = 19,
         SliderGrabActive = 20,
-
         Button = 21,
         ButtonHovered = 22,
         ButtonActive = 23,
-
         Header = 24,
         HeaderHovered = 25,
         HeaderActive = 26,
-
         Separator = 27,
         SeparatorHovered = 28,
         SeparatorActive = 29,
-
         ResizeGrip = 30,
         ResizeGripHovered = 31,
         ResizeGripActive = 32,
+        TabHovered = 33,
+        Tab = 34,
+        TabSelected = 35,
+        TabSelectedOverline = 36,
+        TabDimmed = 37,
+        TabDimmedSelected = 38,
+        TabDimmedSelectedOverline = 39,
+        DockingPreview = 40,
+        DockingEmptyBg = 41,
+        PlotLines = 42,
+        PlotLinesHovered = 43,
+        PlotHistogram = 44,
+        PlotHistogramHovered = 45,
+        TableHeaderBg = 46,
+        TableBorderStrong = 47,
+        TableBorderLight = 48,
+        TableRowBg = 49,
+        TableRowBgAlt = 50,
+        TextLink = 51,
+        TextSelectedBg = 52,
+        DragDropTarget = 53,
+        NavCursor = 54,
+        NavWindowingHighlight = 55,
+        NavWindowingDimBg = 56,
+        ModalWindowDimBg = 57,
 
-        Tab = 33,
-        TabHovered = 34,
-        TabActive = 35,
-        TabUnfocused = 36,
-        TabUnfocusedActive = 37,
+        // Couleurs personnalisées FuGui
+        Highlight = 58,
+        HighlightHovered = 59,
+        HighlightActive = 60,
+        HighlightDisabled = 61,
 
-        DockingPreview = 38,
-        DockingEmptyBg = 39,
+        FrameHoverFeedback = 62,
+        FrameSelectedFeedback = 63,
 
-        PlotLines = 40,
-        PlotLinesHovered = 41,
-        PlotHistogram = 42,
-        PlotHistogramHovered = 43,
+        Collapsable = 64,
+        CollapsableHovered = 65,
+        CollapsableActive = 66,
+        CollapsableDisabled = 67,
 
-        TableHeaderBg = 44,
-        TableBorderStrong = 45,
-        TableBorderLight = 46,
-        TableRowBg = 47,
-        TableRowBgAlt = 48,
+        Selected = 68,
+        SelectedHovered = 69,
+        SelectedActive = 70,
+        SelectedText = 71,
 
-        TextSelectedBg = 49,
-        DragDropTarget = 50,
+        Knob = 72,
+        KnobHovered = 73,
+        KnobActive = 74,
 
-        NavHighlight = 51,
-        NavWindowingHighlight = 52,
-        NavWindowingDimBg = 53,
+        MainMenuText = 75,
+        HighlightText = 76,
+        HighlightTextDisabled = 77,
 
-        ModalWindowDimBg = 54,
+        TextInfo = 78,
+        TextDanger = 79,
+        TextWarning = 80,
+        TextSuccess = 81,
 
-        Highlight = 55,
-        HighlightHovered = 56,
-        HighlightActive = 57,
-        HighlightDisabled = 58,
+        BackgroundInfo = 82,
+        BackgroundDanger = 83,
+        BackgroundWarning = 84,
+        BackgroundSuccess = 85,
 
-        FrameHoverFeedback = 59,
-        FrameSelectedFeedback = 60,
+        HoveredWindowTab = 86,
 
-        Collapsable = 61,
-        CollapsableHovered = 62,
-        CollapsableActive = 63,
-        CollapsableDisabled = 64,
+        DuotonePrimaryColor = 58, // alias interne
+        DuotoneSecondaryColor = 59, // alias interne
 
-        Selected = 65,
-        SelectedHovered = 66,
-        SelectedActive = 67,
-        SelectedText = 68,
-
-        Knob = 69,
-        KnobHovered = 70,
-        KnobActive = 71,
-
-        MainMenuText = 72,
-        HighlightText = 73,
-        HighlightTextDisabled = 74,
-
-        TextInfo = 75,
-        TextDanger = 76,
-        TextWarning = 77,
-        TextSuccess = 78,
-
-        BackgroundInfo = 79,
-        BackgroundDanger = 80,
-        BackgroundWarning = 81,
-        BackgroundSuccess = 82,
-
-        HoveredWindowTab = 83,
-
-        COUNT = 84
+        COUNT = 87
     }
 }

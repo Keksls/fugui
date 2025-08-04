@@ -46,7 +46,7 @@ namespace ImGuiNET
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern byte ImGuiDockNode_IsEmpty(ImGuiDockNode* self);
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
-        public static extern byte ImGuiDockNode_IsFloatingNode(ImGuiDockNode* self);
+        public static extern bool ImGuiDockNode_IsFloatingNode(ImGuiDockNode* self);
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern byte ImGuiDockNode_IsHiddenTabBar(ImGuiDockNode* self);
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]

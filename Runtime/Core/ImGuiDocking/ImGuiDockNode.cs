@@ -116,8 +116,7 @@ namespace ImGuiNET
         }
         public bool IsFloatingNode()
         {
-            byte ret = NativeDocking.ImGuiDockNode_IsFloatingNode((ImGuiDockNode*)(NativePtr));
-            return ret != 0;
+            return NativeDocking.ImGuiDockNode_IsFloatingNode((ImGuiDockNode*)(NativePtr));
         }
         public bool IsHiddenTabBar()
         {

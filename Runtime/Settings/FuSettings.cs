@@ -255,10 +255,6 @@ namespace Fu.Core
         [FuTooltip("pos offset of icons glyphs in font.")]
         public Vector2 FontIconsOffset = Vector2.zero;
 
-        [Tooltip("renderType to use to render imgui DrawLists (for main container).")]
-        [FuTooltip("renderType to use to render imgui DrawLists (for main container).")]
-        public RenderType RendererType = RenderType.Mesh;
-
         [Tooltip("platform (input type) to use for main container.")]
         [FuTooltip("platform (input type) to use for main container.")]
         public InputType PlatformType = InputType.InputManager;
@@ -279,6 +275,14 @@ namespace Fu.Core
         [FuSlider(0.1f, 64f)]
         public float DoubleClickMaxDist = 6.0f;
 
+        [Tooltip("The power of the scroll wheel. " +
+            "This is used to scale the scroll delta when scrolling with the mouse wheel. (default=0.1f)")]
+        [FuTooltip("The power of the scroll wheel. " +
+            "This is used to scale the scroll delta when scrolling with the mouse wheel. (default=0.1f)")]
+        [Range(0.001f, 100f)]
+        [FuSlider(0.001f, 100f)]
+        public float ScrollPower = 1f;
+        
         [Tooltip("Distance threshold before considering we are dragging. (default=6.0f)")]
         [FuTooltip("Distance threshold before considering we are dragging. (default=6.0f)")]
         [Range(0.01f, 64f)]
@@ -361,13 +365,6 @@ namespace Fu.Core
         [FuToggle]
         public bool ConfigDockingNoSplit = false;
 
-        [Tooltip("[BETA] [FIXME: This currently creates regression with auto-sizing and general overhead] " +
-            "Make every single floating window display within a docking node.")]
-        [FuTooltip("[BETA] [FIXME: This currently creates regression with auto-sizing and general overhead] \n" +
-            "Make every single floating window display within a docking node.")]
-        [FuToggle]
-        public bool ConfigDockingAlwaysTabBar = true;
-
         [Tooltip("[BETA] Make window or viewport transparent when docking and only display docking boxes on the target viewport. " +
             "Useful if rendering of multiple viewport cannot be synced. Best used with ConfigViewportsNoAutoMerge.")]
         [FuTooltip("[BETA] Make window or viewport transparent when docking and only display docking boxes on the target viewport. \n" +
@@ -395,7 +392,7 @@ namespace Fu.Core
         public void ApplyTo(ImGuiIOPtr io)
         {
             io.ConfigFlags = ImGuiConfig;
-
+            io.BackendFlags = ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos;
             io.MouseDoubleClickTime = DoubleClickTime;
             io.MouseDoubleClickMaxDist = DoubleClickMaxDist;
             io.MouseDragThreshold = DragThreshold;
@@ -403,7 +400,7 @@ namespace Fu.Core
             io.KeyRepeatDelay = KeyRepeatDelay;
             io.KeyRepeatRate = KeyRepeatRate;
 
-            io.FontGlobalScale = FontGlobalScale;
+            io.FontGlobalScale = 1f;// FontGlobalScale;
             io.FontAllowUserScaling = FontAllowUserScaling;
 
             io.DisplayFramebufferScale = DisplayFramebufferScale;
@@ -411,7 +408,6 @@ namespace Fu.Core
 
             io.ConfigDockingAlwaysTabBar = false;
             io.ConfigDockingNoSplit = ConfigDockingNoSplit;
-            io.ConfigDockingAlwaysTabBar = ConfigDockingAlwaysTabBar;
             io.ConfigDockingTransparentPayload = ConfigDockingTransparentPayload;
 
             io.ConfigInputTextCursorBlink = TextCursorBlink;

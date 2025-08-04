@@ -105,7 +105,7 @@ namespace Fu.Core
         public bool IsHovered { get; internal set; }
         public bool IsHoveredContent { get { return IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup && !Mouse.IsHoverTopBar; } }
         public bool IsDocked { get; internal set; }
-        internal bool IsImguiDocked => (IsDocked || (IsDockable && Fugui.Settings.ConfigDockingAlwaysTabBar));
+        internal bool IsImguiDocked => IsDocked;
         public bool IsBusy { get; internal set; }
         public bool IsInterractable { get; set; }
         public bool IsVisible { get; private set; }
@@ -138,7 +138,6 @@ namespace Fu.Core
         private Vector2Int _lastFrameSize;
         private Vector2Int _lastFramePos;
         private bool _lastFrameVisible;
-        private readonly float _leaveThreshold = 0.8f;
         internal float _targetDeltaTimeMs = 1;
         internal float _lastRenderTime = 0;
         private bool _open = true;
@@ -334,7 +333,7 @@ namespace Fu.Core
                         unsafe
                         {
                             ImGuiDockNode* node = NativeDocking.igDockBuilderGetNode(CurrentDockID);
-                            if (new IntPtr(node) != IntPtr.Zero && NativeDocking.ImGuiDockNode_IsFloatingNode(node) != 0)
+                            if (new IntPtr(node) != IntPtr.Zero && NativeDocking.ImGuiDockNode_IsFloatingNode(node))
                             {
                                 NativeDocking.igDockBuilderSetNodePos(CurrentDockID, LocalPosition);
                                 NativeDocking.igDockBuilderFinish(CurrentDockID);
@@ -355,7 +354,7 @@ namespace Fu.Core
                         unsafe
                         {
                             ImGuiDockNode* node = NativeDocking.igDockBuilderGetNode(CurrentDockID);
-                            if (new IntPtr(node) != IntPtr.Zero && NativeDocking.ImGuiDockNode_IsFloatingNode(node) != 0)
+                            if (new IntPtr(node) != IntPtr.Zero && NativeDocking.ImGuiDockNode_IsFloatingNode(node))
                             {
                                 NativeDocking.igDockBuilderSetNodeSize(CurrentDockID, Size);
                                 NativeDocking.igDockBuilderFinish(CurrentDockID);
@@ -464,10 +463,14 @@ namespace Fu.Core
             {
                 bool docked = ImGuiNative.igIsWindowDocked() != 0;
                 // prevent floating node to fake docked state
-                if (docked)
-                {
-                    docked = NativeDocking.ImGuiDockNode_IsFloatingNode(NativeDocking.igDockBuilderGetNode(ImGui.GetWindowDockID())) == 0;
-                }
+                //if (docked)
+                //{
+                //    var dockId = ImGuiNative.igGetWindowDockID();
+                //    ImGuiDockNode* dockNode = NativeDocking.igDockBuilderGetNode(dockId);
+                //    // check if this is a floating node
+                //    bool isFloatingNode = NativeDocking.ImGuiDockNode_IsFloatingNode(dockNode);
+                //    docked = !isFloatingNode;
+                //}
                 if (docked != IsDocked)
                 {
                     IsDocked = docked;
@@ -542,6 +545,8 @@ namespace Fu.Core
             }
             else
             {
+                ImGui.End();
+                Fugui.PopStyle();
                 IsVisible = false;
                 IsHovered = false;
             }
@@ -702,7 +707,7 @@ namespace Fu.Core
             ImGui.Dummy(Vector2.one);
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
             Fugui.Push(ImGuiCols.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
-            if(ImGui.BeginChild(ID + "d", new Vector2(196f, 202f)))
+            if (ImGui.BeginChild(ID + "d", new Vector2(196f, 202f)))
             {
                 // states
                 ImGui.Text("State : " + State);

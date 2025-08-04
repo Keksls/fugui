@@ -225,9 +225,10 @@ MonoBehaviour:
     FontIconsOffset: {x: 0, y: -1}
     RendererType: 0
     PlatformType: 1
-    ImGuiConfig: 129
+    ImGuiConfig: 1153
     DoubleClickTime: 0.3
     DoubleClickMaxDist: 6
+    ScrollPower: 1
     DragThreshold: 6
     ClickMaxDist: 3
     KeyRepeatDelay: 0.25
@@ -242,7 +243,6 @@ MonoBehaviour:
     MoveFromTitleOnly: 1
     ConfigMemoryCompactTimer: 1
     ConfigDockingNoSplit: 0
-    ConfigDockingAlwaysTabBar: 0
     ConfigDockingTransparentPayload: 0
     Shaders: {fileID: 11400000, guid: 16d5b609d19632f418f94c335a29d67d, type: 2}
     CursorShapes: {fileID: 11400000, guid: 544ebd31157cfd842871f087e10eb417, type: 2}

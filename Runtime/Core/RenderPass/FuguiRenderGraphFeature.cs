@@ -263,6 +263,7 @@ namespace Fu.Core.DearImGui.Renderer
         public RenderPassEvent PassEvent = RenderPassEvent.AfterRenderingPostProcessing;
         public Shader _shader;
         public int _cameraLayer = 5; // 5 is default unity UI layer
+        private Dictionary<Camera, FuguiRenderGraphPass> _passPerCamera = new();
 
         /// <summary>
         /// Creates the Fugui Render Graph Pass with the specified shader.
@@ -279,15 +280,13 @@ namespace Fu.Core.DearImGui.Renderer
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
             var camera = renderingData.cameraData.camera;
+            if (camera.gameObject.layer != _cameraLayer) return;
 
-            if (camera.gameObject.layer != _cameraLayer)
-                return;
-
-            // Créer une nouvelle instance de la pass pour cette caméra
-            var pass = new FuguiRenderGraphPass(_shader)
+            if (!_passPerCamera.TryGetValue(camera, out var pass))
             {
-                renderPassEvent = PassEvent
-            };
+                pass = new FuguiRenderGraphPass(_shader);
+                _passPerCamera[camera] = pass;
+            }
 
             renderer.EnqueuePass(pass);
         }

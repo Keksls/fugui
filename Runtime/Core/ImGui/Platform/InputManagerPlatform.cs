@@ -170,7 +170,7 @@ namespace Fu.Core.DearImGui.Platform
             io.AddMousePosEvent(pos.x, pos.y);
 
             // Scroll
-            Vector2 scroll = Input.mouseScrollDelta;
+            Vector2 scroll = Input.mouseScrollDelta * Fugui.Settings.ScrollPower;
             io.AddMouseWheelEvent(scroll.x, scroll.y);
 
             // Mouse buttons

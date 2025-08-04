@@ -33,7 +33,7 @@ public class FuguiDemoScene : MonoBehaviour
         // set default layout (will create UIWindows instances)
         if (FuDockingLayoutManager.Layouts.Count > 0)
         {
-            //FuDockingLayoutManager.SetLayout("DemoScene");
+            FuDockingLayoutManager.SetLayout("DemoScene");
         }
     }
 

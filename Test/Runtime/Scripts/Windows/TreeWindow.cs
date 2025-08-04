@@ -144,7 +144,7 @@ namespace FuguiDemo
             new FuWindowDefinition(FuWindowsNames.Tree, (window) =>
             {
                 // create a panel to draw tree on it (we don't need to use cliper because FuTree has its own clipping system)
-                using (FuPanel panel = new FuPanel("treePanel", false))
+                using (FuPanel panel = new FuPanel("treePanel"))
                 {
                     // draw a button to add random item on runtime
                     if (new FuLayout().Button("add item"))

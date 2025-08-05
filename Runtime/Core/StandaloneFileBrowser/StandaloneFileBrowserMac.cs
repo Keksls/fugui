@@ -1,9 +1,8 @@
 #if UNITY_STANDALONE_OSX
-
 using System;
 using System.Runtime.InteropServices;
 
-namespace Fugui.Framework {
+namespace Fu.Framework {
     public class StandaloneFileBrowserMac : IStandaloneFileBrowser {
         private static Action<string[]> _openFileCb;
         private static Action<string[]> _openFolderCb;

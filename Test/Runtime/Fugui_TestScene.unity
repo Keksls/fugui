@@ -171,10 +171,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: DemoScene
       objectReference: {fileID: 0}
-    - target: {fileID: 7280319400249430176, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _showImGuiDemoWindow
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -1,5 +1,4 @@
-﻿using Fu.Core.DearImGui.Assets;
-using ImGuiNET;
+﻿using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -15,8 +14,7 @@ namespace Fu.Core.DearImGui.Platform
         private int[] _mainKeys;
         private Keyboard _keyboard = null;
 
-        public InputSystemPlatform(CursorShapesAsset cursorShapes, IniSettingsAsset iniSettings) :
-            base(cursorShapes, iniSettings)
+        public InputSystemPlatform() : base()
         { }
 
         /// <summary>

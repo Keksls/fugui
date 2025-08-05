@@ -115,46 +115,6 @@ namespace Fu.Core
         [FuSlider(0f, 0.5f)]
         public float NotifyAnimlationDuration = 0.15f;
 
-        [Tooltip("The icon to be used for the maximize button.")]
-        [FuTooltip("The icon to be used for the maximize button.")]
-        [FuImage]
-        public Texture2D MaximizeIcon;
-
-        [Tooltip("The icon to be used for the minimize button.")]
-        [FuTooltip("The icon to be used for the minimize button.")]
-        [FuImage]
-        public Texture2D MinimizeIcon;
-
-        [Tooltip("The icon to be used for the top docking button.")]
-        [FuTooltip("The icon to be used for the top docking button.")]
-        [FuImage]
-        public Texture2D TopIcon;
-
-        [Tooltip("The icon to be used for the bottom docking button.")]
-        [FuTooltip("The icon to be used for the bottom docking button.")]
-        [FuImage]
-        public Texture2D BottomIcon;
-
-        [Tooltip("The icon to be used for the left docking button.")]
-        [FuTooltip("The icon to be used for the left docking button.")]
-        [FuImage]
-        public Texture2D LeftIcon;
-
-        [Tooltip("The icon to be used for the right docking button.")]
-        [FuTooltip("The icon to be used for the right docking button.")]
-        [FuImage]
-        public Texture2D RightIcon;
-
-        [Tooltip("The icon to be used for the center docking button.")]
-        [FuTooltip("The icon to be used for the center docking button.")]
-        [FuImage]
-        public Texture2D CenterIcon;
-
-        [Tooltip("The texture to be used when an OpenGL non-readable texture is loaded.")]
-        [FuTooltip("The texture to be used when an OpenGL non-readable texture is loaded.")]
-        [FuImage]
-        public Texture2D OpenGLNonReadableTexture;
-
         [Tooltip("The texture to be used as icon into an Info.")]
         [FuTooltip("The texture to be used as icon into an Info.")]
         [FuImage]
@@ -376,10 +336,6 @@ namespace Fu.Core
         [FuHidden]
         [NonSerialized]
         public IntPtr UserData;
-
-        // shaders to use to render imgui (main container)
-        [FuHidden]
-        public ShaderResourcesAsset Shaders = null;
 
         // cursors pack to use
         [FuHidden]

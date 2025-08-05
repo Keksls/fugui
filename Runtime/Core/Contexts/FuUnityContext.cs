@@ -16,7 +16,6 @@ namespace Fu.Core
         public Camera Camera;
         public TextureManager TextureManager;
         private IPlatform _platform;
-        private CommandBuffer _renderCommandBuffer;
 
         public FuUnityContext(int index, float scale, float fontScale, Action onInitialize, Camera camera) : base(index, scale, fontScale, onInitialize)
         {
@@ -31,20 +30,9 @@ namespace Fu.Core
         internal override void Destroy()
         {
             Fugui.SetCurrentContext(this);
-
             SetPlatform(null, IO, PlatformIO);
-
             TextureManager.Shutdown();
-
             Fugui.SetCurrentContext(null);
-
-            if (_renderCommandBuffer != null)
-            {
-                _renderCommandBuffer.Release();
-            }
-
-            _renderCommandBuffer = null;
-
             ImGui.DestroyContext(ImGuiContext);
         }
 
@@ -104,17 +92,22 @@ namespace Fu.Core
         /// </summary>
         protected override void sub_initialize()
         {
-            _renderCommandBuffer = new CommandBuffer();
-
-            //if (!RenderUtility.IsUsingURP())
-            //{
-            //    Camera.AddCommandBuffer(CameraEvent.AfterEverything, _renderCommandBuffer);
-            //}
-
             Fugui.SetCurrentContext(this);
 
-            IPlatform platform = PlatformUtility.Create(Fugui.Settings.PlatformType, Fugui.Settings.CursorShapes, null);
+            // create the input manager platform
+            IPlatform platform = null;
+            switch (Fugui.Settings.PlatformType)
+            {
+                case InputType.InputManager:
+                    platform = new InputManagerPlatform();
+                    break;
+                case InputType.InputSystem:
+                    platform = new InputSystemPlatform();
+                    break;
+            }
             SetPlatform(platform, IO, PlatformIO);
+
+            // check if platform is set
             if (_platform == null)
             {
                 throw new Exception("imgui platform is null");

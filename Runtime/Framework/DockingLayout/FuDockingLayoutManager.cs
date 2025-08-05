@@ -389,7 +389,15 @@ namespace Fu.Framework
             uint Dockspace_id = Fugui.MainContainer.Dockspace_id;
             ImGuiDocking.DockBuilderRemoveNode(Dockspace_id); // Clear out existing layout
             ImGuiDocking.DockBuilderAddNode(Dockspace_id, ImGuiDockNodeFlags.None); // Add empty node
-            ImGuiDocking.DockBuilderSetNodeSize(Dockspace_id, Fugui.MainContainer.Size);
+
+            // ensure Fugui.MainContainer.Size is more than 0
+            Vector2 size = Fugui.MainContainer.Size;
+            if (size.x <= 0 || size.y <= 0)
+            {
+                size = new Vector2(800, 600); // Default size if not set
+            }
+
+            ImGuiDocking.DockBuilderSetNodeSize(Dockspace_id, size);
         }
 
         /// <summary>

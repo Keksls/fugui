@@ -126,7 +126,7 @@ namespace Fu.Framework
                 for (int i = 0; i < nbItems; i++)
                 {
                     Vector2 txtSize = ImGui.CalcTextSize(items[i].ToString());
-                    naturalSize += 8f + Mathf.Max(txtSize.x, txtSize.y + 4f * Fugui.CurrentContext.Scale);
+                    naturalSize += 8f * Fugui.CurrentContext.Scale + Mathf.Max(txtSize.x, txtSize.y + 4f * Fugui.CurrentContext.Scale);
                 }
                 naturalSize += nbItems;
                 cursorPos = cursorPos + ImGui.GetContentRegionAvail().x - naturalSize;

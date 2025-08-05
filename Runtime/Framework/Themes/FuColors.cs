@@ -100,9 +100,9 @@
 
         HoveredWindowTab = 86,
 
-        DuotonePrimaryColor = 58, // alias interne
-        DuotoneSecondaryColor = 59, // alias interne
+        DuotonePrimaryColor = 87,
+        DuotoneSecondaryColor = 88,
 
-        COUNT = 87
+        COUNT = 89
     }
 }

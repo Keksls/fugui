@@ -33,21 +33,21 @@ public class InspectorWindow : MonoBehaviour
                             grid.SetMinimumLineHeight(20f);
                             Vector3 pos = Raycaster.transform.position;
                             grid.SetNextElementToolTip("x parameter of the position", "y parameter of the position", "z parameter of the position");
-                            if (grid.Drag(Icons.Position + " Position", ref pos, "X", "Y", "Z", -100f, 100f))
+                            if (grid.Drag(Icons.Edit_duotone + " Position", ref pos, "X", "Y", "Z", -100f, 100f))
                             {
                                 Raycaster.transform.position = pos;
                             }
 
                             grid.SetNextElementToolTip("x parameter of the rotation", "y parameter of the rotation", "z parameter of the rotation");
                             Vector3 rot = Raycaster.transform.localEulerAngles;
-                            if (grid.Drag(Icons.Rotate + " Rotation", ref rot, "X", "Y", "Z", -360f, 360f))
+                            if (grid.Drag(Icons.Displacement_duotone + " Rotation", ref rot, "X", "Y", "Z", -360f, 360f))
                             {
                                 Raycaster.transform.localEulerAngles = rot;
                             }
 
                             grid.SetNextElementToolTip("x parameter of the scale", "y parameter of the scale", "z parameter of the scale");
                             Vector3 scale = Raycaster.transform.localScale;
-                            if (grid.Drag("Scale", ref scale, "X", "Y", "Z", 0.1f, 2f))
+                            if (grid.Drag(Icons.Link_duotone + " Scale", ref scale, "X", "Y", "Z", 0.1f, 2f))
                             {
                                 Raycaster.transform.localScale = scale;
                             }

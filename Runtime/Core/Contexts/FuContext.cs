@@ -289,7 +289,7 @@ namespace Fu.Core
                     Fonts[font.Size].Italic = fontPtrItalic;
                 }
 
-                // set  as default if needed
+                // set as default if needed
                 if (font.Size == fontConf.DefaultSize)
                 {
                     DefaultFont = Fonts[font.Size];

@@ -26,14 +26,7 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
@@ -48,25 +41,11 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    SubFonts_Italic:
-    - FileName: italic.ttf
-      FilePath: 
-      StartGlyph: 0
-      EndGlyph: 0
-      CustomGlyphRanges: 
-      SizeOffset: 0
-      GlyphOffset: {x: 0, y: 0}
+    SubFonts_Italic: []
   - Size: 10
     SubFonts_Regular:
     - FileName: regular.ttf
@@ -79,14 +58,7 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
@@ -101,25 +73,11 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    SubFonts_Italic:
-    - FileName: italic.ttf
-      FilePath: 
-      StartGlyph: 0
-      EndGlyph: 0
-      CustomGlyphRanges: 
-      SizeOffset: 0
-      GlyphOffset: {x: 0, y: 0}
+    SubFonts_Italic: []
   - Size: 12
     SubFonts_Regular:
     - FileName: regular.ttf
@@ -132,14 +90,7 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
@@ -154,14 +105,7 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
@@ -178,14 +122,7 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
@@ -200,14 +137,7 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
@@ -224,14 +154,7 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
@@ -246,14 +169,7 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
@@ -270,14 +186,7 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
@@ -292,34 +201,9 @@ MonoBehaviour:
     - FileName: icons.ttf
       FilePath: 
       StartGlyph: 57445
-      EndGlyph: 57645
-      CustomGlyphRanges: 
-      SizeOffset: -4
-      GlyphOffset: {x: 0, y: -1}
-    - FileName: icons.ttf
-      FilePath: 
-      StartGlyph: 60644
-      EndGlyph: 61044
+      EndGlyph: 60797
       CustomGlyphRanges: 
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
     SubFonts_Italic: []
-  - Size: 36
-    SubFonts_Regular:
-    - FileName: regular.ttf
-      FilePath: 
-      StartGlyph: 0
-      EndGlyph: 0
-      CustomGlyphRanges: 
-      SizeOffset: 0
-      GlyphOffset: {x: 0, y: 0}
-    SubFonts_Bold: []
-    SubFonts_Italic:
-    - FileName: italic.ttf
-      FilePath: 
-      StartGlyph: 0
-      EndGlyph: 0
-      CustomGlyphRanges: 
-      SizeOffset: 0
-      GlyphOffset: {x: 0, y: 0}
   FontsFolder: Fugui/Fonts/current/

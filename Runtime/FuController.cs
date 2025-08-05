@@ -50,6 +50,12 @@ namespace Fu.Core
 
         private void Update()
         {
+            // Ensure we are not rendering or rendering is complete
+            if (Fugui.RenderingState != FuguiRenderingState.None &&
+                Fugui.RenderingState != FuguiRenderingState.RenderComplete)
+                return;
+            Fugui.RenderingState = FuguiRenderingState.Updating;
+
             // Update Input Manager
             FuRaycasting.Update();
 
@@ -59,7 +65,11 @@ namespace Fu.Core
             // let's update main container inputs and internal stuff
             Fugui.MainContainer.Update();
 
+            // Render Fugui (this will prepare the rendering data and call all fugui implementations code but it will NOT draw the UI, the Drawing is handeled by Render Feature)
             Fugui.Render();
+
+            // Set the rendering state to complete
+            Fugui.RenderingState = FuguiRenderingState.UpdateComplete;
         }
 
         private void LateUpdate()

@@ -1,4 +1,5 @@
 using Fu.Core.DearImGui;
+using Fu.Core.DearImGui.Texture;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,7 @@ namespace Fu.Core
         public event Func<bool> OnPrepareFrame;
         public bool AutoUpdateMouse = true;
         public bool AutoUpdateKeyboard = true;
+        public TextureManager TextureManager;
         public bool Started { get; private set; }
         public float Scale { get; protected set; }
         public float FontScale { get; protected set; }
@@ -62,6 +64,7 @@ namespace Fu.Core
             Scale = scale;
             FontScale = fontScale;
             ID = index;
+            TextureManager = new TextureManager();
         }
 
         /// <summary>
@@ -180,7 +183,10 @@ namespace Fu.Core
         /// <summary>
         /// Destroy this context. Don't call it, Fugui layout handle it for you
         /// </summary>
-        internal abstract void Destroy();
+        internal virtual void Destroy()
+        {
+            TextureManager.Shutdown();
+        }
 
         /// /// <summary>
         /// Set this context as current. Don't call it, Fugui layout handle it for you

@@ -1,12 +1,11 @@
 ﻿using ImGuiNET;
 using System;
-using Fu.Core.DearImGui.Assets;
 using UnityEngine;
 using UnityEngine.Assertions;
 
 namespace Fu.Core.DearImGui.Platform
 {
-    internal class PlatformBase : IPlatform
+    internal abstract class PlatformBase
     {
         protected readonly PlatformCallbacks _callbacks = new PlatformCallbacks();
         protected ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
@@ -20,11 +19,11 @@ namespace Fu.Core.DearImGui.Platform
         /// </summary>
         /// <param name="io"> ImGuiIOPtr instance to set up the platform backend.</param>
         /// <param name="pio"> ImGuiPlatformIOPtr instance to set up the platform backend.</param>
-        /// <param name="platformName"> Name of the platform, used for debugging purposes.</param>
+        /// <param name="platformName"> The name of the platform backend, used for identification.</param>
         /// <returns> True if the platform backend was successfully initialized, false otherwise.</returns>
-        public virtual bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName)
+        public virtual bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
-            io.SetBackendPlatformName("Unity Input System");
+            io.SetBackendPlatformName(platformName);
             io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 
             if ((Fugui.Settings.ImGuiConfig & ImGuiConfigFlags.NavEnableKeyboard) != 0 ||

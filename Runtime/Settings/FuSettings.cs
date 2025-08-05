@@ -215,10 +215,6 @@ namespace Fu.Core
         [FuTooltip("pos offset of icons glyphs in font.")]
         public Vector2 FontIconsOffset = Vector2.zero;
 
-        [Tooltip("platform (input type) to use for main container.")]
-        [FuTooltip("platform (input type) to use for main container.")]
-        public InputType PlatformType = InputType.InputManager;
-
         [Tooltip("For more info look the imgui.h:1380(~). (default=NavEnableKeyboard | DockingEnable)")]
         [FuTooltip("For more info look the imgui.h:1380(~). (default=NavEnableKeyboard | DockingEnable)")]
         public ImGuiConfigFlags ImGuiConfig = ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DockingEnable;

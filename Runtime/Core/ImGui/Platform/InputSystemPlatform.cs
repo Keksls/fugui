@@ -21,12 +21,12 @@ namespace Fu.Core.DearImGui.Platform
         /// Initialize the ImGui input system, setting up event listeners and configuring ImGui IO.
         /// </summary>
         /// <param name="io"> ImGui IO pointer.</param>
-        /// <param name="platformName"> Name of the platform, used for logging or identification.</param>
+        /// <param name="pio"> ImGui Platform IO pointer.</param>
         /// <returns> True if initialization was successful, false otherwise.</returns>
-        public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName)
+        public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
             InputSystem.onDeviceChange += OnDeviceChange;
-            base.Initialize(io, pio, platformName);
+            base.Initialize(io, pio, "Input System (New)");
             Fugui.Settings.ApplyTo(io);
 
             unsafe

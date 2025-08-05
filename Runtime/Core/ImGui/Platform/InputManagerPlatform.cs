@@ -1,5 +1,4 @@
-﻿using Fu.Core.DearImGui.Assets;
-using ImGuiNET;
+﻿using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,8 +13,7 @@ namespace Fu.Core.DearImGui.Platform
         private static int _lastTextInputFrame = -1;
         private static List<uint> _frameTextInput = new List<uint>();
 
-        public InputManagerPlatform(CursorShapesAsset cursorShapes, IniSettingsAsset iniSettings) :
-            base(cursorShapes, iniSettings)
+        public InputManagerPlatform() : base()
         { }
 
         /// <summary>

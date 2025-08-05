@@ -192,14 +192,6 @@ MonoBehaviour:
     ModalAnimationDuration: 0.2
     ElementsAnimationDuration: 0.1
     NotifyAnimlationDuration: 0.15
-    MaximizeIcon: {fileID: 2800000, guid: 29b96c3657f037d479544d03c83b829d, type: 3}
-    MinimizeIcon: {fileID: 2800000, guid: 609ec44100d1c864c89ad4d654103b6e, type: 3}
-    TopIcon: {fileID: 2800000, guid: 84b851a47e17a564eb7882e4752aab69, type: 3}
-    BottomIcon: {fileID: 2800000, guid: 1b65fe293ee78d345910255bba53529f, type: 3}
-    LeftIcon: {fileID: 2800000, guid: 2d092e4968abaea428c3a12ea1abbf7c, type: 3}
-    RightIcon: {fileID: 2800000, guid: e43a48c6f5b887f4b8dc9078fe467bdf, type: 3}
-    CenterIcon: {fileID: 2800000, guid: 88d6d9ba964f11e41aa111b8b482cbe5, type: 3}
-    OpenGLNonReadableTexture: {fileID: 2800000, guid: 86e79ee31b0415048851a462666eea0d, type: 3}
     InfoIcon: {fileID: 2800000, guid: 04c00c04e0f871c4fb92d618c431717a, type: 3}
     WarningIcon: {fileID: 2800000, guid: 4d5c887232331e04b87d503925340957, type: 3}
     DangerIcon: {fileID: 2800000, guid: 11f3a4d594ed7b244948b9cc632faffc, type: 3}
@@ -223,7 +215,6 @@ MonoBehaviour:
     TabBarButtonRight: 1
     LayoutsFolder: Fugui/Layouts
     FontIconsOffset: {x: 0, y: -1}
-    RendererType: 0
     PlatformType: 1
     ImGuiConfig: 1153
     DoubleClickTime: 0.3
@@ -245,6 +236,6 @@ MonoBehaviour:
     ConfigDockingNoSplit: 0
     ConfigDockingTransparentPayload: 0
     Shaders: {fileID: 11400000, guid: 16d5b609d19632f418f94c335a29d67d, type: 2}
-    CursorShapes: {fileID: 11400000, guid: 544ebd31157cfd842871f087e10eb417, type: 2}
+    CursorShapes: {fileID: 11400000, guid: ce7ff60857038f249956282ba6f82d62, type: 2}
   _uiCamera: {fileID: 963194227}
   _logErrors: 1

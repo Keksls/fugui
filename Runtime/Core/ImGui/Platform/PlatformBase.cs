@@ -8,17 +8,11 @@ namespace Fu.Core.DearImGui.Platform
 {
     internal class PlatformBase : IPlatform
     {
-        protected readonly IniSettingsAsset _iniSettings;
-        protected readonly CursorShapesAsset _cursorShapes;
-
         protected readonly PlatformCallbacks _callbacks = new PlatformCallbacks();
-
         protected ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
 
-        internal PlatformBase(CursorShapesAsset cursorShapes, IniSettingsAsset iniSettings)
+        internal PlatformBase()
         {
-            _cursorShapes = cursorShapes;
-            _iniSettings = iniSettings;
         }
 
         /// <summary>
@@ -52,12 +46,6 @@ namespace Fu.Core.DearImGui.Platform
 
             _callbacks.Assign(pio);
             pio.Platform_ClipboardUserData = IntPtr.Zero;
-
-            if (_iniSettings != null)
-            {
-                ImGui.LoadIniSettingsFromMemory(_iniSettings.Load());
-            }
-
             return true;
         }
 
@@ -71,16 +59,8 @@ namespace Fu.Core.DearImGui.Platform
         public virtual void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
         {
             Assert.IsTrue(io.Fonts.IsBuilt(), "Font atlas not built! Generally built by the renderer. Missing call to renderer NewFrame() function?");
-
-            io.DisplaySize = displayRect.size; // TODO: dpi aware, scale, etc.
-
+            io.DisplaySize = displayRect.size;
             io.DeltaTime = Time.unscaledDeltaTime;
-
-            if (_iniSettings != null && io.WantSaveIniSettings)
-            {
-                _iniSettings.Save(ImGui.SaveIniSettingsToMemory());
-                io.WantSaveIniSettings = false;
-            }
         }
 
         /// <summary>
@@ -121,9 +101,9 @@ namespace Fu.Core.DearImGui.Platform
 
             _lastCursor = cursor;
             Cursor.visible = cursor != ImGuiMouseCursor.None; // Hide cursor if ImGui is drawing it or if it wants no cursor.
-            if (_cursorShapes != null)
+            if (Fugui.Settings.CursorShapes != null)
             {
-                Cursor.SetCursor(_cursorShapes[cursor].Texture, _cursorShapes[cursor].Hotspot, CursorMode.Auto);
+                Cursor.SetCursor(Fugui.Settings.CursorShapes[cursor].Texture, Fugui.Settings.CursorShapes[cursor].Hotspot, CursorMode.Auto);
             }
         }
     }

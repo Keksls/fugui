@@ -1,25 +1,20 @@
-using Fu.Core.DearImGui;
 using Fu.Core.DearImGui.Platform;
-using Fu.Core.DearImGui.Renderer;
 using Fu.Core.DearImGui.Texture;
 using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Fu.Core
 {
     public class FuUnityContext : FuContext
     {
         public Camera Camera;
-        public TextureManager TextureManager;
-        private IPlatform _platform;
+        private PlatformBase _platform;
 
         public FuUnityContext(int index, float scale, float fontScale, Action onInitialize, Camera camera) : base(index, scale, fontScale, onInitialize)
         {
-            TextureManager = new TextureManager();
             Camera = camera;
             initialize(onInitialize);
         }
@@ -29,9 +24,9 @@ namespace Fu.Core
         /// </summary>
         internal override void Destroy()
         {
+            base.Destroy();
             Fugui.SetCurrentContext(this);
             SetPlatform(null, IO, PlatformIO);
-            TextureManager.Shutdown();
             Fugui.SetCurrentContext(null);
             ImGui.DestroyContext(ImGuiContext);
         }
@@ -95,16 +90,7 @@ namespace Fu.Core
             Fugui.SetCurrentContext(this);
 
             // create the input manager platform
-            IPlatform platform = null;
-            switch (Fugui.Settings.PlatformType)
-            {
-                case InputType.InputManager:
-                    platform = new InputManagerPlatform();
-                    break;
-                case InputType.InputSystem:
-                    platform = new InputSystemPlatform();
-                    break;
-            }
+            PlatformBase platform = isUsingNewInputSystem() ? new InputSystemPlatform() : new InputManagerPlatform();
             SetPlatform(platform, IO, PlatformIO);
 
             // check if platform is set
@@ -122,16 +108,36 @@ namespace Fu.Core
         }
 
         /// <summary>
+        /// Check if the new input system is used in the project.
+        /// </summary>
+        /// <returns> True if the new input system is used, false if the legacy input system is used.</returns>
+        private bool isUsingNewInputSystem()
+        {
+            try
+            {
+                // fake a check for the legacy input system by trying to access a random key.
+                // This will throw an exception if the new input system is used.
+                Input.GetKey(KeyCode.End);
+                return false;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
         /// Set a IPlatform to handle ImGui Inputs into main container (Unity context)
         /// </summary>
         /// <param name="platform">platform (Input system) to use</param>
         /// <param name="io">IO of the ImGui context</param>
         /// <param name="pio">Platform IO of the ImGui context</param>
-        private void SetPlatform(IPlatform platform, ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
+        private void SetPlatform(PlatformBase platform, ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
         {
             _platform?.Shutdown(io, pio);
             _platform = platform;
-            _platform?.Initialize(io, pio, "Unity " + Fugui.Settings.PlatformType.ToString());
+            _platform?.Initialize(io, pio);
+            Debug.Log($"Fugui: Input Platform set to {io.BackendPlatformName}.");
         }
 
         /// <summary>

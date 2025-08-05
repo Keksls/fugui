@@ -14,28 +14,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Arrow:
     Texture: {fileID: 2800000, guid: 5cc189aa8b8b8284c9e535de5cdb0050, type: 3}
-    Hotspot: {x: 4, y: 5}
+    Hotspot: {x: 16, y: 16}
   TextInput:
     Texture: {fileID: 2800000, guid: b7f8332df2aea9149967023f04ce0fe4, type: 3}
-    Hotspot: {x: 13, y: 11}
+    Hotspot: {x: 24, y: 16}
   ResizeAll:
     Texture: {fileID: 2800000, guid: 5e01829c4b82a144da703367903b1e10, type: 3}
-    Hotspot: {x: 4, y: 5}
+    Hotspot: {x: 16, y: 16}
   ResizeNS:
     Texture: {fileID: 2800000, guid: dc447b163fba5d247a9477d565d40c3a, type: 3}
-    Hotspot: {x: 11, y: 11}
+    Hotspot: {x: 24, y: 32}
   ResizeEW:
     Texture: {fileID: 2800000, guid: fcf61aac454b75c43be179e7d3624053, type: 3}
-    Hotspot: {x: 18, y: 11}
+    Hotspot: {x: 32, y: 24}
   ResizeNESW:
     Texture: {fileID: 2800000, guid: 8e9ed88d69f1a764c9ea10b1e538eaad, type: 3}
-    Hotspot: {x: 11, y: 11}
+    Hotspot: {x: 32, y: 16}
   ResizeNWSE:
     Texture: {fileID: 2800000, guid: f3b8803d3daf34b4b8ece371a061fb11, type: 3}
     Hotspot: {x: 16, y: 16}
   Hand:
     Texture: {fileID: 2800000, guid: 0b43ab5a9f4b50645946f08971892832, type: 3}
-    Hotspot: {x: 9, y: 5}
+    Hotspot: {x: 24, y: 16}
   NotAllowed:
     Texture: {fileID: 2800000, guid: 847cddc5c27dbf749b64ae39b9d98121, type: 3}
-    Hotspot: {x: 11, y: 11}
+    Hotspot: {x: 16, y: 16}

@@ -20,11 +20,12 @@ namespace Fu.Core.DearImGui.Platform
         /// Initialize the platform bindings for ImGui.
         /// </summary>
         /// <param name="io"> ImGuiIOPtr instance to initialize with platform data.</param>
-        /// <param name="platformName"> Name of the platform, used for logging or identification.</param>
+        /// <param name="pio"> ImGuiPlatformIOPtr instance to initialize with platform data.</param>
+        /// <param name="platformName"> Optional name for the platform backend, used for identification.</param>
         /// <returns> True if initialization was successful, false otherwise.</returns>
-        public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName)
+        public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
-            base.Initialize(io, pio, platformName);
+            base.Initialize(io, pio, "Input Manager (Old)");
             Fugui.Settings.ApplyTo(io);
             return true;
         }
@@ -165,7 +166,7 @@ namespace Fu.Core.DearImGui.Platform
         {
             // Position
             Vector2 pos = Input.mousePosition;
-            io.AddMousePosEvent(pos.x, pos.y);
+            io.AddMousePosEvent(pos.x, io.DisplaySize.y - pos.y);
 
             // Scroll
             Vector2 scroll = Input.mouseScrollDelta * Fugui.Settings.ScrollPower;

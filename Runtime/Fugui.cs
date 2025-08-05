@@ -2,7 +2,6 @@
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
 //#define FUDEBUG 
 using Fu.Core;
-using Fu.Core.DearImGui.Renderer;
 using Fu.Framework;
 using ImGuiNET;
 using System;
@@ -12,7 +11,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.Threading;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -74,6 +72,10 @@ namespace Fu
         /// Whatever Fugui is allowed to set mouse cursor icon
         /// </summary>
         public static bool IsCursorLocked { get; internal set; } = false;
+        /// <summary>
+        /// The rendering state of Fugui, used to determine the current rendering phase
+        /// </summary>
+        public static FuguiRenderingState RenderingState = FuguiRenderingState.None;
         /// <summary>
         /// FuGui Controller instance
         /// </summary>
@@ -276,7 +278,6 @@ namespace Fu
             // prepare debug new frame
             newFrame();
 #endif
-
             // set shared time
             Time = UnityEngine.Time.unscaledTime;
             // get absolute monitors cursor pos
@@ -931,34 +932,6 @@ namespace Fu
 
             // create and add context
             FuUnityContext context = new FuUnityContext(index, scale, fontScale, onInitialize, camera);
-            Contexts.Add(index, context);
-
-            return context;
-        }
-
-        /// <summary>
-        /// Create a new Fugui context to render outside of unity
-        /// </summary>
-        /// <param name="onInitialize">invoked on context initialization</param>
-        /// <returns>the context created</returns>
-        public static unsafe FuExternalContext CreateExternalContext(float scale = 1f, float fontScale = 1f, Action onInitialize = null)
-        {
-            return CreateExternalContext(_contextID++, scale, fontScale, onInitialize);
-        }
-
-        /// <summary>
-        /// Create a new Fugui context to render outside of unity
-        /// </summary>
-        /// <param name="index">index of the context</param>
-        /// <param name="onInitialize">invoked on context initialization</param>
-        /// <returns>the context created</returns>
-        private static unsafe FuExternalContext CreateExternalContext(int index, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
-        {
-            if (Contexts.ContainsKey(index))
-                return null;
-
-            // create and add context
-            FuExternalContext context = new FuExternalContext(index, scale, fontScale, onInitialize);
             Contexts.Add(index, context);
 
             return context;

@@ -11,7 +11,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace Fu.Core.DearImGui.Renderer
 {
-    public class FuguiRenderGraphFeature : ScriptableRendererFeature
+    public class FuguiRenderFeature : ScriptableRendererFeature
     {
         private class FuguiRenderGraphPass : ScriptableRenderPass
         {
@@ -55,6 +55,7 @@ namespace Fu.Core.DearImGui.Renderer
                 _mesh.MarkDynamic();
             }
 
+            #region Rendergraph Pass
             /// <summary>
             /// Records the render graph pass for rendering Fugui.
             /// </summary>
@@ -74,11 +75,10 @@ namespace Fu.Core.DearImGui.Renderer
                 // set the pass data
                 builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
                 {
-                    // ensure the Fugui context is started
-                    if (Fugui.DefaultContext == null || !Fugui.DefaultContext.Started)
-                    {
+                    // If not ready to render, skip this pass.
+                    if (Fugui.RenderingState != FuguiRenderingState.UpdateComplete)
                         return;
-                    }
+                    Fugui.RenderingState = FuguiRenderingState.Rendering;
 
                     // render the default context
                     Fugui.DefaultContext.EndRender();
@@ -91,10 +91,12 @@ namespace Fu.Core.DearImGui.Renderer
                         if (context.Key != 0 && context.Value.Started)
                         {
                             context.Value.EndRender();
-                            // TODO : SET TEXTURE MANAGER FOR CONTEXT
+                            _textureManager = context.Value.TextureManager;
                             RenderDrawLists(ctx.cmd, context.Value.DrawData);
                         }
                     }
+
+                    Fugui.RenderingState = FuguiRenderingState.RenderComplete;
                 });
             }
 
@@ -178,6 +180,129 @@ namespace Fu.Core.DearImGui.Renderer
                 }
                 commandBuffer.DisableScissorRect();
             }
+            #endregion
+
+            #region Old Render Pass
+            /// <summary>
+            /// Executes the rendering logic for Fugui.
+            /// This Render Pass should be used only for compatibility purposes if renderGraph is disabled.
+            /// </summary>
+            /// <param name="context"> The scriptable render context.</param>
+            /// <param name="renderingData"> The camera data used for the render pass.</param>
+            [Obsolete]
+            public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+            {
+                // If not ready to render, skip this pass.
+                if (Fugui.RenderingState != FuguiRenderingState.UpdateComplete)
+                    return;
+                Fugui.RenderingState = FuguiRenderingState.Rendering;
+
+                var commandBuffer = CommandBufferPool.Get("FuguiRenderPass");
+
+                // Render the default context
+                Fugui.DefaultContext.EndRender();
+                _textureManager = Fugui.DefaultContext.TextureManager;
+                RenderDrawLists(commandBuffer, Fugui.DefaultContext.DrawData);
+
+                // Render other contexts if available.
+                foreach (var contextPair in Fugui.Contexts)
+                {
+                    if (contextPair.Key != 0 && contextPair.Value.Started)
+                    {
+                        contextPair.Value.EndRender();
+                        _textureManager = contextPair.Value.TextureManager;
+                        RenderDrawLists(commandBuffer, contextPair.Value.DrawData);
+                    }
+                }
+
+                context.ExecuteCommandBuffer(commandBuffer);
+                CommandBufferPool.Release(commandBuffer);
+
+                // Reset the rendering state after rendering is complete.
+                Fugui.RenderingState = FuguiRenderingState.RenderComplete;
+            }
+
+            /// <summary>
+            /// Renders the draw lists using the provided command buffer and draw data.
+            /// </summary>
+            /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
+            /// <param name="drawData"></ param>
+            public void RenderDrawLists(CommandBuffer commandBuffer, DrawData drawData)
+            {
+                Vector2 fbOSize = drawData.DisplaySize * drawData.FramebufferScale;
+
+                // Avoid rendering when minimized.
+                if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
+
+                UpdateMesh(drawData);
+                commandBuffer.BeginSample(Constants.ExecuteDrawCommandsMarker);
+                CreateDrawCommands(commandBuffer, drawData, fbOSize);
+                commandBuffer.EndSample(Constants.ExecuteDrawCommandsMarker);
+            }
+
+            /// <summary>
+            /// Creates the draw commands for rendering Fugui using the provided command buffer and draw data.
+            /// </summary>
+            /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
+            /// <param name="drawData"> The draw data containing the information to render.</param>
+            /// <param name="fbSize"> The framebuffer size to use for rendering.</param>
+            private void CreateDrawCommands(CommandBuffer commandBuffer, DrawData drawData, Vector2 fbSize)
+            {
+                IntPtr prevTextureId = IntPtr.Zero;
+                Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
+                    drawData.DisplayPos.x, drawData.DisplayPos.y);
+                Vector4 clipScale = new Vector4(drawData.FramebufferScale.x, drawData.FramebufferScale.y,
+                    drawData.FramebufferScale.x, drawData.FramebufferScale.y);
+
+                commandBuffer.SetViewport(new Rect(0f, 0f, fbSize.x, fbSize.y));
+                commandBuffer.SetViewProjectionMatrices(
+                    Matrix4x4.Translate(new Vector3(0.5f / fbSize.x, 0.5f / fbSize.y, 0f)), // Small adjustment to improve text.
+                    Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
+
+                int subOf = 0;
+                for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
+                {
+                    DrawList drawList = drawData.DrawLists[n];
+                    for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i, ++subOf)
+                    {
+                        ImDrawCmd drawCmd = drawList.CmdBuffer[i];
+                        if (drawCmd.UserCallback != IntPtr.Zero)
+                        {
+                            Debug.Log("unhandled user callback");
+                        }
+                        else
+                        {
+                            // Project scissor rectangle into framebuffer space and skip if fully outside.
+                            Vector4 clipSize = drawCmd.ClipRect - clipOffset;
+                            Vector4 clip = Vector4.Scale(clipSize, clipScale);
+
+                            if (clip.x >= fbSize.x || clip.y >= fbSize.y || clip.z < 0f || clip.w < 0f) continue;
+
+                            if (prevTextureId != drawCmd.TextureId)
+                            {
+                                prevTextureId = drawCmd.TextureId;
+
+                                // TODO: Implement ImDrawCmdPtr.GetTexID().
+                                bool hasTexture = _textureManager.TryGetTexture(prevTextureId, out UnityEngine.Texture texture);
+
+                                //Assert.IsTrue(hasTexture, $"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
+                                if (!hasTexture)
+                                {
+                                    Debug.LogError($"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
+                                }
+                                else
+                                {
+                                    _materialProperties.SetTexture(_textureID, texture);
+                                }
+                            }
+                            commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
+                            commandBuffer.DrawMesh(_mesh, Matrix4x4.identity, _material, subOf, 0, _materialProperties);
+                        }
+                    }
+                }
+                commandBuffer.DisableScissorRect();
+            }
+            #endregion
 
             /// <summary>
             /// Updates the mesh with the provided draw data.
@@ -260,7 +385,7 @@ namespace Fu.Core.DearImGui.Renderer
             }
         }
 
-        public RenderPassEvent PassEvent = RenderPassEvent.AfterRenderingPostProcessing;
+        public RenderPassEvent PassEvent = RenderPassEvent.AfterRendering;
         public Shader _shader;
         public int _cameraLayer = 5; // 5 is default unity UI layer
         private Dictionary<Camera, FuguiRenderGraphPass> _passPerCamera = new();

@@ -16,8 +16,7 @@ public class FuguiDemoScene : MonoBehaviour
     {
         // register DockingLayoutManager events
         FuDockingLayoutManager.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
-        FuDockingLayoutManager.OnDockLayoutSet += DockingLayoutManager_OnDockLayoutSet;
-
+        
         // register on render event of the main container's context to draw ImGui Demo Window
         Fugui.MainContainer.Context.OnRender += MainContainerContext_OnRender;
 
@@ -45,9 +44,9 @@ public class FuguiDemoScene : MonoBehaviour
         // add Fugui menu
         Fugui.RegisterMainMenuItem("Fugui", null);
         // add 'Settings' menu items to open settings (its a child of 'Fugui' item)
-        Fugui.RegisterMainMenuItem("Settings", () => { }, "Fugui");
+        Fugui.RegisterMainMenuItem(Icons.Settings_duotone + " Settings", () => Fugui.CreateWindowAsync(FuWindowsNames.FuguiSettings, null), "Fugui");
         // add 'Settings' menu items to open settings (its a child of 'Fugui' item)
-        Fugui.RegisterMainMenuItem("Imgui Demo", () => { _showImGuiDemoWindow = true; }, "Fugui");
+        Fugui.RegisterMainMenuItem(Icons.Screen_duotone + " Imgui Demo", () => { _showImGuiDemoWindow = true; }, "Fugui");
 
         // register all alyout so user can switch between them
         Fugui.RegisterMainMenuItem("Layout", null);
@@ -67,27 +66,15 @@ public class FuguiDemoScene : MonoBehaviour
             Fugui.RegisterMainMenuItem(windowName.WindowName.ToString(), () => Fugui.CreateWindowAsync(windowName.WindowName, null), "Windows");
         }
 
-        // register all windows from registered windows definitions, once instantiated, the window will be added to its own 3d container so it can be render in 3D scene
-        Fugui.RegisterMainMenuItem("3D Windows", null);
-        foreach (FuWindowDefinition windowName in Fugui.UIWindowsDefinitions.Values)
-        {
-            Fugui.RegisterMainMenuItem("3D " + windowName.WindowName.ToString(), () => Fugui.CreateWindowAsync(windowName.WindowName, (window) =>
-            {
-                Fugui.Add3DWindow(window, new Vector3(0f, -2f, 0f), Quaternion.Euler(Vector3.up * 180f));
-            }, false), "3D Windows");
-        }
-    }
-
-    /// <summary>
-    /// Whenever a docking Layout is set
-    /// </summary>
-    private void DockingLayoutManager_OnDockLayoutSet()
-    {
-        // instantiate test 3D window
-        Fugui.CreateWindowAsync(FuSystemWindowsNames.FuguiSettings, (window) =>
-        {
-            //Fugui.Add3DWindow(window, new Vector3(0f, -2f, 0f), Quaternion.Euler(Vector3.up * 180f));
-        }, false);
+        //// register all windows from registered windows definitions, once instantiated, the window will be added to its own 3d container so it can be render in 3D scene
+        //Fugui.RegisterMainMenuItem("3D Windows", null);
+        //foreach (FuWindowDefinition windowName in Fugui.UIWindowsDefinitions.Values)
+        //{
+        //    Fugui.RegisterMainMenuItem("3D " + windowName.WindowName.ToString(), () => Fugui.CreateWindowAsync(windowName.WindowName, (window) =>
+        //    {
+        //        Fugui.Add3DWindow(window, new Vector3(0f, -2f, 0f), Quaternion.Euler(Vector3.up * 180f));
+        //    }, false), "3D Windows");
+        //}
     }
 
     /// <summary>

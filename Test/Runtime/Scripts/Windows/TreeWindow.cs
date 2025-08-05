@@ -86,9 +86,9 @@ namespace FuguiDemo
         {
             // exemple of warning icon with tooltip and color
             layout.SetNextElementToolTipWithLabel("Warning");
-            layout.SetNextElementToolTipStyles(FuTextStyle.Warning);
+            layout.SetNextElementToolTipStyles(FuTextStyle.Info);
             layout.AlignTextToFramePadding();
-            layout.Text(Icons.Warning + " ", FuTextStyle.Warning);
+            layout.Text(Icons.Info_duotone + " ");
 
             // draw the next element on same line
             layout.SameLine();

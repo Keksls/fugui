@@ -134,10 +134,10 @@ public class WidgetsWindow : MonoBehaviour
 
             grid.ButtonsGroup<FuToggleFlags>("Buttons Group", (flag) => { Debug.Log(flag + " selected"); });
             grid.SetNextElementToolTip("About", "Accelerate", "Arch", "Arrow Down");
-            grid.ButtonsGroup("Default", new List<string>() { Icons.About + "##0", Icons.Accelerate + "##0", Icons.Arch + "##0", Icons.ArrowDown + "##0" }, (index) => { }, null, 0f, FuButtonsGroupFlags.Default);
-            grid.ButtonsGroup("Left", new List<string>() { Icons.About + "##1", Icons.Accelerate + "##1", Icons.Arch + "##1", Icons.ArrowDown + "##1" }, (index) => { }, null, 0f, FuButtonsGroupFlags.AlignLeft);
-            grid.ButtonsGroup("Auto size", new List<string>() { Icons.About + "##2", Icons.Accelerate + "##2", Icons.Arch + "##2", Icons.ArrowDown + "##2" }, (index) => { }, null, 0f, FuButtonsGroupFlags.AutoSizeButtons);
-            grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.About + "##3", Icons.Accelerate + "##3", Icons.Arch + "##3", Icons.ArrowDown + "##3" }, (index) => { }, null, 0f, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
+            grid.ButtonsGroup("Default", new List<string>() { Icons.InfoCircle + "##0", Icons.Light + "##0", Icons.Arch + "##0", Icons.Alignment + "##0" }, (index) => { }, null, 0f, FuButtonsGroupFlags.Default);
+            grid.ButtonsGroup("Left", new List<string>() { Icons.InfoCircle + "##1", Icons.Light + "##1", Icons.Arch + "##1", Icons.Alignment + "##1" }, (index) => { }, null, 0f, FuButtonsGroupFlags.AlignLeft);
+            grid.ButtonsGroup("Auto size", new List<string>() { Icons.InfoCircle + "##2", Icons.Light + "##2", Icons.Arch + "##2", Icons.Alignment + "##2" }, (index) => { }, null, 0f, FuButtonsGroupFlags.AutoSizeButtons);
+            grid.ButtonsGroup("Left and auto size", new List<string>() { Icons.InfoCircle + "##3", Icons.Light + "##3", Icons.Arch + "##3", Icons.Alignment + "##3" }, (index) => { }, null, 0f, FuButtonsGroupFlags.AlignLeft | FuButtonsGroupFlags.AutoSizeButtons);
 
             if (!_enableWidgets)
             {

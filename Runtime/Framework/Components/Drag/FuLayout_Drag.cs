@@ -176,7 +176,7 @@ namespace Fu.Framework
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(2f, 0f) * Fugui.CurrentContext.Scale);
             bool valueChanged = false;
             // Calculate the column width for the table
-            float colWidth = ImGui.GetContentRegionAvail().x * 0.5f;
+            float colWidth = ImGui.GetContentRegionAvail().x / 2f - (2f * Fugui.CurrentContext.Scale); // 2 is the cellpadding, only once between 2 columns
             // Start the table with two columns
             if (ImGui.BeginTable(text + "dragTable", 2))
             {
@@ -274,7 +274,7 @@ namespace Fu.Framework
             }
 
             bool valueChanged = false;
-            float colWidth = ImGui.GetContentRegionAvail().x / 3f;
+            float colWidth = ImGui.GetContentRegionAvail().x / 3f - (2f * 2f * Fugui.CurrentContext.Scale); // 2 is the cellpadding, 2 is the nomber of padding betwen 3 columns
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(2f, 0f) * Fugui.CurrentContext.Scale);
             if (ImGui.BeginTable(text + "dragTable", 3))
             {
@@ -382,7 +382,7 @@ namespace Fu.Framework
             }
 
             bool valueChanged = false;
-            float colWidth = ImGui.GetContentRegionAvail().x * 0.25f;
+            float colWidth = ImGui.GetContentRegionAvail().x / 4f - (2f * 3f * Fugui.CurrentContext.Scale); // 2 is the cellpadding, 3 is the nomber of padding betwen 4 columns
             Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(2f, 0f) * Fugui.CurrentContext.Scale);
             if (ImGui.BeginTable(text + "dragTable", 4))
             {

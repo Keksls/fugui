@@ -2,6 +2,7 @@
 {
     public enum FuColors
     {
+        // Imgui colors
         Text = 0,
         TextDisabled = 1,
         WindowBg = 2,
@@ -61,7 +62,7 @@
         NavWindowingDimBg = 56,
         ModalWindowDimBg = 57,
 
-        // Couleurs personnalisées FuGui
+        // FuGui colors
         Highlight = 58,
         HighlightHovered = 59,
         HighlightActive = 60,

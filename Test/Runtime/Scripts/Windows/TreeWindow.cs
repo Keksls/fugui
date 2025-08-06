@@ -6,13 +6,13 @@ using UnityEngine;
 
 namespace FuguiDemo
 {
-    public class TreeWindow : MonoBehaviour
+    public class TreeWindow : FuWindowBehaviour
     {
         private List<treeTestItem> _treeItems;
         private FuTree<treeTestItem> _tree = null;
         float _treeItemHeight = 16f;
 
-        private void Awake()
+        public void Awake()
         {
             // generate and save tree items
             _treeItems = treeTestItem.GetRandomHierarchie(20, 3);
@@ -48,9 +48,6 @@ namespace FuguiDemo
 
             // update the tree to prepare it with all items
             _tree.UpdateTree(_treeItems);
-
-            // register the Tree window definition
-            registerUIWindow();
         }
 
         /// <summary>
@@ -136,31 +133,28 @@ namespace FuguiDemo
         }
 
         /// <summary>
-        /// Register the Tree window definition
+        /// Called each frame to draw the UI of this window
         /// </summary>
-        private void registerUIWindow()
+        /// <param name="window"> the window that is drawing this UI</param>
+        public override void OnUI(FuWindow window)
         {
-            // create a new FuWindowDefinition, Fugui will automaticaly register it so it can instantiate a FuWiindow when needed
-            new FuWindowDefinition(FuWindowsNames.Tree, (window) =>
+            // create a panel to draw tree on it (we don't need to use cliper because FuTree has its own clipping system)
+            using (FuPanel panel = new FuPanel("treePanel"))
             {
-                // create a panel to draw tree on it (we don't need to use cliper because FuTree has its own clipping system)
-                using (FuPanel panel = new FuPanel("treePanel"))
+                // draw a button to add random item on runtime
+                if (new FuLayout().Button("add item"))
                 {
-                    // draw a button to add random item on runtime
-                    if (new FuLayout().Button("add item"))
-                    {
-                        treeTestItem item = new treeTestItem("added " + System.Guid.NewGuid().ToString(), 0, null);
-                        _treeItems.Insert(Random.Range(0, _treeItems.Count), item);
-                        _tree.UpdateTree(_treeItems);
-                    }
-
-                    // set sacing to none (just a UI choice, you don't have to do this)
-                    Fugui.Push(ImGuiNET.ImGuiStyleVar.ItemSpacing, Vector2.zero);
-                    // draw the tree
-                    _tree.DrawTree();
-                    Fugui.PopStyle();
+                    treeTestItem item = new treeTestItem("added " + System.Guid.NewGuid().ToString(), 0, null);
+                    _treeItems.Insert(Random.Range(0, _treeItems.Count), item);
+                    _tree.UpdateTree(_treeItems);
                 }
-            }, flags: FuWindowFlags.AllowMultipleWindow);
+
+                // set sacing to none (just a UI choice, you don't have to do this)
+                Fugui.Push(ImGuiNET.ImGuiStyleVar.ItemSpacing, Vector2.zero);
+                // draw the tree
+                _tree.DrawTree();
+                Fugui.PopStyle();
+            }
         }
     }
 

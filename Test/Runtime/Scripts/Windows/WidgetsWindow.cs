@@ -5,27 +5,27 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WidgetsWindow : MonoBehaviour
+public class WidgetsWindow : FuWindowBehaviour
 {
     private bool _enableWidgets = true;
     // texts
-    string richText = "a <color=red>red</color> <b>Bold TEXT</b>";
-    string smallText = "a small text";
-    string pathText = "";
-    string filePathText = "";
+    private string richText = "a <color=red>red</color> <b>Bold TEXT</b>";
+    private string smallText = "a small text";
+    private string pathText = "";
+    private string filePathText = "";
     // toggle and checkbox
-    bool toggleVal = false;
-    bool boolVal = false;
+    private bool toggleVal = false;
+    private bool boolVal = false;
     // ranges
-    float min = 10f;
-    float max = 20;
+    private float min = 10f;
+    private float max = 20;
     // drag and sliders
-    int intVal = 5;
-    float floatVal = 5f;
-    float floatValKnob = 5f;
-    Vector2 v2Val = Vector2.zero;
-    Vector3 v3Val = Vector3.zero;
-    Vector4 v4Val = Vector4.zero;
+    private int intVal = 5;
+    private float floatVal = 5f;
+    private float floatValKnob = 5f;
+    private Vector2 v2Val = Vector2.zero;
+    private Vector3 v3Val = Vector3.zero;
+    private Vector4 v4Val = Vector4.zero;
     // combobox
     private enum myTestEnum
     {
@@ -35,58 +35,50 @@ public class WidgetsWindow : MonoBehaviour
         EnumValueD = 3,
         EnumValueE = 4,
     }
-    myTestEnum _selectedEnumValue = myTestEnum.EnumValueC;
-    List<string> cbTexts = new List<string>() { "cb1", "cb2", "cb3" };
+    private myTestEnum _selectedEnumValue = myTestEnum.EnumValueC;
+    private List<string> cbTexts = new List<string>() { "cb1", "cb2", "cb3" };
     // radio buttons
-    int radioButtonGroup1Index;
-    int radioButtonGroup2Index;
+    private int radioButtonGroup1Index;
+    private int radioButtonGroup2Index;
     // color pickers
-    Vector3 colorV3 = (Vector3)(Vector4)Color.yellow;
-    Vector4 colorV4 = Color.blue;
+    private Vector3 colorV3 = (Vector3)(Vector4)Color.yellow;
+    private Vector4 colorV4 = Color.blue;
     // date time pickers
-    DateTime dateTime = DateTime.Now;
+    private DateTime dateTime = DateTime.Now;
     // spinners
-    float spinnerSize = 20f;
-    int spinnerNbDots = 6;
-    float spinnerDotsSize = 2f;
-    bool spinnerDoubleColor = false;
-    Vector2 spinnerV2Size = new Vector2(64f, 20f);
-    float spinnerFrequency = 6f;
+    private float spinnerSize = 20f;
+    private int spinnerNbDots = 6;
+    private float spinnerDotsSize = 2f;
+    private bool spinnerDoubleColor = false;
+    private Vector2 spinnerV2Size = new Vector2(64f, 20f);
+    private float spinnerFrequency = 6f;
 
-    void Awake()
+    public override void OnUI(FuWindow window)
     {
-        registerUIWidgetsWindow();
-    }
-
-    private void registerUIWidgetsWindow()
-    {
-        new FuWindowDefinition(FuWindowsNames.Widgets, (window) =>
+        using (var layout = new FuLayout())
         {
-            using (var layout = new FuLayout())
-            {
-                layout.CenterNextItem("Check Fugui's git page.");
-                layout.Text("Check Fugui's ");
-                layout.SameLine();
-                layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui");
-                layout.Toggle("##toggleDisable", ref _enableWidgets, "Widgets Disabled", "Widgets Enabled", FuToggleFlags.MaximumTextSize);
+            layout.CenterNextItem("Check Fugui's git page.");
+            layout.Text("Check Fugui's ");
+            layout.SameLine();
+            layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui");
+            layout.Toggle("##toggleDisable", ref _enableWidgets, "Widgets Disabled", "Widgets Enabled", FuToggleFlags.MaximumTextSize);
 
-                using (new FuPanel("widgetsDemoPanel", FuStyle.Unpadded))
+            using (new FuPanel("widgetsDemoPanel", FuStyle.Unpadded))
+            {
+                layout.Collapsable("Sliders", drawSliders);
+                layout.Collapsable("Basics Widgets", () => { drawBasics(layout); }, 0);
+                layout.Collapsable("Texts", () => { drawTexts(layout); });
+                layout.Collapsable("Buttons", () => { drawButtons(layout); });
+                layout.Collapsable("Drags", drawDrags);
+                layout.Collapsable("Progress Bars", drawProgressbar);
+                layout.Collapsable("Knobs", drawKnobs);
+                layout.Collapsable("Spinners", () =>
                 {
-                    layout.Collapsable("Sliders", drawSliders);
-                    layout.Collapsable("Basics Widgets", () => { drawBasics(layout); }, 0);
-                    layout.Collapsable("Texts", () => { drawTexts(layout); });
-                    layout.Collapsable("Buttons", () => { drawButtons(layout); });
-                    layout.Collapsable("Drags", drawDrags);
-                    layout.Collapsable("Progress Bars", drawProgressbar);
-                    layout.Collapsable("Knobs", drawKnobs);
-                    layout.Collapsable("Spinners", () =>
-                    {
-                        drawSpinners(layout);
-                    });
-                    layout.Collapsable("Lists", () => { drawBoxes(layout); });
-                }
+                    drawSpinners(layout);
+                });
+                layout.Collapsable("Lists", () => { drawBoxes(layout); });
             }
-        }, flags: FuWindowFlags.AllowMultipleWindow);
+        }
     }
 
     private void drawKnobs()

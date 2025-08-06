@@ -19,9 +19,6 @@ public class FuguiDemoScene : MonoBehaviour
         
         // register on render event of the main container's context to draw ImGui Demo Window
         Fugui.MainContainer.Context.OnRender += MainContainerContext_OnRender;
-
-        // Initialize the DockingLayoutManager and give it the list of custom windows names (see DockingLayout on doc)
-        FuDockingLayoutManager.Initialize(FuWindowsNames.GetAllWindowsNames());
     }
 
     private void Start()

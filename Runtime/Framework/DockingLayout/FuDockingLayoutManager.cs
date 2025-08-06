@@ -16,7 +16,6 @@ namespace Fu.Framework
     public static class FuDockingLayoutManager
     {
         #region Variables
-        internal static Dictionary<ushort, FuWindowName> RegisteredWindowsNames;
         public static FuDockingLayoutDefinition CurrentLayout { get; internal set; }
         internal static Dictionary<int, string> DefinedDockSpaces;
         internal static ExtensionFilter FlgExtensionFilter;
@@ -51,21 +50,6 @@ namespace Fu.Framework
             // create dockaspace windows definitions
             new FuWindowDefinition(FuSystemWindowsNames.DockSpaceManager, (window) => Fugui.DrawDockSpacelayoutCreator());
             new FuWindowDefinition(FuSystemWindowsNames.WindowsDefinitionManager, (window) => Fugui.DrawWindowsDefinitionManager());
-
-            RegisteredWindowsNames = null;
-        }
-
-        /// <summary>
-        /// give to the layout manager the custom names of the FuWindows on your application
-        /// </summary>
-        /// <param name="windowsNames">names of the windows (mostly FuWindowsNames.GetAll())</param>
-        public static void Initialize(List<FuWindowName> windowsNames)
-        {
-            RegisteredWindowsNames = new Dictionary<ushort, FuWindowName>();
-            foreach (FuWindowName windowName in windowsNames)
-            {
-                RegisteredWindowsNames.Add(windowName.ID, windowName);
-            }
         }
         #endregion
 
@@ -223,14 +207,6 @@ namespace Fu.Framework
         /// <param name="getOnlyAutoInstantiated">Whatever you only want windows in this layout that will auto instantiated by layout</param>
         public static void SetLayout(FuDockingLayoutDefinition layout, bool getOnlyAutoInstantiated = true)
         {
-            // check whatever the layout manager knows the custom application windows names
-            if (RegisteredWindowsNames == null)
-            {
-                Debug.Log("Can't set layout because Layout Manager is not Initialized." + Environment.NewLine +
-                    "Please call FuDockingLayoutManager.Initialize() befose setting a layout.");
-                return;
-            }
-
             // check whatever we car set Layer
             if (!canSetLayer())
             {
@@ -322,7 +298,7 @@ namespace Fu.Framework
             {
                 foreach (ushort windowID in layout.WindowsDefinition)
                 {
-                    var ids = windows.Where(w => w.Item1.Equals(RegisteredWindowsNames[windowID])).Select(w => w.Item2.ID);
+                    var ids = windows.Where(w => w.Item1.Equals(FuWindowNameProvider.GetAllWindowNames()[windowID])).Select(w => w.Item2.ID);
                     foreach (string id in ids)
                     {
                         ImGuiDocking.DockBuilderDockWindow(id, layout.ID);
@@ -345,7 +321,7 @@ namespace Fu.Framework
         {
             if (layout.WindowsDefinition.Count > 0)
             {
-                var instances = Fugui.GetWindowInstances(RegisteredWindowsNames[layout.WindowsDefinition[0]]);
+                var instances = Fugui.GetWindowInstances(FuWindowNameProvider.GetAllWindowNames()[layout.WindowsDefinition[0]]);
                 if (instances.Count > 0)
                 {
                     instances[0].ForceFocusOnNextFrame();

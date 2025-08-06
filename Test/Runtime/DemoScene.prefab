@@ -12722,7 +12722,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a066f5737656e54cb77606c068677e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Camera: {fileID: 5027617570534833868}
+  _windowName:
+    _id: 9
+    _name: 3D View
+    _autoInstantiateWindowOnlayoutSet: 1
+    _idleFPS: -1
+  _windowFlags: 0
+  _size: {x: 0, y: 0}
+  _position: {x: 0, y: 0}
+  _forceCreateAloneOnAwake: 0
+  _camera: {fileID: 5027617570534833868}
+  _superSampling: 2
   HitForce: 50
 --- !u!114 &4743667465687535263
 MonoBehaviour:
@@ -12736,6 +12746,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55da302fa7100144494e2d3f679fc2ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _windowName:
+    _id: 6
+    _name: Inspector
+    _autoInstantiateWindowOnlayoutSet: 1
+    _idleFPS: -1
+  _windowFlags: 0
+  _size: {x: 0, y: 0}
+  _position: {x: 0, y: 0}
+  _forceCreateAloneOnAwake: 0
   Camera: {fileID: 5027617570534833868}
   Raycaster: {fileID: 184572714933081265}
   CameraWindow: {fileID: 4082823442619091940}
@@ -12751,6 +12770,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da56040b57296274e8bdf2651ea3d0bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _windowName:
+    _id: 10
+    _name: Popups
+    _autoInstantiateWindowOnlayoutSet: 1
+    _idleFPS: -1
+  _windowFlags: 0
+  _size: {x: 0, y: 0}
+  _position: {x: 0, y: 0}
+  _forceCreateAloneOnAwake: 0
 --- !u!114 &4742880329986240731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12763,6 +12791,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d980075f4ce05047b4330cbacfd3751, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _windowName:
+    _id: 4
+    _name: Tree
+    _autoInstantiateWindowOnlayoutSet: 1
+    _idleFPS: -1
+  _windowFlags: 0
+  _size: {x: 0, y: 0}
+  _position: {x: 0, y: 0}
+  _forceCreateAloneOnAwake: 0
 --- !u!114 &7505416273416394174
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12775,6 +12812,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e4bb581669b474499feec5670b85d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _windowName:
+    _id: 11
+    _name: Widgets
+    _autoInstantiateWindowOnlayoutSet: 1
+    _idleFPS: -1
+  _windowFlags: 0
+  _size: {x: 0, y: 0}
+  _position: {x: 0, y: 0}
+  _forceCreateAloneOnAwake: 0
 --- !u!1 &6858132336863804837
 GameObject:
   m_ObjectHideFlags: 0

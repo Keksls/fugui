@@ -1,13 +1,19 @@
 ﻿using System;
+using UnityEngine;
 
 namespace Fu
 {
+    [Serializable]
     public struct FuWindowName : IComparable<FuWindowName>, IEquatable<FuWindowName>
     {
-        ushort _id;
-        string _name;
-        bool _autoInstantiateWindowOnlayoutSet;
-        short _idleFPS;
+        [SerializeField]
+        private ushort _id;
+        [SerializeField]
+        private string _name;
+        [SerializeField]
+        private bool _autoInstantiateWindowOnlayoutSet;
+        [SerializeField]
+        private short _idleFPS;
         public ushort ID { get { return _id; } }
         public string Name { get { return _name; } }
         /// <summary>

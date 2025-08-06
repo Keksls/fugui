@@ -1,3 +1,4 @@
+using Fu.Core;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -185,9 +186,9 @@ namespace Fu.Framework
 
             foreach (ushort windowID in WindowsDefinition)
             {
-                if (getOnlyAutoInstantiated && FuDockingLayoutManager.RegisteredWindowsNames[windowID].AutoInstantiateWindowOnlayoutSet || !getOnlyAutoInstantiated)
+                if (getOnlyAutoInstantiated && FuWindowNameProvider.GetAllWindowNames()[windowID].AutoInstantiateWindowOnlayoutSet || !getOnlyAutoInstantiated)
                 {
-                    windows.Add(FuDockingLayoutManager.RegisteredWindowsNames[windowID]);
+                    windows.Add(FuWindowNameProvider.GetAllWindowNames()[windowID]);
                 }
             }
 

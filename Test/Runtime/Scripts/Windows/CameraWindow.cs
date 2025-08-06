@@ -2,51 +2,38 @@ using Fu.Core;
 using Fu.Framework;
 using UnityEngine;
 
-public class CameraWindow : MonoBehaviour
+public class CameraWindow : FuCameraWindowBehaviour
 {
-    public Camera Camera;
     public float HitForce = 50f;
-    private FuCameraWindow _cameraWindow;
 
-    private void Awake()
+    /// <summary>
+    /// Whenever the window is created, set the camera to the MouseOrbitImproved component
+    /// </summary>
+    /// <param name="window"> FuWindow instance</param>
+    public override void OnWindowCreated(FuWindow window)
     {
-        registerCameraViewWindow();
+        Camera.GetComponent<MouseOrbitImproved>().Camera = CameraWindow;
     }
 
     /// <summary>
-    /// register the camera window and its overlays
+    /// This method is called when the window definition is created.
     /// </summary>
-    private void registerCameraViewWindow()
+    /// <param name="windowDefinition"> The FuWindowDefinition instance that was created.</param>
+    public override void OnWindowDefinitionCreated(FuWindowDefinition windowDefinition)
     {
-        // register camera window
-        FuCameraWindowDefinition camWinDef = new FuCameraWindowDefinition(FuWindowsNames.MainCameraView, Camera, null, flags: FuWindowFlags.NoInterractions);
-        camWinDef.SetSupersampling(2f);
-        camWinDef.SetCustomWindowType<FuCameraWindow>();
-        camWinDef.OnUIWindowCreated += CamWinDef_OnUIWindowCreated;
-
         // camera FPS overlay
         FuOverlay fps1 = new FuOverlay("oCamFPS", new Vector2Int(102, 52), (overlay) =>
         {
-            drawCameraFPSOverlay(_cameraWindow);
+            drawCameraFPSOverlay(CameraWindow);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);
-        fps1.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.TopRight);
+        fps1.AnchorWindowDefinition(windowDefinition, FuOverlayAnchorLocation.TopRight);
 
         // camera supersampling overlay
         FuOverlay ss1 = new FuOverlay("oCamSS", new Vector2Int(196, 36), (overlay) =>
         {
-            drawSupersamplingOverlay(_cameraWindow);
+            drawSupersamplingOverlay(CameraWindow);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Left);
-        ss1.AnchorWindowDefinition(camWinDef, FuOverlayAnchorLocation.TopLeft);
-    }
-
-    /// <summary>
-    /// whenever the camera window in instantiated
-    /// </summary>
-    /// <param name="camWindow">camera FuWindow instance</param>
-    private void CamWinDef_OnUIWindowCreated(FuWindow camWindow)
-    {
-        _cameraWindow = (FuCameraWindow)camWindow;
-        _cameraWindow.Camera.GetComponent<MouseOrbitImproved>().Camera = _cameraWindow;
+        ss1.AnchorWindowDefinition(windowDefinition, FuOverlayAnchorLocation.TopLeft);
     }
 
     #region overlays
@@ -98,16 +85,16 @@ public class CameraWindow : MonoBehaviour
 
     private void Update()
     {
-        if (_cameraWindow == null || !_cameraWindow.IsInitialized)
+        if (CameraWindow == null || !CameraWindow.IsInitialized)
         {
             return;
         }
 
         // just for fun and for demo raycast from camera window
-        if (_cameraWindow.Mouse.IsDown(FuMouseButton.Left) && !_cameraWindow.Mouse.IsHoverOverlay && !_cameraWindow.Mouse.IsHoverPopup)
+        if (CameraWindow.Mouse.IsDown(FuMouseButton.Left) && !CameraWindow.Mouse.IsHoverOverlay && !CameraWindow.Mouse.IsHoverPopup)
         {
             RaycastHit hit;
-            Ray ray = _cameraWindow.GetCameraRay();
+            Ray ray = CameraWindow.GetCameraRay();
             if (Physics.Raycast(ray, out hit))
             {
                 Rigidbody rb = hit.collider.GetComponent<Rigidbody>();

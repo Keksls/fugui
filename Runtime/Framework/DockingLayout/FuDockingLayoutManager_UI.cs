@@ -50,7 +50,7 @@ namespace Fu
                      .AddSeparator()
                      .BeginChild("Windows");
 
-                foreach (var windowName in FuDockingLayoutManager.RegisteredWindowsNames.Values)
+                foreach (var windowName in FuWindowNameProvider.GetAllWindowNames().Values)
                 {
                     builder.AddItem((_hoveredNode.WindowsDefinition.Contains(windowName.ID) ? "V " : "  ") + windowName.Name, () =>
                     {
@@ -130,7 +130,7 @@ namespace Fu
             foreach (var windowName in node.WindowsDefinition)
             {
                 ImGui.SetCursorScreenPos(new Vector2(min.x + padding.x * 2f, ImGui.GetCursorScreenPos().y));
-                ImGui.Text(FuDockingLayoutManager.RegisteredWindowsNames[windowName].Name);
+                ImGui.Text(FuWindowNameProvider.GetAllWindowNames()[windowName].Name);
             }
 
             int i = 0;
@@ -395,7 +395,7 @@ namespace Fu
                 layout.FramedText("Windows Definitions");
                 PopFont();
 
-                var windows = FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList();
+                var windows = FuWindowNameProvider.GetAllWindowNames().Values.ToList();
                 using (FuGrid grid = new FuGrid("windowsDefinition_grid"))
                 {
                     windows.Remove(FuSystemWindowsNames.None);
@@ -422,10 +422,10 @@ namespace Fu
                     if (grid.TextInput("Window name", ref windowName))
                     {
                         _selectedWindowDefinition.SetName(windowName);
-                        FuDockingLayoutManager.RegisteredWindowsNames[_selectedWindowDefinition.ID] = _selectedWindowDefinition;
+                        FuWindowNameProvider.GetAllWindowNames()[_selectedWindowDefinition.ID] = _selectedWindowDefinition;
                     }
 
-                    if (FuDockingLayoutManager.RegisteredWindowsNames.Values.Where(wd => wd.Name == _selectedWindowDefinition.Name).Count() > 1)
+                    if (FuWindowNameProvider.GetAllWindowNames().Values.Where(wd => wd.Name == _selectedWindowDefinition.Name).Count() > 1)
                     {
                         grid.NextColumn();
                         grid.SmartText(string.Format($"<color=red>The name <b>'{_selectedWindowDefinition}'</b> is already present in the current FuGui windows definition !</color>"));
@@ -443,7 +443,7 @@ namespace Fu
                     if (grid.Toggle("Auto Instance", ref autoInstantiate))
                     {
                         _selectedWindowDefinition.SetAutoInstantiateOnLayoutSet(autoInstantiate);
-                        FuDockingLayoutManager.RegisteredWindowsNames[_selectedWindowDefinition.ID] = _selectedWindowDefinition;
+                        FuWindowNameProvider.GetAllWindowNames()[_selectedWindowDefinition.ID] = _selectedWindowDefinition;
                     }
 
                     int idleFPS = _selectedWindowDefinition.IdleFPS;
@@ -451,7 +451,7 @@ namespace Fu
                     if (grid.Slider("Idle FPS", ref idleFPS, -1, 144))
                     {
                         _selectedWindowDefinition.SetIdleFPS((short)idleFPS);
-                        FuDockingLayoutManager.RegisteredWindowsNames[_selectedWindowDefinition.ID] = _selectedWindowDefinition;
+                        FuWindowNameProvider.GetAllWindowNames()[_selectedWindowDefinition.ID] = _selectedWindowDefinition;
                     }
                 }
 
@@ -460,16 +460,16 @@ namespace Fu
                     // create button
                     if (grid.Button("New##wn", FuButtonStyle.Highlight))
                     {
-                        ushort newIndex = (ushort)(FuDockingLayoutManager.RegisteredWindowsNames.Max(x => x.Key) + 1);
-                        FuDockingLayoutManager.RegisteredWindowsNames.Add(newIndex, new FuWindowName(newIndex, "WindowName", true, -1));
+                        ushort newIndex = (ushort)(FuWindowNameProvider.GetAllWindowNames().Max(x => x.Key) + 1);
+                        FuWindowNameProvider.GetAllWindowNames().Add(newIndex, new FuWindowName(newIndex, "WindowName", true, -1));
 
-                        _selectedWindowDefinition = FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList().Last();
+                        _selectedWindowDefinition = FuWindowNameProvider.GetAllWindowNames().Values.ToList().Last();
                     }
 
                     // delete button
                     if (grid.Button("Delete##wn", FuButtonStyle.Danger))
                     {
-                        FuDockingLayoutManager.RegisteredWindowsNames.Remove(_selectedWindowDefinition.ID);
+                        FuWindowNameProvider.GetAllWindowNames().Remove(_selectedWindowDefinition.ID);
                         windows.Remove(_selectedWindowDefinition);
 
                         // remove window from all layout
@@ -488,12 +488,12 @@ namespace Fu
                     }
                     if (grid.Button("Save##wn", FuButtonStyle.Info))
                     {
-                        foreach (KeyValuePair<ushort, FuWindowName> pair in FuDockingLayoutManager.RegisteredWindowsNames)
+                        foreach (KeyValuePair<ushort, FuWindowName> pair in FuWindowNameProvider.GetAllWindowNames())
                         {
                             pair.Value.SetName(RemoveSpaceAndCapitalize(pair.Value.Name));
                         }
 
-                        FuDockingLayoutManager.writeToFile(Settings.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuDockingLayoutManager.RegisteredWindowsNames));
+                        FuDockingLayoutManager.writeToFile(Settings.FUGUI_WINDOWS_DEF_ENUM_PATH, FuDockingLayoutManager.generateEnum("FuWindowsNames", FuWindowNameProvider.GetAllWindowNames()));
 
                         if (_windowNamesMustSaveLayouts)
                         {
@@ -504,7 +504,7 @@ namespace Fu
                             _windowNamesMustSaveLayouts = false;
                         }
 
-                        var names = FuDockingLayoutManager.RegisteredWindowsNames.Values.ToList();
+                        var names = FuWindowNameProvider.GetAllWindowNames().Values.ToList();
                         _selectedWindowDefinition = names.Count > 0 ? names[0] : FuSystemWindowsNames.None;
                     }
                 }

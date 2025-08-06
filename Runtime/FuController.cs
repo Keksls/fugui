@@ -32,6 +32,12 @@ namespace Fu.Core
             {
                 Fugui.OnUIException += FuGui_OnUIException;
             }
+
+            // awake all FuWindowBehaviour instances
+            foreach (var mono in GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+            {
+                mono.SendMessage("FuguiAwake", SendMessageOptions.DontRequireReceiver);
+            }
         }
 
         private void Start()

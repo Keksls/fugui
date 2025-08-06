@@ -33,7 +33,10 @@ public class FuLayoutBehaviour : MonoBehaviour
         // set default layout (will create UIWindows instances)
         if (FuDockingLayoutManager.Layouts.Count > 0)
         {
-            FuDockingLayoutManager.SetLayout(_layoutName);
+            Fugui.ExecuteBeforeRenderWindows(() =>
+            {
+                FuDockingLayoutManager.SetLayout(_layoutName);
+            });
         }
     }
 

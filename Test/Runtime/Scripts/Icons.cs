@@ -144,8 +144,6 @@ namespace Fu.Framework
         public static string Plus_duotone { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Plus_duotone; }
         protected static string _Plus_solid = "\uE086";
         public static string Plus_solid { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Plus_solid; }
-        protected static string _Settings_duotone = "\uED2C";
-        public static string Settings_duotone { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Settings_duotone; }
         protected static string _Settings_solid = "\uE087";
         public static string Settings_solid { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Settings_solid; }
         protected static string _SettingsPreferences = "\uED2E";
@@ -178,8 +176,6 @@ namespace Fu.Framework
         public static string CheckV { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _CheckV; }
         protected static string _Light = "\uE08B";
         public static string Light { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Light; }
-        protected static string _Screen_duotone = "\uED44";
-        public static string Screen_duotone { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Screen_duotone; }
         protected static string _Screen_solid = "\uE08C";
         public static string Screen_solid { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Screen_solid; }
         protected static string _Sealant = "\uED46";

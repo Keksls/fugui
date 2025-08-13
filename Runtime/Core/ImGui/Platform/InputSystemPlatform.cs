@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace Fu.Core.DearImGui.Platform
 {
@@ -11,8 +12,8 @@ namespace Fu.Core.DearImGui.Platform
     internal sealed class InputSystemPlatform : PlatformBase
     {
         private readonly List<char> _textInput = new List<char>();
-        private int[] _mainKeys;
         private Keyboard _keyboard = null;
+        private Dictionary<ImGuiKey, KeyControl> _keyControls;
 
         public InputSystemPlatform() : base()
         { }
@@ -174,16 +175,18 @@ namespace Fu.Core.DearImGui.Platform
             _keyboard = keyboard;
             _keyboard.onTextInput += _textInput.Add;
 
-            // Stocker uniquement les touches que tu veux suivre dans UpdateKeyboard()
-            _mainKeys = new int[] {
-                (int)Key.A, (int)Key.C, (int)Key.V, (int)Key.X, (int)Key.Y, (int)Key.Z,
-                (int)Key.Tab, (int)Key.LeftArrow, (int)Key.RightArrow,
-                (int)Key.UpArrow, (int)Key.DownArrow, (int)Key.PageUp, (int)Key.PageDown,
-                (int)Key.Home, (int)Key.End, (int)Key.Insert, (int)Key.Delete,
-                (int)Key.Backspace, (int)Key.Space, (int)Key.Escape, (int)Key.Enter,
-                (int)Key.NumpadEnter
+            // get the current keyboard layout and map main keys (regardless of layout => azert, qwerty, etc.)
+            _keyControls = new Dictionary<ImGuiKey, KeyControl>
+            {
+                { ImGuiKey.A, keyboard.FindKeyOnCurrentKeyboardLayout("a") },
+                { ImGuiKey.C, keyboard.FindKeyOnCurrentKeyboardLayout("c") },
+                { ImGuiKey.V, keyboard.FindKeyOnCurrentKeyboardLayout("v") },
+                { ImGuiKey.X, keyboard.FindKeyOnCurrentKeyboardLayout("x") },
+                { ImGuiKey.Y, keyboard.FindKeyOnCurrentKeyboardLayout("y") },
+                { ImGuiKey.Z, keyboard.FindKeyOnCurrentKeyboardLayout("z") }
             };
         }
+
 
         /// <summary>
         /// Update the ImGui input state with the current keyboard state.
@@ -194,13 +197,14 @@ namespace Fu.Core.DearImGui.Platform
         {
             if (keyboard == null) return;
 
-            // Remplacer les touches principales
-            io.AddKeyEvent(ImGuiKey.A, keyboard[Key.A].isPressed);
-            io.AddKeyEvent(ImGuiKey.C, keyboard[Key.C].isPressed);
-            io.AddKeyEvent(ImGuiKey.V, keyboard[Key.V].isPressed);
-            io.AddKeyEvent(ImGuiKey.X, keyboard[Key.X].isPressed);
-            io.AddKeyEvent(ImGuiKey.Y, keyboard[Key.Y].isPressed);
-            io.AddKeyEvent(ImGuiKey.Z, keyboard[Key.Z].isPressed);
+            // handle A, C, V, X, Y, Z keys
+            if (_keyControls != null)
+            {
+                foreach (var kvp in _keyControls)
+                {
+                    io.AddKeyEvent(kvp.Key, kvp.Value.isPressed);
+                }
+            }
 
             io.AddKeyEvent(ImGuiKey.Tab, keyboard[Key.Tab].isPressed);
             io.AddKeyEvent(ImGuiKey.LeftArrow, keyboard[Key.LeftArrow].isPressed);
@@ -236,13 +240,19 @@ namespace Fu.Core.DearImGui.Platform
             }
 
             _textInput.Clear();
+
+            // Handle Ctrl, Alt, Super, and Shift keys
+            io.AddKeyEvent(ImGuiKey.ModCtrl, keyboard[Key.LeftCtrl].isPressed || keyboard[Key.RightCtrl].isPressed);
+            io.AddKeyEvent(ImGuiKey.ModAlt, keyboard[Key.LeftAlt].isPressed || keyboard[Key.RightAlt].isPressed);
+            io.AddKeyEvent(ImGuiKey.ModSuper, keyboard[Key.LeftMeta].isPressed || keyboard[Key.RightMeta].isPressed);
+            io.AddKeyEvent(ImGuiKey.ModShift, keyboard[Key.LeftShift].isPressed || keyboard[Key.RightShift].isPressed);
         }
 
         /// <summary>
         /// Handle device changes, specifically for keyboard layout changes or device changes.
         /// </summary>
         /// <param name="device"> The input device that changed.</param>
-        /// <param name="chang e"> The type of change that occurred.</param>
+        /// <param name="change"> The type of change that occurred.</param>
         private void OnDeviceChange(InputDevice device, InputDeviceChange change)
         {
             if (device is Keyboard keyboard)

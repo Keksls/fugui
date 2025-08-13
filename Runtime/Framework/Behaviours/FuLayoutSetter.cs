@@ -4,7 +4,7 @@ using Fu.Framework;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FuLayoutBehaviour : MonoBehaviour
+public class FuLayoutSetter : MonoBehaviour
 {
     [SerializeField]
     private string _layoutName;
@@ -33,10 +33,7 @@ public class FuLayoutBehaviour : MonoBehaviour
         // set default layout (will create UIWindows instances)
         if (FuDockingLayoutManager.Layouts.Count > 0)
         {
-            Fugui.ExecuteBeforeRenderWindows(() =>
-            {
-                FuDockingLayoutManager.SetLayout(_layoutName);
-            });
+            FuDockingLayoutManager.SetLayout(_layoutName);
         }
     }
 
@@ -45,7 +42,7 @@ public class FuLayoutBehaviour : MonoBehaviour
     /// </summary>
     private void registerMainMenuItems()
     {
-        if (_addFuguiToMainMenu)
+        if (_addWindowsToMainMenu)
         {
             // add Fugui menu
             Fugui.RegisterMainMenuItem("Fugui", null);

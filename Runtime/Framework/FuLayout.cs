@@ -533,7 +533,7 @@ namespace Fu.Framework
         public void CenterNextItem(float itemWidth)
         {
             float avWidth = ImGui.GetContentRegionAvail().x;
-            float offset = avWidth / 2f - itemWidth / 2f;
+            float offset = avWidth / 2f - (itemWidth * Fugui.CurrentContext.Scale) / 2f;
             if (offset > 0f)
             {
                 Fugui.MoveXUnscaled(offset);

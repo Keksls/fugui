@@ -167,9 +167,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2335456719184029569, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4082823442619091940, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4742880329986240731, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5190680658197817161, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_Name
       value: DemoScene
+      objectReference: {fileID: 0}
+    - target: {fileID: 7505416273416394174, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 7280319400249430176, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
@@ -199,6 +215,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _layoutName: DemoScene
   _addWindowsToMainMenu: 1
+  _addLayoutsToMainMenu: 1
+  _addFuguiToMainMenu: 1
+  _showImGuiDemoWindow: 0
 --- !u!1001 &1203538079
 PrefabInstance:
   m_ObjectHideFlags: 0

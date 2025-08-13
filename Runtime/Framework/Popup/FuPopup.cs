@@ -53,7 +53,7 @@ namespace Fu
             {
                 ImGui.SetWindowFocus();
                 ImGui.Text(_popupMessage);
-                _popupSize = ImGui.CalcTextSize(_popupMessage) + new Vector2(16f, 16f);
+                _popupSize = ImGui.GetItemRectSize() + new Vector2(16f, 16f);
                 ImGui.EndPopup();
             }
             PopStyle();

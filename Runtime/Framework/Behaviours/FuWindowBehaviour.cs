@@ -29,6 +29,10 @@ namespace Fu.Framework
         /// </summary>
         public virtual void FuguiAwake()
         {
+            // don't do anything if the monobehaviour is not enabled
+            if (!enabled)
+                return;
+
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
             FuWindowDefinition windowDefinition = new FuWindowDefinition(_windowName, OnUI, _position == Vector2Int.zero ? null : _position, _size == Vector2Int.zero ? null : _size, _windowFlags);
             // call the OnWindowDefinitionCreated method to allow further customization

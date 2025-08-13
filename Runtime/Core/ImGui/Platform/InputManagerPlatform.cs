@@ -62,17 +62,6 @@ namespace Fu.Core.DearImGui.Platform
             void Key(ImGuiKey imguiKey, KeyCode keyCode)
                 => io.AddKeyEvent(imguiKey, Input.GetKey(keyCode));
 
-            // Letters
-            for (int i = 0; i < 26; i++)
-                Key((ImGuiKey)((int)ImGuiKey.A + i), KeyCode.A + i);
-
-            // Numbers
-            for (int i = 0; i <= 9; i++)
-                Key((ImGuiKey)((int)ImGuiKey._0 + i), KeyCode.Alpha0 + i);
-
-            // Function keys
-            for (int i = 1; i <= 12; i++)
-                Key((ImGuiKey)((int)ImGuiKey.F1 + (i - 1)), KeyCode.F1 + (i - 1));
             // Arrows and navigation
             Key(ImGuiKey.Tab, KeyCode.Tab);
             Key(ImGuiKey.LeftArrow, KeyCode.LeftArrow);
@@ -101,38 +90,6 @@ namespace Fu.Core.DearImGui.Platform
             Key(ImGuiKey.RightSuper, KeyCode.RightCommand); // or RightWindows
             Key(ImGuiKey.Menu, KeyCode.Menu);
 
-            // Keypad
-            for (int i = 0; i <= 9; i++)
-                Key((ImGuiKey)((int)ImGuiKey.Keypad0 + i), KeyCode.Keypad0 + i);
-
-            Key(ImGuiKey.KeypadDecimal, KeyCode.KeypadPeriod);
-            Key(ImGuiKey.KeypadDivide, KeyCode.KeypadDivide);
-            Key(ImGuiKey.KeypadMultiply, KeyCode.KeypadMultiply);
-            Key(ImGuiKey.KeypadSubtract, KeyCode.KeypadMinus);
-            Key(ImGuiKey.KeypadAdd, KeyCode.KeypadPlus);
-            Key(ImGuiKey.KeypadEnter, KeyCode.KeypadEnter);
-            Key(ImGuiKey.KeypadEqual, KeyCode.KeypadEquals);
-
-            // Symbols
-            Key(ImGuiKey.Apostrophe, KeyCode.Quote);
-            Key(ImGuiKey.Comma, KeyCode.Comma);
-            Key(ImGuiKey.Minus, KeyCode.Minus);
-            Key(ImGuiKey.Period, KeyCode.Period);
-            Key(ImGuiKey.Slash, KeyCode.Slash);
-            Key(ImGuiKey.Semicolon, KeyCode.Semicolon);
-            Key(ImGuiKey.Equal, KeyCode.Equals);
-            Key(ImGuiKey.LeftBracket, KeyCode.LeftBracket);
-            Key(ImGuiKey.Backslash, KeyCode.Backslash);
-            Key(ImGuiKey.RightBracket, KeyCode.RightBracket);
-            Key(ImGuiKey.GraveAccent, KeyCode.BackQuote);
-
-            // Toggles
-            Key(ImGuiKey.CapsLock, KeyCode.CapsLock);
-            Key(ImGuiKey.ScrollLock, KeyCode.ScrollLock);
-            Key(ImGuiKey.NumLock, KeyCode.Numlock);
-            Key(ImGuiKey.PrintScreen, KeyCode.Print);
-            Key(ImGuiKey.Pause, KeyCode.Pause);
-
             // App navigation (optional)
             Key(ImGuiKey.AppBack, KeyCode.Escape);   // Or JoystickButton6
             Key(ImGuiKey.AppForward, KeyCode.Return); // Or JoystickButton7
@@ -156,6 +113,21 @@ namespace Fu.Core.DearImGui.Platform
             {
                 io.AddInputCharacter((ushort)character);
             }
+
+            // Register A, Z, C, V, X keys for copy, paste, cut, undo
+            io.AddKeyEvent(ImGuiKey.Z, Input.GetKey(KeyCode.Z));
+            io.AddKeyEvent(ImGuiKey.Y, Input.GetKey(KeyCode.Y));
+            io.AddKeyEvent(ImGuiKey.C, Input.GetKey(KeyCode.C));
+            io.AddKeyEvent(ImGuiKey.V, Input.GetKey(KeyCode.V));
+            io.AddKeyEvent(ImGuiKey.X, Input.GetKey(KeyCode.X));
+            io.AddKeyEvent(ImGuiKey.A, Input.GetKey(KeyCode.A));
+
+            // Handle Ctrl, Alt, Super, and Shift keys
+            io.AddKeyEvent(ImGuiKey.ModCtrl, Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
+            io.AddKeyEvent(ImGuiKey.ModAlt, Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
+            io.AddKeyEvent(ImGuiKey.ModSuper, Input.GetKey(KeyCode.LeftCommand) || Input.GetKey(KeyCode.RightCommand) ||
+                                                     Input.GetKey(KeyCode.LeftWindows) || Input.GetKey(KeyCode.RightWindows));
+            io.AddKeyEvent(ImGuiKey.ModShift, Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
         }
 
         /// <summary>

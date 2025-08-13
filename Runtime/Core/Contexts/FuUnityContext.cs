@@ -137,7 +137,6 @@ namespace Fu.Core
             _platform?.Shutdown(io, pio);
             _platform = platform;
             _platform?.Initialize(io, pio);
-            Debug.Log($"Fugui: Input Platform set to {io.BackendPlatformName}.");
         }
 
         /// <summary>

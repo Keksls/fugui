@@ -1,5 +1,6 @@
 ﻿using Fu.Core;
 using ImGuiNET;
+using System;
 using UnityEngine;
 
 namespace Fu
@@ -10,6 +11,7 @@ namespace Fu
         private static string _popupMessage = string.Empty;
         private static Vector2 _popupSize = Vector2.one;
         private static IFuWindowContainer _popupContainer = null;
+        private static Action _popupUI = null;
 
         /// <summary>
         /// Show a Popup Message
@@ -25,6 +27,30 @@ namespace Fu
             _popupContainer = container;
             _popupMessage = message;
             _showPopup = true;
+
+            _popupUI = () =>
+            {
+                ImGui.Text(_popupMessage);
+                _popupSize = ImGui.CalcTextSize(_popupMessage) + new Vector2(32f, 32f) * CurrentContext.Scale;
+            };
+        }
+
+        /// <summary>
+        /// Show a Popup Message with a custom UI
+        /// </summary>
+        /// <param name="UI"> Action to render the custom UI in the popup</param>
+        /// <param name="size"> Size of the popup window</param>
+        /// <param name="container"> container to show the message in (Main Container if null)</param>
+        public static void ShowPopupMessage(Action UI, Vector2 size, IFuWindowContainer container = null)
+        {
+            if (container == null)
+            {
+                container = MainContainer;
+            }
+            _popupContainer = container;
+            _showPopup = true;
+            _popupUI = UI;
+            _popupSize = size;
         }
 
         /// <summary>
@@ -53,8 +79,7 @@ namespace Fu
             if (ImGui.BeginPopupModal("FuguiPopupMessage", ref open, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMouseInputs | ImGuiWindowFlags.NoResize))
             {
                 ImGui.SetWindowFocus();
-                ImGui.Text(_popupMessage);
-                _popupSize = ImGui.CalcTextSize(_popupMessage) + new Vector2(32f, 32f) * CurrentContext.Scale;
+                _popupUI?.Invoke();
                 ImGui.EndPopup();
             }
             PopStyle();

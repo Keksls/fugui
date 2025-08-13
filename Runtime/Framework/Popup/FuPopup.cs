@@ -50,7 +50,7 @@ namespace Fu
             _popupContainer = container;
             _showPopup = true;
             _popupUI = UI;
-            _popupSize = size;
+            _popupSize = size * CurrentContext.Scale;
         }
 
         /// <summary>

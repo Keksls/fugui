@@ -49,11 +49,12 @@ namespace Fu
             bool open = true;
             Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * Fugui.CurrentContext.Scale);
             ImGui.SetNextWindowPos(new Vector2(_popupContainer.Size.x / 2f - _popupSize.x / 2f, _popupContainer.Size.y / 2f - _popupSize.y / 2f), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(_popupSize, ImGuiCond.Always);
             if (ImGui.BeginPopupModal("FuguiPopupMessage", ref open, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMouseInputs | ImGuiWindowFlags.NoResize))
             {
                 ImGui.SetWindowFocus();
                 ImGui.Text(_popupMessage);
-                _popupSize = ImGui.GetItemRectSize() + new Vector2(16f, 16f);
+                _popupSize = ImGui.CalcTextSize(_popupMessage) + new Vector2(32f, 32f) * CurrentContext.Scale;
                 ImGui.EndPopup();
             }
             PopStyle();

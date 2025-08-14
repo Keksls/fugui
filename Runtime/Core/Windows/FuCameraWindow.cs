@@ -1,6 +1,7 @@
 using ImGuiNET;
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace Fu.Core
@@ -68,7 +69,11 @@ namespace Fu.Core
             // create the render texture
             _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
             _rTexture.antiAliasing = 8;
-            _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+            bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
+            if (isRenderGraphEnabled)
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
+            else
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
             _rTexture.useDynamicScale = true;
             _rTexture.Create();
 
@@ -117,7 +122,11 @@ namespace Fu.Core
 
             _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);
             _rTexture.antiAliasing = 8;
-            _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+            bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
+            if (isRenderGraphEnabled)
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
+            else
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
             _rTexture.useDynamicScale = true;
             _rTexture.Create();
             Camera.targetTexture = _rTexture;

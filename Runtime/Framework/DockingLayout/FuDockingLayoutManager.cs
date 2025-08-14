@@ -82,7 +82,7 @@ namespace Fu.Framework
             foreach (string file in Directory.GetFiles(folderPath, "*.fdl"))
             {
                 string fileName = Path.GetFileNameWithoutExtension(file);
-                FuDockingLayoutDefinition tempLayout = FuDockingLayoutDefinition.ReadFromFile(file);
+                FuDockingLayoutDefinition tempLayout = FuDockingLayoutDefinition.Deserialize(file);
 
                 if (tempLayout != null && !Layouts.ContainsKey(fileName))
                 {

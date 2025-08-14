@@ -43,12 +43,21 @@ namespace Fu.Framework
         /// </summary>
         public byte LayoutType;
 
+        /// <summary>
+        /// Default constructor, used for serialization purposes
+        /// </summary>
         public FuDockingLayoutDefinition()
         {
 
         }
 
-        //Constructor that accepts 4 parameters: name, id, proportion and orientation
+        /// <summary>
+        /// Constructor that accepts 4 parameters: name, id, proportion, and orientation
+        /// </summary>
+        /// <param name="name"> The name of the dock space</param>
+        /// <param name="id"> The unique identifier of the dock space</param>
+        /// <param name="proportion"> The proportion of the dock space relative to its parent</param>
+        /// <param name="orientation"> The orientation of the dock space</param>
         public FuDockingLayoutDefinition(string name, uint id, float proportion, UIDockSpaceOrientation orientation)
         {
             Name = name;
@@ -59,7 +68,11 @@ namespace Fu.Framework
             WindowsDefinition = new List<ushort>();
         }
 
-        //Constructor that accepts 2 parameters: name and id, with default values for proportion and orientation
+        /// <summary>
+        /// Constructor that accepts 2 parameters: name and id
+        /// </summary>
+        /// <param name="name"> The name of the dock space</param>
+        /// <param name="id"> The unique identifier of the dock space</param>
         public FuDockingLayoutDefinition(string name, uint id)
         {
             Name = name;
@@ -70,7 +83,10 @@ namespace Fu.Framework
             WindowsDefinition = new List<ushort>();
         }
 
-        //Method that returns the total number of children, including all children of children
+        /// <summary>
+        /// Method that returns the total number of children, including all children of children
+        /// </summary>
+        /// <returns> The total number of children in the dock space, including all nested children</returns>
         public uint GetTotalChildren()
         {
             uint count = (uint)Children.Count;
@@ -83,14 +99,22 @@ namespace Fu.Framework
             return count;
         }
 
-        //Serialization method
+        /// <summary>
+        /// Method that serializes the dock space definition to a JSON string
+        /// </summary>
+        /// <param name="dockspaceDefinition"> The dock space definition to serialize</param>
+        /// <returns> A JSON string representing the dock space definition</returns>
         public static string Serialize(FuDockingLayoutDefinition dockspaceDefinition)
         {
             return JsonConvert.SerializeObject(dockspaceDefinition);
         }
 
-        //Deserialization method
-        public static FuDockingLayoutDefinition ReadFromFile(string pathFile)
+        /// <summary>
+        /// Method that writes the serialized dock space definition to a file
+        /// </summary>
+        /// <param name="pathFile"> The path to the file containing the serialized dock space definition</param>
+        /// <returns> A FuDockingLayoutDefinition object representing the deserialized dock space</returns>
+        public static FuDockingLayoutDefinition Deserialize(string pathFile)
         {
             FuDockingLayoutDefinition result = null;
 

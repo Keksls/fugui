@@ -42,7 +42,7 @@ public class FuLayoutSetter : MonoBehaviour
     /// </summary>
     private void registerMainMenuItems()
     {
-        if (_addWindowsToMainMenu)
+        if (_addFuguiToMainMenu)
         {
             // add Fugui menu
             Fugui.RegisterMainMenuItem("Fugui", null);

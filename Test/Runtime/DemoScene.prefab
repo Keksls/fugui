@@ -12666,7 +12666,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 131582004965259276}
-  - component: {fileID: 7280319400249430176}
+  - component: {fileID: 6205686686847885011}
   - component: {fileID: 4082823442619091940}
   - component: {fileID: 4743667465687535263}
   - component: {fileID: 2335456719184029569}
@@ -12697,7 +12697,7 @@ Transform:
   - {fileID: 6830960728300181111}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7280319400249430176
+--- !u!114 &6205686686847885011
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -12706,9 +12706,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 5190680658197817161}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 197b9dd31fa57ca419cc76af754cccb0, type: 3}
+  m_Script: {fileID: 11500000, guid: 06799a67f3402424ea5ebc9c1e48b1f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _layoutName: DemoScene
+  _addWindowsToMainMenu: 1
+  _addLayoutsToMainMenu: 1
+  _addFuguiToMainMenu: 1
   _showImGuiDemoWindow: 0
 --- !u!114 &4082823442619091940
 MonoBehaviour:

@@ -170,7 +170,10 @@ namespace Fu.Core.DearImGui.Renderer
                                 }
                                 else
                                 {
-                                    _materialProperties.SetTexture(_textureID, texture);
+                                    if (texture && texture != null)
+                                        _materialProperties.SetTexture(_textureID, texture);
+                                    else
+                                        Debug.LogWarning($"Texture {prevTextureId} is null or not a valid texture.");
                                 }
                             }
                             commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
@@ -292,7 +295,10 @@ namespace Fu.Core.DearImGui.Renderer
                                 }
                                 else
                                 {
-                                    _materialProperties.SetTexture(_textureID, texture);
+                                    if (texture && texture != null)
+                                        _materialProperties.SetTexture(_textureID, texture);
+                                    else
+                                        Debug.LogWarning($"Texture {prevTextureId} is null or not a valid texture.");
                                 }
                             }
                             commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.

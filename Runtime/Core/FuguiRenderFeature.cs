@@ -333,9 +333,8 @@ namespace Fu.Core.DearImGui.Renderer
                     _mesh.subMeshCount = _prevSubMeshCount = subMeshCount;
                 }
 
-                var idxFmt = drawData.TotalIdxCount > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16;
                 _mesh.SetVertexBufferParams(drawData.TotalVtxCount, _vertexAttributes);
-                _mesh.SetIndexBufferParams(drawData.TotalIdxCount, idxFmt);
+                _mesh.SetIndexBufferParams(drawData.TotalIdxCount, IndexFormat.UInt16);
 
                 //  Upload data into mesh.
                 int vtxOf = 0;

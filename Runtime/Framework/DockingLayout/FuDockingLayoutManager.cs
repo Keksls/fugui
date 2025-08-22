@@ -603,7 +603,7 @@ namespace Fu.Framework
         /// <param name="layoutName"> layout name to delete</param>
         /// <param name="showConfigModal"> whatever you want to show a confirmation modal before delete</param>
         /// <param name="callback"> callback to invoke after delete</param>
-        public static void DeleteLayout(string folderPath, string layoutName, bool showConfigModal, Action callback = null)
+        public static void DeleteLayout(string folderPath, string layoutName, bool showConfigModal = true, Action callback = null)
         {
             if (Layouts.ContainsKey(layoutName))
             {

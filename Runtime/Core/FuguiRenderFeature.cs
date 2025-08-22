@@ -69,9 +69,9 @@ namespace Fu.Core.DearImGui.Renderer
 
                 // create the builder for the raster render pass
                 using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_RenderGraph_Pass", out var passData);
-                builder.SetRenderAttachment(target, 0);
                 builder.AllowPassCulling(false);
                 builder.AllowGlobalStateModification(true);
+                builder.SetRenderAttachment(target, 0, AccessFlags.Write);
 
                 // set the pass data
                 builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>

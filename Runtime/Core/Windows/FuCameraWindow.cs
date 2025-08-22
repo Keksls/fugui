@@ -53,6 +53,9 @@ namespace Fu.Core
             SuperSampling = windowDefinition.SuperSampling;
             Camera = windowDefinition.Camera;
 
+
+            Camera.clearFlags = CameraClearFlags.Nothing;
+
             // get post process data
             _postProcessLayer = Camera.GetComponent<UniversalAdditionalCameraData>();
             if (_postProcessLayer != null)

@@ -77,7 +77,9 @@ namespace Fu.Core.DearImGui.Renderer
                 {
                     // If not ready to render, skip this pass.
                     if (Fugui.RenderingState != FuguiRenderingState.UpdateComplete)
+                    {
                         return;
+                    }
                     Fugui.RenderingState = FuguiRenderingState.Rendering;
 
                     // render the default context

@@ -597,9 +597,13 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// Delete currentlky selected layout
+        /// Delete a layout file from disk and remove it from loaded layouts
         /// </summary>
-        public static void DeleteLayout(string folderPath, string layoutName, Action callback = null)
+        /// <param name="folderPath"> folder path where layout files are stored</param>
+        /// <param name="layoutName"> layout name to delete</param>
+        /// <param name="showConfigModal"> whatever you want to show a confirmation modal before delete</param>
+        /// <param name="callback"> callback to invoke after delete</param>
+        public static void DeleteLayout(string folderPath, string layoutName, bool showConfigModal, Action callback = null)
         {
             if (Layouts.ContainsKey(layoutName))
             {
@@ -612,20 +616,27 @@ namespace Fu.Framework
 
                         if (File.Exists(filePathToDelete))
                         {
-                            Fugui.ShowModal("Delete Docking Layout", () =>
+                            if (showConfigModal)
                             {
-                                using (FuLayout layout = new FuLayout())
+                                Fugui.ShowModal("Delete Docking Layout", () =>
                                 {
-                                    layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrap);
-                                }
-                                if (Fugui.MainContainer.Keyboard.GetKeyDown(FuKeysCode.Enter))
-                                {
-                                    confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback);
-                                    Fugui.CloseModal();
-                                }
-                            }, FuModalSize.Medium,
-                            new FuModalButton("Yes", () => confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback), FuButtonStyle.Danger, FuKeysCode.Enter),
-                            new FuModalButton("No", null, FuButtonStyle.Default, FuKeysCode.Escape));
+                                    using (FuLayout layout = new FuLayout())
+                                    {
+                                        layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrap);
+                                    }
+                                    if (Fugui.MainContainer.Keyboard.GetKeyDown(FuKeysCode.Enter))
+                                    {
+                                        confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback);
+                                        Fugui.CloseModal();
+                                    }
+                                }, FuModalSize.Medium,
+                                new FuModalButton("Yes", () => confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback), FuButtonStyle.Danger, FuKeysCode.Enter),
+                                new FuModalButton("No", null, FuButtonStyle.Default, FuKeysCode.Escape));
+                            }
+                            else
+                            {
+                                confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -640,7 +651,9 @@ namespace Fu.Framework
         /// <summary>
         /// Callbacked used for user response after delete layout file
         /// </summary>
-        /// <param name="result">User result</param>
+        /// <param name="callback">callback to invoke after delete</param>
+        /// <param name="folderPath">folder path where layout files are stored</param>
+        /// <param name="layoutName"> layout name to delete</param>
         private static void confirmDeleteSelectedLayoutFile(string folderPath, string layoutName, Action callback)
         {
             try

@@ -359,7 +359,7 @@ namespace Fu
 
                 if (grid.Button("Delete##fdl", FuButtonStyle.Danger))
                 {
-                    FuDockingLayoutManager.DeleteLayout(Path.Combine(Application.streamingAssetsPath, Settings.LayoutsFolder), FuDockingLayoutManager.CurrentLayout.Name);
+                    FuDockingLayoutManager.DeleteLayout(Path.Combine(Application.streamingAssetsPath, Settings.LayoutsFolder), FuDockingLayoutManager.CurrentLayout.Name, true);
                 }
             }
         }

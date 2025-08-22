@@ -178,9 +178,9 @@ MonoBehaviour:
     FUGUI_DOCKSPACE_FOLDER_PATH: Assets\StreamingAssets\Fugui\Layout\
     EnableExternalizations: 0
     DisplaySettingsIfNoLayout: 1
-    IdleFPS: 1
-    ManipulatingFPS: 28
-    IdleCameraFPS: 2
+    IdleFPS: 8
+    ManipulatingFPS: 60
+    IdleCameraFPS: 16
     Windows3DScale: 10
     Windows3DSuperSampling: 2
     Windows3DFontScale: 3
@@ -215,7 +215,6 @@ MonoBehaviour:
     TabBarButtonRight: 1
     LayoutsFolder: Fugui/Layouts
     FontIconsOffset: {x: 0, y: -1}
-    PlatformType: 1
     ImGuiConfig: 1153
     DoubleClickTime: 0.3
     DoubleClickMaxDist: 6
@@ -235,7 +234,6 @@ MonoBehaviour:
     ConfigMemoryCompactTimer: 1
     ConfigDockingNoSplit: 0
     ConfigDockingTransparentPayload: 0
-    Shaders: {fileID: 11400000, guid: 16d5b609d19632f418f94c335a29d67d, type: 2}
     CursorShapes: {fileID: 11400000, guid: ce7ff60857038f249956282ba6f82d62, type: 2}
   _uiCamera: {fileID: 963194227}
   _logErrors: 1

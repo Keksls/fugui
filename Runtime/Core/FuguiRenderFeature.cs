@@ -332,8 +332,10 @@ namespace Fu.Core.DearImGui.Renderer
                     _mesh.Clear(true);
                     _mesh.subMeshCount = _prevSubMeshCount = subMeshCount;
                 }
+
+                var idxFmt = drawData.TotalIdxCount > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16;
                 _mesh.SetVertexBufferParams(drawData.TotalVtxCount, _vertexAttributes);
-                _mesh.SetIndexBufferParams(drawData.TotalIdxCount, IndexFormat.UInt16);
+                _mesh.SetIndexBufferParams(drawData.TotalIdxCount, idxFmt);
 
                 //  Upload data into mesh.
                 int vtxOf = 0;
@@ -384,8 +386,8 @@ namespace Fu.Core.DearImGui.Renderer
                 _mesh.SetSubMeshes(descriptors, NoMeshChecks);
 
                 // Set a safe, large 2D bounds in clip space pixels
-                _mesh.bounds = new Bounds(Vector3.zero, new Vector3(1e6f, 1e6f, 1f));
-
+                Vector2 fbSize = drawData.DisplaySize * drawData.FramebufferScale;
+                _mesh.bounds = new Bounds(new Vector3(fbSize.x * 0.5f, fbSize.y * 0.5f, 0f), new Vector3(fbSize.x + 4f, fbSize.y + 4f, 1f));
                 _mesh.UploadMeshData(false);
             }
 

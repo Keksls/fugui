@@ -38,5 +38,4 @@ half4 ImGuiPassFrag(Varyings input) : SV_Target
 {
     return input.color * SAMPLE_TEXTURE2D(_Texture, sampler_Texture, input.uv);
 }
-
 #endif

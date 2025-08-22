@@ -1,11 +1,8 @@
 ﻿using Fu.Core.DearImGui;
 using Fu.Core.DearImGui.Assets;
-using Fu.Core.DearImGui.Platform;
-using Fu.Core.DearImGui.Renderer;
 using Fu.Framework;
 using ImGuiNET;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Core
@@ -36,20 +33,20 @@ namespace Fu.Core
 
         [Tooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
-        [Range(1, 30)]
-        [FuSlider(1, 30)]
+        [Range(1, 120)]
+        [FuSlider(1, 120)]
         public int IdleFPS = 8;
 
         [Tooltip("The number of FPS to be used when the UI windows are being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are being manipulated.")]
-        [Range(1, 90)]
-        [FuSlider(1, 90)]
+        [Range(1, 240)]
+        [FuSlider(1, 240)]
         public int ManipulatingFPS = 60;
 
         [Tooltip("The number of Camera FPS to be used when the UI windows are Idle.")]
         [FuTooltip("The number of Camera FPS to be used when the UI windows are Idle.")]
-        [Range(1, 90)]
-        [FuSlider(1, 90)]
+        [Range(1, 240)]
+        [FuSlider(1, 240)]
         public int IdleCameraFPS = 4;
 
         [Tooltip("The number of FPS to be used when the UI windows are being manipulated.")]

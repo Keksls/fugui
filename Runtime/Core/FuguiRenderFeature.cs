@@ -71,6 +71,7 @@ namespace Fu.Core.DearImGui.Renderer
                 using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_RenderGraph_Pass", out var passData);
                 builder.SetRenderAttachment(target, 0);
                 builder.AllowPassCulling(false);
+                builder.AllowGlobalStateModification(true);
 
                 // set the pass data
                 builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
@@ -381,6 +382,10 @@ namespace Fu.Core.DearImGui.Renderer
                 }
 
                 _mesh.SetSubMeshes(descriptors, NoMeshChecks);
+
+                // Set a safe, large 2D bounds in clip space pixels
+                _mesh.bounds = new Bounds(Vector3.zero, new Vector3(1e6f, 1e6f, 1f));
+
                 _mesh.UploadMeshData(false);
             }
 

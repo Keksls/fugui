@@ -45,16 +45,12 @@ namespace Fu.Core
         private UniversalAdditionalCameraData _postProcessLayer;
         private AntialiasingMode _defaultAntiAliasing;
         private bool _defaultCameraMSAA = false;
-        private Vector2 _currentImageUV;
 
         public FuCameraWindow(FuCameraWindowDefinition windowDefinition) : base(windowDefinition)
         {
             AutoCameraFPS = true;
             SuperSampling = windowDefinition.SuperSampling;
             Camera = windowDefinition.Camera;
-
-
-            Camera.clearFlags = CameraClearFlags.Nothing;
 
             // get post process data
             _postProcessLayer = Camera.GetComponent<UniversalAdditionalCameraData>();
@@ -66,8 +62,6 @@ namespace Fu.Core
             // set default MSAA friendly texture format
             _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
             _currentTextureDepth = 24;
-            // set default image UV
-            _currentImageUV = Vector2.one;
 
             // create the render texture
             _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
@@ -118,7 +112,6 @@ namespace Fu.Core
             // set default MSAA friendly texture format
             _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
             _currentTextureDepth = 24;
-            _currentImageUV = Vector2.one;
 
             // recreate render texture
             _rTexture.Release();

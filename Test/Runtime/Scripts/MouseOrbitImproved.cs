@@ -1,5 +1,5 @@
 using UnityEngine;
-using Fu.Core;
+using Fu;
 
 public class MouseOrbitImproved : MonoBehaviour
 {
@@ -34,7 +34,7 @@ public class MouseOrbitImproved : MonoBehaviour
             if (Camera.IsHoveredContent)
             {
                 distance = Mathf.Clamp(distance - (Camera.Mouse.Wheel.y * zSpeed), distanceMin, distanceMax);
-                if (Camera.Mouse.IsPressed(Fu.Framework.FuMouseButton.Right))
+                if (Camera.Mouse.IsPressed(FuMouseButton.Right))
                 {
                     velocityX += xSpeed * Camera.Mouse.Movement.x * Time.deltaTime;
                     velocityY += ySpeed * Camera.Mouse.Movement.y * Time.deltaTime;

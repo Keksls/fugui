@@ -1,4 +1,4 @@
-﻿namespace Fu.Core
+﻿namespace Fu
 {
     public enum FuKeysCode
     {

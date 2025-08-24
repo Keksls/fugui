@@ -1,0 +1,88 @@
+﻿using Fu;
+using ImGuiNET;
+
+namespace Fu.Framework
+{
+    public partial class FuLayout
+    {
+        /// <summary>
+        /// Renders a checkbox with the given text and returns true if the checkbox was clicked. The value of the checkbox is stored in the provided boolean variable.
+        /// </summary>
+        /// <param name="text">Text to display next to the checkbox</param>
+        /// <param name="isChecked">Boolean variable to store the value of the checkbox</param>
+        /// <returns>True if the checkbox was clicked, false otherwise</returns>
+        public virtual bool CheckBox(string text, ref bool isChecked)
+        {
+            bool clicked = false;
+            text = "##" + text;
+            beginElement(ref text, null); // Push the style for the checkbox element
+
+            // return if item must no be draw
+            if (!_drawElement)
+            {
+                return false;
+            }
+
+            // push colors
+            if (LastItemDisabled)
+            {
+                if (isChecked)
+                {
+                    Fugui.Push(ImGuiCol.CheckMark, Fugui.Themes.GetColor(FuColors.Knob) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBg, Fugui.Themes.GetColor(FuColors.CheckMark) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgHovered, Fugui.Themes.GetColor(FuColors.CheckMark) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgActive, Fugui.Themes.GetColor(FuColors.CheckMark) * 0.5f);
+                }
+                else
+                {
+                    Fugui.Push(ImGuiCol.CheckMark, Fugui.Themes.GetColor(FuColors.Knob) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBg, Fugui.Themes.GetColor(FuColors.FrameBg) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgHovered, Fugui.Themes.GetColor(FuColors.FrameBg) * 0.5f);
+                    Fugui.Push(ImGuiCol.FrameBgActive, Fugui.Themes.GetColor(FuColors.FrameBg) * 0.5f);
+                }
+            }
+            else
+            {
+                if (isChecked)
+                {
+                    Fugui.Push(ImGuiCol.CheckMark, Fugui.Themes.GetColor(FuColors.Knob));
+                    Fugui.Push(ImGuiCol.FrameBg, Fugui.Themes.GetColor(FuColors.CheckMark));
+                    Fugui.Push(ImGuiCol.FrameBgHovered, Fugui.Themes.GetColor(FuColors.CheckMark) * 0.9f);
+                    Fugui.Push(ImGuiCol.FrameBgActive, Fugui.Themes.GetColor(FuColors.CheckMark) * 0.8f);
+                }
+                else
+                {
+                    Fugui.Push(ImGuiCol.CheckMark, Fugui.Themes.GetColor(FuColors.Knob));
+                    Fugui.Push(ImGuiCol.FrameBg, Fugui.Themes.GetColor(FuColors.FrameBg));
+                    Fugui.Push(ImGuiCol.FrameBgHovered, Fugui.Themes.GetColor(FuColors.FrameBgHovered));
+                    Fugui.Push(ImGuiCol.FrameBgActive, Fugui.Themes.GetColor(FuColors.FrameBgActive));
+                }
+            }
+            // reduce border strenght
+            Fugui.Push(ImGuiCol.Border, Fugui.Themes.GetColor(FuColors.Border) * 0.5f);
+            ImGui.PushID(text);
+            //Fugui.MoveY(-2f);
+            if (LastItemDisabled)
+            {
+                bool value = isChecked; // Create a temporary variable to hold the value of isChecked
+                ImGui.Checkbox("", ref value); // Display a disabled checkbox with the given text label
+            }
+            else
+            {
+                clicked = ImGui.Checkbox("", ref isChecked); // Display an enabled checkbox and update the value of isChecked based on user interaction
+            }
+            // Pop the style for the checkbox element
+            Fugui.PopColor(5);
+            // Display a tooltip if one has been set for this element
+            displayToolTip();
+            // Set the flag indicating that this element should have a hover frame drawn around it
+            _elementHoverFramedEnabled = true;
+            // process element states
+            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, clicked);
+            endElement(null);
+            ImGui.PopID();
+
+            return clicked; // Return a boolean indicating whether the checkbox was clicked by the user
+        }
+    }
+}

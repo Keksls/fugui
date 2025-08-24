@@ -1,11 +1,9 @@
-﻿using Fu.Core.DearImGui;
-using Fu.Core.DearImGui.Assets;
-using Fu.Framework;
+﻿using Fu.Framework;
 using ImGuiNET;
 using System;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     [Serializable]
     /// <summary>
@@ -330,6 +328,12 @@ namespace Fu.Core
         [NonSerialized]
         public IntPtr UserData;
 
+        // target cursor size
+        [Tooltip("The target size of the cursor in pixels.")]
+        [FuTooltip("The target size of the cursor in pixels.")]
+        [Range(8, 256)]
+        [FuSlider(8, 256)]
+        public int TargetCursorSize = 32;
         // cursors pack to use
         [FuHidden]
         public CursorShapesAsset CursorShapes = null;

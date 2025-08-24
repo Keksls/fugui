@@ -98,57 +98,57 @@ namespace Fu.Framework
             // default text style
             _defaultTextStyle = new FuTextStyle()
             {
-                Text = FuThemeManager.GetColor(FuColors.Text),
-                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
-                DisabledText = FuThemeManager.GetColor(FuColors.TextDisabled)
+                Text = Fugui.Themes.GetColor(FuColors.Text),
+                LinkText = Fugui.Themes.GetColor(FuColors.TextLink),
+                DisabledText = Fugui.Themes.GetColor(FuColors.TextDisabled)
             };
             // default text style
             _defaultDeactivated = new FuTextStyle()
             {
-                Text = FuThemeManager.GetColor(FuColors.Text) * 0.66f,
-                LinkText = FuThemeManager.GetColor(FuColors.TextLink) * 0.66f,
-                DisabledText = FuThemeManager.GetColor(FuColors.TextDisabled) * 0.66f
+                Text = Fugui.Themes.GetColor(FuColors.Text) * 0.66f,
+                LinkText = Fugui.Themes.GetColor(FuColors.TextLink) * 0.66f,
+                DisabledText = Fugui.Themes.GetColor(FuColors.TextDisabled) * 0.66f
             };
             // selected text style
             _selectedTextStyle = new FuTextStyle()
             {
-                Text = FuThemeManager.GetColor(FuColors.SelectedText),
-                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
-                DisabledText = FuThemeManager.GetColor(FuColors.SelectedText) * 0.5f
+                Text = Fugui.Themes.GetColor(FuColors.SelectedText),
+                LinkText = Fugui.Themes.GetColor(FuColors.TextLink),
+                DisabledText = Fugui.Themes.GetColor(FuColors.SelectedText) * 0.5f
             };
             // highlight text style
             _highlightTextStyle = new FuTextStyle()
             {
-                Text = FuThemeManager.GetColor(FuColors.HighlightText),
-                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
-                DisabledText = FuThemeManager.GetColor(FuColors.HighlightTextDisabled)
+                Text = Fugui.Themes.GetColor(FuColors.HighlightText),
+                LinkText = Fugui.Themes.GetColor(FuColors.TextLink),
+                DisabledText = Fugui.Themes.GetColor(FuColors.HighlightTextDisabled)
             };
             // highlight text style
             _successTextStyle = new FuTextStyle()
             {
-                Text = FuThemeManager.GetColor(FuColors.TextSuccess),
-                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
-                DisabledText = FuThemeManager.GetColor(FuColors.TextSuccess) * 0.5f
+                Text = Fugui.Themes.GetColor(FuColors.TextSuccess),
+                LinkText = Fugui.Themes.GetColor(FuColors.TextLink),
+                DisabledText = Fugui.Themes.GetColor(FuColors.TextSuccess) * 0.5f
             };
             // highlight text style
             _dangerTextStyle = new FuTextStyle()
             {
-                Text = FuThemeManager.GetColor(FuColors.TextDanger),
-                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
-                DisabledText = FuThemeManager.GetColor(FuColors.TextDanger) * 0.5f
+                Text = Fugui.Themes.GetColor(FuColors.TextDanger),
+                LinkText = Fugui.Themes.GetColor(FuColors.TextLink),
+                DisabledText = Fugui.Themes.GetColor(FuColors.TextDanger) * 0.5f
             };
             // highlight text style
             _infoTextStyle = new FuTextStyle()
             {
-                Text = FuThemeManager.GetColor(FuColors.TextInfo),
-                DisabledText = FuThemeManager.GetColor(FuColors.TextInfo) * 0.5f
+                Text = Fugui.Themes.GetColor(FuColors.TextInfo),
+                DisabledText = Fugui.Themes.GetColor(FuColors.TextInfo) * 0.5f
             };
             // highlight text style
             _warningTextStyle = new FuTextStyle()
             {
-                Text = FuThemeManager.GetColor(FuColors.TextWarning),
-                LinkText = FuThemeManager.GetColor(FuColors.TextLink),
-                DisabledText = FuThemeManager.GetColor(FuColors.TextWarning) * 0.5f
+                Text = Fugui.Themes.GetColor(FuColors.TextWarning),
+                LinkText = Fugui.Themes.GetColor(FuColors.TextLink),
+                DisabledText = Fugui.Themes.GetColor(FuColors.TextWarning) * 0.5f
             };
         }
     }

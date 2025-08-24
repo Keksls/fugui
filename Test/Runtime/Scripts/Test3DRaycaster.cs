@@ -1,4 +1,4 @@
-using Fu.Core;
+using Fu;
 using UnityEngine;
 
 public class Test3DRaycaster : MonoBehaviour

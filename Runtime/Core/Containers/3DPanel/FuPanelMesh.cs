@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-namespace Fu.Core
+namespace Fu
 {
     public class FuPanelMesh : MonoBehaviour
     {

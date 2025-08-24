@@ -1,8 +1,7 @@
-using Fu.Core;
+using Fu;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif

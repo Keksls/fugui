@@ -3,7 +3,7 @@ using ImGuiNET;
 using System;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     /// <summary>
     /// A class that represent a 3D UI Container
@@ -106,10 +106,10 @@ namespace Fu.Core
             _keyboardState = new FuKeyboardState(_fuguiContext.IO);
 
             // apply the theme to this context
-            FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
+            Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
 
             // register on theme change
-            FuThemeManager.OnThemeSet += ThemeManager_OnThemeSet;
+            Fugui.Themes.OnThemeSet += ThemeManager_OnThemeSet;
 
             // set default position
             SetPosition(position.HasValue ? position.Value : Vector3.zero);
@@ -141,7 +141,7 @@ namespace Fu.Core
             _panelGameObject = new GameObject(ID + "_Panel");
             _panelGameObject.transform.SetParent(Camera.transform);
             FuPanelMesh rectangleMesh = _panelGameObject.AddComponent<FuPanelMesh>();
-            float round = FuThemeManager.WindowRounding * Context.Scale;
+            float round = Fugui.Themes.WindowRounding * Context.Scale;
             MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
             collider.sharedMesh = rectangleMesh.CreateMesh(Window.Size.x / Context.Scale, Window.Size.y / Context.Scale, 1f / 1000f * Fugui.Settings.Windows3DScale, round, round, round, round, Fugui.Settings.UIPanelWidth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial);
             int layer = (int)Mathf.Log(Fugui.Settings.UILayer.value, 2);
@@ -432,7 +432,7 @@ namespace Fu.Core
                 _fuguiContext.OnPrepareFrame -= context_OnPrepareFrame;
                 Fugui.DestroyContext(_fuguiContext);
             }
-            FuThemeManager.OnThemeSet -= ThemeManager_OnThemeSet;
+            Fugui.Themes.OnThemeSet -= ThemeManager_OnThemeSet;
             if (Camera != null)
             {
                 Camera.targetTexture.Release();

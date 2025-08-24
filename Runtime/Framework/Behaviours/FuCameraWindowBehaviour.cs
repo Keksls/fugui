@@ -1,4 +1,4 @@
-using Fu.Core;
+using Fu;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;

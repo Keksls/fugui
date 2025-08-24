@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     /// <summary>
     /// Interface that represent what should implement an UI window container

@@ -60,29 +60,6 @@ namespace Fu.Framework
     }
 
     /// <summary>
-    /// Define Fugui mouse buttons
-    /// </summary>
-    public enum FuMouseButton
-    {
-        /// <summary>
-        /// None / default no button
-        /// </summary>
-        None = -1,
-        /// <summary>
-        /// Left mouse button
-        /// </summary>
-        Left = 0,
-        /// <summary>
-        /// Right mouse button
-        /// </summary>
-        Right = 1,
-        /// <summary>
-        /// Center mouse button
-        /// </summary>
-        Center = 2
-    }
-
-    /// <summary>
     /// Define Fugui Knobs behaviour flags
     /// </summary>
     public enum FuKnobFlags

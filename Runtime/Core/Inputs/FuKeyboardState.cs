@@ -1,7 +1,7 @@
 using ImGuiNET;
 using System.Collections.Generic;
 
-namespace Fu.Core
+namespace Fu
 {
     /// <summary>
     /// struct that represent Keyboard states for an UIWindow

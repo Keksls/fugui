@@ -1,114 +1,115 @@
 using Fu;
-using Fu.Core;
-using Fu.Framework;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FuLayoutSetter : MonoBehaviour
+namespace Fu.Framework
 {
-    [SerializeField]
-    private string _layoutName;
-    [SerializeField]
-    private bool _addWindowsToMainMenu = true;
-    [SerializeField]
-    private bool _addLayoutsToMainMenu = true;
-    [SerializeField]
-    private bool _addFuguiToMainMenu = true;
-    [SerializeField]
-    private bool _showImGuiDemoWindow = false;
-
-    private void Awake()
+    public class FuLayoutSetter : MonoBehaviour
     {
-        // register DockingLayoutManager events
-        FuDockingLayoutManager.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
-        // register on render event of the main container's context to draw ImGui Demo Window
-        Fugui.MainContainer.Context.OnRender += MainContainerContext_OnRender;
-    }
+        [SerializeField]
+        private string _layoutName;
+        [SerializeField]
+        private bool _addWindowsToMainMenu = true;
+        [SerializeField]
+        private bool _addLayoutsToMainMenu = true;
+        [SerializeField]
+        private bool _addFuguiToMainMenu = true;
+        [SerializeField]
+        private bool _showImGuiDemoWindow = false;
 
-    private void Start()
-    {
-        // register the main menu items
-        registerMainMenuItems();
-
-        // set default layout (will create UIWindows instances)
-        if (FuDockingLayoutManager.Layouts.Count > 0)
+        private void Awake()
         {
-            FuDockingLayoutManager.SetLayout(_layoutName);
-        }
-    }
-
-    /// <summary>
-    /// Register demo menu settings
-    /// </summary>
-    private void registerMainMenuItems()
-    {
-        if (_addFuguiToMainMenu)
-        {
-            // add Fugui menu
-            Fugui.RegisterMainMenuItem("Fugui", null);
-            // add 'Settings' menu items to open settings (its a child of 'Fugui' item)
-            Fugui.RegisterMainMenuItem(FuIcons.Settings_duotone + " Settings", () => Fugui.CreateWindowAsync(FuSystemWindowsNames.FuguiSettings, null), "Fugui");
-            // add 'Settings' menu items to open settings (its a child of 'Fugui' item)
-            Fugui.RegisterMainMenuItem(FuIcons.Screen_duotone + " Imgui Demo", () => { _showImGuiDemoWindow = true; }, "Fugui");
+            // register DockingLayoutManager events
+            Fugui.Layouts.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
+            // register on render event of the main container's context to draw ImGui Demo Window
+            Fugui.MainContainer.Context.OnRender += MainContainerContext_OnRender;
         }
 
-        if (_addLayoutsToMainMenu)
+        private void Start()
         {
-            // register all layout so user can switch between them
-            foreach (KeyValuePair<string, FuDockingLayoutDefinition> layoutDefinition in FuDockingLayoutManager.Layouts)
+            // register the main menu items
+            registerMainMenuItems();
+
+            // set default layout (will create UIWindows instances)
+            if (Fugui.Layouts.Layouts.Count > 0)
             {
-                string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
-                if (!Fugui.IsMainMenuRegisteredItem(menuName))
+                Fugui.Layouts.SetLayout(_layoutName);
+            }
+        }
+
+        /// <summary>
+        /// Register demo menu settings
+        /// </summary>
+        private void registerMainMenuItems()
+        {
+            if (_addFuguiToMainMenu)
+            {
+                // add Fugui menu
+                Fugui.RegisterMainMenuItem("Fugui", null);
+                // add 'Settings' menu items to open settings (its a child of 'Fugui' item)
+                Fugui.RegisterMainMenuItem(FuIcons.Settings_duotone + " Settings", () => Fugui.CreateWindowAsync(FuSystemWindowsNames.FuguiSettings, null), "Fugui");
+                // add 'Settings' menu items to open settings (its a child of 'Fugui' item)
+                Fugui.RegisterMainMenuItem(FuIcons.Screen_duotone + " Imgui Demo", () => { _showImGuiDemoWindow = true; }, "Fugui");
+            }
+
+            if (_addLayoutsToMainMenu)
+            {
+                // register all layout so user can switch between them
+                foreach (KeyValuePair<string, FuDockingLayoutDefinition> layoutDefinition in Fugui.Layouts.Layouts)
                 {
-                    Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Key), "Layout");
+                    string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
+                    if (!Fugui.IsMainMenuRegisteredItem(menuName))
+                    {
+                        Fugui.RegisterMainMenuItem(menuName, () => Fugui.Layouts.SetLayout(layoutDefinition.Key), "Layout");
+                    }
+                }
+            }
+
+            if (_addWindowsToMainMenu)
+            {
+                // register all windows from registered windows definitions so user can instantiate them from here
+                Fugui.RegisterMainMenuItem("Windows", null);
+                foreach (FuWindowDefinition windowName in Fugui.UIWindowsDefinitions.Values)
+                {
+                    Fugui.RegisterMainMenuItem(windowName.WindowName.ToString(), () => Fugui.CreateWindowAsync(windowName.WindowName, null), "Windows");
                 }
             }
         }
 
-        if (_addWindowsToMainMenu)
+        /// <summary>
+        /// Whenever the DockingLayoutManager reload its list of registered Layouts
+        /// </summary>
+        private void DockingLayoutManager_OnDockLayoutReloaded()
         {
-            // register all windows from registered windows definitions so user can instantiate them from here
-            Fugui.RegisterMainMenuItem("Windows", null);
-            foreach (FuWindowDefinition windowName in Fugui.UIWindowsDefinitions.Values)
+            if (!_addLayoutsToMainMenu)
+                return;
+            //Unregistered menu and all children
+            Fugui.UnregisterMainMenuItem("Layout");
+
+            //Register the layout menu empty
+            Fugui.RegisterMainMenuItem("Layout", null);
+
+            foreach (KeyValuePair<string, FuDockingLayoutDefinition> layoutDefinition in Fugui.Layouts.Layouts)
             {
-                Fugui.RegisterMainMenuItem(windowName.WindowName.ToString(), () => Fugui.CreateWindowAsync(windowName.WindowName, null), "Windows");
+                //Add new children
+                string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
+                if (!Fugui.IsMainMenuRegisteredItem(menuName))
+                {
+                    Fugui.RegisterMainMenuItem(menuName, () => Fugui.Layouts.SetLayout(layoutDefinition.Value), "Layout");
+                }
             }
         }
-    }
 
-    /// <summary>
-    /// Whenever the DockingLayoutManager reload its list of registered Layouts
-    /// </summary>
-    private void DockingLayoutManager_OnDockLayoutReloaded()
-    {
-        if (!_addLayoutsToMainMenu)
-            return;
-        //Unregistered menu and all children
-        Fugui.UnregisterMainMenuItem("Layout");
-
-        //Register the layout menu empty
-        Fugui.RegisterMainMenuItem("Layout", null);
-
-        foreach (KeyValuePair<string, FuDockingLayoutDefinition> layoutDefinition in FuDockingLayoutManager.Layouts)
+        /// <summary>
+        /// Whenever the Fugui render Context on the main container do a render tick
+        /// </summary>
+        private void MainContainerContext_OnRender()
         {
-            //Add new children
-            string menuName = Fugui.AddSpacesBeforeUppercase(layoutDefinition.Key);
-            if (!Fugui.IsMainMenuRegisteredItem(menuName))
+            // draw imgui demo winfow (if _showImGuiDemoWindow is true)
+            if (_showImGuiDemoWindow)
             {
-                Fugui.RegisterMainMenuItem(menuName, () => FuDockingLayoutManager.SetLayout(layoutDefinition.Value), "Layout");
+                ImGuiNET.ImGui.ShowDemoWindow(ref _showImGuiDemoWindow);
             }
-        }
-    }
-
-    /// <summary>
-    /// Whenever the Fugui render Context on the main container do a render tick
-    /// </summary>
-    private void MainContainerContext_OnRender()
-    {
-        // draw imgui demo winfow (if _showImGuiDemoWindow is true)
-        if (_showImGuiDemoWindow)
-        {
-            ImGuiNET.ImGui.ShowDemoWindow(ref _showImGuiDemoWindow);
         }
     }
 }

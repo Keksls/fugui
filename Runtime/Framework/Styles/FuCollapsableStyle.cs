@@ -1,4 +1,3 @@
-using Fu.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -79,10 +78,10 @@ namespace Fu.Framework
             // default collapsable style
             _defaultContainerStyle = new FuCollapsableStyle()
             {
-                _color = FuThemeManager.GetColor(FuColors.Collapsable),
-                _colorHovered = FuThemeManager.GetColor(FuColors.CollapsableHovered),
-                _colorActive = FuThemeManager.GetColor(FuColors.CollapsableActive),
-                _disabledColor = FuThemeManager.GetColor(FuColors.CollapsableDisabled),
+                _color = Fugui.Themes.GetColor(FuColors.Collapsable),
+                _colorHovered = Fugui.Themes.GetColor(FuColors.CollapsableHovered),
+                _colorActive = Fugui.Themes.GetColor(FuColors.CollapsableActive),
+                _disabledColor = Fugui.Themes.GetColor(FuColors.CollapsableDisabled),
                 _text = FuTextStyle.Default,
                 _layout = FuStyle.Content
             };

@@ -1,9 +1,8 @@
-﻿using Fu.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     public static class FuRaycasting
     {

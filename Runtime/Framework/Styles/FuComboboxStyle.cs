@@ -1,4 +1,3 @@
-using Fu.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -97,20 +96,20 @@ namespace Fu.Framework
             _highlightStyle = new FuComboboxStyle()
             {
                 ButtonStyle = FuButtonStyle.Highlight,
-                _frame = FuThemeManager.GetColor(FuColors.Highlight),
-                _frameHovered = FuThemeManager.GetColor(FuColors.HighlightHovered),
-                _frameActive = FuThemeManager.GetColor(FuColors.HighlightActive),
-                _frameDisabled = FuThemeManager.GetColor(FuColors.HighlightDisabled)
+                _frame = Fugui.Themes.GetColor(FuColors.Highlight),
+                _frameHovered = Fugui.Themes.GetColor(FuColors.HighlightHovered),
+                _frameActive = Fugui.Themes.GetColor(FuColors.HighlightActive),
+                _frameDisabled = Fugui.Themes.GetColor(FuColors.HighlightDisabled)
             };
 
             // selected style
             _selectedStyle = new FuComboboxStyle()
             {
                 ButtonStyle = FuButtonStyle.Selected,
-                _frame = FuThemeManager.GetColor(FuColors.Selected),
-                _frameHovered = FuThemeManager.GetColor(FuColors.SelectedHovered),
-                _frameActive = FuThemeManager.GetColor(FuColors.SelectedActive),
-                _frameDisabled = FuThemeManager.GetColor(FuColors.Selected) * 0.5f
+                _frame = Fugui.Themes.GetColor(FuColors.Selected),
+                _frameHovered = Fugui.Themes.GetColor(FuColors.SelectedHovered),
+                _frameActive = Fugui.Themes.GetColor(FuColors.SelectedActive),
+                _frameDisabled = Fugui.Themes.GetColor(FuColors.Selected) * 0.5f
             };
         }
     }

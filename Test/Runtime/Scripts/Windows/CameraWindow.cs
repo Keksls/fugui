@@ -1,4 +1,4 @@
-using Fu.Core;
+using Fu;
 using Fu.Framework;
 using UnityEngine;
 

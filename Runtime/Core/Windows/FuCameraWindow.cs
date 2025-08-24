@@ -2,12 +2,17 @@ using ImGuiNET;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+#if HAS_URP
 using UnityEngine.Rendering.Universal;
+#elif HAS_HDRP
+using UnityEngine.Rendering.HighDefinition;
+#endif
 
-namespace Fu.Core
+namespace Fu
 {
     public class FuCameraWindow : FuWindow
     {
+        #region Variables
         public float _superSampling = 1.0f;
         public float SuperSampling
         {
@@ -45,6 +50,7 @@ namespace Fu.Core
         private UniversalAdditionalCameraData _postProcessLayer;
         private AntialiasingMode _defaultAntiAliasing;
         private bool _defaultCameraMSAA = false;
+        #endregion
 
         public FuCameraWindow(FuCameraWindowDefinition windowDefinition) : base(windowDefinition)
         {
@@ -65,7 +71,7 @@ namespace Fu.Core
 
             // create the render texture
             _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
-            _rTexture.antiAliasing = 4;
+            _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(4);
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
             if (isRenderGraphEnabled)
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
@@ -97,7 +103,7 @@ namespace Fu.Core
             };
 
             // register raycaster
-            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsPressed(Framework.FuMouseButton.Left), () => Mouse.IsPressed(Framework.FuMouseButton.Right), () => false, () => Mouse.Wheel.y, () => IsHoveredContent);
+            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsPressed(FuMouseButton.Left), () => Mouse.IsPressed(FuMouseButton.Right), () => false, () => Mouse.Wheel.y, () => IsHoveredContent);
             FuRaycasting.RegisterRaycaster(_raycaster);
         }
 
@@ -117,7 +123,7 @@ namespace Fu.Core
             _rTexture.Release();
 
             _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);
-            _rTexture.antiAliasing = 4;
+            _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(4);
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
             if (isRenderGraphEnabled)
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;

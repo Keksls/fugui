@@ -143,11 +143,11 @@ namespace Fu.Framework
         {
             if (cellPadding < 0f)
             {
-                cellPadding = FuThemeManager.CellPadding.x;
+                cellPadding = Fugui.Themes.CellPadding.x;
             }
             if (rowPadding < 0f)
             {
-                rowPadding = FuThemeManager.CellPadding.y;
+                rowPadding = Fugui.Themes.CellPadding.y;
             }
             ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
             _gridCreated = _currentGridDef.SetupTable(_ID, cellPadding, outterPadding, linesBg, ref _isResponsivelyResized, width);

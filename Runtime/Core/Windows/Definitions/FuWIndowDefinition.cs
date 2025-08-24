@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     public class FuWindowDefinition
     {

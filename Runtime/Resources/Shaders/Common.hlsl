@@ -14,5 +14,4 @@ struct Varyings
     float2 uv       : TEXCOORD0;
     half4  color    : COLOR;
 };
-
 #endif

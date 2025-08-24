@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 
-namespace Fu.Core
+namespace Fu
 {
     public class FuWindowsNames : FuSystemWindowsNames
     {

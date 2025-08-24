@@ -113,8 +113,8 @@ namespace Fu.Framework
                 _containerStyle = FuPanelStyle.Default,
                 _frameStyle = FuFrameStyle.Default,
                 _textStyle = FuTextStyle.Default,
-                FramePadding = FuThemeManager.CurrentTheme.FramePadding,
-                WindowPadding = FuThemeManager.CurrentTheme.WindowPadding
+                FramePadding = Fugui.Themes.CurrentTheme.FramePadding,
+                WindowPadding = Fugui.Themes.CurrentTheme.WindowPadding
             };
 
             // no background layout style

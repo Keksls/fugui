@@ -4,7 +4,7 @@ using UnityEngine;
 using ImGuiNET;
 using Fu.Framework;
 
-namespace Fu.Core
+namespace Fu
 {
     /// <summary>
     /// A class representing the main UI container.
@@ -92,7 +92,7 @@ namespace Fu.Core
             // Subscribe to the Layout event of the given FuguiContext
             _fuguiContext.OnRender += _fuguiContext_OnRender;
             // Set the docking style color to current theme
-            FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
+            Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
         }
 
         private void _fuguiContext_OnRender()
@@ -468,12 +468,12 @@ namespace Fu.Core
             Fugui.RenderMainMenu();
             float mainMenuHeight = 24f * Context.Scale;
             // draw main menu separator
-            ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - Context.Scale), new Vector2(_size.x, mainMenuHeight - Context.Scale), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.HeaderHovered)));
+            ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - Context.Scale), new Vector2(_size.x, mainMenuHeight - Context.Scale), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered)));
 
             // draw main dockspace
             uint viewPortID = 0;
             ImGuiDockNodeFlags dockspace_flags = Fugui.Settings.DockingFlags;
-            if (FuDockingLayoutManager.CurrentLayout != null && FuDockingLayoutManager.CurrentLayout.AutoHideTopBar)
+            if (Fugui.Layouts.CurrentLayout != null && Fugui.Layouts.CurrentLayout.AutoHideTopBar)
             {
                 dockspace_flags |= ImGuiDockNodeFlags.AutoHideTabBar;
             }
@@ -501,7 +501,7 @@ namespace Fu.Core
                 Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
                 Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
                 Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
-                Fugui.Push(ImGuiCol.WindowBg, FuThemeManager.GetColor(FuColors.MenuBarBg));
+                Fugui.Push(ImGuiCol.WindowBg, Fugui.Themes.GetColor(FuColors.MenuBarBg));
                 ImGui.SetNextWindowPos(new Vector2(0f, _size.y - (_footerHeight * Context.Scale)));
                 ImGui.SetNextWindowSize(new Vector2(_size.x, (_footerHeight * Context.Scale)));
                 ImGui.SetNextWindowViewport(viewPortID);

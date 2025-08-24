@@ -71,6 +71,7 @@ namespace Fu
 
             // create the render texture
             _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
+            var urpAsset = UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
             int msaaSamples = Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor
                 ? 8
                 : urpAsset?.msaaSampleCount ?? 1;            
@@ -125,7 +126,8 @@ namespace Fu
             // recreate render texture
             _rTexture.Release();
 
-            _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);            
+            _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);      
+            var urpAsset = UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
             int msaaSamples = Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor
                 ? 8
                 : urpAsset?.msaaSampleCount ?? 1;

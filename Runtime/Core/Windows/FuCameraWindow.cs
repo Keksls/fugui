@@ -1,3 +1,4 @@
+@ -1,321 +1,345 @@
 using ImGuiNET;
 using System;
 using UnityEngine;
@@ -65,33 +66,25 @@ namespace Fu
                 _defaultAntiAliasing = _postProcessLayer.antialiasing;
             }
             _defaultCameraMSAA = Camera.allowMSAA;
-
             // set default MSAA friendly texture format
             _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
             _currentTextureDepth = 24;
 
-            // get URP pipeline settings
-            var urpAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-            int msaaSamples = urpAsset?.msaaSampleCount ?? 1;
+            // create the render texture
+            _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
+            int msaaSamples = Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor
+                ? 8
+                : urpAsset?.msaaSampleCount ?? 1;            
+            _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(msaaSamples);            
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
-            bool supportsHDR = urpAsset?.supportsHDR ?? false;
-
-            // create the render texture (dyanmic settings from project settings)
-            _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat)
-            {
-                antiAliasing = Fugui.GetSrpMsaaSampleCount(msaaSamples),
-                depthStencilFormat = isRenderGraphEnabled 
-                    ? UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt 
-                    : UnityEngine.Experimental.Rendering.GraphicsFormat.None,
-                useDynamicScale = true,
-                useMipMap = supportsHDR,
-                autoGenerateMips = false,
-                enableRandomWrite = false
-            };
-
+            if (isRenderGraphEnabled)
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
+            else
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+            _rTexture.useDynamicScale = true;
             _rTexture.Create();
-            Camera.targetTexture = _rTexture;
 
+            Camera.targetTexture = _rTexture;
             OnResized += ImGuiCameraWindow_OnResize;
             OnDock += ImGuiCameraWindow_OnDock;
             OnClosed += UICameraWindow_OnClosed;
@@ -126,36 +119,27 @@ namespace Fu
                 _postProcessLayer.antialiasing = _defaultAntiAliasing;
             }
             Camera.allowMSAA = _defaultCameraMSAA;
-
             // set default MSAA friendly texture format
             _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
             _currentTextureDepth = 24;
 
-            // release previous render texture
+            // recreate render texture
             _rTexture.Release();
 
-            // get URP pipeline settings
-            var urpAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-            int msaaSamples = urpAsset?.msaaSampleCount ?? 1;
+            _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);            
+            int msaaSamples = Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor
+                ? 8
+                : urpAsset?.msaaSampleCount ?? 1;
+            
+            _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(msaaSamples);            
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
-            bool supportsHDR = urpAsset?.supportsHDR ?? false;
-
-            // recreate render texture with dynamic settings
-            _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat)
-            {
-                antiAliasing = Fugui.GetSrpMsaaSampleCount(msaaSamples),
-                depthStencilFormat = isRenderGraphEnabled 
-                    ? UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt 
-                    : UnityEngine.Experimental.Rendering.GraphicsFormat.None,
-                useDynamicScale = true,
-                useMipMap = supportsHDR,
-                autoGenerateMips = false,
-                enableRandomWrite = false
-            };
-
+            if (isRenderGraphEnabled)
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
+            else
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+            _rTexture.useDynamicScale = true;
             _rTexture.Create();
             Camera.targetTexture = _rTexture;
-
             // resize cam target
             Camera.pixelRect = new Rect(0, 0, (int)(WorkingAreaSize.x * _superSampling), (int)(WorkingAreaSize.y * _superSampling));
 
@@ -243,78 +227,29 @@ namespace Fu
         /// <summary>
         /// update camera and render texture size
         /// </summary>
-        /// <summary>
-        /// update camera and render texture size
-        /// </summary>
-        /// <summary>
-        /// update camera and render texture size
-        /// </summary>
         private void updateCameraSize()
         {
             if (!NeedToUpdateCamera)
             {
                 return;
             }
-        
+
             NeedToUpdateCamera = false;
-        
+            // resize render texture
             if (WorkingAreaSize.x <= 10 || WorkingAreaSize.y <= 10 || _superSampling <= 0.1f)
             {
                 return;
             }
-        
-            // release previous render texture
             _rTexture.Release();
-        
-            // get URP pipeline settings
-            var urpAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-            int msaaSamples = urpAsset?.msaaSampleCount ?? 1;
-            bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
-            bool supportsHDR = urpAsset?.supportsHDR ?? false;
-        
-            // platform-specific MSAA handling
-            bool isMacOS = Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor;
-            int resolvedMsaa = isMacOS && isRenderGraphEnabled ? 1 : Fugui.GetSrpMsaaSampleCount(msaaSamples);
-        
-            // recreate render texture with updated size and dynamic settings
-            _rTexture = new RenderTexture(
-                Mathf.Max((int)(WorkingAreaSize.x * _superSampling), 1),
-                Mathf.Max((int)(WorkingAreaSize.y * _superSampling), 1),
-                _currentTextureDepth,
-                _currentTextureFormat)
-            {
-                antiAliasing = resolvedMsaa,
-                depthStencilFormat = isRenderGraphEnabled 
-                    ? UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt 
-                    : UnityEngine.Experimental.Rendering.GraphicsFormat.None,
-                useDynamicScale = true,
-                useMipMap = supportsHDR,
-                autoGenerateMips = false,
-                enableRandomWrite = false
-            };
-        
-            _rTexture.Create();
+            _rTexture.width = (int)(WorkingAreaSize.x * _superSampling);
+            _rTexture.height = (int)(WorkingAreaSize.y * _superSampling);
             Camera.targetTexture = _rTexture;
-        
-            // macOS-specific workaround: disable post-processing and MSAA on camera
-            if (isMacOS)
-            {
-                if (_postProcessLayer != null)
-                {
-                    _postProcessLayer.renderPostProcessing = false;
-                    _postProcessLayer.antialiasing = AntialiasingMode.None;
-                }
-        
-                Camera.allowMSAA = false;
-            }
-        
             // resize cam target
-            Camera.pixelRect = new Rect(0, 0, _rTexture.width, _rTexture.height);
-        
+            Camera.pixelRect = new Rect(0, 0, (int)(WorkingAreaSize.x * _superSampling), (int)(WorkingAreaSize.y * _superSampling));
+
             ForceRenderCamera();
             updateCameraRender();
         }
-
 
         /// <summary>
         /// check whatever camera must be enabled or disabled to reach target camera FPS

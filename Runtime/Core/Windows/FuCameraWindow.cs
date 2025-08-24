@@ -246,6 +246,9 @@ namespace Fu
         /// <summary>
         /// update camera and render texture size
         /// </summary>
+        /// <summary>
+        /// update camera and render texture size
+        /// </summary>
         private void updateCameraSize()
         {
             if (!NeedToUpdateCamera)
@@ -269,6 +272,10 @@ namespace Fu
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
             bool supportsHDR = urpAsset?.supportsHDR ?? false;
         
+            // platform-specific MSAA handling
+            bool isMacOS = Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor;
+            int resolvedMsaa = isMacOS && isRenderGraphEnabled ? 1 : Fugui.GetSrpMsaaSampleCount(msaaSamples);
+        
             // recreate render texture with updated size and dynamic settings
             _rTexture = new RenderTexture(
                 Mathf.Max((int)(WorkingAreaSize.x * _superSampling), 1),
@@ -276,7 +283,7 @@ namespace Fu
                 _currentTextureDepth,
                 _currentTextureFormat)
             {
-                antiAliasing = Fugui.GetSrpMsaaSampleCount(msaaSamples),
+                antiAliasing = resolvedMsaa,
                 depthStencilFormat = isRenderGraphEnabled 
                     ? UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt 
                     : UnityEngine.Experimental.Rendering.GraphicsFormat.None,
@@ -289,12 +296,25 @@ namespace Fu
             _rTexture.Create();
             Camera.targetTexture = _rTexture;
         
+            // macOS-specific workaround: disable post-processing and MSAA on camera
+            if (isMacOS)
+            {
+                if (_postProcessLayer != null)
+                {
+                    _postProcessLayer.renderPostProcessing = false;
+                    _postProcessLayer.antialiasing = AntialiasingMode.None;
+                }
+        
+                Camera.allowMSAA = false;
+            }
+        
             // resize cam target
             Camera.pixelRect = new Rect(0, 0, _rTexture.width, _rTexture.height);
         
             ForceRenderCamera();
             updateCameraRender();
         }
+
 
         /// <summary>
         /// check whatever camera must be enabled or disabled to reach target camera FPS

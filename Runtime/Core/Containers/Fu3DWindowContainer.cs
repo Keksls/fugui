@@ -69,11 +69,21 @@ namespace Fu.Core
             Camera.cullingMask = 0;
 
             // Create RenderTexture
-            RenderTexture = new RenderTexture(Camera.pixelWidth, Camera.pixelHeight, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
-            RenderTexture.antiAliasing = 8;
-            RenderTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+            RenderTexture = new RenderTexture(Window.Size.x, Window.Size.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
+            int aaSamples = QualitySettings.antiAliasing;
+            if (aaSamples <= 0) aaSamples = 1;
+            {
+                RenderTexture.antiAliasing = aaSamples;
+            }
+            RenderTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
             RenderTexture.useDynamicScale = true;
             RenderTexture.Create();
+
+            if (!RenderTexture.IsCreated())
+            {
+                Debug.LogError("RenderTexture failed to create.");
+                return;
+            }
 
             // Assignate RenderTexture to Camera
             Camera.targetTexture = RenderTexture;

@@ -5,7 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
-namespace Fugui.Framework {
+namespace SFB {
 
     public class StandaloneFileBrowserLinux : IStandaloneFileBrowser {
         

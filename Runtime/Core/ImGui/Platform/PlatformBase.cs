@@ -10,17 +10,10 @@ namespace Fu.Core.DearImGui.Platform
         protected readonly PlatformCallbacks _callbacks = new PlatformCallbacks();
         protected ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
 
-        internal PlatformBase()
-        {
-        }
+        private const int TargetCursorSize = 32;
 
-        /// <summary>
-        /// Initialize the platform backend.
-        /// </summary>
-        /// <param name="io"> ImGuiIOPtr instance to set up the platform backend.</param>
-        /// <param name="pio"> ImGuiPlatformIOPtr instance to set up the platform backend.</param>
-        /// <param name="platformName"> The name of the platform backend, used for identification.</param>
-        /// <returns> True if the platform backend was successfully initialized, false otherwise.</returns>
+        internal PlatformBase() { }
+
         public virtual bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
             io.SetBackendPlatformName(platformName);
@@ -48,13 +41,6 @@ namespace Fu.Core.DearImGui.Platform
             return true;
         }
 
-        /// <summary>
-        /// Prepare the frame for rendering.
-        /// </summary>
-        /// <param name="io"> ImGuiIOPtr instance to prepare the frame.</param>
-        /// <param name="displayRect"> The display rectangle for the frame, used to set the display size.</param>
-        /// <param name="updateMouse"> Whether to update mouse input for the frame.</param>
-        /// <param name="updateKeyboard"> Whether to update keyboard input for the frame.</param>
         public virtual void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
         {
             Assert.IsTrue(io.Fonts.IsBuilt(), "Font atlas not built! Generally built by the renderer. Missing call to renderer NewFrame() function?");
@@ -62,22 +48,12 @@ namespace Fu.Core.DearImGui.Platform
             io.DeltaTime = Time.unscaledDeltaTime;
         }
 
-        /// <summary>
-        /// Shutdown the platform backend.
-        /// </summary>
-        /// <param name="io"> ImGuiIOPtr instance to shut down the platform backend.</param>
-        /// <param name="pio"> ImGuiPlatformIOPtr instance to shut down the platform backend.</param>
         public virtual void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
         {
             io.SetBackendPlatformName(null);
             _callbacks.Unset(pio);
         }
 
-        /// <summary>
-        /// Update the cursor based on the current ImGui state.
-        /// </summary>
-        /// <param name="io"> ImGuiIOPtr instance to update the cursor.</param>
-        /// <param name="cursor"> The current ImGui mouse cursor type.</param>
         protected void UpdateCursor(ImGuiIOPtr io, ImGuiMouseCursor cursor)
         {
             if (Fugui.IsCursorLocked)
@@ -85,6 +61,7 @@ namespace Fu.Core.DearImGui.Platform
 
             if (cursor == ImGuiMouseCursor.Arrow && ImGui.IsAnyItemHovered())
                 cursor = ImGuiMouseCursor.Hand;
+
             if (io.MouseDrawCursor)
             {
                 cursor = ImGuiMouseCursor.None;
@@ -95,15 +72,62 @@ namespace Fu.Core.DearImGui.Platform
                 Fugui.CursorsJustUnlocked = false;
                 return;
             }
+
             Fugui.CursorsJustUnlocked = false;
             if ((io.ConfigFlags & ImGuiConfigFlags.NoMouseCursorChange) != 0) return;
 
             _lastCursor = cursor;
-            Cursor.visible = cursor != ImGuiMouseCursor.None; // Hide cursor if ImGui is drawing it or if it wants no cursor.
-            if (Fugui.Settings.CursorShapes != null)
+            Cursor.visible = cursor != ImGuiMouseCursor.None;
+
+            if (Fugui.Settings.CursorShapes != null && Fugui.Settings.CursorShapes[cursor].Texture != null)
             {
-                Cursor.SetCursor(Fugui.Settings.CursorShapes[cursor].Texture, Fugui.Settings.CursorShapes[cursor].Hotspot, CursorMode.Auto);
+                var shape = Fugui.Settings.CursorShapes[cursor];
+                Texture2D texture = shape.Texture;
+
+                // Vérification des contraintes Unity
+                if (!texture.isReadable || texture.mipmapCount > 1 || texture.format != TextureFormat.RGBA32)
+                {
+                    texture = RebuildCursorTexture(texture);
+                }
+
+                // Redimensionnement si nécessaire
+                if (texture.width > TargetCursorSize || texture.height > TargetCursorSize)
+                {
+                    texture = ResizeCursorTexture(texture, TargetCursorSize, TargetCursorSize);
+                }
+
+                // Hotspot ajusté proportionnellement
+                Vector2 hotspot = new Vector2(
+                    Mathf.Clamp(shape.Hotspot.x * ((float)texture.width / shape.Texture.width), 0, texture.width),
+                    Mathf.Clamp(shape.Hotspot.y * ((float)texture.height / shape.Texture.height), 0, texture.height)
+                );
+
+                Cursor.SetCursor(texture, hotspot, CursorMode.Auto);
             }
+        }
+
+        private Texture2D ResizeCursorTexture(Texture2D source, int targetWidth, int targetHeight)
+        {
+            RenderTexture rt = RenderTexture.GetTemporary(targetWidth, targetHeight);
+            Graphics.Blit(source, rt);
+            RenderTexture.active = rt;
+
+            Texture2D result = new Texture2D(targetWidth, targetHeight, TextureFormat.RGBA32, false);
+            result.ReadPixels(new Rect(0, 0, targetWidth, targetHeight), 0, 0);
+            result.Apply();
+
+            RenderTexture.ReleaseTemporary(rt);
+            RenderTexture.active = null;
+
+            return result;
+        }
+
+        private Texture2D RebuildCursorTexture(Texture2D source)
+        {
+            Texture2D rebuilt = new Texture2D(source.width, source.height, TextureFormat.RGBA32, false);
+            Graphics.CopyTexture(source, rebuilt);
+            rebuilt.Apply();
+            return rebuilt;
         }
     }
 }

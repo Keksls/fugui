@@ -1,4 +1,5 @@
 using System;
+using SFB;
 
 namespace Fu.Framework {
     public struct ExtensionFilter {

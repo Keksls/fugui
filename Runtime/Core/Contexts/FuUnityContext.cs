@@ -100,6 +100,7 @@ namespace Fu.Core
             }
 
             LoadFonts();
+            IO.Fonts.Build();
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
             FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
@@ -156,6 +157,7 @@ namespace Fu.Core
             // update font scale
             TextureManager.ClearFontAtlas(oldScale);
             LoadFonts();
+            IO.Fonts.Build();  
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
             FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);

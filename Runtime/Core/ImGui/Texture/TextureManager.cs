@@ -148,7 +148,8 @@ namespace Fu.Core.DearImGui.Texture
             _atlasTexture.Add(Fugui.CurrentContext.FontScale, atlas);
 
             // register atlas texture
-            RegisterTexture(_atlasTexture[Fugui.CurrentContext.FontScale]);
+            IntPtr texId = RegisterTexture(atlas);
+            io.Fonts.SetTexID(texId);
         }
 
         /// <summary>

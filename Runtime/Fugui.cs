@@ -280,16 +280,6 @@ namespace Fu
 #endif
             // set shared time
             Time = UnityEngine.Time.unscaledTime;
-            // get absolute monitors cursor pos
-            Vector2Int _worldMousePosition;
-            if (GetCursorPos(out _worldMousePosition))
-            {
-                WorldMousePosition = _worldMousePosition;
-            }
-            else
-            {
-                Debug.Log("fail");
-            }
 
             // execute mainThread actions stack
             while (_executeInMainThreadActionsStack.Count > 0)

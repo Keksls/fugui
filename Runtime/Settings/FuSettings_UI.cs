@@ -1,5 +1,4 @@
-﻿using Fu.Core;
-using Fu.Framework;
+﻿using Fu.Framework;
 using ImGuiNET;
 using UnityEngine;
 
@@ -31,7 +30,7 @@ namespace Fu
                 {
                     if (grid.Button("Docking Layout", FuButtonStyle.Highlight))
                     {
-                        FuDockingLayoutManager.SetConfigurationLayout();
+                        Fugui.Layouts.SetConfigurationLayout();
                     }
                 }
                 FuStyle.Unpadded.Pop();

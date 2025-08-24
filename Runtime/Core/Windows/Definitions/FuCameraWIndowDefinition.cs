@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     /// <summary>
     /// Represents a definition for a UI window that displays a camera view.

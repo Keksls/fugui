@@ -1,12 +1,9 @@
-using Fu.Core.DearImGui.Platform;
-using Fu.Core.DearImGui.Texture;
-using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Linq;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     public class FuUnityContext : FuContext
     {
@@ -103,7 +100,7 @@ namespace Fu.Core
             IO.Fonts.Build();
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
-            FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
+            Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
 
             SetDefaultImGuiIniFilePath(null);
         }
@@ -160,7 +157,7 @@ namespace Fu.Core
             IO.Fonts.Build();  
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
-            FuThemeManager.SetTheme(FuThemeManager.CurrentTheme);
+            Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
 
             // scale windows sizes for windows NOT docked, visible and in this context
             Fugui.UIWindows.Where(win => win.Value.Container.Context == this && win.Value.IsVisible && !win.Value.IsDocked).ToList()

@@ -1,15 +1,12 @@
-using Fu.Core.DearImGui;
-using Fu.Core.DearImGui.Texture;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     public abstract class FuContext
     {
@@ -110,7 +107,7 @@ namespace Fu.Core
             {
                 int byteCount = Encoding.UTF8.GetByteCount(iniPath);
                 byte* nativeName = (byte*)Marshal.AllocHGlobal(byteCount + 1);
-                int offset = Utils.GetUtf8(iniPath, nativeName, byteCount);
+                int offset = Fugui.GetUtf8(iniPath, nativeName, byteCount);
                 nativeName[offset] = 0x0;
                 io->IniFilename = nativeName;
             }

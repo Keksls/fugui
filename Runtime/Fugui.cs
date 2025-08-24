@@ -1,7 +1,6 @@
 ﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
 //#define FUDEBUG 
-using Fu.Core;
 using Fu.Framework;
 using ImGuiNET;
 using System;
@@ -10,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -77,6 +77,18 @@ namespace Fu
         /// </summary>
         public static FuguiRenderingState RenderingState = FuguiRenderingState.None;
         /// <summary>
+        /// The type of render pipeline currently in use (Built-in, URP, HDRP)
+        /// </summary>
+        public static FuRenderPipelineType RenderPipelineType { get; private set; }
+        /// <summary>
+        /// The Fugui Theme Manager instance
+        /// </summary>
+        public static FuThemeManager Themes { get; private set; }
+        /// <summary>
+        /// The Fugui Docking Layout Manager instance
+        /// </summary>
+        public static FuDockingLayoutManager Layouts { get; private set; }
+        /// <summary>
         /// FuGui Controller instance
         /// </summary>
         internal static FuController Controller;
@@ -129,7 +141,6 @@ namespace Fu
 
         private static float _targetScale = -1f;
         private static float _targetFontScale = -1f;
-
         #endregion
 
         #region Constants
@@ -230,15 +241,7 @@ namespace Fu
 
         static Fugui()
         {
-            // instantiate UIWindows 
-            UIWindows = new Dictionary<string, FuWindow>();
-            UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
-            // init dic and queue
-            _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
-            // handle native ImGui assert handler
-            ImGuiAssertHandler.Install();
-            // prepare context menu
-            ResetContextMenu(true);
+            Initialize(null, null, null);
         }
 
         #region Workflow
@@ -246,10 +249,33 @@ namespace Fu
         /// Initialize FuGui and create Main Container
         /// </summary>
         /// <param name="mainContainerUICamera">Camera that will display UI of main container</param>
-        public static void Initialize(Camera mainContainerUICamera)
+        public static void Initialize(FuSettings settings, FuController controller, Camera mainContainerUICamera)
         {
+            Settings = settings;
+            Controller = controller;
+            GetCurrentRenderPipeline();
+            if (RenderPipelineType == FuRenderPipelineType.Unsupported)
+            {
+                Debug.LogWarning($"[Fugui] Fugui has detected an unsupported render pipeline ({RenderPipelineType}). Fugui is only supporting Universal Render Pipeline (URP) and High Definition Render Pipeline (HDRP). You can still use Fugui with Built-in or custom SRP, but some features may not work as expected.");
+            }
+            Themes = new FuThemeManager();
+            Layouts = new FuDockingLayoutManager();
+            // instantiate UIWindows 
+            UIWindows = new Dictionary<string, FuWindow>();
+            UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
+            // init dic and queue
+            _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
+            // handle native ImGui assert handler
+            ImGuiAssertHandler.Initialize();
+            // prepare context menu
+            ResetContextMenu(true);
+
+            // prevnt null ref
+            if (settings == null || controller == null || mainContainerUICamera == null)
+                return;
+
             // create Default Fugui Context and initialize themeManager
-            DefaultContext = CreateUnityContext(mainContainerUICamera, Settings.GlobalScale, Settings.FontGlobalScale, FuThemeManager.Initialize);
+            DefaultContext = CreateUnityContext(mainContainerUICamera, Settings.GlobalScale, Settings.FontGlobalScale, Fugui.Themes.Initialize);
             DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
@@ -667,7 +693,7 @@ namespace Fu
         }
         #endregion
 
-        #region Render Thread
+        #region Rendering
         /// <summary>
         /// Render each FuGui contexts
         /// </summary>
@@ -727,6 +753,40 @@ namespace Fu
 
             // prevent rescaling each frames
             _targetScale = -1f;
+        }
+
+        /// <summary>
+        /// Get the current render pipeline type
+        /// </summary>
+        private static void GetCurrentRenderPipeline()
+        {
+            try
+            {
+                // Try the most specific first, then fallbacks.
+                RenderPipelineAsset asset =
+                      GraphicsSettings.currentRenderPipeline
+                   ?? QualitySettings.renderPipeline
+                   ?? GraphicsSettings.defaultRenderPipeline;
+
+                // If null, it's Built-in RP.
+                if (asset == null)
+                {
+                    RenderPipelineType = FuRenderPipelineType.BuiltIn;
+                    return;
+                }
+#if HAS_URP
+                RenderPipelineType = FuRenderPipelineType.URP;
+#elif HAS_HDRP
+            RenderPipelineType = FuRenderPipelineType.HDRP;
+#else
+            RenderPipelineType = FuRenderPipelineType.CustomSRP;
+#endif
+            }
+            catch (Exception ex)
+            {
+                RenderPipelineType = FuRenderPipelineType.Unknown;
+                Debug.LogWarning("Fugui: Unable to determine current render pipeline. " + ex.Message);
+            }
         }
         #endregion
 
@@ -1116,7 +1176,7 @@ namespace Fu
             Vector4 currentTextColor = ImGui.GetStyle().Colors[(int)FuColors.Text];
 
             // Get FuGui theme reference text color
-            Vector4 themeTextColor = FuThemeManager.GetColor(FuColors.Text);
+            Vector4 themeTextColor = Fugui.Themes.GetColor(FuColors.Text);
 
             // If ImGui style uses a custom color (i.e., it's different from the theme)
             if (!ColorsAreEqual(currentTextColor, themeTextColor))
@@ -1125,7 +1185,7 @@ namespace Fu
             }
 
             // Else return duotone from theme (disabled or not)
-            var color = FuThemeManager.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotonePrimaryColor);
+            var color = Fugui.Themes.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotonePrimaryColor);
             return ImGui.GetColorU32(color);
         }
 
@@ -1140,7 +1200,7 @@ namespace Fu
             Vector4 currentTextColor = ImGui.GetStyle().Colors[(int)FuColors.Text];
 
             // Get FuGui theme base text color
-            Vector4 themeTextColor = FuThemeManager.GetColor(FuColors.Text);
+            Vector4 themeTextColor = Fugui.Themes.GetColor(FuColors.Text);
 
             // If user has pushed a custom text color
             if (!ColorsAreEqual(currentTextColor, themeTextColor))
@@ -1157,7 +1217,7 @@ namespace Fu
             }
 
             // Fallback to theme duotone or disabled color
-            var color = FuThemeManager.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotoneSecondaryColor);
+            var color = Fugui.Themes.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotoneSecondaryColor);
             return ImGui.GetColorU32(color);
         }
 
@@ -1179,9 +1239,24 @@ namespace Fu
 
         #region public Utils
         /// <summary>
+        /// Convert a string to UTF8 byte array and return the number of bytes written to the array
+        /// </summary>
+        /// <param name="s"> string to convert</param>
+        /// <param name="utf8Bytes"> pointer to the byte array that will receive the UTF8 bytes</param>
+        /// <param name="utf8ByteCount"> size of the byte array</param>
+        /// <returns> number of bytes written to the array</returns>
+        public unsafe static int GetUtf8(string s, byte* utf8Bytes, int utf8ByteCount)
+        {
+            fixed (char* utf16Ptr = s)
+            {
+                return Encoding.UTF8.GetBytes(utf16Ptr, s.Length, utf8Bytes, utf8ByteCount);
+            }
+        }
+
+        /// <summary>
         /// Execute a callback after each window of default context has render
         /// </summary>
-        /// <param name="callback"></param>
+        /// <param name="callback"> callback to execute</param>
         public static void ExecuteAfterRenderWindows(Action callback)
         {
             if (callback != null)

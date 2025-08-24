@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace Fu.Core
+namespace Fu
 {
     public class FuSystemWindowsNames
     {

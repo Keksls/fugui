@@ -24,7 +24,7 @@ namespace ImGuiNET
         /// <summary>
         /// Sets up the managed assertion handler and installs it into native ImGui.
         /// </summary>
-        public static void Install()
+        public static void Initialize()
         {
             _callbackDelegate = HandleAssert;
             SetImGuiAssertCallback(_callbackDelegate);

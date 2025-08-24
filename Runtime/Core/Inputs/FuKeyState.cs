@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     /// <summary>
     /// struct that represent a keyboard key state

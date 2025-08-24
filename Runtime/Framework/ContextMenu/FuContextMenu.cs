@@ -1,5 +1,4 @@
-﻿using Fu.Core;
-using Fu.Framework;
+﻿using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -242,7 +241,7 @@ namespace Fu
                     bool enabled = (menuItem.Enabled?.Invoke() ?? true) && !IsContextMenuDisabled;
                     if (!enabled)
                     {
-                        Push(ImGuiCol.Text, FuThemeManager.GetColor(FuColors.TextDisabled));
+                        Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled));
                     }
                     // whatever the item is a parent (contain children)
                     if (menuItem.Children.Count > 0)

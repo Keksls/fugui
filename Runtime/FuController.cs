@@ -1,8 +1,7 @@
-using Fu.Framework;
 using System;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     public class FuController : MonoBehaviour
     {
@@ -20,12 +19,8 @@ namespace Fu.Core
         #region Unity Methods
         void Awake()
         {
-            // store Fugui settings
-            Fugui.Controller = this;
-            Fugui.Settings = _settings;
-
             // prepare FuGui before start using it
-            Fugui.Initialize(_uiCamera);
+            Fugui.Initialize(_settings, this, _uiCamera);
 
             // log errors to Unity console
             if (_logErrors)
@@ -43,7 +38,7 @@ namespace Fu.Core
         private void Start()
         {
             // if no layouts and settings is set so, display Fugui settings to avoid 'softLocked scene'
-            if (FuDockingLayoutManager.CurrentLayout == null && FuDockingLayoutManager.Layouts.Count == 0 && Fugui.Settings.DisplaySettingsIfNoLayout)
+            if (Fugui.Layouts.CurrentLayout == null && Fugui.Layouts.Layouts.Count == 0 && Fugui.Settings.DisplaySettingsIfNoLayout)
             {
                 Fugui.CreateWindowAsync(FuSystemWindowsNames.FuguiSettings, null);
             }

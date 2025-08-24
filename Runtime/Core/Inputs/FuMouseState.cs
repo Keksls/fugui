@@ -1,9 +1,8 @@
-using Fu.Framework;
 using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     /// <summary>
     /// struct that represent mouse states for an UIWindow

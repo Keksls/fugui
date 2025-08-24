@@ -1,7 +1,6 @@
 using System;
-using SFB;
 
-namespace Fu.Framework {
+namespace Fu {
     public struct ExtensionFilter {
         public string Name;
         public string[] Extensions;

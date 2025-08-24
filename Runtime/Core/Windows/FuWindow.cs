@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Fu.Core
+namespace Fu
 {
     /// <summary>
     /// Class that represent an ImGui Window
@@ -436,13 +436,13 @@ namespace Fu.Core
             // set tab color of hovered window
             if (IsHovered)
             {
-                Fugui.Push(ImGuiCol.TabSelected, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
-                Fugui.Push(ImGuiCol.TabDimmedSelected, FuThemeManager.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCol.TabSelected, Fugui.Themes.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCol.TabDimmedSelected, Fugui.Themes.GetColor(FuColors.HoveredWindowTab));
             }
             else
             {
-                Fugui.Push(ImGuiCol.TabSelected, FuThemeManager.GetColor(FuColors.TabSelected));
-                Fugui.Push(ImGuiCol.TabDimmedSelected, FuThemeManager.GetColor(FuColors.TabDimmedSelected));
+                Fugui.Push(ImGuiCol.TabSelected, Fugui.Themes.GetColor(FuColors.TabSelected));
+                Fugui.Push(ImGuiCol.TabDimmedSelected, Fugui.Themes.GetColor(FuColors.TabDimmedSelected));
             }
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(6f, 4f));
 
@@ -913,7 +913,7 @@ namespace Fu.Core
         /// <returns>whatever the window has been docked</returns>
         public bool AutoDock()
         {
-            return FuDockingLayoutManager.AutoDockWindow(this);
+            return Fugui.Layouts.AutoDockWindow(this);
         }
 
         /// <summary>

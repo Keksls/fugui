@@ -1,5 +1,5 @@
 //#define PUSH_POP_DEBUG
-using Fu.Core;
+using Fu;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -219,17 +219,17 @@ namespace Fu.Framework
             {
                 if (ImGuiNative.igIsItemFocused() != 0)
                 {
-                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
+                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
                 }
                 else if (ImGui.IsItemHovered())
                 {
                     // ImGui fail on inputText since version 1.88, check on new version
-                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
+                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
                 }
             }
             else if (force)
             {
-                ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
+                ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
             }
         }
 
@@ -239,7 +239,7 @@ namespace Fu.Framework
         /// <param name="rect">rect of the frame (pos + size)</param>
         private void drawBorderFrame(Rect rect, bool rounded = true)
         {
-            ImGui.GetWindowDrawList().AddRect(rect.min, rect.max, ImGui.GetColorU32(FuThemeManager.GetColor(FuColors.FrameSelectedFeedback)), rounded ? ImGui.GetStyle().FrameRounding : 0f);
+            ImGui.GetWindowDrawList().AddRect(rect.min, rect.max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), rounded ? ImGui.GetStyle().FrameRounding : 0f);
         }
         #endregion
 

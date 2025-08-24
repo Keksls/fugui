@@ -1,4 +1,3 @@
-using Fu.Core;
 using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -150,10 +149,10 @@ namespace Fu.Framework
             _defaultButtonStyle = new FuButtonStyle()
             {
                 FramePadding = new Vector2(8f, 4f),
-                Button = FuThemeManager.GetColor(FuColors.Button),
-                ButtonHovered = FuThemeManager.GetColor(FuColors.ButtonHovered),
-                ButtonActive = FuThemeManager.GetColor(FuColors.ButtonActive),
-                DisabledButton = FuThemeManager.GetColor(FuColors.Button) * 0.5f,
+                Button = Fugui.Themes.GetColor(FuColors.Button),
+                ButtonHovered = Fugui.Themes.GetColor(FuColors.ButtonHovered),
+                ButtonActive = Fugui.Themes.GetColor(FuColors.ButtonActive),
+                DisabledButton = Fugui.Themes.GetColor(FuColors.Button) * 0.5f,
                 TextStyle = FuTextStyle.Default
             };
             // transparent button style
@@ -170,70 +169,70 @@ namespace Fu.Framework
             _highlightButtonStyle = new FuButtonStyle()
             {
                 FramePadding = new Vector2(8f, 4f),
-                Button = FuThemeManager.GetColor(FuColors.Highlight),
-                ButtonHovered = FuThemeManager.GetColor(FuColors.HighlightHovered),
-                ButtonActive = FuThemeManager.GetColor(FuColors.HighlightActive),
-                DisabledButton = FuThemeManager.GetColor(FuColors.HighlightDisabled),
+                Button = Fugui.Themes.GetColor(FuColors.Highlight),
+                ButtonHovered = Fugui.Themes.GetColor(FuColors.HighlightHovered),
+                ButtonActive = Fugui.Themes.GetColor(FuColors.HighlightActive),
+                DisabledButton = Fugui.Themes.GetColor(FuColors.HighlightDisabled),
                 TextStyle = FuTextStyle.Highlight
             };
             // selected
             _selectedButtonStyle = new FuButtonStyle()
             {
                 FramePadding = new Vector2(8f, 4f),
-                Button = FuThemeManager.GetColor(FuColors.Selected),
-                ButtonHovered = FuThemeManager.GetColor(FuColors.SelectedHovered),
-                ButtonActive = FuThemeManager.GetColor(FuColors.SelectedActive),
-                DisabledButton = FuThemeManager.GetColor(FuColors.Selected) * 0.5f,
+                Button = Fugui.Themes.GetColor(FuColors.Selected),
+                ButtonHovered = Fugui.Themes.GetColor(FuColors.SelectedHovered),
+                ButtonActive = Fugui.Themes.GetColor(FuColors.SelectedActive),
+                DisabledButton = Fugui.Themes.GetColor(FuColors.Selected) * 0.5f,
                 TextStyle = FuTextStyle.Selected
             };
             // danger
             _dangerButtonStyle = new FuButtonStyle()
             {
                 FramePadding = new Vector2(8f, 4f),
-                Button = FuThemeManager.GetColor(FuColors.BackgroundDanger),
-                ButtonHovered = FuThemeManager.GetColor(FuColors.BackgroundDanger) * 0.9f,
-                ButtonActive = FuThemeManager.GetColor(FuColors.BackgroundDanger) * 0.8f,
-                DisabledButton = FuThemeManager.GetColor(FuColors.BackgroundDanger) * 0.5f,
+                Button = Fugui.Themes.GetColor(FuColors.BackgroundDanger),
+                ButtonHovered = Fugui.Themes.GetColor(FuColors.BackgroundDanger) * 0.9f,
+                ButtonActive = Fugui.Themes.GetColor(FuColors.BackgroundDanger) * 0.8f,
+                DisabledButton = Fugui.Themes.GetColor(FuColors.BackgroundDanger) * 0.5f,
                 TextStyle = FuTextStyle.Default
             };
             // info
             _infoButtonStyle = new FuButtonStyle()
             {
                 FramePadding = new Vector2(8f, 4f),
-                Button = FuThemeManager.GetColor(FuColors.BackgroundInfo),
-                ButtonHovered = FuThemeManager.GetColor(FuColors.BackgroundInfo) * 0.9f,
-                ButtonActive = FuThemeManager.GetColor(FuColors.BackgroundInfo) * 0.8f,
-                DisabledButton = FuThemeManager.GetColor(FuColors.BackgroundInfo) * 0.5f,
+                Button = Fugui.Themes.GetColor(FuColors.BackgroundInfo),
+                ButtonHovered = Fugui.Themes.GetColor(FuColors.BackgroundInfo) * 0.9f,
+                ButtonActive = Fugui.Themes.GetColor(FuColors.BackgroundInfo) * 0.8f,
+                DisabledButton = Fugui.Themes.GetColor(FuColors.BackgroundInfo) * 0.5f,
                 TextStyle = FuTextStyle.Default
             };
             // success
             _successButtonStyle = new FuButtonStyle()
             {
                 FramePadding = new Vector2(8f, 4f),
-                Button = FuThemeManager.GetColor(FuColors.BackgroundSuccess),
-                ButtonHovered = FuThemeManager.GetColor(FuColors.BackgroundSuccess) * 0.9f,
-                ButtonActive = FuThemeManager.GetColor(FuColors.BackgroundSuccess) * 0.8f,
-                DisabledButton = FuThemeManager.GetColor(FuColors.BackgroundSuccess) * 0.5f,
+                Button = Fugui.Themes.GetColor(FuColors.BackgroundSuccess),
+                ButtonHovered = Fugui.Themes.GetColor(FuColors.BackgroundSuccess) * 0.9f,
+                ButtonActive = Fugui.Themes.GetColor(FuColors.BackgroundSuccess) * 0.8f,
+                DisabledButton = Fugui.Themes.GetColor(FuColors.BackgroundSuccess) * 0.5f,
                 TextStyle = FuTextStyle.Default
             };
             // warning
             _warningButtonStyle = new FuButtonStyle()
             {
                 FramePadding = new Vector2(8f, 4f),
-                Button = FuThemeManager.GetColor(FuColors.BackgroundWarning),
-                ButtonHovered = FuThemeManager.GetColor(FuColors.BackgroundWarning) * 0.9f,
-                ButtonActive = FuThemeManager.GetColor(FuColors.BackgroundWarning) * 0.8f,
-                DisabledButton = FuThemeManager.GetColor(FuColors.BackgroundWarning) * 0.5f,
+                Button = Fugui.Themes.GetColor(FuColors.BackgroundWarning),
+                ButtonHovered = Fugui.Themes.GetColor(FuColors.BackgroundWarning) * 0.9f,
+                ButtonActive = Fugui.Themes.GetColor(FuColors.BackgroundWarning) * 0.8f,
+                DisabledButton = Fugui.Themes.GetColor(FuColors.BackgroundWarning) * 0.5f,
                 TextStyle = FuTextStyle.Default
             };
             // collapsable
             _collapsableButtonStyle = new FuButtonStyle()
             {
                 FramePadding = new Vector2(8f, 3f),
-                Button = FuThemeManager.GetColor(FuColors.Collapsable),
-                ButtonHovered = FuThemeManager.GetColor(FuColors.CollapsableHovered),
-                ButtonActive = FuThemeManager.GetColor(FuColors.CollapsableActive),
-                DisabledButton = FuThemeManager.GetColor(FuColors.CollapsableDisabled),
+                Button = Fugui.Themes.GetColor(FuColors.Collapsable),
+                ButtonHovered = Fugui.Themes.GetColor(FuColors.CollapsableHovered),
+                ButtonActive = Fugui.Themes.GetColor(FuColors.CollapsableActive),
+                DisabledButton = Fugui.Themes.GetColor(FuColors.CollapsableDisabled),
                 TextStyle = FuTextStyle.Default
             };
         }

@@ -1,3 +1,4 @@
+@ -1,315 +1,321 @@
 using ImGuiNET;
 using System;
 using UnityEngine;
@@ -71,11 +72,7 @@ namespace Fu
 
             // create the render texture
             _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
-            var urpAsset = UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
-            int msaaSamples = Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor
-                ? 8
-                : urpAsset?.msaaSampleCount ?? 1;            
-            _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(msaaSamples);            
+            _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(4);
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
             if (isRenderGraphEnabled)
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
@@ -126,13 +123,8 @@ namespace Fu
             // recreate render texture
             _rTexture.Release();
 
-            _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);      
-            var urpAsset = UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
-            int msaaSamples = Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor
-                ? 8
-                : urpAsset?.msaaSampleCount ?? 1;
-            
-            _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(msaaSamples);            
+            _rTexture = new RenderTexture(Size.x, Size.y, _currentTextureDepth, _currentTextureFormat);
+            _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(4);
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
             if (isRenderGraphEnabled)
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;

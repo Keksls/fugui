@@ -37,10 +37,13 @@ namespace Fu.Framework
                 return;
             }
 
+            // set default path
+            defaultPath = string.IsNullOrEmpty(defaultPath) ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) : defaultPath;
+
             // set path if not exist in dic
             if (!_pathFieldValues.ContainsKey(text))
             {
-                _pathFieldValues.Add(text, string.IsNullOrEmpty(defaultPath) ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) : defaultPath);
+                _pathFieldValues.Add(text, defaultPath);
             }
             string path = _pathFieldValues[text];
 

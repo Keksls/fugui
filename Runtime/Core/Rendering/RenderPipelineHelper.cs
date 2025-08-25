@@ -1,12 +1,7 @@
 ﻿using System.Reflection;
 using UnityEngine;
 using UnityEngine.Rendering;
-#if HAS_URP
 using UnityEngine.Rendering.Universal;
-#endif
-#if HAS_HDRP
-using UnityEngine.Rendering.HighDefinition;
-#endif
 
 namespace Fu
 {
@@ -31,10 +26,8 @@ namespace Fu
                 return FuRenderPipelineType.BuiltIn;
 
             // Try strong-typed checks when packages are present
-#if HAS_URP
             if (asset is UniversalRenderPipelineAsset)
                 return FuRenderPipelineType.URP;
-#endif
 #if HAS_HDRP
         if (asset is HDRenderPipelineAsset) 
             return FuRenderPipelineType.HDRP;
@@ -69,14 +62,8 @@ namespace Fu
             if (asset == null) return @default;
 
             // Strong-typed path if packages are present
-#if HAS_URP
             if (asset is UniversalRenderPipelineAsset urp)
                 return urp.msaaSampleCount;
-#endif
-#if HAS_HDRP
-        if (asset is HDRenderPipelineAsset hdrp)
-            return hdrp.msaaSampleCount;
-#endif
 
             // Fallback by reflection (property exists on both URP/HDRP assets)
             try

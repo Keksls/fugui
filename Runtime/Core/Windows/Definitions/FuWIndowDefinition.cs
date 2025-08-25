@@ -37,6 +37,8 @@ namespace Fu
         public Action<FuWindow, float, float> UITopBar { get; set; }
         // The height of the window topBar (optional)
         public float TopBarHeight { get; private set; }
+        // The height of the window topBar (optional)
+        public float BottomBarHeight { get; private set; }
         #endregion
 
         /// <summary>
@@ -177,6 +179,23 @@ namespace Fu
         {
             TopBarHeight = Mathf.Max(0f, topBarHeight);
             UITopBar = uiTopBar;
+            // Return the current UIWindowDefinition object
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the UI of the bottomBar of this window
+        /// This will be called before main UI callback and set the cursor
+        /// Sets the height of the bottomBar of this window
+        /// The WorkingArea Size and Position will be calculated according to this value.
+        /// The bottomBar will not be draw by Fugui, you will have to do it yourself
+        /// </summary>
+        /// <param name="UITopBar">The height of the optional window BottomBar.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetBottombarUI(Action<FuWindow, float, float> uiBottomBar, float bottomBarHeight)
+        {
+            BottomBarHeight = Mathf.Max(0f, bottomBarHeight);
+            UITopBar = uiBottomBar;
             // Return the current UIWindowDefinition object
             return this;
         }

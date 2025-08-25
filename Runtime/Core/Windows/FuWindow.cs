@@ -46,7 +46,8 @@ namespace Fu
         public FuWindowName WindowName { get; private set; }
         public string ID { get; private set; }
         public Action<FuWindow> UI { get; set; }
-        public Action<FuWindow, float, float> UITopBar { get; set; }
+        public Action<FuWindow, float, float> UIHeader { get; set; }
+        public Action<FuWindow, float, float> UIFooter { get; set; }
         public bool HasMovedThisFrame { get; private set; }
         public bool HasJustBeenDraw { get; set; }
         public bool WantCaptureKeyboard { get; private set; }
@@ -154,9 +155,9 @@ namespace Fu
         #endregion
 
         #region Window Location
-        // unscaled private The height of the window topBar (optional)
+        // unscaled private The height of the window topBar (optional)   
         private float _topBarHeight;
-        // The height of the window topBar (optional)
+
         public float TopBarHeight
         {
             get
@@ -166,6 +167,21 @@ namespace Fu
             set
             {
                 _topBarHeight = value;
+            }
+        }
+
+        // unscaled private The height of the window bottomBar (optional)        
+        private float _bottomBarHeight;
+
+        public float BottomBarHeight
+        {
+            get
+            {
+                return _bottomBarHeight * (Container?.Context.Scale ?? 1f);
+            }
+            set
+            {
+                _bottomBarHeight = value;
             }
         }
         internal Vector2Int _size;
@@ -247,7 +263,8 @@ namespace Fu
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
             TopBarHeight = windowDefinition.TopBarHeight;
-            UITopBar = windowDefinition.UITopBar;
+            BottomBarHeight = windowDefinition.BottomBarHeight;
+            UIHeader = windowDefinition.UITopBar;
             _lastFrameVisible = false;
             // add default overlays
             Overlays = new Dictionary<string, FuOverlay>();
@@ -635,17 +652,18 @@ namespace Fu
         private void TryDrawUI()
         {
             // save working area size and position
-            _workingAreaSize = new Vector2Int((int)ImGui.GetContentRegionAvail().x, (int)(ImGui.GetContentRegionAvail().y - TopBarHeight));
+            _workingAreaSize = new Vector2Int((int)ImGui.GetContentRegionAvail().x, (int)(ImGui.GetContentRegionAvail().y - TopBarHeight - BottomBarHeight));
             _workingAreaPosition = new Vector2Int((int)ImGui.GetCursorScreenPos().x, (int)(ImGui.GetCursorScreenPos().y + TopBarHeight)) - _localPosition;
+
             if (MustBeDraw())
             {
                 Fugui.HasRenderWindowThisFrame = true;
                 CurrentDrawingWindow = this;
                 // draw topBar if needed
-                if (TopBarHeight > 0f && UITopBar != null)
+                if (TopBarHeight > 0f && UIHeader != null)
                 {
                     Vector2 screenCursorPos = ImGui.GetCursorScreenPos();
-                    UITopBar.Invoke(this, _workingAreaSize.x, TopBarHeight);
+                    UIHeader.Invoke(this, _workingAreaSize.x, TopBarHeight);
                     ImGui.SetCursorScreenPos(screenCursorPos + new Vector2(0f, TopBarHeight));
                 }
 
@@ -661,6 +679,12 @@ namespace Fu
 
                 // invoke body draw event 
                 OnBodyDraw?.Invoke(this);
+
+                // draw bottomBar if needed
+                if (BottomBarHeight > 0f && UIFooter != null)
+                {
+                    UIFooter.Invoke(this, _workingAreaSize.x, BottomBarHeight);
+                }
 
                 // pop missing push
                 int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;

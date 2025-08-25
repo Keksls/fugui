@@ -26,6 +26,8 @@ namespace Fu
         public bool IsHoverPopup { get { return _isHoverPupUp; } }
         private bool _isHoverTopBar;
         public bool IsHoverTopBar { get { return _isHoverTopBar; } }
+        private bool _isHoverBottomBar;
+        public bool IsHoverBottomBar { get { return _isHoverBottomBar; } }
         private static readonly HashSet<int> _currentPressedKeys = new HashSet<int>();
 
         /// <summary>
@@ -78,7 +80,8 @@ namespace Fu
                 _isHoverOverlay |= overlay.LocalRect.Contains(position);
             }
             _isHoverPupUp = Fugui.IsInsideAnyPopup(window.Container.LocalMousePos);
-            _isHoverTopBar = window.UITopBar != null && window.TopBarHeight > 0f && position.y <= window.TopBarHeight + (window.WorkingAreaPosition.y - window.LocalPosition.y);
+            _isHoverTopBar = window.UIHeader != null && window.TopBarHeight > 0f && position.y <= window.TopBarHeight + (window.WorkingAreaPosition.y - window.LocalPosition.y);
+            _isHoverBottomBar = window.UIFooter != null && window.BottomBarHeight > 0f && position.y >= window.WorkingAreaSize.y + window.WorkingAreaPosition.y - window.BottomBarHeight;
         }
 
         /// <summary>
@@ -93,6 +96,7 @@ namespace Fu
             _isHoverOverlay = false;
             _isHoverPupUp = false;
             _isHoverTopBar = false;
+            _isHoverBottomBar = false;
 
             // set container mouse buttons states
             bool btn0State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Left) != 0;
@@ -109,6 +113,7 @@ namespace Fu
                 _isHoverOverlay |= window.Mouse.IsHoverOverlay;
                 _isHoverPupUp |= window.Mouse.IsHoverPopup;
                 _isHoverTopBar |= window.Mouse.IsHoverTopBar;
+                _isHoverBottomBar |= window.Mouse._isHoverBottomBar;
             });
         }
 

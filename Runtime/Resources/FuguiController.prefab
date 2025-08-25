@@ -234,6 +234,7 @@ MonoBehaviour:
     ConfigMemoryCompactTimer: 1
     ConfigDockingNoSplit: 0
     ConfigDockingTransparentPayload: 0
+    TargetCursorSize: 32
     CursorShapes: {fileID: 11400000, guid: ce7ff60857038f249956282ba6f82d62, type: 2}
   _uiCamera: {fileID: 963194227}
   _logErrors: 1

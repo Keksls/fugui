@@ -1,4 +1,4 @@
-Shader "FuGui/3DUIWindow"
+Shader "Fugui/3DUIWindow"
 {
     Properties {
         _MainTex ("Texture", 2D) = "white" {}

@@ -104,7 +104,7 @@ namespace Fu.Framework
             // Draw the filled part
             if (filledPartSize.x > 0)
             {
-                ImGui.GetWindowDrawList().AddRectFilled(cursorPos, cursorPos + filledPartSize, ImGui.GetColorU32(ImGuiCol.PlotLines, LastItemDisabled ? 0.5f : 1f), rounding);
+                ImGui.GetWindowDrawList().AddRectFilled(cursorPos, cursorPos + filledPartSize, ImGui.GetColorU32(ImGuiCol.CheckMark, LastItemDisabled ? 0.5f : 1f), rounding);
             }
 
             // Display the text
@@ -144,7 +144,7 @@ namespace Fu.Framework
             Vector2 barSize = new Vector2(barFillerWidth * (1.0f - 0.05f * Math.Abs(2.0f * animationPosition - 1.0f)), size.y);
             Vector2 barPos = ImGui.GetCursorScreenPos() + new Vector2(size.x * 0.5f - barFillerWidth * 0.5f + (animationPosition - 0.5f) * (size.x - barFillerWidth), 0.0f);
             drawList.AddRectFilled(ImGui.GetCursorScreenPos(), ImGui.GetCursorScreenPos() + size, ImGui.GetColorU32(ImGuiCol.FrameBg, LastItemDisabled ? 0.5f : 1f), rounding);
-            drawList.AddRectFilled(barPos, barPos + barSize, ImGui.GetColorU32(ImGuiCol.PlotLines, LastItemDisabled ? 0.5f : 1f), rounding);
+            drawList.AddRectFilled(barPos, barPos + barSize, ImGui.GetColorU32(ImGuiCol.CheckMark, LastItemDisabled ? 0.5f : 1f), rounding);
             ImGui.Dummy(size);
 
             // for draw current window to ensure animation fluidity

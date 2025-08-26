@@ -70,7 +70,7 @@ namespace Fu
             _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(4);
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
             if (isRenderGraphEnabled)
-                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
             else
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
             _rTexture.useDynamicScale = true;
@@ -122,7 +122,7 @@ namespace Fu
             _rTexture.antiAliasing = Fugui.GetSrpMsaaSampleCount(4);
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
             if (isRenderGraphEnabled)
-                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
+                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
             else
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
             _rTexture.useDynamicScale = true;

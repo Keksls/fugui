@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Rendering;
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -9,6 +11,8 @@ namespace Fu.Framework
     {
         [SerializeField]
         private Camera _camera;
+        [SerializeField]
+        private MSAASamples _msaa = MSAASamples.None;
         public Camera Camera => _camera;
         public FuCameraWindow CameraWindow => _fuWindow as FuCameraWindow;
         [SerializeField]
@@ -18,7 +22,7 @@ namespace Fu.Framework
         public override void FuguiAwake()
         {
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
-            FuCameraWindowDefinition windowDefinition = new FuCameraWindowDefinition(_windowName, _camera, OnUI, _position == Vector2Int.zero ? null : _position, _size == Vector2Int.zero ? null : _size, _windowFlags);
+            FuCameraWindowDefinition windowDefinition = new FuCameraWindowDefinition(_windowName, _camera, _msaa, OnUI, _position == Vector2Int.zero ? null : _position, _size == Vector2Int.zero ? null : _size, _windowFlags);
             windowDefinition.SetSupersampling(_superSampling);
             windowDefinition.SetCustomWindowType<FuCameraWindow>();
             // call the OnWindowDefinitionCreated method to allow further customization

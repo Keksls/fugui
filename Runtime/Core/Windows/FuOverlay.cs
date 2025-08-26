@@ -10,6 +10,7 @@ namespace Fu
         #region Variables
         // ID of the Overlay
         public string ID { get; private set; }
+        public FuLayout Layout { get; private set; }
         // unscaled private size of  the Overlay
         private Vector2Int _size;
         // unscaled public size of  the Overlay
@@ -41,7 +42,7 @@ namespace Fu
             }
         }
         // Custom UI display function for the overlay
-        public Action<FuOverlay> UI { get; private set; }
+        public Action<FuOverlay, FuLayout> UI { get; private set; }
         // Whenever the Overlay will render just right now
         public event Action OnPreRender;
         // Whenever the Overlay just render right now
@@ -108,7 +109,7 @@ namespace Fu
         /// <param name="size">size of this overlay</param>
         /// <param name="ui">UI of this overlay</param>
         /// <param name="flags">Overlay comportement flags</param>
-        public FuOverlay(string id, Vector2Int size, Action<FuOverlay> ui, FuOverlayFlags flags = FuOverlayFlags.Default, FuOverlayDragPosition dragButtonPosition = FuOverlayDragPosition.Auto)
+        public FuOverlay(string id, Vector2Int size, Action<FuOverlay, FuLayout> ui, FuOverlayFlags flags = FuOverlayFlags.Default, FuOverlayDragPosition dragButtonPosition = FuOverlayDragPosition.Auto)
         {
             // Set the ID of the window
             ID = id;
@@ -440,10 +441,11 @@ namespace Fu
                     Fugui.Push(ImGuiCol.Border, Vector4.zero);
                     Fugui.Push(ImGuiCol.BorderShadow, Vector4.zero);
                 }
+                Layout = new FuLayout();
                 OnPreRender?.Invoke();
                 if (ImGui.BeginChild(ID, Size, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
-                    UI?.Invoke(this);
+                    UI?.Invoke(this, Layout);
                     OnPostRender?.Invoke();
                     if (_noBackground)
                     {
@@ -452,6 +454,7 @@ namespace Fu
                     _overlayStyle.Pop();
                 }
                 ImGuiNative.igEndChild();
+                Layout.Dispose();
             }
             Fugui.PopStyle();
 
@@ -537,7 +540,7 @@ namespace Fu
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && _draggable)
                 {
                     _draging = true;
-                    _dragMousePosition = Fugui.WorldMousePosition - _dragOffset;
+                    _dragMousePosition = Window.Mouse.Position - _dragOffset;
                 }
                 // will show / hide overlay on double click
                 if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
@@ -624,7 +627,7 @@ namespace Fu
             // handle drag offset
             if (_draging)
             {
-                _dragOffset = Fugui.WorldMousePosition - _dragMousePosition;
+                _dragOffset = Window.Mouse.Position - _dragMousePosition;
                 // draw snap grid only if we start to drag (avoid draw grid on double click)
                 if (!_drawSnapGrid && Math.Abs(_dragOffset.x) + Math.Abs(_dragOffset.y) > 4)
                 {

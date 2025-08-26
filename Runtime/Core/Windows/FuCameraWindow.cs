@@ -90,12 +90,12 @@ namespace Fu
 
             OnAddToContainer += FuCameraWindow_OnAddToContainer;
 
-            UI = (window) =>
+            UI = (window, layout) =>
             {
                 Vector2 cursorPos = ImGui.GetCursorScreenPos();
                 Container.ImGuiImage(_rTexture, WorkingAreaSize);
                 ImGui.SetCursorScreenPos(cursorPos);
-                windowDefinition.UI?.Invoke(this);
+                windowDefinition.UI?.Invoke(this, Layout);
             };
 
             // register raycaster

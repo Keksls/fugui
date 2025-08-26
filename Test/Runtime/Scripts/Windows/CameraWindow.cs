@@ -22,18 +22,40 @@ public class CameraWindow : FuCameraWindowBehaviour
     public override void OnWindowDefinitionCreated(FuWindowDefinition windowDefinition)
     {
         // camera FPS overlay
-        FuOverlay fps1 = new FuOverlay("oCamFPS", new Vector2Int(102, 52), (overlay) =>
+        FuOverlay fps1 = new FuOverlay("oCamFPS", new Vector2Int(102, 52), (overlay, layout) =>
         {
             drawCameraFPSOverlay(CameraWindow);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Right);
         fps1.AnchorWindowDefinition(windowDefinition, FuOverlayAnchorLocation.TopRight);
 
         // camera supersampling overlay
-        FuOverlay ss1 = new FuOverlay("oCamSS", new Vector2Int(196, 36), (overlay) =>
+        FuOverlay ss1 = new FuOverlay("oCamSS", new Vector2Int(196, 36), (overlay, layout) =>
         {
-            drawSupersamplingOverlay(CameraWindow);
+            drawSupersamplingOverlay(CameraWindow, layout);
         }, FuOverlayFlags.Default, FuOverlayDragPosition.Left);
         ss1.AnchorWindowDefinition(windowDefinition, FuOverlayAnchorLocation.TopLeft);
+
+        // set header and footer UI
+        windowDefinition.SetHeaderUI(HeaderUI, 24f);
+        windowDefinition.SetFooterUI(FooterUI, 24f);
+    }
+
+    private void HeaderUI(FuWindow window, Vector2 size)
+    {
+        Fugui.PushFont(FontType.Bold);
+        window.Layout.CenterNextItem("Camera Window");
+        window.Layout.CenterNextItemVertical("Camera Window", size.y);
+        window.Layout.Text("Camera Window");
+        Fugui.PopFont();
+    }
+
+    private void FooterUI(FuWindow window, Vector2 size)
+    {
+        Fugui.PushFont(FontType.Italic);
+        window.Layout.CenterNextItem("Click on the scene to apply a force");
+        window.Layout.CenterNextItemVertical("Click on the scene to apply a force", size.y);
+        window.Layout.Text("Click on the scene to apply a force");
+        Fugui.PopFont();
     }
 
     #region overlays
@@ -56,29 +78,26 @@ public class CameraWindow : FuCameraWindowBehaviour
     /// Draw camera supersampling settings overlay
     /// </summary>
     /// <param name="cam">FuCameraWindow definition</param>
-    void drawSupersamplingOverlay(FuCameraWindow cam)
+    void drawSupersamplingOverlay(FuCameraWindow cam, FuLayout layout)
     {
-        using (var layout = new FuLayout())
+        if (layout.RadioButton("x0.5", cam.SuperSampling == 0.5f))
         {
-            if (layout.RadioButton("x0.5", cam.SuperSampling == 0.5f))
-            {
-                cam.SuperSampling = 0.5f;
-            }
-            layout.SameLine();
-            if (layout.RadioButton("x1", cam.SuperSampling == 1f))
-            {
-                cam.SuperSampling = 1f;
-            }
-            layout.SameLine();
-            if (layout.RadioButton("x1.5", cam.SuperSampling == 1.5f))
-            {
-                cam.SuperSampling = 1.5f;
-            }
-            layout.SameLine();
-            if (layout.RadioButton("x2", cam.SuperSampling == 2f))
-            {
-                cam.SuperSampling = 2f;
-            }
+            cam.SuperSampling = 0.5f;
+        }
+        layout.SameLine();
+        if (layout.RadioButton("x1", cam.SuperSampling == 1f))
+        {
+            cam.SuperSampling = 1f;
+        }
+        layout.SameLine();
+        if (layout.RadioButton("x1.5", cam.SuperSampling == 1.5f))
+        {
+            cam.SuperSampling = 1.5f;
+        }
+        layout.SameLine();
+        if (layout.RadioButton("x2", cam.SuperSampling == 2f))
+        {
+            cam.SuperSampling = 2f;
         }
     }
     #endregion

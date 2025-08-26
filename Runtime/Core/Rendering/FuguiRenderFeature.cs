@@ -65,14 +65,20 @@ namespace Fu
             public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
             {
                 // get the active color texture from the frame data
-                var data = frameData.Get<UniversalResourceData>();
-                var target = data.activeColorTexture;
+                var urpRes = frameData.Get<UniversalResourceData>();
 
-                // create the builder for the raster render pass
+                // Use the *active* camera targets provided by URP
+                TextureHandle color = urpRes.activeColorTexture;
+                TextureHandle depth = urpRes.activeDepthTexture; // important : bind depth as attachment
+
                 using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_RenderGraph_Pass", out var passData);
-                builder.AllowPassCulling(false);
+
+                // Let this pass modify GL state if needed (you already had this)
                 builder.AllowGlobalStateModification(true);
-                builder.SetRenderAttachment(target, 0, AccessFlags.Write);
+
+                // >>> Attach the actual render targets of the camera <<<
+                builder.SetRenderAttachment(color, 0, AccessFlags.Write);
+                builder.SetRenderAttachmentDepth(depth, AccessFlags.Read); // depth test only
 
                 // set the pass data
                 builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>

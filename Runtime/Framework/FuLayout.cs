@@ -1,5 +1,4 @@
 //#define PUSH_POP_DEBUG
-using Fu;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -539,6 +538,38 @@ namespace Fu.Framework
                 Fugui.MoveXUnscaled(offset);
             }
         }
+
+        /// <summary>
+        /// Prepare centering for the next item vertically (next item should be a text)
+        /// </summary>
+        /// <param name="nextItemText"> text of the next item</param>
+        /// <param name="maxHeight"> max height available, if -1 use all available height</param>
+        public void CenterNextItemVertical(string nextItemText, float maxHeight = -1)
+        {
+            float txtHeight = ImGui.CalcTextSize(nextItemText).y;
+            float avHeight = maxHeight > 0 ? maxHeight : ImGui.GetContentRegionAvail().y;
+            float offset = avHeight / 2f - txtHeight / 2f;
+            if (offset > 0f)
+            {
+                Fugui.MoveYUnscaled(offset);
+            }
+        }
+
+        /// <summary>
+        /// Prepare centering for the next item vertically (next item should be a text)
+        /// </summary>
+        /// <param name="itemHeight"> height of the next item</param>
+        /// <param name="maxHeight"> max height available, if -1 use all available height</param>
+        public void CenterNextItemVertical(float itemHeight, float maxHeight = -1)
+        {
+            float avHeight = maxHeight > 0 ? maxHeight :ImGui.GetContentRegionAvail().y;
+            float offset = avHeight / 2f - (itemHeight * Fugui.CurrentContext.Scale) / 2f;
+            if (offset > 0f)
+            {
+                Fugui.MoveYUnscaled(offset);
+            }
+        }
+
         #endregion
 
         #region private utils

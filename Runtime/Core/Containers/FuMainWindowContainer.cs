@@ -63,8 +63,6 @@ namespace Fu
         private Queue<FuWindow> _toAddWindows;
         // The mouse position relative to the container.
         private Vector2Int _mousePos;
-        // The mouse position in world space from the previous frame.
-        private Vector2Int _lastFrameWorldMousePos;
         // The size of the container.
         private Vector2Int _size;
         // current Fugui context
@@ -143,20 +141,9 @@ namespace Fu
             _size = new Vector2Int(Screen.width, Screen.height);
 
             // get unity local mouse position
-            Vector2Int newMousePos = new Vector2Int((int)Context.IO.MousePos.x, (int)Context.IO.MousePos.y); // new Vector2Int((int)Fugui.WorldMousePosition.x, _size.y - (int)Fugui.WorldMousePosition.y);
-
-            // world mouse has moved but local mouse don't move acordingly
-            // let's ignore container pos to avoid glitching when lose focus if exeternal window are shown
-            if (Fugui.WorldMousePosition != _lastFrameWorldMousePos && newMousePos == _mousePos)
-            {
-                return;
-            }
-
-            // all mouses has moved, let's update mouse and container pos
-            _mousePos = newMousePos;// newMousePos;
-
+            Vector2Int newMousePos = new Vector2Int((int)Context.IO.MousePos.x, (int)Context.IO.MousePos.y);
+            _mousePos = newMousePos;
             _worldPosition = Screen.mainWindowPosition;
-            _lastFrameWorldMousePos = Fugui.WorldMousePosition;
         }
 
         #region Footer

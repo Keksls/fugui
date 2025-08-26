@@ -1,7 +1,9 @@
-﻿using Fu;
-using ImGuiNET;
+﻿using ImGuiNET;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.Video;
 
 namespace Fu.Framework
@@ -62,8 +64,25 @@ namespace Fu.Framework
         {
             // player is ready, let's create texture
             Texture = new RenderTexture((int)Player.width, (int)Player.height, 24, RenderTextureFormat.RGB111110Float, 0);
-            Texture.antiAliasing = Fugui.GetSrpMsaaSampleCount(4);
-            Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+
+            // get the first FuCameraWindowDefinition to get the current SRP MSAA sample count
+            FuCameraWindowDefinition camDef = Fugui.UIWindowsDefinitions.FirstOrDefault(wd => wd.Value is FuCameraWindowDefinition).Value as FuCameraWindowDefinition;
+            if (camDef != null)
+            {
+                Texture.antiAliasing = (int)camDef.MSAASamples;
+            }
+            else
+            {
+                Texture.antiAliasing = 0; // by default no MSAA to avoid flickering issues and fail on Metal
+            }
+
+            // if render graph is enabled, we need a depth buffer to avoid issues
+            bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
+            if (isRenderGraphEnabled)
+                Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
+            else
+                Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+
             Texture.useDynamicScale = true;
             Texture.Create();
             Player.targetTexture = Texture;

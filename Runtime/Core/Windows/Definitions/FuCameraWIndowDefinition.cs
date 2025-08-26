@@ -1,6 +1,7 @@
 using Fu.Framework;
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Fu
 {
@@ -17,22 +18,28 @@ namespace Fu
         /// Get the default supersampling for camera window
         /// </summary>
         public float SuperSampling { get; private set; }
+        /// <summary>
+        /// Get or set the MSAA samples for the camera window render texture
+        /// </summary>
+        public MSAASamples MSAASamples { get; private set; } = MSAASamples.None;
 
         /// <summary>
         /// Initializes a new instance of the UICameraWindowDefinition class with the specified parameters.
         /// </summary>
+        /// <param name="windowName">The name of the UI window.</param>
         /// <param name="camera">The camera to be displayed in the UI window.</param>
-        /// <param name="id">The unique identifier for the UI window.</param>
         /// <param name="ui">The action to be performed on the UI window.</param>
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
-        public FuCameraWindowDefinition(FuWindowName windowName, Camera camera, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default) : base(windowName, ui, pos, size, flags)
+        public FuCameraWindowDefinition(FuWindowName windowName, Camera camera, MSAASamples mSAASamples, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default) : base(windowName, ui, pos, size, flags)
         {
             // set default camera window supersampling
             SuperSampling = 1f;
             // Assign the specified camera to the Camera field
             Camera = camera;
+            // Assign the specified MSAASamples to the MSAASamples field
+            MSAASamples = mSAASamples;
         }
 
         /// <summary>

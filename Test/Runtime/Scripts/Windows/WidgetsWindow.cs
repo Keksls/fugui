@@ -52,31 +52,28 @@ public class WidgetsWindow : FuWindowBehaviour
     private Vector2 spinnerV2Size = new Vector2(64f, 20f);
     private float spinnerFrequency = 6f;
 
-    public override void OnUI(FuWindow window)
+    public override void OnUI(FuWindow window, FuLayout layout)
     {
-        using (var layout = new FuLayout())
-        {
-            layout.CenterNextItem("Check Fugui's git page.");
-            layout.Text("Check Fugui's ");
-            layout.SameLine();
-            layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui");
-            layout.Toggle("##toggleDisable", ref _enableWidgets, "Widgets Disabled", "Widgets Enabled", FuToggleFlags.MaximumTextSize);
+        layout.CenterNextItem("Check Fugui's git page.");
+        layout.Text("Check Fugui's ");
+        layout.SameLine();
+        layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui");
+        layout.Toggle("##toggleDisable", ref _enableWidgets, "Widgets Disabled", "Widgets Enabled", FuToggleFlags.MaximumTextSize);
 
-            using (new FuPanel("widgetsDemoPanel", FuStyle.Unpadded))
+        using (new FuPanel("widgetsDemoPanel", FuStyle.Unpadded))
+        {
+            layout.Collapsable("Sliders", drawSliders);
+            layout.Collapsable("Basics Widgets", () => { drawBasics(layout); }, 0);
+            layout.Collapsable("Texts", () => { drawTexts(layout); });
+            layout.Collapsable("Buttons", () => { drawButtons(layout); });
+            layout.Collapsable("Drags", drawDrags);
+            layout.Collapsable("Progress Bars", drawProgressbar);
+            layout.Collapsable("Knobs", drawKnobs);
+            layout.Collapsable("Spinners", () =>
             {
-                layout.Collapsable("Sliders", drawSliders);
-                layout.Collapsable("Basics Widgets", () => { drawBasics(layout); }, 0);
-                layout.Collapsable("Texts", () => { drawTexts(layout); });
-                layout.Collapsable("Buttons", () => { drawButtons(layout); });
-                layout.Collapsable("Drags", drawDrags);
-                layout.Collapsable("Progress Bars", drawProgressbar);
-                layout.Collapsable("Knobs", drawKnobs);
-                layout.Collapsable("Spinners", () =>
-                {
-                    drawSpinners(layout);
-                });
-                layout.Collapsable("Lists", () => { drawBoxes(layout); });
-            }
+                drawSpinners(layout);
+            });
+            layout.Collapsable("Lists", () => { drawBoxes(layout); });
         }
     }
 

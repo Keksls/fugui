@@ -37,10 +37,6 @@ namespace Fu
         /// </summary>
         public static FuSettings Settings { get; internal set; }
         /// <summary>
-        /// The public property for the current world mouse position
-        /// </summary>
-        public static Vector2Int WorldMousePosition { get; internal set; }
-        /// <summary>
         /// The current time
         /// </summary>
         public static float Time { get; internal set; }
@@ -282,10 +278,7 @@ namespace Fu
             MainContainer = new FuMainWindowContainer(DefaultContext);
 
             // register Fugui Settings Window
-            new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, (window) =>
-            {
-                DrawSettings();
-            }, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
+            new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, DrawSettings, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
 
             // initialize debug tool if debug is enabled
 #if FUDEBUG

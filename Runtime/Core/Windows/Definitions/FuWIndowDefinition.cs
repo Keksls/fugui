@@ -1,3 +1,4 @@
+using Fu.Framework;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +11,7 @@ namespace Fu
         // A unique identifier for the window
         public FuWindowName WindowName { get; private set; }
         // A delegate for updating the window's UI
-        public Action<FuWindow> UI { get; private set; }
+        public Action<FuWindow, FuLayout> UI { get; private set; }
         // The position of the window on the screen
         public Vector2Int Position { get; private set; }
         // The size of the window
@@ -29,16 +30,18 @@ namespace Fu
         public bool AllowMultipleWindow { get; private set; }
         // A dictionary that store default overlays for this window
         public Dictionary<string, FuOverlay> Overlays { get; private set; }
-        // the type of the UIWindow to instantiate
-        internal Type _uiWindowType;
         // public event invoked when UIWindow is Creating according to this current UIWindowDefinition
         public event Action<FuWindow> OnUIWindowCreated;
         // the callback UI of the optional toolbar of this window
-        public Action<FuWindow, float, float> UITopBar { get; set; }
+        public Action<FuWindow, Vector2> HeaderUI { get; set; }
+        // the callback UI of the optional footer of this window
+        public Action<FuWindow, Vector2> FooterUI { get; set; }
         // The height of the window topBar (optional)
-        public float TopBarHeight { get; private set; }
+        public float HeaderHeight { get; private set; }
         // The height of the window topBar (optional)
         public float BottomBarHeight { get; private set; }
+        // the type of the UIWindow to instantiate
+        internal Type _uiWindowType;
         #endregion
 
         /// <summary>
@@ -50,7 +53,7 @@ namespace Fu
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
-        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default)
+        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default)
         {
             // Assign the specified values to the corresponding fields
             WindowName = windowName;
@@ -173,30 +176,30 @@ namespace Fu
         /// The WorkingArea Size and Position will be calculated according to this value.
         /// The topBar will not be draw by Fugui, you will have to do it yourself
         /// </summary>
-        /// <param name="UITopBar">The height of the optional window TopBar.</param>
+        /// <param name="headerUI">The callback UI of the optional window Header.</param>
+        /// <param name="headerHeight">The height of the optional window Header.</param>
         /// <returns>The current UIWindowDefinition object.</returns>
-        public FuWindowDefinition SetTopbarUI(Action<FuWindow, float, float> uiTopBar, float topBarHeight)
+        public FuWindowDefinition SetHeaderUI(Action<FuWindow, Vector2> headerUI, float headerHeight)
         {
-            TopBarHeight = Mathf.Max(0f, topBarHeight);
-            UITopBar = uiTopBar;
-            // Return the current UIWindowDefinition object
+            // Ensure the header height is not negative
+            HeaderHeight = Mathf.Max(0f, headerHeight);
+            // Assign the specified callback UI to the HeaderUI field
+            HeaderUI = headerUI;
             return this;
         }
 
         /// <summary>
         /// Sets the UI of the bottomBar of this window
-        /// This will be called before main UI callback and set the cursor
-        /// Sets the height of the bottomBar of this window
-        /// The WorkingArea Size and Position will be calculated according to this value.
-        /// The bottomBar will not be draw by Fugui, you will have to do it yourself
         /// </summary>
-        /// <param name="UITopBar">The height of the optional window BottomBar.</param>
-        /// <returns>The current UIWindowDefinition object.</returns>
-        public FuWindowDefinition SetBottombarUI(Action<FuWindow, float, float> uiBottomBar, float bottomBarHeight)
+        /// <param name="bottomBarUI"> The callback UI of the optional window bottomBar.</param>
+        /// <param name="bottomBarHeight" >The height of the optional window bottomBar.</param>
+        /// <returns> The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetFooterUI(Action<FuWindow, Vector2> bottomBarUI, float bottomBarHeight)
         {
+            // Ensure the bottom bar height is not negative
             BottomBarHeight = Mathf.Max(0f, bottomBarHeight);
-            UITopBar = uiBottomBar;
-            // Return the current UIWindowDefinition object
+            // Assign the specified callback UI to the FooterUI field
+            FooterUI = bottomBarUI;
             return this;
         }
 
@@ -205,11 +208,10 @@ namespace Fu
         /// </summary>
         /// <param name="ui">The action to be performed on the UI window.</param>
         /// <returns>The current UIWindowDefinition object.</returns>
-        public FuWindowDefinition SetUI(Action<FuWindow> ui = null)
+        public FuWindowDefinition SetUI(Action<FuWindow, FuLayout> ui = null)
         {
             // Assign the specified action to the UI field
             UI = ui;
-            // Return the current UIWindowDefinition object
             return this;
         }
 
@@ -222,7 +224,6 @@ namespace Fu
         {
             // Assign the specified position or the default value to the Position field
             Position = pos.HasValue ? pos.Value : new Vector2Int(256, 256);
-            // Return the current UIWindowDefinition object
             return this;
         }
 
@@ -235,7 +236,6 @@ namespace Fu
         {
             // Assign the specified size or the default value to the Size field
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
-            // Return the current UIWindowDefinition object
             return this;
         }
 
@@ -248,7 +248,6 @@ namespace Fu
         {
             // Assign the specified value to the IsExternalizable field
             IsExternalizable = isExternalizable;
-            // Return the current UIWindowDefinition object
             return this;
         }
 
@@ -261,7 +260,6 @@ namespace Fu
         {
             // Assign the specified value to the IsDockable field
             IsDockable = isDockable;
-            // Return the current UIWindowDefinition object
             return this;
         }
 
@@ -274,7 +272,6 @@ namespace Fu
         {
             // Assign the specified value to the isClosable field
             IsClosable = isClosable;
-            // Return the current UIWindowDefinition object
             return this;
         }
 
@@ -287,7 +284,6 @@ namespace Fu
         {
             // Assign the specified value to the IsInterractif field
             IsInterractif = isInterractif;
-            // Return the current UIWindowDefinition object
             return this;
         }
 
@@ -300,7 +296,6 @@ namespace Fu
         {
             // Assign the specified value to the NoDockingOverMe field
             NoDockingOverMe = noDockingOverMe;
-            // Return the current UIWindowDefinition object
             return this;
         }
         #endregion

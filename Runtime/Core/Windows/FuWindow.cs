@@ -41,13 +41,12 @@ namespace Fu
                 }
             }
         }
-
         // properties
         public FuWindowName WindowName { get; private set; }
         public string ID { get; private set; }
-        public Action<FuWindow> UI { get; set; }
-        public Action<FuWindow, float, float> UIHeader { get; set; }
-        public Action<FuWindow, float, float> UIFooter { get; set; }
+        public Action<FuWindow, FuLayout> UI { get; set; }
+        public Action<FuWindow, Vector2> HeaderUI { get; set; }
+        public Action<FuWindow, Vector2> FooterUI { get; set; }
         public bool HasMovedThisFrame { get; private set; }
         public bool HasJustBeenDraw { get; set; }
         public bool WantCaptureKeyboard { get; private set; }
@@ -91,6 +90,7 @@ namespace Fu
                 }
             }
         }
+        public FuLayout Layout { get; internal set; }
 
         // states flags
         public bool HasFocus { get; internal set; }
@@ -156,32 +156,30 @@ namespace Fu
 
         #region Window Location
         // unscaled private The height of the window topBar (optional)   
-        private float _topBarHeight;
-
-        public float TopBarHeight
+        private float _headerHeight;
+        public float HeaderHeight
         {
             get
             {
-                return _topBarHeight * (Container?.Context.Scale ?? 1f);
+                return _headerHeight * (Container?.Context.Scale ?? 1f);
             }
             set
             {
-                _topBarHeight = value;
+                _headerHeight = value;
             }
         }
 
         // unscaled private The height of the window bottomBar (optional)        
-        private float _bottomBarHeight;
-
-        public float BottomBarHeight
+        private float _footerHeight;
+        public float FooterHeight
         {
             get
             {
-                return _bottomBarHeight * (Container?.Context.Scale ?? 1f);
+                return _footerHeight * (Container?.Context.Scale ?? 1f);
             }
             set
             {
-                _bottomBarHeight = value;
+                _footerHeight = value;
             }
         }
         internal Vector2Int _size;
@@ -262,9 +260,10 @@ namespace Fu
             IsClosable = windowDefinition.IsClosable;
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
-            TopBarHeight = windowDefinition.TopBarHeight;
-            BottomBarHeight = windowDefinition.BottomBarHeight;
-            UIHeader = windowDefinition.UITopBar;
+            HeaderHeight = windowDefinition.HeaderHeight;
+            FooterHeight = windowDefinition.BottomBarHeight;
+            HeaderUI = windowDefinition.HeaderUI;
+            FooterUI = windowDefinition.FooterUI;
             _lastFrameVisible = false;
             // add default overlays
             Overlays = new Dictionary<string, FuOverlay>();
@@ -447,6 +446,7 @@ namespace Fu
         /// <param name="newFramePos"></param>
         public virtual unsafe void DrawWindowBody(ref Vector2Int newFrameSize, ref Vector2Int newFramePos)
         {
+            Layout = new FuLayout();
             // invoke pre draw event
             OnPreDraw?.Invoke(this);
 
@@ -602,6 +602,7 @@ namespace Fu
                 _sendReadyNextFrame = false;
                 OnInitialized?.Invoke(this);
             }
+            Layout.Dispose();
         }
 
         /// <summary>
@@ -652,19 +653,19 @@ namespace Fu
         private void TryDrawUI()
         {
             // save working area size and position
-            _workingAreaSize = new Vector2Int((int)ImGui.GetContentRegionAvail().x, (int)(ImGui.GetContentRegionAvail().y - TopBarHeight - BottomBarHeight));
-            _workingAreaPosition = new Vector2Int((int)ImGui.GetCursorScreenPos().x, (int)(ImGui.GetCursorScreenPos().y + TopBarHeight)) - _localPosition;
+            _workingAreaSize = new Vector2Int((int)ImGui.GetContentRegionAvail().x, (int)(ImGui.GetContentRegionAvail().y - HeaderHeight - FooterHeight));
+            _workingAreaPosition = new Vector2Int((int)ImGui.GetCursorScreenPos().x, (int)(ImGui.GetCursorScreenPos().y + HeaderHeight)) - _localPosition;
 
             if (MustBeDraw())
             {
                 Fugui.HasRenderWindowThisFrame = true;
                 CurrentDrawingWindow = this;
                 // draw topBar if needed
-                if (TopBarHeight > 0f && UIHeader != null)
+                if (HeaderHeight > 0f && HeaderUI != null)
                 {
                     Vector2 screenCursorPos = ImGui.GetCursorScreenPos();
-                    UIHeader.Invoke(this, _workingAreaSize.x, TopBarHeight);
-                    ImGui.SetCursorScreenPos(screenCursorPos + new Vector2(0f, TopBarHeight));
+                    HeaderUI.Invoke(this, new Vector2(_workingAreaSize.x, HeaderHeight));
+                    ImGui.SetCursorScreenPos(screenCursorPos + new Vector2(0f, HeaderHeight));
                 }
 
                 // count nb push at render begin
@@ -674,16 +675,18 @@ namespace Fu
 
                 // draw user UI callback
                 FuStyle.Default.Push(true);
-                UI?.Invoke(this);
+                UI?.Invoke(this, Layout);
                 FuStyle.Content.Pop();
 
                 // invoke body draw event 
                 OnBodyDraw?.Invoke(this);
 
                 // draw bottomBar if needed
-                if (BottomBarHeight > 0f && UIFooter != null)
+                if (FooterHeight > 0f && FooterUI != null)
                 {
-                    UIFooter.Invoke(this, _workingAreaSize.x, BottomBarHeight);
+                    Vector2 footerPos = new Vector2(_localPosition.x + _workingAreaPosition.x, _localPosition.y + _workingAreaPosition.y + _workingAreaSize.y - FooterHeight + HeaderHeight);
+                    ImGui.SetCursorScreenPos(footerPos);
+                    FooterUI.Invoke(this, new Vector2(_workingAreaSize.x, FooterHeight));
                 }
 
                 // pop missing push
@@ -751,7 +754,6 @@ namespace Fu
                 ImGui.Dummy(new Vector2(4f, 0f));
 
                 // pos and size
-                ImGui.Text("w Mouse : " + Fugui.WorldMousePosition);
                 ImGui.Text("l Mouse : " + Mouse.Position);
                 ImGui.Text("c Mouse : " + Container.LocalMousePos);
                 ImGui.Text("c Pos : " + Container.Position);

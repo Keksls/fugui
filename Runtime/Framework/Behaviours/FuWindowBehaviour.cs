@@ -65,7 +65,7 @@ namespace Fu.Framework
         /// Override this method to define the UI of the window.
         /// </summary>
         /// <param name="window"> The FuWindow instance that this behaviour is attached to.</param>
-        public virtual void OnUI(FuWindow window) { }
+        public virtual void OnUI(FuWindow window, FuLayout layout) { }
 
         /// <summary>
         /// This method is called when the window is created.

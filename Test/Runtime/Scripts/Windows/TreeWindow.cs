@@ -135,13 +135,13 @@ namespace FuguiDemo
         /// Called each frame to draw the UI of this window
         /// </summary>
         /// <param name="window"> the window that is drawing this UI</param>
-        public override void OnUI(FuWindow window)
+        public override void OnUI(FuWindow window, FuLayout layout)
         {
             // create a panel to draw tree on it (we don't need to use cliper because FuTree has its own clipping system)
             using (FuPanel panel = new FuPanel("treePanel"))
             {
                 // draw a button to add random item on runtime
-                if (new FuLayout().Button("add item"))
+                if (layout.Button("add item"))
                 {
                     treeTestItem item = new treeTestItem("added " + System.Guid.NewGuid().ToString(), 0, null);
                     _treeItems.Insert(Random.Range(0, _treeItems.Count), item);

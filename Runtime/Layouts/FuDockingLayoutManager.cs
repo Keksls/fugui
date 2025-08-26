@@ -52,8 +52,8 @@ namespace Fu
             };
 
             // create dockaspace windows definitions
-            new FuWindowDefinition(FuSystemWindowsNames.DockSpaceManager, (window) => Fugui.DrawDockSpacelayoutCreator());
-            new FuWindowDefinition(FuSystemWindowsNames.WindowsDefinitionManager, (window) => Fugui.DrawWindowsDefinitionManager());
+            new FuWindowDefinition(FuSystemWindowsNames.DockSpaceManager, (window, layout) => Fugui.DrawDockSpacelayoutCreator());
+            new FuWindowDefinition(FuSystemWindowsNames.WindowsDefinitionManager, (window, layout) => Fugui.DrawWindowsDefinitionManager());
         }
         #endregion
 
@@ -622,12 +622,9 @@ namespace Fu
                         {
                             if (showConfigModal)
                             {
-                                Fugui.ShowModal("Delete Docking Layout", () =>
+                                Fugui.ShowModal("Delete Docking Layout", (layout) =>
                                 {
-                                    using (FuLayout layout = new FuLayout())
-                                    {
-                                        layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrap);
-                                    }
+                                    layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrap);
                                     if (Fugui.MainContainer.Keyboard.GetKeyDown(FuKeysCode.Enter))
                                     {
                                         confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback);

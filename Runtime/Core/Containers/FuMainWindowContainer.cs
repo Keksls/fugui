@@ -452,10 +452,13 @@ namespace Fu
         private void DrawMainDockSpace()
         {
             // draw main menu
-            Fugui.RenderMainMenu();
-            float mainMenuHeight = 24f * Context.Scale;
-            // draw main menu separator
-            ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - Context.Scale), new Vector2(_size.x, mainMenuHeight - Context.Scale), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered)));
+            float mainMenuHeight = 0f;
+            if (Fugui.RenderMainMenu())
+            {
+                mainMenuHeight = 24f * Context.Scale;
+                // draw main menu separator
+                ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - Context.Scale), new Vector2(_size.x, mainMenuHeight - Context.Scale), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered)));
+            }
 
             // draw main dockspace
             uint viewPortID = 0;

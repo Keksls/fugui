@@ -1,4 +1,3 @@
-using Fu;
 using Fu.Framework;
 using ImGuiNET;
 using System;
@@ -13,6 +12,10 @@ namespace Fu
         /// Whatever the main menu is currently disabled (will disable each menu items)
         /// </summary>
         public static bool IsMainMenuDisabled { get; private set; }
+        /// <summary>
+        /// Whatever the main menu is currently visible
+        /// </summary>
+        public static bool IsMainMenuVisible { get; private set; } = true;
         /// <summary>
         /// Event fired after main menu draw, The rect given is the available rect after menu items
         /// </summary>
@@ -180,14 +183,35 @@ namespace Fu
         }
 
         /// <summary>
+        /// Show the main menu
+        /// </summary>
+        public static void ShowMainMenu()
+        {
+            IsMainMenuVisible = true;
+        }
+
+        /// <summary>
+        /// Hide the main menu
+        /// </summary>
+        public static void HideMainMenu()
+        {
+            IsMainMenuVisible = false;
+        }
+
+        /// <summary>
         /// Draws the main menu bar and all top-level menu items.
         /// </summary>
-        public static void RenderMainMenu()
+        public static bool RenderMainMenu()
         {
+            if (!IsMainMenuVisible)
+            {
+                return false;
+            }
+
             // Return early if no menu items are registered
             if (_mainMenuItems.Count == 0)
             {
-                return;
+                return false;
             }
 
             // Set various style options for the main menu bar and its items
@@ -220,6 +244,8 @@ namespace Fu
             // Pop the set style options
             PopColor(4);
             PopStyle(4);
+
+            return true;
         }
 
         /// <summary>

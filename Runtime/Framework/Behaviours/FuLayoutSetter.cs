@@ -15,6 +15,8 @@ namespace Fu.Framework
         private bool _addFuguiToMainMenu = true;
         [SerializeField]
         private bool _showImGuiDemoWindow = false;
+        [SerializeField]
+        private bool _forceHideMainMenu = false;
 
         private void Awake()
         {
@@ -72,6 +74,12 @@ namespace Fu.Framework
                 {
                     Fugui.RegisterMainMenuItem(windowName.WindowName.ToString(), () => Fugui.CreateWindowAsync(windowName.WindowName, null), "Windows");
                 }
+            }
+
+            // hide main menu if required
+            if(_forceHideMainMenu)
+            {
+                Fugui.HideMainMenu();
             }
         }
 

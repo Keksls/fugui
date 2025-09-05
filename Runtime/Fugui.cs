@@ -254,13 +254,13 @@ namespace Fu
             {
                 Debug.LogWarning($"[Fugui] Fugui has detected an unsupported render pipeline ({RenderPipelineType}). Fugui is only supporting Universal Render Pipeline (URP) and High Definition Render Pipeline (HDRP). You can still use Fugui with Built-in or custom SRP, but some features may not work as expected.");
             }
-            Themes = new FuThemeManager();
-            Layouts = new FuDockingLayoutManager();
             // instantiate UIWindows 
             UIWindows = new Dictionary<string, FuWindow>();
             UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
             // init dic and queue
             _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
+            Themes = new FuThemeManager();
+            Layouts = new FuDockingLayoutManager();
             // handle native ImGui assert handler
             ImGuiAssertHandler.Initialize();
             // prepare context menu

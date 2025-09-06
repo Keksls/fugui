@@ -1,5 +1,6 @@
 using Fu;
 using Fu.Framework;
+using ImGuiNET;
 using UnityEngine;
 
 public class InspectorWindow : FuWindowBehaviour
@@ -82,22 +83,22 @@ public class InspectorWindow : FuWindowBehaviour
                         Camera.backgroundColor = color;
                     }
                 }
-            }, FuButtonStyle.Collapsable, 8f, true, 14f, () =>
+            }, FuButtonStyle.Collapsable, 8f, true, 20f, (h) =>
             {
                 bool camEnabled = CameraWindow.enabled;
                 // reduce the size of the font to reduce checkbox size
-                Fugui.PushFont(12, FontType.Regular);
-                // move the cursor of 2px on Y because we reduce the checkBox size of 2 (default font size is 14)
-                Fugui.MoveY(2f);
-                if (layout.CheckBox("cmEnbldChkCsbl", ref camEnabled))
+                Fugui.PushFont(12);
+                layout.CenterNextItemV(ImGui.GetFrameHeight(), h);
+                if (layout.CheckBox("##cmEnbldChkCsbl", ref camEnabled))
                 {
                     CameraWindow.enabled = camEnabled;
                 }
                 Fugui.PopFont();
-            }, 22f, () =>
+            }, 22f, (h) =>
             {
                 string cameraSettingsPopupID = "cmPppStng";
                 Fugui.PushFont(18, FontType.Regular);
+                layout.CenterNextItemV(Icons.MenuDots, h, false);
                 if (layout.ClickableText(Icons.MenuDots))
                 {
                     Fugui.OpenPopUp(cameraSettingsPopupID, () =>

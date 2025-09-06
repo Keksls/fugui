@@ -1,5 +1,4 @@
-﻿using Fu;
-using ImGuiNET;
+﻿using ImGuiNET;
 using System;
 using UnityEngine;
 
@@ -23,6 +22,7 @@ namespace Fu.Framework
             }
 
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            size *= Fugui.Scale;
             size /= 2f;
             Vector2 pos = ImGui.GetCursorScreenPos();
             float circle_radius = size / 10.0f;
@@ -72,6 +72,8 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
+            dotSize *= Fugui.Scale;
             Vector2 padding = Fugui.Themes.FramePadding;
             float centerX = ImGui.GetCursorScreenPos().x + size / 2 + padding.x;
             float centerY = ImGui.GetCursorScreenPos().y + size / 2 + padding.y;
@@ -108,6 +110,7 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = .10f;
@@ -157,6 +160,7 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = 1.5f;
@@ -188,6 +192,7 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
             var drawList = ImGui.GetWindowDrawList();
 
             float animationTime = (float)ImGui.GetTime();
@@ -238,6 +243,7 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = .5f;
@@ -279,6 +285,7 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             Vector2 startPos = ImGui.GetCursorScreenPos();
@@ -320,6 +327,7 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = 1f;
@@ -353,6 +361,7 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
             float time = (float)ImGui.GetTime();
             time *= 2f;
 
@@ -399,6 +408,7 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = 3.0f;
@@ -442,6 +452,8 @@ namespace Fu.Framework
                 return;
             }
 
+            size *= Fugui.Scale;
+            dotSize *= Fugui.Scale;
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = 0.5f;
             float animationPosition = (float)Math.Sin(animationTime * animationSpeed * Math.PI * 2.0f);

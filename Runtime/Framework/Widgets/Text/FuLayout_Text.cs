@@ -459,10 +459,9 @@ namespace Fu.Framework
             bool clicked = _internalClickableText(text, style, out Rect textRect, wrapping);
             // set states for this element
             setBaseElementState(id, textRect.min, textRect.size, true, false);
-            if (_currentToolTipsOnLabels)
-            {
-                displayToolTip();
-            }
+            displayToolTip();
+            // prevent to draw full element hover frame
+            _elementHoverFramedEnabled = false;
             endElement(style);
             return clicked;
         }

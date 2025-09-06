@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -24,6 +25,10 @@ namespace Fu
         /// The current Context Fugui is drawing on
         /// </summary>
         public static FuContext CurrentContext { get; internal set; }
+        /// <summary>
+        /// The current scale of the UI (based on current context scale)
+        /// </summary>
+        public static float Scale => CurrentContext != null ? CurrentContext.Scale : 1f;
         /// <summary>
         /// All registered contexts
         /// </summary>

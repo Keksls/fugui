@@ -203,6 +203,62 @@ namespace Fu.Framework
                     popupSize.y = -1f;
                 }
                 Rect lastFramePopupRect = Fugui.GetPopupLastFrameRect(Fugui.GetUniquePopupID(popupID));
+
+                // Predict popup width/height we will need
+                float desiredW = (popupSize.x <= 0f) ? btnSize.x : popupSize.x; // 0 or -1 -> fallback to button width
+                float predictedH = (popupSize.y > 0f) ? popupSize.y : lastFramePopupRect.size.y;
+
+                // Apply max height cap prediction (same rule as later)
+                if (predictedH >= COMBOBOX_POPUP_MAXIMUM_HEIGHT)
+                    predictedH = COMBOBOX_POPUP_MAXIMUM_HEIGHT;
+
+                // Viewport working area
+                var vp = ImGui.GetMainViewport();
+                Vector2 vpMin = vp.WorkPos;
+                Vector2 vpMax = vp.WorkPos + vp.WorkSize;
+
+                // Vertical free space
+                float spaceBelow = vpMax.y - (btnMax.y + 2f);
+                float spaceAbove = (btnMin.y - 2f) - vpMin.y;
+
+                // If we target bottom but there's not enough room (and above is better), flip to top
+                if (popupPosition == FuComboboxPopupPosition.BottomLeftAlign || popupPosition == FuComboboxPopupPosition.BottomRightAlign)
+                {
+                    if (predictedH > spaceBelow && spaceAbove >= spaceBelow)
+                        popupPosition = (popupPosition == FuComboboxPopupPosition.BottomLeftAlign)
+                            ? FuComboboxPopupPosition.TopLeftAlign
+                            : FuComboboxPopupPosition.TopRightAlign;
+                }
+                // If we target top but there's not enough room (and below is better), flip to bottom
+                else
+                {
+                    if (predictedH > spaceAbove && spaceBelow > spaceAbove)
+                        popupPosition = (popupPosition == FuComboboxPopupPosition.TopLeftAlign)
+                            ? FuComboboxPopupPosition.BottomLeftAlign
+                            : FuComboboxPopupPosition.BottomRightAlign;
+                }
+
+                // Horizontal alignment sanity: if left-aligned would overflow to the right, switch to right-aligned.
+                // If right-aligned would overflow to the left, switch to left-aligned.
+                float leftAlignedX = btnMin.x;
+                float rightAlignedX = btnMin.x - (desiredW - btnSize.x);
+
+                bool leftWouldOverflowRight = (leftAlignedX + desiredW) > vpMax.x;
+                bool rightWouldOverflowLeft = rightAlignedX < vpMin.x;
+
+                if ((popupPosition == FuComboboxPopupPosition.BottomLeftAlign || popupPosition == FuComboboxPopupPosition.TopLeftAlign) && leftWouldOverflowRight)
+                {
+                    popupPosition = (popupPosition == FuComboboxPopupPosition.BottomLeftAlign)
+                        ? FuComboboxPopupPosition.BottomRightAlign
+                        : FuComboboxPopupPosition.TopRightAlign;
+                }
+                else if ((popupPosition == FuComboboxPopupPosition.BottomRightAlign || popupPosition == FuComboboxPopupPosition.TopRightAlign) && rightWouldOverflowLeft)
+                {
+                    popupPosition = (popupPosition == FuComboboxPopupPosition.BottomRightAlign)
+                        ? FuComboboxPopupPosition.BottomLeftAlign
+                        : FuComboboxPopupPosition.TopLeftAlign;
+                }
+
                 // calculate position
                 switch (popupPosition)
                 {

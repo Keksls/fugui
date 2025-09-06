@@ -38478,10 +38478,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _layoutName: DemoScene
+  _themeName: DarkFlight
   _addWindowsToMainMenu: 1
   _addLayoutsToMainMenu: 1
   _addFuguiToMainMenu: 1
   _showImGuiDemoWindow: 0
+  _forceHideMainMenu: 0
 --- !u!114 &4082823442619091940
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -65,7 +65,7 @@ namespace Fu.Framework
         private unsafe bool _inernalCheckbox(string text, ref bool isChecked)
         {
             // calculate size
-            float lenght = ImGui.GetFrameHeight();
+            float lenght = 16f * Fugui.Scale;
             Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 size = new Vector2(lenght, lenght);
 
@@ -140,7 +140,8 @@ namespace Fu.Framework
             // draw check
             if (isChecked)
             {
-                Fugui.DrawCheckMark(drawList, pos + new Vector2(Fugui.Themes.FrameBorderSize * 2, Fugui.Themes.FrameBorderSize * 2), checkColor, size.y - Fugui.Themes.FrameBorderSize * 4);
+                float padding = 2f * Fugui.Scale;
+                Fugui.DrawCheckMark(drawList, pos + (Vector2.one * padding), checkColor, size.y - (padding * 2f));
             }
 
             // set mouse cursor

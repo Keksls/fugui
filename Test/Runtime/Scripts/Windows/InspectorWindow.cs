@@ -83,17 +83,14 @@ public class InspectorWindow : FuWindowBehaviour
                         Camera.backgroundColor = color;
                     }
                 }
-            }, FuButtonStyle.Collapsable, 8f, true, 20f, (h) =>
+            }, FuButtonStyle.Collapsable, 8f, true, 22f, (h) =>
             {
                 bool camEnabled = CameraWindow.enabled;
-                // reduce the size of the font to reduce checkbox size
-                Fugui.PushFont(12);
-                layout.CenterNextItemV(ImGui.GetFrameHeight(), h);
+                layout.CenterNextItemV(16f * Fugui.Scale, h);
                 if (layout.CheckBox("##cmEnbldChkCsbl", ref camEnabled))
                 {
                     CameraWindow.enabled = camEnabled;
                 }
-                Fugui.PopFont();
             }, 22f, (h) =>
             {
                 string cameraSettingsPopupID = "cmPppStng";

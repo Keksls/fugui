@@ -130,8 +130,7 @@ namespace Fu.Framework
             // Set the font for the header to be bold and size 14
             Fugui.PushFont(14, FontType.Bold);
             // Display the collapsable header with the given identifier
-            Vector2 btnSize;
-            if (_customCollapsableButton(text, style, leftPartCustomUIWidth, rightPartCustomUIWidth, open, drawCarret, paddingY * Fugui.CurrentContext.Scale, out btnSize))
+            if (_customCollapsableButton(text, style, leftPartCustomUIWidth, rightPartCustomUIWidth, open, drawCarret, paddingY * Fugui.CurrentContext.Scale))
             {
                 open = !open;
                 if (open && !string.IsNullOrEmpty(groupID))
@@ -155,6 +154,7 @@ namespace Fu.Framework
             // Draw up and down lines
             Vector2 btnMin = ImGui.GetItemRectMin();
             Vector2 btnMax = ImGui.GetItemRectMax();
+            float height = btnMax.y - btnMin.y;
             ImGui.GetWindowDrawList().AddLine(new Vector2(btnMin.x, btnMax.y), btnMax, ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.4f)));
             ImGui.GetWindowDrawList().AddLine(btnMin, new Vector2(btnMax.x, btnMin.y), ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.6f)));
 
@@ -163,8 +163,8 @@ namespace Fu.Framework
             // Draw left custom UI
             if (leftPartCustomUI != null)
             {
-                ImGui.SetCursorScreenPos(new Vector2(btnMin.x + carretWidth + (2f * Fugui.CurrentContext.Scale), btnMin.y + (2f * Fugui.CurrentContext.Scale)));
-                leftPartCustomUI?.Invoke(btnSize.y);
+                ImGui.SetCursorScreenPos(new Vector2(btnMin.x + carretWidth + (2f * Fugui.CurrentContext.Scale), btnMin.y));
+                leftPartCustomUI?.Invoke(height);
             }
             // Draw right custom UI
             if (rightPartCustomUI != null)
@@ -174,7 +174,7 @@ namespace Fu.Framework
                     SameLine();
                 }
                 ImGui.SetCursorScreenPos(new Vector2(btnMax.x - rightPartCustomUIWidth, btnMin.y));
-                rightPartCustomUI?.Invoke(btnSize.y);
+                rightPartCustomUI?.Invoke(height);
             }
 
             // if collapsable is open, indent content, draw it and unindent
@@ -200,7 +200,7 @@ namespace Fu.Framework
         /// <param name="rightPartUIWidth">width of the right part UI</param>
         /// <param name="opened">whatever the collapsable is opened right now</param>
         /// <returns>true if clicked</returns>
-        private unsafe bool _customCollapsableButton(string text, FuButtonStyle style, float leftPartUIWidth, float rightPartUIWidth, bool opened, bool drawCarret, float paddingY, out Vector2 btnSize)
+        private unsafe bool _customCollapsableButton(string text, FuButtonStyle style, float leftPartUIWidth, float rightPartUIWidth, bool opened, bool drawCarret, float paddingY)
         {
             // clamp gradient strenght
             float gradientStrenght = 1f - Mathf.Clamp(Fugui.Themes.CurrentTheme.CollapsableGradientStrenght, 0.1f, 1f);
@@ -219,7 +219,6 @@ namespace Fu.Framework
             Vector2 size = new Vector2(
                 Mathf.Max(4.0f, region_max.x - ImGuiNative.igGetCursorPosX()),
                 label_size.y + padding.y * 2f);
-            btnSize = size;
 
             bool hovered = IsItemHovered(pos, size);
 

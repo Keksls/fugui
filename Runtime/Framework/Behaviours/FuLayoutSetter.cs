@@ -8,6 +8,8 @@ namespace Fu.Framework
         [SerializeField]
         private string _layoutName;
         [SerializeField]
+        private string _themeName;
+        [SerializeField]
         private bool _addWindowsToMainMenu = true;
         [SerializeField]
         private bool _addLayoutsToMainMenu = true;
@@ -35,6 +37,16 @@ namespace Fu.Framework
             if (Fugui.Layouts.Layouts.Count > 0)
             {
                 Fugui.Layouts.SetLayout(_layoutName);
+            }
+
+            // set default theme
+            if (Fugui.Themes.Themes.Count > 0)
+            {
+                Fugui.Themes.Themes.TryGetValue(_themeName, out FuTheme theme);
+                if (theme != null)
+                {
+                    Fugui.Themes.SetTheme(theme);
+                }
             }
         }
 
@@ -77,7 +89,7 @@ namespace Fu.Framework
             }
 
             // hide main menu if required
-            if(_forceHideMainMenu)
+            if (_forceHideMainMenu)
             {
                 Fugui.HideMainMenu();
             }

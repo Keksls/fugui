@@ -180,12 +180,13 @@ namespace Fu
         /// Move the current drawing X position of strenght
         /// </summary>
         /// <param name="strenght">quantity of pixels to move on X from here</param>
-        public static void MoveX(float strenght)
+        /// <param name="negValueUseMaxRect">if strenght is negative use max rect width to calculate the position</param>
+        public static void MoveX(float strenght, bool negValueUseMaxRect = false)
         {
             if(strenght == 0) return;
             if (strenght < 0)
             {
-                MoveXUnscaled(strenght * Scale);
+                MoveXUnscaled(strenght * Scale, negValueUseMaxRect);
                 return;
             }
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x + strenght * Scale, ImGui.GetCursorScreenPos().y));
@@ -195,12 +196,13 @@ namespace Fu
         /// Move the current drawing Y position of strenght
         /// </summary>
         /// <param name="strenght">quantity of pixels to move on Y from here</param>
-        public static void MoveY(float strenght)
+        /// <param name="negValueUseMaxRect">if strenght is negative use max rect width to calculate the position</param>
+        public static void MoveY(float strenght, bool negValueUseMaxRect = false)
         {
             if (strenght == 0) return;
             if (strenght < 0)
             {
-                MoveYUnscaled(strenght * Scale);
+                MoveYUnscaled(strenght * Scale, negValueUseMaxRect);
                 return;
             }
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, ImGui.GetCursorScreenPos().y + strenght * Scale));
@@ -210,10 +212,11 @@ namespace Fu
         /// Move the current drawing X position of strenght
         /// </summary>
         /// <param name="strenght">quantity of pixels to move on X from here</param>
-        public static void MoveXUnscaled(float strenght)
+        /// <param name="negValueUseMaxRect">if strenght is negative use max rect width to calculate the position</param>
+        public static void MoveXUnscaled(float strenght, bool negValueUseMaxRect = false)
         {
             if (strenght == 0) return;
-            if (strenght < 0)
+            if (strenght < 0 && negValueUseMaxRect)
             {
                 strenght = ImGui.GetContentRegionAvail().x + strenght;
             }
@@ -224,10 +227,11 @@ namespace Fu
         /// Move the current drawing Y position of strenght
         /// </summary>
         /// <param name="strenght">quantity of pixels to move on Y from here</param>
-        public static void MoveYUnscaled(float strenght)
+        /// <param name="negValueUseMaxRect">if strenght is negative, use max rect available + strenght</param>
+        public static void MoveYUnscaled(float strenght, bool negValueUseMaxRect = false)
         {
             if (strenght == 0) return;
-            if (strenght < 0)
+            if (strenght < 0 && negValueUseMaxRect)
             {
                 strenght = ImGui.GetContentRegionAvail().y + strenght;
             }

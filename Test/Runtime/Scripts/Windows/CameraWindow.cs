@@ -43,8 +43,8 @@ public class CameraWindow : FuCameraWindowBehaviour
     private void HeaderUI(FuWindow window, Vector2 size)
     {
         Fugui.PushFont(FontType.Bold);
-        window.Layout.CenterNextItem("Camera Window");
-        window.Layout.CenterNextItemVertical("Camera Window", size.y);
+        window.Layout.CenterNextItemH("Camera Window");
+        window.Layout.CenterNextItemV("Camera Window", size.y);
         window.Layout.Text("Camera Window");
         Fugui.PopFont();
     }
@@ -52,8 +52,8 @@ public class CameraWindow : FuCameraWindowBehaviour
     private void FooterUI(FuWindow window, Vector2 size)
     {
         Fugui.PushFont(FontType.Italic);
-        window.Layout.CenterNextItem("Click on the scene to apply a force");
-        window.Layout.CenterNextItemVertical("Click on the scene to apply a force", size.y);
+        window.Layout.CenterNextItemH("Click on the scene to apply a force");
+        window.Layout.CenterNextItemV("Click on the scene to apply a force", size.y);
         window.Layout.Text("Click on the scene to apply a force");
         Fugui.PopFont();
     }

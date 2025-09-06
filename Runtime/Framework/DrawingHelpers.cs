@@ -1,5 +1,6 @@
 ﻿using Fu.Framework;
 using ImGuiNET;
+using System;
 using UnityEngine;
 
 namespace Fu
@@ -154,12 +155,40 @@ namespace Fu
         }
 
         /// <summary>
+        /// Draw a check mark at the given position, size and color
+        /// </summary>
+        /// <param name="drawList"> The draw list to use to draw the check mark</param>
+        /// <param name="pos"> Position to draw the check mark</param>
+        /// <param name="col"> Color of the check mark</param>
+        /// <param name="size"> Size of the check mark</param>
+        public static void DrawCheckMark(ImDrawListPtr drawList, Vector2 pos, Color col, float size)
+        {
+            float thickness = Mathf.Max(size / 5.0f, 1.0f);
+            size -= thickness * 0.5f;
+            pos += new Vector2(thickness * 0.25f, thickness * 0.25f);
+
+            float third = size / 3.0f;
+            float bx = pos.x + third;
+            float by = pos.y + size - third * 0.5f;
+            drawList.PathLineTo(new Vector2(bx - third, by - third));
+            drawList.PathLineTo(new Vector2(bx, by));
+            drawList.PathLineTo(new Vector2(bx + third * 2.0f, by - third * 2.0f));
+            drawList.PathStroke(ImGui.GetColorU32(col), 0, thickness);
+        }
+
+        /// <summary>
         /// Move the current drawing X position of strenght
         /// </summary>
         /// <param name="strenght">quantity of pixels to move on X from here</param>
         public static void MoveX(float strenght)
         {
-            ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x + strenght * Fugui.CurrentContext.Scale, ImGui.GetCursorScreenPos().y));
+            if(strenght == 0) return;
+            if (strenght < 0)
+            {
+                MoveXUnscaled(strenght * Scale);
+                return;
+            }
+            ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x + strenght * Scale, ImGui.GetCursorScreenPos().y));
         }
 
         /// <summary>
@@ -168,7 +197,13 @@ namespace Fu
         /// <param name="strenght">quantity of pixels to move on Y from here</param>
         public static void MoveY(float strenght)
         {
-            ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, ImGui.GetCursorScreenPos().y + strenght * CurrentContext.Scale));
+            if (strenght == 0) return;
+            if (strenght < 0)
+            {
+                MoveYUnscaled(strenght * Scale);
+                return;
+            }
+            ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, ImGui.GetCursorScreenPos().y + strenght * Scale));
         }
 
         /// <summary>
@@ -177,6 +212,11 @@ namespace Fu
         /// <param name="strenght">quantity of pixels to move on X from here</param>
         public static void MoveXUnscaled(float strenght)
         {
+            if (strenght == 0) return;
+            if (strenght < 0)
+            {
+                strenght = ImGui.GetContentRegionAvail().x + strenght;
+            }
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x + strenght, ImGui.GetCursorScreenPos().y));
         }
 
@@ -186,6 +226,11 @@ namespace Fu
         /// <param name="strenght">quantity of pixels to move on Y from here</param>
         public static void MoveYUnscaled(float strenght)
         {
+            if (strenght == 0) return;
+            if (strenght < 0)
+            {
+                strenght = ImGui.GetContentRegionAvail().y + strenght;
+            }
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, ImGui.GetCursorScreenPos().y + strenght));
         }
 
@@ -195,7 +240,7 @@ namespace Fu
         /// <param name="x">Local X position</param>
         public static void SetLocalX(float x)
         {
-            ImGui.SetCursorPosX(x * Fugui.CurrentContext.Scale);
+            ImGui.SetCursorPosX(x * Scale);
         }
 
         /// <summary>
@@ -204,7 +249,7 @@ namespace Fu
         /// <param name="y">Local Y position</param>
         public static void SetLocalY(float y)
         {
-            ImGui.SetCursorPosY(y * Fugui.CurrentContext.Scale);
+            ImGui.SetCursorPosY(y * Scale);
         }
 
         ///<summary>

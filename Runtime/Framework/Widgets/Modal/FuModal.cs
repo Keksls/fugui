@@ -179,7 +179,7 @@ namespace Fu
             float cursorPos = ImGui.GetCursorScreenPos().y;
             using (FuLayout layout = new FuLayout())
             {
-                layout.CenterNextItem(title);
+                layout.CenterNextItemH(title);
                 layout.Text(title);
             }
             _currentTitleHeight = ImGui.GetCursorScreenPos().y - cursorPos;

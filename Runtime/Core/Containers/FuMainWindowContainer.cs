@@ -269,14 +269,14 @@ namespace Fu
             // render notifications
             Fugui.RenderContextMenu();
 
-            // render notifications
-            Fugui.RenderNotifications(this);
-
             // render modal
             Fugui.RenderModal(this);
 
             // render popup message
             Fugui.RenderPopupMessage();
+
+            // render notifications
+            Fugui.RenderNotifications(this);
         }
 
         /// <summary>

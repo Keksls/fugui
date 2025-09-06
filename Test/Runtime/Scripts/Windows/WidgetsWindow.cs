@@ -54,7 +54,7 @@ public class WidgetsWindow : FuWindowBehaviour
 
     public override void OnUI(FuWindow window, FuLayout layout)
     {
-        layout.CenterNextItem("Check Fugui's git page.");
+        layout.CenterNextItemH("Check Fugui's git page.");
         layout.Text("Check Fugui's ");
         layout.SameLine();
         layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui");
@@ -314,6 +314,7 @@ public class WidgetsWindow : FuWindowBehaviour
         layout.SetNextElementToolTipWithLabel("This is a 128px clipped text, it's clipped");
         layout.Text("This is a 128px clipped text, it's clipped", new Vector2(128f, 0f), FuTextWrapping.Clip);
 
+        layout.SetNextElementToolTip("This is a clickable text, click it !");
         if (layout.ClickableText("This text can be clicked"))
         {
             Debug.Log("Clicked !");

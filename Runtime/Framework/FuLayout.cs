@@ -22,6 +22,11 @@ namespace Fu.Framework
         public bool LastItemHovered { get => _lastItemHovered; }
         private static bool _lastItemHovered = false;
         /// <summary>
+        /// A rectangle representing the last drawed item position and size.
+        /// </summary>
+        public Rect LastItemRect { get => _lastItemRect; }
+        private static Rect _lastItemRect = default;
+        /// <summary>
         /// A flag indicating last drawed item is currently used by current pointer.
         /// </summary>
         public bool LastItemActive { get => _lastItemActive; }
@@ -128,6 +133,7 @@ namespace Fu.Framework
         /// <param name="style">The style to use for this element.</param>
         protected virtual void beginElement(ref string elementID, IFuElementStyle style = null, bool noEditID = false, bool canBeHidden = true)
         {
+            _lastItemRect = default;
             _lastItemActive = false;
             _lastItemHovered = false;
             _lastItemJustDeactivated = false;
@@ -514,25 +520,35 @@ namespace Fu.Framework
         /// Prepare centering for the next item (next item should be a text)
         /// </summary>
         /// <param name="nextItemText">text of the next item</param>
-        public void CenterNextItem(string nextItemText)
+        /// <param name="availWidth">available width, if 0 use all available width, if negative use all available width minus this value</param>
+        /// <param name="scale">whatever the avail width must be scaled</param>
+        public void CenterNextItemH(string nextItemText, float availWidth = 0f, bool scale = false)
         {
             float txtWidth = ImGui.CalcTextSize(nextItemText).x;
-            float avWidth = ImGui.GetContentRegionAvail().x;
-            float offset = avWidth / 2f - txtWidth / 2f;
-            if (offset > 0f)
-            {
-                Fugui.MoveXUnscaled(offset);
-            }
+            CenterNextItemH(txtWidth, availWidth, scale);
         }
 
         /// <summary>
         /// Prepare centering for the next item
         /// </summary>
         /// <param name="itemWidth">width of the next item</param>
-        public void CenterNextItem(float itemWidth)
+        /// <param name="availWidth">available width, if 0 use all available width, if negative use all available width minus this value</param>
+        /// <param name="scale">whatever the avail width must be scaled</param>
+        public void CenterNextItemH(float itemWidth, float availWidth = 0f, bool scale = false)
         {
-            float avWidth = ImGui.GetContentRegionAvail().x;
-            float offset = avWidth / 2f - (itemWidth * Fugui.CurrentContext.Scale) / 2f;
+            if (availWidth == 0f)
+            {
+                availWidth = ImGui.GetContentRegionAvail().x;
+            }
+            else if (availWidth < 0f)
+            {
+                availWidth = ImGui.GetContentRegionAvail().x - availWidth * Fugui.Scale;
+            }
+            else if (scale)
+            {
+                availWidth *= Fugui.Scale;
+            }
+            float offset = availWidth / 2f - itemWidth / 2f;
             if (offset > 0f)
             {
                 Fugui.MoveXUnscaled(offset);
@@ -543,12 +559,35 @@ namespace Fu.Framework
         /// Prepare centering for the next item vertically (next item should be a text)
         /// </summary>
         /// <param name="nextItemText"> text of the next item</param>
-        /// <param name="maxHeight"> max height available, if -1 use all available height</param>
-        public void CenterNextItemVertical(string nextItemText, float maxHeight = -1)
+        /// <param name="availHeight"> max height available, if -1 use all available height</param>
+        /// <param name="scale">whatever the avail height must be scaled</param>
+        public void CenterNextItemV(string nextItemText, float availHeight = -1, bool scale = false)
         {
             float txtHeight = ImGui.CalcTextSize(nextItemText).y;
-            float avHeight = maxHeight > 0 ? maxHeight : ImGui.GetContentRegionAvail().y;
-            float offset = avHeight / 2f - txtHeight / 2f;
+            CenterNextItemV(txtHeight, availHeight, scale);
+        }
+
+        /// <summary>
+        /// Prepare centering for the next item vertically (next item should be a text)
+        /// </summary>
+        /// <param name="itemHeight"> height of the next item</param>
+        /// <param name="availHeight"> max height available, if -1 use all available height</param>
+        /// <param name="scale">whatever the avail height must be scaled</param>
+        public void CenterNextItemV(float itemHeight, float availHeight = -1, bool scale = false)
+        {
+            if (availHeight == 0f)
+            {
+                availHeight = ImGui.GetContentRegionAvail().y;
+            }
+            else if (availHeight < 0f)
+            {
+                availHeight = ImGui.GetContentRegionAvail().y - availHeight * Fugui.Scale;
+            }
+            else if(scale)
+            {
+                availHeight *= Fugui.Scale;
+            }
+            float offset = availHeight / 2f - itemHeight / 2f;
             if (offset > 0f)
             {
                 Fugui.MoveYUnscaled(offset);
@@ -556,20 +595,34 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// Prepare centering for the next item vertically (next item should be a text)
+        /// Prepare centering for the next item horizontally and vertically (next item should be a text)
         /// </summary>
-        /// <param name="itemHeight"> height of the next item</param>
-        /// <param name="maxHeight"> max height available, if -1 use all available height</param>
-        public void CenterNextItemVertical(float itemHeight, float maxHeight = -1)
+        /// <param name="nextItemText"> text of the next item</param>
+        /// <param name="availWidth"> available width, if 0 use all available width, if negative use all available width minus this value</param>
+        /// <param name="availHeight"> max height available, if -1 use all available height</param>
+        /// <param name="scale">whatever the avail width and height must be scaled</param>
+        public void CenterNextItemHV(string nextItemText, float availWidth = 0f, float availHeight = -1, bool scale = false)
         {
-            float avHeight = maxHeight > 0 ? maxHeight :ImGui.GetContentRegionAvail().y;
-            float offset = avHeight / 2f - (itemHeight * Fugui.CurrentContext.Scale) / 2f;
-            if (offset > 0f)
-            {
-                Fugui.MoveYUnscaled(offset);
-            }
+            Vector2 txtSize = ImGui.CalcTextSize(nextItemText);
+            float txtWidth = txtSize.x;
+            float txtHeight = txtSize.y;
+            CenterNextItemH(txtWidth, availWidth, scale);
+            CenterNextItemV(txtHeight, availHeight, scale);
         }
 
+        /// <summary>
+        /// Prepare centering for the next item horizontally and vertically
+        /// </summary>
+        /// <param name="itemWidth"> width of the next item</param>
+        /// <param name="itemHeight"> height of the next item</param>
+        /// <param name="availWidth"> available width, if 0 use all available width, if negative use all available width minus this value</param>
+        /// <param name="availHeight"> max height available, if -1 use all available height</param>
+        /// <param name="scale">whatever the avail width and height must be scaled</param>
+        public void CenterNextItemHV(float itemWidth, float itemHeight, float availWidth = 0f, float availHeight = -1, bool scale = false)
+        {
+            CenterNextItemH(itemWidth, availWidth, scale);
+            CenterNextItemV(itemHeight, availHeight, scale);
+        }
         #endregion
 
         #region private utils
@@ -767,6 +820,8 @@ namespace Fu.Framework
         /// <param name="updateOnClick"></param>
         protected void setBaseElementState(string uniqueID, Vector2 pos, Vector2 size, bool clickable, bool updated, bool updateOnClick = false)
         {
+            _lastItemRect = new Rect(pos, size);
+
             // do nothing if the item is disabled
             if (LastItemDisabled)
             {

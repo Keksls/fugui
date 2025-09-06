@@ -89,12 +89,12 @@ namespace Fu.Framework
         /// <param name="drawCarret">Whether to draw a caret icon indicating the collapsable state.</param>
         /// <param name="groupID">Optional group ID to manage collapsable states within a group.</param>
         /// <param name="indent"> The indentation to apply to the content within the collapsable element.</param>
-        /// <param name="leftPartCustomUI"> Optional custom UI to display on the left side of the collapsable header.</param>
+        /// <param name="leftPartCustomUI"> Optional custom UI to display on the left side of the collapsable header. It receives as parameter the available height to draw in.</param>
         /// <param name="leftPartCustomUIWidth">Width of the left custom UI part.</param>
         /// <param name="paddingY">Padding to apply vertically to the collapsable header.</param>
-        /// <param name="rightPartCustomUI">Optional custom UI to display on the right side of the collapsable header.</param>
+        /// <param name="rightPartCustomUI">Optional custom UI to display on the right side of the collapsable header. It receives as parameter the available height to draw in.</param>
         /// <param name="rightPartCustomUIWidth">Width of the right custom UI part.</param>
-        public void Collapsable(string text, Action innerUI, FuButtonStyle style, float indent = 16f, bool defaultOpen = true, float leftPartCustomUIWidth = 0f, Action leftPartCustomUI = null, float rightPartCustomUIWidth = 0f, Action rightPartCustomUI = null, bool drawCarret = true, string groupID = null, float paddingY = 4f)
+        public void Collapsable(string text, Action innerUI, FuButtonStyle style, float indent = 16f, bool defaultOpen = true, float leftPartCustomUIWidth = 0f, Action<float> leftPartCustomUI = null, float rightPartCustomUIWidth = 0f, Action<float> rightPartCustomUI = null, bool drawCarret = true, string groupID = null, float paddingY = 4f)
         {
             // check value
             if (leftPartCustomUI == null)
@@ -130,7 +130,8 @@ namespace Fu.Framework
             // Set the font for the header to be bold and size 14
             Fugui.PushFont(14, FontType.Bold);
             // Display the collapsable header with the given identifier
-            if (_customCollapsableButton(text, style, leftPartCustomUIWidth, rightPartCustomUIWidth, open, drawCarret, paddingY * Fugui.CurrentContext.Scale))
+            Vector2 btnSize;
+            if (_customCollapsableButton(text, style, leftPartCustomUIWidth, rightPartCustomUIWidth, open, drawCarret, paddingY * Fugui.CurrentContext.Scale, out btnSize))
             {
                 open = !open;
                 if (open && !string.IsNullOrEmpty(groupID))
@@ -163,7 +164,7 @@ namespace Fu.Framework
             if (leftPartCustomUI != null)
             {
                 ImGui.SetCursorScreenPos(new Vector2(btnMin.x + carretWidth + (2f * Fugui.CurrentContext.Scale), btnMin.y + (2f * Fugui.CurrentContext.Scale)));
-                leftPartCustomUI?.Invoke();
+                leftPartCustomUI?.Invoke(btnSize.y);
             }
             // Draw right custom UI
             if (rightPartCustomUI != null)
@@ -173,7 +174,7 @@ namespace Fu.Framework
                     SameLine();
                 }
                 ImGui.SetCursorScreenPos(new Vector2(btnMax.x - rightPartCustomUIWidth, btnMin.y));
-                rightPartCustomUI?.Invoke();
+                rightPartCustomUI?.Invoke(btnSize.y);
             }
 
             // if collapsable is open, indent content, draw it and unindent
@@ -199,7 +200,7 @@ namespace Fu.Framework
         /// <param name="rightPartUIWidth">width of the right part UI</param>
         /// <param name="opened">whatever the collapsable is opened right now</param>
         /// <returns>true if clicked</returns>
-        private unsafe bool _customCollapsableButton(string text, FuButtonStyle style, float leftPartUIWidth, float rightPartUIWidth, bool opened, bool drawCarret, float paddingY)
+        private unsafe bool _customCollapsableButton(string text, FuButtonStyle style, float leftPartUIWidth, float rightPartUIWidth, bool opened, bool drawCarret, float paddingY, out Vector2 btnSize)
         {
             // clamp gradient strenght
             float gradientStrenght = 1f - Mathf.Clamp(Fugui.Themes.CurrentTheme.CollapsableGradientStrenght, 0.1f, 1f);
@@ -218,6 +219,7 @@ namespace Fu.Framework
             Vector2 size = new Vector2(
                 Mathf.Max(4.0f, region_max.x - ImGuiNative.igGetCursorPosX()),
                 label_size.y + padding.y * 2f);
+            btnSize = size;
 
             bool hovered = IsItemHovered(pos, size);
 

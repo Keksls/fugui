@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+#if HAS_UDP
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
-using UnityEngine.Rendering.Universal;
+#endif
 
 namespace Fu
 {
+#if HAS_URP
     public class FuguiRenderFeature : ScriptableRendererFeature
     {
         internal const string _sampleName = "Fugui.ExecuteDrawCommands";
@@ -437,4 +439,5 @@ namespace Fu
             renderer.EnqueuePass(pass);
         }
     }
+#endif
 }

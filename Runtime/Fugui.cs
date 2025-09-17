@@ -729,8 +729,10 @@ namespace Fu
                 DefaultContext.SetScale(_targetScale, _targetFontScale);
             }
 
+#if IS_URP
             // check if render graph is enabled
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
+#endif
 
             // render any other contexts
             foreach (var context in Contexts)
@@ -786,7 +788,7 @@ namespace Fu
                 Debug.LogWarning("Fugui: Unable to determine current render pipeline. " + ex.Message);
             }
         }
-        #endregion
+#endregion
 
         #region Styles and Colors
 #if !FUDEBUG
@@ -880,7 +882,7 @@ namespace Fu
             }
         }
 #endif
-        #endregion
+#endregion
 
         #region Fonts
         /// <summary>

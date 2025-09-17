@@ -2,7 +2,14 @@ using ImGuiNET;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+
+#if HAS_URP
 using UnityEngine.Rendering.Universal;
+#endif
+
+#if HAS_HDRP
+using UnityEngine.Rendering.HighDefinition;
+#endif
 
 namespace Fu
 {
@@ -22,14 +29,8 @@ namespace Fu
         public bool NeedToUpdateCamera { get; set; }
         public int TargetCameraFPS
         {
-            get
-            {
-                return (int)(1f / _targetCameraDeltaTimeMs);
-            }
-            set
-            {
-                _targetCameraDeltaTimeMs = 1f / value;
-            }
+            get { return (int)(1f / _targetCameraDeltaTimeMs); }
+            set { _targetCameraDeltaTimeMs = 1f / value; }
         }
         public float CameraDeltaTime { get; internal set; }
         public float CurrentCameraFPS { get; internal set; }
@@ -54,40 +55,58 @@ namespace Fu
             // Handle MSAA settings
             if (windowDefinition.MSAASamples != MSAASamples.None)
             {
-                // set MSAA on camera
                 Camera.allowMSAA = true;
                 Camera.allowDynamicResolution = false;
-                // set default MSAA friendly texture format
+
+                // default MSAA-friendly format
                 _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
                 _currentTextureDepth = 24;
             }
             else
             {
-                // disable MSAA on camera
                 Camera.allowMSAA = false;
                 Camera.allowDynamicResolution = false;
-                // set default non MSAA friendly texture format
+
+                // non-MSAA format
                 _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_SFloat;
                 _currentTextureDepth = 0;
             }
 
-            // disable MSAA on current pipeline to avoid flickering
-            // MSAA is no needed for URP asset, assuming we must use Fugui CameraWindow to draw camera render.
-            // MSAA is so handled by the render texture itself and powered by the camera allowMSAA property
-            // Also, native fugui SuperSampling will do a better job than MSAA in most cases
+#if HAS_URP
+            // Disable MSAA in URP asset
             if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urpAsset)
             {
                 urpAsset.msaaSampleCount = 1;
             }
+#endif
 
-            // create the render texture
+#if HAS_HDRP
+            // HDRP : MSAA est désactivé par défaut en mode Deferred. 
+            // Si besoin, on peut gérer via HDRenderPipelineAsset.msaaSampleCount
+            if (GraphicsSettings.currentRenderPipeline is HDRenderPipelineAsset hdrpAsset)
+            {
+                // désactiver MSAA global si tu utilises la super-sampling Fugui
+                //hdrpAsset.currentPlatformRenderPipelineSettings.supportMSAA = false;
+            }
+#endif
+
+            // Create the render texture
             _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
             _rTexture.antiAliasing = (int)windowDefinition.MSAASamples;
+
+#if HAS_URP
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
             if (isRenderGraphEnabled)
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
             else
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+#endif
+
+#if HAS_HDRP
+            // HDRP gère automatiquement le depth-stencil, on force un format compatible
+            _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D32_SFloat_S8_UInt;
+#endif
+
             _rTexture.useDynamicScale = true;
             _rTexture.Create();
 
@@ -111,7 +130,7 @@ namespace Fu
                 windowDefinition.UI?.Invoke(this, Layout);
             };
 
-            // register raycaster
+            // Register raycaster
             _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsPressed(FuMouseButton.Left), () => Mouse.IsPressed(FuMouseButton.Right), () => false, () => Mouse.Wheel.y, () => IsHoveredContent);
             FuRaycasting.RegisterRaycaster(_raycaster);
         }

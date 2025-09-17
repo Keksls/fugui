@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+#if HAS_URP
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+#endif
 using UnityEngine.Video;
 
 namespace Fu.Framework
@@ -66,7 +68,9 @@ namespace Fu.Framework
             Texture = new RenderTexture((int)Player.width, (int)Player.height, 24, RenderTextureFormat.RGB111110Float, 0);
 
             // get the first FuCameraWindowDefinition to get the current SRP MSAA sample count
-            FuCameraWindowDefinition camDef = Fugui.UIWindowsDefinitions.FirstOrDefault(wd => wd.Value is FuCameraWindowDefinition).Value as FuCameraWindowDefinition;
+            FuCameraWindowDefinition camDef = Fugui.UIWindowsDefinitions
+                .FirstOrDefault(wd => wd.Value is FuCameraWindowDefinition).Value as FuCameraWindowDefinition;
+
             if (camDef != null)
             {
                 Texture.antiAliasing = (int)camDef.MSAASamples;
@@ -76,24 +80,36 @@ namespace Fu.Framework
                 Texture.antiAliasing = 0; // by default no MSAA to avoid flickering issues and fail on Metal
             }
 
-            // if render graph is enabled, we need a depth buffer to avoid issues
-            bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
-            if (isRenderGraphEnabled)
-                Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
-            else
-                Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+#if HAS_URP
+    // if render graph is enabled, we need a depth buffer to avoid issues
+    bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
+    if (isRenderGraphEnabled)
+        Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
+    else
+        Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+#endif
+
+#if HAS_HDRP
+            // HDRP always expects a valid depth buffer; safer to force a 32-bit depth-stencil
+            Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D32_SFloat_S8_UInt;
+#endif
 
             Texture.useDynamicScale = true;
             Texture.Create();
+
             Player.targetTexture = Texture;
+
             _executeOncePrepared?.Invoke();
             _executeOncePrepared = null;
+
             if (_autoPlay)
             {
                 Play();
             }
+
             _isPreparing = false;
         }
+
         #endregion
 
         /// <summary>

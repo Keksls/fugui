@@ -7,7 +7,7 @@
        LOD 100
 
        Lighting Off
-       Cull Off ZWrite On ZTest Always
+       Cull Off ZWrite Off ZTest LEqual
        Blend SrcAlpha OneMinusSrcAlpha
 
        Pass

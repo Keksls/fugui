@@ -1,4 +1,4 @@
-using ImGuiNET;
+ï»¿using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -26,6 +26,15 @@ namespace Fu
                                                        MeshUpdateFlags.DontRecalculateBounds |
                                                        MeshUpdateFlags.DontResetBoneBounds |
                                                        MeshUpdateFlags.DontValidateIndices;
+        #endregion
+
+        #region CONSTRUCTOR
+        public FuguiHDRPCustomPass()
+        {
+            name = "Fugui HDRP";
+            targetColorBuffer = TargetBuffer.Camera;
+            targetDepthBuffer = TargetBuffer.None;
+        }
         #endregion
 
         #region ATTRIBUTES (Inspector)
@@ -63,6 +72,13 @@ namespace Fu
         /// </summary>
         protected override void Setup(ScriptableRenderContext renderContext, CommandBuffer cmd)
         {
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlaying)
+            {
+                return;
+            }
+#endif
+
             _textureID = Shader.PropertyToID("_Texture");
             _materialProperties = new MaterialPropertyBlock();
 
@@ -87,33 +103,31 @@ namespace Fu
         /// </summary>
         protected override void Execute(CustomPassContext ctx)
         {
-            // Layer gate comme ta RenderFeature URP
-            if (ctx.hdCamera != null && ctx.hdCamera.camera != null)
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlaying)
             {
-                if (ctx.hdCamera.camera.gameObject.layer != CameraLayer)
-                {
-                    return;
-                }
+                return;
+            }
+#endif
+
+            if (_material == null || _mesh == null || Fugui.RenderingState != FuguiRenderingState.UpdateComplete)
+            {
+                return;
             }
 
-            // Vérifie l’état de rendu
-            if (Fugui.RenderingState != FuguiRenderingState.UpdateComplete)
+            if (ctx.hdCamera?.camera?.gameObject.layer != CameraLayer)
             {
                 return;
             }
 
             Fugui.RenderingState = FuguiRenderingState.Rendering;
 
-            CommandBuffer commandBuffer = ctx.cmd;
-
-            // Rendu du contexte principal
             Fugui.DefaultContext.EndRender();
             _textureManager = Fugui.DefaultContext.TextureManager;
-            RenderDrawLists(commandBuffer, Fugui.DefaultContext.DrawData);
+            RenderDrawLists(ctx.cmd, Fugui.DefaultContext.DrawData);
 
             Fugui.RenderingState = FuguiRenderingState.RenderComplete;
         }
-
 
         /// <summary>
         /// Called when the pass is disabled or destroyed.
@@ -245,25 +259,26 @@ namespace Fu
         /// </summary>
         private void UpdateMesh(DrawData drawData)
         {
-            // Count total submeshes
             int subMeshCount = 0;
             for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
             {
                 subMeshCount += drawData.DrawLists[n].CmdBuffer.Length;
             }
 
-            if (_prevSubMeshCount != subMeshCount)
+            bool layoutChanged = _mesh.vertexCount != drawData.TotalVtxCount || _mesh.GetIndexCount(0) != drawData.TotalIdxCount;
+
+            if (_prevSubMeshCount != subMeshCount || layoutChanged)
             {
                 _mesh.Clear(true);
                 _mesh.subMeshCount = _prevSubMeshCount = subMeshCount;
-            }
 
-            _mesh.SetVertexBufferParams(drawData.TotalVtxCount, _vertexAttributes);
-            _mesh.SetIndexBufferParams(drawData.TotalIdxCount, IndexFormat.UInt16);
+                _mesh.SetVertexBufferParams(drawData.TotalVtxCount, _vertexAttributes);
+                _mesh.SetIndexBufferParams(drawData.TotalIdxCount, IndexFormat.UInt16);
+            }
 
             int vtxOf = 0;
             int idxOf = 0;
-            List<SubMeshDescriptor> descriptors = new List<SubMeshDescriptor>(subMeshCount);
+            List<SubMeshDescriptor> descriptors = new List<SubMeshDescriptor>();
 
             for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
             {
@@ -283,17 +298,54 @@ namespace Fu
                     _mesh.SetVertexBufferData(vtxArray, 0, vtxOf, vtxArray.Length, 0, NO_MESH_CHECKS);
                     _mesh.SetIndexBufferData(idxArray, 0, idxOf, idxArray.Length, NO_MESH_CHECKS);
 
+                    ImDrawCmd? previousCmd = null;
+                    int mergedElemCount = 0;
+                    int mergedIdxOffset = 0;
+                    int mergedVtxOffset = 0;
+
                     for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i)
                     {
                         ImDrawCmd cmd = drawList.CmdBuffer[i];
-                        SubMeshDescriptor descriptor = new SubMeshDescriptor
+
+                        if (previousCmd.HasValue &&
+                            cmd.TextureId == previousCmd.Value.TextureId &&
+                            cmd.ClipRect.Equals(previousCmd.Value.ClipRect))
+                        {
+                            // Compatible â†’ fusionne
+                            mergedElemCount += (int)cmd.ElemCount;
+                        }
+                        else
+                        {
+                            // Flush prÃ©cÃ©dent
+                            if (previousCmd.HasValue)
+                            {
+                                descriptors.Add(new SubMeshDescriptor
+                                {
+                                    topology = MeshTopology.Triangles,
+                                    indexStart = idxOf + mergedIdxOffset,
+                                    indexCount = mergedElemCount,
+                                    baseVertex = vtxOf + mergedVtxOffset,
+                                });
+                            }
+
+                            // Nouveau bloc
+                            previousCmd = cmd;
+                            mergedElemCount = (int)cmd.ElemCount;
+                            mergedIdxOffset = (int)cmd.IdxOffset;
+                            mergedVtxOffset = (int)cmd.VtxOffset;
+                        }
+                    }
+
+                    // Flush final
+                    if (previousCmd.HasValue)
+                    {
+                        descriptors.Add(new SubMeshDescriptor
                         {
                             topology = MeshTopology.Triangles,
-                            indexStart = idxOf + (int)cmd.IdxOffset,
-                            indexCount = (int)cmd.ElemCount,
-                            baseVertex = vtxOf + (int)cmd.VtxOffset,
-                        };
-                        descriptors.Add(descriptor);
+                            indexStart = idxOf + mergedIdxOffset,
+                            indexCount = mergedElemCount,
+                            baseVertex = vtxOf + mergedVtxOffset,
+                        });
                     }
 
                     vtxOf += vtxArray.Length;
@@ -303,13 +355,15 @@ namespace Fu
 
             _mesh.SetSubMeshes(descriptors, NO_MESH_CHECKS);
 
-            // Safe 2D bounds in clip-space pixels
             Vector2 fbSize = drawData.DisplaySize * drawData.FramebufferScale;
             _mesh.bounds = new Bounds(
                 new Vector3(fbSize.x * 0.5f, fbSize.y * 0.5f, 0.0f),
                 new Vector3(fbSize.x + 4.0f, fbSize.y + 4.0f, 1.0f));
 
-            _mesh.UploadMeshData(false);
+            if (layoutChanged)
+            {
+                _mesh.UploadMeshData(false);
+            }
         }
         #endregion
     }

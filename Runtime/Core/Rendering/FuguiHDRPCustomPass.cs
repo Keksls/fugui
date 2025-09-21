@@ -43,6 +43,9 @@ namespace Fu
         /// </summary>
         public Shader FuguiShader;
 
+        [Tooltip("Restrict this custom pass to a single camera (leave null = all cameras).")]
+        public Camera targetCamera;
+
         /// <summary>
         /// Only render when the camera GameObject is on this layer (default Unity UI layer = 5).
         /// </summary>
@@ -109,6 +112,11 @@ namespace Fu
                 return;
             }
 #endif
+
+            if (targetCamera != null && ctx.hdCamera.camera != targetCamera)
+            {
+                return;
+            }
 
             if (_material == null || _mesh == null || Fugui.RenderingState != FuguiRenderingState.UpdateComplete)
             {

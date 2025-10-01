@@ -454,6 +454,7 @@ namespace Fu
                     _overlayStyle.Pop();
                 }
                 ImGuiNative.igEndChild();
+                ImGui.Dummy(Vector2.zero);
                 Layout.Dispose();
             }
             Fugui.PopStyle();

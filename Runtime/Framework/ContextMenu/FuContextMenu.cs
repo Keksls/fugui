@@ -135,14 +135,16 @@ namespace Fu
         /// <summary>
         /// Open the context menu if the current window is right clicked
         /// </summary>
-        public static void TryOpenContextMenuOnWindowClick()
+        public static bool TryOpenContextMenuOnWindowClick()
         {
             // whatever the current window is hovered and right clicked
             if (ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup) && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
             {
                 // open the context menu
                 TryOpenContextMenu();
+                return true;
             }
+            return false;
         }
         #endregion
 

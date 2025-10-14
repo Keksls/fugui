@@ -15,6 +15,8 @@ namespace Fu
         public static FuWindowName MainCameraView { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _MainCameraView; }
         private static FuWindowName _Popups = new FuWindowName(10, "Popups", true, -1);
         public static FuWindowName Popups { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _Popups; }
+        private static FuWindowName _NodalEditor = new FuWindowName(12, "Nodal Editor", true, -1);
+        public static FuWindowName NodalEditor { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _NodalEditor; }
         public static List<FuWindowName> GetAllWindowsNames()
         {
             return new List<FuWindowName>()
@@ -28,6 +30,7 @@ namespace Fu
                 _Widgets,
                 _MainCameraView,
                 _Popups,
+                _NodalEditor
             };
         }
     }

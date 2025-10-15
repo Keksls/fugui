@@ -9,8 +9,8 @@ namespace Fu.Framework.Nodal
 {
     public interface INodalSerializer
     {
-        string SaveToJson(NodalGraph graph);
-        NodalGraph LoadFromJson(string json);
+        string SaveToJson(FuNodalGraph graph);
+        FuNodalGraph LoadFromJson(string json);
     }
 
     public sealed class JsonNodalSerializer : INodalSerializer
@@ -22,9 +22,9 @@ namespace Fu.Framework.Nodal
                 DateTimeFormat = new DateTimeFormat("o")
             };
 
-        public string SaveToJson(NodalGraph graph)
+        public string SaveToJson(FuNodalGraph graph)
         {
-            var ser = new DataContractJsonSerializer(typeof(NodalGraph), _settings);
+            var ser = new DataContractJsonSerializer(typeof(FuNodalGraph), _settings);
             using (var ms = new MemoryStream())
             {
                 ser.WriteObject(ms, graph);
@@ -32,13 +32,13 @@ namespace Fu.Framework.Nodal
             }
         }
 
-        public NodalGraph LoadFromJson(string json)
+        public FuNodalGraph LoadFromJson(string json)
         {
             var bytes = Encoding.UTF8.GetBytes(json ?? string.Empty);
-            var ser = new DataContractJsonSerializer(typeof(NodalGraph), _settings);
+            var ser = new DataContractJsonSerializer(typeof(FuNodalGraph), _settings);
             using (var ms = new MemoryStream(bytes))
             {
-                return (NodalGraph)ser.ReadObject(ms);
+                return (FuNodalGraph)ser.ReadObject(ms);
             }
         }
     }

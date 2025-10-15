@@ -104,6 +104,16 @@
         DuotonePrimaryColor = 87,
         DuotoneSecondaryColor = 88,
 
-        COUNT = 89
+        // Nodes
+        NodeHeader = 89,
+        NodePort = 90,
+        NodeEdge = 91,
+        NodeGridMinor = 92,
+        NodeGridMajor = 93,
+        NodeLinkPreview = 94,
+        NodeSelectedEdge = 95,
+        NodeHoveredEdge = 96,
+
+        COUNT = 97
     }
 }

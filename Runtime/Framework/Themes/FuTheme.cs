@@ -78,6 +78,10 @@ namespace Fu
         public bool AntiAliasedLines = true;
         [FuToggle]
         public bool AntiAliasedFill = true;
+        [FuSlider(0f, 20f)]
+        public float NodeKnobRadius = 5f;
+        [FuSlider(0f, 20f)]
+        public float NodeKnobMargin = 8f;
         // colors
         [FuHidden]
         public Vector4[] Colors;
@@ -188,6 +192,8 @@ namespace Fu
             AntiAliasedLinesUseTex = false;
             AntiAliasedLines = true;
             AntiAliasedFill = true;
+            NodeKnobRadius = 5f;
+            NodeKnobMargin = 8f;
 
             int colorsCount = ThemeExtension != null ? (int)FuColors.COUNT + ThemeExtensionCount : (int)FuColors.COUNT;
             Colors = new Vector4[colorsCount];
@@ -295,9 +301,19 @@ namespace Fu
             Colors[(int)FuColors.BackgroundInfo] = new Vector4(81f / 255f, 212f / 255f, 233f / 255f, 1f);
             Colors[(int)FuColors.BackgroundSuccess] = new Vector4(97f / 255f, 217f / 255f, 124f / 255f, 1f);
             Colors[(int)FuColors.BackgroundWarning] = new Vector4(255f / 255f, 199f / 255f, 30f / 255f, 1f);
-            
+
             Colors[(int)FuColors.DuotonePrimaryColor] = new Vector4(1f / 255f, 122f / 255f, 1f, 1f);
             Colors[(int)FuColors.DuotoneSecondaryColor] = new Vector4(1f / 255f * 0.9f, 122f / 255f * 0.9f, 1f * 0.9f, 1f);
+
+            // nodes colors
+            Colors[(int)FuColors.NodeHeader] = new Color(0.12f, 0.12f, 0.12f, 0.95f);
+            Colors[(int)FuColors.NodePort] = new Color(0.90f, 0.90f, 0.90f, 1.00f);
+            Colors[(int)FuColors.NodeEdge] = new Color(0.80f, 0.80f, 0.80f, 1.00f);
+            Colors[(int)FuColors.NodeGridMinor] = new Color(0.20f, 0.20f, 0.20f, 0.30f);
+            Colors[(int)FuColors.NodeGridMajor] = new Color(0.25f, 0.25f, 0.25f, 0.60f);
+            Colors[(int)FuColors.NodeLinkPreview] = new Color(0.80f, 0.80f, 0.80f, 1.00f);
+            Colors[(int)FuColors.NodeSelectedEdge] = new Color(0.90f, 0.90f, 0.90f, 1.00f);
+            Colors[(int)FuColors.NodeHoveredEdge] = new Color(0.70f, 0.70f, 0.70f, 1.00f);
 
             for (int i = (int)FuColors.COUNT; i < colorsCount; i++)
             {
@@ -450,6 +466,16 @@ namespace Fu
 
             Colors[(int)FuColors.DuotonePrimaryColor] = new Vector4(1f / 255f, 122f / 255f, 1f, 1f);
             Colors[(int)FuColors.DuotoneSecondaryColor] = new Vector4(1f / 255f * 0.9f, 122f / 255f * 0.9f, 1f * 0.9f, 1f);
+
+            // nodes colors
+            Colors[(int)FuColors.NodeHeader] = new Color(0.87f, 0.87f, 0.87f, 0.95f);
+            Colors[(int)FuColors.NodePort] = new Color(0.10f, 0.10f, 0.10f, 1.00f);
+            Colors[(int)FuColors.NodeEdge] = new Color(0.20f, 0.20f, 0.20f, 1.00f);
+            Colors[(int)FuColors.NodeGridMinor] = new Color(0.80f, 0.80f, 0.80f, 0.30f);
+            Colors[(int)FuColors.NodeGridMajor] = new Color(0.75f, 0.75f, 0.75f, 0.60f);
+            Colors[(int)FuColors.NodeLinkPreview] = new Color(0.20f, 0.20f, 0.20f, 1.00f);
+            Colors[(int)FuColors.NodeSelectedEdge] = new Color(0.10f, 0.10f, 0.10f, 1.00f);
+            Colors[(int)FuColors.NodeHoveredEdge] = new Color(0.30f, 0.30f, 0.30f, 1.00f);
 
             for (int i = (int)FuColors.COUNT; i < colorsCount; i++)
             {

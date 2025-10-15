@@ -337,4 +337,34 @@ namespace Fu.Framework
         /// </summary>
         Right = 2
     }
+
+    /// <summary>
+    /// Define the direction of a nodal port
+    /// </summary>
+    public enum FuNodalPortDirection
+    {
+        /// <summary>
+        /// Port is an input
+        /// </summary>
+        In = 0,
+        /// <summary>
+        /// Port is an output
+        /// </summary>
+        Out = 1
+    }
+
+    /// <summary>
+    /// Define if a port can have one or many connections
+    /// </summary>
+    public enum FuNodalMultiplicity
+    {
+        /// <summary>
+        /// Port can have only one connection
+        /// </summary>
+        Single = 0,
+        /// <summary>
+        /// Port can have many connections
+        /// </summary>
+        Many = 1
+    }
 }

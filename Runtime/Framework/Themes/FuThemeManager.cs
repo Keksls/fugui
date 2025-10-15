@@ -41,6 +41,8 @@ namespace Fu
         public float TabRounding { get; private set; }
         public float TabBorderSize { get; private set; }
         public float TabMinWidthForCloseButton { get; private set; }
+        public float NodeKnobRadius { get; private set; }
+        public float NodeKnobMargin { get; private set; }
 
         /// <summary>
         /// Update variables with current theme scale
@@ -71,6 +73,8 @@ namespace Fu
             TabRounding = CurrentTheme.TabRounding * scale;
             TabBorderSize = CurrentTheme.TabBorderSize * scale;
             TabMinWidthForCloseButton = CurrentTheme.TabMinWidthForCloseButton * scale;
+            NodeKnobRadius = CurrentTheme.NodeKnobRadius * scale;
+            NodeKnobMargin = CurrentTheme.NodeKnobMargin * scale;
         }
         #endregion
 
@@ -189,6 +193,17 @@ namespace Fu
         }
 
         /// <summary>
+        /// return the color of the current theme that match with the given enum parameter as U32
+        /// </summary>
+        /// <param name="color"> color enum to get value of</param>
+        /// <returns> color value as U32</returns>
+        public uint GetColorU32(FuColors color)
+        {
+            Vector4 col = CurrentTheme.Colors[(int)color];
+            return ImGuiNET.ImGui.GetColorU32(col);
+        }
+
+        /// <summary>
         /// return the color of the current theme that match with the given enum parameter
         /// </summary>
         /// <param name="color">color enum to get value of</param>
@@ -199,6 +214,19 @@ namespace Fu
             Vector4 colorV4 = CurrentTheme.Colors[(int)color];
             colorV4.w *= alphaMult;
             return colorV4;
+        }
+
+        /// <summary>
+        /// return the color of the current theme that match with the given enum parameter as U32
+        /// </summary>
+        /// <param name="color"> color enum to get value of</param>
+        /// <param name="alphaMult"> alpha multiplicator of the color</param>
+        /// <returns> color value as U32</returns>
+        public uint GetColorU32(FuColors color, float alphaMult)
+        {
+            Vector4 col = CurrentTheme.Colors[(int)color];
+            col.w *= alphaMult;
+            return ImGuiNET.ImGui.GetColorU32(col);
         }
 
         /// <summary>

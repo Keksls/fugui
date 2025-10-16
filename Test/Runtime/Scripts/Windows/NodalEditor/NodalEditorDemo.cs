@@ -17,12 +17,7 @@ public class NodalEditorDemo : FuWindowBehaviour
         // Register custom types
         FuNodalRegistry.RegisterType(FuNodalType.Create<float>("core/float", 0f, (obj) => obj.ToString(), (str) => float.Parse(str), color:_floatColor));
         FuNodalRegistry.RegisterType(FuNodalType.Create<int>("core/int", 0, (obj) => obj.ToString(), (str) => int.Parse(str), color: _intColor));
-        FuNodalRegistry.RegisterType(FuNodalType.Create<Vector4>("core/v4", Vector4.zero, (obj) => string.Join('|', obj), (str) =>
-        {
-            string[] parts = str.Split('|');
-            if (parts.Length != 4) return Vector4.zero;
-            return new Vector4(float.Parse(parts[0]), float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3]));
-        }, color: _vector4Color));
+        FuNodalRegistry.RegisterType(FuNodalType.Create<Vector4>("core/v4", Vector4.zero, (obj) => JsonUtility.ToJson(obj), (str) => JsonUtility.FromJson<Vector4>(str), color: _vector4Color));
 
         // Register custom nodes
         FuNodalRegistry.RegisterNode("Variables/Float", () => new FloatNode(_floatColor));

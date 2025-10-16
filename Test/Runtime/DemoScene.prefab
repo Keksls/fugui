@@ -39464,9 +39464,12 @@ MonoBehaviour:
   _size: {x: 0, y: 0}
   _position: {x: 0, y: 0}
   _forceCreateAloneOnAwake: 0
-  _floatColor: {r: 0.1295834, g: 0.27617204, b: 0.4528302, a: 1}
-  _intColor: {r: 0, g: 0.5471698, b: 0.5185939, a: 1}
-  _vector4Color: {r: 0.57232696, g: 0.24736388, b: 0.17097813, a: 1}
+  _floatColor: {r: 0.17722785, g: 0.3895586, b: 0.64779866, a: 1}
+  _intColor: {r: 0.03682595, g: 0.61635214, b: 0.58323646, a: 1}
+  _vector2Color: {r: 0.62426883, g: 0.6289307, b: 0.17206587, a: 1}
+  _vector3Color: {r: 0.23838642, g: 0.59748423, b: 0.20104025, a: 1}
+  _vector4Color: {r: 0.67295593, g: 0.30616626, b: 0.22220236, a: 1}
+  _field2DColor: {r: 0.59119487, g: 0.24726067, b: 0.5086507, a: 1}
 --- !u!1 &5199011613196837288
 GameObject:
   m_ObjectHideFlags: 0

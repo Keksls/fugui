@@ -220,6 +220,42 @@ PrefabInstance:
       propertyPath: m_Name
       value: DemoScene
       objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _intColor.b
+      value: 0.58323646
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _intColor.g
+      value: 0.61635214
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _intColor.r
+      value: 0.03682595
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _floatColor.b
+      value: 0.64779866
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _floatColor.g
+      value: 0.3895586
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _floatColor.r
+      value: 0.17722785
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector4Color.b
+      value: 0.22220236
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector4Color.g
+      value: 0.30616626
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector4Color.r
+      value: 0.67295593
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -76,6 +76,17 @@ namespace Fu.Framework
                 return false;
             }
 
+            // check multiplicity
+            if (b.Multiplicity == FuNodalMultiplicity.Single)
+            {
+                // Remove existing edges to this input port
+                var edgesToRemove = Edges.FindAll(e => e.ToNodeId == bNodeId && e.ToPortId == b.Id);
+                foreach (var edge in edgesToRemove)
+                {
+                    DeleteEdge(edge);
+                }
+            }
+
             // Add the edge
             Edges.Add(new FuNodalEdge
             {

@@ -10,7 +10,13 @@ namespace Fu.Framework
     {
         public override string Title => "Vector4";
         public override float Width => 200f;
-        public override Color? NodeColor => null;
+        public override Color? NodeColor => color;
+        private Color color;
+
+        public Vector4Node(Color col)
+        {
+            color = col;
+        }
 
         public override bool CanConnect(FuNodalPort fromPort, FuNodalPort toPort) => true;
 

@@ -2,6 +2,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Forms;
 using UnityEngine;
 
 namespace Fu.Framework.Nodal
@@ -288,8 +289,14 @@ namespace Fu.Framework.Nodal
 
                 // Couleur selon état
                 bool selected = (_selectedEdgeIndex == i);
+
                 uint col = selected ? Fugui.Themes.GetColorU32(FuColors.NodeSelectedEdge) :
                            (hovered ? Fugui.Themes.GetColorU32(FuColors.NodeHoveredEdge) : Fugui.Themes.GetColorU32(FuColors.NodeEdge));
+                var typeData = FuNodalRegistry.GetType(pFrom.DataType);
+                if(typeData != null && typeData.Color.HasValue)
+                {
+                    col = ImGui.GetColorU32(typeData.Color.Value);
+                }
                 float width = selected ? 4.0f : (hovered ? 3.0f : 2.0f);
                 DrawBezier(drawList, a, b, width, col);
 
@@ -437,7 +444,7 @@ namespace Fu.Framework.Nodal
             float dx = Mathf.Abs(b.x - a.x);
             var c0 = new Vector2(a.x + dx * 0.5f, a.y);
             var c1 = new Vector2(b.x - dx * 0.5f, b.y);
-            dl.AddBezierCubic(a, c0, c1, b, col, thickness);
+            dl.AddBezierCubic(a, c0, c1, b, col, thickness * _zoom);
         }
 
         /// <summary>
@@ -548,7 +555,11 @@ namespace Fu.Framework.Nodal
                 bool over = Vector2.Distance(mouse, c) <= rBase * 1.8f;
                 float r = over ? rBase * 1.5f : rBase;
                 uint col = over ? ImGui.GetColorU32(headerColor) : Fugui.Themes.GetColorU32(FuColors.NodePort);
-
+                var typeData = FuNodalRegistry.GetType(p.DataType);
+                if (typeData != null && typeData.Color.HasValue)
+                {
+                    col = ImGui.GetColorU32(typeData.Color.Value);
+                }
                 dl.AddCircleFilled(c, r, col, 12);
 
                 string label = p.Name ?? p.DataType ?? "?";

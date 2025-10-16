@@ -17,7 +17,7 @@ public class NodalEditorDemo : FuWindowBehaviour
         // Register custom types
         FuNodalRegistry.RegisterType(FuNodalType.Create<float>("core/float", 0f, (obj) => obj.ToString(), (str) => float.Parse(str), color:_floatColor));
         FuNodalRegistry.RegisterType(FuNodalType.Create<int>("core/int", 0, (obj) => obj.ToString(), (str) => int.Parse(str), color: _intColor));
-        FuNodalRegistry.RegisterType(FuNodalType.Create<Vector4>("core/vector4", Vector4.zero, (obj) => string.Join('|', obj), (str) =>
+        FuNodalRegistry.RegisterType(FuNodalType.Create<Vector4>("core/v4", Vector4.zero, (obj) => string.Join('|', obj), (str) =>
         {
             string[] parts = str.Split('|');
             if (parts.Length != 4) return Vector4.zero;
@@ -25,9 +25,9 @@ public class NodalEditorDemo : FuWindowBehaviour
         }, color: _vector4Color));
 
         // Register custom nodes
-        FuNodalRegistry.RegisterNode("Variables/Float", () => new FloatNode());
-        FuNodalRegistry.RegisterNode("Variables/Int", () => new IntNode());
-        FuNodalRegistry.RegisterNode("Variables/Vector4", () => new Vector4Node());
+        FuNodalRegistry.RegisterNode("Variables/Float", () => new FloatNode(_floatColor));
+        FuNodalRegistry.RegisterNode("Variables/Int", () => new IntNode(_intColor));
+        FuNodalRegistry.RegisterNode("Variables/Vector4", () => new Vector4Node(_vector4Color));
         FuNodalRegistry.RegisterNode("Maths/Add", () => new AddNode());
     }
 

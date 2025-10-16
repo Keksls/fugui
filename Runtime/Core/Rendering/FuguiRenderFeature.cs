@@ -402,7 +402,6 @@ namespace Fu
             /// </summary>
             private class PassData
             {
-                public TextureHandle colorTarget;
             }
         }
 

@@ -6,43 +6,29 @@ using UnityEngine;
 public class NodalEditorDemo : FuWindowBehaviour
 {
     [SerializeField] Color _floatColor;
-    [SerializeField] Color _vector2Color;
-    [SerializeField] Color _vector3Color;
+    [SerializeField] Color _intColor;
+    [SerializeField] Color _vector4Color;
     private FuNodalEditor _nodalEditor;
 
     private void Awake()
     {
         _nodalEditor = new FuNodalEditor("Demo Nodal Editor");
 
-        _nodalEditor.RegisterNode("Variables/Float", () => new FloatNode());
-        _nodalEditor.RegisterNode("Variables/Int", () => new IntNode());
-        _nodalEditor.RegisterNode("Variables/Vector2", () => new Vector2Node());
-        _nodalEditor.RegisterNode("Variables/Vector3", () => new Vector3Node());
-        _nodalEditor.RegisterNode("Variables/Vector4", () => new Vector4Node());
+        // Register custom types
+        FuNodalRegistry.RegisterType(FuNodalType.Create<float>("core/float", 0f, (obj) => obj.ToString(), (str) => float.Parse(str), color:_floatColor));
+        FuNodalRegistry.RegisterType(FuNodalType.Create<int>("core/int", 0, (obj) => obj.ToString(), (str) => int.Parse(str), color: _intColor));
+        FuNodalRegistry.RegisterType(FuNodalType.Create<Vector4>("core/vector4", Vector4.zero, (obj) => string.Join('|', obj), (str) =>
+        {
+            string[] parts = str.Split('|');
+            if (parts.Length != 4) return Vector4.zero;
+            return new Vector4(float.Parse(parts[0]), float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3]));
+        }, color: _vector4Color));
 
-        _nodalEditor.RegisterNode("Maths/Add", () => new AddNode());
-        _nodalEditor.RegisterNode("Maths/Subtract", () => new SubtractNode());
-        _nodalEditor.RegisterNode("Maths/Multiply", () => new MultiplyNode());
-        _nodalEditor.RegisterNode("Maths/Divide", () => new DivideNode());
-        _nodalEditor.RegisterNode("Maths/Min", () => new MinNode());
-        _nodalEditor.RegisterNode("Maths/Max", () => new MaxNode());
-        _nodalEditor.RegisterNode("Maths/Pow", () => new PowNode());
-        _nodalEditor.RegisterNode("Maths/Clamp", () => new ClampNode());
-        _nodalEditor.RegisterNode("Maths/Lerp", () => new LerpNode());
-
-        _nodalEditor.RegisterNode("Maths/Saturate", () => new SaturateNode());
-        _nodalEditor.RegisterNode("Maths/OneMinus", () => new OneMinusNode());
-        _nodalEditor.RegisterNode("Maths/Abs", () => new AbsNode());
-        _nodalEditor.RegisterNode("Maths/Floor", () => new FloorNode());
-        _nodalEditor.RegisterNode("Maths/Ceil", () => new CeilNode());
-        _nodalEditor.RegisterNode("Maths/Round", () => new RoundNode());
-        _nodalEditor.RegisterNode("Maths/Sqrt", () => new SqrtNode());
-
-        _nodalEditor.RegisterNode("Maths/Dot", () => new DotNode());
-        _nodalEditor.RegisterNode("Maths/Cross", () => new CrossNode());
-        _nodalEditor.RegisterNode("Maths/Length", () => new LengthNode());
-        _nodalEditor.RegisterNode("Maths/Normalize", () => new NormalizeNode());
-        _nodalEditor.RegisterNode("Maths/Distance", () => new DistanceNode());
+        // Register custom nodes
+        FuNodalRegistry.RegisterNode("Variables/Float", () => new FloatNode());
+        FuNodalRegistry.RegisterNode("Variables/Int", () => new IntNode());
+        FuNodalRegistry.RegisterNode("Variables/Vector4", () => new Vector4Node());
+        FuNodalRegistry.RegisterNode("Maths/Add", () => new AddNode());
     }
 
     public override void OnWindowDefinitionCreated(FuWindowDefinition windowDefinition)

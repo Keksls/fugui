@@ -11,6 +11,7 @@ namespace Fu.Framework
         public override string Title => "Float";
         public override float Width => 200f;
         public override Color? NodeColor => null;
+
         private bool slider = false;
         private float min = float.MinValue;
         private float max = float.MaxValue;

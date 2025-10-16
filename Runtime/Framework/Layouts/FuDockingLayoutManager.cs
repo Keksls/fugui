@@ -17,7 +17,6 @@ namespace Fu
     {
         #region Variables
         public FuDockingLayoutDefinition CurrentLayout { get; internal set; }
-        internal Dictionary<int, string> DefinedDockSpaces;
         internal ExtensionFilter FlgExtensionFilter;
         public Dictionary<string, FuDockingLayoutDefinition> Layouts { get; private set; }
         /// <summary>

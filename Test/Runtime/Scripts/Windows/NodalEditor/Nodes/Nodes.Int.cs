@@ -10,7 +10,7 @@ namespace Fu.Framework
     {
         public override string Title => "Int";
         public override float Width => 200f;
-        public override Color? NodeColor => new Color(0.8f,0.8f,0.8f);
+        public override Color? NodeColor => null;
 
         public override bool CanConnect(FuNodalPort fromPort, FuNodalPort toPort) => true;
 

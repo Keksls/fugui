@@ -127,6 +127,7 @@ namespace Fu
                 }
                 //ImGui.SetNextWindowFocus();
                 // beggin modal
+                ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, Fugui.Themes.PopupRounding);
                 if (ImGui.BeginPopupModal(_modalTitle, ref _showModal, ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     // draw modal title
@@ -164,7 +165,7 @@ namespace Fu
                     //end the modal
                     ImGui.EndPopup();
                 }
-
+                ImGui.PopStyleVar();
                 // animate the modal
                 AnimateModal();
             }
@@ -180,6 +181,7 @@ namespace Fu
             using (FuLayout layout = new FuLayout())
             {
                 layout.CenterNextItemH(title);
+                layout.CenterNextItemV(title, _currentTitleHeight);
                 layout.Text(title);
             }
             _currentTitleHeight = ImGui.GetCursorScreenPos().y - cursorPos;

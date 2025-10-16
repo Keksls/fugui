@@ -165,79 +165,91 @@ namespace Fu.Framework
                 return;
             ClearDirty();
 
-            // Build indegree (number of incoming edges per node) and adjacency (outgoing neighbors).
-            var indegree = Nodes.ToDictionary(n => n.Id, n => 0);
-            var adjacency = Nodes.ToDictionary(n => n.Id, n => new List<Guid>());
-
-            for (int i = 0; i < Edges.Count; i++)
+            try
             {
-                var e = Edges[i];
-                if (!indegree.ContainsKey(e.ToNodeId) || !adjacency.ContainsKey(e.FromNodeId))
-                    continue; // Edge references a missing node; ignore safely.
+                // Build indegree (number of incoming edges per node) and adjacency (outgoing neighbors).
+                var indegree = Nodes.ToDictionary(n => n.Id, n => 0);
+                var adjacency = Nodes.ToDictionary(n => n.Id, n => new List<Guid>());
 
-                indegree[e.ToNodeId] += 1;
-                adjacency[e.FromNodeId].Add(e.ToNodeId);
-            }
-
-            // Initialize queue with nodes that have no inputs.
-            var queue = new Queue<Guid>(indegree.Where(kv => kv.Value == 0).Select(kv => kv.Key));
-
-            int processed = 0;
-            while (queue.Count > 0)
-            {
-                var nodeId = queue.Dequeue();
-                var node = FindNode(nodeId);
-                if (node != null)
+                for (int i = 0; i < Edges.Count; i++)
                 {
-                    try
+                    var e = Edges[i];
+                    if (!indegree.ContainsKey(e.ToNodeId) || !adjacency.ContainsKey(e.FromNodeId))
+                        continue; // Edge references a missing node; ignore safely.
+
+                    indegree[e.ToNodeId] += 1;
+                    adjacency[e.FromNodeId].Add(e.ToNodeId);
+                }
+
+                // Initialize queue with nodes that have no inputs.
+                var queue = new Queue<Guid>(indegree.Where(kv => kv.Value == 0).Select(kv => kv.Key));
+
+                int processed = 0;
+                while (queue.Count > 0)
+                {
+                    var nodeId = queue.Dequeue();
+                    var node = FindNode(nodeId);
+                    if (node != null)
                     {
-                        // propagate in nodes out values to connected nodes inputs
-                        var outgoingEdges = Edges.FindAll(e => e.FromNodeId == nodeId);
-                        if (outgoingEdges != null)
+                        try
                         {
-                            for (int i = 0; i < outgoingEdges.Count; i++)
+                            // propagate in nodes out values to connected nodes inputs
+                            var outgoingEdges = Edges.FindAll(e => e.FromNodeId == nodeId);
+                            if (outgoingEdges != null)
                             {
-                                var edge = outgoingEdges[i];
-                                var toNode = FindNode(edge.ToNodeId);
-                                if (toNode == null) continue;
-                                var fromPort = node.Ports.Values.FirstOrDefault(p => p.Id == edge.FromPortId);
-                                var toPort = toNode.Ports.Values.FirstOrDefault(p => p.Id == edge.ToPortId);
-                                if (fromPort == null || toPort == null) continue;
-                                // set input port data type to match output port
-                                toPort.DataType = fromPort.DataType;
-                                toPort.Data = fromPort.Data;
+                                for (int i = 0; i < outgoingEdges.Count; i++)
+                                {
+                                    var edge = outgoingEdges[i];
+                                    var toNode = FindNode(edge.ToNodeId);
+                                    if (toNode == null) continue;
+                                    var fromPort = node.Ports.Values.FirstOrDefault(p => p.Id == edge.FromPortId);
+                                    var toPort = toNode.Ports.Values.FirstOrDefault(p => p.Id == edge.ToPortId);
+                                    if (fromPort == null || toPort == null) continue;
+                                    // set input port data type to match output port
+                                    toPort.DataType = fromPort.DataType;
+                                    toPort.Data = fromPort.Data;
+                                }
                             }
-                        }
 
-                        // nodes outputs are calculated into compute
-                        node.Compute();
+                            // nodes outputs are calculated into compute
+                            node.Compute();
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogError($"[Nodal] Compute failed on node '{node?.GetType().Name}' ({nodeId}): {ex}");
+                        }
                     }
-                    catch (Exception ex)
+
+                    processed++;
+
+                    // Decrease indegree of each neighbor; enqueue when all its inputs are satisfied.
+                    var neighbors = adjacency.TryGetValue(nodeId, out var list) ? list : null;
+                    if (neighbors == null) continue;
+
+                    for (int i = 0; i < neighbors.Count; i++)
                     {
-                        Debug.LogError($"[Nodal] Compute failed on node '{node?.GetType().Name}' ({nodeId}): {ex}");
+                        var to = neighbors[i];
+                        if (!indegree.ContainsKey(to)) continue;
+                        indegree[to] -= 1;
+                        if (indegree[to] == 0)
+                            queue.Enqueue(to);
                     }
                 }
 
-                processed++;
-
-                // Decrease indegree of each neighbor; enqueue when all its inputs are satisfied.
-                var neighbors = adjacency.TryGetValue(nodeId, out var list) ? list : null;
-                if (neighbors == null) continue;
-
-                for (int i = 0; i < neighbors.Count; i++)
+                if (processed < Nodes.Count)
                 {
-                    var to = neighbors[i];
-                    if (!indegree.ContainsKey(to)) continue;
-                    indegree[to] -= 1;
-                    if (indegree[to] == 0)
-                        queue.Enqueue(to);
+                    // If this ever triggers, there is a cycle or dangling edge set.
+                    Debug.LogWarning($"[Nodal] Cycle or invalid edges detected. Computed {processed}/{Nodes.Count} nodes.");
                 }
             }
-
-            if (processed < Nodes.Count)
+            catch (Exception ex)
             {
-                // If this ever triggers, there is a cycle or dangling edge set.
-                Debug.LogWarning($"[Nodal] Cycle or invalid edges detected. Computed {processed}/{Nodes.Count} nodes.");
+                Debug.LogError($"[Nodal] Graph computation failed: {ex}");
+            }
+            finally
+            {
+                // Always clear dirty to avoid infinite recompute loops.
+                ClearDirty();
             }
         }
 

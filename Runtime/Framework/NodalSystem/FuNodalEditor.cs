@@ -338,10 +338,13 @@ namespace Fu.Framework.Nodal
 
             // Draw nodes (on top)
             _hoveredPort = null;
+            float fScale = Fugui.Scale;
+            Fugui.CurrentContext.SetTempFakeScale(fScale * _zoom); // scale globale pour les nodes
             for (int i = 0; i < Graph.Nodes.Count; i++)
             {
                 DrawNode(drawList, window, Graph.Nodes[i]);
             }
+            Fugui.CurrentContext.SetTempFakeScale(fScale); // reset scale
 
             // Preview link
             if (_isLinking && _linkFrom.HasValue)
@@ -470,6 +473,7 @@ namespace Fu.Framework.Nodal
         #endregion
 
         #region Nodes Drawing
+        Dictionary<Guid, float> _nodesHeightCache = new Dictionary<Guid, float>();
         /// <summary>
         /// Draw a single node at its position.
         /// </summary>
@@ -480,6 +484,7 @@ namespace Fu.Framework.Nodal
             var g = CalcNodeGeom(node);
             float z = _zoom;
 
+            float startY = g.rectMin.y;
             // utilise g.rectMin/g.rectMax, pas les valeurs du child.
             ImGui.SetCursorScreenPos(g.rectMin);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.zero);
@@ -520,7 +525,7 @@ namespace Fu.Framework.Nodal
                   ImGui.GetColorU32(borderColor),
                   Fugui.Themes.WindowRounding * z,
                   ImDrawFlags.RoundCornersDefault,
-                  borderThickness
+                  borderThickness * z
               );
 
             // Header
@@ -567,7 +572,7 @@ namespace Fu.Framework.Nodal
                 float textDy = -lbSize.y * 0.5f;
                 Vector2 labelPos = (p.Direction == FuNodalPortDirection.In)
                     ? (c + new Vector2(10f * z, textDy))
-                    : (c + new Vector2(-lbSize.x - (8f * Fugui.Scale) * z, textDy));
+                    : (c + new Vector2(-lbSize.x - 8f * Fugui.Scale, textDy));
                 dl.AddText(labelPos, Fugui.Themes.GetColorU32(FuColors.Text), label);
 
                 if (over) { ImGui.SetMouseCursor(ImGuiMouseCursor.Hand); _hoveredPort = (node, p); }
@@ -590,6 +595,8 @@ namespace Fu.Framework.Nodal
             ImGui.EndChild();
             ImGui.PopStyleVar();
             ImGui.PopStyleColor();
+            float endY = ImGui.GetCursorScreenPos().y;
+            _nodesHeightCache[node.Id] = endY - startY;
 
             HandleNodeInputs(node, window, rectMin, rectMax);
         }
@@ -874,11 +881,12 @@ namespace Fu.Framework.Nodal
             int outCount = node.Ports.Count(p => p.Value.Direction == FuNodalPortDirection.Out);
             int maxPorts = Mathf.Max(inCount, outCount);
 
-            // TODO : handle dynamic CustomUIHeight changes
-            float customUiPx = 0f; // node.CustomUIHeight * _zoom * Fugui.Scale;
-
-            float totalHeight = headerHeight + (maxPorts * lineH) + customUiPx
+            float totalHeight = headerHeight + (maxPorts * lineH)
                                 + ImGui.GetStyle().WindowPadding.y * 2f;
+            if(_nodesHeightCache.ContainsKey(node.Id))
+            {
+                totalHeight = _nodesHeightCache[node.Id]; // conserve la hauteur UI si déjà calculée
+            }
 
             Vector2 posScreen = CanvasToScreen(new Vector2(node.x, node.y));
             Vector2 rectMin = posScreen;

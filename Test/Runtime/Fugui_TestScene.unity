@@ -245,6 +245,54 @@ PrefabInstance:
       value: 0.17722785
       objectReference: {fileID: 0}
     - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _field2DColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _field2DColor.b
+      value: 0.5086507
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _field2DColor.g
+      value: 0.24726067
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _field2DColor.r
+      value: 0.59119487
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector2Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector2Color.b
+      value: 0.17206587
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector2Color.g
+      value: 0.6289307
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector2Color.r
+      value: 0.62426883
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector3Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector3Color.b
+      value: 0.20104025
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector3Color.g
+      value: 0.59748423
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _vector3Color.r
+      value: 0.23838642
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: _vector4Color.b
       value: 0.22220236
       objectReference: {fileID: 0}
@@ -255,6 +303,22 @@ PrefabInstance:
     - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: _vector4Color.r
       value: 0.67295593
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _floatArray2DColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _floatArray2DColor.b
+      value: 0.04639842
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _floatArray2DColor.g
+      value: 0.4762353
+      objectReference: {fileID: 0}
+    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _floatArray2DColor.r
+      value: 0.8679245
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

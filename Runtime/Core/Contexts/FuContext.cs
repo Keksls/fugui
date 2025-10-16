@@ -517,6 +517,15 @@ namespace Fu
         /// <param name="scale">global scale of this context</param>
         /// <param name="fontScale">font scale of this context</param>
         public abstract void SetScale(float scale, float fontScale);
+
+        /// <summary>
+        /// Set a temporary fake scale for this context (used to trick Fugui, eg : zoom on editor that draw UI)
+        /// </summary>
+        /// <param name="scale"> fake scale</param>
+        public void SetTempFakeScale(float scale)
+        {
+            Scale = scale;
+        }
     }
 
     internal class FontSet

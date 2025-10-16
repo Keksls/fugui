@@ -13,7 +13,6 @@ namespace Fu.Framework.Nodal
     public class FuNodalEditor
     {
         #region Variables
-        private readonly INodalSerializer _serializer = new JsonNodalSerializer();
         public FuNodalGraph Graph { get; private set; }
         // View
         private Vector2 _pan = new Vector2(0f, 0f);
@@ -48,7 +47,6 @@ namespace Fu.Framework.Nodal
 
         private Vector2 contextmenuOpenMousePos;
         private Dictionary<Guid, NodeGeom> _nodeGeometries = new Dictionary<Guid, NodeGeom>();
-        private static Dictionary<string, Func<FuNode>> nodesTypes = new Dictionary<string, Func<FuNode>>();
         #endregion
 
         public FuNodalEditor(string name)
@@ -62,7 +60,7 @@ namespace Fu.Framework.Nodal
             FuContextMenuBuilder builder = new FuContextMenuBuilder();
 
             // Build category tree from TypeId like "Cat/Sub/NodeName"
-            IEnumerable<string> types = nodesTypes.Keys;
+            IEnumerable<string> types = FuNodalRegistry.GetRegisteredNode();
 
             var root = new MenuNode();
             foreach (var typeId in types)
@@ -93,17 +91,17 @@ namespace Fu.Framework.Nodal
                 .AddItem("New", () => { Graph = new FuNodalGraph { Name = "New Graph" }; })
                 .AddItem("Save JSON", () =>
                 {
-                    try { ImGui.SetClipboardText(_serializer.SaveToJson(Graph)); }
-                    catch (Exception ex) { ImGui.SetClipboardText("Save failed: " + ex.Message); }
+                    string json = FuGraphSerializer.SaveToJson(Graph);
+                    string path = FileBrowser.SaveFilePanel("Save Nodal Graph JSON", Environment.GetFolderPath(Environment.SpecialFolder.Desktop), Graph.Name + ".json", "json");
+                    if (string.IsNullOrEmpty(path)) return;
+                    System.IO.File.WriteAllText(path, json);
                 })
                 .AddItem("Load JSON", () =>
                 {
-                    try
-                    {
-                        var g = _serializer.LoadFromJson(ImGui.GetClipboardText());
-                        if (g != null) Graph = g;
-                    }
-                    catch (Exception ex) { ImGui.SetClipboardText("Load failed: " + ex.Message); }
+                    string[] path = FileBrowser.OpenFilePanel("Load Nodal Graph JSON", Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "json", false);
+                    if (path.Length == 0) return;
+                    string json = System.IO.File.ReadAllText(path[0]);
+                    Graph = FuGraphSerializer.LoadFromJson(json);
                 });
 
             Fugui.PushContextMenuItems(builder.Build());
@@ -136,7 +134,7 @@ namespace Fu.Framework.Nodal
                 {
                     var mouseScreen = _canvasOrigin + contextmenuOpenMousePos;
                     var pos = ScreenToCanvas(mouseScreen);
-                    var n = CreateNode(type);
+                    var n = FuNodalRegistry.CreateNode(type);
                     n.SetPosition(pos.x, pos.y);
                     Graph.AddNode(n);
                 });
@@ -461,35 +459,6 @@ namespace Fu.Framework.Nodal
         {
             Vector2 mousePos = ImGui.GetMousePos();
             return mousePos - _canvasOrigin;
-        }
-        #endregion
-
-        #region Nodes Registry
-        /// <summary>
-        /// Register a node type with its constructor function
-        /// </summary>
-        /// <param name="typeId"> The unique identifier for the node type.</param>
-        /// <param name="constructor"> A function that constructs and returns an instance of the node type.</param>
-        public void RegisterNode(string typeId, Func<FuNode> constructor)
-        {
-            if (!nodesTypes.ContainsKey(typeId))
-                nodesTypes.Add(typeId, constructor);
-        }
-
-        /// <summary>
-        /// Create an instance of a registered node type by its typeId
-        /// </summary>
-        /// <param name="typeId"> The unique identifier for the node type to be created.</param>
-        /// <returns> An instance of the node type if found; otherwise, null.</returns>
-        public FuNode CreateNode(string typeId)
-        {
-            if (nodesTypes.ContainsKey(typeId))
-            {
-                FuNode node = nodesTypes[typeId].Invoke();
-                node.CreateDefaultPorts();
-                return node;
-            }
-            return null;
         }
         #endregion
 

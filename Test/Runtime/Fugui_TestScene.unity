@@ -220,54 +220,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: DemoScene
       objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _vector2Color.a
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _vector2Color.b
-      value: 0.039215688
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _vector2Color.g
-      value: 0.40392157
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _vector2Color.r
-      value: 0.32197943
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _vector3Color.a
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _vector3Color.b
-      value: 0.16018261
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _vector3Color.g
-      value: 0.38364768
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _vector3Color.r
-      value: 0.02292227
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _windowName._id
-      value: 12
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _windowName._name
-      value: Nodal Editor
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _windowName._idleFPS
-      value: -1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7325860304142673871, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: _windowName._autoInstantiateWindowOnlayoutSet
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

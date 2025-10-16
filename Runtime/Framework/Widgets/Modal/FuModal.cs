@@ -109,7 +109,7 @@ namespace Fu
                 {
                     _currentBodySize.y = _currentBodyHeight;
                 }
-                _currentBodySize.y = Mathf.Clamp(_currentBodySize.y, 32f, container.Size.y - 256f);
+                _currentBodySize.y = Mathf.Clamp(_currentBodySize.y, 32f, container.Size.y - 256f - _currentTitleHeight - _currentFooterheight);
 
                 // calculate full size and pos
                 Vector2 modalSize = new Vector2(_currentBodySize.x, _currentBodySize.y + _currentFooterheight + _currentTitleHeight);
@@ -145,18 +145,19 @@ namespace Fu
                     if (_modalBody != null)
                     {
                         //call the stored body callback
-                        using (new FuPanel("FuguiModalBody", FuStyle.NoBackgroundUnpadded, false, _currentBodySize.y))
+                        FuStyle.NoBackgroundUnpadded.Push(true);
+                        ImGui.BeginChild("FuguiModalBody", new Vector2(-1f, _currentBodySize.y));
+                        float cursorY = ImGui.GetCursorScreenPos().y;
+                        ImGui.Dummy(Vector2.zero);
+                        using (FuLayout layout = new FuLayout())
                         {
-                            float cursorY = ImGui.GetCursorScreenPos().y;
-                            ImGui.Dummy(Vector2.zero);
-                            using (FuLayout layout = new FuLayout())
-                            {
-                                _modalBody(layout);
-                            }
-                            ImGui.Dummy(Vector2.zero);
-                            // get body height for this frame
-                            _currentBodyHeight = ImGui.GetCursorScreenPos().y - cursorY;
+                            _modalBody(layout);
                         }
+                        ImGui.Dummy(Vector2.zero);
+                        // get body height for this frame
+                        _currentBodyHeight = ImGui.GetCursorScreenPos().y - cursorY;
+                        ImGui.EndChild();
+                        FuStyle.NoBackgroundUnpadded.Pop();
                     }
 
                     // draw footer
@@ -211,7 +212,7 @@ namespace Fu
                 {
                     // Set cursor position
                     Vector2 size = button.GetButtonSize();
-                    cursorX -= (size.x + 8f);
+                    cursorX -= (size.x + (8f * Fugui.Scale));
                     ImGui.SetCursorPosX(cursorX);
 
                     // Draw button

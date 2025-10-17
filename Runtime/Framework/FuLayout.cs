@@ -415,7 +415,18 @@ namespace Fu.Framework
         /// <returns>Vector2 that represent the available area (x = width, y = height)</returns>
         public Vector2 GetAvailable()
         {
-            return ImGui.GetContentRegionAvail();
+            Vector2 imAvail = ImGui.GetContentRegionAvail();
+
+            float windowHeight = float.MaxValue;
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                float cursoY = ImGui.GetCursorScreenPos().y;
+                FuWindow win = FuWindow.CurrentDrawingWindow;
+                float windowMaxY = win.LocalPosition.y + win.WorkingAreaPosition.y + win.WorkingAreaSize.y;
+                windowHeight = windowMaxY - cursoY;
+            }
+
+            return new Vector2(imAvail.x, Mathf.Min(windowHeight, imAvail.y));
         }
 
         /// <summary>
@@ -433,7 +444,16 @@ namespace Fu.Framework
         /// <returns>float that represent the available height</returns>
         public float GetAvailableHeight()
         {
-            return ImGui.GetContentRegionAvail().y;
+            float windowHeight = float.MaxValue;
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                float cursoY = ImGui.GetCursorScreenPos().y;
+                FuWindow win = FuWindow.CurrentDrawingWindow;
+                float windowMaxY = win.LocalPosition.y + win.WorkingAreaPosition.y + win.WorkingAreaSize.y;
+                windowHeight = windowMaxY - cursoY;
+            }
+
+            return Mathf.Min(windowHeight, ImGui.GetContentRegionAvail().y);
         }
 
         /// <summary>
@@ -583,7 +603,7 @@ namespace Fu.Framework
             {
                 availHeight = ImGui.GetContentRegionAvail().y - availHeight * Fugui.Scale;
             }
-            else if(scale)
+            else if (scale)
             {
                 availHeight *= Fugui.Scale;
             }

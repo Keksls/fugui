@@ -27,9 +27,9 @@ namespace Fu.Framework
 
             // verticaly center Label
             float textHeight = ImGui.CalcTextSize(text).y;
-            if (textHeight < _minLineHeight)
+            if (textHeight < _minLineHeight * Fugui.Scale)
             {
-                float padding = (_minLineHeight - textHeight) / 2f;
+                float padding = ((_minLineHeight * Fugui.Scale) - textHeight) / 2f;
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() + padding - 1f);
             }
             // draw text
@@ -64,9 +64,9 @@ namespace Fu.Framework
 
             // horizontaly center Label
             float textHeight = ImGui.CalcTextSize(text).y;
-            if (textHeight < _minLineHeight)
+            if (textHeight < _minLineHeight * Fugui.Scale)
             {
-                float padding = (_minLineHeight - textHeight) / 2f;
+                float padding = ((_minLineHeight * Fugui.Scale) - textHeight) / 2f;
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() + padding - 1f);
             }
             // draw text

@@ -1,14 +1,15 @@
 ﻿using Fu;
 using ImGuiNET;
+using System;
+using System.Windows.Forms;
 using UnityEngine;
 
 namespace Fu.Framework
 {
-    /// <summary>
-    /// a class that hold data that represent a notification
-    /// </summary>
+    /// <summary>Notification card: accent side/top/bottom per anchor, header click-to-collapse, body bg, AutoResizeY.</summary>
     internal class FuguiNotification
     {
+        #region Data
         internal string Title;
         internal string Message;
         internal StateType Type;
@@ -18,148 +19,81 @@ namespace Fu.Framework
         internal int Quantity;
         internal FuTextStyle TextColor;
         internal FuButtonStyle BGColor;
+
+        internal Action ClickCallback;
+        internal bool IsCollapsed;
+        internal bool CanCollapse;
+
         private float _animationEnlapsed = 0f;
         private bool _removing = false;
         private bool _hasSpawn = false;
 
-        /// <summary>
-        /// Instantiate a new Notification object
-        /// </summary>
-        /// <param name="title">Title of the notification (can be null if message is not)</param>
-        /// <param name="message">Message of the notification (can be null if title is not)</param>
-        /// <param name="type">Type of the notification</param>
-        /// <param name="duration">Duration before this notification disapear</param>
-        internal FuguiNotification(string title, string message, StateType type, float duration)
+        private float _borderWidth => 1.5f * Fugui.CurrentContext.Scale;
+
+        private float _initialDuration;
+        #endregion
+
+        #region Ctor
+        /// <summary>Instantiate a new Notification object.</summary>
+        internal FuguiNotification(string title, string message, StateType type, float duration, Action onClick = null, bool? startCollapsed = null)
         {
             Title = title;
             Message = message;
             Type = type;
             Duration = duration;
+            _initialDuration = Mathf.Max(0.001f, duration);
             Height = 64f;
             Icon = null;
             Quantity = 1;
             TextColor = FuTextStyle.Default;
             BGColor = FuButtonStyle.Default;
+            ClickCallback = onClick;
             _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration;
 
             switch (type)
             {
-                case StateType.Danger:
-                    Icon = Fugui.Settings.DangerIcon;
-                    TextColor = FuTextStyle.Danger;
-                    BGColor = FuButtonStyle.Danger;
-                    break;
-
-                case StateType.Success:
-                    Icon = Fugui.Settings.SuccessIcon;
-                    TextColor = FuTextStyle.Success;
-                    BGColor = FuButtonStyle.Success;
-                    break;
-
-                case StateType.Info:
-                    Icon = Fugui.Settings.InfoIcon;
-                    TextColor = FuTextStyle.Info;
-                    BGColor = FuButtonStyle.Info;
-                    break;
-
-                case StateType.Warning:
-                    Icon = Fugui.Settings.WarningIcon;
-                    TextColor = FuTextStyle.Warning;
-                    BGColor = FuButtonStyle.Warning;
-                    break;
+                case StateType.Danger: Icon = Fugui.Settings.DangerIcon; TextColor = FuTextStyle.Danger; BGColor = FuButtonStyle.Danger; break;
+                case StateType.Success: Icon = Fugui.Settings.SuccessIcon; TextColor = FuTextStyle.Success; BGColor = FuButtonStyle.Success; break;
+                case StateType.Info: Icon = Fugui.Settings.InfoIcon; TextColor = FuTextStyle.Info; BGColor = FuButtonStyle.Info; break;
+                case StateType.Warning: Icon = Fugui.Settings.WarningIcon; TextColor = FuTextStyle.Warning; BGColor = FuButtonStyle.Warning; break;
             }
-        }
 
-        /// <summary>
-        /// update the notificatipn duration and animation
-        /// </summary>
-        /// <param name="deltaTime">time that have passes since last draw frame</param>
-        /// <returns>true if time is out, we need to remove this notification</returns>
-        private bool update(float deltaTime)
-        {
-            // update animation state
-            if (_removing)
-            {
-                if (_animationEnlapsed > 0f)
-                {
-                    _animationEnlapsed = Mathf.Clamp(_animationEnlapsed - deltaTime, 0f, Fugui.Settings.NotifyAnimlationDuration);
-                }
-                if (_animationEnlapsed == 0f)
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                if (_animationEnlapsed < Fugui.Settings.NotifyAnimlationDuration)
-                {
-                    _animationEnlapsed = Mathf.Clamp(_animationEnlapsed + deltaTime, 0f, Fugui.Settings.NotifyAnimlationDuration);
-                }
-                else
-                {
-                    // update animation duration once apear
-                    Duration -= deltaTime;
-                }
-                if (Duration <= 0f)
-                {
-                    Close();
-                }
-            }
-            return false;
+            CanCollapse = !string.IsNullOrEmpty(Title) && !string.IsNullOrEmpty(Message);
+            IsCollapsed = false;
+            if (startCollapsed.HasValue && CanCollapse) IsCollapsed = startCollapsed.Value;
         }
+        #endregion
 
-        /// <summary>
-        /// Remove this notification from the list
-        /// </summary>
-        public void Close()
-        {
-            _removing = true;
-            _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration;
-        }
+        #region Public API
+        /// <summary>Remove this notification (animated).</summary>
+        public void Close() { _removing = true; _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration; }
 
-        /// <summary>
-        /// Add a stacked notification to this one (an exacte same notify, let's increment quantity)
-        /// </summary>
-        /// <param name="duration">duration of the notification</param>
-        public void AddStackedNotification(float duration)
-        {
-            Duration = duration;
-            _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration;
-            Quantity++;
-        }
+        /// <summary>Add a stacked notification (refresh timer and quantity).</summary>
+        public void AddStackedNotification(float duration) { Duration = duration; _initialDuration = Mathf.Max(_initialDuration, duration); _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration; Quantity++; }
 
-        /// <summary>
-        /// Draw the notification
-        /// </summary>
-        /// <param name="parentDrawList">draw list of the notifyPanel window</param>
-        /// <param name="i">index of this notification in the display list</param>
-        /// <param name="deltaTime">time that have passes since last draw frame</param>
-        /// <returns>whatever the notification must be removed from draw list</returns>
+        /// <summary>Force collapsed state if collapsible.</summary>
+        public void ForceCollapsed(bool collapsed) { if (CanCollapse) IsCollapsed = collapsed; }
+        #endregion
+
+        #region Rendering
+        /// <summary>Draw the card (accent per anchor, header click collapse, body background, AutoResizeY).</summary>
         public bool Draw(ImDrawListPtr parentDrawList, int i, float deltaTime)
         {
-            bool toRemove = update(deltaTime);
             float width = Fugui.Settings.NotifyPanelWidth * Fugui.CurrentContext.Scale;
-            float lineWidth = 8f * Fugui.CurrentContext.Scale;
-            float borderWidth = 1f * Fugui.CurrentContext.Scale;
-            width -= lineWidth;
-            Vector2 panelPos = ImGui.GetCursorScreenPos();
-            panelPos.x += lineWidth;
-            Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
-            // draw notify
-            Vector2 fullSize = new Vector2(width, Height);
-            Vector2 collapsedSize = _removing ? new Vector2(width, 1f) : new Vector2(32f, Height);
-            Vector2 size = Vector2.Lerp(collapsedSize, fullSize, _animationEnlapsed / Fugui.Settings.NotifyAnimlationDuration);
-            Fugui.MoveXUnscaled(lineWidth);
-            if(ImGui.BeginChild("notificationPanel" + i, size, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
-            {
-                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-                // draw rect background
-                drawList.AddRectFilled(panelPos, panelPos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.ChildBg)));
+            Vector2 childTopLeft = ImGui.GetCursorScreenPos();
 
-                ImGui.Dummy(Vector2.zero);
-                float cursorY = ImGui.GetCursorScreenPos().y;
-                // draw title
-                using (FuGrid grid = new FuGrid("notificationGrid" + i, new FuGridDefinition(3, new int[] { (int)(Fugui.Settings.NotifyIconSize ), -32 }), FuGridFlag.NoAutoLabels, outterPadding: 8f))
+            // child with AutoResizeY (pas AlwaysAutoResize)
+            bool opened = ImGui.BeginChild("notificationPanel" + i, new Vector2(width, 0f), ImGuiChildFlags.AutoResizeY, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+            if (opened)
+            {
+                var dl = ImGui.GetWindowDrawList();
+                Vector2 winPos = ImGui.GetWindowPos();
+                Vector2 winSize = ImGui.GetWindowSize();
+
+                // HEADER
+                ImGuiNative.igSpacing();
+                float headerStartY = ImGui.GetCursorScreenPos().y;
+                using (FuGrid grid = new FuGrid("notificationGrid" + i, new FuGridDefinition(3, new int[] { (int)(Fugui.Settings.NotifyIconSize), -36 }), FuGridFlag.NoAutoLabels, outterPadding:6f))
                 {
                     grid.Image("notificationIcon" + i, Icon, new Vector2(Fugui.Settings.NotifyIconSize, Fugui.Settings.NotifyIconSize), TextColor.Text);
 
@@ -173,54 +107,109 @@ namespace Fu.Framework
                         grid.Text((Quantity > 1 ? "(" + Quantity + ") " : "") + Title, TextColor);
                         Fugui.PopFont();
                     }
-                    if (_animationEnlapsed == Fugui.Settings.NotifyAnimlationDuration)
+
+                    Fugui.Push(ImGuiStyleVar.FrameRounding, 20f);
+                    if (grid.Button("x", new Vector2(22, 22), Vector2.zero, Vector2.zero, FuButtonStyle.Default))
                     {
-                        Fugui.PushFont(Fugui.CurrentContext.DefaultFont.Size, FontType.Bold);
-                        if (grid.ClickableText("X", FuTextStyle.Default))
-                        {
-                            Close();
-                        }
-                        Fugui.PopFont();
+                        Close();
                     }
+                    Fugui.PopStyle();
                 }
 
-                // draw message
-                if (!string.IsNullOrEmpty(Message) && !string.IsNullOrEmpty(Title))
+                // header click→collapse (simple clic)
+                Vector2 headerStart = new Vector2(winPos.x, headerStartY);
+                Vector2 headerEnd = new Vector2(winPos.x + winSize.x, ImGui.GetCursorScreenPos().y);
+                ImGui.SetCursorScreenPos(headerStart);
+                ImGui.InvisibleButton("notify_header_" + i, headerEnd - headerStart);
+                bool headerHovered = ImGui.IsItemHovered();
+                if (headerHovered && ImGui.IsItemClicked(ImGuiMouseButton.Left) && CanCollapse) IsCollapsed = !IsCollapsed;
+
+                // SEPARATOR + BODY BG
+                if (!string.IsNullOrEmpty(Title) && !string.IsNullOrEmpty(Message) && !IsCollapsed)
                 {
-                    ImGui.Dummy(Vector2.one * 8f * Fugui.CurrentContext.Scale);
-                    ImGui.SameLine();
-                    ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 4f * Fugui.CurrentContext.Scale);
+                    dl = ImGui.GetWindowDrawList();
+                    Fugui.MoveY(-8f);
+                    Vector2 sepA = new Vector2(winPos.x, ImGui.GetCursorScreenPos().y);
+                    Vector2 sepB = new Vector2(winPos.x + winSize.x, ImGui.GetCursorScreenPos().y);
+                    dl.AddLine(sepA, sepB, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border)), 1f);
+
+                    float bodyPad = 6f * Fugui.CurrentContext.Scale;
+
+                    Vector2 textTL = new Vector2(ImGui.GetCursorScreenPos().x + bodyPad, ImGui.GetCursorScreenPos().y);
+                    float beforeY = ImGui.GetCursorScreenPos().y;
+                    ImGui.SetCursorScreenPos(textTL);
+                    ImGuiNative.igSpacing();
+
+                    Fugui.MoveXUnscaled(bodyPad);
+                    float wrapWidth = ImGui.GetContentRegionAvail().x - bodyPad * 2.0f;
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPos().x + wrapWidth);
                     ImGui.TextWrapped(Message);
-                    ImGui.Dummy(Vector2.one * 8f * Fugui.CurrentContext.Scale);
+                    ImGui.Dummy(new Vector2(0f, bodyPad));
+                    float afterY = ImGui.GetCursorScreenPos().y;
+
+                    Vector2 bodyTL = new Vector2(winPos.x, beforeY);
+                    Vector2 bodyBR = new Vector2(winPos.x + winSize.x, afterY);
+                    uint bodyBG = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.WindowBg));
+                    dl.AddRectFilled(bodyTL + new Vector2(Fugui.Scale, 0f), bodyBR + new Vector2(-Fugui.Scale, -Fugui.Scale), bodyBG, Fugui.Themes.ChildRounding, ImDrawFlags.RoundCornersBottom);
+
+                    ImGui.SetCursorScreenPos(textTL);
+                    ImGuiNative.igSpacing();
+
+                    Fugui.MoveXUnscaled(bodyPad);
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPos().x + wrapWidth);
+                    ImGui.TextWrapped(Message);
+                    ImGui.Dummy(new Vector2(0f, bodyPad));
                 }
 
-                if (!_hasSpawn || _animationEnlapsed == Fugui.Settings.NotifyAnimlationDuration)
-                {
-                    Height = ImGui.GetCursorScreenPos().y - cursorY + 4f * Fugui.CurrentContext.Scale;
-                }
+                // PROGRESS (en bas)
+                float pbH = 3f * Fugui.CurrentContext.Scale;
+                float ratio = Mathf.Clamp01(Duration / Mathf.Max(0.0001f, _initialDuration));
+                Vector2 pbTL = new Vector2(winPos.x + Fugui.Themes.ChildRounding, winPos.y + winSize.y - pbH);
+                Vector2 pbTrackBR = new Vector2(winPos.x + winSize.x - Fugui.Themes.ChildRounding, winPos.y + winSize.y);
+                Vector2 pbBR = new Vector2(Mathf.Lerp(pbTL.x, pbTrackBR.x, ratio), pbTrackBR.y);
+                uint pbCol = ImGui.GetColorU32(BGColor.Button);
+                uint pbBg = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameBg));
+                dl.AddRectFilled(new Vector2(pbTL.x, pbTrackBR.y - pbH), pbTrackBR, pbBg, pbH * 0.5f);
+                dl.AddRectFilled(pbTL, pbBR, pbCol, pbH * 0.5f);
 
-                if (!_hasSpawn)
-                {
-                    _animationEnlapsed = 0f;
-                    _hasSpawn = true;
-                }
+                bool hoverChild = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows);
 
-                // draw left line
-                if (_removing)
-                {
-                    parentDrawList.AddLine(new Vector2(panelPos.x - lineWidth / 2f, panelPos.y), new Vector2(panelPos.x - lineWidth / 2f, panelPos.y + Mathf.Lerp(1f, Height, _animationEnlapsed / Fugui.Settings.NotifyAnimlationDuration)), ImGui.GetColorU32(BGColor.Button), lineWidth);
-                }
-                else
-                {
-                    parentDrawList.AddLine(new Vector2(panelPos.x - lineWidth / 2f, panelPos.y), new Vector2(panelPos.x - lineWidth / 2f, panelPos.y + Height), ImGui.GetColorU32(BGColor.Button), lineWidth);
-                }
-                // draw border rect
-                drawList.AddRect(panelPos, (ImGui.GetCursorScreenPos() + ImGui.GetContentRegionAvail()), ImGui.GetColorU32(BGColor.Button), 0f, ImDrawFlags.None, borderWidth);
+                ImGuiNative.igEndChild();
+                Fugui.PopStyle();
+
+                // ACCENT après EndChild (on a la bbox exacte)
+                Vector2 childMin = childTopLeft;
+                Vector2 childMax = new Vector2(childTopLeft.x + width, childTopLeft.y + winSize.y);
+                // bord fin
+                dl.AddRect(childMin, childMax, ImGui.GetColorU32(BGColor.ButtonHovered), Fugui.Themes.ChildRounding, ImDrawFlags.None, _borderWidth);
+
+                // lifetime
+                bool toRemove = update(deltaTime, pauseTimer: hoverChild);
+                return toRemove;
             }
-            ImGuiNative.igEndChild();
-            Fugui.PopStyle();
-            Height = Mathf.Max(Height, Fugui.Settings.NotifyIconSize + 8f * Fugui.CurrentContext.Scale);
-            return toRemove;
+            else
+                ImGuiNative.igEndChild();
+            return false;
         }
+        #endregion
+
+        #region Internals
+        /// <summary>Update animation and lifetime. Returns true when the card must be removed.</summary>
+        private bool update(float deltaTime, bool pauseTimer)
+        {
+            if (_removing)
+            {
+                if (_animationEnlapsed > 0f) _animationEnlapsed = Mathf.Clamp(_animationEnlapsed - deltaTime, 0f, Fugui.Settings.NotifyAnimlationDuration);
+                return _animationEnlapsed == 0f;
+            }
+            else
+            {
+                if (_animationEnlapsed < Fugui.Settings.NotifyAnimlationDuration) _animationEnlapsed = Mathf.Clamp(_animationEnlapsed + deltaTime, 0f, Fugui.Settings.NotifyAnimlationDuration);
+                else if (!pauseTimer) Duration -= deltaTime;
+                if (Duration <= 0f) Close();
+                return false;
+            }
+        }
+        #endregion
     }
 }

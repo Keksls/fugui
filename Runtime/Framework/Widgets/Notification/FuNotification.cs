@@ -89,6 +89,7 @@ namespace Fu.Framework
                 var dl = ImGui.GetWindowDrawList();
                 Vector2 winPos = ImGui.GetWindowPos();
                 Vector2 winSize = ImGui.GetWindowSize();
+                Vector2 closebtnPos = default;
 
                 // HEADER
                 ImGuiNative.igSpacing();
@@ -113,9 +114,10 @@ namespace Fu.Framework
                     {
                         Close();
                     }
+                    closebtnPos = grid.LastItemRect.center;
                     Fugui.PopStyle();
                 }
-
+               
                 // header click→collapse (simple clic)
                 Vector2 headerStart = new Vector2(winPos.x, headerStartY);
                 Vector2 headerEnd = new Vector2(winPos.x + winSize.x, ImGui.GetCursorScreenPos().y);
@@ -161,16 +163,10 @@ namespace Fu.Framework
                     ImGui.Dummy(new Vector2(0f, bodyPad));
                 }
 
-                // PROGRESS (en bas)
-                float pbH = 3f * Fugui.CurrentContext.Scale;
-                float ratio = Mathf.Clamp01(Duration / Mathf.Max(0.0001f, _initialDuration));
-                Vector2 pbTL = new Vector2(winPos.x + Fugui.Themes.ChildRounding, winPos.y + winSize.y - pbH);
-                Vector2 pbTrackBR = new Vector2(winPos.x + winSize.x - Fugui.Themes.ChildRounding, winPos.y + winSize.y);
-                Vector2 pbBR = new Vector2(Mathf.Lerp(pbTL.x, pbTrackBR.x, ratio), pbTrackBR.y);
+                // PROGRESS (close btn)
                 uint pbCol = ImGui.GetColorU32(BGColor.Button);
-                uint pbBg = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameBg));
-                dl.AddRectFilled(new Vector2(pbTL.x, pbTrackBR.y - pbH), pbTrackBR, pbBg, pbH * 0.5f);
-                dl.AddRectFilled(pbTL, pbBR, pbCol, pbH * 0.5f);
+                float ratio = Mathf.Clamp01(Duration / Mathf.Max(0.0001f, _initialDuration));
+                Fugui.DrawArc(dl, closebtnPos, 11f * Fugui.Scale, 2f * Fugui.Scale, ratio, pbCol);
 
                 bool hoverChild = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows);
 

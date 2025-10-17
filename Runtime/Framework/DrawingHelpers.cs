@@ -295,7 +295,6 @@ namespace Fu
             }
         }
 
-
         /// <summary>
         /// Draw a gradient rect
         /// Used as Button background
@@ -314,6 +313,28 @@ namespace Fu
             drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(color), rounding);
             int vert_end_idx = drawList.VtxBuffer.Size;
             ImGuiInternal.igShadeVertsLinearColorGradientKeepAlpha(drawList.NativePtr, vert_start_idx, vert_end_idx, pos, new Vector2(pos.x, pos.y + size.y), ImGuiNative.igGetColorU32_Vec4(color), ImGuiNative.igGetColorU32_Vec4(bg2f));
+        }
+
+        /// <summary>
+        /// Draws a circular arc on the current ImGui window.
+        /// </summary>
+        /// <param name="center">The center position of the circle.</param>
+        /// <param name="radius">The radius of the circle.</param>
+        /// <param name="thickness">The stroke thickness of the arc.</param>
+        /// <param name="angle">Normalized angle between 0 and 1 (0 = none, 1 = full circle).</param>
+        /// <param name="color">The color of the arc (ImGui packed color).</param>
+        public static void DrawArc(ImDrawListPtr drawList, Vector2 center, float radius, float thickness, float angle, uint color)
+        {
+            if (angle <= 0f) return;
+
+            float startAngle = -MathF.PI / 2f; // Start at the top
+            float endAngle = startAngle + angle * MathF.PI * 2f;
+
+            int segments = (int)(64 * angle);
+            if (segments < 4) segments = 4;
+
+            drawList.PathArcTo(center, radius, startAngle, endAngle, segments);
+            drawList.PathStroke(color, ImDrawFlags.None, thickness);
         }
     }
 }

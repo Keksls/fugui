@@ -23,7 +23,7 @@ namespace Fu.Framework
         // Flag to indicate if the grid has been created
         internal bool _gridCreated = false;
         // The minimum line height for elements in the grid
-        private float _minLineHeight = 20f;
+        private float _minLineHeight = 22f;
         // The Y padding to draw on top of the next element of the list
         private float _nextElementYPadding = 0f;
         // The y-coordinate of the cursor position when the current group of elements began
@@ -122,7 +122,7 @@ namespace Fu.Framework
         /// <param name="minLineHeight">wished minimum lines (rows) height</param>
         public void SetMinimumLineHeight(float minLineHeight)
         {
-            _minLineHeight = minLineHeight * Fugui.CurrentContext.Scale;
+            _minLineHeight = minLineHeight;
         }
 
         /// <summary>
@@ -210,9 +210,9 @@ namespace Fu.Framework
 
             }
             float lineHeight = ImGuiNative.igGetCursorPosY() - _beginElementCursorY;
-            if (lineHeight < _minLineHeight)
+            if (lineHeight < _minLineHeight * Fugui.Scale)
             {
-                ImGuiNative.igDummy(new Vector2(0f, _minLineHeight - lineHeight));
+                ImGuiNative.igDummy(new Vector2(0f, (_minLineHeight * Fugui.Scale) - lineHeight));
             }
         }
 

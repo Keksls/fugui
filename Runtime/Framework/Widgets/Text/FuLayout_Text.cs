@@ -1,5 +1,6 @@
 ﻿using Fu;
 using ImGuiNET;
+using SharpFont.PostScript;
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -250,7 +251,7 @@ namespace Fu.Framework
                 {
                     // get txt width
                     float txtWidth = ImGui.CalcTextSize(sb.ToString()).x;
-                    // assumle we always are on same line (simpler that derterminate it at this point)
+                    // assume we always are on same line (simpler that derterminate it at this point)
                     if (!firstChunk)
                     {
                         ImGui.SameLine();
@@ -265,7 +266,7 @@ namespace Fu.Framework
                     else
                     {
                         // if not, place X cusror to minus 3, because it's a hard ImGui Text padding
-                        ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 3f);
+                        ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 3f * Fugui.Scale);
                     }
                     // draw the text
                     ImGui.Text(sb.ToString());

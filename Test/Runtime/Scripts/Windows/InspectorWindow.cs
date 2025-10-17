@@ -1,6 +1,5 @@
 using Fu;
 using Fu.Framework;
-using ImGuiNET;
 using UnityEngine;
 
 public class InspectorWindow : FuWindowBehaviour
@@ -48,7 +47,7 @@ public class InspectorWindow : FuWindowBehaviour
                 using (FuGrid grid = new FuGrid("cameraGrid", outterPadding: 8f))
                 {
                     // camera clear flags
-                    grid.SetMinimumLineHeight(22f);
+                    grid.SetMinimumLineHeight(24f);
                     grid.SetNextElementToolTipWithLabel("Clear flag of the camera");
                     grid.ComboboxEnum<CameraClearFlags>("Clear Flags", (CameraClearFlags) =>
                     {

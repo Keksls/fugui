@@ -52,6 +52,14 @@ namespace Fu.Framework
 
         #region Public Methods
         /// <summary>
+        /// Mark the node as dirty, indicating that it needs to be recomputed
+        /// </summary>
+        public void MarkDirty()
+        {
+            Dirty = true;
+        }
+
+        /// <summary>
         /// Get the data type of a port by its name
         /// </summary>
         /// <param name="portName"> The name of the port whose data type is to be retrieved.</param>

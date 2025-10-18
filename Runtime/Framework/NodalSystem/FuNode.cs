@@ -13,7 +13,7 @@ namespace Fu.Framework
         public float x { get; private set; }
         public float y { get; private set; }
         public Dictionary<string, FuNodalPort> Ports { get; private set; } = new Dictionary<string, FuNodalPort>();
-        public abstract Color? NodeColor { get; }
+        public virtual Color? NodeColor { get; } = null;
         internal bool Dirty { get; set; } = true;
 
         #region Abstract Methods

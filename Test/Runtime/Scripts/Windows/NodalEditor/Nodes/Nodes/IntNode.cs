@@ -7,7 +7,7 @@ namespace Fu.Framework.Demo
     public sealed class IntNode : FuNode
     {
         public override string Title => "Int";
-        public override float Width => 200f;
+        public override float Width => 96f;
         public override Color? NodeColor => _color;
         private Color _color;
         public IntNode(Color color) { _color = color; }

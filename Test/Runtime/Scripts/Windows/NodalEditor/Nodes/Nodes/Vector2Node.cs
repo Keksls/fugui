@@ -9,7 +9,7 @@ namespace Fu.Framework.Demo
     public sealed class Vector2Node : FuNode
     {
         public override string Title => "Vector2";
-        public override float Width => 220f;
+        public override float Width => 100f;
         public override Color? NodeColor => _color;
         private Color _color;
         public Vector2Node(Color color) { _color = color; }

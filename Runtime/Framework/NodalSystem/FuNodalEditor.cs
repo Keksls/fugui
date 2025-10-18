@@ -20,6 +20,7 @@ namespace Fu.Framework.Nodal
         private float _zoom = 1.0f;
         private const float MinZoom = 0.5f;
         private const float MaxZoom = 2.0f;
+        private float fuScale = 1f;
 
         // Interaction
         private bool _isDraggingNode = false;
@@ -338,13 +339,13 @@ namespace Fu.Framework.Nodal
 
             // Draw nodes (on top)
             _hoveredPort = null;
-            float fScale = Fugui.Scale;
-            Fugui.CurrentContext.SetTempFakeScale(fScale * _zoom); // scale globale pour les nodes
+            fuScale = Fugui.Scale;
+            Fugui.CurrentContext.SetTempFakeScale(fuScale * _zoom); // scale globale pour les nodes
             for (int i = 0; i < Graph.Nodes.Count; i++)
             {
                 DrawNode(drawList, window, Graph.Nodes[i]);
             }
-            Fugui.CurrentContext.SetTempFakeScale(fScale); // reset scale
+            Fugui.CurrentContext.SetTempFakeScale(fuScale); // reset scale
 
             // Preview link
             if (_isLinking && _linkFrom.HasValue)
@@ -890,7 +891,7 @@ namespace Fu.Framework.Nodal
 
             Vector2 posScreen = CanvasToScreen(new Vector2(node.x, node.y));
             Vector2 rectMin = posScreen;
-            Vector2 rectMax = posScreen + new Vector2(node.Width * _zoom * Fugui.Scale, totalHeight);
+            Vector2 rectMax = posScreen + new Vector2(node.Width * _zoom * fuScale, totalHeight);
 
             float portsStartY = rectMin.y + headerHeight;
             float portsEndY = portsStartY + maxPorts * lineH;

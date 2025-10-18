@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Fu.Framework
+namespace Fu.Framework.Demo
 {
     /// <summary>Float variable node.</summary>
     public sealed class FloatNode : FuNode

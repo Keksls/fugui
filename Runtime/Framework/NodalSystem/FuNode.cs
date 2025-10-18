@@ -210,7 +210,7 @@ namespace Fu.Framework
         /// <param name="validationFunc"> An optional function that validates the nodal type value. If not provided, a default validation function that checks if the value is of type T will be used.</param>
         /// <param name="color"> An optional color associated with the nodal type.</param>
         /// <returns> A new instance of FuNodalType with the specified parameters.</returns>
-        public static FuNodalType Create<T>(string name, T defaultValue, Func<T, string> serializationFunc, Func<string, T> deserializationFunc, Func<object, bool> validationFunc = null, Color? color = null) where T : notnull
+        public static FuNodalType Create<T>(string name, T defaultValue, Func<T, string> serializationFunc, Func<string, T> deserializationFunc, Func<object, bool> validationFunc = null, Color? color = null)
         {
             return new FuNodalType()
             {

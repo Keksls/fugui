@@ -10,7 +10,6 @@ namespace Fu.Framework.Demo
     {
         public override string Title => "Multiply";
         public override float Width => 240f;
-        public override Color? NodeColor => null;
 
         /// <summary>
         /// Creates the default ports for this node.

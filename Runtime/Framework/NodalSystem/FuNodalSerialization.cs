@@ -25,6 +25,7 @@ namespace Fu.Framework
         public string NodeType { get; set; }
         public float X { get; set; }
         public float Y { get; set; }
+        public string CustomNodeDataJson { get; set; }
         public List<FuPortDto> Ports { get; set; } = new List<FuPortDto>();
     }
 
@@ -125,6 +126,7 @@ namespace Fu.Framework
                 {
                     Id = n.Id,
                     NodeType = FuNodalRegistry.GetNodeTypeId(n),
+                    CustomNodeDataJson = JsonConvert.SerializeObject(n.Serialize()),
                     X = n.x,
                     Y = n.y
                 };
@@ -165,6 +167,8 @@ namespace Fu.Framework
             {
                 var node = FuNodalRegistry.CreateNode(nDto.NodeType);
                 if (node == null) continue;
+
+                node.Deserialize(JsonConvert.DeserializeObject<string>(nDto.CustomNodeDataJson));
 
                 node.Id = nDto.Id;
                 node.SetPosition(nDto.X, nDto.Y);

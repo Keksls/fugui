@@ -48,6 +48,18 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="port"> the port to set default values for</param>
         public abstract void SetDefaultValues(FuNodalPort port);
+
+        /// <summary>
+        /// Serialize the node's data to a string
+        /// </summary>
+        /// <returns> A string representation of the node's data.</returns>
+        public virtual string Serialize() { return ""; }
+
+        /// <summary>
+        /// Deserialize the node's data from a string
+        /// </summary>
+        /// <param name="data"> A string representation of the node's data.</param>
+        public virtual void Deserialize(string data) { }
         #endregion
 
         #region Public Methods

@@ -890,7 +890,7 @@ namespace Fu.Framework.Nodal
 
             Vector2 posScreen = CanvasToScreen(new Vector2(node.x, node.y));
             Vector2 rectMin = posScreen;
-            Vector2 rectMax = posScreen + new Vector2(node.Width * _zoom, totalHeight);
+            Vector2 rectMax = posScreen + new Vector2(node.Width * _zoom * Fugui.Scale, totalHeight);
 
             float portsStartY = rectMin.y + headerHeight;
             float portsEndY = portsStartY + maxPorts * lineH;

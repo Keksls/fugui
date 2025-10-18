@@ -6,7 +6,7 @@ namespace Fu.Framework.Demo
     public sealed class MaxNode : FuNode
     {
         public override string Title => "Min (Field2D)";
-        public override float Width => 200f;
+        public override float Width => 96f;
         public override System.Nullable<UnityEngine.Color> NodeColor => null;
         public override void CreateDefaultPorts()
         {

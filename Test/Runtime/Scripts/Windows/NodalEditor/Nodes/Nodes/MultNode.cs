@@ -9,7 +9,7 @@ namespace Fu.Framework.Demo
     public sealed class MultNode : FuNode
     {
         public override string Title => "Multiply";
-        public override float Width => 240f;
+        public override float Width => 128f;
 
         /// <summary>
         /// Creates the default ports for this node.

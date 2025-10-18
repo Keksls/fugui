@@ -7,7 +7,7 @@ namespace Fu.Framework.Demo
     public sealed class FloatNode : FuNode
     {
         public override string Title => "Float";
-        public override float Width => 200f;
+        public override float Width => 96f;
         public override Color? NodeColor => _color;
         private Color _color;
         private bool _slider = false;

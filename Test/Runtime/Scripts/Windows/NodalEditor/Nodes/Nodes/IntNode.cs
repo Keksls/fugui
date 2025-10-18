@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Fu.Framework
+namespace Fu.Framework.Demo
 {
     /// <summary>Int variable node.</summary>
     public sealed class IntNode : FuNode

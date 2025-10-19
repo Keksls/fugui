@@ -14,6 +14,7 @@ namespace Fu.Framework
         public float y { get; private set; }
         public Dictionary<string, FuNodalPort> Ports { get; private set; } = new Dictionary<string, FuNodalPort>();
         public virtual Color? NodeColor { get; } = null;
+        public FuNodalGraph Graph { get;  internal set; }
         internal bool Dirty { get; set; } = true;
 
         #region Abstract Methods
@@ -184,6 +185,30 @@ namespace Fu.Framework
         {
             this.x = x;
             this.y = y;
+        }
+
+        /// <summary>
+        /// Get the input node connected to a specific input port by its name
+        /// </summary>
+        /// <param name="portName"> The name of the input port whose connected node is to be retrieved.</param>
+        /// <returns> The input node connected to the specified port, or null if not found.</returns>
+        public FuNode GetInputNode(string portName)
+        {
+            if (Graph == null)
+            {
+                return null;
+            }
+            FuNodalPort port = Ports.Values.FirstOrDefault(p => p.Name == portName && p.Direction == FuNodalPortDirection.In);
+            if (port == null)
+            {
+                return null;
+            }
+            FuNodalEdge edge = Graph.Edges.FirstOrDefault(e => e.ToNodeId == Id && e.ToPortId == port.Id);
+            if (edge == null)
+            {
+                return null;
+            }
+            return Graph.GetNode(edge.FromNodeId);
         }
         #endregion
     }

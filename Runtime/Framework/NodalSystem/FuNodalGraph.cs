@@ -19,7 +19,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="id"> The unique identifier of the node to find</param>
         /// <returns> The node with the specified identifier, or null if no such node exists</returns>
-        public FuNode FindNode(Guid id)
+        public FuNode GetNode(Guid id)
         {
             for (int i = 0; i < Nodes.Count; i++)
                 if (Nodes[i].Id == id)
@@ -69,7 +69,7 @@ namespace Fu.Framework
             }
 
             // Check compatibility
-            FuNode inNode = FindNode(bNodeId);
+            FuNode inNode = GetNode(bNodeId);
             if (!inNode.CanConnect(a, b))
             {
                 Debug.LogWarning("[Nodal] Cannot create link as ports are not compatible.");
@@ -141,7 +141,7 @@ namespace Fu.Framework
         public void DeleteEdge(FuNodalEdge edge)
         {
             // reset input port data type and data
-            FuNode toNode = FindNode(edge.ToNodeId);
+            FuNode toNode = GetNode(edge.ToNodeId);
             if (toNode != null)
             {
                 var toPort = toNode.Ports.Values.FirstOrDefault(p => p.Id == edge.ToPortId);
@@ -188,7 +188,7 @@ namespace Fu.Framework
                 while (queue.Count > 0)
                 {
                     var nodeId = queue.Dequeue();
-                    var node = FindNode(nodeId);
+                    var node = GetNode(nodeId);
                     if (node != null)
                     {
                         try
@@ -200,7 +200,7 @@ namespace Fu.Framework
                                 for (int i = 0; i < outgoingEdges.Count; i++)
                                 {
                                     var edge = outgoingEdges[i];
-                                    var toNode = FindNode(edge.ToNodeId);
+                                    var toNode = GetNode(edge.ToNodeId);
                                     if (toNode == null) continue;
                                     var fromPort = node.Ports.Values.FirstOrDefault(p => p.Id == edge.FromPortId);
                                     var toPort = toNode.Ports.Values.FirstOrDefault(p => p.Id == edge.ToPortId);
@@ -282,7 +282,7 @@ namespace Fu.Framework
             while (queue.Count > 0)
             {
                 var id = queue.Dequeue();
-                var node = FindNode(id);
+                var node = GetNode(id);
                 if (node != null)
                     order.Add(node);
 
@@ -344,7 +344,7 @@ namespace Fu.Framework
             }
 
             // Remove the node itself
-            FuNode fuNode = FindNode(nodeId);
+            FuNode fuNode = GetNode(nodeId);
             if (fuNode != null)
                 Nodes.Remove(fuNode);
             _isDirty = true;

@@ -17,8 +17,8 @@ namespace Fu.Framework.Nodal
         // View
         private Vector2 _pan = new Vector2(0f, 0f);
         private float _zoom = 1.0f;
-        private const float MinZoom = 0.5f;
-        private const float MaxZoom = 2.0f;
+        private float MinZoom = 0.5f;
+        private float MaxZoom = 2.0f;
         private float fuScale = 1f;
 
         // Interaction
@@ -50,8 +50,10 @@ namespace Fu.Framework.Nodal
         private Dictionary<Guid, NodeGeom> _nodeGeometries = new Dictionary<Guid, NodeGeom>();
         #endregion
 
-        public FuNodalEditor(string name)
+        public FuNodalEditor(string name, float minZoom = 0.5f, float maxZoom = 2f)
         {
+            MinZoom = Mathf.Max(0.1f, minZoom);
+            MaxZoom = Mathf.Max(MinZoom, Mathf.Min(4f, maxZoom));
             Graph = new FuNodalGraph { Name = name };
         }
 

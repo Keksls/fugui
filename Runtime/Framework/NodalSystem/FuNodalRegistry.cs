@@ -26,11 +26,12 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="typeId"> The unique identifier for the node type to be created.</param>
         /// <returns> An instance of the node type if found; otherwise, null.</returns>
-        public static FuNode CreateNode(string typeId)
+        public static FuNode CreateNode(string typeId, FuNodalGraph graph)
         {
             if (_nodesRegistry.ContainsKey(typeId))
             {
                 FuNode node = _nodesRegistry[typeId].Invoke();
+                node.Graph = graph;
                 node.CreateDefaultPorts();
                 return node;
             }

@@ -135,7 +135,7 @@ namespace Fu.Framework.Nodal
                 {
                     var mouseScreen = _canvasOrigin + contextmenuOpenMousePos;
                     var pos = ScreenToCanvas(mouseScreen);
-                    var n = FuNodalRegistry.CreateNode(type);
+                    var n = FuNodalRegistry.CreateNode(type, Graph);
                     n.SetPosition(pos.x, pos.y);
                     Graph.AddNode(n);
                 });
@@ -272,8 +272,8 @@ namespace Fu.Framework.Nodal
             for (int i = 0; i < Graph.Edges.Count; i++)
             {
                 var e = Graph.Edges[i];
-                var from = Graph.FindNode(e.FromNodeId);
-                var to = Graph.FindNode(e.ToNodeId);
+                var from = Graph.GetNode(e.FromNodeId);
+                var to = Graph.GetNode(e.ToNodeId);
                 if (from == null || to == null) continue;
 
                 var pFrom = from.GetPort(e.FromPortId);
@@ -349,7 +349,7 @@ namespace Fu.Framework.Nodal
             // Preview link
             if (_isLinking && _linkFrom.HasValue)
             {
-                var fromNode = Graph.FindNode(_linkFrom.Value.nodeId);
+                var fromNode = Graph.GetNode(_linkFrom.Value.nodeId);
                 var fromPort = fromNode.GetPort(_linkFrom.Value.portId);
                 if (fromNode != null && fromPort != null)
                 {
@@ -643,7 +643,7 @@ namespace Fu.Framework.Nodal
                 _groupDragStartPositions.Clear();
                 foreach (var id in _selectedNodeIds)
                 {
-                    var n = Graph.FindNode(id);
+                    var n = Graph.GetNode(id);
                     if (n != null)
                         _groupDragStartPositions[id] = new Vector2(n.x, n.y); // canvas space
                 }
@@ -659,7 +659,7 @@ namespace Fu.Framework.Nodal
 
                     foreach (var kv in _groupDragStartPositions)
                     {
-                        var n = Graph.FindNode(kv.Key);
+                        var n = Graph.GetNode(kv.Key);
                         if (n == null) continue;
                         Vector2 start = kv.Value;
                         n.SetPosition(start.x + deltaCanvas.x, start.y + deltaCanvas.y);
@@ -699,7 +699,7 @@ namespace Fu.Framework.Nodal
                 return;
 
             var (targetNode, targetPort) = _hoveredPort.Value;
-            var fromNode = Graph.FindNode(_linkFrom.Value.nodeId);
+            var fromNode = Graph.GetNode(_linkFrom.Value.nodeId);
             var fromPort = fromNode.GetPort(_linkFrom.Value.portId);
             if (fromNode == null || fromPort == null)
                 return;
@@ -1053,7 +1053,7 @@ namespace Fu.Framework.Nodal
         /// <param name="nodeId">The ID of the node to select.</param>
         public void SelectNode(Guid nodeId)
         {
-            var n = Graph.FindNode(nodeId);
+            var n = Graph.GetNode(nodeId);
             _selectedNodeIds.Clear();
             if (n != null) _selectedNodeIds.Add(n.Id);
         }
@@ -1122,8 +1122,8 @@ namespace Fu.Framework.Nodal
             for (int i = 0; i < Graph.Edges.Count; i++)
             {
                 var e = Graph.Edges[i];
-                var from = Graph.FindNode(e.FromNodeId);
-                var to = Graph.FindNode(e.ToNodeId);
+                var from = Graph.GetNode(e.FromNodeId);
+                var to = Graph.GetNode(e.ToNodeId);
                 if (from == null || to == null) continue;
 
                 var pFrom = from.GetPort(e.FromPortId);
@@ -1165,8 +1165,8 @@ namespace Fu.Framework.Nodal
             for (int i = 0; i < Graph.Edges.Count; i++)
             {
                 var e = Graph.Edges[i];
-                var from = Graph.FindNode(e.FromNodeId);
-                var to = Graph.FindNode(e.ToNodeId);
+                var from = Graph.GetNode(e.FromNodeId);
+                var to = Graph.GetNode(e.ToNodeId);
                 if (from == null || to == null) continue;
 
                 var pFrom = from.GetPort(e.FromPortId);
@@ -1275,8 +1275,8 @@ namespace Fu.Framework.Nodal
             for (int i = 0; i < Graph.Edges.Count; i++)
             {
                 var e = Graph.Edges[i];
-                var from = Graph.FindNode(e.FromNodeId);
-                var to = Graph.FindNode(e.ToNodeId);
+                var from = Graph.GetNode(e.FromNodeId);
+                var to = Graph.GetNode(e.ToNodeId);
                 if (from == null || to == null) continue;
                 var pFrom = from.GetPort(e.FromPortId);
                 var pTo = to.GetPort(e.ToPortId);

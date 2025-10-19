@@ -165,7 +165,7 @@ namespace Fu.Framework
             // 1) Instantiate nodes via NodeRegistry, create default ports
             foreach (var nDto in dto.Nodes)
             {
-                var node = FuNodalRegistry.CreateNode(nDto.NodeType);
+                var node = FuNodalRegistry.CreateNode(nDto.NodeType, graph);
                 if (node == null) continue;
 
                 node.Deserialize(JsonConvert.DeserializeObject<string>(nDto.CustomNodeDataJson));

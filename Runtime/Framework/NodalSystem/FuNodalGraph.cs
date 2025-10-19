@@ -87,6 +87,13 @@ namespace Fu.Framework
                 }
             }
 
+            // check allowed types
+            if (b.AllowedTypes.Count > 0 && !b.AllowedTypes.Contains(a.DataType))
+            {
+                Debug.LogWarning("[Nodal] Cannot create link as port data types are not compatible.");
+                return false;
+            }
+
             // Add the edge
             Edges.Add(new FuNodalEdge
             {

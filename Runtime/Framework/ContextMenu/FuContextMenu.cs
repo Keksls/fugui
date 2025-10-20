@@ -210,7 +210,7 @@ namespace Fu
             Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
             Push(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 8f));
             // draw the context menu
-            if (ImGui.BeginPopup(CONTEXT_MENU_NAME))
+            if (ImGui.BeginPopup(CONTEXT_MENU_NAME, ImGuiWindowFlags.NoMove))
             {
                 IsContextMenuOpen = true;
                 // draw the items
@@ -233,8 +233,47 @@ namespace Fu
             // draw each items
             foreach (FuContextMenuItem menuItem in items)
             {
-                // whatever the item is a separator
-                if (menuItem.IsSeparator)
+                // handle image items first
+                if (menuItem.Type == FuContextMenuItemType.Image && menuItem.Image != null)
+                {
+                    // Get final size from FuElementSize
+                    FuElementSize drawSize = menuItem.Size;
+                    Vector2 size = drawSize.GetSize();
+
+                    // Compute centering offset relative to current cursor region
+                    float regionWidth = ImGui.GetContentRegionAvail().x;
+                    float cursorX = ImGui.GetCursorPosX();
+                    float offsetX = Mathf.Max(0f, (regionWidth - size.x) * 0.5f);
+
+                    // Apply horizontal offset only (no Y)
+                    ImGui.SetCursorPosX(cursorX + offsetX);
+
+                    // Draw image (Fugui safe)
+                    if (FuWindow.CurrentDrawingWindow == null)
+                    {
+                        MainContainer.ImGuiImage(menuItem.Image, drawSize);
+                    }
+                    else
+                    {
+                        FuWindow.CurrentDrawingWindow.Container.ImGuiImage(menuItem.Image, drawSize);
+                    }
+
+                    // Handle click (same rect as drawn image)
+                    if (menuItem.ClickAction != null)
+                    {
+                        Vector2 startPos = ImGui.GetItemRectMin();
+                        Vector2 endPos = ImGui.GetItemRectMax();
+                        if (ImGui.IsMouseHoveringRect(startPos, endPos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                        {
+                            menuItem.ClickAction?.Invoke();
+                            CloseContextMenu();
+                        }
+                    }
+
+                    continue;
+                }
+
+                else if (menuItem.IsSeparator)
                 {
                     ImGuiNative.igSeparator();
                 }

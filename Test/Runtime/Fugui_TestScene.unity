@@ -216,6 +216,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4082823442619091940, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _msaa
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4082823442619091940, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _superSampling
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5190680658197817161, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_Name
       value: DemoScene

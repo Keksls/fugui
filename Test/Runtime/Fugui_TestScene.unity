@@ -221,6 +221,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4082823442619091940, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: _testImage
+      value: 
+      objectReference: {fileID: 2800000, guid: d4a485895e9bdeb41a2df931c1128348, type: 3}
+    - target: {fileID: 4082823442619091940, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: _superSampling
       value: 1
       objectReference: {fileID: 0}

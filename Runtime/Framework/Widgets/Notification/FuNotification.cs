@@ -92,7 +92,7 @@ namespace Fu.Framework
                 // HEADER
                 ImGuiNative.igSpacing();
                 float headerStartY = ImGui.GetCursorScreenPos().y;
-                using (FuGrid grid = new FuGrid("notificationGrid" + i, new FuGridDefinition(3, new int[] { (int)(Fugui.Settings.NotifyIconSize), -36 }), FuGridFlag.NoAutoLabels, outterPadding:6f))
+                using (FuGrid grid = new FuGrid("notificationGrid" + i, new FuGridDefinition(3, new int[] { (int)(Fugui.Settings.NotifyIconSize), -36 }), FuGridFlag.NoAutoLabels, outterPadding: 6f))
                 {
                     grid.Image("notificationIcon" + i, Icon, new Vector2(Fugui.Settings.NotifyIconSize, Fugui.Settings.NotifyIconSize), TextColor.Text);
 
@@ -115,7 +115,7 @@ namespace Fu.Framework
                     closebtnPos = grid.LastItemRect.center;
                     Fugui.PopStyle();
                 }
-               
+
                 // header click→collapse (simple clic)
                 Vector2 headerStart = new Vector2(winPos.x, headerStartY);
                 Vector2 headerEnd = new Vector2(winPos.x + winSize.x, ImGui.GetCursorScreenPos().y);
@@ -161,10 +161,38 @@ namespace Fu.Framework
                     ImGui.Dummy(new Vector2(0f, bodyPad));
                 }
 
-                // PROGRESS (close btn)
-                uint pbCol = ImGui.GetColorU32(BGColor.Button);
+                // === PROGRESS (close btn) ===
+                uint activeColor = ImGui.GetColorU32(BGColor.Button);
+                uint backgroundColor = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.WindowBg)); // cercle de fond sombre
                 float ratio = Mathf.Clamp01(Duration / Mathf.Max(0.0001f, _initialDuration));
-                Fugui.DrawArc(dl, closebtnPos, 11f * Fugui.Scale, 2f * Fugui.Scale, ratio, pbCol);
+
+                float radius = 11f * Fugui.Scale;
+                float thickness = 2f * Fugui.Scale;
+
+                // --- Dessine d’abord le cercle complet sombre (fond) ---
+                dl.AddCircle(closebtnPos, radius, backgroundColor, 64, thickness);
+
+                // --- Dessine ensuite l’arc radial (inversé pour rotation anti-horaire) ---
+                Fugui.DrawArc(dl, closebtnPos, radius, thickness, 1f - ratio, activeColor);
+
+                // --- Dessine la croix (X) plus fine et plus petite ---
+                float crossSize = 6f * Fugui.Scale;        // plus petit qu’avant
+                float crossThickness = 1.4f * Fugui.Scale; // plus fin
+                Vector2 center = closebtnPos;
+                float half = crossSize * 0.5f;
+
+                // Points diagonaux
+                Vector2 a1 = new Vector2(center.x - half, center.y - half);
+                Vector2 a2 = new Vector2(center.x + half, center.y + half);
+                Vector2 b1 = new Vector2(center.x - half, center.y + half);
+                Vector2 b2 = new Vector2(center.x + half, center.y - half);
+
+                // Couleur de la croix
+                uint crossColor = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text));
+
+                // Dessine les deux barres
+                dl.AddLine(a1, a2, crossColor, crossThickness);
+                dl.AddLine(b1, b2, crossColor, crossThickness);
 
                 bool hoverChild = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows);
 

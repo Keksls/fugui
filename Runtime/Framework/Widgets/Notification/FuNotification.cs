@@ -108,11 +108,19 @@ namespace Fu.Framework
                     }
 
                     Fugui.Push(ImGuiStyleVar.FrameRounding, 20f);
-                    if (grid.Button("x", new Vector2(22, 22), Vector2.zero, Vector2.zero, FuButtonStyle.Default))
+
+                    //Non visible zone to capture close click
+                    ImGui.PushStyleColor(ImGuiCol.Button, 0);
+                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0);
+                    ImGui.PushStyleColor(ImGuiCol.ButtonActive, 0);
+                    ImGui.PushStyleColor(ImGuiCol.Text, 0);
+                    if (grid.Button("##close", new Vector2(22, 22), Vector2.zero, Vector2.zero, FuButtonStyle.Default))
                     {
                         Close();
                     }
                     closebtnPos = grid.LastItemRect.center;
+
+                    ImGui.PopStyleColor(4);
                     Fugui.PopStyle();
                 }
 
@@ -161,36 +169,31 @@ namespace Fu.Framework
                     ImGui.Dummy(new Vector2(0f, bodyPad));
                 }
 
-                // === PROGRESS (close btn) ===
+                // PROGRESS (close btn)
                 uint activeColor = ImGui.GetColorU32(BGColor.Button);
-                uint backgroundColor = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.WindowBg)); // cercle de fond sombre
+                uint backgroundColor = ImGui.GetColorU32(BGColor.DisabledButton);
                 float ratio = Mathf.Clamp01(Duration / Mathf.Max(0.0001f, _initialDuration));
 
                 float radius = 11f * Fugui.Scale;
                 float thickness = 2f * Fugui.Scale;
 
-                // --- Dessine d’abord le cercle complet sombre (fond) ---
+                //Draw dark background circle
                 dl.AddCircle(closebtnPos, radius, backgroundColor, 64, thickness);
 
-                // --- Dessine ensuite l’arc radial (inversé pour rotation anti-horaire) ---
+                //Draw radial arc
                 Fugui.DrawArc(dl, closebtnPos, radius, thickness, 1f - ratio, activeColor);
 
-                // --- Dessine la croix (X) plus fine et plus petite ---
-                float crossSize = 6f * Fugui.Scale;        // plus petit qu’avant
-                float crossThickness = 1.4f * Fugui.Scale; // plus fin
+                //Draw cross to close
+                float crossSize = 6f * Fugui.Scale;
+                float crossThickness = 1.4f * Fugui.Scale;
                 Vector2 center = closebtnPos;
                 float half = crossSize * 0.5f;
-
-                // Points diagonaux
                 Vector2 a1 = new Vector2(center.x - half, center.y - half);
                 Vector2 a2 = new Vector2(center.x + half, center.y + half);
                 Vector2 b1 = new Vector2(center.x - half, center.y + half);
                 Vector2 b2 = new Vector2(center.x + half, center.y - half);
 
-                // Couleur de la croix
                 uint crossColor = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text));
-
-                // Dessine les deux barres
                 dl.AddLine(a1, a2, crossColor, crossThickness);
                 dl.AddLine(b1, b2, crossColor, crossThickness);
 
@@ -199,9 +202,9 @@ namespace Fu.Framework
                 ImGuiNative.igEndChild();
                 Fugui.PopStyle();
 
-                // ACCENT après EndChild (on a la bbox exacte)
                 Vector2 childMin = childTopLeft;
                 Vector2 childMax = new Vector2(childTopLeft.x + width, childTopLeft.y + winSize.y);
+
                 // bord fin
                 dl.AddRect(childMin, childMax, ImGui.GetColorU32(BGColor.ButtonHovered), Fugui.Themes.ChildRounding, ImDrawFlags.None, _borderWidth);
 

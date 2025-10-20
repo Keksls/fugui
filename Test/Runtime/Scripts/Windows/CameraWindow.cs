@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Fu;
 using Fu.Framework;
@@ -95,26 +94,24 @@ public class CameraWindow : FuCameraWindowBehaviour
         {
             FuContextMenuBuilder contextMenuBuilder = FuContextMenuBuilder.Start();
 
+            //Title will always be the first item of the context menu, either it will be ignored
+            contextMenuBuilder.AddTitle("Context menu title");
+            contextMenuBuilder.AddImage(_testImage, new FuElementSize(32f, 32f), 0, () =>
+            {
+                Fugui.Notify("Image clicked!", "Image clicked in contextual menu", StateType.Warning);
+            });
+            contextMenuBuilder.AddSeparator();
             contextMenuBuilder.AddItem($"Menu 1", () =>
             {
-                Fugui.Notify("Menu 1", "Menu 1", StateType.Danger);
+                Fugui.Notify("Menu 1", "Action 1", StateType.Info);
             });
-
-            contextMenuBuilder.AddSeparator();
-
-            contextMenuBuilder.AddItem($"Menu 2", () =>
+            contextMenuBuilder.BeginChild($"Menu 2").AddItem("Action 1", () =>
             {
-                Fugui.Notify("Menu 2", "Menu 2", StateType.Danger);
-            });
-
-            contextMenuBuilder.AddSeparator();
-
-            contextMenuBuilder.AddImage(_testImage, new FuElementSize(32f, 32f), () =>
+                Fugui.Notify("Menu 2", "Action 1", StateType.Success);
+            }).AddItem($"Action 2", () =>
             {
-                Fugui.Notify("Image clicked!", "Image clicked in contextual menu", StateType.Info);
-            });
-
-            contextMenuBuilder.AddSeparator();
+                Fugui.Notify("Menu 2", "Action 2", StateType.Danger);
+            }).EndChild();
 
             List<FuContextMenuItem> contextMenuItems = contextMenuBuilder.Build();
             Fugui.PushContextMenuItems(contextMenuItems);

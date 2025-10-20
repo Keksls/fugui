@@ -188,11 +188,11 @@ namespace Fu.Framework
                 float crossThickness = 1.4f * Fugui.Scale;
                 Vector2 center = closebtnPos;
                 float half = crossSize * 0.5f;
-                Vector2 a1 = new Vector2(center.x - half, center.y - half);
-                Vector2 a2 = new Vector2(center.x + half, center.y + half);
-                Vector2 b1 = new Vector2(center.x - half, center.y + half);
-                Vector2 b2 = new Vector2(center.x + half, center.y - half);
-
+                float overshoot = 0.6f * Fugui.Scale;
+                Vector2 a1 = new Vector2(center.x - half - overshoot, center.y - half - overshoot);
+                Vector2 a2 = new Vector2(center.x + half + overshoot, center.y + half + overshoot);
+                Vector2 b1 = new Vector2(center.x - half - overshoot, center.y + half + overshoot);
+                Vector2 b2 = new Vector2(center.x + half + overshoot, center.y - half - overshoot);
                 uint crossColor = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text));
                 dl.AddLine(a1, a2, crossColor, crossThickness);
                 dl.AddLine(b1, b2, crossColor, crossThickness);

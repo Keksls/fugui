@@ -31,6 +31,19 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Adds an item to the current level of the context menu with a label and click action
+        /// </summary>
+        /// <param name="label">The label text of the item</param>
+        /// <param name="clickAction">The action to perform when the item is clicked</param>
+        public FuContextMenuBuilder AddTitle(string label)
+        {
+            // Adds a context menu item with label and click action.
+            _currentLevel.Add(new FuContextMenuItem(label));
+            return this;
+        }
+
+
+        /// <summary>
         /// Adds an item to the current level of the context menu with a label, shortcut, and click action
         /// </summary>
         /// <param name="label">The label text of the item</param>
@@ -111,7 +124,7 @@ namespace Fu.Framework
         public FuContextMenuBuilder AddSeparator()
         {
             // prevend to add 2 separators on top of each others
-            if (_currentLevel.Count > 0 && _currentLevel[_currentLevel.Count - 1].IsSeparator)
+            if (_currentLevel.Count > 0 && _currentLevel[_currentLevel.Count - 1].Type == FuContextMenuItemType.Separator)
             {
                 return this;
             }
@@ -128,7 +141,7 @@ namespace Fu.Framework
         /// <param name="image">The texture to display in the context menu</param>
         /// <param name="size">The size of the displayed texture</param>
         /// <param name="clickAction">The action to perform when the image is clicked</param>
-        public FuContextMenuBuilder AddImage(Texture2D image, FuElementSize size, Action clickAction)
+        public FuContextMenuBuilder AddImage(Texture2D image, FuElementSize size, int border, Action clickAction)
         {
             // Prevent adding null images
             if (image == null)
@@ -137,7 +150,7 @@ namespace Fu.Framework
             }
 
             // Adds a new clickable image item
-            FuContextMenuItem item = new FuContextMenuItem(image, size, clickAction)
+            FuContextMenuItem item = new FuContextMenuItem(image, size, border, clickAction)
             {
                 ClickAction = clickAction,
                 Enabled = null, // clickable images are considered always enabled by default

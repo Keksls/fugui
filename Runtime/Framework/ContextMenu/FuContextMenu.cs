@@ -233,89 +233,128 @@ namespace Fu
             // draw each items
             foreach (FuContextMenuItem menuItem in items)
             {
-                // handle image items first
-                if (menuItem.Type == FuContextMenuItemType.Image && menuItem.Image != null)
+                switch (menuItem.Type)
                 {
-                    // Get final size from FuElementSize
-                    FuElementSize drawSize = menuItem.Size;
-                    Vector2 size = drawSize.GetSize();
-
-                    // Compute centering offset relative to current cursor region
-                    float regionWidth = ImGui.GetContentRegionAvail().x;
-                    float cursorX = ImGui.GetCursorPosX();
-                    float offsetX = Mathf.Max(0f, (regionWidth - size.x) * 0.5f);
-
-                    // Apply horizontal offset only (no Y)
-                    ImGui.SetCursorPosX(cursorX + offsetX);
-
-                    // Draw image (Fugui safe)
-                    if (FuWindow.CurrentDrawingWindow == null)
-                    {
-                        MainContainer.ImGuiImage(menuItem.Image, drawSize);
-                    }
-                    else
-                    {
-                        FuWindow.CurrentDrawingWindow.Container.ImGuiImage(menuItem.Image, drawSize);
-                    }
-
-                    // Handle click (same rect as drawn image)
-                    if (menuItem.ClickAction != null)
-                    {
-                        Vector2 startPos = ImGui.GetItemRectMin();
-                        Vector2 endPos = ImGui.GetItemRectMax();
-                        if (ImGui.IsMouseHoveringRect(startPos, endPos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    default:
+                    //Display Text menu
+                    case FuContextMenuItemType.Text:
+                        bool enabled = (menuItem.Enabled?.Invoke() ?? true) && !IsContextMenuDisabled;
+                        if (!enabled)
                         {
-                            menuItem.ClickAction?.Invoke();
-                            CloseContextMenu();
+                            Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled));
                         }
-                    }
-
-                    continue;
-                }
-
-                else if (menuItem.IsSeparator)
-                {
-                    ImGuiNative.igSeparator();
-                }
-                else
-                {
-                    bool enabled = (menuItem.Enabled?.Invoke() ?? true) && !IsContextMenuDisabled;
-                    if (!enabled)
-                    {
-                        Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled));
-                    }
-                    // whatever the item is a parent (contain children)
-                    if (menuItem.Children.Count > 0)
-                    {
-                        // draw secondary duotone glyph if needed
-                        DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
-
-                        // draw the parent and bind children if parent is open
-                        if (ImGui.BeginMenu(menuItem.Label, enabled))
+                        // whatever the item is a parent (contain children)
+                        if (menuItem.Children.Count > 0)
                         {
-                            // bind children
-                            drawContextMenuItems(menuItem.Children);
-                            ImGuiNative.igEndMenu();
-                        }
-                    }
-                    // whatever the item is a 'leaf' (no child)
-                    else
-                    {
-                        // draw secondary duotone glyph if needed
-                        DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
+                            // draw secondary duotone glyph if needed
+                            DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
 
-                        // draw menu item
-                        if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, enabled))
-                        {
-                            // invoke the callback action of the item if clicked and close the context menu
-                            menuItem.ClickAction?.Invoke();
-                            CloseContextMenu();
+                            // draw the parent and bind children if parent is open
+                            if (ImGui.BeginMenu(menuItem.Label, enabled))
+                            {
+                                // bind children
+                                drawContextMenuItems(menuItem.Children);
+                                ImGuiNative.igEndMenu();
+                            }
                         }
-                    }
-                    if (!enabled)
-                    {
-                        PopColor();
-                    }
+                        //Whatever the item is a 'leaf' (no child)
+                        else
+                        {
+                            // draw secondary duotone glyph if needed
+                            DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
+
+                            // draw menu item
+                            if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, enabled))
+                            {
+                                //Invoke the callback action of the item if clicked and close the context menu
+                                menuItem.ClickAction?.Invoke();
+                                CloseContextMenu();
+                            }
+                        }
+                        if (!enabled)
+                        {
+                            PopColor();
+                        }
+                        break;
+                    //Display Separator
+                    case FuContextMenuItemType.Separator:
+                        ImGuiNative.igSeparator();
+                        break;
+                    //Display Title
+                    case FuContextMenuItemType.Title:
+                        if (!string.IsNullOrEmpty(menuItem.Label))
+                        {
+                            //Consider title only if menuItem if the first part of the builded context menu
+                            if (menuItem != items[0])
+                            {
+                                continue;
+                            }
+
+                            Vector2 region = ImGui.GetContentRegionAvail();
+                            Vector2 textSize = Fugui.CalcTextSize(menuItem.Label, FuTextWrapping.None);
+
+                            //Center label title text
+                            float offsetX = (region.x - textSize.x) * 0.5f;
+                            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Mathf.Max(0f, offsetX));
+
+                            PushFont(14, FontType.Bold);
+                            ImGui.Text(menuItem.Label);
+                            PopFont();
+
+                            //Add always a separator under title
+                            ImGuiNative.igSeparator();
+                        }
+                        break;
+                    //Display Image
+                    case FuContextMenuItemType.Image:
+                        if (menuItem.Type == FuContextMenuItemType.Image && menuItem.Image != null)
+                        {
+                            FuElementSize drawSize = menuItem.Size;
+                            Vector2 size = drawSize.GetSize();
+
+                            float regionWidth = ImGui.GetContentRegionAvail().x;
+                            float cursorX = ImGui.GetCursorPosX();
+                            float offsetX = Mathf.Max(0f, (regionWidth - size.x) * 0.5f);
+
+                            ImGui.SetCursorPosX(cursorX + offsetX);
+
+                            // Draw image
+                            if (FuWindow.CurrentDrawingWindow == null)
+                            {
+                                MainContainer.ImGuiImage(menuItem.Image, drawSize);
+                            }
+                            else
+                            {
+                                FuWindow.CurrentDrawingWindow.Container.ImGuiImage(menuItem.Image, drawSize);
+                            }
+
+                            // Draw optional border (if > 0)
+                            if (menuItem.Border > 0)
+                            {
+                                Vector2 min = ImGui.GetItemRectMin();
+                                Vector2 max = ImGui.GetItemRectMax();
+                                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+
+                                // Add an offest around (1px) around image to avoid artifacts
+                                float pad = menuItem.Border + 1f;
+                                drawList.AddRect(new Vector2(min.x - pad, min.y - pad), new Vector2(max.x + pad, max.y + pad), Themes.GetColorU32(FuColors.Border), 0f, ImDrawFlags.None, menuItem.Border);
+                            }
+
+                            // Handle click
+                            if (menuItem.ClickAction != null)
+                            {
+                                Vector2 startPos = ImGui.GetItemRectMin();
+                                Vector2 endPos = ImGui.GetItemRectMax();
+
+                                if (ImGui.IsMouseHoveringRect(startPos, endPos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                                {
+                                    menuItem.ClickAction?.Invoke();
+                                    CloseContextMenu();
+                                }
+                            }
+                            continue;
+                        }
+                        break;
                 }
             }
         }

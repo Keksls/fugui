@@ -816,7 +816,6 @@ namespace Fu
                 if (dockSpaces.Count == 0)
                 {
                     Debug.LogWarning("[Fugui] No dockspace found to generate layout.");
-                    Fugui.ClosePopupMessage();
                     return null;
                 }
 
@@ -828,7 +827,6 @@ namespace Fu
             catch (Exception ex)
             {
                 Debug.LogError("[Fugui] GenerateCurrentLayoutSync failed: " + ex);
-                Fugui.ClosePopupMessage();
                 return null;
             }
         }

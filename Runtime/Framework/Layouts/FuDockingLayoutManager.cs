@@ -708,215 +708,147 @@ namespace Fu
 
         #region Generate Current Layout
         /// <summary>
-        /// Get the definition of the current layout
+        /// Generate current layout synchronously
         /// </summary>
-        /// <returns>current custom FuDockingLayoutDefinition OR null if failed</returns>
-        public void GenerateCurrentLayout(Action<FuDockingLayoutDefinition> callback)
+        /// <returns></returns>
+        public FuDockingLayoutDefinition GenerateCurrentLayout()
         {
-            Thread thread = new Thread(() =>
+            HashSet<uint> visitedDockIDs = new HashSet<uint>();
+            List<dockSpaceData> dockSpaces = new List<dockSpaceData>();
+            Vector2 padding = new Vector2(2f, 2f);
+
+            try
             {
-                // declare working variables
-                HashSet<uint> dockNodeDone = new HashSet<uint>();
-                List<dockSpaceData> dockSpaceDatas = new List<dockSpaceData>();
-                Vector2 windowOffset = new Vector2(2f, 2f);
-
-                // display popup message
-                Fugui.ShowPopupMessage("Saving Layout...");
-
-                // Save Focused windows
-                List<FuWindow> FocusedWindows = new List<FuWindow>();
+                //Get visibles windows
+                List<FuWindow> visibleWindows = new List<FuWindow>();
                 foreach (FuWindow win in Fugui.UIWindows.Values)
                 {
                     if (win.IsVisible)
                     {
-                        FocusedWindows.Add(win);
+                        visibleWindows.Add(win);
                     }
                 }
 
-                // force focus all windows one after another
-                int startFrame = ImGui.GetFrameCount();
+                //Force each window to draw to ensure position
+                foreach (FuWindow win in visibleWindows)
+                {
+                    win.ForceDraw();
+                }
+
                 foreach (FuWindow win in Fugui.UIWindows.Values)
                 {
-                    win.ForceFocusOnNextFrame();
-                    win.ForceDraw();
-                    while (ImGui.GetFrameCount() <= startFrame + 2)
+                    if (win.IsDocked && win.IsOpened && !visitedDockIDs.Contains(win.CurrentDockID))
                     {
-                        Thread.Sleep(10);
-                    }
-                }
+                        visitedDockIDs.Add(win.CurrentDockID);
 
-                // restore focused windows one after another
-                startFrame = ImGui.GetFrameCount();
-                foreach (FuWindow win in FocusedWindows)
-                {
-                    win.ForceFocusOnNextFrame();
-                    win.ForceDraw();
-                    while (ImGui.GetFrameCount() <= startFrame + 2)
-                    {
-                        Thread.Sleep(10);
-                    }
-                }
-
-                // get open windows rects by dock nodes
-                foreach (FuWindow window in Fugui.UIWindows.Values)
-                {
-                    if (window.IsDocked && window.IsOpened)
-                    {
-                        if (dockNodeDone.Contains(window.CurrentDockID))
+                        dockSpaceData space = new dockSpaceData
                         {
-                            continue;
-                        }
-
-                        dockNodeDone.Add(window.CurrentDockID);
-                        dockSpaceDatas.Add(new dockSpaceData()
-                        {
-                            Rect = new Rect(window.LocalPosition, window.Size + windowOffset),
+                            Rect = new Rect(win.LocalPosition, win.Size + padding),
                             WindowNames = new List<FuWindowName>()
-                        });
-                        foreach (FuWindow win in Fugui.UIWindows.Values)
-                        {
-                            if (win.IsDocked && win.CurrentDockID == window.CurrentDockID)
-                            {
-                                dockSpaceDatas[dockSpaceDatas.Count - 1].WindowNames.Add(win.WindowName);
-                            }
-                        }
-                    }
-                }
-
-                int nbTry = 0;
-                // determinate binary tree
-                while (dockSpaceDatas.Count > 1 && nbTry < 100)
-                {
-                    // order dockSpaceDatas by Rect surface
-                    dockSpaceDatas = dockSpaceDatas.OrderBy(x => x.Rect.size.x * x.Rect.size.y).ToList();
-
-                    for (int i = 0; i < dockSpaceDatas.Count; i++)
-                    {
-                        // get first leaf
-                        dockSpaceData leaf = dockSpaceDatas[i];
-
-                        // prepare parent dockSpaceData
-                        dockSpaceData parentDockSpace = new dockSpaceData();
-
-                        // find neighbour
-                        dockSpaceData neighbour = null;
-
-                        // check right neighbour that have same height
-                        foreach (dockSpaceData otherLeaf in dockSpaceDatas)
-                        {
-                            if (otherLeaf.Rect.min.x == leaf.Rect.min.x + leaf.Rect.size.x && otherLeaf.Rect.min.y == leaf.Rect.min.y && otherLeaf.Rect.size.y == leaf.Rect.size.y)
-                            {
-                                neighbour = otherLeaf;
-                                parentDockSpace.Rect = new Rect(new Vector2(Mathf.Min(leaf.Rect.min.x, neighbour.Rect.min.x), leaf.Rect.min.y), new Vector2(leaf.Rect.size.x + neighbour.Rect.size.x, leaf.Rect.size.y));
-                                parentDockSpace.SplitSpaceRatio = leaf.Rect.size.x / parentDockSpace.Rect.size.x;
-                                parentDockSpace.Dir = UIDockSpaceOrientation.Horizontal;
-                                parentDockSpace.Children = new List<dockSpaceData>()
-                        {
-                            leaf,
-                            neighbour
                         };
-                                break;
-                            }
-                        }
-                        // check left neighbour that have same height
-                        if (neighbour == null)
+
+                        foreach (FuWindow w in Fugui.UIWindows.Values)
                         {
-                            foreach (dockSpaceData otherLeaf in dockSpaceDatas)
+                            if (w.IsDocked && w.CurrentDockID == win.CurrentDockID)
                             {
-                                if (otherLeaf.Rect.min.x + otherLeaf.Rect.size.x == leaf.Rect.min.x && otherLeaf.Rect.min.y == leaf.Rect.min.y && otherLeaf.Rect.size.y == leaf.Rect.size.y)
-                                {
-                                    neighbour = otherLeaf;
-                                    parentDockSpace.Rect = new Rect(new Vector2(Mathf.Min(leaf.Rect.min.x, neighbour.Rect.min.x), leaf.Rect.min.y), new Vector2(leaf.Rect.size.x + neighbour.Rect.size.x, leaf.Rect.size.y));
-                                    parentDockSpace.SplitSpaceRatio = neighbour.Rect.size.x / parentDockSpace.Rect.size.x;
-                                    parentDockSpace.Dir = UIDockSpaceOrientation.Horizontal;
-                                    parentDockSpace.Children = new List<dockSpaceData>()
-                            {
-                                neighbour,
-                                leaf
-                            };
-                                    break;
-                                }
-                            }
-                        }
-                        // check top neighbour that have same width
-                        if (neighbour == null)
-                        {
-                            foreach (dockSpaceData otherLeaf in dockSpaceDatas)
-                            {
-                                if (otherLeaf.Rect.min.x == leaf.Rect.min.x && otherLeaf.Rect.min.y + otherLeaf.Rect.size.y == leaf.Rect.min.y && otherLeaf.Rect.size.x == leaf.Rect.size.x)
-                                {
-                                    neighbour = otherLeaf;
-                                    parentDockSpace.Rect = new Rect(new Vector2(leaf.Rect.min.x, Mathf.Min(leaf.Rect.min.y, neighbour.Rect.min.y)), new Vector2(leaf.Rect.size.x, leaf.Rect.size.y + neighbour.Rect.size.y));
-                                    parentDockSpace.SplitSpaceRatio = neighbour.Rect.size.y / parentDockSpace.Rect.size.y;
-                                    parentDockSpace.Dir = UIDockSpaceOrientation.Vertical;
-                                    parentDockSpace.Children = new List<dockSpaceData>()
-                            {
-                                neighbour,
-                                leaf
-                            };
-                                    break;
-                                }
-                            }
-                        }
-                        // check bottom neighbour that have same width
-                        if (neighbour == null)
-                        {
-                            foreach (dockSpaceData otherLeaf in dockSpaceDatas)
-                            {
-                                if (otherLeaf.Rect.min.x == leaf.Rect.min.x && otherLeaf.Rect.min.y == leaf.Rect.min.y + leaf.Rect.size.y && otherLeaf.Rect.size.x == leaf.Rect.size.x)
-                                {
-                                    neighbour = otherLeaf;
-                                    parentDockSpace.Rect = new Rect(new Vector2(leaf.Rect.min.x, Mathf.Min(leaf.Rect.min.y, neighbour.Rect.min.y)), new Vector2(leaf.Rect.size.x, leaf.Rect.size.y + neighbour.Rect.size.y));
-                                    parentDockSpace.SplitSpaceRatio = leaf.Rect.size.y / parentDockSpace.Rect.size.y;
-                                    parentDockSpace.Dir = UIDockSpaceOrientation.Vertical;
-                                    parentDockSpace.Children = new List<dockSpaceData>()
-                            {
-                                leaf,
-                                neighbour
-                            };
-                                    break;
-                                }
+                                space.WindowNames.Add(w.WindowName);
                             }
                         }
 
-                        // replace the two leafs by parent in list and set them as children
-                        if (neighbour != null)
+                        dockSpaces.Add(space);
+                    }
+                }
+
+                //Dockspaces fusion
+                int safety = 0;
+                while (dockSpaces.Count > 1 && safety < 100)
+                {
+                    dockSpaces = dockSpaces.OrderBy(x => x.Rect.size.x * x.Rect.size.y).ToList();
+                    bool merged = false;
+
+                    for (int i = 0; i < dockSpaces.Count && !merged; i++)
+                    {
+                        dockSpaceData a = dockSpaces[i];
+                        dockSpaceData b = null;
+                        dockSpaceData combined = new dockSpaceData();
+
+                        b = dockSpaces.FirstOrDefault(d =>
+                            d.Rect.min.x == a.Rect.min.x + a.Rect.size.x &&
+                            d.Rect.min.y == a.Rect.min.y &&
+                            d.Rect.size.y == a.Rect.size.y);
+
+                        if (b != null)
                         {
-                            dockSpaceDatas.Remove(leaf);
-                            dockSpaceDatas.Remove(neighbour);
-                            dockSpaceDatas.Add(parentDockSpace);
-                            break;
+                            combined.Rect = new Rect(new Vector2(Mathf.Min(a.Rect.min.x, b.Rect.min.x), a.Rect.min.y), new Vector2(a.Rect.size.x + b.Rect.size.x, a.Rect.size.y));
+                            combined.SplitSpaceRatio = a.Rect.size.x / combined.Rect.size.x;
+                            combined.Dir = UIDockSpaceOrientation.Horizontal;
+                            combined.Children = new List<dockSpaceData> { a, b };
                         }
-                        else
+
+                        if (b == null)
                         {
-                            // no neighbour found, this leaf is a root
-                            dockSpaceDatas.Remove(leaf);
-                            dockSpaceDatas.Add(leaf);
+                            b = dockSpaces.FirstOrDefault(d =>
+                                d.Rect.min.x == a.Rect.min.x &&
+                                d.Rect.min.y == a.Rect.min.y + a.Rect.size.y &&
+                                d.Rect.size.x == a.Rect.size.x);
+
+                            if (b != null)
+                            {
+                                combined.Rect = new Rect(new Vector2(a.Rect.min.x, Mathf.Min(a.Rect.min.y, b.Rect.min.y)), new Vector2(a.Rect.size.x, a.Rect.size.y + b.Rect.size.y));
+                                combined.SplitSpaceRatio = a.Rect.size.y / combined.Rect.size.y;
+                                combined.Dir = UIDockSpaceOrientation.Vertical;
+                                combined.Children = new List<dockSpaceData> { a, b };
+                            }
+                        }
+
+                        if (b != null)
+                        {
+                            dockSpaces.Remove(a);
+                            dockSpaces.Remove(b);
+                            dockSpaces.Add(combined);
+                            merged = true;
                         }
                     }
-                    nbTry++;
+
+                    safety++;
                 }
 
-                // we failed retriving layout, let's return null layout
-                if (dockSpaceDatas.Count > 1)
+                if (dockSpaces.Count == 0)
                 {
+                    Debug.LogWarning("[Fugui] No dockspace found to generate layout.");
                     Fugui.ClosePopupMessage();
-                    callback?.Invoke(null);
-                    return;
+                    return null;
                 }
 
-                // get root node
-                dockSpaceData rootDockNode = dockSpaceDatas[0];
+                FuDockingLayoutDefinition rootLayout = new FuDockingLayoutDefinition("GeneratedLayout", 0u);
+                convertDockSpaceDataToDockingLayoutDefinition(dockSpaces[0], rootLayout);
 
-                // recursively convert dockSpaceData to DockingLayoutDefinition
-                FuDockingLayoutDefinition rootDockingLayoutDefinition = new FuDockingLayoutDefinition("TempLayout", 0);
-                convertDockSpaceDataToDockingLayoutDefinition(rootDockNode, rootDockingLayoutDefinition);
+                return rootLayout.Children.Count > 0 ? rootLayout.Children[0] : rootLayout;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("[Fugui] GenerateCurrentLayoutSync failed: " + ex);
                 Fugui.ClosePopupMessage();
+                return null;
+            }
+        }
 
-                // callback that return generated layout
-                callback?.Invoke(rootDockingLayoutDefinition.Children[0]);
-            });
-            thread.Start();
+        /// <summary>
+        /// Generate current layout and call an action
+        /// </summary>
+        /// <returns>current custom FuDockingLayoutDefinition OR null if failed</returns>
+        public void GenerateCurrentLayout(Action<FuDockingLayoutDefinition> callback)
+        {
+            try
+            {
+                FuDockingLayoutDefinition layout = GenerateCurrentLayout();
+                callback?.Invoke(layout);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("[Fugui] GenerateCurrentLayout async wrapper failed: " + ex);
+                callback?.Invoke(null);
+            }
         }
 
         /// <summary>

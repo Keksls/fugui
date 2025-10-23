@@ -676,7 +676,7 @@ namespace Fu
         /// <summary>
         /// Used to format selected layout to FuGui layout configuration file 
         /// </summary>
-        public void SaveLayoutFile(string folderPath, FuDockingLayoutDefinition dockingLayout)
+        public void SaveLayoutFile(string folderPath, FuDockingLayoutDefinition dockingLayout, bool notify = true)
         {
             // create folder if not exists
             if (!Directory.Exists(folderPath))
@@ -697,7 +697,11 @@ namespace Fu
 
             string fileName = Path.Combine(folderPath, dockingLayout.Name) + "." + FUGUI_DOCKING_LAYOUT_EXTENTION;
             File.WriteAllText(fileName, FuDockingLayoutDefinition.Serialize(dockingLayout));
-            Fugui.Notify("Layout saved", type: StateType.Success, duration: 2f);
+
+            if (notify)
+            {
+                Fugui.Notify("Layout saved", type: StateType.Success, duration: 2f);
+            }
         }
 
         internal bool checkLayoutName(string layoutName)

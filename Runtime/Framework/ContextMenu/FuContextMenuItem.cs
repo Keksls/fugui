@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ImGuiNET;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace Fu.Framework
         // Optional image displayed in the context menu 
         public Texture2D Image;
         // Optional image size
-        public FuElementSize Size;
+        public FuElementSize ImageSize;
         //Optional border pixel size
         public int Border;
         // Defines the type of this item (Normal, Separator, or Image)
@@ -47,7 +48,6 @@ namespace Fu.Framework
         /// <summary>
         /// Constructor only use for separator
         /// </summary>
-        /// <param name="title">The title text to display</param>
         public FuContextMenuItem()
         {
             Label = null;
@@ -69,37 +69,17 @@ namespace Fu.Framework
         /// <param name="isSeparator">Whether the item is a separator</param>
         /// <param name="clickAction">The action to perform when the item is clicked</param>
         /// <param name="children">The children items for the item</param>
-        public FuContextMenuItem(string label, string shortcut, Func<bool> enabled, bool isSeparator, Action clickAction, List<FuContextMenuItem> children = null)
+        public FuContextMenuItem(string label, string shortcut, Func<bool> enabled, Action clickAction, Texture2D image = null, FuElementSize imageSize = default, List<FuContextMenuItem> children = null)
         {
             Label = label;
-            Image = null;
+            Image = image;
+            ImageSize = imageSize;
             Shortcut = shortcut;
             Enabled = enabled;
             ClickAction = clickAction;
             Children = children ?? new List<FuContextMenuItem>();
-            Type = isSeparator ? FuContextMenuItemType.Separator : FuContextMenuItemType.Text;
+            Type = FuContextMenuItemType.Item;
             Border = 0;
-        }
-
-        /// <summary>
-        /// Constructor for an image item (always displayed full width, preserving aspect ratio)
-        /// </summary>
-        /// <param name="image">The texture to display in the menu</param>
-        /// <param name="size">Image size</param>
-        /// <param name="border">Image border in px</param>
-        /// <param name="clickAction">Action on image click</param>
-        /// <param name="children">The children items for the item</param>
-        public FuContextMenuItem(Texture2D image, FuElementSize size, int border = 1, Action clickAction = null, List<FuContextMenuItem> children = null)
-        {
-            Label = null;
-            Image = image;
-            Shortcut = null;
-            Children = new List<FuContextMenuItem>();
-            Size = size;
-            ClickAction = clickAction;
-            Children = children ?? new List<FuContextMenuItem>();
-            Type = FuContextMenuItemType.Image;
-            Border = border;
         }
     }
 
@@ -108,9 +88,8 @@ namespace Fu.Framework
     /// </summary>
     public enum FuContextMenuItemType
     {
-        Text,
+        Item,
         Separator,
-        Image,
         Title
     }
 }

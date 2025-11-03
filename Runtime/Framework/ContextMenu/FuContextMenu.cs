@@ -66,15 +66,18 @@ namespace Fu
         /// If the context menu will be open betwin this call and the next 'Pop' call, the item will be added to the context menu
         /// Must call a Pop after pushing items before the end of the frame
         /// </summary>
-        /// <param name="itemLabel">The label for the item</param>
-        /// <param name="enabled">Whether the item is enabled</param>
-        /// <param name="itemCallback">The action to perform when the item is clicked</param>
-        public static void PushContextMenuItem(string itemLabel, Action itemCallback, Func<bool> enabled = null)
+        /// <param name="label"> The label of the context menu item</param>
+        /// <param name="clickAction"> The action to perform when the item is clicked</param>
+        /// <param name="shortcut"> The shortcut text for the context menu item</param>
+        /// <param name="image"> Optional image to display next to the label</param>
+        /// <param name="imageSize"> Optional image size</param>
+        /// <param name="enabled"> Whatever the item is enabled</param>
+        public static void PushContextMenuItem(string label, Action clickAction, string shortcut = "", Texture2D image = null, FuElementSize imageSize = default, Func<bool> enabled = null)
         {
             // Add a new level to the context menu stack
             _contextMenuItemsStack[_currentContextMenuStackIndex] = new List<FuContextMenuItem>()
             {
-                new FuContextMenuItem(itemLabel, null, enabled, false, itemCallback, null)
+                new FuContextMenuItem(label, shortcut, enabled, clickAction, image, imageSize, null)
             };
             // Increment the current context menu stack index
             _currentContextMenuStackIndex++;
@@ -90,15 +93,24 @@ namespace Fu
         /// Pop last pushed items to the context menu items stack
         /// Must be call after a push before the end of the frame
         /// </summary>
-        public static void PopContextMenuItems()
+        /// <param name="nbPop">Number of levels to pop</param>
+        public static void PopContextMenuItems(int nbPop = 1)
         {
-            // Remove a level from the context menu stack
-            _currentContextMenuStackIndex--;
-            // Check if the current context menu stack index is within the bounds of the stack
-            if (_currentContextMenuStackIndex < _contextMenuItemsStack.Length && _currentContextMenuStackIndex >= 0)
+            for (int i = 0; i < nbPop; i++)
             {
-                // If so, set the current level of the stack to null
-                _contextMenuItemsStack[_currentContextMenuStackIndex] = null;
+                // Remove a level from the context menu stack
+                _currentContextMenuStackIndex--;
+                // Check if the current context menu stack index is within the bounds of the stack
+                if (_currentContextMenuStackIndex < _contextMenuItemsStack.Length && _currentContextMenuStackIndex >= 0)
+                {
+                    // If so, set the current level of the stack to null
+                    _contextMenuItemsStack[_currentContextMenuStackIndex] = null;
+                }
+                // Ensure the current context menu stack index is not negative
+                if (_currentContextMenuStackIndex < 0)
+                {
+                    _currentContextMenuStackIndex = 0;
+                }
             }
         }
         #endregion
@@ -107,13 +119,14 @@ namespace Fu
         /// <summary>
         /// Open the context menu if the last item drawed has just been right clicked
         /// </summary>
-        public static void TryOpenContextMenuOnItemClick()
+        /// <param name="mouseButton">Mouse button to use to open the context menu</param>
+        public static void TryOpenContextMenuOnItemClick(FuMouseButton mouseButton = FuMouseButton.Right)
         {
             // Whatever the last item drawed has just been clicked
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+            if (ImGui.IsItemClicked((ImGuiMouseButton)mouseButton))
             {
                 // Open the context menu
-                TryOpenContextMenu();
+                TryOpenContextMenuOnWindowClick(mouseButton);
             }
         }
 
@@ -122,23 +135,23 @@ namespace Fu
         /// </summary>
         /// <param name="min">Left Up corner of the rect</param>
         /// <param name="max">Right Down corner of the rect</param>
-        public static void TryOpenContextMenuOnRectClick(Vector2 min, Vector2 max)
+        /// <param name="mouseButton">Mouse button to use to open the context menu</param>
+        public static bool TryOpenContextMenuOnRectClick(Vector2 min, Vector2 max, FuMouseButton mouseButton = FuMouseButton.Right)
         {
-            // Whatever the mouse is hovering a rect and click on it
-            if (ImGui.IsMouseHoveringRect(min, max) && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-            {
-                // Open the context menu
-                TryOpenContextMenu();
-            }
+            // check if the mouse is hovering the rect
+            if (ImGui.IsMouseHoveringRect(min, max))
+                return TryOpenContextMenuOnWindowClick(mouseButton);
+            return false;
         }
 
         /// <summary>
         /// Open the context menu if the current window is right clicked
         /// </summary>
-        public static bool TryOpenContextMenuOnWindowClick()
+        /// <param name="mouseButton">Mouse button to use to open the context menu</param>
+        public static bool TryOpenContextMenuOnWindowClick(FuMouseButton mouseButton = FuMouseButton.Right)
         {
             // whatever the current window is hovered and right clicked
-            if (ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup) && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+            if (FuWindow.CurrentDrawingWindow != null && FuWindow.CurrentDrawingWindow.IsHoveredContent && FuWindow.CurrentDrawingWindow.Mouse.IsClicked(mouseButton))
             {
                 // open the context menu
                 TryOpenContextMenu();
@@ -214,7 +227,20 @@ namespace Fu
             {
                 IsContextMenuOpen = true;
                 // draw the items
-                drawContextMenuItems(_currentContextMenuItems);
+                FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout ?? new FuLayout();
+                try
+                {
+                    drawContextMenuItems(_currentContextMenuItems, layout, 0);
+                }
+                catch (Exception e)
+                {
+                    OnUIException?.Invoke(e);
+                }
+                finally
+                {
+                    if (FuWindow.CurrentDrawingWindow == null)
+                        layout.Dispose();
+                }
                 ImGuiNative.igEndPopup();
             }
             else
@@ -228,7 +254,7 @@ namespace Fu
         /// Draw each items recursively
         /// </summary>
         /// <param name="items">list of items to draw</param>
-        private static void drawContextMenuItems(List<FuContextMenuItem> items)
+        private static void drawContextMenuItems(List<FuContextMenuItem> items, FuLayout layout, int id)
         {
             // draw each items
             foreach (FuContextMenuItem menuItem in items)
@@ -237,59 +263,105 @@ namespace Fu
                 {
                     default:
                     //Display Text menu
-                    case FuContextMenuItemType.Text:
+                    case FuContextMenuItemType.Item:
+                        string label = menuItem.Label ?? string.Empty;
+                        Vector2 imageSize = menuItem.ImageSize;
+                        if(imageSize == Vector2.zero && menuItem.Image != null)
+                        {
+                            float currentFontSize = Fugui.GetFontSize();
+                            imageSize = new Vector2(currentFontSize, currentFontSize); // Default size for image if not specified is current font size
+                        }
+                        bool hasLabel = !string.IsNullOrEmpty(label);
+                        bool hasImage = menuItem.Image != null;
+
                         bool enabled = (menuItem.Enabled?.Invoke() ?? true) && !IsContextMenuDisabled;
                         if (!enabled)
-                        {
                             Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled));
-                        }
-                        // whatever the item is a parent (contain children)
+
+                        // Draw secondary duotone glyph if needed
+                        DrawDuotoneSecondaryGlyph(label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
+
+                        // Parent item (submenu)
                         if (menuItem.Children.Count > 0)
                         {
-                            // draw secondary duotone glyph if needed
-                            DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
-
-                            // draw the parent and bind children if parent is open
-                            if (ImGui.BeginMenu(menuItem.Label, enabled))
+                            if (hasImage && hasLabel)
                             {
-                                // bind children
-                                drawContextMenuItems(menuItem.Children);
-                                ImGuiNative.igEndMenu();
+                                layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, false);
+                                ImGui.SameLine();
+                                bool open = ImGui.BeginMenu(label, enabled);
+                                if (open)
+                                {
+                                    drawContextMenuItems(menuItem.Children, layout, id + 1);
+                                    ImGuiNative.igEndMenu();
+                                }
+                            }
+                            else if (!hasLabel && hasImage)
+                            {
+                                ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().x - imageSize.x) * 0.5f);
+                                bool open = ImGui.BeginMenu("##imgmenu" + id, enabled);
+                                layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, false);
+                                if (open)
+                                {
+                                    drawContextMenuItems(menuItem.Children, layout, id + 1);
+                                    ImGuiNative.igEndMenu();
+                                }
+                            }
+                            else // label only
+                            {
+                                if (ImGui.BeginMenu(label, enabled))
+                                {
+                                    drawContextMenuItems(menuItem.Children, layout, id + 1);
+                                    ImGuiNative.igEndMenu();
+                                }
                             }
                         }
-                        //Whatever the item is a 'leaf' (no child)
+                        // Leaf item
                         else
                         {
-                            // draw secondary duotone glyph if needed
-                            DrawDuotoneSecondaryGlyph(menuItem.Label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
-
-                            // draw menu item
-                            if (ImGui.MenuItem(menuItem.Label, menuItem.Shortcut, false, enabled))
+                            if (hasImage && hasLabel)
                             {
-                                //Invoke the callback action of the item if clicked and close the context menu
-                                menuItem.ClickAction?.Invoke();
-                                CloseContextMenu();
+                                bool clicked = layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, true);
+                                ImGui.SameLine();
+                                clicked |= ImGui.MenuItem(label, menuItem.Shortcut, false, enabled);
+                                if (clicked)
+                                {
+                                    menuItem.ClickAction?.Invoke();
+                                    CloseContextMenu();
+                                }
+                            }
+                            else if (!hasLabel && hasImage)
+                            {
+                                layout.CenterNextItemH(imageSize.x);
+                                if (layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, true))
+                                {
+                                    menuItem.ClickAction?.Invoke();
+                                    CloseContextMenu();
+                                }
+                            }
+                            else // label only
+                            {
+                                if (ImGui.MenuItem(label, menuItem.Shortcut, false, enabled))
+                                {
+                                    menuItem.ClickAction?.Invoke();
+                                    CloseContextMenu();
+                                }
                             }
                         }
+
                         if (!enabled)
-                        {
                             PopColor();
-                        }
+
                         break;
+
                     //Display Separator
                     case FuContextMenuItemType.Separator:
                         ImGuiNative.igSeparator();
                         break;
+
                     //Display Title
                     case FuContextMenuItemType.Title:
                         if (!string.IsNullOrEmpty(menuItem.Label))
                         {
-                            //Consider title only if menuItem if the first part of the builded context menu
-                            if (menuItem != items[0])
-                            {
-                                continue;
-                            }
-
                             Vector2 region = ImGui.GetContentRegionAvail();
                             Vector2 textSize = Fugui.CalcTextSize(menuItem.Label, FuTextWrapping.None);
 
@@ -297,62 +369,12 @@ namespace Fu
                             float offsetX = (region.x - textSize.x) * 0.5f;
                             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + Mathf.Max(0f, offsetX));
 
-                            PushFont(14, FontType.Bold);
+                            PushFont(FontType.Bold);
                             ImGui.Text(menuItem.Label);
                             PopFont();
 
                             //Add always a separator under title
                             ImGuiNative.igSeparator();
-                        }
-                        break;
-                    //Display Image
-                    case FuContextMenuItemType.Image:
-                        if (menuItem.Type == FuContextMenuItemType.Image && menuItem.Image != null)
-                        {
-                            FuElementSize drawSize = menuItem.Size;
-                            Vector2 size = drawSize.GetSize();
-
-                            float regionWidth = ImGui.GetContentRegionAvail().x;
-                            float cursorX = ImGui.GetCursorPosX();
-                            float offsetX = Mathf.Max(0f, (regionWidth - size.x) * 0.5f);
-
-                            ImGui.SetCursorPosX(cursorX + offsetX);
-
-                            // Draw image
-                            if (FuWindow.CurrentDrawingWindow == null)
-                            {
-                                MainContainer.ImGuiImage(menuItem.Image, drawSize);
-                            }
-                            else
-                            {
-                                FuWindow.CurrentDrawingWindow.Container.ImGuiImage(menuItem.Image, drawSize);
-                            }
-
-                            // Draw optional border (if > 0)
-                            if (menuItem.Border > 0)
-                            {
-                                Vector2 min = ImGui.GetItemRectMin();
-                                Vector2 max = ImGui.GetItemRectMax();
-                                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-
-                                // Add an offest around (1px) around image to avoid artifacts
-                                float pad = menuItem.Border + 1f;
-                                drawList.AddRect(new Vector2(min.x - pad, min.y - pad), new Vector2(max.x + pad, max.y + pad), Themes.GetColorU32(FuColors.Border), 0f, ImDrawFlags.None, menuItem.Border);
-                            }
-
-                            // Handle click
-                            if (menuItem.ClickAction != null)
-                            {
-                                Vector2 startPos = ImGui.GetItemRectMin();
-                                Vector2 endPos = ImGui.GetItemRectMax();
-
-                                if (ImGui.IsMouseHoveringRect(startPos, endPos) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
-                                {
-                                    menuItem.ClickAction?.Invoke();
-                                    CloseContextMenu();
-                                }
-                            }
-                            continue;
                         }
                         break;
                 }

@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class PopupsWindow : FuWindowBehaviour
 {
+    [SerializeField] private Texture2D _testImage;
     private List<FuContextMenuItem> someContextMenuItems;
     private List<FuContextMenuItem> someMoreContextMenuItems;
     private List<FuContextMenuItem> yetAnotherContextMenuItem;
@@ -21,6 +22,7 @@ public class PopupsWindow : FuWindowBehaviour
             .AddItem("Action 0 Lvl 1", () => { Debug.Log("Action 0 Lvl 1"); })
             .AddItem("Action 1 Lvl 1", () => { Debug.Log("Action 1 Lvl 1"); })
             .EndChild()
+            .SetTitle("Context menu title")
             .Build();
 
         // create some more context menu items
@@ -34,7 +36,23 @@ public class PopupsWindow : FuWindowBehaviour
 
         // create yet another context menu item
         yetAnotherContextMenuItem = FuContextMenuBuilder.Start()
-            .AddItem("This is a very special listbox", "some shortcut", () => { Debug.Log("click on my very special listbox !"); })
+            .AddItem("This is a very special listbox", () => { Debug.Log("click on my very special listbox !"); }, "some shortcut")
+            .SetTitle("Section title")
+            .AddItem("", () =>
+            {
+                Fugui.Notify("Image clicked!", "Image clicked in contextual menu", StateType.Info);
+            }, image: _testImage, imageSize: new FuElementSize(32f, 32f))
+            .AddItem("Image Item", () =>
+            {
+                Fugui.Notify("Image item clicked!", "Image clicked in contextual menu", StateType.Info);
+            }, image: _testImage)
+            .BeginChild("Image Parent", _testImage)
+            .SetTitle("Sub menu title")
+            .AddItem("Image Child", () =>
+            {
+                Fugui.Notify("Image child clicked!", "Image clicked in contextual menu", StateType.Info);
+            }, image: _testImage)
+            .EndChild()
             .Build();
     }
 
@@ -151,9 +169,7 @@ public class PopupsWindow : FuWindowBehaviour
 
                 Fugui.PushContextMenuItems(yetAnotherContextMenuItem);
                 layout.FramedText("I have extra item");
-                Fugui.PopContextMenuItems();
-
-                Fugui.PopContextMenuItems();
+                Fugui.PopContextMenuItems(2);
             });
             Fugui.TryOpenContextMenuOnWindowClick();
             Fugui.PopContextMenuItems();

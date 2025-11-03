@@ -31,90 +31,41 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// Adds an item to the current level of the context menu with a label and click action
+        /// Set the title of the current context menu level
         /// </summary>
-        /// <param name="label">The label text of the item</param>
-        /// <param name="clickAction">The action to perform when the item is clicked</param>
-        public FuContextMenuBuilder AddTitle(string label)
+        /// <param name="title"> The title text of the context menu</param>
+        /// <returns> The current instance of the FuContextMenuBuilder</returns>
+        public FuContextMenuBuilder SetTitle(string title)
         {
-            // Adds a context menu item with label and click action.
-            _currentLevel.Add(new FuContextMenuItem(label));
+            // check if first item is already a title item
+            if(_currentLevel.Count > 0 && _currentLevel[0].Type == FuContextMenuItemType.Title)
+            {
+                return this;
+            }
+
+            // insert at the beginning
+            _currentLevel.Insert(0, new FuContextMenuItem(title)
+            {
+                Type = FuContextMenuItemType.Title
+            });
+
             return this;
         }
 
-
         /// <summary>
-        /// Adds an item to the current level of the context menu with a label, shortcut, and click action
+        /// AddItem method adds a new context menu item to the current level with the given label, shortcut, enabled status, and click action.
         /// </summary>
-        /// <param name="label">The label text of the item</param>
-        /// <param name="shortcut">The keyboard shortcut of the item</param>
-        /// <param name="enabled">Whether the item is enabled or not</param>
-        /// <param name="clickAction">The action to perform when the item is clicked</param>
-        public FuContextMenuBuilder AddItem(string label, string shortcut, Func<bool> enabled, Action clickAction)
+        /// <param name="label"> The label of the context menu item</param>
+        /// <param name="clickAction"> The action to perform when the item is clicked</param>
+        /// <param name="shortcut"> The shortcut text for the context menu item</param>
+        /// <param name="image"> Optional image to display next to the label</param>
+        /// <param name="imageSize"> Optional image size</param>
+        /// <param name="enabled"> Whatever the item is enabled</param>
+        /// <returns> The current instance of the FuContextMenuBuilder</returns>
+        public FuContextMenuBuilder AddItem(string label, Action clickAction, string shortcut = "", Texture2D image = null, FuElementSize imageSize = default, Func<bool> enabled = null)
         {
             // Adds a new context menu item to the current level with the given label, shortcut, enabled status, and click action
-            _currentLevel.Add(new FuContextMenuItem(label, shortcut, enabled, false, clickAction));
-            return this;
-        }
-
-        /// <summary>
-        /// Adds an item to the current level of the context menu with a label and enabled status
-        /// </summary>
-        /// <param name="label">The label text of the item</param>
-        /// <param name="enabled">Whether the item is enabled or not</param>
-        public FuContextMenuBuilder AddItem(string label, Func<bool> enabled)
-        {
-            // Adds a new context menu item to the current level with the given label and enabled status
-            _currentLevel.Add(new FuContextMenuItem(label, string.Empty, enabled, false, null));
-            return this;
-        }
-
-        /// <summary>
-        /// Adds an enabled item to the current level of the context menu with a label
-        /// </summary>
-        /// <param name="label">The label text of the item</param>
-        public FuContextMenuBuilder AddItem(string label)
-        {
-            // Adds a new enabled context menu item to the current level with the given label
-            _currentLevel.Add(new FuContextMenuItem(label, string.Empty, null, false, null));
-            return this;
-        }
-
-        /// <summary>
-        /// Adds an enabled item to the current level of the context menu with a label and keyboard shortcut
-        /// </summary>
-        /// <param name="label">The label text of the item</param>
-        /// <param name="shortcut">The keyboard shortcut of the item</param>
-        /// <param name="clickAction">The action to perform when the item is clicked</param>
-        public FuContextMenuBuilder AddItem(string label, string shortcut, Action clickAction)
-        {
-            // Adds a new enabled context menu item to the current level with the given label and keyboard shortcut
-            _currentLevel.Add(new FuContextMenuItem(label, shortcut, null, false, clickAction));
-            return this;
-        }
-
-        /// <summary>
-        /// Adds an item to the current level of the context menu with a label, enabled status, and click action
-        /// </summary>
-        /// <param name="label">The label text of the item</param>
-        /// <param name="enabled">Whether the item is enabled or not</param>
-        /// <param name="clickAction">The action to perform when the item is clicked</param>
-        public FuContextMenuBuilder AddItem(string label, Func<bool> enabled, Action clickAction)
-        {
-            // Adds a context menu item with label, enabled status, and click action.
-            _currentLevel.Add(new FuContextMenuItem(label, string.Empty, enabled, false, clickAction));
-            return this;
-        }
-
-        /// <summary>
-        /// Adds an item to the current level of the context menu with a label and click action
-        /// </summary>
-        /// <param name="label">The label text of the item</param>
-        /// <param name="clickAction">The action to perform when the item is clicked</param>
-        public FuContextMenuBuilder AddItem(string label, Action clickAction)
-        {
-            // Adds a context menu item with label and click action.
-            _currentLevel.Add(new FuContextMenuItem(label, string.Empty, null, false, clickAction));
+            _currentLevel.Add(new FuContextMenuItem(label, shortcut, enabled, clickAction, image, imageSize, null));
             return this;
         }
 
@@ -129,35 +80,7 @@ namespace Fu.Framework
                 return this;
             }
             // Adds a separator to the context menu.
-            _currentLevel.Add(new FuContextMenuItem(null, null, null, true, null));
-            return this;
-        }
-
-        /// <summary>
-        /// Adds a clickable image item to the current level of the context menu.
-        /// The image will be displayed full width, scaled to preserve its aspect ratio,
-        /// and will trigger the specified action when clicked.
-        /// </summary>
-        /// <param name="image">The texture to display in the context menu</param>
-        /// <param name="size">The size of the displayed texture</param>
-        /// <param name="clickAction">The action to perform when the image is clicked</param>
-        public FuContextMenuBuilder AddImage(Texture2D image, FuElementSize size, int border, Action clickAction)
-        {
-            // Prevent adding null images
-            if (image == null)
-            {
-                return this;
-            }
-
-            // Adds a new clickable image item
-            FuContextMenuItem item = new FuContextMenuItem(image, size, border, clickAction)
-            {
-                ClickAction = clickAction,
-                Enabled = null, // clickable images are considered always enabled by default
-                Type = FuContextMenuItemType.Image
-            };
-
-            _currentLevel.Add(item);
+            _currentLevel.Add(new FuContextMenuItem());
             return this;
         }
 
@@ -165,9 +88,11 @@ namespace Fu.Framework
         /// BeginChild method starts a new child context menu with the specified label and sets it enabled by default.
         /// </summary>
         /// <param name="label">Label of the parent item</param>
-        public FuContextMenuBuilder BeginChild(string label)
+        /// <param name="image">Optional image to display next to the label</param>
+        /// <param name="imageSize">Optional image size</param>
+        public FuContextMenuBuilder BeginChild(string label, Texture2D image = null, FuElementSize imageSize = default)
         {
-            return BeginChild(label, null);
+            return BeginChild(label, null, image, imageSize);
         }
 
         /// <summary>
@@ -175,10 +100,12 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="label">Label of the parent item</param>
         /// <param name="enabled">Whatever the item is enabled</param>
-        public FuContextMenuBuilder BeginChild(string label, Func<bool> enabled)
+        /// <param name="image">Optional image to display next to the label</param>
+        /// <param name="imageSize">Optional image size</param>
+        public FuContextMenuBuilder BeginChild(string label, Func<bool> enabled, Texture2D image = null, FuElementSize imageSize = default)
         {
             // Starts a new child context menu with the specified label and enabled status.
-            var item = new FuContextMenuItem(label, string.Empty, enabled, false, null, new List<FuContextMenuItem>());
+            var item = new FuContextMenuItem(label, string.Empty, enabled, null, image, imageSize, new List<FuContextMenuItem>());
             _currentLevel.Add(item);
             _currentLevel = item.Children;
             return this;
@@ -198,6 +125,11 @@ namespace Fu.Framework
             return this;
         }
 
+        /// <summary>
+        /// Recursively searches for the parent level of the current level in the context menu items.
+        /// </summary>
+        /// <param name="level"> The current level of context menu items to search through</param>
+        /// <param name="finded"> A reference boolean indicating whether the parent level has been found</param>
         private void GetParentLevel(List<FuContextMenuItem> level, ref bool finded)
         {
             foreach (var item in level)

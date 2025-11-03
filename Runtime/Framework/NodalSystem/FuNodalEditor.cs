@@ -13,7 +13,7 @@ namespace Fu.Framework.Nodal
     public class FuNodalEditor
     {
         #region Variables
-        public FuNodalGraph Graph { get; private set; }
+        public FuNodalGraph Graph { get; set; }
         // View
         private Vector2 _pan = new Vector2(0f, 0f);
         private float _zoom = 1.0f;
@@ -45,6 +45,9 @@ namespace Fu.Framework.Nodal
         private Vector2 _marqueeStartWA, _marqueeEndWA;
         private readonly Dictionary<Guid, Vector2> _groupDragStartPositions = new Dictionary<Guid, Vector2>();
         private bool _isGroupDragging = false;
+
+        // context menu
+        private Action<FuContextMenuBuilder> OnDrawContextMenu;
 
         private Vector2 contextmenuOpenMousePos;
         private Dictionary<Guid, NodeGeom> _nodeGeometries = new Dictionary<Guid, NodeGeom>();
@@ -90,22 +93,8 @@ namespace Fu.Framework.Nodal
             // Emit into builder using fluent BeginChild/EndChild
             EmitSubitems(root, builder);
 
-            builder.AddSeparator()
-                .AddItem("New", () => { Graph = new FuNodalGraph { Name = "New Graph" }; })
-                .AddItem("Save JSON", () =>
-                {
-                    string json = FuGraphSerializer.SaveToJson(Graph);
-                    string path = FileBrowser.SaveFilePanel("Save Nodal Graph JSON", Environment.GetFolderPath(Environment.SpecialFolder.Desktop), Graph.Name + ".json", "json");
-                    if (string.IsNullOrEmpty(path)) return;
-                    System.IO.File.WriteAllText(path, json);
-                })
-                .AddItem("Load JSON", () =>
-                {
-                    string[] path = FileBrowser.OpenFilePanel("Load Nodal Graph JSON", Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "json", false);
-                    if (path.Length == 0) return;
-                    string json = System.IO.File.ReadAllText(path[0]);
-                    Graph = FuGraphSerializer.LoadFromJson(json);
-                });
+            // invoke custom menu items
+            OnDrawContextMenu?.Invoke(builder);
 
             Fugui.PushContextMenuItems(builder.Build());
             if (Fugui.TryOpenContextMenuOnWindowClick())
@@ -1047,6 +1036,15 @@ namespace Fu.Framework.Nodal
 
             // PostDraw graph compute
             Graph.ComputeGraphIfDirty();
+        }
+
+        /// <summary>
+        /// Register a custom context menu callback to add items to the canvas right-click menu.
+        /// </summary>
+        /// <param name="customContextMenuCallback"> The callback to invoke when building the context menu.</param>
+        public void RegisterCustomContextMenu(Action<FuContextMenuBuilder> customContextMenuCallback)
+        {
+            this.OnDrawContextMenu = customContextMenuCallback;
         }
 
         /// <summary>

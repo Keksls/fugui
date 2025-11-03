@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Fu;
 using Fu.Framework;
 using UnityEngine;
@@ -5,6 +6,8 @@ using UnityEngine;
 public class CameraWindow : FuCameraWindowBehaviour
 {
     public float HitForce = 50f;
+
+    public Texture2D _testImage;
 
     /// <summary>
     /// Whenever the window is created, set the camera to the MouseOrbitImproved component
@@ -38,6 +41,12 @@ public class CameraWindow : FuCameraWindowBehaviour
         // set header and footer UI
         windowDefinition.SetHeaderUI(HeaderUI, 24f);
         windowDefinition.SetFooterUI(FooterUI, 24f);
+        windowDefinition.SetUI(DrawTestMenu);
+    }
+
+    private void DrawTestMenu(FuWindow window, FuLayout layout)
+    {
+        drawContextualMenu(window);
     }
 
     private void HeaderUI(FuWindow window, Vector2 size)
@@ -71,6 +80,43 @@ public class CameraWindow : FuCameraWindowBehaviour
             grid.Text(((int)cam.CurrentCameraFPS).ToString());
             grid.Text("ui. FPS");
             grid.Text(((int)cam.CurrentFPS).ToString());
+        }
+    }
+
+    /// <summary>
+    /// Draw flight item contextual menu
+    /// </summary>
+    /// <param name="window"></param>
+    /// <param name="flight"></param>
+    private void drawContextualMenu(FuWindow window)
+    {
+        if (window.Mouse.IsDown(FuMouseButton.Right))
+        {
+            FuContextMenuBuilder contextMenuBuilder = FuContextMenuBuilder.Start();
+
+            //Title will always be the first item of the context menu, either it will be ignored
+            contextMenuBuilder.AddTitle("Context menu title");
+            contextMenuBuilder.AddImage(_testImage, new FuElementSize(32f, 32f), 0, () =>
+            {
+                Fugui.Notify("Image clicked!", "Image clicked in contextual menu", StateType.Warning);
+            });
+            contextMenuBuilder.AddSeparator();
+            contextMenuBuilder.AddItem($"Menu 1", () =>
+            {
+                Fugui.Notify("Menu 1", "Action 1", StateType.Info);
+            });
+            contextMenuBuilder.BeginChild($"Menu 2").AddItem("Action 1", () =>
+            {
+                Fugui.Notify("Menu 2", "Action 1", StateType.Success);
+            }).AddItem($"Action 2", () =>
+            {
+                Fugui.Notify("Menu 2", "Action 2", StateType.Danger);
+            }).EndChild();
+
+            List<FuContextMenuItem> contextMenuItems = contextMenuBuilder.Build();
+            Fugui.PushContextMenuItems(contextMenuItems);
+            Fugui.TryOpenContextMenu();
+            Fugui.PopContextMenuItems();
         }
     }
 

@@ -92,7 +92,7 @@ namespace Fu.Framework
                 // HEADER
                 ImGuiNative.igSpacing();
                 float headerStartY = ImGui.GetCursorScreenPos().y;
-                using (FuGrid grid = new FuGrid("notificationGrid" + i, new FuGridDefinition(3, new int[] { (int)(Fugui.Settings.NotifyIconSize), -36 }), FuGridFlag.NoAutoLabels, outterPadding:6f))
+                using (FuGrid grid = new FuGrid("notificationGrid" + i, new FuGridDefinition(3, new int[] { (int)(Fugui.Settings.NotifyIconSize), -36 }), FuGridFlag.NoAutoLabels, outterPadding: 6f))
                 {
                     grid.Image("notificationIcon" + i, Icon, new Vector2(Fugui.Settings.NotifyIconSize, Fugui.Settings.NotifyIconSize), TextColor.Text);
 
@@ -108,14 +108,22 @@ namespace Fu.Framework
                     }
 
                     Fugui.Push(ImGuiStyleVar.FrameRounding, 20f);
-                    if (grid.Button("x", new Vector2(22, 22), Vector2.zero, Vector2.zero, FuButtonStyle.Default))
+
+                    //Non visible zone to capture close click
+                    ImGui.PushStyleColor(ImGuiCol.Button, 0);
+                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0);
+                    ImGui.PushStyleColor(ImGuiCol.ButtonActive, 0);
+                    ImGui.PushStyleColor(ImGuiCol.Text, 0);
+                    if (grid.Button("##close", new Vector2(22, 22), Vector2.zero, Vector2.zero, FuButtonStyle.Default))
                     {
                         Close();
                     }
                     closebtnPos = grid.LastItemRect.center;
+
+                    ImGui.PopStyleColor(4);
                     Fugui.PopStyle();
                 }
-               
+
                 // header click→collapse (simple clic)
                 Vector2 headerStart = new Vector2(winPos.x, headerStartY);
                 Vector2 headerEnd = new Vector2(winPos.x + winSize.x, ImGui.GetCursorScreenPos().y);
@@ -162,18 +170,41 @@ namespace Fu.Framework
                 }
 
                 // PROGRESS (close btn)
-                uint pbCol = ImGui.GetColorU32(BGColor.Button);
+                uint activeColor = ImGui.GetColorU32(BGColor.Button);
+                uint backgroundColor = ImGui.GetColorU32(BGColor.DisabledButton);
                 float ratio = Mathf.Clamp01(Duration / Mathf.Max(0.0001f, _initialDuration));
-                Fugui.DrawArc(dl, closebtnPos, 11f * Fugui.Scale, 2f * Fugui.Scale, ratio, pbCol);
+
+                float radius = 11f * Fugui.Scale;
+                float thickness = 2f * Fugui.Scale;
+
+                //Draw dark background circle
+                dl.AddCircle(closebtnPos, radius, backgroundColor, 64, thickness);
+
+                //Draw radial arc
+                Fugui.DrawArc(dl, closebtnPos, radius, thickness, 1f - ratio, activeColor);
+
+                //Draw cross to close
+                float crossSize = 6f * Fugui.Scale;
+                float crossThickness = 1.4f * Fugui.Scale;
+                Vector2 center = closebtnPos;
+                float half = crossSize * 0.5f;
+                float overshoot = 0.6f * Fugui.Scale;
+                Vector2 a1 = new Vector2(center.x - half - overshoot, center.y - half - overshoot);
+                Vector2 a2 = new Vector2(center.x + half + overshoot, center.y + half + overshoot);
+                Vector2 b1 = new Vector2(center.x - half - overshoot, center.y + half + overshoot);
+                Vector2 b2 = new Vector2(center.x + half + overshoot, center.y - half - overshoot);
+                uint crossColor = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text));
+                dl.AddLine(a1, a2, crossColor, crossThickness);
+                dl.AddLine(b1, b2, crossColor, crossThickness);
 
                 bool hoverChild = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows);
 
                 ImGuiNative.igEndChild();
                 Fugui.PopStyle();
 
-                // ACCENT après EndChild (on a la bbox exacte)
                 Vector2 childMin = childTopLeft;
                 Vector2 childMax = new Vector2(childTopLeft.x + width, childTopLeft.y + winSize.y);
+
                 // bord fin
                 dl.AddRect(childMin, childMax, ImGui.GetColorU32(BGColor.ButtonHovered), Fugui.Themes.ChildRounding, ImDrawFlags.None, _borderWidth);
 

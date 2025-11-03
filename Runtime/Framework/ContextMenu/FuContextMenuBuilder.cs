@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Fu.Framework
 {
@@ -28,6 +29,19 @@ namespace Fu.Framework
         {
             return new FuContextMenuBuilder();
         }
+
+        /// <summary>
+        /// Adds an item to the current level of the context menu with a label and click action
+        /// </summary>
+        /// <param name="label">The label text of the item</param>
+        /// <param name="clickAction">The action to perform when the item is clicked</param>
+        public FuContextMenuBuilder AddTitle(string label)
+        {
+            // Adds a context menu item with label and click action.
+            _currentLevel.Add(new FuContextMenuItem(label));
+            return this;
+        }
+
 
         /// <summary>
         /// Adds an item to the current level of the context menu with a label, shortcut, and click action
@@ -110,12 +124,40 @@ namespace Fu.Framework
         public FuContextMenuBuilder AddSeparator()
         {
             // prevend to add 2 separators on top of each others
-            if (_currentLevel.Count > 0 && _currentLevel[_currentLevel.Count - 1].IsSeparator)
+            if (_currentLevel.Count > 0 && _currentLevel[_currentLevel.Count - 1].Type == FuContextMenuItemType.Separator)
             {
                 return this;
             }
             // Adds a separator to the context menu.
             _currentLevel.Add(new FuContextMenuItem(null, null, null, true, null));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a clickable image item to the current level of the context menu.
+        /// The image will be displayed full width, scaled to preserve its aspect ratio,
+        /// and will trigger the specified action when clicked.
+        /// </summary>
+        /// <param name="image">The texture to display in the context menu</param>
+        /// <param name="size">The size of the displayed texture</param>
+        /// <param name="clickAction">The action to perform when the image is clicked</param>
+        public FuContextMenuBuilder AddImage(Texture2D image, FuElementSize size, int border, Action clickAction)
+        {
+            // Prevent adding null images
+            if (image == null)
+            {
+                return this;
+            }
+
+            // Adds a new clickable image item
+            FuContextMenuItem item = new FuContextMenuItem(image, size, border, clickAction)
+            {
+                ClickAction = clickAction,
+                Enabled = null, // clickable images are considered always enabled by default
+                Type = FuContextMenuItemType.Image
+            };
+
+            _currentLevel.Add(item);
             return this;
         }
 

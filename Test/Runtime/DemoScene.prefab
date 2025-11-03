@@ -39353,8 +39353,8 @@ MonoBehaviour:
   _position: {x: 0, y: 0}
   _forceCreateAloneOnAwake: 0
   _camera: {fileID: 5027617570534833868}
-  _msaa: 8
-  _superSampling: 2
+  _msaa: 1
+  _superSampling: 1
   HitForce: 50
 --- !u!114 &4743667465687535263
 MonoBehaviour:
@@ -39401,6 +39401,7 @@ MonoBehaviour:
   _size: {x: 0, y: 0}
   _position: {x: 0, y: 0}
   _forceCreateAloneOnAwake: 0
+  _testImage: {fileID: 2800000, guid: 53db97583c27f1e439e94975c20d066c, type: 3}
 --- !u!114 &4742880329986240731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39469,7 +39470,6 @@ MonoBehaviour:
   _vector2Color: {r: 0.62426883, g: 0.6289307, b: 0.17206587, a: 1}
   _vector3Color: {r: 0.23838642, g: 0.59748423, b: 0.20104025, a: 1}
   _vector4Color: {r: 0.67295593, g: 0.30616626, b: 0.22220236, a: 1}
-  _field2DColor: {r: 0.59119487, g: 0.24726067, b: 0.5086507, a: 1}
 --- !u!1 &5199011613196837288
 GameObject:
   m_ObjectHideFlags: 0

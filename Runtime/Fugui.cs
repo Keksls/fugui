@@ -917,7 +917,16 @@ namespace Fu
         /// <param name="type">type of the font</param>
         public static void PushFont(FontType type)
         {
-            PushFont(CurrentContext.DefaultFont.Size, type);
+            PushFont(GetFontSize(), type);
+        }
+
+        /// <summary>
+        /// Get the current font size
+        /// </summary>
+        /// <returns> size of the current font</returns>
+        public static int GetFontSize()
+        {
+            return (int)(ImGuiNative.igGetFontSize() / Scale);
         }
 
         /// <summary>

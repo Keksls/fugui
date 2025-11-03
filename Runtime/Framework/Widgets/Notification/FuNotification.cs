@@ -24,7 +24,6 @@ namespace Fu.Framework
 
         private float _animationEnlapsed = 0f;
         private bool _removing = false;
-        private bool _hasSpawn = false;
 
         private float _borderWidth => 1.5f * Fugui.CurrentContext.Scale;
 

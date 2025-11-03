@@ -128,7 +128,7 @@ namespace Fu.Framework
             // Adjust the padding and spacing for the frame and the items within it
             Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
             // Set the font for the header to be bold and size 14
-            Fugui.PushFont(14, FontType.Bold);
+            Fugui.PushFont(FontType.Bold);
             // Display the collapsable header with the given identifier
             if (_customCollapsableButton(text, style, leftPartCustomUIWidth, rightPartCustomUIWidth, open, drawCarret, paddingY * Fugui.CurrentContext.Scale))
             {
@@ -259,8 +259,8 @@ namespace Fu.Framework
             if (!hoverCustomUI)
             {
                 // draw a dummy button to update cursor and get states
-                bool clicked = ImGui.InvisibleButton(text, size, ImGuiButtonFlags.None) && !LastItemDisabled;
-                setBaseElementState(text, pos, size, true, clicked);
+                ImGui.Dummy(size);
+                setBaseElementState(text, pos, size, true, false, !LastItemDisabled);
             }
             else
             {

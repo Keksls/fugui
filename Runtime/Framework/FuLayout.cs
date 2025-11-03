@@ -861,20 +861,24 @@ namespace Fu.Framework
             // get click state
             if (clickable && _lastItemHovered)
             {
-                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                if (Fugui.MainContainer.Mouse.IsClicked(FuMouseButton.Left))
                 {
                     _lastItemClickedButton = FuMouseButton.Left;
                     if (updateOnClick)
                     {
                         updated = true;
                     }
-
-                    _activeItem = uniqueID;
-                    _lastItemJustActivated = true;
                 }
-                else if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                else if (Fugui.MainContainer.Mouse.IsClicked(FuMouseButton.Right))
                 {
                     _lastItemClickedButton = FuMouseButton.Right;
+                }
+
+                // get active state
+                if(ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                {
+                    _activeItem = uniqueID;
+                    _lastItemJustActivated = true;
                 }
             }
 

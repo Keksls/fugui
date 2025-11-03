@@ -472,7 +472,7 @@ namespace Fu.Framework
             textRect = new Rect(ImGui.GetCursorScreenPos() - new Vector2(4f, 0f), Fugui.CalcTextSize(text, wrapping) + Fugui.Themes.FramePadding);
             bool hovered = IsItemHovered(textRect.min, textRect.size);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
-            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !LastItemDisabled;
+            bool clicked = LastItemClickedButton == FuMouseButton.Left && hovered && !LastItemDisabled;
 
             // set mouse cursor
             if (hovered && !LastItemDisabled)

@@ -1,4 +1,6 @@
 using Fu.Framework.Nodal;
+using System;
+using UnityEditor.Graphs;
 using UnityEngine;
 
 namespace Fu.Framework.Demo
@@ -32,6 +34,27 @@ namespace Fu.Framework.Demo
 
             // COMBINERS & MATH
             FuNodalRegistry.RegisterNode("Procedural/Multiply", () => new MultNode());
+
+            // Add new / save / load graph to context menu
+            _nodalEditor.RegisterCustomContextMenu((builder) =>
+            {
+                builder.AddSeparator()
+                    .AddItem("New", () => { _nodalEditor.Graph = new FuNodalGraph { Name = "New Graph" }; })
+                    .AddItem("Save JSON", () =>
+                    {
+                        string json = FuGraphSerializer.SaveToJson(_nodalEditor.Graph);
+                        string path = FileBrowser.SaveFilePanel("Save Nodal Graph JSON", Environment.GetFolderPath(Environment.SpecialFolder.Desktop), _nodalEditor.Graph.Name + ".json", "json");
+                        if (string.IsNullOrEmpty(path)) return;
+                        System.IO.File.WriteAllText(path, json);
+                    })
+                    .AddItem("Load JSON", () =>
+                    {
+                        string[] path = FileBrowser.OpenFilePanel("Load Nodal Graph JSON", Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "json", false);
+                        if (path.Length == 0) return;
+                        string json = System.IO.File.ReadAllText(path[0]);
+                        _nodalEditor.Graph = FuGraphSerializer.LoadFromJson(json);
+                    });
+            });
         }
 
         public override void OnWindowDefinitionCreated(FuWindowDefinition windowDefinition)

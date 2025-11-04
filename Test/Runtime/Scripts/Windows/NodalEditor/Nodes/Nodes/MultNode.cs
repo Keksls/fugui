@@ -16,29 +16,9 @@ namespace Fu.Framework.Demo
         /// </summary>
         public override void CreateDefaultPorts()
         {
-            AddPort(new FuNodalPort { Name = "A", Direction = FuNodalPortDirection.In, DataType = "core/float", AllowedTypes = new HashSet<string> { "core/float" }, Data = 1f, Multiplicity = FuNodalMultiplicity.Single });
-            AddPort(new FuNodalPort { Name = "B", Direction = FuNodalPortDirection.In, DataType = "core/float", AllowedTypes = new HashSet<string> { "core/float" }, Data = 1f, Multiplicity = FuNodalMultiplicity.Single });
-            AddPort(new FuNodalPort { Name = "Out", Direction = FuNodalPortDirection.Out, DataType = "core/float", AllowedTypes = new HashSet<string> { "core/float" }, Data = 0f, Multiplicity = FuNodalMultiplicity.Many });
-        }
-
-        /// <summary>
-        /// Checks if two ports can be connected.
-        /// </summary>
-        /// <param name="fromPort"> the output port from another node.</param>
-        /// <param name="toPort"> the input port of this node.</param>
-        /// <returns> true if they can be connected, false otherwise.</returns>
-        public override bool CanConnect(FuNodalPort fromPort, FuNodalPort toPort)
-        {
-            switch (fromPort.DataType)
-            {
-                case "core/float":
-                case "core/int":
-                case "core/v2":
-                case "core/v3":
-                case "core/v4":
-                    return true;
-            }
-            return false;
+            AddPort(new FuNodalPort { Name = "A", Direction = FuNodalPortDirection.In, DataType = "core/float", AllowedTypes = new HashSet<string> { "core/float", "core/int", "core/v2", "core/v3", "core/v4" }, Data = 1f, Multiplicity = FuNodalMultiplicity.Single });
+            AddPort(new FuNodalPort { Name = "B", Direction = FuNodalPortDirection.In, DataType = "core/float", AllowedTypes = new HashSet<string> { "core/float", "core/int", "core/v2", "core/v3", "core/v4" }, Data = 1f, Multiplicity = FuNodalMultiplicity.Single });
+            AddPort(new FuNodalPort { Name = "Out", Direction = FuNodalPortDirection.Out, DataType = "core/float", AllowedTypes = new HashSet<string> { "core/float", "core/int", "core/v2", "core/v3", "core/v4" }, Data = 0f, Multiplicity = FuNodalMultiplicity.Many });
         }
 
         /// <summary>
@@ -158,22 +138,22 @@ namespace Fu.Framework.Demo
             {
                 case "core/float":
                 case "core/int":
-                    float valueFloat = GetPortValue<float>("Out", 0f);
+                    float valueFloat = GetPortValue<float>("Out", 1f);
                     layout.Drag("##" + Id, ref valueFloat, "", float.MinValue, float.MaxValue);
                     break;
 
                 case "core/v2":
-                    Vector2 valueV2 = GetPortValue<Vector2>("Out", Vector2.zero);
+                    Vector2 valueV2 = GetPortValue<Vector2>("Out", Vector2.one);
                     layout.Drag("##" + Id, ref valueV2, "");
                     break;
 
                 case "core/v3":
-                    Vector3 valueV3 = GetPortValue<Vector3>("Out", Vector3.zero);
+                    Vector3 valueV3 = GetPortValue<Vector3>("Out", Vector3.one);
                     layout.Drag("##" + Id, ref valueV3, "");
                     break;
 
                 case "core/v4":
-                    Vector4 valueV4 = GetPortValue<Vector4>("Out", Vector4.zero);
+                    Vector4 valueV4 = GetPortValue<Vector4>("Out", Vector4.one);
                     layout.Drag("##" + Id, ref valueV4, "");
                     break;
             }
@@ -188,25 +168,48 @@ namespace Fu.Framework.Demo
             switch (port.DataType)
             {
                 case "core/float":
-                    port.Data = 0f;
+                    port.Data = 1f;
                     break;
 
                 case "core/int":
-                    port.Data = 0;
+                    port.Data = 1;
                     break;
 
                 case "core/v2":
-                    port.Data = Vector2.zero;
+                    port.Data = Vector2.one;
                     break;
 
                 case "core/v3":
-                    port.Data = Vector3.zero;
+                    port.Data = Vector3.one;
                     break;
 
                 case "core/v4":
-                    port.Data = Vector4.zero;
+                    port.Data = Vector4.one;
                     break;
             }
+        }
+
+        /// <summary>
+        /// Gets the current converted type for the given port.
+        /// Here we ensure that both inputs A and B have the same type, which is the highest dimension type among them.
+        /// </summary>
+        /// <param name="port"> The port to get the converted type for.</param>
+        /// <returns> The current converted type for the port.</returns>
+        public override string GetCurrentConvertedType(FuNodalPort port)
+        {
+            switch (port.Name)
+            {
+                case "A":
+                case "B":
+                    string thisPort  = GetPortType(port.Name);
+                    string otherPort = GetPortType(port.Name == "A" ? "B" : "A");
+                    // get the higher dimension type
+                    if (thisPort == "core/v4" || otherPort == "core/v4") return "core/v4";
+                    if (thisPort == "core/v3" || otherPort == "core/v3") return "core/v3";
+                    if (thisPort == "core/v2" || otherPort == "core/v2") return "core/v2";
+                    return "core/float";
+            }
+            return port.DataType;
         }
     }
 }

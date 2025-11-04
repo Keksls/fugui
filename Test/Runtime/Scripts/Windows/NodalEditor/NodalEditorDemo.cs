@@ -1,6 +1,5 @@
 using Fu.Framework.Nodal;
 using System;
-using UnityEditor.Graphs;
 using UnityEngine;
 
 namespace Fu.Framework.Demo
@@ -17,6 +16,7 @@ namespace Fu.Framework.Demo
         private void Awake()
         {
             _nodalEditor = new FuNodalEditor("Demo Nodal Editor");
+            //_nodalEditor.UseBezierCurves = false;
 
             // TYPES (choose your palette colors)
             FuNodalRegistry.RegisterType(FuNodalType.Create<float>("core/float", 0f, o => o.ToString(), s => float.Parse(s), color: _floatColor));

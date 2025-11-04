@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Windows;
 
 namespace Fu.Framework.Nodal
 {
@@ -14,6 +15,9 @@ namespace Fu.Framework.Nodal
     {
         #region Variables
         public FuNodalGraph Graph { get; set; }
+        public bool UseBezierCurves { get; set; } = true;
+        public bool ShowCompatiblesNodesOnVoidLink { get; set; } = true;
+        public bool AutoLinkColorFromConvertedType { get; set; } = true;
         // View
         private Vector2 _pan = new Vector2(0f, 0f);
         private float _zoom = 1.0f;
@@ -32,6 +36,8 @@ namespace Fu.Framework.Nodal
         // Linking
         private bool _isLinking = false;
         private (Guid nodeId, Guid portId)? _linkFrom;
+        private Guid voidLinkFromNode;
+        private FuNodalPort voidLinkFromPort;
 
         private Vector2 _canvasOrigin;
         private Vector2 _canvasSize;
@@ -61,13 +67,17 @@ namespace Fu.Framework.Nodal
         }
 
         #region Context menu
-        private void DrawContextMenu(FuLayout layout)
+        /// <summary>
+        /// Draw the context menu for adding nodes.
+        /// </summary>
+        /// <param name="layout"> The FuLayout to use for ImGui calls.</param>
+        /// <param name="types"> The list of node TypeIds to include in the menu.</param>
+        /// <param name="drawCustom"> Whether to invoke custom menu items.</param>
+        private void DrawContextMenu(FuLayout layout, IEnumerable<string> types, bool drawCustom, bool forceOpen, bool tryAutoConnect)
         {
             FuContextMenuBuilder builder = new FuContextMenuBuilder();
 
             // Build category tree from TypeId like "Cat/Sub/NodeName"
-            IEnumerable<string> types = FuNodalRegistry.GetRegisteredNode();
-
             var root = new MenuNode();
             foreach (var typeId in types)
             {
@@ -91,15 +101,24 @@ namespace Fu.Framework.Nodal
             }
 
             // Emit into builder using fluent BeginChild/EndChild
-            EmitSubitems(root, builder);
+            EmitSubitems(root, builder, tryAutoConnect);
 
             // invoke custom menu items
-            OnDrawContextMenu?.Invoke(builder);
+            if (drawCustom)
+                OnDrawContextMenu?.Invoke(builder);
 
             Fugui.PushContextMenuItems(builder.Build());
-            if (Fugui.TryOpenContextMenuOnWindowClick())
+            if (forceOpen)
             {
                 contextmenuOpenMousePos = GetLocalMousePosition();
+                Fugui.TryOpenContextMenu();
+            }
+            else
+            {
+                if (Fugui.TryOpenContextMenuOnWindowClick())
+                {
+                    contextmenuOpenMousePos = GetLocalMousePosition();
+                }
             }
             Fugui.PopContextMenuItems();
         }
@@ -107,13 +126,13 @@ namespace Fu.Framework.Nodal
         /// <summary>
         /// Recursively emits submenus and items using the fluent builder (BeginChild/EndChild).
         /// </summary>
-        private void EmitSubitems(MenuNode node, FuContextMenuBuilder b)
+        private void EmitSubitems(MenuNode node, FuContextMenuBuilder b, bool tryAutoConnect)
         {
             // Submenus first (alpha order)
             foreach (var kv in node.Children.OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase))
             {
                 b.BeginChild(kv.Key);
-                EmitSubitems(kv.Value, b);
+                EmitSubitems(kv.Value, b, tryAutoConnect);
                 b.EndChild();
             }
 
@@ -126,9 +145,44 @@ namespace Fu.Framework.Nodal
                 {
                     var mouseScreen = _canvasOrigin + contextmenuOpenMousePos;
                     var pos = ScreenToCanvas(mouseScreen);
-                    var n = FuNodalRegistry.CreateNode(type, Graph);
+                    string typeId = type;
+                    if (tryAutoConnect)
+                    {
+                        int index = type.LastIndexOf('(');
+                        if (index >= 0)
+                            typeId = type.Substring(0, index).TrimEnd();
+                    }
+                    var n = FuNodalRegistry.CreateNode(typeId, Graph);
                     n.SetPosition(pos.x, pos.y);
                     Graph.AddNode(n);
+
+                    if (tryAutoConnect)
+                    {
+                        try
+                        {
+                            if (voidLinkFromPort != null)
+                            {
+                                // try get port name
+                                var spl = label.Split('(');
+                                string portName = spl.Length > 1 ? spl[1].TrimEnd(')') : null;
+                                var toPort = n.Ports.FirstOrDefault(p => p.Value.Name.Equals(portName, StringComparison.OrdinalIgnoreCase));
+
+                                if (toPort.Value != null)
+                                {
+                                    Graph.TryConnect(voidLinkFromPort, toPort.Value, voidLinkFromNode, n.Id);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Fugui.Fire_OnUIException(ex);
+                        }
+                        finally
+                        {
+                            voidLinkFromNode = Guid.Empty;
+                            voidLinkFromPort = null;
+                        }
+                    }
                 });
             }
         }
@@ -274,22 +328,40 @@ namespace Fu.Framework.Nodal
                 Vector2 a = GetPortAnchorScreen(from, pFrom);
                 Vector2 b = GetPortAnchorScreen(to, pTo);
 
-                // Vérifie le survol souris
+                // Check mouse hover
                 Vector2 mouse = _canvasOrigin + GetLocalMousePosition();
-                bool hovered = IsMouseNearBezier(mouse, a, b, 8f); // 8px de tolérance
+                bool hovered = false;
+                if (UseBezierCurves)
+                    hovered = IsMouseNearBezier(mouse, a, b, 8f); // 8px threshold
+                else
+                    hovered = IsMouseNearStraight(mouse, a, b, 8f);
 
-                // Couleur selon état
+                // Color from port type
                 bool selected = (_selectedEdgeIndex == i);
 
-                uint col = selected ? Fugui.Themes.GetColorU32(FuColors.NodeSelectedEdge) :
+                // start Color
+                uint startCol = selected ? Fugui.Themes.GetColorU32(FuColors.NodeSelectedEdge) :
                            (hovered ? Fugui.Themes.GetColorU32(FuColors.NodeHoveredEdge) : Fugui.Themes.GetColorU32(FuColors.NodeEdge));
                 var typeData = FuNodalRegistry.GetType(pFrom.DataType);
-                if(typeData != null && typeData.Color.HasValue)
+                if (typeData != null && typeData.Color.HasValue)
                 {
-                    col = ImGui.GetColorU32(typeData.Color.Value);
+                    startCol = ImGui.GetColorU32(typeData.Color.Value);
                 }
+                // end Color
+                uint endCol = selected ? Fugui.Themes.GetColorU32(FuColors.NodeSelectedEdge) :
+                           (hovered ? Fugui.Themes.GetColorU32(FuColors.NodeHoveredEdge) : Fugui.Themes.GetColorU32(FuColors.NodeEdge));
+                var convertedType = to.GetCurrentConvertedType(pTo);
+                var toTypeData = FuNodalRegistry.GetType(convertedType);
+                if (toTypeData != null && toTypeData.Color.HasValue)
+                {
+                    endCol = ImGui.GetColorU32(toTypeData.Color.Value);
+                }
+
                 float width = selected ? 4.0f : (hovered ? 3.0f : 2.0f);
-                DrawBezier(drawList, a, b, width, col);
+                if (UseBezierCurves)
+                    DrawBezier(drawList, a, b, width, startCol, endCol);
+                else
+                    DrawStraightConnection(drawList, a, b, width, startCol, endCol);
 
                 if (hovered)
                 {
@@ -346,7 +418,11 @@ namespace Fu.Framework.Nodal
                 {
                     Vector2 aPrev = GetPortAnchorScreen(fromNode, fromPort);
                     Vector2 bPrev = _canvasOrigin + GetLocalMousePosition();
-                    DrawBezier(drawList, aPrev, bPrev, 1.5f, Fugui.Themes.GetColorU32(FuColors.NodeLinkPreview));
+                    uint col = Fugui.Themes.GetColorU32(FuColors.NodeLinkPreview);
+                    if (UseBezierCurves)
+                        DrawBezier(drawList, aPrev, bPrev, 1.5f, col, col);
+                    else
+                        DrawStraightConnection(drawList, aPrev, bPrev, 1.5f, col, col);
                 }
             }
 
@@ -428,17 +504,141 @@ namespace Fu.Framework.Nodal
         /// <param name="a"> Start point.</param>
         /// <param name="b"> End point.</param>
         /// <param name="thickness"> Line thickness.</param>
-        /// <param name="col"> Line color as a packed uint.</param>
-        private void DrawBezier(ImDrawListPtr dl, Vector2 a, Vector2 b, float thickness, uint col)
+        /// <param name="startCol"> Line color as a packed uint.</param>
+        private void DrawBezier(ImDrawListPtr dl, Vector2 a, Vector2 b, float thickness, uint startCol, uint endCol)
         {
-            // Snappe les points d’ancrage comme les knobs
+            // Snap anchor points as knobs are centered on half-pixels
             a = new Vector2(Mathf.Floor(a.x) + 0.5f, Mathf.Floor(a.y) + 0.5f);
             b = new Vector2(Mathf.Floor(b.x) + 0.5f, Mathf.Floor(b.y) + 0.5f);
 
             float dx = Mathf.Abs(b.x - a.x);
-            var c0 = new Vector2(a.x + dx * 0.5f, a.y);
-            var c1 = new Vector2(b.x - dx * 0.5f, b.y);
-            dl.AddBezierCubic(a, c0, c1, b, col, thickness * _zoom);
+            Vector2 c0 = new Vector2(a.x + dx * 0.5f, a.y);
+            Vector2 c1 = new Vector2(b.x - dx * 0.5f, b.y);
+
+            // First pass: rough length estimation to choose step count
+            int lenSamples = 16;
+            Vector2 prev = a;
+            float approxLen = 0f;
+            for (int i = 1; i <= lenSamples; i++)
+            {
+                float t = i / (float)lenSamples;
+                Vector2 p = CubicBezierPoint(a, c0, c1, b, t);
+                approxLen += Vector2.Distance(prev, p);
+                prev = p;
+            }
+
+            int steps = Mathf.Max(2, (int)(approxLen / 6f)); // ~1 segment per ~6 px
+            float w = thickness * _zoom;
+
+            Vector2 p0 = a;
+            for (int i = 1; i <= steps; i++)
+            {
+                float t = i / (float)steps;
+                Vector2 p1 = CubicBezierPoint(a, c0, c1, b, t);
+                uint col = LerpColor(startCol, endCol, t);
+                dl.AddLine(p0, p1, col, w);
+                p0 = p1;
+            }
+        }
+
+        /// <summary>
+        /// Evaluate a cubic Bezier curve at parameter t [0..1].
+        /// </summary>
+        /// <param name="a"> Start point.</param>
+        /// <param name="c0"> First control point.</param>
+        /// <param name="c1"> Second control point.</param>
+        /// <param name="b"> End point.</param>
+        /// <param name="t"> Parameter [0..1].</param>
+        /// <returns> Point on the curve at t.</returns>
+        private static Vector2 CubicBezierPoint(Vector2 a, Vector2 c0, Vector2 c1, Vector2 b, float t)
+        {
+            float u = 1f - t;
+            float tt = t * t;
+            float uu = u * u;
+            float uuu = uu * u;
+            float ttt = tt * t;
+            return (uuu * a) + (3f * uu * t * c0) + (3f * u * tt * c1) + (ttt * b);
+        }
+
+        /// <summary>
+        /// Draw a straight segmented connection between two points.
+        /// </summary>
+        /// <param name="dl">The ImDrawListPtr to use for drawing.</param>
+        /// <param name="a">Start point (on the left).</param>
+        /// <param name="b">End point (on the right).</param>
+        /// <param name="thickness">Line thickness.</param>
+        /// <param name="col">Line color as a packed uint.</param>
+        /// <param name="segmentLength">Length of the small horizontal segments at both ends.</param>
+        private void DrawStraightConnection(ImDrawListPtr dl, Vector2 a, Vector2 b, float thickness, uint colStart, uint colEnd, float segmentLength = 20f)
+        {
+            // Snap anchor points as knobs are centered on half-pixels
+            a = new Vector2(Mathf.Floor(a.x) + 0.5f, Mathf.Floor(a.y) + 0.5f);
+            b = new Vector2(Mathf.Floor(b.x) + 0.5f, Mathf.Floor(b.y) + 0.5f);
+
+            // Fixed-length horizontal segments
+            Vector2 aEnd = new Vector2(a.x + segmentLength, a.y);
+            Vector2 bStart = new Vector2(b.x - segmentLength, b.y);
+
+            // Distances
+            float d1 = Vector2.Distance(a, aEnd);
+            float d2 = Vector2.Distance(aEnd, bStart);
+            float d3 = Vector2.Distance(bStart, b);
+            float total = Mathf.Max(1e-4f, d1 + d2 + d3); // avoid div-by-zero
+
+            float t0 = 0f;
+            float t1 = d1 / total;
+            float t2 = (d1 + d2) / total;
+            float t3 = 1f;
+
+            float w = thickness * _zoom;
+
+            // Local: draw one segment with gradient by subdividing
+            void DrawGradSegment(Vector2 p0, Vector2 p1, float g0, float g1)
+            {
+                float dist = Vector2.Distance(p0, p1);
+                int steps = Mathf.Max(1, (int)(dist / 6f)); // ≈1 segment every ~6px
+                Vector2 prev = p0;
+
+                for (int i = 1; i <= steps; i++)
+                {
+                    float s = i / (float)steps;
+                    Vector2 cur = Vector2.Lerp(p0, p1, s);
+                    float gt = Mathf.Lerp(g0, g1, s);
+                    uint col = LerpColor(colStart, colEnd, gt);
+                    dl.AddLine(prev, cur, col, w);
+                    prev = cur;
+                }
+            }
+
+            // Draw the three segments with continuous gradient
+            DrawGradSegment(a, aEnd, t0, t1);
+            DrawGradSegment(aEnd, bStart, t1, t2);
+            DrawGradSegment(bStart, b, t2, t3);
+        }
+
+        /// <summary>
+        /// Linear interpolation between two ImGui packed colors (IM_COL32 RGBA).
+        /// </summary>
+        private static uint LerpColor(uint c0, uint c1, float t)
+        {
+            t = Mathf.Clamp01(t);
+
+            int r0 = (int)(c0 & 0xFF);
+            int g0 = (int)((c0 >> 8) & 0xFF);
+            int b0 = (int)((c0 >> 16) & 0xFF);
+            int a0 = (int)((c0 >> 24) & 0xFF);
+
+            int r1 = (int)(c1 & 0xFF);
+            int g1 = (int)((c1 >> 8) & 0xFF);
+            int b1 = (int)((c1 >> 16) & 0xFF);
+            int a1 = (int)((c1 >> 24) & 0xFF);
+
+            int r = (int)Mathf.Round(Mathf.Lerp(r0, r1, t));
+            int g = (int)Mathf.Round(Mathf.Lerp(g0, g1, t));
+            int b = (int)Mathf.Round(Mathf.Lerp(b0, b1, t));
+            int a = (int)Mathf.Round(Mathf.Lerp(a0, a1, t));
+
+            return (uint)((a << 24) | (b << 16) | (g << 8) | r);
         }
 
         /// <summary>
@@ -682,25 +882,6 @@ namespace Fu.Framework.Nodal
         }
 
         /// <summary>
-        /// Try to finish the link operation if possible (called on mouse release).
-        /// </summary>
-        private void TryFinishLink()
-        {
-            if (!_hoveredPort.HasValue || !_linkFrom.HasValue)
-                return;
-
-            var (targetNode, targetPort) = _hoveredPort.Value;
-            var fromNode = Graph.GetNode(_linkFrom.Value.nodeId);
-            var fromPort = fromNode.GetPort(_linkFrom.Value.portId);
-            if (fromNode == null || fromPort == null)
-                return;
-
-            FuNodalPort a = fromPort, b = targetPort;
-            Guid aNodeId = fromNode.Id, bNodeId = targetNode.Id;
-            Graph.TryConnect(a, b, aNodeId, bNodeId);
-        }
-
-        /// <summary>
         /// Checks if the mouse is hovering over any node.
         /// </summary>
         /// <param name="onlyHeader"> If true, only checks the header area of nodes.</param>
@@ -736,11 +917,11 @@ namespace Fu.Framework.Nodal
         }
 
         /// <summary>
-        /// Vérifie si un point (mouse) est proche d'une Bézier cubique (a->b) approximée.
+        /// Checks if the mouse is near a Bezier curve defined by points a and b.
         /// </summary>
         private static bool IsMouseNearBezier(Vector2 mouse, Vector2 a, Vector2 b, float threshold)
         {
-            // On échantillonne la Bézier en 20 points pour simplifier (suffisant pour l'interaction)
+            // Approximate the Bezier curve with line segments and check distance
             const int segments = 20;
             float dx = Mathf.Abs(b.x - a.x);
             Vector2 c0 = new Vector2(a.x + dx * 0.5f, a.y);
@@ -751,7 +932,7 @@ namespace Fu.Framework.Nodal
             for (int i = 1; i <= segments; i++)
             {
                 float t = i / (float)segments;
-                // interpolation cubique
+                // Cubic Bezier formula
                 Vector2 p = Mathf.Pow(1 - t, 3) * a
                     + 3 * Mathf.Pow(1 - t, 2) * t * c0
                     + 3 * (1 - t) * Mathf.Pow(t, 2) * c1
@@ -775,6 +956,38 @@ namespace Fu.Framework.Nodal
             t = Mathf.Clamp01(t);
             Vector2 proj = a + ab * t;
             return (p - proj).sqrMagnitude;
+        }
+
+        /// <summary>
+        /// Vérifie si un point (mouse) est proche d'une connexion droite segmentée (a->b).
+        /// </summary>
+        /// <param name="mouse">Position de la souris.</param>
+        /// <param name="a">Point de départ (à gauche).</param>
+        /// <param name="b">Point d'arrivée (à droite).</param>
+        /// <param name="threshold">Distance maximale pour considérer la souris "proche".</param>
+        /// <param name="segmentLength">Longueur des segments horizontaux aux extrémités.</param>
+        /// <returns>True si la souris est proche de la connexion.</returns>
+        private static bool IsMouseNearStraight(Vector2 mouse, Vector2 a, Vector2 b, float threshold, float segmentLength = 20f)
+        {
+            // Snap points comme dans le dessin
+            a = new Vector2(Mathf.Floor(a.x) + 0.5f, Mathf.Floor(a.y) + 0.5f);
+            b = new Vector2(Mathf.Floor(b.x) + 0.5f, Mathf.Floor(b.y) + 0.5f);
+
+            // Points intermédiaires
+            Vector2 aEnd = new Vector2(a.x + segmentLength, a.y);
+            Vector2 bStart = new Vector2(b.x - segmentLength, b.y);
+
+            float thresholdSq = threshold * threshold;
+
+            // On teste les 3 segments indépendamment
+            if (DistancePointSegmentSq(mouse, a, aEnd) <= thresholdSq)
+                return true;
+            if (DistancePointSegmentSq(mouse, bStart, b) <= thresholdSq)
+                return true;
+            if (DistancePointSegmentSq(mouse, aEnd, bStart) <= thresholdSq)
+                return true;
+
+            return false;
         }
 
         /// <summary>
@@ -874,7 +1087,7 @@ namespace Fu.Framework.Nodal
 
             float totalHeight = headerHeight + (maxPorts * lineH)
                                 + ImGui.GetStyle().WindowPadding.y * 2f;
-            if(_nodesHeightCache.ContainsKey(node.Id))
+            if (_nodesHeightCache.ContainsKey(node.Id))
             {
                 totalHeight = _nodesHeightCache[node.Id]; // conserve la hauteur UI si déjà calculée
             }
@@ -909,6 +1122,63 @@ namespace Fu.Framework.Nodal
             };
             _nodeGeometries[node.Id] = ng;
             return ng;
+        }
+        #endregion
+
+        #region Link Handling
+        /// <summary>
+        /// Try to finish the link operation if possible (called on mouse release).
+        /// </summary>
+        private void TryFinishLink()
+        {
+            // Si aucun port source n'est défini, on ne peut rien faire
+            if (!_linkFrom.HasValue)
+                return;
+
+            var (fromNodeId, fromPortId) = _linkFrom.Value;
+            var fromNode = Graph.GetNode(fromNodeId);
+            var fromPort = fromNode?.GetPort(fromPortId);
+
+            if (fromNode == null || fromPort == null)
+                return;
+
+            // ✅ Si aucun port survolé -> on affiche les nodes compatibles
+            if (!_hoveredPort.HasValue)
+            {
+                // On inverse la direction (input -> output et inversement)
+                var oppositeDir = fromPort.Direction == FuNodalPortDirection.In
+                    ? FuNodalPortDirection.Out
+                    : FuNodalPortDirection.In;
+
+                if (ShowCompatiblesNodesOnVoidLink)
+                    DisplayCompatiblesNodes(fromNodeId, fromPort, oppositeDir, fromPort.AllowedTypes);
+                return;
+            }
+
+            // ✅ Sinon, tentative de connexion normale
+            var (targetNode, targetPort) = _hoveredPort.Value;
+            if (targetNode == null || targetPort == null)
+                return;
+
+            FuNodalPort a = fromPort;
+            FuNodalPort b = targetPort;
+            Guid aNodeId = fromNode.Id;
+            Guid bNodeId = targetNode.Id;
+
+            Graph.TryConnect(a, b, aNodeId, bNodeId);
+        }
+
+        /// <summary>
+        /// Display a context menu with nodes compatible with the given port direction and data type.
+        /// </summary>
+        /// <param name="direction"> The port direction (In/Out) to find compatible nodes for.</param>
+        /// <param name="dataType"> The data type to find compatible nodes for.</param>
+        private void DisplayCompatiblesNodes(Guid fromNode, FuNodalPort fromPort, FuNodalPortDirection direction, HashSet<string> dataTypes)
+        {
+            var compatibleTypes = FuNodalRegistry.GetCompatibleNodes(direction, dataTypes);
+            voidLinkFromNode = fromNode;
+            voidLinkFromPort = fromPort;
+            DrawContextMenu(FuWindow.CurrentDrawingWindow.Layout, compatibleTypes, false, true, true);
         }
         #endregion
 
@@ -1019,7 +1289,7 @@ namespace Fu.Framework.Nodal
         /// <param name="layout"> The FuLayout to draw into.</param>
         public void Draw(FuWindow window)
         {
-            DrawContextMenu(window.Layout);
+            DrawContextMenu(window.Layout, FuNodalRegistry.GetRegisteredNode(), true, false, false);
             _nodeGeometries.Clear();
 
             // Application : push police et scale

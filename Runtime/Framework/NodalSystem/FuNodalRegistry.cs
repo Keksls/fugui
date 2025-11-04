@@ -78,6 +78,38 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Get all node type identifiers compatible with a given port direction and type
+        /// </summary>
+        /// <param name="direction"> The direction of the port (input/output).</param>
+        /// <param name="type"> The type to check compatibility against.</param>
+        /// <returns> An enumerable collection of compatible node type identifiers.</returns>
+        public static IEnumerable<string> GetCompatibleNodes(FuNodalPortDirection direction, HashSet<string> types)
+        {
+            HashSet<string> compatibleNodes = new HashSet<string>();
+            foreach (var kvp in _nodesRegistry)
+            {
+                FuNode node = kvp.Value.Invoke();
+                node.CreateDefaultPorts();
+                foreach (var port in node.Ports)
+                {
+                    if (port.Value.Direction != direction)
+                        continue;
+
+                    foreach (var type in types)
+                    {
+                        if (port.Value.AllowedTypes.Contains(type))
+                        {
+                            string nodeId = kvp.Key.Replace("(", "").Replace(")", "").Trim() + " (" + port.Value.Name + ")";
+                            if (!compatibleNodes.Contains(nodeId))
+                                compatibleNodes.Add(nodeId);
+                        }
+                    }
+                }
+            }
+            return compatibleNodes;
+        }
+
+        /// <summary>
         /// Register a FuNodalType in the type registry
         /// </summary>
         /// <param name="type"> The FuNodalType to be registered.</param>

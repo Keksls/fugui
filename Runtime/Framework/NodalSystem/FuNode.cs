@@ -42,7 +42,18 @@ namespace Fu.Framework
         /// <param name="fromPort"> the port where the connection starts (output of another node)</param>
         /// <param name="toPort"> the port where the connection ends (input of this node)</param>
         /// <returns> true if the connection can be made, false otherwise</returns>
-        public abstract bool CanConnect(FuNodalPort fromPort, FuNodalPort toPort);
+        public virtual bool CanConnect(FuNodalPort fromPort, FuNodalPort toPort) => true;
+
+        /// <summary>
+        /// Get the current converted type of a port
+        /// Used for link color preview
+        /// </summary>
+        /// <param name="port"> the port to get the converted type for </param>
+        /// <returns> the converted type as a string </returns>
+        public virtual string GetCurrentConvertedType(FuNodalPort port)
+        {
+            return port.DataType;
+        }
 
         /// <summary>
         /// Set the default values for a port when it is created

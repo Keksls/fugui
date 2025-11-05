@@ -345,7 +345,7 @@ namespace Fu
         public void ApplyTo(ImGuiIOPtr io)
         {
             io.ConfigFlags = ImGuiConfig;
-            io.BackendFlags = ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos;
+            io.BackendFlags = ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos | ImGuiBackendFlags.RendererHasVtxOffset;
             io.MouseDoubleClickTime = DoubleClickTime;
             io.MouseDoubleClickMaxDist = DoubleClickMaxDist;
             io.MouseDragThreshold = DragThreshold;

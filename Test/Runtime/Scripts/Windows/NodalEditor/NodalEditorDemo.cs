@@ -11,14 +11,18 @@ namespace Fu.Framework.Demo
         [SerializeField] Color _vector2Color;
         [SerializeField] Color _vector3Color;
         [SerializeField] Color _vector4Color;
+        [SerializeField] FuNodalEditorFlags _editorFlags = FuNodalEditorFlags.Default;
+        [Range(0.1f, 1f)]
+        [SerializeField] float _minZoom = 0.5f;
+        [Range(1f, 8f)]
+        [SerializeField] float _maxZoom = 2f;
         private FuNodalGraph _nodalgraph;
         private FuNodalEditor _nodalEditor;
 
         private void Awake()
         {
             _nodalgraph = new FuNodalGraph { Name = "Demo Graph" };
-            _nodalEditor = new FuNodalEditor(_nodalgraph);
-            _nodalEditor.UseBezierCurves = false;
+            _nodalEditor = new FuNodalEditor(_nodalgraph, _minZoom, _maxZoom, _editorFlags);
 
             // TYPES (choose your palette colors)
             _nodalgraph.Registry.RegisterType(FuNodalType.Create<float>("core/float", 0f, o => o.ToString(), s => float.Parse(s), color: _floatColor));

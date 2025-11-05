@@ -26,6 +26,7 @@ namespace Fu
         public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
             base.Initialize(io, pio, "Input Manager (Old)");
+            io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
             Fugui.Settings.ApplyTo(io);
             return true;
         }

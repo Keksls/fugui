@@ -28,6 +28,7 @@ namespace Fu
         {
             InputSystem.onDeviceChange += OnDeviceChange;
             base.Initialize(io, pio, "Input System (New)");
+            io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
             Fugui.Settings.ApplyTo(io);
 
             unsafe

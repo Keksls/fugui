@@ -1614,14 +1614,7 @@ namespace Fu
         /// <returns>true if a popup if open from this window</returns>
         public static bool WindowHasPopupOpen(FuWindow window)
         {
-            foreach (string popupWindowID in PopUpWindowsIDs)
-            {
-                if (window.ID == popupWindowID)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return PopUpWindowsIDs.Any(popupWindowID => window.ID == popupWindowID);
         }
 
         /// <summary>
@@ -1631,14 +1624,7 @@ namespace Fu
         /// <returns>true if the position is inside some currently open popup</returns>
         public static bool IsInsideAnyPopup(Vector2 worldPosition)
         {
-            foreach (Rect popupRect in PopUpRects)
-            {
-                if (popupRect.Contains(worldPosition))
-                {
-                    return true;
-                }
-            }
-            return false;
+            return PopUpRects.Any(popupRect => popupRect.Contains(worldPosition));
         }
 
         /// <summary>
@@ -1647,14 +1633,7 @@ namespace Fu
         /// <returns>true if we are drawing on a popup</returns>
         public static bool IsDrawingInsidePopup()
         {
-            foreach (bool isDrawing in IsPopupDrawing)
-            {
-                if (isDrawing)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return IsPopupDrawing.Any(isDrawing => isDrawing);
         }
 
         /// <summary>

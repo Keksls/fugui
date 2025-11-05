@@ -173,7 +173,6 @@ namespace Fu.Framework
         {
             if (!IsDirty())
                 return;
-            ClearDirty();
 
             try
             {
@@ -203,6 +202,9 @@ namespace Fu.Framework
                     {
                         try
                         {
+                            // nodes outputs are calculated into compute
+                            node.Compute();
+
                             // propagate in nodes out values to connected nodes inputs
                             var outgoingEdges = Edges.FindAll(e => e.FromNodeId == nodeId);
                             if (outgoingEdges != null)
@@ -220,9 +222,6 @@ namespace Fu.Framework
                                     toPort.Data = fromPort.Data;
                                 }
                             }
-
-                            // nodes outputs are calculated into compute
-                            node.Compute();
                         }
                         catch (Exception ex)
                         {

@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Windows;
 
 namespace Fu.Framework.Nodal
 {
@@ -35,8 +34,8 @@ namespace Fu.Framework.Nodal
 
         // Linking
         private bool _isLinking = false;
-        private (Guid nodeId, Guid portId)? _linkFrom;
-        private Guid voidLinkFromNode;
+        private (int nodeId, int portId)? _linkFrom;
+        private int voidLinkFromNode;
         private FuNodalPort voidLinkFromPort;
 
         private Vector2 _canvasOrigin;
@@ -46,24 +45,24 @@ namespace Fu.Framework.Nodal
         // Selection
         private int? _selectedEdgeIndex = null;
         private int? _hoveredEdgeIndex = null;
-        private readonly HashSet<Guid> _selectedNodeIds = new HashSet<Guid>();
+        private readonly HashSet<int> _selectedNodeIds = new HashSet<int>();
         private bool _isMarqueeSelecting = false;
         private Vector2 _marqueeStartWA, _marqueeEndWA;
-        private readonly Dictionary<Guid, Vector2> _groupDragStartPositions = new Dictionary<Guid, Vector2>();
+        private readonly Dictionary<int, Vector2> _groupDragStartPositions = new Dictionary<int, Vector2>();
         private bool _isGroupDragging = false;
 
         // context menu
         private Action<FuContextMenuBuilder> OnDrawContextMenu;
 
         private Vector2 contextmenuOpenMousePos;
-        private Dictionary<Guid, NodeGeom> _nodeGeometries = new Dictionary<Guid, NodeGeom>();
+        private Dictionary<int, NodeGeom> _nodeGeometries = new Dictionary<int, NodeGeom>();
         #endregion
 
-        public FuNodalEditor(string name, float minZoom = 0.5f, float maxZoom = 2f)
+        public FuNodalEditor(FuNodalGraph graph, float minZoom = 0.5f, float maxZoom = 2f)
         {
             MinZoom = Mathf.Max(0.1f, minZoom);
             MaxZoom = Mathf.Max(MinZoom, Mathf.Min(4f, maxZoom));
-            Graph = new FuNodalGraph { Name = name };
+            Graph = graph;
         }
 
         #region Context menu
@@ -152,7 +151,7 @@ namespace Fu.Framework.Nodal
                         if (index >= 0)
                             typeId = type.Substring(0, index).TrimEnd();
                     }
-                    var n = FuNodalRegistry.CreateNode(typeId, Graph);
+                    var n = Graph.Registry.CreateNode(typeId, Graph);
                     n.SetPosition(pos.x, pos.y);
                     Graph.AddNode(n);
 
@@ -179,7 +178,7 @@ namespace Fu.Framework.Nodal
                         }
                         finally
                         {
-                            voidLinkFromNode = Guid.Empty;
+                            voidLinkFromNode = 0;
                             voidLinkFromPort = null;
                         }
                     }
@@ -317,6 +316,10 @@ namespace Fu.Framework.Nodal
             for (int i = 0; i < Graph.Edges.Count; i++)
             {
                 var e = Graph.Edges[i];
+
+                if (!IsInCanvasFostrum(e))
+                    continue;
+
                 var from = Graph.GetNode(e.FromNodeId);
                 var to = Graph.GetNode(e.ToNodeId);
                 if (from == null || to == null) continue;
@@ -342,7 +345,7 @@ namespace Fu.Framework.Nodal
                 // start Color
                 uint startCol = selected ? Fugui.Themes.GetColorU32(FuColors.NodeSelectedEdge) :
                            (hovered ? Fugui.Themes.GetColorU32(FuColors.NodeHoveredEdge) : Fugui.Themes.GetColorU32(FuColors.NodeEdge));
-                var typeData = FuNodalRegistry.GetType(pFrom.DataType);
+                var typeData = Graph.Registry.GetType(pFrom.DataType);
                 if (typeData != null && typeData.Color.HasValue)
                 {
                     startCol = ImGui.GetColorU32(typeData.Color.Value);
@@ -351,7 +354,7 @@ namespace Fu.Framework.Nodal
                 uint endCol = selected ? Fugui.Themes.GetColorU32(FuColors.NodeSelectedEdge) :
                            (hovered ? Fugui.Themes.GetColorU32(FuColors.NodeHoveredEdge) : Fugui.Themes.GetColorU32(FuColors.NodeEdge));
                 var convertedType = to.GetCurrentConvertedType(pTo);
-                var toTypeData = FuNodalRegistry.GetType(convertedType);
+                var toTypeData = Graph.Registry.GetType(convertedType);
                 if (toTypeData != null && toTypeData.Color.HasValue)
                 {
                     endCol = ImGui.GetColorU32(toTypeData.Color.Value);
@@ -405,6 +408,8 @@ namespace Fu.Framework.Nodal
             Fugui.CurrentContext.SetTempFakeScale(fuScale * _zoom); // scale globale pour les nodes
             for (int i = 0; i < Graph.Nodes.Count; i++)
             {
+                if (!IsInCanvasFostrum(Graph.Nodes[i]))
+                    continue;
                 DrawNode(drawList, window, Graph.Nodes[i]);
             }
             Fugui.CurrentContext.SetTempFakeScale(fuScale); // reset scale
@@ -535,7 +540,7 @@ namespace Fu.Framework.Nodal
             {
                 float t = i / (float)steps;
                 Vector2 p1 = CubicBezierPoint(a, c0, c1, b, t);
-                uint col = LerpColor(startCol, endCol, t);
+                uint col = Fugui.LerpColor(startCol, endCol, t);
                 dl.AddLine(p0, p1, col, w);
                 p0 = p1;
             }
@@ -571,74 +576,25 @@ namespace Fu.Framework.Nodal
         /// <param name="segmentLength">Length of the small horizontal segments at both ends.</param>
         private void DrawStraightConnection(ImDrawListPtr dl, Vector2 a, Vector2 b, float thickness, uint colStart, uint colEnd, float segmentLength = 20f)
         {
-            // Snap anchor points as knobs are centered on half-pixels
+            // Snap anchor points (knobs centered on half-pixels)
             a = new Vector2(Mathf.Floor(a.x) + 0.5f, Mathf.Floor(a.y) + 0.5f);
             b = new Vector2(Mathf.Floor(b.x) + 0.5f, Mathf.Floor(b.y) + 0.5f);
 
-            // Fixed-length horizontal segments
+            // Scale segment length with zoom
+            segmentLength *= _zoom;
+
+            // Fixed horizontal offsets
             Vector2 aEnd = new Vector2(a.x + segmentLength, a.y);
             Vector2 bStart = new Vector2(b.x - segmentLength, b.y);
 
-            // Distances
-            float d1 = Vector2.Distance(a, aEnd);
-            float d2 = Vector2.Distance(aEnd, bStart);
-            float d3 = Vector2.Distance(bStart, b);
-            float total = Mathf.Max(1e-4f, d1 + d2 + d3); // avoid div-by-zero
-
-            float t0 = 0f;
-            float t1 = d1 / total;
-            float t2 = (d1 + d2) / total;
-            float t3 = 1f;
-
             float w = thickness * _zoom;
 
-            // Local: draw one segment with gradient by subdividing
-            void DrawGradSegment(Vector2 p0, Vector2 p1, float g0, float g1)
-            {
-                float dist = Vector2.Distance(p0, p1);
-                int steps = Mathf.Max(1, (int)(dist / 6f)); // ≈1 segment every ~6px
-                Vector2 prev = p0;
+            // --- Small horizontal segments: solid color ---
+            dl.AddLine(a, aEnd, colStart, w);
+            dl.AddLine(bStart, b, colEnd, w);
 
-                for (int i = 1; i <= steps; i++)
-                {
-                    float s = i / (float)steps;
-                    Vector2 cur = Vector2.Lerp(p0, p1, s);
-                    float gt = Mathf.Lerp(g0, g1, s);
-                    uint col = LerpColor(colStart, colEnd, gt);
-                    dl.AddLine(prev, cur, col, w);
-                    prev = cur;
-                }
-            }
-
-            // Draw the three segments with continuous gradient
-            DrawGradSegment(a, aEnd, t0, t1);
-            DrawGradSegment(aEnd, bStart, t1, t2);
-            DrawGradSegment(bStart, b, t2, t3);
-        }
-
-        /// <summary>
-        /// Linear interpolation between two ImGui packed colors (IM_COL32 RGBA).
-        /// </summary>
-        private static uint LerpColor(uint c0, uint c1, float t)
-        {
-            t = Mathf.Clamp01(t);
-
-            int r0 = (int)(c0 & 0xFF);
-            int g0 = (int)((c0 >> 8) & 0xFF);
-            int b0 = (int)((c0 >> 16) & 0xFF);
-            int a0 = (int)((c0 >> 24) & 0xFF);
-
-            int r1 = (int)(c1 & 0xFF);
-            int g1 = (int)((c1 >> 8) & 0xFF);
-            int b1 = (int)((c1 >> 16) & 0xFF);
-            int a1 = (int)((c1 >> 24) & 0xFF);
-
-            int r = (int)Mathf.Round(Mathf.Lerp(r0, r1, t));
-            int g = (int)Mathf.Round(Mathf.Lerp(g0, g1, t));
-            int b = (int)Mathf.Round(Mathf.Lerp(b0, b1, t));
-            int a = (int)Mathf.Round(Mathf.Lerp(a0, a1, t));
-
-            return (uint)((a << 24) | (b << 16) | (g << 8) | r);
+            // --- Middle segment: gradient ---
+            Fugui.DrawLineGradient(dl, aEnd, bStart, 0f, 1f, w, colStart, colEnd);
         }
 
         /// <summary>
@@ -663,8 +619,115 @@ namespace Fu.Framework.Nodal
         }
         #endregion
 
+        #region Fostrum culling
+        /// <summary>
+        /// Returns true if the node is at least partially visible in the canvas fostrum.
+        /// </summary>
+        /// <param name="node"> The node to test.</param>
+        /// <returns> True if the node is in the canvas fostrum, false otherwise.</returns>
+        private bool IsInCanvasFostrum(FuNode node)
+        {
+            var g = CalcNodeGeom(node);
+
+            float padding = 10f * _zoom; // pixels around canvas to keep slightly offscreen nodes visible
+
+            float xMin = _canvasOrigin.x - padding;
+            float yMin = _canvasOrigin.y - padding;
+            float xMax = xMin + _canvasSize.x + padding;
+            float yMax = yMin + _canvasSize.y + padding;
+
+            // AABB overlap test (rect-rect intersection)
+            return g.rectMax.x > xMin &&
+                    g.rectMin.x < xMax &&
+                    g.rectMax.y > yMin &&
+                    g.rectMin.y < yMax;
+        }
+
+        /// <summary>
+        /// Returns true if the edge is at least partially visible in the canvas frustum.
+        /// </summary>
+        private bool IsInCanvasFostrum(FuNodalEdge edge)
+        {
+            // Get nodes
+            var from = Graph.GetNode(edge.FromNodeId);
+            var to = Graph.GetNode(edge.ToNodeId);
+            if (from == null || to == null)
+                return false;
+
+            // If either node is visible, the edge is visible
+            if (IsInCanvasFostrum(from) || IsInCanvasFostrum(to))
+                return true;
+
+            // Get edge segment
+            Vector2 p1 = ScreenToCanvas(GetPortAnchorScreen(from, from.GetPort(edge.FromPortId)));
+            Vector2 p2 = ScreenToCanvas(GetPortAnchorScreen(to, to.GetPort(edge.ToPortId)));
+
+            // Define canvas rect
+            float xMin = _canvasOrigin.x;
+            float yMin = _canvasOrigin.y;
+            float xMax = _canvasSize.x;
+            float yMax = _canvasSize.y;
+
+            // If the segment intersects the rect, it's visible
+            return SegmentIntersectsRect(p1, p2, xMin, yMin, xMax, yMax);
+        }
+
+        /// <summary>
+        /// Tests if a line segment intersects a rectangle.
+        /// </summary>
+        private bool SegmentIntersectsRect(Vector2 p1, Vector2 p2, float xMin, float yMin, float xMax, float yMax)
+        {
+            // Liang–Barsky or Cohen–Sutherland algorithm would be optimal,
+            // but we can simplify with bounding and line-rect intersection tests.
+
+            // 1. Quick reject if both points are outside on the same side
+            if ((p1.x < xMin && p2.x < xMin) || (p1.x > xMax && p2.x > xMax) ||
+                (p1.y < yMin && p2.y < yMin) || (p1.y > yMax && p2.y > yMax))
+                return false;
+
+            // 2. If any endpoint is inside → visible
+            if (p1.x >= xMin && p1.x <= xMax && p1.y >= yMin && p1.y <= yMax)
+                return true;
+            if (p2.x >= xMin && p2.x <= xMax && p2.y >= yMin && p2.y <= yMax)
+                return true;
+
+            // 3. Test intersection with each rect edge
+            Vector2 topLeft = new(xMin, yMin);
+            Vector2 topRight = new(xMax, yMin);
+            Vector2 bottomRight = new(xMax, yMax);
+            Vector2 bottomLeft = new(xMin, yMax);
+
+            return LineSegmentsIntersect(p1, p2, topLeft, topRight)
+                || LineSegmentsIntersect(p1, p2, topRight, bottomRight)
+                || LineSegmentsIntersect(p1, p2, bottomRight, bottomLeft)
+                || LineSegmentsIntersect(p1, p2, bottomLeft, topLeft);
+        }
+
+        /// <summary>
+        /// Returns true if two line segments intersect.
+        /// </summary>
+        private bool LineSegmentsIntersect(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2)
+        {
+            float o1 = Orientation(p1, p2, q1);
+            float o2 = Orientation(p1, p2, q2);
+            float o3 = Orientation(q1, q2, p1);
+            float o4 = Orientation(q1, q2, p2);
+
+            if (o1 != o2 && o3 != o4)
+                return true; // general case
+
+            return false;
+        }
+
+        private float Orientation(Vector2 a, Vector2 b, Vector2 c)
+        {
+            float val = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+            return (val > 0) ? 1 : (val < 0 ? -1 : 0);
+        }
+        #endregion
+
         #region Nodes Drawing
-        Dictionary<Guid, float> _nodesHeightCache = new Dictionary<Guid, float>();
+        Dictionary<int, float> _nodesHeightCache = new Dictionary<int, float>();
         /// <summary>
         /// Draw a single node at its position.
         /// </summary>
@@ -699,15 +762,16 @@ namespace Fu.Framework.Nodal
             Color colNodeColor = Fugui.Themes.GetColor(FuColors.NodeHeader);
             Color borderColor = Fugui.Themes.GetColor(FuColors.Border);
             float borderThickness = 1f;
+
             if (isHovered && !isSelected)
             {
-                borderColor = node.NodeColor ?? colNodeColor;
+                borderColor = node.NodeColor ?? Fugui.Themes.GetColor(FuColors.NodeSelectedBorder);
                 borderColor *= 0.8f;
                 borderThickness = 1.5f;
             }
             else if (isSelected)
             {
-                borderColor = node.NodeColor ?? colNodeColor;
+                borderColor = node.NodeColor ?? Fugui.Themes.GetColor(FuColors.NodeSelectedBorder);
                 borderThickness = 2.0f;
             }
             dl.AddRect(
@@ -729,10 +793,10 @@ namespace Fu.Framework.Nodal
             window.Layout.Text(node.Title);
 
             dl.AddLine(
-                new Vector2(rectMin.x, Snap(rectMin.y + g.headerHeight)),
-                new Vector2(rectMax.x, Snap(rectMin.y + g.headerHeight)),
-                ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)), 1.5f
-            );
+                    new Vector2(rectMin.x, Snap(rectMin.y + g.headerHeight)),
+                    new Vector2(rectMax.x, Snap(rectMin.y + g.headerHeight)),
+                    ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)), 1.5f
+                );
 
             // Fonds ports
             if (g.hasIn)
@@ -751,10 +815,16 @@ namespace Fu.Framework.Nodal
                 bool over = Vector2.Distance(mouse, c) <= rBase * 1.8f;
                 float r = over ? rBase * 1.5f : rBase;
                 uint col = over ? ImGui.GetColorU32(headerColor) : Fugui.Themes.GetColorU32(FuColors.NodePort);
-                var typeData = FuNodalRegistry.GetType(p.DataType);
+                var typeData = Graph.Registry.GetType(p.DataType);
                 if (typeData != null && typeData.Color.HasValue)
                 {
                     col = ImGui.GetColorU32(typeData.Color.Value);
+                    var convertedType = node.GetCurrentConvertedType(p);
+                    var toTypeData = Graph.Registry.GetType(convertedType);
+                    if (toTypeData != null && toTypeData.Color.HasValue)
+                    {
+                        col = ImGui.GetColorU32(toTypeData.Color.Value);
+                    }
                 }
                 dl.AddCircleFilled(c, r, col, 12);
 
@@ -1072,8 +1142,8 @@ namespace Fu.Framework.Nodal
         /// <returns> The calculated NodeGeom.</returns>
         private NodeGeom CalcNodeGeom(FuNode node)
         {
-            if (_nodeGeometries.ContainsKey(node.Id))
-                return _nodeGeometries[node.Id];
+            if (_nodeGeometries.TryGetValue(node.Id, out var geom))
+                return geom;
 
             float lineH = ImGui.GetTextLineHeightWithSpacing();
             float headerTextH = ImGui.CalcTextSize("Ap").y;
@@ -1087,9 +1157,10 @@ namespace Fu.Framework.Nodal
 
             float totalHeight = headerHeight + (maxPorts * lineH)
                                 + ImGui.GetStyle().WindowPadding.y * 2f;
-            if (_nodesHeightCache.ContainsKey(node.Id))
+
+            if (_nodesHeightCache.TryGetValue(node.Id, out var hCache))
             {
-                totalHeight = _nodesHeightCache[node.Id]; // conserve la hauteur UI si déjà calculée
+                totalHeight = hCache; // conserve la hauteur UI si déjà calculée
             }
 
             Vector2 posScreen = CanvasToScreen(new Vector2(node.x, node.y));
@@ -1162,8 +1233,8 @@ namespace Fu.Framework.Nodal
 
             FuNodalPort a = fromPort;
             FuNodalPort b = targetPort;
-            Guid aNodeId = fromNode.Id;
-            Guid bNodeId = targetNode.Id;
+            int aNodeId = fromNode.Id;
+            int bNodeId = targetNode.Id;
 
             Graph.TryConnect(a, b, aNodeId, bNodeId);
         }
@@ -1173,9 +1244,9 @@ namespace Fu.Framework.Nodal
         /// </summary>
         /// <param name="direction"> The port direction (In/Out) to find compatible nodes for.</param>
         /// <param name="dataType"> The data type to find compatible nodes for.</param>
-        private void DisplayCompatiblesNodes(Guid fromNode, FuNodalPort fromPort, FuNodalPortDirection direction, HashSet<string> dataTypes)
+        private void DisplayCompatiblesNodes(int fromNode, FuNodalPort fromPort, FuNodalPortDirection direction, HashSet<string> dataTypes)
         {
-            var compatibleTypes = FuNodalRegistry.GetCompatibleNodes(direction, dataTypes);
+            var compatibleTypes = Graph.Registry.GetCompatibleNodes(direction, dataTypes);
             voidLinkFromNode = fromNode;
             voidLinkFromPort = fromPort;
             DrawContextMenu(FuWindow.CurrentDrawingWindow.Layout, compatibleTypes, false, true, true);
@@ -1186,7 +1257,7 @@ namespace Fu.Framework.Nodal
         /// <summary>
         /// Returns true if the node with the given id is currently selected.
         /// </summary>
-        private bool IsSelected(Guid id) => _selectedNodeIds.Contains(id);
+        private bool IsSelected(int id) => _selectedNodeIds.Contains(id);
 
         /// <summary>
         /// Clears the selection set.
@@ -1289,20 +1360,32 @@ namespace Fu.Framework.Nodal
         /// <param name="layout"> The FuLayout to draw into.</param>
         public void Draw(FuWindow window)
         {
-            DrawContextMenu(window.Layout, FuNodalRegistry.GetRegisteredNode(), true, false, false);
             _nodeGeometries.Clear();
 
-            // Application : push police et scale
+            DrawContextMenu(window.Layout, Graph.Registry.GetRegisteredNode(), true, false, false);
+
+            // push font and scale
             Fugui.Themes.CurrentTheme.Apply(_zoom);
             ImGui.SetWindowFontScale(_zoom);
 
-            // Dessin du canvas nodal
+            // draw canvas
             DrawCanvas(window);
 
-            // Restauration
+            // restore font and scale
             Fugui.Themes.CurrentTheme.Apply(Fugui.Scale);
             ImGui.SetWindowFontScale(1.0f);
             Fugui.PopFont();
+
+            // copy paste handling
+            if (window.Keyboard.KeyCtrl && window.Keyboard.GetKeyDown(FuKeysCode.C) && _selectedNodeIds.Count > 0)
+            {
+                Graph.CopyNodes(_selectedNodeIds);
+            }
+            if (window.Keyboard.KeyCtrl && window.Keyboard.GetKeyDown(FuKeysCode.V))
+            {
+                Vector2 mouseCanvas = ScreenToCanvas(_canvasOrigin + GetLocalMousePosition());
+                Graph.PasteNodes(mouseCanvas);
+            }
 
             // PostDraw graph compute
             Graph.ComputeGraphIfDirty();
@@ -1321,7 +1404,7 @@ namespace Fu.Framework.Nodal
         /// Select a node by its ID (replaces the selection).
         /// </summary>
         /// <param name="nodeId">The ID of the node to select.</param>
-        public void SelectNode(Guid nodeId)
+        public void SelectNode(int nodeId)
         {
             var n = Graph.GetNode(nodeId);
             _selectedNodeIds.Clear();

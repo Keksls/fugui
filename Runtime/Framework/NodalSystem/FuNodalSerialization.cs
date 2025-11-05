@@ -2,7 +2,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace Fu.Framework
 {
@@ -12,6 +11,9 @@ namespace Fu.Framework
     /// </summary>
     public sealed class FuGraphDto
     {
+        public string Version { get; set; }
+        public int Id { get; set; }
+        public string Name { get; set; }
         public List<FuNodeDto> Nodes { get; set; } = new List<FuNodeDto>();
         public List<FuNodalEdge> Edges { get; set; } = new List<FuNodalEdge>();
     }
@@ -21,7 +23,7 @@ namespace Fu.Framework
     /// </summary>
     public sealed class FuNodeDto
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public string NodeType { get; set; }
         public float X { get; set; }
         public float Y { get; set; }
@@ -34,7 +36,7 @@ namespace Fu.Framework
     /// </summary>
     public sealed class FuPortDto
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         public FuNodalPortDirection Direction { get; set; }
         public FuNodalMultiplicity Multiplicity { get; set; }
@@ -53,12 +55,12 @@ namespace Fu.Framework
         /// <summary>
         /// Serialize a port runtime value to JSON according to its DataType.
         /// </summary>
-        public static string ToJson(string dataType, object value)
+        public static string ToJson(FuNodalGraph graph, string dataType, object value)
         {
             if (value == null)
                 return null;
 
-            FuNodalType type = FuNodalRegistry.GetType(dataType);
+            FuNodalType type = graph.Registry.GetType(dataType);
             if (type != null && type.SerializationFunc != null)
             {
                 // Custom serialization if provided
@@ -71,12 +73,12 @@ namespace Fu.Framework
         /// <summary>
         /// Deserialize JSON to a runtime value according to DataType.
         /// </summary>
-        public static object FromJson(string dataType, string json)
+        public static object FromJson(FuNodalGraph graph, string dataType, string json)
         {
             if (string.IsNullOrEmpty(json))
                 return null;
 
-            FuNodalType type = FuNodalRegistry.GetType(dataType);
+            FuNodalType type = graph.Registry.GetType(dataType);
             if (type != null && type.DeserializationFunc != null)
             {
                 // Custom deserialization if provided
@@ -98,39 +100,28 @@ namespace Fu.Framework
         /// <summary>
         /// Export a runtime graph to a portable JSON string.
         /// </summary>
-        public static string SaveToJson(FuNodalGraph graph)
-        {
-            var dto = ToDto(graph);
-            var json = JsonConvert.SerializeObject(dto, Formatting.Indented);
-            return json;
-        }
-
-        /// <summary>
-        /// Import a runtime graph from a JSON string.
-        /// </summary>
-        public static FuNodalGraph LoadFromJson(string json)
-        {
-            var dto = JsonConvert.DeserializeObject<FuGraphDto>(json);
-            return FromDto(dto);
-        }
-
-        /// <summary>
-        /// Map runtime graph to DTO (no Unity refs).
-        /// </summary>
-        public static FuGraphDto ToDto(FuNodalGraph graph)
+        public static string ToJson(this FuNodalGraph graph)
         {
             var dto = new FuGraphDto();
+
+            // Basic graph info
+            dto.Version = graph.Version;
+            dto.Id = graph.Id;
+            dto.Name = graph.Name;
+
+            // Nodes
             foreach (var n in graph.Nodes)
             {
                 var nDto = new FuNodeDto
                 {
                     Id = n.Id,
-                    NodeType = FuNodalRegistry.GetNodeTypeId(n),
+                    NodeType = graph.Registry.GetNodeTypeId(n),
                     CustomNodeDataJson = JsonConvert.SerializeObject(n.Serialize()),
                     X = n.x,
                     Y = n.y
                 };
 
+                // Ports
                 foreach (var p in n.Ports.Values)
                 {
                     var pDto = new FuPortDto
@@ -141,7 +132,7 @@ namespace Fu.Framework
                         Multiplicity = p.Multiplicity,
                         AllowedTypes = p.AllowedTypes?.ToList() ?? new List<string>(),
                         DataType = p.DataType,
-                        DataJson = FuPortValueSerializer.ToJson(p.DataType, p.Data)
+                        DataJson = FuPortValueSerializer.ToJson(graph, p.DataType, p.Data)
                     };
                     nDto.Ports.Add(pDto);
                 }
@@ -151,21 +142,51 @@ namespace Fu.Framework
 
             // Edges are already flat and serializable
             dto.Edges.AddRange(graph.Edges);
-            return dto;
+
+            return JsonConvert.SerializeObject(dto, Formatting.Indented);
         }
 
         /// <summary>
-        /// Rebuild a runtime graph from its DTO. Factories are used to instantiate nodes.
+        /// Import a runtime graph from a JSON string.
         /// </summary>
-        public static FuNodalGraph FromDto(FuGraphDto dto)
+        public static void FromJson(this FuNodalGraph graph, string dtoJson)
         {
-            var graph = new FuNodalGraph();
-            var nodeMap = new Dictionary<Guid, FuNode>();
+            FuGraphDto dto = JsonConvert.DeserializeObject<FuGraphDto>(dtoJson);
+            var nodeMap = new Dictionary<int, FuNode>();
+
+            // Basic graph info
+            graph.Version = dto.Version;
+            graph.Id = dto.Id;
+            graph.Name = dto.Name;
+
+            // Clear existing graph
+            graph.Nodes.Clear();
+            graph.Edges.Clear();
+
+            // Ensure registry has all needed types/nodes
+            foreach (var nDto in dto.Nodes)
+            {
+                if (!graph.Registry.HasRegisteredNode(nDto.NodeType))
+                {
+                    throw new Exception($"Node type '{nDto.NodeType}' not registered in NodeRegistry. Cannot deserialize graph.\n" +
+                        $"Please ensure all custom nodes are registered before loading the graph.\n" +
+                        $"The graph must have a registry that match the one used to serialize it.");
+                }
+                foreach (var pDto in nDto.Ports)
+                {
+                    if (!graph.Registry.HasRegisteredType(pDto.DataType))
+                    {
+                        throw new Exception($"Port data type '{pDto.DataType}' not registered in NodeRegistry. Cannot deserialize graph.\n" +
+                        $"Please ensure all custom types are registered before loading the graph.\n" +
+                        $"The graph must have a registry that match the one used to serialize it.");
+                    }
+                }
+            }
 
             // 1) Instantiate nodes via NodeRegistry, create default ports
             foreach (var nDto in dto.Nodes)
             {
-                var node = FuNodalRegistry.CreateNode(nDto.NodeType, graph);
+                var node = graph.Registry.CreateNode(nDto.NodeType, graph);
                 if (node == null) continue;
 
                 node.Deserialize(JsonConvert.DeserializeObject<string>(nDto.CustomNodeDataJson));
@@ -189,7 +210,7 @@ namespace Fu.Framework
                     port.Multiplicity = pDto.Multiplicity;
                     port.AllowedTypes = new HashSet<string>(pDto.AllowedTypes ?? new List<string>());
                     port.DataType = pDto.DataType;
-                    port.Data = FuPortValueSerializer.FromJson(pDto.DataType, pDto.DataJson);
+                    port.Data = FuPortValueSerializer.FromJson(graph, pDto.DataType, pDto.DataJson);
                 }
 
                 nodeMap[node.Id] = node;
@@ -203,7 +224,8 @@ namespace Fu.Framework
                 graph.Edges.Add(e);
             }
 
-            return graph;
+            // 4) Ensure FuNodeId is synced
+            FuNodeId.Sync(graph.Nodes.Select(n => n.Id));
         }
     }
     #endregion

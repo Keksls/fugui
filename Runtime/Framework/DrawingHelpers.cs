@@ -336,5 +336,92 @@ namespace Fu
             drawList.PathArcTo(center, radius, startAngle, endAngle, segments);
             drawList.PathStroke(color, ImDrawFlags.None, thickness);
         }
+
+        /// <summary>
+        /// Draw a line with gradient colors from start to end
+        /// </summary>
+        /// <param name="drawList"> The draw list to use to draw the line</param>
+        /// <param name="p0"> Starting point of the line</param>
+        /// <param name="p1"> Ending point of the line</param>
+        /// <param name="g0"> Gradient progression at the start point (0 = colStart, 1 = colEnd)</param>
+        /// <param name="g1"> Gradient progression at the end point (0 = colStart, 1 = colEnd)</param>
+        /// <param name="thickness"> Thickness of the line</param>
+        /// <param name="colStart"> Color at the start of the line</param>
+        /// <param name="colEnd"> Color at the end of the line</param>
+        public static void DrawLineGradient(ImDrawListPtr drawList, Vector2 p0, Vector2 p1, float g0, float g1, float thickness, uint colStart, uint colEnd)
+        {
+            // Skip if fully transparent
+            if (((colStart | colEnd) & 0xFF000000) == 0)
+                return;
+
+            Vector2 diff = p1 - p0;
+            float len = diff.magnitude;
+            if (len <= 0.0001f)
+                return;
+
+            if(thickness <= 1.0f)
+                thickness = 1.0f;
+
+            Vector2 dir = diff / len;
+            Vector2 normal = new Vector2(-dir.y, dir.x) * (thickness * .5f);
+
+            // Compute quad corners
+            Vector2 v0 = p0 + normal;
+            Vector2 v1 = p1 + normal;
+            Vector2 v2 = p1 - normal;
+            Vector2 v3 = p0 - normal;
+
+            // Interpolate colors along gradient progression
+            uint c0 = LerpColor(colStart, colEnd, g0);
+            uint c1 = LerpColor(colStart, colEnd, g1);
+
+            // Get the white pixel UV (ImGui built-in)
+            var uv = ImGui.GetIO().Fonts.TexUvWhitePixel;
+
+            // Reserve vertices + indices
+            drawList.PrimReserve(6, 4);
+
+            // Write indices (2 triangles)
+            drawList.PrimWriteIdx((ushort)(drawList._VtxCurrentIdx));
+            drawList.PrimWriteIdx((ushort)(drawList._VtxCurrentIdx + 1));
+            drawList.PrimWriteIdx((ushort)(drawList._VtxCurrentIdx + 2));
+            drawList.PrimWriteIdx((ushort)(drawList._VtxCurrentIdx));
+            drawList.PrimWriteIdx((ushort)(drawList._VtxCurrentIdx + 2));
+            drawList.PrimWriteIdx((ushort)(drawList._VtxCurrentIdx + 3));
+
+            // Write vertices with gradient colors
+            drawList.PrimWriteVtx(v0, uv, c0);
+            drawList.PrimWriteVtx(v1, uv, c1);
+            drawList.PrimWriteVtx(v2, uv, c1);
+            drawList.PrimWriteVtx(v3, uv, c0);
+        }
+
+        /// <summary>
+        /// Linear interpolation between two ImGui packed colors (IM_COL32 RGBA).
+        /// </summary>
+        /// <param name="c0"> First color (IM_COL32 RGBA).</param>
+        /// <param name="c1"> Second color (IM_COL32 RGBA).</param>
+        /// <param name="t"> Interpolation factor (0.0 to 1.0).</param>
+        public static uint LerpColor(uint c0, uint c1, float t)
+        {
+            t = Mathf.Clamp01(t);
+
+            int r0 = (int)(c0 & 0xFF);
+            int g0 = (int)((c0 >> 8) & 0xFF);
+            int b0 = (int)((c0 >> 16) & 0xFF);
+            int a0 = (int)((c0 >> 24) & 0xFF);
+
+            int r1 = (int)(c1 & 0xFF);
+            int g1 = (int)((c1 >> 8) & 0xFF);
+            int b1 = (int)((c1 >> 16) & 0xFF);
+            int a1 = (int)((c1 >> 24) & 0xFF);
+
+            int r = (int)Mathf.Round(Mathf.Lerp(r0, r1, t));
+            int g = (int)Mathf.Round(Mathf.Lerp(g0, g1, t));
+            int b = (int)Mathf.Round(Mathf.Lerp(b0, b1, t));
+            int a = (int)Mathf.Round(Mathf.Lerp(a0, a1, t));
+
+            return (uint)((a << 24) | (b << 16) | (g << 8) | r);
+        }
     }
 }

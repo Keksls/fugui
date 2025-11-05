@@ -1,10 +1,9 @@
-﻿using Fu.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Fu.Framework
 {
-    public static class FuNodalRegistry
+    public class FuNodalRegistry
     {
         private static Dictionary<string, Func<FuNode>> _nodesRegistry = new Dictionary<string, Func<FuNode>>();
         private static Dictionary<string, FuNodalType> _typeRegistry = new Dictionary<string, FuNodalType>();
@@ -15,7 +14,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="typeId"> The unique identifier for the node type.</param>
         /// <param name="constructor"> A function that constructs and returns an instance of the node type.</param>
-        public static void RegisterNode(string typeId, Func<FuNode> constructor)
+        public void RegisterNode(string typeId, Func<FuNode> constructor)
         {
             if (!_nodesRegistry.ContainsKey(typeId))
                 _nodesRegistry.Add(typeId, constructor);
@@ -26,7 +25,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="typeId"> The unique identifier for the node type to be created.</param>
         /// <returns> An instance of the node type if found; otherwise, null.</returns>
-        public static FuNode CreateNode(string typeId, FuNodalGraph graph)
+        public FuNode CreateNode(string typeId, FuNodalGraph graph)
         {
             if (_nodesRegistry.ContainsKey(typeId))
             {
@@ -43,7 +42,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="node"> The node instance whose typeId is to be retrieved.</param>
         /// <returns> The typeId of the node if found; otherwise, null.</returns>
-        public static string GetNodeTypeId(FuNode node)
+        public string GetNodeTypeId(FuNode node)
         {
             // get node type
             Type nodeType = node.GetType();
@@ -72,9 +71,19 @@ namespace Fu.Framework
         /// Get all registered node type identifiers
         /// </summary>
         /// <returns> An enumerable collection of registered node type identifiers.</returns>
-        public static IEnumerable<string> GetRegisteredNode()
+        public IEnumerable<string> GetRegisteredNode()
         {
             return _nodesRegistry.Keys;
+        }
+
+        /// <summary>
+        /// Check if a node type is registered by its typeId
+        /// </summary>
+        /// <param name="typeId"> The unique identifier for the node type to check.</param>
+        /// <returns> True if the node type is registered; otherwise, false.</returns>
+        public bool HasRegisteredNode(string typeId)
+        {
+            return _nodesRegistry.ContainsKey(typeId);
         }
 
         /// <summary>
@@ -83,7 +92,7 @@ namespace Fu.Framework
         /// <param name="direction"> The direction of the port (input/output).</param>
         /// <param name="type"> The type to check compatibility against.</param>
         /// <returns> An enumerable collection of compatible node type identifiers.</returns>
-        public static IEnumerable<string> GetCompatibleNodes(FuNodalPortDirection direction, HashSet<string> types)
+        public IEnumerable<string> GetCompatibleNodes(FuNodalPortDirection direction, HashSet<string> types)
         {
             HashSet<string> compatibleNodes = new HashSet<string>();
             foreach (var kvp in _nodesRegistry)
@@ -113,10 +122,20 @@ namespace Fu.Framework
         /// Register a FuNodalType in the type registry
         /// </summary>
         /// <param name="type"> The FuNodalType to be registered.</param>
-        public static void RegisterType(FuNodalType type)
+        public void RegisterType(FuNodalType type)
         {
             if (!_typeRegistry.ContainsKey(type.Name))
                 _typeRegistry.Add(type.Name, type);
+        }
+
+        /// <summary>
+        /// Check if a FuNodalType is registered by its name
+        /// </summary>
+        /// <param name="typeName"> The name of the FuNodalType to check.</param>
+        /// <returns> True if the FuNodalType is registered; otherwise, false.</returns>
+        public bool HasRegisteredType(string typeName)
+        {
+            return _typeRegistry.ContainsKey(typeName);
         }
 
         /// <summary>
@@ -124,7 +143,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="typeName"> The name of the FuNodalType to retrieve.</param>
         /// <returns> The FuNodalType if found; otherwise, null.</returns>
-        public static FuNodalType GetType(string typeName)
+        public FuNodalType GetType(string typeName)
         {
             if (_typeRegistry.ContainsKey(typeName))
                 return _typeRegistry[typeName];
@@ -135,7 +154,7 @@ namespace Fu.Framework
         /// Get all registered FuNodalTypes
         /// </summary>
         /// <returns> An enumerable collection of all registered FuNodalTypes.</returns>
-        public static IEnumerable<string> GetRegisteredTypes()
+        public IEnumerable<string> GetRegisteredTypes()
         {
             return _typeRegistry.Keys;
         }

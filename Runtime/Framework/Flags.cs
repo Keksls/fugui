@@ -367,4 +367,28 @@ namespace Fu.Framework
         /// </summary>
         Many = 1
     }
+
+    /// <summary>
+    /// Flags for configuring the Nodal Editor
+    /// </summary>
+    public enum FuNodalEditorFlags
+    {
+        None = 0,
+        /// <summary>
+        /// Disable the grid background
+        /// </summary>
+        UseBezierCurves = 1 << 0,
+        /// <summary>
+        /// Disable the pannable view
+        /// </summary>
+        ShowCompatiblesNodesOnVoidLink = 1 << 1,
+        /// <summary>
+        /// Disable the zoomable view
+        /// </summary>
+        AutoLinkColorFromConvertedType = 1 << 2,
+        /// <summary>
+        /// Default flag
+        /// </summary>
+        Default = ShowCompatiblesNodesOnVoidLink | AutoLinkColorFromConvertedType,
+    }
 }

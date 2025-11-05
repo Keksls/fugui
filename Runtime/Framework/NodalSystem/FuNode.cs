@@ -15,7 +15,8 @@ namespace Fu.Framework
         public Dictionary<string, FuNodalPort> Ports { get; private set; } = new Dictionary<string, FuNodalPort>();
         public virtual Color? NodeColor { get; } = null;
         public FuNodalGraph Graph { get;  internal set; }
-        internal bool Dirty { get; set; } = true;
+        internal bool Dirty { get; set; } = false;
+        internal FuNodeEditorData EditorData { get; set; } = new FuNodeEditorData();
 
         #region Abstract Methods
         /// <summary>
@@ -222,6 +223,29 @@ namespace Fu.Framework
             return Graph.GetNode(edge.FromNodeId);
         }
         #endregion
+    }
+
+    /// <summary>
+    /// Struct holding precalculated geometry for a node to optimize drawing and interaction.
+    /// </summary>
+    public class FuNodeEditorData
+    {
+        public bool MustRecalculate = true;
+
+        public Vector2 rectMin, rectMax;
+        public float headerHeight;
+
+        public float portLineHeight;
+        public float portsStartY;
+        public float portsEndY;
+
+        public bool hasIn;
+        public bool hasOut;
+
+        public float leftMinX;
+        public float leftMaxX;
+        public float rightMinX;
+        public float rightMaxX;
     }
 
     public sealed class FuNodalPort

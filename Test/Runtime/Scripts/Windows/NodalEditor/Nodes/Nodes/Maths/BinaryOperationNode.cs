@@ -170,14 +170,8 @@ namespace Fu.Framework.Demo
 
         public override void SetDefaultValues(FuNodalPort port)
         {
-            switch (port.DataType)
-            {
-                case "core/float": port.Data = DefaultValue; break;
-                case "core/int": port.Data = (int)DefaultValue; break;
-                case "core/v2": port.Data = new Vector2(DefaultValue, DefaultValue); break;
-                case "core/v3": port.Data = new Vector3(DefaultValue, DefaultValue, DefaultValue); break;
-                case "core/v4": port.Data = new Vector4(DefaultValue, DefaultValue, DefaultValue, DefaultValue); break;
-            }
+            port.Data = 1f;
+            port.DataType = "core/float";
         }
 
         public override string GetCurrentConvertedType(FuNodalPort port)

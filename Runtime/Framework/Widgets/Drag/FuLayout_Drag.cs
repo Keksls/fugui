@@ -1,4 +1,7 @@
 ﻿using ImGuiNET;
+using System;
+using System.Runtime.CompilerServices;
+using System.Text;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -74,42 +77,46 @@ namespace Fu.Framework
         ///<returns>True if the value in the input field was changed, false otherwise.</returns>
         private bool dragFloat(string text, ref float value, string vString, float min, float max, float speed, string format, bool disabled)
         {
-            // set the current item ID, so internal calculation can be unique (overwise the V2/V3 and V4 draw will use same ID for each dragFloat)
             _lastItemID = text;
-            // Display the string before the input field if it was provided
+
+            // Show optional label
             if (!string.IsNullOrEmpty(vString))
             {
-                // verticaly align text to frame padding
                 ImGui.AlignTextToFramePadding();
-                ImGui.Text(vString);
+                ImGui.TextUnformatted(vString); // Faster than ImGui.Text()
                 ImGui.SameLine();
             }
 
-            // Set the width of the input field and create it
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-            var oldVal = value; // Store the old value in case the input field is disabled
-            if (disabled)
-            {
-                ImGui.BeginDisabled();
-            }
-            ImGui.DragFloat("##" + text, ref value, speed, min, max, string.IsNullOrEmpty(format) ? getStringFormat(value) : format, disabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
-            if (disabled)
-            {
-                ImGui.EndDisabled();
-            }
-            bool valueChanged = value != oldVal;
-            // If the input field is disabled, reset its value and return false for the valueChanged flag
-            if (disabled)
-            {
-                value = oldVal;
-                valueChanged = false;
-            }
 
-            // set states for this element
+            float oldVal = value;
+
+            if (disabled)
+                ImGui.BeginDisabled();
+
+            // Avoid string concat; prebuild static IDs
+            string id = ImGuiPushID(text);
+
+            // Inline GetStringFormat replacement (zero alloc)
+            string fmt = string.IsNullOrEmpty(format) ? GetCachedFormat(value) : format;
+
+            ImGui.DragFloat(id, ref value, speed, min, max, fmt,
+                disabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+
+            if (disabled)
+                ImGui.EndDisabled();
+
+            bool valueChanged = !disabled && value != oldVal;
+
+            if (disabled)
+                value = oldVal;
+
+            // Record element state
             setBaseElementState(text, ImGui.GetItemRectMin(), ImGui.GetItemRectSize(), true, valueChanged);
-            // Display a tooltip and set the _elementHoverFramed flag
+
             displayToolTip();
             _elementHoverFramedEnabled = true;
+
             return valueChanged;
         }
         #endregion
@@ -527,6 +534,52 @@ namespace Fu.Framework
             endElement(style);
             // return whatever the value has changed
             return valueChanged;
+        }
+        #endregion
+
+        #region Optimisation helpers
+        // Pre-allocated format strings, no concat per frame
+        private static readonly string[] _formats = { "%.0f", "%.1f", "%.2f", "%.3f", "%.4f", "%.5f", "%.6f", "%.7f", "%.8f" };
+
+        /// <summary>
+        /// Get a cached format string based on the value magnitude
+        /// </summary>
+        /// <param name="value"> The float value to determine the format for.</param>
+        /// <returns> A format string suitable for displaying the float value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static string GetCachedFormat(float value)
+        {
+            if (ImGuiNative.igIsItemFocused() != 0)
+                return "%.4f";
+
+            float abs = value < 0 ? -value : value;
+            int idx =
+                abs < 1e-7f ? 8 :
+                abs < 1e-6f ? 7 :
+                abs < 1e-5f ? 6 :
+                abs < 1e-4f ? 5 :
+                abs < 1e-3f ? 4 :
+                abs < 1e-2f ? 3 :
+                abs < 1e-1f ? 2 :
+                abs < 1f ? 1 : 0;
+            return _formats[idx];
+        }
+
+        // Cache for IDs, avoids "##" + text alloc à chaque frame
+        [ThreadStatic] private static StringBuilder _idBuilder;
+
+        /// <summary>
+        /// Generates a unique ImGui ID string by appending "##" to the provided text.
+        /// </summary>
+        /// <param name="text"> The base text to which "##" will be appended.</param>
+        /// <returns> A unique ID string for ImGui elements.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static string ImGuiPushID(string text)
+        {
+            var sb = _idBuilder ?? (_idBuilder = new StringBuilder(64));
+            sb.Length = 0;
+            sb.Append("##").Append(text);
+            return sb.ToString();
         }
         #endregion
     }

@@ -653,26 +653,40 @@ namespace Fu.Framework
         /// <param name="id">ID of the UIElement</param>
         /// <param name="value">float Value</param>
         /// <returns></returns>
-        private string getStringFormat(float value)
+        private static unsafe string getStringFormat(float value)
         {
-            // If the element is focused, set the string format to 4 decimal places
+            // Fast path: if focused
             if (ImGuiNative.igIsItemFocused() != 0)
-            {
                 return "%.4f";
-            }
 
-            // Split the value by the decimal point
-            string v = value.ToString();
-            string[] spl = v.Split(',');
-            // If there is a decimal point, set the string format to the number of decimal places (up to 8)
-            if (spl.Length > 1)
-            {
-                int nbDec = Math.Min(8, spl[1].TrimEnd('0').Length);
-                return "%." + nbDec.ToString() + "f";
-            }
-            // Otherwise, set the string format to 0 decimal places
-            return "%.0f";
+            // Fast no alloc path: get exponent
+            int bits = *(int*)&value;
+            int exponent = ((bits >> 23) & 0xFF) - 127;
+            if (exponent >= 23) // No decimals
+                return "%.0f";
+
+            // Determine number of decimals based on value magnitude
+            int nbDec = 0;
+            float absVal = value < 0 ? -value : value;
+            if (absVal < 1e-7f) nbDec = 8;
+            else if (absVal < 1e-6f) nbDec = 7;
+            else if (absVal < 1e-5f) nbDec = 6;
+            else if (absVal < 1e-4f) nbDec = 5;
+            else if (absVal < 1e-3f) nbDec = 4;
+            else if (absVal < 1e-2f) nbDec = 3;
+            else if (absVal < 1e-1f) nbDec = 2;
+            else if (absVal < 1f) nbDec = 1;
+            else nbDec = 0;
+
+            // Clamp to max 8 decimals
+            if (nbDec > 8) nbDec = 8;
+            return formats[nbDec];
         }
+
+        private static readonly string[] formats = new[]
+        {
+            "%.0f", "%.1f", "%.2f", "%.3f", "%.4f", "%.5f", "%.6f", "%.7f", "%.8f"
+        };
         #endregion
 
         #region tooltip utils

@@ -7,7 +7,7 @@ namespace Fu.Framework
 {
     public abstract class FuNode
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; } = FuNodeId.New();
         public abstract string Title { get; }
         public abstract float Width { get; }
         public float x { get; private set; }
@@ -99,7 +99,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="portId"> The unique identifier of the port to be retrieved.</param>
         /// <returns> The port with the specified unique identifier, or null if not found.</returns>
-        public FuNodalPort GetPort(Guid portId)
+        public FuNodalPort GetPort(int portId)
         {
             return Ports.Values.FirstOrDefault(p => p.Id == portId);
         }
@@ -226,7 +226,7 @@ namespace Fu.Framework
 
     public sealed class FuNodalPort
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; } = FuNodeId.New();
         public string Name { get; set; }
         public FuNodalPortDirection Direction { get; set; }
         public FuNodalMultiplicity Multiplicity { get; set; } = FuNodalMultiplicity.Single;
@@ -238,11 +238,11 @@ namespace Fu.Framework
 
     public sealed class FuNodalEdge
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public Guid FromNodeId { get; set; }
-        public Guid FromPortId { get; set; }
-        public Guid ToNodeId { get; set; }
-        public Guid ToPortId { get; set; }
+        public int Id { get; set; } = FuNodeId.New();
+        public int FromNodeId { get; set; }
+        public int FromPortId { get; set; }
+        public int ToNodeId { get; set; }
+        public int ToPortId { get; set; }
     }
 
     public sealed class FuNodalType

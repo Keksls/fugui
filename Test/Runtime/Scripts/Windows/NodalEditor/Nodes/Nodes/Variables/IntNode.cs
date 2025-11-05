@@ -12,10 +12,9 @@ namespace Fu.Framework.Demo
         private Color _color;
         public IntNode(Color color) { _color = color; }
 
-        public override bool CanConnect(FuNodalPort fromPort, FuNodalPort toPort) => true;
-        public override void CreateDefaultPorts()
+         public override void CreateDefaultPorts()
         {
-            AddPort(new FuNodalPort{ Name="Out", Direction=FuNodalPortDirection.Out, DataType="core/int", AllowedTypes=new HashSet<string>{"core/int"}, Data=0, Multiplicity=FuNodalMultiplicity.Many });
+            AddPort(new FuNodalPort{ Name="Out", Direction=FuNodalPortDirection.Out, DataType="core/int", AllowedTypes=new HashSet<string>{"core/int"}, Data=1, Multiplicity=FuNodalMultiplicity.Many });
         }
         public override void Compute(){}
         public override void OnDraw(FuLayout layout)

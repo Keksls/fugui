@@ -14,11 +14,9 @@ namespace Fu.Framework.Demo
         private float _min = 0f, _max = 100f;
         public FloatNode(Color color) { _color = color; }
 
-        public override bool CanConnect(FuNodalPort fromPort, FuNodalPort toPort) => true;
-
         public override void CreateDefaultPorts()
         {
-            AddPort(new FuNodalPort { Name = "Out", Direction = FuNodalPortDirection.Out, DataType = "core/float", AllowedTypes = new HashSet<string> { "core/float" }, Data = 0f, Multiplicity = FuNodalMultiplicity.Many });
+            AddPort(new FuNodalPort { Name = "Out", Direction = FuNodalPortDirection.Out, DataType = "core/float", AllowedTypes = new HashSet<string> { "core/float" }, Data = 1f, Multiplicity = FuNodalMultiplicity.Many });
         }
 
         public override void Compute() { }

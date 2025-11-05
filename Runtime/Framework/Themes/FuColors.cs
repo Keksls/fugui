@@ -113,7 +113,8 @@
         NodeLinkPreview = 94,
         NodeSelectedEdge = 95,
         NodeHoveredEdge = 96,
+        NodeSelectedBorder = 97,
 
-        COUNT = 97
+        COUNT = 98
     }
 }

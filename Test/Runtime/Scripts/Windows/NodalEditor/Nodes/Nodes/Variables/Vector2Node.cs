@@ -14,11 +14,9 @@ namespace Fu.Framework.Demo
         private Color _color;
         public Vector2Node(Color color) { _color = color; }
 
-        public override bool CanConnect(FuNodalPort fromPort, FuNodalPort toPort) => true;
-
         public override void CreateDefaultPorts()
         {
-            AddPort(new FuNodalPort{ Name="Out", Direction=FuNodalPortDirection.Out, DataType="core/v2", AllowedTypes=new HashSet<string>{"core/v2"}, Data=Vector2.zero, Multiplicity=FuNodalMultiplicity.Many });
+            AddPort(new FuNodalPort{ Name="Out", Direction=FuNodalPortDirection.Out, DataType="core/v2", AllowedTypes=new HashSet<string>{"core/v2"}, Data=Vector2.one, Multiplicity=FuNodalMultiplicity.Many });
         }
 
         public override void Compute(){}

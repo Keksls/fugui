@@ -240,35 +240,38 @@ namespace Fu
         /// </summary>
         private static void _closePopup(string id)
         {
-            // invoke the OnClose callback
-            if (_registeredPopups.ContainsKey(id))
+            ExecuteAfterRenderWindows(() => // defer the popup removal after fugui rendering to avoid multiple click on same frame issues
             {
-                var data = _registeredPopups[id];
-
-                // pop popup from stack
-                PopUpWindowsIDs.RemoveAt(data.PopupIndex);
-                PopUpIDs.RemoveAt(data.PopupIndex);
-                IsPopupDrawing.RemoveAt(data.PopupIndex);
-                PopUpRects.RemoveAt(data.PopupIndex);
-                IsPopupFocused.RemoveAt(data.PopupIndex);
-
-                // update PopupIndex of each deeper popups
-                foreach (var popupData in _registeredPopups.Values)
+                // invoke the OnClose callback
+                if (_registeredPopups.ContainsKey(id))
                 {
-                    if (popupData.PopupIndex > data.PopupIndex)
+                    var data = _registeredPopups[id];
+
+                    // pop popup from stack
+                    PopUpWindowsIDs.RemoveAt(data.PopupIndex);
+                    PopUpIDs.RemoveAt(data.PopupIndex);
+                    IsPopupDrawing.RemoveAt(data.PopupIndex);
+                    PopUpRects.RemoveAt(data.PopupIndex);
+                    IsPopupFocused.RemoveAt(data.PopupIndex);
+
+                    // update PopupIndex of each deeper popups
+                    foreach (var popupData in _registeredPopups.Values)
                     {
-                        popupData.PopupIndex--;
+                        if (popupData.PopupIndex > data.PopupIndex)
+                        {
+                            popupData.PopupIndex--;
+                        }
                     }
+
+                    // downsample static popup stack index
+                    _currentPopupIndex--;
+
+                    // invoke popup's onClose event if there is one
+                    _registeredPopups[id].OnClose?.Invoke();
                 }
-
-                // downsample static popup stack index
-                _currentPopupIndex--;
-
-                // invoke popup's onClose event if there is one
-                _registeredPopups[id].OnClose?.Invoke();
-            }
-            // remove from dic
-            _registeredPopups.Remove(id);
+                // remove from dic
+                _registeredPopups.Remove(id);
+            });
         }
 
         /// <summary>

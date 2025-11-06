@@ -457,9 +457,10 @@ namespace Fu.Framework
                 return false;
             }
 
-            bool clicked = _internalClickableText(text, style, out Rect textRect, wrapping);
             // set states for this element
+            Rect textRect = new Rect(ImGui.GetCursorScreenPos() - new Vector2(4f, 0f), Fugui.CalcTextSize(text, wrapping) + Fugui.Themes.FramePadding);
             setBaseElementState(id, textRect.min, textRect.size, true, false);
+            bool clicked = _internalClickableText(text, style, textRect, wrapping);
             displayToolTip();
             // prevent to draw full element hover frame
             _elementHoverFramedEnabled = false;
@@ -467,9 +468,8 @@ namespace Fu.Framework
             return clicked;
         }
 
-        private bool _internalClickableText(string text, FuTextStyle style, out Rect textRect, FuTextWrapping wrapping)
+        private bool _internalClickableText(string text, FuTextStyle style, Rect textRect, FuTextWrapping wrapping)
         {
-            textRect = new Rect(ImGui.GetCursorScreenPos() - new Vector2(4f, 0f), Fugui.CalcTextSize(text, wrapping) + Fugui.Themes.FramePadding);
             bool hovered = IsItemHovered(textRect.min, textRect.size);
             bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
             bool clicked = LastItemClickedButton == FuMouseButton.Left && hovered && !LastItemDisabled;

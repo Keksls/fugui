@@ -8,13 +8,13 @@ using UnityEngine.Assertions;
 
 namespace Fu
 {
-    internal abstract class PlatformBase
+    public abstract class PlatformBase
     {
-        protected readonly PlatformCallbacks _callbacks = new PlatformCallbacks();
-        protected ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
+        public readonly PlatformCallbacks _callbacks = new PlatformCallbacks();
+        public ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
         private readonly HashSet<IntPtr> _managedAllocations = new HashSet<IntPtr>();
 
-        internal PlatformBase() { }
+        public PlatformBase() { }
 
         /// <summary>
         /// Initialize the platform backend with the given ImGuiIO and ImGuiPlatformIO instances.

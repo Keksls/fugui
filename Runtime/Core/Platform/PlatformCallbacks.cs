@@ -9,18 +9,18 @@ namespace Fu
 {
     #region Callback methods
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal unsafe delegate string GetClipboardTextCallback(void* user_data);
-    internal delegate string GetClipboardTextSafeCallback(IntPtr user_data);
+    public unsafe delegate string GetClipboardTextCallback(void* user_data);
+    public delegate string GetClipboardTextSafeCallback(IntPtr user_data);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal unsafe delegate void SetClipboardTextCallback(void* user_data, byte* text);
-    internal delegate void SetClipboardTextSafeCallback(IntPtr user_data, string text);
+    public unsafe delegate void SetClipboardTextCallback(void* user_data, byte* text);
+    public delegate void SetClipboardTextSafeCallback(IntPtr user_data, string text);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal delegate void ImeSetInputScreenPosCallback(int x, int y);
+    public delegate void ImeSetInputScreenPosCallback(int x, int y);
     #endregion
 
-    internal unsafe class PlatformCallbacks
+    public unsafe class PlatformCallbacks
     {
         private static GetClipboardTextCallback _getClipboardText;
         private static SetClipboardTextCallback _setClipboardText;

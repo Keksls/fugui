@@ -441,7 +441,7 @@ namespace Fu.Framework
                 }
 
                 // draw video image
-                currentContainer.ImGuiImage(Texture, videoImageSize);
+                ImGui.Image(currentContainer.Context.TextureManager.GetTextureId(Texture), videoImageSize);
 
                 // video is playing, check if it's buffering
                 if (Player != null && Player.isPlaying)

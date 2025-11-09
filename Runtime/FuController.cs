@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using static Codice.CM.WorkspaceServer.WorkspaceTreeDataStore;
 
 namespace Fu
 {
@@ -51,12 +52,6 @@ namespace Fu
 
         private void Update()
         {
-            // Ensure we are not rendering or rendering is complete
-            if (Fugui.RenderingState != FuguiRenderingState.None &&
-                Fugui.RenderingState != FuguiRenderingState.RenderComplete)
-                return;
-            Fugui.RenderingState = FuguiRenderingState.Updating;
-
             // Update Input Manager
             FuRaycasting.Update();
 
@@ -66,11 +61,21 @@ namespace Fu
             // let's update main container inputs and internal stuff
             Fugui.MainContainer.Update();
 
+            // Update external windows
+            foreach (FuWindow window in Fugui.UIWindows.Values)
+            {
+                if (window.IsExternal)
+                {
+                    FuExternalWindowContainer externalContainer = window.Container as FuExternalWindowContainer;
+                    if (externalContainer != null)
+                    {
+                        externalContainer.Update();
+                    }
+                }
+            }
+
             // Render Fugui (this will prepare the rendering data and call all fugui implementations code but it will NOT draw the UI, the Drawing is handeled by Render Feature)
             Fugui.Render();
-
-            // Set the rendering state to complete
-            Fugui.RenderingState = FuguiRenderingState.UpdateComplete;
         }
 
         private void LateUpdate()
@@ -84,6 +89,13 @@ namespace Fu
                     FuContext context = Fugui.GetContext(contextID);
                     context.EndRender();
                     context.Destroy();
+
+                    if(context is FuExternalContext externalContext)
+                    {
+                        // remove external window from dictionary
+                        Fugui.ExternalWindows.Remove(externalContext.Window.Window.ID);
+                    }
+
                     Fugui.Contexts.Remove(context.ID);
                     Fugui.DefaultContext.SetAsCurrent();
                 }

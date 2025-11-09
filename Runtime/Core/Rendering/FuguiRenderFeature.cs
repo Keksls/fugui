@@ -1,8 +1,6 @@
 ﻿using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -17,8 +15,9 @@ namespace Fu
         private class FuguiRenderGraphPass : ScriptableRenderPass
         {
             #region Variables
-            private Material _material;
-            private Mesh _mesh;
+            private Dictionary<int, Mesh> _meshs;
+            private Dictionary<int, Material> _materials;
+            private readonly Shader _shader;
             private int _textureID;
             private int _prevSubMeshCount = 1;
             private TextureManager _textureManager;
@@ -43,17 +42,18 @@ namespace Fu
             /// <param name="shader"> Shader to use for rendering Fugui.</param>
             public FuguiRenderGraphPass(Shader shader)
             {
+                _shader = shader;
                 _textureID = Shader.PropertyToID("_Texture");
                 _materialProperties = new MaterialPropertyBlock();
-                _material = new Material(shader)
-                {
-                    hideFlags = HideFlags.HideAndDontSave & ~HideFlags.DontUnloadUnusedAsset
-                };
-                _mesh = new Mesh
-                {
-                    name = "FuguiMesh"
-                };
-                _mesh.MarkDynamic();
+
+                renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
+
+                // IMPORTANT : aucune dépendance implicite (depth/normals, etc.)
+                ConfigureInput(ScriptableRenderPassInput.None);
+
+                // (optionnel mais propre) évite les allocs répétées
+                _meshs = new Dictionary<int, Mesh>();
+                _materials = new Dictionary<int, Material>();
             }
 
             #region Rendergraph Pass
@@ -64,50 +64,44 @@ namespace Fu
             /// <param name="frameData"> The frame data containing the active color texture.</param>
             public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
             {
-                // get the active color texture from the frame data
                 var urpRes = frameData.Get<UniversalResourceData>();
-
-                // Use the *active* camera targets provided by URP
                 TextureHandle color = urpRes.activeColorTexture;
-                TextureHandle depth = urpRes.activeDepthTexture; // important : bind depth as attachment
+                TextureHandle depth = urpRes.activeDepthTexture;
 
-                using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_RenderGraph_Pass", out var passData);
-
-                // Let this pass modify GL state if needed (you already had this)
-                builder.AllowGlobalStateModification(true);
-
-                // >>> Attach the actual render targets of the camera <<<
-                builder.SetRenderAttachment(color, 0, AccessFlags.Write);
-                builder.SetRenderAttachmentDepth(depth, AccessFlags.Read); // depth test only
-
-                // set the pass data
-                builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                // === 1️ Pass principale : contexte Unity par défaut ===
+                using (var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_MainPass", out var passData))
                 {
-                    // If not ready to render, skip this pass.
-                    if (Fugui.RenderingState != FuguiRenderingState.UpdateComplete)
-                    {
-                        return;
-                    }
-                    Fugui.RenderingState = FuguiRenderingState.Rendering;
+                    builder.AllowGlobalStateModification(true);
+                    builder.SetRenderAttachment(color, 0, AccessFlags.Write);
 
-                    // render the default context
-                    Fugui.DefaultContext.EndRender();
-                    _textureManager = Fugui.DefaultContext.TextureManager;
-                    RenderDrawLists(ctx.cmd, Fugui.DefaultContext.DrawData);
+                    // Attache la depth uniquement si valide (sinon ne l’attache pas)
+                    if (depth.IsValid())
+                        builder.SetRenderAttachmentDepth(depth, AccessFlags.Read);
 
-                    // render any other contexts
-                    foreach (var context in Fugui.Contexts)
+                    builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
                     {
-                        if (context.Key != 0 && context.Value.Started)
+                        if (Fugui.DefaultContext?.Started != true) return;
+                        _textureManager = Fugui.DefaultContext.TextureManager;
+                        RenderDrawLists(Fugui.DefaultContext.ID, ctx.cmd, Fugui.DefaultContext.DrawData);
+
+                        foreach (var pair in Fugui.Contexts)
                         {
-                            context.Value.EndRender();
-                            _textureManager = context.Value.TextureManager;
-                            RenderDrawLists(ctx.cmd, context.Value.DrawData);
-                        }
-                    }
+                            // ignore external contexts, they have their own render pipeline
+                            if (pair.Value is FuExternalContext extCtx)
+                            {
+                                continue;
+                            }
 
-                    Fugui.RenderingState = FuguiRenderingState.RenderComplete;
-                });
+                            using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_External_{pair.Key}", out var passData);
+                            var context = pair.Value;
+                            builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                            {
+                                _textureManager = context.TextureManager;
+                                RenderDrawLists(context.ID, ctx.cmd, context.DrawData);
+                            });
+                        }
+                    });
+                }
             }
 
             /// <summary>
@@ -115,16 +109,38 @@ namespace Fu
             /// </summary>
             /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
             /// <param name="drawData"></ param>
-            public void RenderDrawLists(RasterCommandBuffer commandBuffer, DrawData drawData)
+            public void RenderDrawLists(int ctxId, RasterCommandBuffer commandBuffer, DrawData drawData)
             {
+                // ensure mesh and material exist for this context
+                if (_meshs == null) _meshs = new Dictionary<int, Mesh>();
+                if (!_meshs.ContainsKey(ctxId))
+                {
+                    _meshs[ctxId] = new Mesh
+                    {
+                        name = "FuguiMesh"
+                    };
+                    _meshs[ctxId].MarkDynamic();
+                }
+                if (_materials == null) _materials = new Dictionary<int, Material>();
+                if (!_materials.ContainsKey(ctxId))
+                {
+                    _materials[ctxId] = new Material(_shader)
+                    {
+                        hideFlags = HideFlags.HideAndDontSave & ~HideFlags.DontUnloadUnusedAsset
+                    };
+                }
+                Mesh _mesh = _meshs[ctxId];
+                Material _material = _materials[ctxId];
+
                 Vector2 fbOSize = drawData.DisplaySize * drawData.FramebufferScale;
 
                 // Avoid rendering when minimized.
                 if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
 
-                UpdateMesh(drawData);
+                // display draw data for debug
+                UpdateMesh(_mesh, _material, drawData);
                 commandBuffer.BeginSample(_sampleName);
-                CreateDrawCommands(commandBuffer, drawData, fbOSize);
+                CreateDrawCommands(_mesh, _material, commandBuffer, drawData, fbOSize);
                 commandBuffer.EndSample(_sampleName);
             }
 
@@ -134,7 +150,7 @@ namespace Fu
             /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
             /// <param name="drawData"> The draw data containing the information to render.</param>
             /// <param name="fbSize"> The framebuffer size to use for rendering.</param>
-            private void CreateDrawCommands(RasterCommandBuffer commandBuffer, DrawData drawData, Vector2 fbSize)
+            private void CreateDrawCommands(Mesh _mesh, Material _material, RasterCommandBuffer commandBuffer, DrawData drawData, Vector2 fbSize)
             {
                 IntPtr prevTextureId = IntPtr.Zero;
                 Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
@@ -205,34 +221,24 @@ namespace Fu
             [Obsolete]
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
             {
-                // If not ready to render, skip this pass.
-                if (Fugui.RenderingState != FuguiRenderingState.UpdateComplete)
-                    return;
-                Fugui.RenderingState = FuguiRenderingState.Rendering;
-
                 var commandBuffer = CommandBufferPool.Get("FuguiRenderPass");
 
                 // Render the default context
-                Fugui.DefaultContext.EndRender();
                 _textureManager = Fugui.DefaultContext.TextureManager;
-                RenderDrawLists(commandBuffer, Fugui.DefaultContext.DrawData);
+                RenderDrawLists(Fugui.DefaultContext.ID, commandBuffer, Fugui.DefaultContext.DrawData);
 
                 // Render other contexts if available.
                 foreach (var contextPair in Fugui.Contexts)
                 {
                     if (contextPair.Key != 0 && contextPair.Value.Started)
                     {
-                        contextPair.Value.EndRender();
                         _textureManager = contextPair.Value.TextureManager;
-                        RenderDrawLists(commandBuffer, contextPair.Value.DrawData);
+                        RenderDrawLists(contextPair.Key, commandBuffer, contextPair.Value.DrawData);
                     }
                 }
 
                 context.ExecuteCommandBuffer(commandBuffer);
                 CommandBufferPool.Release(commandBuffer);
-
-                // Reset the rendering state after rendering is complete.
-                Fugui.RenderingState = FuguiRenderingState.RenderComplete;
             }
 
             /// <summary>
@@ -240,16 +246,38 @@ namespace Fu
             /// </summary>
             /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
             /// <param name="drawData"></ param>
-            public void RenderDrawLists(CommandBuffer commandBuffer, DrawData drawData)
+            public void RenderDrawLists(int ctxId, CommandBuffer commandBuffer, DrawData drawData)
             {
+                // ensure mesh and material exist for this context
+                if (_meshs == null) _meshs = new Dictionary<int, Mesh>();
+                if (!_meshs.ContainsKey(ctxId))
+                {
+                    _meshs[ctxId] = new Mesh
+                    {
+                        name = "FuguiMesh"
+                    };
+                    _meshs[ctxId].MarkDynamic();
+                }
+                if (_materials == null) _materials = new Dictionary<int, Material>();
+                if (!_materials.ContainsKey(ctxId))
+                {
+                    _materials[ctxId] = new Material(_shader)
+                    {
+                        hideFlags = HideFlags.HideAndDontSave & ~HideFlags.DontUnloadUnusedAsset
+                    };
+                }
+                Mesh _mesh = _meshs[ctxId];
+                Material _material = _materials[ctxId];
+
                 Vector2 fbOSize = drawData.DisplaySize * drawData.FramebufferScale;
 
                 // Avoid rendering when minimized.
                 if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
 
-                UpdateMesh(drawData);
+                // display draw data for debug
+                UpdateMesh(_mesh, _material, drawData);
                 commandBuffer.BeginSample(_sampleName);
-                CreateDrawCommands(commandBuffer, drawData, fbOSize);
+                CreateDrawCommands(_mesh, _material, commandBuffer, drawData, fbOSize);
                 commandBuffer.EndSample(_sampleName);
             }
 
@@ -259,7 +287,7 @@ namespace Fu
             /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
             /// <param name="drawData"> The draw data containing the information to render.</param>
             /// <param name="fbSize"> The framebuffer size to use for rendering.</param>
-            private void CreateDrawCommands(CommandBuffer commandBuffer, DrawData drawData, Vector2 fbSize)
+            private void CreateDrawCommands(Mesh _mesh, Material _material, CommandBuffer commandBuffer, DrawData drawData, Vector2 fbSize)
             {
                 IntPtr prevTextureId = IntPtr.Zero;
                 Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
@@ -324,18 +352,15 @@ namespace Fu
             /// Updates the mesh with the provided draw data.
             /// </summary>
             /// <param name="drawData"> The draw data containing the vertex and index buffers.</param>
-            private void UpdateMesh(DrawData drawData)
+            private void UpdateMesh(Mesh _mesh, Material _material, DrawData drawData)
             {
-                // Number of submeshes is the same as the nr of ImDrawCmd.
+                // Nombre de submeshes = nombre total de ImDrawCmd
                 int subMeshCount = 0;
-                for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
-                {
+                for (int n = 0; n < drawData.CmdListsCount; ++n)
                     subMeshCount += drawData.DrawLists[n].CmdBuffer.Length;
-                }
 
                 if (_prevSubMeshCount != subMeshCount)
                 {
-                    // Occasionally crashes when changing subMeshCount without clearing first.
                     _mesh.Clear(true);
                     _mesh.subMeshCount = _prevSubMeshCount = subMeshCount;
                 }
@@ -343,57 +368,45 @@ namespace Fu
                 _mesh.SetVertexBufferParams(drawData.TotalVtxCount, _vertexAttributes);
                 _mesh.SetIndexBufferParams(drawData.TotalIdxCount, IndexFormat.UInt16);
 
-                //  Upload data into mesh.
                 int vtxOf = 0;
                 int idxOf = 0;
-                List<SubMeshDescriptor> descriptors = new List<SubMeshDescriptor>();
+                var descriptors = new List<SubMeshDescriptor>(subMeshCount);
 
-                for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
+                for (int n = 0; n < drawData.CmdListsCount; ++n)
                 {
-                    DrawList drawList = drawData.DrawLists[n];
+                    var dl = drawData.DrawLists[n];
 
-                    unsafe
+                    // Upload direct des tableaux managés
+                    _mesh.SetVertexBufferData(dl.VtxBuffer, 0, vtxOf, dl.VtxBuffer.Length, 0, NoMeshChecks);
+                    _mesh.SetIndexBufferData(dl.IdxBuffer, 0, idxOf, dl.IdxBuffer.Length, NoMeshChecks);
+
+                    // Définition des submeshes pour chaque ImDrawCmd
+                    var cmds = dl.CmdBuffer;
+                    for (int i = 0; i < cmds.Length; ++i)
                     {
-                        // TODO: Convert NativeArray to C# array or list (remove collections).
-                        NativeArray<ImDrawVert> vtxArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ImDrawVert>(
-                            (void*)drawList.VtxPtr, drawList.VtxBuffer.Length, Allocator.None);
-                        NativeArray<ushort> idxArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ushort>(
-                            (void*)drawList.IdxPtr, drawList.IdxBuffer.Length, Allocator.None);
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                        NativeArrayUnsafeUtility
-                            .SetAtomicSafetyHandle(ref vtxArray, AtomicSafetyHandle.GetTempMemoryHandle());
-                        NativeArrayUnsafeUtility
-                            .SetAtomicSafetyHandle(ref idxArray, AtomicSafetyHandle.GetTempMemoryHandle());
-#endif
-                        // Upload vertex/index data.
-                        _mesh.SetVertexBufferData(vtxArray, 0, vtxOf, vtxArray.Length, 0, NoMeshChecks);
-                        _mesh.SetIndexBufferData(idxArray, 0, idxOf, idxArray.Length, NoMeshChecks);
-
-                        // Define subMeshes.
-                        for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i)
+                        var cmd = cmds[i];
+                        var desc = new SubMeshDescriptor
                         {
-                            ImDrawCmd cmd = drawList.CmdBuffer[i];
-                            SubMeshDescriptor descriptor = new SubMeshDescriptor
-                            {
-                                topology = MeshTopology.Triangles,
-                                indexStart = idxOf + (int)cmd.IdxOffset,
-                                indexCount = (int)cmd.ElemCount,
-                                baseVertex = vtxOf + (int)cmd.VtxOffset,
-                            };
-                            descriptors.Add(descriptor);
-                        }
-
-                        vtxOf += vtxArray.Length;
-                        idxOf += idxArray.Length;
+                            topology = MeshTopology.Triangles,
+                            indexStart = idxOf + (int)cmd.IdxOffset,
+                            indexCount = (int)cmd.ElemCount,
+                            baseVertex = vtxOf + (int)cmd.VtxOffset,
+                        };
+                        descriptors.Add(desc);
                     }
+
+                    vtxOf += dl.VtxBuffer.Length;
+                    idxOf += dl.IdxBuffer.Length;
                 }
 
                 _mesh.SetSubMeshes(descriptors, NoMeshChecks);
 
-                // Set a safe, large 2D bounds in clip space pixels
                 Vector2 fbSize = drawData.DisplaySize * drawData.FramebufferScale;
-                _mesh.bounds = new Bounds(new Vector3(fbSize.x * 0.5f, fbSize.y * 0.5f, 0f), new Vector3(fbSize.x + 4f, fbSize.y + 4f, 1f));
+                _mesh.bounds = new Bounds(
+                    new Vector3(fbSize.x * 0.5f, fbSize.y * 0.5f, 0f),
+                    new Vector3(fbSize.x + 4f, fbSize.y + 4f, 1f)
+                );
+
                 _mesh.UploadMeshData(false);
             }
 

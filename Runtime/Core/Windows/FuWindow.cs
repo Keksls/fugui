@@ -1,5 +1,6 @@
 using Fu.Framework;
 using ImGuiNET;
+using PlasticPipe.PlasticProtocol.Messages;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -467,7 +468,11 @@ namespace Fu
             bool _lastFrameHovered = IsHovered;
             // try to start drawing window, according to the closable flag state
             bool nativeWantDrawWindow;
-            if (IsClosable)
+            if (IsExternal)
+            {
+                nativeWantDrawWindow = ImGui.Begin(ID, _windowFlags | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
+            }
+            else if (IsClosable)
             {
                 nativeWantDrawWindow = ImGui.Begin(ID, ref _open, _windowFlags);
             }
@@ -675,6 +680,12 @@ namespace Fu
 
                 // draw user UI callback
                 FuStyle.Default.Push(true);
+
+                if(Layout.Button("Externalize"))
+                {
+                    Fugui.ExternalizeWindow(this);
+                }
+
                 UI?.Invoke(this, Layout);
                 FuStyle.Content.Pop();
 

@@ -11,7 +11,6 @@ namespace Fu
     {
         public static long ImDrawCmdSize { get; private set; }
         public static long ImDrawVertSize { get; private set; }
-        private static DrawData cmd = new DrawData();
         private static Dictionary<string, string> _unIconnizedTitleMapping = new Dictionary<string, string>();
 
         static ImGuiDrawListUtils()
@@ -20,7 +19,7 @@ namespace Fu
             ImDrawVertSize = (long)Unsafe.SizeOf<ImDrawVert>();
         }
 
-        public static DrawData GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr)
+        public static void GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr, ref DrawData cmd)
         {
             cmd.Clear();
 
@@ -128,7 +127,6 @@ namespace Fu
             cmd.FramebufferScale = imDrawDataPtr.FramebufferScale;
             cmd.DisplayPos = imDrawDataPtr.DisplayPos;
             cmd.DisplaySize = imDrawDataPtr.DisplaySize;
-            return cmd;
         }
     }
 

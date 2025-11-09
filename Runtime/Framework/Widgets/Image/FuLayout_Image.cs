@@ -55,11 +55,11 @@ namespace Fu.Framework
             }
             if (FuWindow.CurrentDrawingWindow == null)
             {
-                Fugui.MainContainer.ImGuiImage(texture, size.GetSize(), color);
+                ImGui.Image(Fugui.CurrentContext.TextureManager.GetTextureId(texture), size.GetSize(), Vector2.zero, Vector2.one, color);
             }
             else
             {
-                FuWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size.GetSize(), color);
+                ImGui.Image(FuWindow.CurrentDrawingWindow.Container.Context.TextureManager.GetTextureId(texture), size.GetSize(), Vector2.zero, Vector2.one, color);
             }
 
             // set states for this element
@@ -101,11 +101,11 @@ namespace Fu.Framework
             }
             if (FuWindow.CurrentDrawingWindow == null)
             {
-                Fugui.MainContainer.ImGuiImage(texture, size.GetSize(), color);
+                ImGui.Image(Fugui.CurrentContext.TextureManager.GetTextureId(texture), size.GetSize(), Vector2.zero, Vector2.one, color);
             }
             else
             {
-                FuWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, size.GetSize(), color);
+                ImGui.Image(FuWindow.CurrentDrawingWindow.Container.Context.TextureManager.GetTextureId(texture), size.GetSize(), Vector2.zero, Vector2.one, color);
             }
             // set states for this element
             setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, isClickable, false);
@@ -220,11 +220,11 @@ namespace Fu.Framework
             ImGui.SetCursorScreenPos(btnPos + padding + imagePadding + centerImageOffset);
             if (FuWindow.CurrentDrawingWindow == null)
             {
-                Fugui.MainContainer.ImGuiImage(texture, imgSize, color);
+                ImGui.Image(Fugui.CurrentContext.TextureManager.GetTextureId(texture), imgSize, Vector2.zero, Vector2.one, color);
             }
             else
             {
-                FuWindow.CurrentDrawingWindow.Container.ImGuiImage(texture, imgSize, color);
+                ImGui.Image(FuWindow.CurrentDrawingWindow.Container.Context.TextureManager.GetTextureId(texture), imgSize, Vector2.zero, Vector2.one, color);
             }
             ImGui.SetCursorScreenPos(btnPos);
             ImGui.Dummy(size);

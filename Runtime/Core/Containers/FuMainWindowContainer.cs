@@ -1,8 +1,10 @@
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using ImGuiNET;
-using Fu.Framework;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Fu
 {
@@ -110,7 +112,8 @@ namespace Fu
                 FuWindow window = _toRemoveWindows.Dequeue();
                 window.OnClosed -= UIWindow_OnClose;
                 Windows.Remove(window.ID);
-                window.Container = null;
+                if (window.Container == this)
+                    window.Container = null;
             }
 
             // add windows
@@ -143,7 +146,11 @@ namespace Fu
             // get unity local mouse position
             Vector2Int newMousePos = new Vector2Int((int)Context.IO.MousePos.x, (int)Context.IO.MousePos.y);
             _mousePos = newMousePos;
+#if UNITY_EDITOR
+            _worldPosition = GameViewUtils.GetPos();
+#else
             _worldPosition = Screen.mainWindowPosition;
+#endif
         }
 
         #region Footer
@@ -328,121 +335,6 @@ namespace Fu
         {
             return false;
         }
-
-        /// <summary>
-        /// get texture ID for current graphic context
-        /// </summary>
-        /// <param name="texture">texture to get id</param>
-        /// <returns>graphic ID of the texture</returns>
-        public IntPtr GetTextureID(Texture2D texture)
-        {
-            return _fuguiContext.TextureManager.GetTextureId(texture);
-        }
-
-        /// <summary>
-        /// get texture ID for current graphic context
-        /// </summary>
-        /// <param name="texture">texture to get id</param>
-        /// <returns>graphic ID of the texture</returns>
-        public IntPtr GetTextureID(RenderTexture texture)
-        {
-            return _fuguiContext.TextureManager.GetTextureId(texture);
-        }
-
-        /// <summary>
-        /// Draw ImGui Image regardless to GL context
-        /// </summary>
-        /// <param name="texture">renderTexture to draw</param>
-        /// <param name="size">size of the image</param>
-        public void ImGuiImage(RenderTexture texture, Vector2 size)
-        {
-            if (texture == null)
-            {
-                ImGui.Dummy(size);
-                return;
-            }
-            ImGui.Image(GetTextureID(texture), size);
-        }
-
-        /// <summary>
-        /// Draw ImGui Image regardless to GL context
-        /// </summary>
-        /// <param name="texture">renderTexture to draw</param>
-        /// <param name="size">size of the image</param>
-        public void ImGuiImage(Texture2D texture, Vector2 size)
-        {
-            if (texture == null)
-            {
-                ImGui.Dummy(size);
-                return;
-            }
-            ImGui.Image(GetTextureID(texture), size);
-        }
-
-        /// <summary>
-        /// Draw ImGui Image regardless to GL context
-        /// </summary>
-        /// <param name="texture">texture2D to draw</param>
-        /// <param name="size">size of the image</param>
-        /// <param name="color">tint color of the image</param>
-        public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color)
-        {
-            if (texture == null)
-            {
-                ImGui.Dummy(size);
-                return;
-            }
-            ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
-        }
-
-        /// <summary>
-        /// Draw ImGui Image regardless to GL context
-        /// </summary>
-        /// <param name="texture">texture2D to draw</param>
-        /// <param name="size">size of the image</param>
-        /// <param name="color">tint color of the image</param>
-        public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color)
-        {
-            if (texture == null)
-            {
-                ImGui.Dummy(size);
-                return;
-            }
-            ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
-        }
-
-        /// <summary>
-        /// Draw ImGui ImageButton regardless to GL context
-        /// </summary>
-        /// <param name="texture">texture2D to draw</param>
-        /// <param name="size">size of the image</param>
-        /// <returns>true if clicked</returns>
-        public bool ImGuiImageButton(Texture2D texture, Vector2 size)
-        {
-            if (texture == null)
-            {
-                ImGui.Dummy(size);
-                return false;
-            }
-            return ImGui.ImageButton("", GetTextureID(texture), size);
-        }
-
-        /// <summary>
-        /// Draw ImGui ImageButton regardless to GL context
-        /// </summary>
-        /// <param name="texture">texture2D to draw</param>
-        /// <param name="size">size of the image</param>
-        /// <param name="color">tint additive color of the image</param>
-        /// <returns>true if clicked</returns>
-        public bool ImGuiImageButton(Texture2D texture, Vector2 size, Vector4 color)
-        {
-            if (texture == null)
-            {
-                ImGui.Dummy(size);
-                return false;
-            }
-            return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
-        }
         #endregion
 
         #region Docking
@@ -506,4 +398,30 @@ namespace Fu
         }
         #endregion
     }
+
+#if UNITY_EDITOR
+    public static class GameViewUtils
+    {
+        private static EditorWindow gameView = null;
+
+        private static void Init()
+        {
+            // Get GameView type
+            var gameViewType = typeof(Editor).Assembly.GetType("UnityEditor.GameView");
+            if (gameViewType == null) return;
+            // Find GameView instance
+            gameView = EditorWindow.GetWindow(gameViewType);
+        }
+
+        public static Vector2Int GetPos()
+        {
+            if (gameView == null) Init();
+            if (gameView != null)
+            {
+                return new Vector2Int((int)gameView.position.x, (int)gameView.position.y);
+            }
+            return Vector2Int.zero;
+        }
+    }
+#endif
 }

@@ -106,7 +106,7 @@ namespace Fu
             UI = (window, layout) =>
             {
                 Vector2 cursorPos = ImGui.GetCursorScreenPos();
-                Container.ImGuiImage(_rTexture, WorkingAreaSize);
+                ImGui.Image(Container.Context.TextureManager.GetTextureId(_rTexture), WorkingAreaSize);
                 ImGui.SetCursorScreenPos(cursorPos);
                 windowDefinition.UI?.Invoke(this, Layout);
             };

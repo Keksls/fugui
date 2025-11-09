@@ -8,13 +8,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 
 namespace Fu
 {
@@ -62,10 +58,6 @@ namespace Fu
         /// </summary>
         public static Dictionary<FuWindowName, FuWindowDefinition> UIWindowsDefinitions { get; internal set; }
         /// <summary>
-        /// A boolean value indicating whether the render thread has started
-        /// </summary>
-        public static bool IsRendering { get; internal set; } = false;
-        /// <summary>
         /// A boolean value indicating whether a window has been render this frame
         /// </summary>
         public static bool HasRenderWindowThisFrame { get; internal set; } = false;
@@ -73,14 +65,6 @@ namespace Fu
         /// Whatever Fugui is allowed to set mouse cursor icon
         /// </summary>
         public static bool IsCursorLocked { get; internal set; } = false;
-        /// <summary>
-        /// The rendering state of Fugui, used to determine the current rendering phase
-        /// </summary>
-        public static FuguiRenderingState RenderingState = FuguiRenderingState.None;
-        /// <summary>
-        /// The type of render pipeline currently in use (Built-in, URP, HDRP)
-        /// </summary>
-        public static FuRenderPipelineType RenderPipelineType { get; private set; }
         /// <summary>
         /// The Fugui Theme Manager instance
         /// </summary>
@@ -129,8 +113,10 @@ namespace Fu
         /// Whatever cursors has just been unlocked
         /// </summary>
         internal static bool CursorsJustUnlocked = false;
-        // The dictionary of external windows
+        // The dictionary of 3D windows
         private static Dictionary<string, Fu3DWindowContainer> _3DWindows;
+        // dictionary of external windows
+        internal static Dictionary<string, FuExternalWindowContainer> ExternalWindows = new Dictionary<string, FuExternalWindowContainer>();
         // counter of Fugui Contexts
         private static int _contextID = 0;
         // queue of callback to execute BEFORE default render
@@ -254,11 +240,6 @@ namespace Fu
         {
             Settings = settings;
             Controller = controller;
-            GetCurrentRenderPipeline();
-            if (RenderPipelineType == FuRenderPipelineType.Unsupported)
-            {
-                Debug.LogWarning($"[Fugui] Fugui has detected an unsupported render pipeline ({RenderPipelineType}). Fugui is only supporting Universal Render Pipeline (URP) and High Definition Render Pipeline (HDRP). You can still use Fugui with Built-in or custom SRP, but some features may not work as expected.");
-            }
             // instantiate UIWindows 
             UIWindows = new Dictionary<string, FuWindow>();
             UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
@@ -324,17 +305,6 @@ namespace Fu
                 DestroyContext(contextID);
             }
         }
-        #endregion
-
-        #region Windows Native PInvoke
-        /// <summary>
-        /// windows user32 method to get world mouse pos
-        /// </summary>
-        /// <param name="lpMousePosition"></param>
-        /// <returns></returns>
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetCursorPos(out Vector2Int lpMousePosition);
         #endregion
 
         #region public Utils
@@ -724,13 +694,14 @@ namespace Fu
                     _afterDefaultRenderStack.Dequeue()?.Invoke();
                 }
             }
+            DefaultContext.EndRender();
             if (_targetScale != -1f)
             {
                 DefaultContext.SetScale(_targetScale, _targetFontScale);
             }
 
             // check if render graph is enabled
-            bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
+            //bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
 
             // render any other contexts
             foreach (var context in Contexts)
@@ -740,7 +711,9 @@ namespace Fu
                     if (context.Value.PrepareRender())
                     {
                         HasRenderWindowThisFrame = false;
+
                         context.Value.Render();
+                        context.Value.EndRender();
                         if (_targetScale != -1f)
                         {
                             context.Value.SetScale(_targetScale, _targetFontScale);
@@ -749,42 +722,59 @@ namespace Fu
                 }
             }
 
+            // --- Render ImGui multi-viewport (only once, from the main context) ---
+            var io = DefaultContext.IO;
+            if ((io.ConfigFlags & ImGuiConfigFlags.ViewportsEnable) != 0)
+            {
+                // On s’assure que le contexte principal (Unity) est bien actif
+                SetCurrentContext(DefaultContext);
+
+                ImGui.UpdatePlatformWindows();
+                ImGui.RenderPlatformWindowsDefault();
+            }
+
             // prevent rescaling each frames
             _targetScale = -1f;
         }
+        #endregion
+
+        #region External Windows
+        /// <summary>
+        /// Externalize a Fugui window into a native external window.
+        /// </summary>
+        /// <param name="uiWindow">The Fugui window to externalize.</param>
+        public static void ExternalizeWindow(FuWindow uiWindow)
+        {
+            if (uiWindow == null)
+            {
+                Debug.LogError("Cannot create an external window from a null Fugui window.");
+                return;
+            }
+
+            if (ExternalWindows.ContainsKey(uiWindow.ID))
+            {
+                Debug.LogWarning($"External window for {uiWindow.ID} already exists.");
+                return;
+            }
+
+            // 0) Create the external Fugui context
+            FuExternalContext context = new FuExternalContext(_contextID++, Settings.GlobalScale, Settings.FontGlobalScale, null, uiWindow);
+            Contexts.Add(context.ID, context);
+
+            // 1) Create the external container bound to this context
+            var container = new FuExternalWindowContainer(uiWindow, context);
+
+            // 2) Register and attach the window to this container
+            ExternalWindows.Add(uiWindow.ID, container);
+        }
 
         /// <summary>
-        /// Get the current render pipeline type
+        /// Remove an externalized window by instance.
         /// </summary>
-        private static void GetCurrentRenderPipeline()
+        internal static void RemoveExternalWindow(FuWindow uiWindow)
         {
-            try
-            {
-                // Try the most specific first, then fallbacks.
-                RenderPipelineAsset asset =
-                      GraphicsSettings.currentRenderPipeline
-                   ?? QualitySettings.renderPipeline
-                   ?? GraphicsSettings.defaultRenderPipeline;
-
-                // If null, it's Built-in RP.
-                if (asset == null)
-                {
-                    RenderPipelineType = FuRenderPipelineType.BuiltIn;
-                    return;
-                }
-#if HAS_URP
-                RenderPipelineType = FuRenderPipelineType.URP;
-#elif HAS_HDRP
-            RenderPipelineType = FuRenderPipelineType.HDRP;
-#else
-            RenderPipelineType = FuRenderPipelineType.CustomSRP;
-#endif
-            }
-            catch (Exception ex)
-            {
-                RenderPipelineType = FuRenderPipelineType.Unknown;
-                Debug.LogWarning("Fugui: Unable to determine current render pipeline. " + ex.Message);
-            }
+            if (uiWindow == null) return;
+            DestroyContext(uiWindow.Container.Context.ID);
         }
         #endregion
 
@@ -982,7 +972,7 @@ namespace Fu
         /// <param name="camera">Camera that will render the context</param>
         /// <param name="onInitialize">invoked on context initialization</param>
         /// <returns>the context created</returns>
-        private static unsafe FuUnityContext CreateUnityContext(int index, Camera camera, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
+        private static FuUnityContext CreateUnityContext(int index, Camera camera, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
         {
             if (Contexts.ContainsKey(index))
                 return null;

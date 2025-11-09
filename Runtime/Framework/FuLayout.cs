@@ -875,7 +875,7 @@ namespace Fu.Framework
             // get click state
             if (clickable && _lastItemHovered)
             {
-                if (Fugui.MainContainer.Mouse.IsClicked(FuMouseButton.Left))
+                if (Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Left))
                 {
                     _lastItemClickedButton = FuMouseButton.Left;
                     if (updateOnClick)
@@ -883,7 +883,7 @@ namespace Fu.Framework
                         updated = true;
                     }
                 }
-                else if (Fugui.MainContainer.Mouse.IsClicked(FuMouseButton.Right))
+                else if (Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Right))
                 {
                     _lastItemClickedButton = FuMouseButton.Right;
                 }

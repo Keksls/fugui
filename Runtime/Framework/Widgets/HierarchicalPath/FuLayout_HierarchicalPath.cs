@@ -48,7 +48,7 @@ namespace Fu.Framework
             float drawedWidth = 0f;
 
             // get current MouseState
-            FuMouseState mouse = FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Mouse : Fugui.MainContainer.Mouse;
+            FuMouseState mouse = FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Mouse : Fugui.DefaultContainer.Mouse;
             #endregion
 
             // draw path rect

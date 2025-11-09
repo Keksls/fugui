@@ -21,7 +21,7 @@ namespace Fu
         {
             if (container == null)
             {
-                container = MainContainer;
+                container = DefaultContainer;
             }
             _popupContainer = container;
             _popupMessage = message;
@@ -44,7 +44,7 @@ namespace Fu
         {
             if (container == null)
             {
-                container = MainContainer;
+                container = DefaultContainer;
             }
             _popupContainer = container;
             _showPopup = true;

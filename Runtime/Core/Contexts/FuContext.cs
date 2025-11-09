@@ -196,7 +196,6 @@ namespace Fu
         /// </summary>
         public unsafe void SetAsCurrent()
         {
-            Fugui.CurrentContext = this;
             ImGui.SetCurrentContext(ImGuiContext);
         }
 

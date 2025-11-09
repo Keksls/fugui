@@ -44,7 +44,7 @@ namespace Fu
         /// <summary>
         /// The static main UI container (this is the unity default 3D view)
         /// </summary>
-        public static FuMainWindowContainer MainContainer { get; internal set; }
+        public static FuMainWindowContainer DefaultContainer { get; internal set; }
         /// <summary>
         /// Default Fugui Context (it's the main unity context)
         /// </summary>
@@ -128,6 +128,7 @@ namespace Fu
 
         private static float _targetScale = -1f;
         private static float _targetFontScale = -1f;
+        internal static SDLEventRooter SDLEventRooter { get; private set; } = new SDLEventRooter();
         #endregion
 
         #region Constants
@@ -261,16 +262,15 @@ namespace Fu
             DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
-            MainContainer = new FuMainWindowContainer(DefaultContext);
+            DefaultContainer = new FuMainWindowContainer(DefaultContext);
 
             // register Fugui Settings Window
             new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, DrawSettings, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
 
-            // initialize debug tool if debug is enabled
 #if FUDEBUG
+            // initialize debug tool if debug is enabled
             initDebugTool();
 #endif
-
         }
 
         /// <summary>
@@ -541,9 +541,9 @@ namespace Fu
                     {
                         // Subscribe to the OnReady event of the window
                         win.OnInitialized += onWindowReady;
-                        win.Size = new Vector2Int((int)(winDef.Size.x * MainContainer.Context.Scale), (int)(winDef.Size.y * MainContainer.Context.Scale));
+                        win.Size = new Vector2Int((int)(winDef.Size.x * DefaultContainer.Context.Scale), (int)(winDef.Size.y * DefaultContainer.Context.Scale));
                         // add UIWindow to main container
-                        win.TryAddToContainer(MainContainer);
+                        win.TryAddToContainer(DefaultContainer);
                     }
                     else
                     {
@@ -757,14 +757,14 @@ namespace Fu
                 return;
             }
 
-            // 0) Create the external Fugui context
+            // 1) Create the external Fugui context
             FuExternalContext context = new FuExternalContext(_contextID++, Settings.GlobalScale, Settings.FontGlobalScale, null, uiWindow);
             Contexts.Add(context.ID, context);
 
-            // 1) Create the external container bound to this context
+            // 2) Create the external container bound to this context
             var container = new FuExternalWindowContainer(uiWindow, context);
 
-            // 2) Register and attach the window to this container
+            // 3) Register and attach the window to this container
             ExternalWindows.Add(uiWindow.ID, container);
         }
 
@@ -1051,6 +1051,7 @@ namespace Fu
             if (context != null)
             {
                 context.SetAsCurrent();
+                CurrentContext = context;
             }
             else
             {
@@ -1377,7 +1378,8 @@ namespace Fu
         }
 
         // Clipper
-        private static unsafe readonly ImGuiListClipper* _clipper = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
+        private static Dictionary<int, ImGuiListClipperPtr> _clippers = new Dictionary<int, ImGuiListClipperPtr>();
+        //private static unsafe readonly ImGuiListClipper* _clipper = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
 
         /// <summary>
         /// Beggin a list clipper. Use it to help drawing only visible items of a list (items need to have fixed height)
@@ -1386,7 +1388,19 @@ namespace Fu
         /// <param name="itemHeight">height of an item</param>
         public static unsafe void ListClipperBegin(int count = -1, float itemHeight = -1f)
         {
-            ImGuiNative.ImGuiListClipper_Begin(_clipper, count, itemHeight);
+            if (count <= 0)
+                count = 1;
+            if (itemHeight <= 0f)
+                itemHeight = 1f;
+
+            int ctxId = CurrentContext != null ? CurrentContext.ID : 0;
+            if (!_clippers.ContainsKey(ctxId))
+            {
+                _clippers.Add(ctxId, new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper()));
+            }
+
+            var _clipper = _clippers[ctxId];
+            ImGuiNative.ImGuiListClipper_Begin(_clipper.NativePtr, count, itemHeight);
         }
 
         /// <summary>
@@ -1394,7 +1408,14 @@ namespace Fu
         /// </summary>
         public static unsafe void ListClipperEnd()
         {
-            ImGuiNative.ImGuiListClipper_End(_clipper);
+            int ctxId = CurrentContext != null ? CurrentContext.ID : 0;
+            if (!_clippers.ContainsKey(ctxId))
+            {
+                _clippers.Add(ctxId, new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper()));
+            }
+
+            var _clipper = _clippers[ctxId];
+            ImGuiNative.ImGuiListClipper_End(_clipper.NativePtr);
         }
 
         /// <summary>
@@ -1403,7 +1424,14 @@ namespace Fu
         /// <returns>true if step success</returns>
         public static unsafe bool ListClipperStep()
         {
-            return ImGuiNative.ImGuiListClipper_Step(_clipper) == 1;
+            int ctxId = CurrentContext != null ? CurrentContext.ID : 0;
+            if (!_clippers.ContainsKey(ctxId))
+            {
+                _clippers.Add(ctxId, new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper()));
+            }
+
+            var _clipper = _clippers[ctxId];
+            return ImGuiNative.ImGuiListClipper_Step(_clipper.NativePtr) == 1;
         }
 
         /// <summary>
@@ -1412,7 +1440,14 @@ namespace Fu
         /// <returns>index of the item</returns>
         public static unsafe int ListClipperDisplayStart()
         {
-            return _clipper->DisplayStart;
+            int ctxId = CurrentContext != null ? CurrentContext.ID : 0;
+            if (!_clippers.ContainsKey(ctxId))
+            {
+                _clippers.Add(ctxId, new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper()));
+            }
+
+            var _clipper = _clippers[ctxId];
+            return _clipper.DisplayStart;
         }
 
         /// <summary>
@@ -1421,7 +1456,14 @@ namespace Fu
         /// <returns>index of the item</returns>
         public static unsafe int ListClipperDisplayEnd()
         {
-            return _clipper->DisplayEnd;
+            int ctxId = CurrentContext != null ? CurrentContext.ID : 0;
+            if (!_clippers.ContainsKey(ctxId))
+            {
+                _clippers.Add(ctxId, new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper()));
+            }
+
+            var _clipper = _clippers[ctxId];
+            return _clipper.DisplayEnd;
         }
 
         /// <summary>
@@ -1460,7 +1502,7 @@ namespace Fu
             bool isDown = false;
             if (windowsNames == null || windowsNames.Length == 0)
             {
-                isDown |= MainContainer.Keyboard.GetKeyDown(key);
+                isDown |= DefaultContainer.Keyboard.GetKeyDown(key);
                 if (!isDown)
                 {
                     foreach (var threeDWindowContainer in _3DWindows.Values)
@@ -1509,7 +1551,7 @@ namespace Fu
             bool isPressed = false;
             if (windowsNames == null || windowsNames.Length == 0)
             {
-                isPressed |= MainContainer.Keyboard.GetKeyPressed(key);
+                isPressed |= DefaultContainer.Keyboard.GetKeyPressed(key);
                 if (!isPressed)
                 {
                     foreach (var threeDWindowContainer in _3DWindows.Values)
@@ -1558,7 +1600,7 @@ namespace Fu
             bool isUp = false;
             if (windowsNames == null || windowsNames.Length == 0)
             {
-                isUp |= MainContainer.Keyboard.GetKeyUp(key);
+                isUp |= DefaultContainer.Keyboard.GetKeyUp(key);
                 if (!isUp)
                 {
                     foreach (var threeDWindowContainer in _3DWindows.Values)
@@ -1593,6 +1635,19 @@ namespace Fu
                 }
             }
             return isUp;
+        }
+
+        /// <summary>
+        /// Get the current mouse state
+        /// </summary>
+        /// <returns> current mouse state</returns>
+        public static FuMouseState GetCurrentMouse()
+        {
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                return FuWindow.CurrentDrawingWindow.Mouse;
+            }
+            return DefaultContainer.Mouse;
         }
         #endregion
 

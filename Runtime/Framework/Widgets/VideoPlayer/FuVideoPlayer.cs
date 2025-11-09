@@ -354,12 +354,12 @@ namespace Fu.Framework
                 // enter full screen
                 if (_isFullScreen)
                 {
-                    (FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.MainContainer).Context.OnLastRender += fullScreen_draw_event;
+                    (FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.DefaultContainer).Context.OnLastRender += fullScreen_draw_event;
                 }
                 // exit full screen
                 else
                 {
-                    (FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.MainContainer).Context.OnLastRender -= fullScreen_draw_event;
+                    (FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.DefaultContainer).Context.OnLastRender -= fullScreen_draw_event;
                 }
             });
         }
@@ -394,7 +394,7 @@ namespace Fu.Framework
             }
 
             // get current container
-            IFuWindowContainer currentContainer = FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.MainContainer;
+            IFuWindowContainer currentContainer = FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.DefaultContainer;
 
             // draw in full screen if video is full screen (draw in a new full screen imgui window)
             if (startFCState)
@@ -613,7 +613,7 @@ namespace Fu.Framework
         public void DrawTimeLine(float height = 16f, float width = -1f)
         {
             // get current container
-            IFuWindowContainer currentContainer = FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.MainContainer;
+            IFuWindowContainer currentContainer = FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.DefaultContainer;
 
             int frame = 0;
             if (Player != null)

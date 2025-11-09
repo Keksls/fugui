@@ -145,7 +145,7 @@ namespace Fu
             tryAutoDockWindow(window, CurrentLayout, ref success);
             if (success)
             {
-                uint MainID = Fugui.MainContainer.Dockspace_id;
+                uint MainID = Fugui.DefaultContainer.Dockspace_id;
                 ImGuiDocking.DockBuilderFinish(MainID);
             }
             return success;
@@ -251,7 +251,7 @@ namespace Fu
             {
                 Fugui.ExecuteAfterRenderWindows(() =>
                 {
-                    uint MainID = Fugui.MainContainer.Dockspace_id;
+                    uint MainID = Fugui.DefaultContainer.Dockspace_id;
                     dockSpaceDefinition.ID = MainID;
 
                     createDocking(windows, dockSpaceDefinition);
@@ -365,12 +365,12 @@ namespace Fu
         /// </summary>
         private void breakDockingLayout()
         {
-            uint Dockspace_id = Fugui.MainContainer.Dockspace_id;
+            uint Dockspace_id = Fugui.DefaultContainer.Dockspace_id;
             ImGuiDocking.DockBuilderRemoveNode(Dockspace_id); // Clear out existing layout
             ImGuiDocking.DockBuilderAddNode(Dockspace_id, ImGuiDockNodeFlags.None); // Add empty node
 
             // ensure Fugui.MainContainer.Size is more than 0
-            Vector2 size = Fugui.MainContainer.Size;
+            Vector2 size = Fugui.DefaultContainer.Size;
             if (size.x <= 0 || size.y <= 0)
             {
                 size = new Vector2(800, 600); // Default size if not set
@@ -409,7 +409,7 @@ namespace Fu
                     return;
                 }
 
-                uint Dockspace_id = Fugui.MainContainer.Dockspace_id;
+                uint Dockspace_id = Fugui.DefaultContainer.Dockspace_id;
                 uint left;
                 uint right;
                 ImGuiDocking.DockBuilderSplitNode(Dockspace_id, ImGuiDir.Left, 0.7f, out left, out right);
@@ -624,7 +624,7 @@ namespace Fu
                                 Fugui.ShowModal("Delete Docking Layout", (layout) =>
                                 {
                                     layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrap);
-                                    if (Fugui.MainContainer.Keyboard.GetKeyDown(FuKeysCode.Enter))
+                                    if (Fugui.DefaultContainer.Keyboard.GetKeyDown(FuKeysCode.Enter))
                                     {
                                         confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback);
                                         Fugui.CloseModal();
@@ -862,7 +862,7 @@ namespace Fu
         {
             // create new DockingLayoutDefinition
             FuDockingLayoutDefinition newDockingLayoutDefinition = new FuDockingLayoutDefinition("DockSpace_" + dockSpaceData.Rect.ToString(), 0);
-            newDockingLayoutDefinition.ID = Fugui.MainContainer.Dockspace_id;
+            newDockingLayoutDefinition.ID = Fugui.DefaultContainer.Dockspace_id;
             newDockingLayoutDefinition.Name = "DockSpace_" + dockSpaceData.Rect.ToString();
             newDockingLayoutDefinition.Orientation = dockSpaceData.Dir;
             newDockingLayoutDefinition.Proportion = dockSpaceData.SplitSpaceRatio;

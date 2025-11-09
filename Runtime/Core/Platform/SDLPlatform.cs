@@ -18,21 +18,22 @@ namespace Fu
 
         public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr platformIO, string platformName = null)
         {
+            base.Initialize(io, platformIO, platformName ?? "Fugui SDL Platform");
             _initialized = true;
 
             io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos;
             io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
 
-            platformIO.Platform_CreateWindow = Marshal.GetFunctionPointerForDelegate((Platform_CreateWindowCallback)CreateWindow);
-            platformIO.Platform_DestroyWindow = Marshal.GetFunctionPointerForDelegate((Platform_DestroyWindowCallback)DestroyWindow);
-            platformIO.Platform_ShowWindow = Marshal.GetFunctionPointerForDelegate((Platform_ShowWindowCallback)ShowWindow);
-            platformIO.Platform_SetWindowPos = Marshal.GetFunctionPointerForDelegate((Platform_SetWindowPosCallback)SetWindowPos);
-            platformIO.Platform_SetWindowSize = Marshal.GetFunctionPointerForDelegate((Platform_SetWindowSizeCallback)SetWindowSize);
-            platformIO.Platform_SetWindowFocus = Marshal.GetFunctionPointerForDelegate((Platform_SetWindowFocusCallback)SetWindowFocus);
-            platformIO.Platform_GetWindowPos = Marshal.GetFunctionPointerForDelegate((Platform_GetWindowPosCallback)GetWindowPos);
-            platformIO.Platform_GetWindowSize = Marshal.GetFunctionPointerForDelegate((Platform_GetWindowSizeCallback)GetWindowSize);
-            platformIO.Platform_GetWindowFocus = Marshal.GetFunctionPointerForDelegate((Platform_GetWindowFocusCallback)GetWindowFocus);
-            platformIO.Platform_RenderWindow = Marshal.GetFunctionPointerForDelegate((Platform_RenderWindowCallback)RenderWindow);
+            //platformIO.Platform_CreateWindow = Marshal.GetFunctionPointerForDelegate((Platform_CreateWindowCallback)CreateWindow);
+            //platformIO.Platform_DestroyWindow = Marshal.GetFunctionPointerForDelegate((Platform_DestroyWindowCallback)DestroyWindow);
+            //platformIO.Platform_ShowWindow = Marshal.GetFunctionPointerForDelegate((Platform_ShowWindowCallback)ShowWindow);
+            //platformIO.Platform_SetWindowPos = Marshal.GetFunctionPointerForDelegate((Platform_SetWindowPosCallback)SetWindowPos);
+            //platformIO.Platform_SetWindowSize = Marshal.GetFunctionPointerForDelegate((Platform_SetWindowSizeCallback)SetWindowSize);
+            //platformIO.Platform_SetWindowFocus = Marshal.GetFunctionPointerForDelegate((Platform_SetWindowFocusCallback)SetWindowFocus);
+            //platformIO.Platform_GetWindowPos = Marshal.GetFunctionPointerForDelegate((Platform_GetWindowPosCallback)GetWindowPos);
+            //platformIO.Platform_GetWindowSize = Marshal.GetFunctionPointerForDelegate((Platform_GetWindowSizeCallback)GetWindowSize);
+            //platformIO.Platform_GetWindowFocus = Marshal.GetFunctionPointerForDelegate((Platform_GetWindowFocusCallback)GetWindowFocus);
+            //platformIO.Platform_RenderWindow = Marshal.GetFunctionPointerForDelegate((Platform_RenderWindowCallback)RenderWindow);
 
             return true;
         }
@@ -117,35 +118,93 @@ namespace Fu
             if (!_initialized) return;
             base.PrepareFrame(io, rect, updateMouse, updateKeyboard);
 
-            // Récupère la position de la souris SDL
-            if (updateMouse)
+            SDL.SDL_Event e;
+            while (Fugui.SDLEventRooter.Poll(_window.SdlWindowId, out e))
             {
-                int mx, my;
-                uint buttons = SDL.SDL_GetMouseState(out mx, out my);
-                io.MousePos = new Vector2(mx, my);
-                io.MouseDown[0] = (buttons & SDL.SDL_BUTTON_LMASK) != 0;
-                io.MouseDown[1] = (buttons & SDL.SDL_BUTTON_RMASK) != 0;
-                io.MouseDown[2] = (buttons & SDL.SDL_BUTTON_MMASK) != 0;
-            }
-
-            // Handle keyboard input from SDL
-            if (updateKeyboard)
-            {
-                int count = 0;
-                IntPtr statePtr = SDL.SDL_GetKeyboardState(ref count);
-
-                // Copy unmanaged memory into managed array
-                byte[] state = new byte[count];
-                Marshal.Copy(statePtr, state, 0, count);
-
-                for (int i = 0; i < count; i++)
+                switch (e.type)
                 {
-                    bool pressed = state[i] != 0;
-                    ImGuiKey key = SDLKeyToImGuiKey((SDL.SDL_Scancode)i);
-                    if (key != ImGuiKey.None)
-                        io.AddKeyEvent(key, pressed);
+                    case SDL.SDL_EventType.SDL_KEYDOWN:
+                    case SDL.SDL_EventType.SDL_KEYUP:
+                        HandleKey(io, e.key);
+                        break;
+
+                    case SDL.SDL_EventType.SDL_TEXTINPUT:
+                        HandleTextInput(io, e.text);
+                        break;
+
+                    case SDL.SDL_EventType.SDL_MOUSEWHEEL:
+                        HandleMouseWheel(io, e.wheel);
+                        break;
+
+                    case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
+                    case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
+                        HandleMouseButton(io, e.button);
+                        break;
+
+                    case SDL.SDL_EventType.SDL_MOUSEMOTION:
+                        HandleMouseMotion(io, e.motion);
+                        break;
+
+                    // Unhandled events are pushed back to the rooter
+                    default:
+                        Fugui.SDLEventRooter.Push(_window.SdlWindowId, ref e);
+                        break;
                 }
             }
+        }
+
+        private void HandleMouseMotion(ImGuiIOPtr io, SDL.SDL_MouseMotionEvent m)
+        {
+            io.AddMousePosEvent(m.x, m.y);
+        }
+
+        private void HandleMouseWheel(ImGuiIOPtr io, SDL.SDL_MouseWheelEvent w)
+        {
+            float x = w.x;
+            float y = w.y;
+            Debug.Log($"Mouse Wheel: x={x}, y={y}");
+            io.AddMouseWheelEvent(x, y);
+        }
+
+        private void HandleMouseButton(ImGuiIOPtr io, SDL.SDL_MouseButtonEvent b)
+        {
+            int index =
+                b.button == SDL.SDL_BUTTON_LEFT ? 0 :
+                b.button == SDL.SDL_BUTTON_RIGHT ? 1 :
+                b.button == SDL.SDL_BUTTON_MIDDLE ? 2 : -1;
+
+            if (index >= 0)
+                io.AddMouseButtonEvent(index, b.state == SDL.SDL_PRESSED);
+        }
+
+        private void HandleTextInput(ImGuiIOPtr io, SDL.SDL_TextInputEvent text)
+        {
+            unsafe
+            {
+                string s = new string(text.text);
+
+                if (!string.IsNullOrEmpty(s))
+                {
+                    foreach (char c in s)
+                        io.AddInputCharacter(c);
+                }
+            }
+        }
+
+        private void HandleKey(ImGuiIOPtr io, SDL.SDL_KeyboardEvent key)
+        {
+            bool down = key.state == SDL.SDL_PRESSED;
+            ImGuiKey imKey = SDLKeyToImGuiKey(key.keysym.scancode);
+
+            if (imKey != ImGuiKey.None)
+                io.AddKeyEvent(imKey, down);
+
+            SDL.SDL_Keymod mods = SDL.SDL_GetModState();
+
+            io.AddKeyEvent(ImGuiKey.ModCtrl, (mods & SDL.SDL_Keymod.KMOD_CTRL) != 0);
+            io.AddKeyEvent(ImGuiKey.ModShift, (mods & SDL.SDL_Keymod.KMOD_SHIFT) != 0);
+            io.AddKeyEvent(ImGuiKey.ModAlt, (mods & SDL.SDL_Keymod.KMOD_ALT) != 0);
+            io.AddKeyEvent(ImGuiKey.ModSuper, (mods & SDL.SDL_Keymod.KMOD_GUI) != 0);
         }
 
         public override void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr platformIO)
@@ -193,6 +252,34 @@ namespace Fu
                 case SDL.SDL_Scancode.SDL_SCANCODE_RIGHT: return ImGuiKey.RightArrow;
                 case SDL.SDL_Scancode.SDL_SCANCODE_UP: return ImGuiKey.UpArrow;
                 case SDL.SDL_Scancode.SDL_SCANCODE_DOWN: return ImGuiKey.DownArrow;
+
+                case SDL.SDL_Scancode.SDL_SCANCODE_LCTRL: return ImGuiKey.LeftCtrl;
+                case SDL.SDL_Scancode.SDL_SCANCODE_RCTRL: return ImGuiKey.RightCtrl;
+                case SDL.SDL_Scancode.SDL_SCANCODE_LSHIFT: return ImGuiKey.LeftShift;
+                case SDL.SDL_Scancode.SDL_SCANCODE_RSHIFT: return ImGuiKey.RightShift;
+                case SDL.SDL_Scancode.SDL_SCANCODE_LALT: return ImGuiKey.LeftAlt;
+                case SDL.SDL_Scancode.SDL_SCANCODE_RALT: return ImGuiKey.RightAlt;
+
+                case SDL.SDL_Scancode.SDL_SCANCODE_0: return ImGuiKey._0;
+                case SDL.SDL_Scancode.SDL_SCANCODE_1: return ImGuiKey._1;
+                case SDL.SDL_Scancode.SDL_SCANCODE_2: return ImGuiKey._2;
+                case SDL.SDL_Scancode.SDL_SCANCODE_3: return ImGuiKey._3;
+                case SDL.SDL_Scancode.SDL_SCANCODE_4: return ImGuiKey._4;
+                case SDL.SDL_Scancode.SDL_SCANCODE_5: return ImGuiKey._5;
+                case SDL.SDL_Scancode.SDL_SCANCODE_6: return ImGuiKey._6;
+                case SDL.SDL_Scancode.SDL_SCANCODE_7: return ImGuiKey._7;
+                case SDL.SDL_Scancode.SDL_SCANCODE_8: return ImGuiKey._8;
+                case SDL.SDL_Scancode.SDL_SCANCODE_9: return ImGuiKey._9;
+
+                case SDL.SDL_Scancode.SDL_SCANCODE_DELETE: return ImGuiKey.Delete;
+
+                case SDL.SDL_Scancode.SDL_SCANCODE_HOME: return ImGuiKey.Home;
+                case SDL.SDL_Scancode.SDL_SCANCODE_END: return ImGuiKey.End;
+                case SDL.SDL_Scancode.SDL_SCANCODE_PAGEUP: return ImGuiKey.PageUp;
+                case SDL.SDL_Scancode.SDL_SCANCODE_PAGEDOWN: return ImGuiKey.PageDown;
+
+                case SDL.SDL_Scancode.SDL_SCANCODE_INSERT: return ImGuiKey.Insert;
+                case SDL.SDL_Scancode.SDL_SCANCODE_MENU: return ImGuiKey.Menu;
 
                 default: return ImGuiKey.None;
             }

@@ -59,7 +59,7 @@ namespace Fu
             Fugui.Update();
 
             // let's update main container inputs and internal stuff
-            Fugui.MainContainer.Update();
+            Fugui.DefaultContainer.Update();
 
             // Update external windows
             foreach (FuWindow window in Fugui.UIWindows.Values)
@@ -87,17 +87,16 @@ namespace Fu
                 if (Fugui.ContextExists(contextID))
                 {
                     FuContext context = Fugui.GetContext(contextID);
-                    context.EndRender();
-                    context.Destroy();
-
                     if(context is FuExternalContext externalContext)
                     {
                         // remove external window from dictionary
                         Fugui.ExternalWindows.Remove(externalContext.Window.Window.ID);
                     }
+                    context.EndRender();
+                    context.Destroy();
 
                     Fugui.Contexts.Remove(context.ID);
-                    Fugui.DefaultContext.SetAsCurrent();
+                    Fugui.SetCurrentContext(Fugui.DefaultContext);
                 }
             }
         }

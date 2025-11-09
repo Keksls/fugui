@@ -681,7 +681,7 @@ namespace Fu
                 // draw user UI callback
                 FuStyle.Default.Push(true);
 
-                if(Layout.Button("Externalize"))
+                if(Layout.Button("Externalize##" + ID))
                 {
                     Fugui.ExternalizeWindow(this);
                 }

@@ -33,9 +33,11 @@ namespace Fu
         /// </summary>
         internal override bool EndRender()
         {
-            Fugui.IsRendering = false;
             if (!RenderPrepared)
+            {
+                Debug.LogWarning("[Fugui] Trying to end render for context that is not prepared.");
                 return false;
+            }
 
             // cancel drag drop for this context if left click is up this frame and it's not the first frame of the current drag drop operation
             if (_isDraggingPayload && !_firstFrameDragging && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
@@ -44,6 +46,7 @@ namespace Fu
             }
 
             RenderPrepared = false;
+            ImGui.EndFrame();
             return true;
         }
 
@@ -58,7 +61,6 @@ namespace Fu
                 return true;
             }
 
-            Fugui.IsRendering = true;
             // set this contextr as current
             Fugui.SetCurrentContext(this);
 

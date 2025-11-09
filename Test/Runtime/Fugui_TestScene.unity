@@ -238,6 +238,10 @@ PrefabInstance:
       value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 2932005272966750016, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
+      propertyPath: _settings.ImGuiConfig
+      value: 1153
+      objectReference: {fileID: 0}
+    - target: {fileID: 2932005272966750016, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
       propertyPath: _settings.IdleCameraFPS
       value: 30
       objectReference: {fileID: 0}

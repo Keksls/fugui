@@ -46,11 +46,11 @@ namespace Fu.Framework
             // Draw the gradient texture
             if (FuWindow.CurrentDrawingWindow == null)
             {
-                Fugui.MainContainer.ImGuiImage(gradientTexture, gradientRect.size, Color.white);
+                ImGui.Image(Fugui.CurrentContext.TextureManager.GetTextureId(gradientTexture), gradientRect.size, Vector2.zero, Vector2.one, Color.white);
             }
             else
             {
-                FuWindow.CurrentDrawingWindow.Container.ImGuiImage(gradientTexture, gradientRect.size, Color.white);
+                ImGui.Image(FuWindow.CurrentDrawingWindow.Container.Context.TextureManager.GetTextureId(gradientTexture), gradientRect.size, Vector2.zero, Vector2.one, Color.white);
             }
 
             // draw border
@@ -210,11 +210,11 @@ namespace Fu.Framework
             // Draw the gradient texture
             if (FuWindow.CurrentDrawingWindow == null)
             {
-                Fugui.MainContainer.ImGuiImage(gradientTexture, gradientRect.size, Color.white);
+                ImGui.Image(Fugui.CurrentContext.TextureManager.GetTextureId(gradientTexture), gradientRect.size, Vector2.zero, Vector2.one, Color.white);
             }
             else
             {
-                FuWindow.CurrentDrawingWindow.Container.ImGuiImage(gradientTexture, gradientRect.size, Color.white);
+                ImGui.Image(FuWindow.CurrentDrawingWindow.Container.Context.TextureManager.GetTextureId(gradientTexture), gradientRect.size, Vector2.zero, Vector2.one, Color.white);
             }
 
             bool isAnyKeyHovered = false;

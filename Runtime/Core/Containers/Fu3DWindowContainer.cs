@@ -97,7 +97,7 @@ namespace Fu
 
             // create the fugui 3d context
             _fuguiContext = Fugui.CreateUnityContext(Camera, Fugui.Settings.Windows3DSuperSampling, Fugui.Settings.Windows3DFontScale);
-            _fuguiContext.OnRender += _context_OnRender;
+            _fuguiContext.OnRender += RenderFuWindows;
             _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
             _fuguiContext.AutoUpdateMouse = false;
 
@@ -208,14 +208,6 @@ namespace Fu
 
             // return whatever the mouse need to be drawn
             return Window.MustBeDraw();
-        }
-
-        /// <summary>
-        /// whenever the fugui context render the frame
-        /// </summary>
-        private void _context_OnRender()
-        {
-            RenderFuWindows();
         }
 
         /// <summary>
@@ -428,7 +420,7 @@ namespace Fu
             }
             if (_fuguiContext != null)
             {
-                _fuguiContext.OnRender -= _context_OnRender;
+                _fuguiContext.OnRender -= RenderFuWindows;
                 _fuguiContext.OnPrepareFrame -= context_OnPrepareFrame;
                 Fugui.DestroyContext(_fuguiContext);
             }

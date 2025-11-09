@@ -32,13 +32,14 @@ namespace Fu
         public bool AutoUpdateMouse = true;
         public bool AutoUpdateKeyboard = true;
         public TextureManager TextureManager;
-        public bool Started { get; private set; }
+        public bool Started { get; protected set; }
         public float Scale { get; protected set; }
         public float FontScale { get; protected set; }
-        public DrawData DrawData { get; protected set; } = new DrawData();
+        protected DrawData _drawData = new DrawData();
+        public DrawData DrawData => _drawData;
         public bool RenderPrepared { get; protected set; } = false;
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
-        internal FontSet DefaultFont { get; private set; }
+        internal FontSet DefaultFont { get; set; }
         // var to count how many push are at frame start, so we can pop missing push
         private static int _nbColorPushOnFrameStart = 0;
         private static int _nbStylePushOnFrameStart = 0;
@@ -124,6 +125,7 @@ namespace Fu
         {
             if (!RenderPrepared)
             {
+                Debug.LogWarning("[Fugui] Render called without PrepareRender being called or returning false. Skipping Render.");
                 return;
             }
 
@@ -164,7 +166,11 @@ namespace Fu
             OnPostRender?.Invoke();
 
             // keep draw data for this context while rendering
-            DrawData = ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData());
+            lock (DrawData)
+            {
+                ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData(), ref _drawData);
+            }
+            //Debug.Log(this.ID + " Rendered with " + _drawData.CmdListsCount + " Draw Lists and " + _drawData.TotalVtxCount + " vertices.");
         }
 
         /// <summary>

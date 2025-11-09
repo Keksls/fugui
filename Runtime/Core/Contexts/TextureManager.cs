@@ -216,6 +216,11 @@ namespace Fu
             return _textureIds.TryGetValue(texture, out IntPtr id) ? id : RegisterTexture(texture);
         }
 
+        public IntPtr GetFontAtlasTextureId()
+        {
+            return GetTextureId(_atlasTexture[Fugui.CurrentContext.FontScale]);
+        }
+
         internal SpriteInfo GetSpriteInfo(Sprite sprite)
         {
             if (!_spriteData.TryGetValue(sprite, out SpriteInfo spriteInfo))

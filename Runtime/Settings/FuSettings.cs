@@ -345,6 +345,15 @@ namespace Fu
         public void ApplyTo(ImGuiIOPtr io)
         {
             io.ConfigFlags = ImGuiConfig;
+
+            if(ImGuiConfig.HasFlag(ImGuiConfigFlags.ViewportsEnable))
+            {
+                io.ConfigFlags |= ImGuiConfigFlags.DpiEnableScaleViewports;
+                io.ConfigFlags |= ImGuiConfigFlags.DpiEnableScaleFonts;
+                io.ConfigViewportsNoDecoration = false;
+                io.ConfigViewportsNoAutoMerge = false;
+            }
+
             io.BackendFlags = ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos | ImGuiBackendFlags.RendererHasVtxOffset;
             io.MouseDoubleClickTime = DoubleClickTime;
             io.MouseDoubleClickMaxDist = DoubleClickMaxDist;

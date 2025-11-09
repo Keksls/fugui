@@ -25,7 +25,7 @@ namespace Fu.Framework
             // register DockingLayoutManager events
             Fugui.Layouts.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
             // register on render event of the main container's context to draw ImGui Demo Window
-            Fugui.MainContainer.Context.OnRender += MainContainerContext_OnRender;
+            Fugui.DefaultContainer.Context.OnRender += MainContainerContext_OnRender;
         }
 
         private void Start()

@@ -51,7 +51,7 @@ namespace Fu.Framework
                 Callback?.Invoke();
                 Fugui.CloseModal();
             }
-            else if(KeyCodeExecute != FuKeysCode.None && Fugui.MainContainer.Keyboard.GetKeyDown(KeyCodeExecute))
+            else if(KeyCodeExecute != FuKeysCode.None && Fugui.DefaultContainer.Keyboard.GetKeyDown(KeyCodeExecute))
             {
                 Callback?.Invoke();
                 Fugui.CloseModal();

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using static Codice.CM.WorkspaceServer.WorkspaceTreeDataStore;
 using static SDL2.SDL;
 
 namespace Fu
@@ -16,7 +15,8 @@ namespace Fu
     {
         #region Variables
         public FuWindow Window;
-        public IntPtr _sdlWindow { get; private set; }
+        public IntPtr SdlWindow { get; private set; }
+        public uint SdlWindowId { get; private set; }
         public string Title { get; private set; }
         public int Width => Window.Size.x;
         public int Height => Window.Size.y;
@@ -27,8 +27,8 @@ namespace Fu
             set
             {
                 _containerPosition = value;
-                if (_sdlWindow != IntPtr.Zero)
-                    SDL_SetWindowPosition(_sdlWindow, _containerPosition.x, _containerPosition.y);
+                if (SdlWindow != IntPtr.Zero)
+                    SDL_SetWindowPosition(SdlWindow, _containerPosition.x, _containerPosition.y);
             }
         }
 
@@ -225,7 +225,7 @@ namespace Fu
             SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_BLUE_SIZE, 8);
             SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_ALPHA_SIZE, 8);
 
-            _sdlWindow = SDL_CreateWindow(
+            SdlWindow = SDL_CreateWindow(
                 Title,
                 _containerPosition.x,
                 _containerPosition.y,
@@ -234,23 +234,22 @@ namespace Fu
                 SDL_WindowFlags.SDL_WINDOW_SHOWN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_OPENGL
                 /*| SDL_WindowFlags.SDL_WINDOW_BORDERLESS*/);
 
-            if (_sdlWindow == IntPtr.Zero)
+            if (SdlWindow == IntPtr.Zero)
             {
                 Debug.LogError("SDL_CreateWindow failed: " + SDL_GetError());
-                SDL_Quit();
                 return;
             }
+            SdlWindowId = SDL_GetWindowID(SdlWindow);
 
-            _glContext = SDL_GL_CreateContext(_sdlWindow);
+            _glContext = SDL_GL_CreateContext(SdlWindow);
             if (_glContext == IntPtr.Zero)
             {
                 Debug.LogError("SDL_GL_CreateContext failed: " + SDL_GetError());
-                SDL_DestroyWindow(_sdlWindow);
-                SDL_Quit();
+                SDL_DestroyWindow(SdlWindow);
                 return;
             }
 
-            SDL_GL_MakeCurrent(_sdlWindow, _glContext);
+            SDL_GL_MakeCurrent(SdlWindow, _glContext);
             GLMini.Load(name => SDL_GL_GetProcAddress(name));
             SDL_GL_SetSwapInterval(1); // vsync
 
@@ -280,6 +279,9 @@ namespace Fu
             // Create fallback white texture
             CreateFallbackWhiteTexture();
 
+            // Register window to sdl event rooter
+            Fugui.SDLEventRooter.RegisterWindow(SdlWindowId);
+
             _isRunning = true;
         }
 
@@ -289,8 +291,11 @@ namespace Fu
             if (!_isRunning)
                 return;
 
+            SDL_GL_MakeCurrent(SdlWindow, _glContext);
+            Fugui.SDLEventRooter.Update();
+
             // Main loop
-            while (SDL_PollEvent(out evt) != 0)
+            while (Fugui.SDLEventRooter.Poll(SdlWindowId, out evt))
                 HandleEvent(evt);
 
             // If a close was requested, stop running and close resources once
@@ -309,7 +314,7 @@ namespace Fu
             RenderFrame();
 
             // perform buffer swap
-            SDL_GL_SwapWindow(_sdlWindow);
+            SDL_GL_SwapWindow(SdlWindow);
 
             // ensure local position is zero
             Window.LocalPosition = Vector2Int.zero;
@@ -352,8 +357,8 @@ namespace Fu
                 if (_vao != 0) { glDeleteVertexArray(_vao); _vao = 0; }
 
                 // Unbind current before destroying the context
-                if (_sdlWindow != IntPtr.Zero)
-                    SDL_GL_MakeCurrent(_sdlWindow, IntPtr.Zero);
+                if (SdlWindow != IntPtr.Zero)
+                    SDL_GL_MakeCurrent(SdlWindow, IntPtr.Zero);
 
                 if (_glContext != IntPtr.Zero)
                 {
@@ -361,13 +366,16 @@ namespace Fu
                     _glContext = IntPtr.Zero;
                 }
 
-                if (_sdlWindow != IntPtr.Zero)
+                if (SdlWindow != IntPtr.Zero)
                 {
-                    SDL_DestroyWindow(_sdlWindow);
-                    _sdlWindow = IntPtr.Zero;
+                    SDL_DestroyWindow(SdlWindow);
+                    SdlWindow = IntPtr.Zero;
                 }
 
                 Fugui.RemoveExternalWindow(Window);
+
+                // unregister from SDL event rooter
+                Fugui.SDLEventRooter.UnregisterWindow(SdlWindowId);
             }
             catch (Exception e)
             {
@@ -382,6 +390,7 @@ namespace Fu
         /// <param name="e"> the event </param>
         private void HandleEvent(SDL_Event e)
         {
+            Debug.Log("External window event: " + e.type);
             if (e.type == SDL_EventType.SDL_QUIT ||
                (e.type == SDL_EventType.SDL_WINDOWEVENT && e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE))
             {

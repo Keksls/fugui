@@ -4,9 +4,11 @@
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.Rendering;
 using static SDL2.SDL;
 
 namespace Fu
@@ -54,14 +56,6 @@ namespace Fu
         // CPU-side scratch (resized on demand)
         private int _vbCapacity;
         private int _ibCapacity;
-
-        private uint _fallbackWhiteTex = 0;
-
-        // Texture mapping ImGui TextureId -> GL texture
-        private readonly Dictionary<IntPtr, uint> _glTextures = new Dictionary<IntPtr, uint>();
-
-        private Dictionary<IntPtr, uint> _registeredTextures = new Dictionary<IntPtr, uint>();
-        HashSet<IntPtr> _pendingTextures = new HashSet<IntPtr>();
         #endregion
 
         public FuExternalWindow(FuWindow window)
@@ -71,139 +65,7 @@ namespace Fu
             Title = Window.WindowName.Name;
         }
 
-        #region Textures Management
-        /// <summary>
-        /// Create a fallback white texture (1x1 white pixel) for ImGui usage
-        /// </summary>
-        private void CreateFallbackWhiteTexture()
-        {
-            GLMini.glGenTextures(1, out _fallbackWhiteTex);
-            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, _fallbackWhiteTex);
-
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MIN_FILTER, (int)GLMini.GL_LINEAR);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MAG_FILTER, (int)GLMini.GL_LINEAR);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
-
-            GLMini.glPixelStorei(GLMini.GL_UNPACK_ALIGNMENT, 1);
-
-            unsafe
-            {
-                byte white = 128;
-                GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA,
-                    1, 1, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, (IntPtr)(&white));
-            }
-
-            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, 0);
-        }
-
-        /// <summary>
-        /// Register a texture from raw RGBA32 data
-        /// </summary>
-        /// <param name="unityId"> Unity texture ID </param>
-        /// <param name="raw"> raw RGBA32 data </param>
-        /// <param name="width"> the width of the texture </param>
-        /// <param name="height"> the height of the texture </param>
-        /// <returns> OpenGL texture ID as IntPtr </returns>
-        public void RegisterTexture(IntPtr unityId, byte[] raw, int width, int height)
-        {
-            uint id;
-            GLMini.glGenTextures(1, out id);
-            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, id);
-
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MIN_FILTER, (int)GLMini.GL_LINEAR);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MAG_FILTER, (int)GLMini.GL_LINEAR);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
-
-            unsafe
-            {
-                fixed (byte* p = raw)
-                {
-                    GLMini.glPixelStorei(GLMini.GL_UNPACK_ALIGNMENT, 1);
-                    GLMini.glTexImage2D(
-                        GLMini.GL_TEXTURE_2D,
-                        0,
-                        (int)GLMini.GL_RGBA,
-                        width,
-                        height,
-                        0,
-                        GLMini.GL_RGBA,
-                        GLMini.GL_UNSIGNED_BYTE,
-                        (IntPtr)p
-                    );
-                }
-            }
-
-            _registeredTextures[unityId] = id;
-            _pendingTextures.Remove(unityId);
-        }
-
-        /// <summary>
-        /// Get the registered OpenGL texture for a given Unity texture ID
-        /// </summary>
-        /// <param name="unityId"> Unity texture ID </param>
-        /// <returns> OpenGL texture ID as IntPtr, or IntPtr.Zero if not found </returns>
-        public uint GetRegisteredTexture(IntPtr unityId)
-        {
-            if (_registeredTextures.TryGetValue(unityId, out var glId))
-                return glId;
-
-            // get texture from unity if needed
-            if (!_pendingTextures.Contains(unityId))
-            {
-                _pendingTextures.Add(unityId);
-                if (!Window.Container.Context.TextureManager.TryGetTexture(unityId, out Texture tex))
-                    return _fallbackWhiteTex;
-
-                byte[] rawData;
-                int width;
-                int height;
-
-                Texture2D tex2D = tex as Texture2D;
-                if (tex2D != null)
-                {
-                    // Format lisible directement
-                    width = tex2D.width;
-                    height = tex2D.height;
-
-                    // Lire les données brutes
-                    rawData = tex2D.GetRawTextureData().ToArray();
-                }
-                else
-                {
-                    // Texture inconnue : obligé de passer par un ReadPixels
-                    RenderTexture rt = tex as RenderTexture;
-                    if (rt != null)
-                    {
-                        width = rt.width;
-                        height = rt.height;
-
-                        RenderTexture prev = RenderTexture.active;
-                        RenderTexture.active = rt;
-
-                        Texture2D readable = new Texture2D(width, height, TextureFormat.RGBA32, false, false);
-                        readable.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-                        readable.Apply();
-
-                        rawData = readable.GetRawTextureData().ToArray();
-
-                        RenderTexture.active = prev;
-                    }
-                    else
-                    {
-                        Debug.LogError("Unsupported texture type for OpenGL upload: " + tex.GetType());
-                        _pendingTextures.Remove(unityId);
-                        return _fallbackWhiteTex;
-                    }
-                }
-                RegisterTexture(unityId, rawData, width, height);
-            }
-
-            return _fallbackWhiteTex;
-        }
-        #endregion
-
+        #region Workflow
         /// <summary>
         /// Main run loop for the external window thread
         /// </summary>
@@ -225,14 +87,20 @@ namespace Fu
             SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_BLUE_SIZE, 8);
             SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_ALPHA_SIZE, 8);
 
+            SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_SHOWN;
+            if(Window.NoTaskBarIcon)
+                flags |= SDL_WindowFlags.SDL_WINDOW_SKIP_TASKBAR;
+            if(!Window.UseNativeTitleBar)
+                flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
+            if(Window.AlwaysOnTop)
+                flags |= SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP;
             SdlWindow = SDL_CreateWindow(
                 Title,
                 _containerPosition.x,
                 _containerPosition.y,
                 Window.Size.x,
                 Window.Size.y,
-                SDL_WindowFlags.SDL_WINDOW_SHOWN | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_OPENGL
-                /*| SDL_WindowFlags.SDL_WINDOW_BORDERLESS*/);
+                flags);
 
             if (SdlWindow == IntPtr.Zero)
             {
@@ -258,8 +126,7 @@ namespace Fu
 
             try
             {
-                GLMini.LoadMinimal();
-                GLMini.LoadForImGui();
+                GLMini.LoadAll();
             }
             catch (Exception e)
             {
@@ -388,6 +255,265 @@ namespace Fu
                 Debug.LogError("Error during external window cleanup: " + e);
             }
         }
+        #endregion
+
+        #region Textures Management
+        // Fallback white texture (1x1) used when a texture is missing
+        private uint _fallbackWhiteTex = 0;
+        // Keep for compatibility with rest of the pipeline
+        private readonly Dictionary<IntPtr, uint> _registeredTextures = new Dictionary<IntPtr, uint>();
+        // Per-unityId state
+        private readonly Dictionary<IntPtr, PBOPair> _gpu = new Dictionary<IntPtr, PBOPair>();
+        private readonly Dictionary<IntPtr, ReadbackState> _rb = new Dictionary<IntPtr, ReadbackState>();
+
+        // ===== Runtime structures =====
+        private sealed class PBOPair
+        {
+            public uint glTex;
+            public readonly uint[] pbo = new uint[2];
+            public int index = 0;
+            public int w, h;
+            public int byteSize => w * h * 4;
+        }
+
+        // Async GPU → CPU readback per Unity texture (RenderTexture only)
+        private sealed class ReadbackState
+        {
+            public AsyncGPUReadbackRequest request;
+            public bool requested = false;
+            public Queue<NativeArray<byte>> ready = new Queue<NativeArray<byte>>(); // frames awaiting upload
+            public int w, h;
+        }
+
+        /// <summary>
+        /// Create a fallback white texture (1x1 white pixel) for ImGui usage.
+        /// </summary>
+        private void CreateFallbackWhiteTexture()
+        {
+            GLMini.glGenTextures(1, out _fallbackWhiteTex);
+            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, _fallbackWhiteTex);
+
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MIN_FILTER, (int)GLMini.GL_LINEAR);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MAG_FILTER, (int)GLMini.GL_LINEAR);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
+
+            GLMini.glPixelStorei(GLMini.GL_UNPACK_ALIGNMENT, 1);
+
+            unsafe
+            {
+                byte white = 128;
+                GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA,
+                    1, 1, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, (IntPtr)(&white));
+            }
+
+            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, 0);
+        }
+
+        /// <summary>
+        /// Ensure we have a GL texture + double PBOs for this Unity texture (created in our SDL GL context).
+        /// </summary>
+        private PBOPair EnsurePBOPair(IntPtr unityId, int w, int h)
+        {
+            if (_gpu.TryGetValue(unityId, out var gpu))
+            {
+                if (gpu.w == w && gpu.h == h) return gpu;
+
+                // Size changed → recreate (simple path)
+                gpu = null;
+                _gpu.Remove(unityId);
+            }
+
+            var pair = new PBOPair { w = w, h = h };
+
+            // GL texture
+            GLMini.glGenTextures(1, out pair.glTex);
+            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, pair.glTex);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MIN_FILTER, (int)GLMini.GL_LINEAR);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MAG_FILTER, (int)GLMini.GL_LINEAR);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
+            GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA, w, h, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, IntPtr.Zero);
+
+            // Double PBO
+            GLMini.glGenBuffers(2, out pair.pbo[0]);
+            for (int i = 0; i < 2; i++)
+            {
+                GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, pair.pbo[i]);
+                GLMini.glBufferData(GLMini.GL_PIXEL_UNPACK_BUFFER, (IntPtr)pair.byteSize, IntPtr.Zero, GLMini.GL_STREAM_DRAW);
+            }
+            GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, 0);
+
+            _gpu[unityId] = pair;
+            _registeredTextures[unityId] = pair.glTex; // we own this GL texture (will be deleted in cleanup)
+            return pair;
+        }
+
+        /// <summary>
+        /// CPU → GPU upload using double PBO (no stalls).
+        /// </summary>
+        private unsafe void UploadWithPBO(PBOPair gpu, IntPtr src, int byteLen)
+        {
+            int next = (gpu.index + 1) % 2;
+
+            // Fill current PBO
+            GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, gpu.pbo[gpu.index]);
+            IntPtr ptr = GLMini.glMapBufferRange(
+                GLMini.GL_PIXEL_UNPACK_BUFFER,
+                IntPtr.Zero,
+                (IntPtr)byteLen,
+                GLMini.GL_MAP_WRITE_BIT | GLMini.GL_MAP_INVALIDATE_BUFFER_BIT);
+
+            if (ptr != IntPtr.Zero)
+            {
+                Buffer.MemoryCopy((void*)src, (void*)ptr, byteLen, byteLen);
+                GLMini.glUnmapBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER);
+            }
+
+            // Issue async upload from the other PBO
+            GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, gpu.pbo[next]);
+            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, gpu.glTex);
+            GLMini.glTexSubImage2D(GLMini.GL_TEXTURE_2D, 0, 0, 0, gpu.w, gpu.h, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, IntPtr.Zero);
+
+            // Cleanup
+            GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, 0);
+            gpu.index = next;
+        }
+
+        /// <summary>
+        /// For Texture2D readable: zero-allocation fast path (no ToArray()).
+        /// </summary>
+        private unsafe void UploadTexture2D(IntPtr unityId, Texture2D t2d)
+        {
+            var raw = t2d.GetRawTextureData<byte>(); // NativeArray<byte>
+            if (!raw.IsCreated || raw.Length == 0) return;
+
+            PBOPair gpu = EnsurePBOPair(unityId, t2d.width, t2d.height);
+            void* src = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(raw);
+            UploadWithPBO(gpu, (IntPtr)src, raw.Length);
+        }
+
+        /// <summary>
+        /// For RenderTexture: fully async GPU→CPU using AsyncGPUReadback, then CPU→GPU PBO upload without stalls.
+        /// </summary>
+        private void PumpRenderTextureReadback(IntPtr unityId, RenderTexture rt)
+        {
+            if (!_rb.TryGetValue(unityId, out var state))
+            {
+                state = new ReadbackState { w = rt.width, h = rt.height };
+                _rb[unityId] = state;
+            }
+
+            // Handle size change
+            if (state.w != rt.width || state.h != rt.height)
+            {
+                // Drop old pending frames
+                while (state.ready.Count > 0)
+                {
+                    var na = state.ready.Dequeue();
+                    if (na.IsCreated) na.Dispose();
+                }
+                state.w = rt.width; state.h = rt.height;
+                state.requested = false;
+            }
+
+            // If no request in flight, schedule one
+            if (!state.requested)
+            {
+                // RT must be RGBA32-like; if not, Graphics.Blit into an intermediate ARGB32 RT upstream.
+                state.request = AsyncGPUReadback.Request(rt, 0, TextureFormat.RGBA32, req =>
+                {
+                    if (req.hasError) return;
+                    var data = req.GetData<byte>(); // NativeArray<byte>
+                                                    // Keep a copy-owned NativeArray we must dispose after upload
+                    var copy = new NativeArray<byte>(data.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                    copy.CopyFrom(data);
+                    state.ready.Enqueue(copy);
+                });
+                state.requested = true;
+            }
+            else
+            {
+                // If completed, allow issuing a new one next frame
+                if (state.request.done) state.requested = false;
+            }
+        }
+
+        /// <summary>
+        /// Consume one ready frame (if any) and upload via PBO.
+        /// </summary>
+        private unsafe void ConsumeRenderTextureFrame(IntPtr unityId, int w, int h)
+        {
+            if (!_rb.TryGetValue(unityId, out var state)) return;
+            if (state.ready.Count == 0) return;
+
+            var na = state.ready.Dequeue();
+            try
+            {
+                PBOPair gpu = EnsurePBOPair(unityId, w, h);
+                void* src = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(na);
+                UploadWithPBO(gpu, (IntPtr)src, na.Length);
+            }
+            finally
+            {
+                if (na.IsCreated) na.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Get the GL texture to bind for ImGui (portable path).
+        /// </summary>
+        public uint GetRegisteredTexture(IntPtr unityId)
+        {
+            if (!Window.Container.Context.TextureManager.TryGetTexture(unityId, out Texture tex) || tex == null)
+                return _fallbackWhiteTex;
+
+            // Texture2D (readable): direct NativeArray → PBO upload (no stalls)
+            if (tex is Texture2D t2d)
+            {
+                if (!_gpu.TryGetValue(unityId, out var gpu))
+                {
+                    // Create GL texture once
+                    uint texId;
+                    GLMini.glGenTextures(1, out texId);
+                    GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, texId);
+
+                    GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MIN_FILTER, (int)GLMini.GL_LINEAR);
+                    GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MAG_FILTER, (int)GLMini.GL_LINEAR);
+                    GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
+                    GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
+
+                    var raw = t2d.GetRawTextureData<byte>();
+                    unsafe
+                    {
+                        void* ptr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(raw);
+                        GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA,
+                            t2d.width, t2d.height, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE,
+                            (IntPtr)ptr);
+                    }
+
+                    GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, 0);
+
+                    // Store it as if it were a PBOPair, but minimal
+                    _gpu[unityId] = new PBOPair { glTex = texId, w = t2d.width, h = t2d.height };
+                }
+
+                return _gpu[unityId].glTex;
+            }
+
+
+            // RenderTexture: schedule/consume async readbacks
+            if (tex is RenderTexture rt)
+            {
+                PumpRenderTextureReadback(unityId, rt);                  // schedule GPU→CPU if possible
+                ConsumeRenderTextureFrame(unityId, rt.width, rt.height); // upload one completed frame if ready
+                return EnsurePBOPair(unityId, rt.width, rt.height).glTex;
+            }
+
+            // Unsupported types → fallback
+            return _fallbackWhiteTex;
+        }
+        #endregion
 
         #region SDL events
         /// <summary>

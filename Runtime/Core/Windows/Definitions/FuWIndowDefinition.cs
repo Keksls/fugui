@@ -16,6 +16,7 @@ namespace Fu
         public Vector2Int Position { get; private set; }
         // The size of the window
         public Vector2Int Size { get; private set; }
+
         // A flag indicating whether the window can be serialized
         public bool IsExternalizable { get; private set; }
         // A flag indicating whether the window can be docked
@@ -28,6 +29,22 @@ namespace Fu
         public bool NoDockingOverMe { get; private set; }
         // A flag indicating whether this window definition can instantiate more than one window at time
         public bool AllowMultipleWindow { get; private set; }
+
+        // A flag indicating whether this window will use native title bar once externalized
+        public bool UseNativeTitleBar { get; private set; }
+        // A flag indicating if this window will have a task bar icon once externalized
+        public bool NoTaskBarIcon { get; private set; }
+        // A flag indicating whether this window will have no focus when appearing
+        public bool NoFocusOnAppearing { get; private set; }
+        // A flag indicating whether this window will be always on top once externalized
+        public bool AlwaysOnTop { get; private set; }
+        // A flag indicating whether this window will be non modal once externalized
+        public bool NoModal { get; private set; }
+        // A flag indicating whether this window will send no notification once externalized
+        public bool NoNotify { get; private set; }
+        // A flag indicating whether this window will show no context menu once externalized
+        public bool NoContextMenu { get; private set; }
+
         // A dictionary that store default overlays for this window
         public Dictionary<string, FuOverlay> Overlays { get; private set; }
         // public event invoked when UIWindow is Creating according to this current UIWindowDefinition
@@ -48,12 +65,12 @@ namespace Fu
         /// Initializes a new instance of the UIWindowDefinition class with the specified parameters.
         /// </summary>
         /// <param name="windowName">The FuGui window definition</param>
-        /// <param name="id">The unique identifier for the UI window.</param>
         /// <param name="ui">The action to be performed on the UI window.</param>
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
-        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default)
+        /// <param name="externalFlags">External window flags of this window definition</param>
+        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default)
         {
             // Assign the specified values to the corresponding fields
             WindowName = windowName;
@@ -68,6 +85,16 @@ namespace Fu
             AllowMultipleWindow = flags.HasFlag(FuWindowFlags.AllowMultipleWindow);
             _uiWindowType = typeof(FuWindow);
             Overlays = new Dictionary<string, FuOverlay>();
+
+            // external window flags
+            UseNativeTitleBar = externalFlags.HasFlag(FuExternalWindowFlags.UseNativeTitleBar);
+            NoTaskBarIcon = externalFlags.HasFlag(FuExternalWindowFlags.NoTaskBarIcon);
+            NoFocusOnAppearing = externalFlags.HasFlag(FuExternalWindowFlags.NoFocusOnAppearing);
+            AlwaysOnTop = externalFlags.HasFlag(FuExternalWindowFlags.AlwaysOnTop);
+            NoModal = externalFlags.HasFlag(FuExternalWindowFlags.NoModal);
+            NoNotify = externalFlags.HasFlag(FuExternalWindowFlags.NoNotify);
+            NoContextMenu = externalFlags.HasFlag(FuExternalWindowFlags.NoContextMenu);
+
             if (!flags.HasFlag(FuWindowFlags.NoAutoRegisterWindowDefinition))
             {
                 Fugui.RegisterWindowDefinition(this);

@@ -3,6 +3,7 @@
 //#define FUDEBUG 
 using Fu.Framework;
 using ImGuiNET;
+using SDL2;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -298,12 +299,21 @@ namespace Fu
         /// </summary>
         public static void Dispose()
         {
+            // close all external windows
+            var externalWindowIDs = ExternalWindows.Keys.ToList();
+            foreach (string windowID in externalWindowIDs)
+            {
+                ((FuExternalContext)ExternalWindows[windowID].Context).Window.Close();
+            }
+
+
             // Dispose Fugui Contexts
             var ids = Contexts.Keys.ToList();
             foreach (int contextID in ids)
             {
                 DestroyContext(contextID);
             }
+            SDL.SDL_Quit();
         }
         #endregion
 
@@ -713,10 +723,12 @@ namespace Fu
                     {
                         HasRenderWindowThisFrame = false;
 
+                        FuExternalWindowContainer externalWindowContainer = null;
                         if (context.Value is FuExternalContext externalContext)
                         {
                             // Update external window container
-                            ((FuExternalWindowContainer)externalContext.Window.Window.Container).Update();
+                            externalWindowContainer = ((FuExternalWindowContainer)externalContext.Window.Window.Container);
+                            externalWindowContainer.Update();
                         }
 
                         context.Value.Render();
@@ -725,6 +737,9 @@ namespace Fu
                         {
                             context.Value.SetScale(_targetScale, _targetFontScale);
                         }
+
+                        // Draw SDL window content if it's an external context
+                        externalWindowContainer?.DrawSDL();
                     }
                 }
             }
@@ -744,6 +759,12 @@ namespace Fu
             if (uiWindow == null)
             {
                 Debug.LogError("Cannot create an external window from a null Fugui window.");
+                return;
+            }
+
+            if(!uiWindow.IsExternalizable)
+            {
+                Debug.LogError($"Cannot externalize window {uiWindow.ID} because it is not externalizable.");
                 return;
             }
 

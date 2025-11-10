@@ -48,6 +48,9 @@ namespace Fu
         }
 
         #region Update & Render
+        /// <summary>
+        /// Update the input states for mouse, keyboard, and window.
+        /// </summary>
         public void Update()
         {
             Vector2 mousePos = Context.IO.MousePos;
@@ -55,19 +58,51 @@ namespace Fu
             _mousePos = new Vector2Int((int)mousePos.x, (int)mousePos.y);
             _mouse.UpdateState(this);
             _keyboard.UpdateState();
-            _window.UpdateState(leftMousePressed);
         }
 
+        /// <summary>
+        /// Render all FuWindows within this container.
+        /// </summary>
         public void RenderFuWindows()
         {
             RenderFuWindow(_window);
-            _context.Window.Render();
+
+            // render notifications
+            if (!_window.NoContextMenu)
+                Fugui.RenderContextMenu();
+
+            // render modal
+            if (!_window.NoModal)
+                Fugui.RenderModal(this);
+
+            // render popup message
+            Fugui.RenderPopupMessage();
+
+            // render notifications
+            if (!_window.NoNotify)
+                Fugui.RenderNotifications(this);
+
             OnPostRenderWindows?.Invoke();
         }
 
+        /// <summary>
+        /// Render a FuWindow within this container.
+        /// </summary>
+        /// <param name="window"> The FuWindow to render. </param>
         public void RenderFuWindow(FuWindow window)
         {
+            window.UpdateState(Context.IO.MouseDown[0]);
             window.DrawWindow();
+            _context.Window.Render();
+        }
+
+        /// <summary>
+        /// Present the rendered content to the SDL window.
+        /// </summary>
+        public void DrawSDL()
+        {
+            // finally present the context actualy draw 
+            //_context.Window.Render();
         }
         #endregion
 

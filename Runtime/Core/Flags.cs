@@ -1,6 +1,48 @@
 ﻿namespace Fu
 {
     /// <summary>
+    /// Flags for configuring external windows
+    /// </summary>
+    [System.Flags]
+    public enum FuExternalWindowFlags
+    {
+        None = 0,
+        /// <summary>
+        /// Use the native OS title bar for the window
+        /// </summary>
+        UseNativeTitleBar = 1,
+        /// <summary>
+        /// Do not show the window in the task bar
+        /// </summary>
+        NoTaskBarIcon = 2,
+        /// <summary>
+        /// Do not focus the window when it appears
+        /// </summary>
+        NoFocusOnAppearing = 4,
+        /// <summary>
+        /// Keep the window always on top of other windows
+        /// </summary>
+        AlwaysOnTop = 8,
+        /// <summary>
+        /// Do not make the window modal
+        /// </summary>
+        NoModal = 16,
+        /// <summary>
+        /// Do not send notifications when the window is opened or closed
+        /// </summary>
+        NoNotify = 32,
+        /// <summary>
+        /// Do not show the context menu on right click
+        /// </summary>
+        NoContextMenu = 64,
+
+        /// <summary>
+        /// Default external window configuration
+        /// </summary>
+        Default = UseNativeTitleBar | NoModal | NoNotify
+    }
+
+    /// <summary>
     /// Enum that represent an UI window state
     /// </summary>
     public enum FuWindowState
@@ -60,6 +102,7 @@
     /// <summary>
     /// Define the behaviour flags of a Fugui Window
     /// </summary>
+    [System.Flags]
     public enum FuWindowFlags
     {
         /// <summary>
@@ -95,21 +138,6 @@
         /// do NOT register windows definition to Fugui core on constructor
         /// </summary>
         NoAutoRegisterWindowDefinition = 64
-    }
-
-    /// <summary>
-    /// Define behaviour flags of an External window
-    /// </summary>
-    public enum FuExternalWindowFlags
-    {
-        /// <summary>
-        /// Default behaviour
-        /// </summary>
-        Default = 0,
-        /// <summary>
-        /// Show the Window's window titleBar and border
-        /// </summary>
-        ShowWindowTitle = 1
     }
 
     /// <summary>

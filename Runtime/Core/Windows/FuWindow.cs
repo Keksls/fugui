@@ -1,6 +1,5 @@
 using Fu.Framework;
 using ImGuiNET;
-using PlasticPipe.PlasticProtocol.Messages;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -96,12 +95,24 @@ namespace Fu
         // states flags
         public bool HasFocus { get; internal set; }
         public bool IsOpened { get { return _open; } internal set { _open = value; } }
+
+        // behaviour flags
         public bool IsDockable { get; private set; }
         public bool IsClosable { get; private set; }
         public bool NoDockingOverMe { get; private set; }
         public bool IsExternalizable { get; private set; }
         public bool IsInitialized { get; private set; }
         public bool IsExternal { get; internal set; }
+
+        // external window flags
+        public bool UseNativeTitleBar { get; private set; }
+        public bool NoTaskBarIcon { get; private set; }
+        public bool NoFocusOnAppearing { get; private set; }
+        public bool AlwaysOnTop { get; private set; }
+        public bool NoModal { get; private set; }
+        public bool NoNotify { get; private set; }
+        public bool NoContextMenu { get; private set; }
+
         public bool IsResizing { get; private set; }
         public bool IsDragging { get; internal set; }
         public bool IsHovered { get; internal set; }
@@ -255,17 +266,32 @@ namespace Fu
             UI = windowDefinition.UI;
             IsOpened = true;
             HasFocus = false;
+            Size = windowDefinition.Size;
+            _lastFrameVisible = false;
+
+            // behaviour flags
             IsDockable = windowDefinition.IsDockable;
             IsExternalizable = windowDefinition.IsExternalizable;
             IsInterractable = windowDefinition.IsInterractif;
             IsClosable = windowDefinition.IsClosable;
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
+
+            // external window flags
+            UseNativeTitleBar = windowDefinition.UseNativeTitleBar;
+            NoTaskBarIcon = windowDefinition.NoTaskBarIcon;
+            NoFocusOnAppearing = windowDefinition.NoFocusOnAppearing;
+            AlwaysOnTop = windowDefinition.AlwaysOnTop;
+            NoModal = windowDefinition.NoModal;
+            NoNotify = windowDefinition.NoNotify;
+            NoContextMenu = windowDefinition.NoContextMenu;
+
+            // top and bottom bar
             HeaderHeight = windowDefinition.HeaderHeight;
             FooterHeight = windowDefinition.BottomBarHeight;
             HeaderUI = windowDefinition.HeaderUI;
             FooterUI = windowDefinition.FooterUI;
-            _lastFrameVisible = false;
+
             // add default overlays
             Overlays = new Dictionary<string, FuOverlay>();
             foreach (FuOverlay overlay in windowDefinition.Overlays.Values)
@@ -681,7 +707,7 @@ namespace Fu
                 // draw user UI callback
                 FuStyle.Default.Push(true);
 
-                if(Layout.Button("Externalize##" + ID))
+                if (Layout.Button("Externalize##" + ID))
                 {
                     Fugui.ExternalizeWindow(this);
                 }

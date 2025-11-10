@@ -32,7 +32,7 @@ namespace Fu
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
-        public FuCameraWindowDefinition(FuWindowName windowName, Camera camera, MSAASamples mSAASamples, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default) : base(windowName, ui, pos, size, flags)
+        public FuCameraWindowDefinition(FuWindowName windowName, Camera camera, MSAASamples mSAASamples, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalWindowFlags = FuExternalWindowFlags.Default) : base(windowName, ui, pos, size, flags, externalWindowFlags)
         {
             // set default camera window supersampling
             SuperSampling = 1f;

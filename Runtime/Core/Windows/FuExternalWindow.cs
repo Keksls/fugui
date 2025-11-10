@@ -1,7 +1,9 @@
 ﻿// Framework 4.7 compatible, IL2CPP-safe
 // Requires: SDL2-CS (native SDL2 present), GLMini.cs (mini OpenGL loader)
 // Renders Dear ImGui draw data into an external SDL2 OpenGL window (OpenGL 3.0 + GLSL 130)
+using Fu.Framework;
 using ImGuiNET;
+using SDL2;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -22,15 +24,15 @@ namespace Fu
         public string Title { get; private set; }
         public int Width => Window.Size.x;
         public int Height => Window.Size.y;
-        private Vector2Int _containerPosition;
-        public Vector2Int ContainerPosition
+        private Vector2Int _position;
+        public Vector2Int Position
         {
-            get => _containerPosition;
+            get => _position;
             set
             {
-                _containerPosition = value;
+                _position = value;
                 if (SdlWindow != IntPtr.Zero)
-                    SDL_SetWindowPosition(SdlWindow, _containerPosition.x, _containerPosition.y);
+                    SDL_SetWindowPosition(SdlWindow, _position.x, _position.y);
             }
         }
 
@@ -61,16 +63,19 @@ namespace Fu
         public FuExternalWindow(FuWindow window)
         {
             Window = window;
-            _containerPosition = window.WorldPosition;
+            _position = window.WorldPosition;
             Title = Window.WindowName.Name;
         }
 
         #region Workflow
         /// <summary>
-        /// Main run loop for the external window thread
+        /// Create and start the external SDL2 OpenGL window
         /// </summary>
-        public void Start()
+        public void Create()
         {
+            SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+            SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "1");
+            SDL_SetHint(SDL_HINT_WINDOWS_HANDLE_MOUSE_ACTIVATION, "1");
             if (SDL_Init(SDL_INIT_VIDEO) < 0)
             {
                 Debug.LogError("SDL init failed: " + SDL_GetError());
@@ -88,16 +93,16 @@ namespace Fu
             SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_ALPHA_SIZE, 8);
 
             SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_SHOWN;
-            if(Window.NoTaskBarIcon)
+            if (Window.NoTaskBarIcon)
                 flags |= SDL_WindowFlags.SDL_WINDOW_SKIP_TASKBAR;
-            if(!Window.UseNativeTitleBar)
-                flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
-            if(Window.AlwaysOnTop)
+            //if(!Window.UseNativeTitleBar)
+            flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
+            if (Window.AlwaysOnTop)
                 flags |= SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP;
             SdlWindow = SDL_CreateWindow(
                 Title,
-                _containerPosition.x,
-                _containerPosition.y,
+                _position.x,
+                _position.y,
                 Window.Size.x,
                 Window.Size.y,
                 flags);
@@ -170,6 +175,9 @@ namespace Fu
                 return;
             }
 
+            // handle window dragging
+            UpdateManipulation();
+
             // Only render if the window has been marked as dirty
             if (!Window.HasJustBeenDraw)
                 return;
@@ -182,15 +190,23 @@ namespace Fu
 
             // ensure local position is zero
             Window.LocalPosition = Vector2Int.zero;
+            int w = 0, h = 0;
+            SDL_GetWindowSize(SdlWindow, ref w, ref h);
+            Window.Size = new Vector2Int(w, h);
         }
 
-        /// <summary>
-        /// Update SDL events for this window
-        /// </summary>
-        public void UpdateEvents()
+
+        public void DrawDebug(FuLayout layout)
         {
-            SDL_GL_MakeCurrent(SdlWindow, _glContext);
-            Fugui.SDLEventRooter.Update();
+            layout.Text($"Position: {_position.x}, {_position.y}");
+            layout.Text($"Size: {Width} x {Height}");
+            layout.Separator();
+
+            // mouse position and state
+            Vector2 mousePos = Window.Container.Context.IO.MousePos;
+            layout.Text($"Mouse Pos: {mousePos.x}, {mousePos.y}");
+            layout.Text($"Mouse Buttons: L[{(Window.Mouse.IsPressed(FuMouseButton.Left) ? "X" : " ")}] " +
+            $"M[{(Window.Mouse.IsPressed(FuMouseButton.Center) ? "X" : " ")}] R[{(Window.Mouse.IsPressed(FuMouseButton.Right) ? "X" : " ")}]");
         }
 
         /// <summary>
@@ -254,6 +270,17 @@ namespace Fu
             {
                 Debug.LogError("Error during external window cleanup: " + e);
             }
+        }
+
+        /// <summary>
+        /// Update the window (make context current, update events)
+        /// </summary>
+        public void Update()
+        {
+            // make context current
+            SDL_GL_MakeCurrent(SdlWindow, _glContext);
+            // update SDL events
+            Fugui.SDLEventRooter.Update();
         }
         #endregion
 
@@ -539,7 +566,278 @@ namespace Fu
             // Window move
             else if (e.type == SDL_EventType.SDL_WINDOWEVENT && e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_MOVED)
             {
-                ContainerPosition = new Vector2Int(e.window.data1, e.window.data2);
+                Position = new Vector2Int(e.window.data1, e.window.data2);
+            }
+        }
+        #endregion
+
+        #region Update: Dragging & Resizing
+        private bool isDragging = false;
+        private Vector2Int dragStartMousePos;
+        private Vector2Int dragStartWindowPos;
+
+        public ResizeEdge HoverResizeEdge { get; private set; } = ResizeEdge.None;
+        private bool isResizing = false;
+        private Vector2Int resizeStartMousePos;
+        private Vector2Int resizeStartWindowPos;
+        private Vector2Int resizeStartWindowSize;
+
+        private ResizeEdge currentResizeEdge = ResizeEdge.None;
+
+        /// <summary>
+        /// Handle window dragging via title bar
+        /// Handle window raising on mouse down
+        /// Handle SDL events
+        /// Handle resizing
+        /// </summary>
+        public void UpdateManipulation()
+        {
+            Vector2Int mouseLocal = Window.Mouse.Position;
+            Vector2Int mouseAbs = Fugui.AbsoluteMonitorMousePosition;
+            Vector2Int windowSize = Window.Size;
+
+            //
+            // --- RESIZE ---
+            //
+            // Detect hover edge (even when not resizing)
+            if (!isDragging && !isResizing)
+            {
+                HoverResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
+            }
+            else
+            {
+                // while dragging or resizing, force hover edge to None
+                HoverResizeEdge = ResizeEdge.None;
+            }
+
+            // detect edge if not resizing or dragging
+            if (!isDragging && !isResizing && Window.Mouse.IsDown(FuMouseButton.Left))
+            {
+                currentResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
+
+                if (currentResizeEdge != ResizeEdge.None)
+                {
+                    // begin resize
+                    isResizing = true;
+                    resizeStartMousePos = mouseAbs;
+                    resizeStartWindowPos = Position;
+                    resizeStartWindowSize = windowSize;
+                }
+            }
+
+            // continue resize
+            if (isResizing)
+            {
+                if (Window.Mouse.IsPressed(FuMouseButton.Left))
+                {
+                    Vector2Int delta = mouseAbs - resizeStartMousePos;
+
+                    Vector2Int newPos = resizeStartWindowPos;
+                    Vector2Int newSize = resizeStartWindowSize;
+
+                    switch (currentResizeEdge)
+                    {
+                        case ResizeEdge.Left:
+                            newPos.x += delta.x;
+                            newSize.x -= delta.x;
+                            break;
+
+                        case ResizeEdge.Right:
+                            newSize.x += delta.x;
+                            break;
+
+                        case ResizeEdge.Bottom:
+                            newSize.y += delta.y;
+                            break;
+
+                        case ResizeEdge.BottomLeft:
+                            newPos.x += delta.x;
+                            newSize.x -= delta.x;
+                            newSize.y += delta.y;
+                            break;
+
+                        case ResizeEdge.BottomRight:
+                            newSize.x += delta.x;
+                            newSize.y += delta.y;
+                            break;
+                    }
+
+                    // enforce minimum
+                    newSize.x = Math.Max(newSize.x, 50);
+                    newSize.y = Math.Max(newSize.y, 50);
+
+                    // assign
+                    Position = newPos;
+                    Window.Size = newSize;
+                    SDL_SetWindowSize(SdlWindow, newSize.x, newSize.y);
+                }
+                else
+                {
+                    // stop resizing
+                    isResizing = false;
+                    currentResizeEdge = ResizeEdge.None;
+                }
+            }
+            else
+            {
+                currentResizeEdge = ResizeEdge.None;
+            }
+
+            //
+            // --- DRAG ---
+            //
+            if (Window.Mouse.IsDown(FuMouseButton.Left))
+            {
+                float titleBarHeight = Window.WorkingAreaPosition.y;
+
+                if (!isDragging && !isResizing && mouseLocal.y < titleBarHeight)
+                {
+                    isDragging = true;
+                    dragStartMousePos = mouseAbs;
+                    dragStartWindowPos = Position;
+                }
+            }
+
+            if (isDragging)
+            {
+                if (Window.Mouse.IsPressed(FuMouseButton.Left))
+                {
+                    Vector2Int delta = mouseAbs - dragStartMousePos;
+                    Position = dragStartWindowPos + delta;
+                }
+                else
+                {
+                    isDragging = false;
+                }
+            }
+
+            //
+            // --- RAISE WINDOW ---
+            //
+            if (Window.Mouse.IsDown(FuMouseButton.Left) || Window.Mouse.IsDown(FuMouseButton.Right) || Window.Mouse.IsDown(FuMouseButton.Center))
+            {
+                SDL_SetWindowAlwaysOnTop(SdlWindow, SDL_bool.SDL_FALSE);
+                SDL_SetWindowAlwaysOnTop(SdlWindow, SDL_bool.SDL_TRUE);
+            }
+        }
+
+        private float RESIZE_BORDER => 6 * Fugui.Scale;
+        private ResizeEdge GetHoveredResizeEdge(Vector2Int mouseLocal, Vector2Int windowSize)
+        {
+            bool left = mouseLocal.x <= RESIZE_BORDER;
+            bool right = mouseLocal.x >= windowSize.x - RESIZE_BORDER;
+            bool bottom = mouseLocal.y >= windowSize.y - RESIZE_BORDER;
+
+            if (bottom && left) return ResizeEdge.BottomLeft;
+            if (bottom && right) return ResizeEdge.BottomRight;
+            if (left) return ResizeEdge.Left;
+            if (right) return ResizeEdge.Right;
+            if (bottom) return ResizeEdge.Bottom;
+
+            return ResizeEdge.None;
+        }
+
+        public void DrawResizeHandles()
+        {
+            var dl = ImGui.GetForegroundDrawList();
+
+            Vector2 windowSize = new Vector2(Window.Size.x, Window.Size.y);
+
+            // colors
+            uint normalColor = Fugui.Themes.GetColorU32(FuColors.ResizeGrip);
+            uint hoverColor = Fugui.Themes.GetColorU32(FuColors.ResizeGripHovered);
+            uint activeColor = Fugui.Themes.GetColorU32(FuColors.ResizeGripActive);
+
+            // thickness
+            float normalThickness = 1f * Fugui.Scale;
+            float hoverThickness = 8f * Fugui.Scale;
+            float activeThickness = 4f * Fugui.Scale;
+
+            // get hovered or active edge
+            ResizeEdge edge = HoverResizeEdge;
+            if (isResizing)
+                edge = currentResizeEdge;
+
+            //
+            // LEFT EDGE
+            //
+            {
+                bool hovered = (edge == ResizeEdge.Left || edge == ResizeEdge.BottomLeft);
+                bool active = isResizing && hovered;
+                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
+                float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
+
+                Vector2 p1 = new Vector2(0, 0);
+                Vector2 p2 = new Vector2(0, windowSize.y);
+                dl.AddLine(p1, p2, color, thickness);
+            }
+
+            //
+            // RIGHT EDGE
+            //
+            {
+                bool hovered = (edge == ResizeEdge.Right || edge == ResizeEdge.BottomRight);
+                bool active = isResizing && hovered;
+                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
+                float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
+
+                Vector2 p1 = new Vector2(windowSize.x, 0);
+                Vector2 p2 = new Vector2(windowSize.x, windowSize.y);
+                dl.AddLine(p1, p2, color, thickness);
+            }
+
+            //
+            // BOTTOM EDGE
+            //
+            {
+                bool hovered = (edge == ResizeEdge.Bottom || edge == ResizeEdge.BottomLeft || edge == ResizeEdge.BottomRight);
+                bool active = isResizing && hovered;
+                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
+                float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
+
+                Vector2 p1 = new Vector2(0, windowSize.y);
+                Vector2 p2 = new Vector2(windowSize.x, windowSize.y);
+                dl.AddLine(p1, p2, color, thickness);
+            }
+
+            //
+            // CORNER (bottom-right) — triangle
+            //
+            {
+                bool hovered = (edge == ResizeEdge.BottomRight);
+                bool active = isResizing && hovered;
+                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
+
+                if (hovered || active)
+                {
+                    float s = 12f * Fugui.Scale;
+
+                    Vector2 c = new Vector2(windowSize.x, windowSize.y);
+                    Vector2 a = c + new Vector2(-s, 0);    // left
+                    Vector2 b = c + new Vector2(0, -s);    // up
+
+                    dl.AddTriangleFilled(a, b, c, color);
+                }
+            }
+
+            //
+            // CORNER (bottom-left) — triangle
+            //
+            {
+                bool hovered = (edge == ResizeEdge.BottomLeft);
+                bool active = isResizing && hovered;
+                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
+
+                if (hovered || active)
+                {
+                    float s = 12f * Fugui.Scale;
+
+                    Vector2 c = new Vector2(0, windowSize.y);
+                    Vector2 a = c + new Vector2(s, 0);     // right
+                    Vector2 b = c + new Vector2(0, -s);    // up
+
+                    dl.AddTriangleFilled(a, b, c, color);
+                }
             }
         }
         #endregion
@@ -762,7 +1060,8 @@ namespace Fu
 
                 // Clear screen
                 GLMini.glViewport(0, 0, Window.Size.x, Window.Size.y);
-                GLMini.glClearColor(0, 0, 0, 1f);
+                var bgColor = Fugui.Themes.GetColor(FuColors.WindowBg);
+                GLMini.glClearColor(bgColor.x, bgColor.y, bgColor.z, bgColor.w);
                 GLMini.glClear(GLMini.GL_COLOR_BUFFER_BIT);
 
                 RenderImGuiDrawData(drawData);
@@ -895,5 +1194,15 @@ namespace Fu
             return v < 256 ? 256 : v;
         }
         #endregion
+    }
+
+    public enum ResizeEdge
+    {
+        None,
+        Left,
+        Right,
+        Bottom,
+        BottomLeft,
+        BottomRight
     }
 }

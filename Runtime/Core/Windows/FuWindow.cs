@@ -350,6 +350,8 @@ namespace Fu
                 return;
             }
 
+            CheckAutoExternalize();
+
             _ignoreResizeForThisFrame = false;
             HasMovedThisFrame = false;
             Vector2Int newFrameSize = Size;
@@ -494,9 +496,11 @@ namespace Fu
             bool _lastFrameHovered = IsHovered;
             // try to start drawing window, according to the closable flag state
             bool nativeWantDrawWindow;
-            if (IsExternal)
+            bool externalBefore = IsExternal;
+            if (externalBefore)
             {
-                nativeWantDrawWindow = ImGui.Begin(ID, _windowFlags | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
+                ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
+                nativeWantDrawWindow = ImGui.Begin(ID, ref _open, _windowFlags | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
             }
             else if (IsClosable)
             {
@@ -597,6 +601,10 @@ namespace Fu
                 Fugui.PopStyle();
                 IsVisible = false;
                 IsHovered = false;
+            }
+            if(externalBefore)
+            {
+                ImGui.PopStyleVar();
             }
 
             // hovered state just changed, handle fire onHover events
@@ -707,9 +715,16 @@ namespace Fu
                 // draw user UI callback
                 FuStyle.Default.Push(true);
 
-                if (Layout.Button("Externalize##" + ID))
+                if (IsExternal)
                 {
-                    Fugui.ExternalizeWindow(this);
+                    ((FuExternalContext)Container.Context).Window.DrawDebug(Layout);
+                }
+                else
+                {
+                    if (Layout.Button("Externalize##" + ID))
+                    {
+                        Fugui.ExternalizeWindow(this);
+                    }
                 }
 
                 UI?.Invoke(this, Layout);
@@ -747,6 +762,12 @@ namespace Fu
                 WantCaptureKeyboard = ImGui.GetIO().WantTextInput;
                 // draw overlays
                 DrawOverlays();
+
+                // if external, draw resize grips and resize hover feedback
+                if (IsExternal)
+                {
+                    ((FuExternalContext)Container.Context).Window.DrawResizeHandles();
+                }
 
                 // update FPS and deltaTime
                 DeltaTime = Fugui.Time - _lastRenderTime;
@@ -838,6 +859,35 @@ namespace Fu
             return (Fugui.Time > _lastRenderTime + _targetDeltaTimeMs && ((!Fugui.HasRenderWindowThisFrame && WindowName.IdleFPS != -1) || Fugui.HasRenderWindowThisFrame))
                 || _forceRedraw > 0
                 || (IsInterractable && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
+        }
+        #endregion
+
+        #region Externalization Handling
+        /// <summary>
+        /// Externalize this window
+        /// </summary>
+        public void Externalize()
+        {
+            Fugui.ExternalizeWindow(this);
+        }
+
+        /// <summary>
+        /// Check if we need to auto externalize this window
+        /// </summary>
+        private void CheckAutoExternalize()
+        {
+            if (!IsExternalizable || IsExternal || !IsDragging || Container == null || Container is not FuMainWindowContainer)
+            {
+                return;
+            }
+
+            // if mouse is out of container bounds, externalize
+            Vector2Int mousePos = Container.LocalMousePos;
+            Rect containerRect = new Rect(Vector2.zero, Container.Size);
+            if (!containerRect.Contains(mousePos))
+            {
+                Fugui.ExternalizeWindow(this);
+            }
         }
         #endregion
 

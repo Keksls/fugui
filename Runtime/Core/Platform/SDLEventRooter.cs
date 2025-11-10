@@ -124,7 +124,6 @@ namespace Fu
         /// </summary>
         public bool Poll(uint windowId, out SDL.SDL_Event e)
         {
-            UnityEngine.Debug.Log($"[SDLEventRooter] Polling events for WindowID: {windowId}");
             e = default;
 
             if (_eventsByWindow.TryGetValue(windowId, out Queue<SDL.SDL_Event> queue))

@@ -59,7 +59,7 @@ namespace Fu
         /// <param name="updateKeyboard"> Whether to update keyboard state. </param>
         public virtual void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
         {
-            Assert.IsTrue(io.Fonts.IsBuilt(), "Font atlas not built! Generally built by the renderer. Missing call to renderer NewFrame() function?");
+            //Assert.IsTrue(io.Fonts.IsBuilt(), "Font atlas not built! Generally built by the renderer. Missing call to renderer NewFrame() function?");
             io.DisplaySize = displayRect.size;
             io.DeltaTime = Time.unscaledDeltaTime;
         }

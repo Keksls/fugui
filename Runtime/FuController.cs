@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using static Codice.CM.WorkspaceServer.WorkspaceTreeDataStore;
 
 namespace Fu
 {
@@ -60,19 +59,6 @@ namespace Fu
 
             // let's update main container inputs and internal stuff
             Fugui.DefaultContainer.Update();
-
-            // Update external windows
-            foreach (FuWindow window in Fugui.UIWindows.Values)
-            {
-                if (window.IsExternal)
-                {
-                    FuExternalWindowContainer externalContainer = window.Container as FuExternalWindowContainer;
-                    if (externalContainer != null)
-                    {
-                        externalContainer.Update();
-                    }
-                }
-            }
 
             // Render Fugui (this will prepare the rendering data and call all fugui implementations code but it will NOT draw the UI, the Drawing is handeled by Render Feature)
             Fugui.Render();

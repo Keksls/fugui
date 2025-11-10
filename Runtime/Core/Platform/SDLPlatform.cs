@@ -1,7 +1,6 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using ImGuiNET;
+﻿using ImGuiNET;
 using SDL2;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu
@@ -24,100 +23,19 @@ namespace Fu
             io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos;
             io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
 
-            //platformIO.Platform_CreateWindow = Marshal.GetFunctionPointerForDelegate((Platform_CreateWindowCallback)CreateWindow);
-            //platformIO.Platform_DestroyWindow = Marshal.GetFunctionPointerForDelegate((Platform_DestroyWindowCallback)DestroyWindow);
-            //platformIO.Platform_ShowWindow = Marshal.GetFunctionPointerForDelegate((Platform_ShowWindowCallback)ShowWindow);
-            //platformIO.Platform_SetWindowPos = Marshal.GetFunctionPointerForDelegate((Platform_SetWindowPosCallback)SetWindowPos);
-            //platformIO.Platform_SetWindowSize = Marshal.GetFunctionPointerForDelegate((Platform_SetWindowSizeCallback)SetWindowSize);
-            //platformIO.Platform_SetWindowFocus = Marshal.GetFunctionPointerForDelegate((Platform_SetWindowFocusCallback)SetWindowFocus);
-            //platformIO.Platform_GetWindowPos = Marshal.GetFunctionPointerForDelegate((Platform_GetWindowPosCallback)GetWindowPos);
-            //platformIO.Platform_GetWindowSize = Marshal.GetFunctionPointerForDelegate((Platform_GetWindowSizeCallback)GetWindowSize);
-            //platformIO.Platform_GetWindowFocus = Marshal.GetFunctionPointerForDelegate((Platform_GetWindowFocusCallback)GetWindowFocus);
-            //platformIO.Platform_RenderWindow = Marshal.GetFunctionPointerForDelegate((Platform_RenderWindowCallback)RenderWindow);
-
             return true;
         }
 
-        #region Platform Callbacks
-        private static void CreateWindow(ImGuiViewportPtr vp)
-        {
-            string title = "Fugui SDL Window";
-            int width = (int)vp.Size.x;
-            int height = (int)vp.Size.y;
-
-            IntPtr window = SDL.SDL_CreateWindow(
-                title,
-                SDL.SDL_WINDOWPOS_CENTERED,
-                SDL.SDL_WINDOWPOS_CENTERED,
-                width, height,
-                SDL.SDL_WindowFlags.SDL_WINDOW_SHOWN
-            );
-
-            vp.PlatformHandleRaw = window;
-            vp.PlatformUserData = window;
-        }
-
-        private static void DestroyWindow(ImGuiViewportPtr vp)
-        {
-            if (vp.PlatformHandleRaw != IntPtr.Zero)
-                SDL.SDL_DestroyWindow(vp.PlatformHandleRaw);
-        }
-
-        private static void ShowWindow(ImGuiViewportPtr vp)
-        {
-            if (vp.PlatformHandleRaw != IntPtr.Zero)
-                SDL.SDL_ShowWindow(vp.PlatformHandleRaw);
-        }
-
-        private static void SetWindowPos(ImGuiViewportPtr vp, Vector2 pos)
-        {
-            if (vp.PlatformHandleRaw == IntPtr.Zero) return;
-            SDL.SDL_SetWindowPosition(vp.PlatformHandleRaw, (int)pos.x, (int)pos.y);
-        }
-
-        private static void SetWindowSize(ImGuiViewportPtr vp, Vector2 size)
-        {
-            if (vp.PlatformHandleRaw == IntPtr.Zero) return;
-            SDL.SDL_SetWindowSize(vp.PlatformHandleRaw, (int)size.x, (int)size.y);
-        }
-
-        private static void SetWindowFocus(ImGuiViewportPtr vp)
-        {
-            if (vp.PlatformHandleRaw != IntPtr.Zero)
-                SDL.SDL_RaiseWindow(vp.PlatformHandleRaw);
-        }
-
-        private static Vector2 GetWindowPos(ImGuiViewportPtr vp)
-        {
-            int x = 0, y = 0;
-            SDL.SDL_GetWindowPosition(vp.PlatformHandleRaw, ref x, ref y);
-            return new Vector2(x, y);
-        }
-
-        private static Vector2 GetWindowSize(ImGuiViewportPtr vp)
-        {
-            int w = 0, h = 0;
-            SDL.SDL_GetWindowSize(vp.PlatformHandleRaw, ref w, ref h);
-            return new Vector2(w, h);
-        }
-
-        private static bool GetWindowFocus(ImGuiViewportPtr vp)
-        {
-            uint flags = SDL.SDL_GetWindowFlags(vp.PlatformHandleRaw);
-            return (flags & (uint)SDL.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0;
-        }
-
-        private static void RenderWindow(ImGuiViewportPtr vp, void* renderArg)
-        {
-            // handled elsewhere
-        }
-        #endregion
-
+        Queue<SDL.SDL_Event> forwardingEvts = new Queue<SDL.SDL_Event>();
         public override void PrepareFrame(ImGuiIOPtr io, Rect rect, bool updateMouse, bool updateKeyboard)
         {
             if (!_initialized) return;
             base.PrepareFrame(io, rect, updateMouse, updateKeyboard);
 
+            // Update window events
+            _window.UpdateEvents();
+
+            forwardingEvts.Clear();
             SDL.SDL_Event e;
             while (Fugui.SDLEventRooter.Poll(_window.SdlWindowId, out e))
             {
@@ -137,8 +55,11 @@ namespace Fu
                         break;
 
                     case SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN:
+                        HandleMouseButton(io, e.button, true);
+                        break;
+
                     case SDL.SDL_EventType.SDL_MOUSEBUTTONUP:
-                        HandleMouseButton(io, e.button);
+                        HandleMouseButton(io, e.button, false);
                         break;
 
                     case SDL.SDL_EventType.SDL_MOUSEMOTION:
@@ -147,34 +68,49 @@ namespace Fu
 
                     // Unhandled events are pushed back to the rooter
                     default:
-                        Fugui.SDLEventRooter.Push(_window.SdlWindowId, ref e);
+                        forwardingEvts.Enqueue(e);
                         break;
                 }
             }
+
+            // Push unhandled events back to the rooter
+            while (forwardingEvts.Count > 0)
+            {
+                SDL.SDL_Event evt = forwardingEvts.Dequeue();
+                Fugui.SDLEventRooter.Push(_window.SdlWindowId, ref evt);
+            }
+
+            // Feed continuous mouse buttons state 
+            io.AddMouseButtonEvent(0, _mouseDown[0]);
+            io.AddMouseButtonEvent(1, _mouseDown[2]);
+            io.AddMouseButtonEvent(2, _mouseDown[1]);
+
+            // Feed continuous mouse position
+            io.AddMousePosEvent(_mouseX, _mouseY);
         }
 
+        private float _mouseX;
+        private float _mouseY;
         private void HandleMouseMotion(ImGuiIOPtr io, SDL.SDL_MouseMotionEvent m)
         {
-            io.AddMousePosEvent(m.x, m.y);
+            _mouseX = m.x;
+            _mouseY = m.y;
         }
 
         private void HandleMouseWheel(ImGuiIOPtr io, SDL.SDL_MouseWheelEvent w)
         {
             float x = w.x;
             float y = w.y;
-            Debug.Log($"Mouse Wheel: x={x}, y={y}");
             io.AddMouseWheelEvent(x, y);
         }
 
-        private void HandleMouseButton(ImGuiIOPtr io, SDL.SDL_MouseButtonEvent b)
+        // Store mouse button states (0 = left, 1 = right, 2 = middle)
+        private readonly bool[] _mouseDown = new bool[3];
+        private void HandleMouseButton(ImGuiIOPtr io, SDL.SDL_MouseButtonEvent b, bool isDown)
         {
-            int index =
-                b.button == SDL.SDL_BUTTON_LEFT ? 0 :
-                b.button == SDL.SDL_BUTTON_RIGHT ? 1 :
-                b.button == SDL.SDL_BUTTON_MIDDLE ? 2 : -1;
-
-            if (index >= 0)
-                io.AddMouseButtonEvent(index, b.state == SDL.SDL_PRESSED);
+            if (b.button < 1 || b.button > 3)
+                return;
+            _mouseDown[b.button - 1] = isDown;
         }
 
         private void HandleTextInput(ImGuiIOPtr io, SDL.SDL_TextInputEvent text)
@@ -285,36 +221,4 @@ namespace Fu
             }
         }
     }
-
-    #region ImGui Platform Callbacks
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void Platform_CreateWindowCallback(ImGuiViewportPtr vp);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void Platform_DestroyWindowCallback(ImGuiViewportPtr vp);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void Platform_ShowWindowCallback(ImGuiViewportPtr vp);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void Platform_SetWindowPosCallback(ImGuiViewportPtr vp, Vector2 pos);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void Platform_SetWindowSizeCallback(ImGuiViewportPtr vp, Vector2 size);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void Platform_SetWindowFocusCallback(ImGuiViewportPtr vp);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate Vector2 Platform_GetWindowPosCallback(ImGuiViewportPtr vp);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate Vector2 Platform_GetWindowSizeCallback(ImGuiViewportPtr vp);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate bool Platform_GetWindowFocusCallback(ImGuiViewportPtr vp);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate void Platform_RenderWindowCallback(ImGuiViewportPtr vp, void* renderArg);
-    #endregion
 }

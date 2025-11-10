@@ -291,9 +291,6 @@ namespace Fu
             if (!_isRunning)
                 return;
 
-            SDL_GL_MakeCurrent(SdlWindow, _glContext);
-            Fugui.SDLEventRooter.Update();
-
             // Main loop
             while (Fugui.SDLEventRooter.Poll(SdlWindowId, out evt))
                 HandleEvent(evt);
@@ -318,6 +315,15 @@ namespace Fu
 
             // ensure local position is zero
             Window.LocalPosition = Vector2Int.zero;
+        }
+
+        /// <summary>
+        /// Update SDL events for this window
+        /// </summary>
+        public void UpdateEvents()
+        {
+            SDL_GL_MakeCurrent(SdlWindow, _glContext);
+            Fugui.SDLEventRooter.Update();
         }
 
         /// <summary>
@@ -390,31 +396,25 @@ namespace Fu
         /// <param name="e"> the event </param>
         private void HandleEvent(SDL_Event e)
         {
-            Debug.Log("External window event: " + e.type);
+            // Window close
             if (e.type == SDL_EventType.SDL_QUIT ||
                (e.type == SDL_EventType.SDL_WINDOWEVENT && e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE))
             {
                 Close();
             }
+
+            // Window resize
             else if (e.type == SDL_EventType.SDL_WINDOWEVENT && (e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED ||
                 e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED))
             {
-                OnResize(e.window.data1, e.window.data2);
+                Window.Size = new Vector2Int(e.window.data1, e.window.data2);
             }
+
+            // Window move
             else if (e.type == SDL_EventType.SDL_WINDOWEVENT && e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_MOVED)
             {
                 ContainerPosition = new Vector2Int(e.window.data1, e.window.data2);
             }
-        }
-
-        /// <summary>
-        /// Handle window resize event
-        /// </summary>
-        /// <param name="width"> the new width </param>
-        /// <param name="height"> the new height </param>
-        private void OnResize(int width, int height)
-        {
-            Window.Size = new Vector2Int(width, height);
         }
         #endregion
 

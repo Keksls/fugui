@@ -259,7 +259,7 @@ namespace Fu
 
             // create Default Fugui Context and initialize themeManager
             DefaultContext = CreateUnityContext(mainContainerUICamera, Settings.GlobalScale, Settings.FontGlobalScale, Fugui.Themes.Initialize);
-            DefaultContext.PrepareRender();
+            //DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
             DefaultContainer = new FuMainWindowContainer(DefaultContext);
@@ -694,6 +694,7 @@ namespace Fu
                     _afterDefaultRenderStack.Dequeue()?.Invoke();
                 }
             }
+
             DefaultContext.EndRender();
             if (_targetScale != -1f)
             {
@@ -712,6 +713,12 @@ namespace Fu
                     {
                         HasRenderWindowThisFrame = false;
 
+                        if (context.Value is FuExternalContext externalContext)
+                        {
+                            // Update external window container
+                            ((FuExternalWindowContainer)externalContext.Window.Window.Container).Update();
+                        }
+
                         context.Value.Render();
                         context.Value.EndRender();
                         if (_targetScale != -1f)
@@ -720,17 +727,6 @@ namespace Fu
                         }
                     }
                 }
-            }
-
-            // --- Render ImGui multi-viewport (only once, from the main context) ---
-            var io = DefaultContext.IO;
-            if ((io.ConfigFlags & ImGuiConfigFlags.ViewportsEnable) != 0)
-            {
-                // On s’assure que le contexte principal (Unity) est bien actif
-                SetCurrentContext(DefaultContext);
-
-                ImGui.UpdatePlatformWindows();
-                ImGui.RenderPlatformWindowsDefault();
             }
 
             // prevent rescaling each frames

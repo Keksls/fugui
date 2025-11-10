@@ -15,6 +15,8 @@ namespace Fu.Framework
         [SerializeField]
         protected FuWindowFlags _windowFlags = FuWindowFlags.Default;
         [SerializeField]
+        protected FuExternalWindowFlags _externalWindowFlags = FuExternalWindowFlags.Default;
+        [SerializeField]
         protected Vector2Int _size = Vector2Int.zero;
         [SerializeField]
         protected Vector2Int _position = Vector2Int.zero;
@@ -33,7 +35,7 @@ namespace Fu.Framework
                 return;
 
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
-            FuWindowDefinition windowDefinition = new FuWindowDefinition(_windowName, OnUI, _position == Vector2Int.zero ? null : _position, _size == Vector2Int.zero ? null : _size, _windowFlags);
+            FuWindowDefinition windowDefinition = new FuWindowDefinition(_windowName, OnUI, _position == Vector2Int.zero ? null : _position, _size == Vector2Int.zero ? null : _size, _windowFlags, _externalWindowFlags);
             // call the OnWindowDefinitionCreated method to allow further customization
             OnWindowDefinitionCreated(windowDefinition);
             // register the OnUIWindowCreated event to handle the window creation

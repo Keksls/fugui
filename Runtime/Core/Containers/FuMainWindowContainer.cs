@@ -195,6 +195,9 @@ namespace Fu
         /// <param name="window"></param>
         public void RenderFuWindow(FuWindow window)
         {
+            // update window state
+            window.UpdateState(Context.IO.MouseDown[0]);
+
             // we clamp size and position BEFORE drawing window to allow dev to set size and pos inside the drawing callback
             // prevent clamping if window is dragging to avoid clipping
             if (!window.IsDragging && !window.IsDocked && !window.IsResizing)
@@ -261,11 +264,8 @@ namespace Fu
             DrawMainDockSpace();
 
             // render every windows into this container
-            bool leftButtonState = ImGui.GetIO().MouseDown[0];
             foreach (FuWindow window in Windows.Values)
             {
-                // update window state
-                window.UpdateState(leftButtonState);
                 // check whatever window must be draw
                 RenderFuWindow(window);
             }

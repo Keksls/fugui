@@ -103,6 +103,16 @@ namespace Fu
         public const uint GL_SRC_ALPHA_SATURATE = 0x0308;
         public const uint GL_TRIANGLE_STRIP = 0x0005;
         public const uint GL_VERTEX_ARRAY_BINDING = 0x85B5;
+        // --- PBO & map access ---
+        public const uint GL_PIXEL_UNPACK_BUFFER = 0x88EC;
+        public const uint GL_PIXEL_PACK_BUFFER = 0x88EB; // (optionnel, utile si tu veux lire depuis GL)
+        public const uint GL_STREAM_DRAW = 0x88E0;
+        public const uint GL_READ_ONLY = 0x88B8; // (optionnel)
+        public const uint GL_WRITE_ONLY = 0x88B9; // utilisé par glMapBuffer
+        public const uint GL_READ_WRITE = 0x88BA; // (optionnel)
+        public const uint GL_MAP_WRITE_BIT = 0x0002;
+        public const uint GL_MAP_INVALIDATE_BUFFER_BIT = 0x0008;
+
         #endregion
 
         #region Basic function delegates (increment as needed)
@@ -153,6 +163,10 @@ namespace Fu
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBlendEquation_t(uint mode);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBlendFuncSeparate_t(uint srcRGB, uint dstRGB, uint srcAlpha, uint dstAlpha);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glDrawArrays_t(uint mode, int first, int count);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate IntPtr glMapBuffer_t(uint target, uint access);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate bool glUnmapBuffer_t(uint target);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate IntPtr glMapBufferRange_t(uint target, IntPtr offset, IntPtr length, uint access);
         #endregion
 
         #region Fields (loaded function pointers)
@@ -203,13 +217,17 @@ namespace Fu
         public static glBlendEquation_t glBlendEquation;
         public static glBlendFuncSeparate_t glBlendFuncSeparate;
         public static glDrawArrays_t glDrawArrays;
+
+        public static glMapBuffer_t glMapBuffer;
+        public static glUnmapBuffer_t glUnmapBuffer;
+        public static glMapBufferRange_t glMapBufferRange;
         #endregion
 
         #region Public loaders
         /// <summary>
         /// Load a minimal set (clear/viewport) to smoke-test context.
         /// </summary>
-        public static void LoadMinimal()
+        public static void LoadAll()
         {
             glGetString = Load<glGetString_t>("glGetString");
             glViewport = Load<glViewport_t>("glViewport");
@@ -223,14 +241,7 @@ namespace Fu
             glBlendFuncSeparate = Load<glBlendFuncSeparate_t>("glBlendFuncSeparate");
             glScissor = Load<glScissor_t>("glScissor");
             glDrawArrays = Load<glDrawArrays_t>("glDrawArrays");
-        }
 
-        /// <summary>
-        /// Load extended set for ImGui-style rendering (VAO/VBO/shaders/texture/draw).
-        /// Call after LoadMinimal().
-        /// </summary>
-        public static void LoadForImGui()
-        {
             glActiveTexture = Load<glActiveTexture_t>("glActiveTexture");
 
             glGenVertexArrays = Load<glGenVertexArrays_t>("glGenVertexArrays");
@@ -266,6 +277,10 @@ namespace Fu
             glTexSubImage2D = Load<glTexSubImage2D_t>("glTexSubImage2D");
 
             glDrawElements = Load<glDrawElements_t>("glDrawElements");
+
+            glMapBuffer = Load<glMapBuffer_t>("glMapBuffer");
+            glUnmapBuffer = Load<glUnmapBuffer_t>("glUnmapBuffer");
+            glMapBufferRange = Load<glMapBufferRange_t>("glMapBufferRange");
         }
         #endregion
 

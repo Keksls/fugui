@@ -75,6 +75,10 @@ namespace Fu
         /// </summary>
         public static FuDockingLayoutManager Layouts { get; private set; }
         /// <summary>
+        /// The absolute mouse position on the monitor (used for multi context / multi window support)
+        /// </summary>
+        public static Vector2Int AbsoluteMonitorMousePosition { get; internal set; }
+        /// <summary>
         /// FuGui Controller instance
         /// </summary>
         internal static FuController Controller;
@@ -676,7 +680,10 @@ namespace Fu
         /// Render each FuGui contexts
         /// </summary>
         public static void Render()
-        {
+        {   
+            SDL.SDL_GetGlobalMouseState(out int x, out int y);
+            AbsoluteMonitorMousePosition = new Vector2Int(x, y);
+
             // clear context menu stack in case dev forgot to pop something OR exception raise between push and pop
             ClearContextMenuStack();
             // clean popup stack to prevent popup to stay on stack if they close unexpectedly
@@ -762,7 +769,7 @@ namespace Fu
                 return;
             }
 
-            if(!uiWindow.IsExternalizable)
+            if (!uiWindow.IsExternalizable)
             {
                 Debug.LogError($"Cannot externalize window {uiWindow.ID} because it is not externalizable.");
                 return;

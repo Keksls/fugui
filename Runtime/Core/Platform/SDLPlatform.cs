@@ -33,7 +33,7 @@ namespace Fu
             base.PrepareFrame(io, rect, updateMouse, updateKeyboard);
 
             // Update window events
-            _window.UpdateEvents();
+            _window.Update();
 
             forwardingEvts.Clear();
             SDL.SDL_Event e;

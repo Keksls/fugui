@@ -145,7 +145,10 @@ namespace SDL2
 			"SDL_GAMECONTROLLERCONFIG";
 		public const string SDL_HINT_ALLOW_TOPMOST =
 			"SDL_ALLOW_TOPMOST";
-		
+        public const string SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH = "SDL_MOUSE_FOCUS_CLICKTHROUGH";
+        public const string SDL_HINT_MOUSE_AUTO_CAPTURE = "SDL_MOUSE_AUTO_CAPTURE";
+        public const string SDL_HINT_WINDOWS_HANDLE_MOUSE_ACTIVATION = "SDL_WINDOWS_HANDLE_MOUSE_ACTIVATION";
+
 		public enum SDL_HintPriority
 		{
 			SDL_HINT_DEFAULT,
@@ -788,9 +791,12 @@ namespace SDL2
 		/* window refers to an SDL_Window* */
 		[DllImport(nativeLibName)]
 		public static extern void SDL_RaiseWindow(IntPtr window);
-		
-		/* window refers to an SDL_Window* */
-		[DllImport(nativeLibName)]
+
+        [DllImport(nativeLibName)]
+        public static extern void SDL_SetWindowAlwaysOnTop(IntPtr window, SDL_bool on_top);
+
+        /* window refers to an SDL_Window* */
+        [DllImport(nativeLibName)]
 		public static extern void SDL_RestoreWindow(IntPtr window);
 		
 		/* window refers to an SDL_Window* */
@@ -3407,13 +3413,18 @@ namespace SDL2
 		[DllImport(nativeLibName)]
 		public static extern IntPtr SDL_GetMouseFocus();
 
-		/* Get the current state of the mouse */
-		/* NOTE: Not sure if x,y should be 'ref', as SDL accepts null */
-		[DllImport(nativeLibName)]
-		public static extern UInt32 SDL_GetMouseState(out int x, out int y);
+        /* Get the current state of the mouse */
+        /* NOTE: Not sure if x,y should be 'ref', as SDL accepts null */
+        [DllImport(nativeLibName)]
+        public static extern UInt32 SDL_GetMouseState(out int x, out int y);
 
-		/* Get the mouse state with relative coords*/
-		[DllImport(nativeLibName)]
+        /* Get the current state of the mouse */
+        /* NOTE: Not sure if x,y should be 'ref', as SDL accepts null */
+        [DllImport(nativeLibName)]
+        public static extern UInt32 SDL_GetGlobalMouseState(out int x, out int y);
+
+        /* Get the mouse state with relative coords*/
+        [DllImport(nativeLibName)]
 		public static extern UInt32 SDL_GetRelativeMouseState(out int x, out int y);
 
 		/* Set the mouse cursor's position (within a window) */

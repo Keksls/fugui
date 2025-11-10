@@ -11,7 +11,7 @@ namespace Fu
     {
         public Vector2Int LocalMousePos => _mousePos;
         public FuContext Context => _context;
-        public Vector2Int Position => _context.Window.ContainerPosition;
+        public Vector2Int Position => _context.Window.Position;
         public Vector2Int Size => _size;
         public FuKeyboardState Keyboard => _keyboard;
         public FuMouseState Mouse => _mouse;
@@ -37,6 +37,12 @@ namespace Fu
             _size = window.Size;
             _context.OnRender += RenderFuWindows;
 
+            Vector2Int absMousePos = Fugui.AbsoluteMonitorMousePosition;
+            Vector2Int winContainerMousePos = window.Container.LocalMousePos;
+            Vector2Int absContainerPos = absMousePos - winContainerMousePos;
+
+            _context.Window.Position = absContainerPos + window.LocalPosition;
+
             TryAddWindow(window);
 
             _window.OnResized += (window) =>
@@ -44,7 +50,7 @@ namespace Fu
                 _size = window.Size;
             };
 
-            _context.Window.Start();
+            _context.Window.Create();
         }
 
         #region Update & Render

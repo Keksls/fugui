@@ -80,6 +80,35 @@ namespace Fu
                 Fugui.SDLEventRooter.Push(_window.SdlWindowId, ref evt);
             }
 
+            // If mouse is outside the window, reset mouse position and buttons
+            //if (!_window.IsMouseHover && FuWindow.InputFocusedWindow != _window.Window)
+            //{
+            //    _mouseX = -float.MaxValue;
+            //    _mouseY = -float.MaxValue;
+            //    _mouseDown[0] = false;
+            //    _mouseDown[1] = false;
+            //    _mouseDown[2] = false;
+            //}
+            //else
+            //{
+            uint state = 0;
+            int x = 0, y = 0;
+            if (_window.IsDragging && !_window.CanInternalize)
+                state = SDL.SDL_GetGlobalMouseState(out x, out y);
+            else
+                state = SDL.SDL_GetMouseState(out x, out y);
+            _mouseX = x;
+            _mouseY = y;
+            if (!_window.IsMouseHover && FuWindow.InputFocusedWindow != _window.Window)
+            {
+                _mouseX = -float.MaxValue;
+                _mouseY = -float.MaxValue;
+            }
+            _mouseDown[0] = (state & SDL.SDL_BUTTON(SDL.SDL_BUTTON_LEFT)) != 0;
+            _mouseDown[1] = (state & SDL.SDL_BUTTON(SDL.SDL_BUTTON_MIDDLE)) != 0;
+            _mouseDown[2] = (state & SDL.SDL_BUTTON(SDL.SDL_BUTTON_RIGHT)) != 0;
+            //}
+
             // Feed continuous mouse buttons state 
             io.AddMouseButtonEvent(0, _mouseDown[0]);
             io.AddMouseButtonEvent(1, _mouseDown[2]);

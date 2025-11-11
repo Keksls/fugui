@@ -22,6 +22,7 @@ namespace Fu
         public IntPtr SdlWindow { get; private set; }
         public uint SdlWindowId { get; private set; }
         public string Title { get; private set; }
+        public bool CanInternalize { get; private set; } = false;
         public int Width => Window.Size.x;
         public int Height => Window.Size.y;
         private Vector2Int _position;
@@ -35,6 +36,7 @@ namespace Fu
                     SDL_SetWindowPosition(SdlWindow, _position.x, _position.y);
             }
         }
+        private Action OnClosed;
 
         private IntPtr _glContext;
 
@@ -46,6 +48,8 @@ namespace Fu
 
         /// <summary>Ensure Close() is executed exactly once.</summary>
         private volatile bool _isClosed = false;
+        private bool _isMouseHover = false;
+        public bool IsMouseHover => _isMouseHover;
 
         // GL objects
         private uint _vao;
@@ -71,7 +75,7 @@ namespace Fu
         /// <summary>
         /// Create and start the external SDL2 OpenGL window
         /// </summary>
-        public void Create()
+        public void Create(bool dragOnStart)
         {
             SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
             SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "1");
@@ -93,8 +97,8 @@ namespace Fu
             SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_ALPHA_SIZE, 8);
 
             SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_SHOWN;
-            if (Window.NoTaskBarIcon)
-                flags |= SDL_WindowFlags.SDL_WINDOW_SKIP_TASKBAR;
+            //if (Window.NoTaskBarIcon)
+            //    flags |= SDL_WindowFlags.SDL_WINDOW_SKIP_TASKBAR;
             //if(!Window.UseNativeTitleBar)
             flags |= SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
             if (Window.AlwaysOnTop)
@@ -113,6 +117,26 @@ namespace Fu
                 return;
             }
             SdlWindowId = SDL_GetWindowID(SdlWindow);
+
+            // check is left click is down to start dragging right away
+            if (dragOnStart)
+            {
+                SDL_CaptureMouse(SDL_bool.SDL_TRUE);
+                SDL_GetMouseState(out int mx, out int my);
+                Vector2Int mouseLocal = new Vector2Int(mx, my);
+                Vector2Int mouseAbs = Fugui.AbsoluteMonitorMousePosition;
+                StartDrag(mouseLocal, mouseAbs);
+
+                // push SDL mouse left button down event to avoid missing it
+                SDL_Event evt = new SDL_Event();
+                evt.type = SDL_EventType.SDL_MOUSEBUTTONDOWN;
+                evt.button.windowID = SdlWindowId;
+                evt.button.button = (byte)SDL_BUTTON_LEFT;
+                evt.button.state = SDL_PRESSED;
+                evt.button.x = mx;
+                evt.button.y = my;
+                Fugui.SDLEventRooter.Push(SdlWindowId, ref evt);
+            }
 
             _glContext = SDL_GL_CreateContext(SdlWindow);
             if (_glContext == IntPtr.Zero)
@@ -175,9 +199,6 @@ namespace Fu
                 return;
             }
 
-            // handle window dragging
-            UpdateManipulation();
-
             // Only render if the window has been marked as dirty
             if (!Window.HasJustBeenDraw)
                 return;
@@ -193,9 +214,43 @@ namespace Fu
             int w = 0, h = 0;
             SDL_GetWindowSize(SdlWindow, ref w, ref h);
             Window.Size = new Vector2Int(w, h);
+
+            // clamp sdl window poisition to screen bounds
+            if (!IsDragging && !IsResizing) // don't clamp while dragging/resizing
+            {
+                // get current position
+                int x = 0, y = 0;
+                SDL_GetWindowPosition(SdlWindow, ref x, ref y);
+                _position = new Vector2Int(x, y);
+
+                // get monitor bounds and clamp
+                var monitorIndex = SDL_GetWindowDisplayIndex(SdlWindow);
+                SDL_Rect monitorRect = default;
+                SDL_GetDisplayUsableBounds(monitorIndex, ref monitorRect);
+                if (!monitorRect.Equals(default)) // valid rect
+                {
+                    int clampedX = Math.Max(monitorRect.x, Math.Min(x, monitorRect.x + monitorRect.w - Width));
+                    int clampedY = Math.Max(monitorRect.y, Math.Min(y, monitorRect.y + monitorRect.h - Height));
+                    if (clampedX != x || clampedY != y)
+                    {
+                        // window is on top of screen bounds, let's maximize it
+                        if (clampedY > y)
+                        {
+                            MaximizeBorderlessWindow();
+                            return;
+                        }
+
+                        SDL_SetWindowPosition(SdlWindow, clampedX, clampedY);
+                        _position = new Vector2Int(clampedX, clampedY);
+                    }
+                }
+            }
         }
 
-
+        /// <summary>
+        /// Draw debug information about the external window
+        /// </summary>
+        /// <param name="layout"> The layout to draw into </param>
         public void DrawDebug(FuLayout layout)
         {
             layout.Text($"Position: {_position.x}, {_position.y}");
@@ -212,9 +267,10 @@ namespace Fu
         /// <summary>
         /// Signal the window to close
         /// </summary>
-        public void Close()
+        public void Close(Action onClosed)
         {
             if (_isClosed) return; // already closed
+            OnClosed = onClosed;
             _shouldClose = true;
         }
 
@@ -270,6 +326,10 @@ namespace Fu
             {
                 Debug.LogError("Error during external window cleanup: " + e);
             }
+            finally
+            {
+                OnClosed?.Invoke();
+            }
         }
 
         /// <summary>
@@ -281,6 +341,15 @@ namespace Fu
             SDL_GL_MakeCurrent(SdlWindow, _glContext);
             // update SDL events
             Fugui.SDLEventRooter.Update();
+
+            // get global mouse position
+            int mx, my;
+            SDL_GetGlobalMouseState(out mx, out my);
+            Vector2Int absMousePos = new Vector2Int(mx, my);
+            Vector2Int windowPos = Position;
+            Vector2Int windowSize = Window.Size;
+            _isMouseHover = absMousePos.x >= windowPos.x && absMousePos.x < windowPos.x + windowSize.x &&
+                             absMousePos.y >= windowPos.y && absMousePos.y < windowPos.y + windowSize.y;
         }
         #endregion
 
@@ -553,31 +622,51 @@ namespace Fu
             if (e.type == SDL_EventType.SDL_QUIT ||
                (e.type == SDL_EventType.SDL_WINDOWEVENT && e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE))
             {
-                Close();
+                Close(null);
             }
 
-            // Window resize
-            else if (e.type == SDL_EventType.SDL_WINDOWEVENT && (e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED ||
-                e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED))
+            if (e.type == SDL.SDL_EventType.SDL_WINDOWEVENT)
             {
-                Window.Size = new Vector2Int(e.window.data1, e.window.data2);
+                switch (e.window.windowEvent)
+                {
+                    // Window resize
+                    case SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
+                        Window.Size = new Vector2Int(e.window.data1, e.window.data2);
+                        break;
+
+                    // Window moved
+                    case SDL_WindowEventID.SDL_WINDOWEVENT_MOVED:
+                        Position = new Vector2Int(e.window.data1, e.window.data2);
+                        break;
+
+                        //// Mouse enter
+                        //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_ENTER:
+                        //    _isMouseHover = true;
+                        //    break;
+
+                        //// Mouse leave
+                        //case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_LEAVE:
+                        //    _isMouseHover = false;
+                        //    break;
+                }
             }
 
-            // Window move
-            else if (e.type == SDL_EventType.SDL_WINDOWEVENT && e.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_MOVED)
+            // Forward event to rooter for ImGui processing
+            if (e.type == SDL_EventType.SDL_MOUSEBUTTONDOWN)
             {
-                Position = new Vector2Int(e.window.data1, e.window.data2);
+                Debug.Log($"External window mouse button down: button={e.button.button} x={e.button.x} y={e.button.y}");
+                Fugui.SDLEventRooter.Push(SdlWindowId, ref e);
             }
         }
         #endregion
 
         #region Update: Dragging & Resizing
-        private bool isDragging = false;
+        public bool IsDragging { get; private set; } = false;
         private Vector2Int dragStartMousePos;
         private Vector2Int dragStartWindowPos;
 
         public ResizeEdge HoverResizeEdge { get; private set; } = ResizeEdge.None;
-        private bool isResizing = false;
+        public bool IsResizing { get; private set; } = false;
         private Vector2Int resizeStartMousePos;
         private Vector2Int resizeStartWindowPos;
         private Vector2Int resizeStartWindowSize;
@@ -592,7 +681,18 @@ namespace Fu
         /// </summary>
         public void UpdateManipulation()
         {
-            Vector2Int mouseLocal = Window.Mouse.Position;
+            if (!_isRunning || _shouldClose || _isClosed)
+                return;
+
+            if (!IsResizing && !IsDragging && !_isMouseHover)
+            {
+                HoverResizeEdge = ResizeEdge.None;
+                currentResizeEdge = ResizeEdge.None;
+                return;
+            }
+
+            uint mouseState = SDL.SDL_GetMouseState(out int mx, out int my);
+            Vector2Int mouseLocal = new Vector2Int(mx, my);
             Vector2Int mouseAbs = Fugui.AbsoluteMonitorMousePosition;
             Vector2Int windowSize = Window.Size;
 
@@ -600,9 +700,12 @@ namespace Fu
             // --- RESIZE ---
             //
             // Detect hover edge (even when not resizing)
-            if (!isDragging && !isResizing)
+            if (!IsDragging && !IsResizing)
             {
-                HoverResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
+                if (IsMaximized)
+                    HoverResizeEdge = ResizeEdge.None;   // interdit resize
+                else
+                    HoverResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
             }
             else
             {
@@ -611,14 +714,14 @@ namespace Fu
             }
 
             // detect edge if not resizing or dragging
-            if (!isDragging && !isResizing && Window.Mouse.IsDown(FuMouseButton.Left))
+            if (!IsMaximized && !IsDragging && !IsResizing && Window.Mouse.IsDown(FuMouseButton.Left))
             {
                 currentResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
 
                 if (currentResizeEdge != ResizeEdge.None)
                 {
                     // begin resize
-                    isResizing = true;
+                    IsResizing = true;
                     resizeStartMousePos = mouseAbs;
                     resizeStartWindowPos = Position;
                     resizeStartWindowSize = windowSize;
@@ -626,7 +729,7 @@ namespace Fu
             }
 
             // continue resize
-            if (isResizing)
+            if (IsResizing)
             {
                 if (Window.Mouse.IsPressed(FuMouseButton.Left))
                 {
@@ -669,12 +772,18 @@ namespace Fu
                     // assign
                     Position = newPos;
                     Window.Size = newSize;
+                    Window.ForceDraw();
                     SDL_SetWindowSize(SdlWindow, newSize.x, newSize.y);
                 }
                 else
                 {
                     // stop resizing
-                    isResizing = false;
+                    IsResizing = false;
+                    if (FuWindow.InputFocusedWindow == Window)
+                    {
+                        FuWindow.InputFocusedWindow = null;
+                        FuWindow.NbInputFocusedWindow = 0;
+                    }
                     currentResizeEdge = ResizeEdge.None;
                 }
             }
@@ -688,17 +797,10 @@ namespace Fu
             //
             if (Window.Mouse.IsDown(FuMouseButton.Left))
             {
-                float titleBarHeight = Window.WorkingAreaPosition.y;
-
-                if (!isDragging && !isResizing && mouseLocal.y < titleBarHeight)
-                {
-                    isDragging = true;
-                    dragStartMousePos = mouseAbs;
-                    dragStartWindowPos = Position;
-                }
+                StartDrag(mouseLocal, mouseAbs);
             }
 
-            if (isDragging)
+            if (IsDragging)
             {
                 if (Window.Mouse.IsPressed(FuMouseButton.Left))
                 {
@@ -707,7 +809,9 @@ namespace Fu
                 }
                 else
                 {
-                    isDragging = false;
+                    IsDragging = false;
+                    CanInternalize = true;
+                    SDL_CaptureMouse(SDL_bool.SDL_FALSE);
                 }
             }
 
@@ -721,15 +825,61 @@ namespace Fu
             }
         }
 
+        private void StartDrag(Vector2Int mouseLocal, Vector2Int mouseAbs)
+        {
+            float titleBarHeight = Window.WorkingAreaPosition.y;
+            float titleBarWidth = Window.Size.x - (64f * Fugui.Scale);
+
+            bool inTitleBar =
+                mouseLocal.y < titleBarHeight &&
+                mouseLocal.x < titleBarWidth;
+
+            // pas dans la title bar → pas de drag
+            if (!inTitleBar || IsResizing)
+                return;
+
+            if (!IsDragging && Window.Mouse.IsDown(FuMouseButton.Left))
+            {
+                if (IsMaximized)
+                {
+                    // 1. On calcule la fraction horizontale du click dans la titlebar
+                    float ratio = (float)mouseLocal.x / (float)Window.Size.x;
+
+                    // 2. Restore immédiatement
+                    RestoreBorderlessWindow();
+
+                    // 3. Positionner la fenêtre sous la souris
+                    //    (important pour un drag naturel)
+                    int newX = mouseAbs.x - (int)(restoreRect.w * ratio);
+                    int newY = mouseAbs.y - (int)(titleBarHeight * 0.5f);
+
+                    Position = new Vector2Int(newX, newY);
+                }
+
+                // 4. Commencer drag normal
+                IsDragging = true;
+                dragStartMousePos = mouseAbs;
+                dragStartWindowPos = Position;
+            }
+        }
+
         private float RESIZE_BORDER => 6 * Fugui.Scale;
+        private float RESIZE_CORNER_SIZE => 12 * Fugui.Scale;
         private ResizeEdge GetHoveredResizeEdge(Vector2Int mouseLocal, Vector2Int windowSize)
         {
+            bool inLeftCorner = mouseLocal.x <= RESIZE_CORNER_SIZE;
+            bool inRightCorner = mouseLocal.x >= windowSize.x - RESIZE_CORNER_SIZE;
+            bool inBottomCorner = mouseLocal.y >= windowSize.y - RESIZE_CORNER_SIZE;
+
+            // Corners first (using corner size)
+            if (inBottomCorner && inLeftCorner) return ResizeEdge.BottomLeft;
+            if (inBottomCorner && inRightCorner) return ResizeEdge.BottomRight;
+
+            // Borders (using border size)
             bool left = mouseLocal.x <= RESIZE_BORDER;
             bool right = mouseLocal.x >= windowSize.x - RESIZE_BORDER;
             bool bottom = mouseLocal.y >= windowSize.y - RESIZE_BORDER;
 
-            if (bottom && left) return ResizeEdge.BottomLeft;
-            if (bottom && right) return ResizeEdge.BottomRight;
             if (left) return ResizeEdge.Left;
             if (right) return ResizeEdge.Right;
             if (bottom) return ResizeEdge.Bottom;
@@ -739,6 +889,17 @@ namespace Fu
 
         public void DrawResizeHandles()
         {
+            if (!_isRunning || _shouldClose || _isClosed)
+                return;
+
+            // check if mouse is inside window
+            if (!IsResizing && !IsDragging && !_isMouseHover)
+            {
+                HoverResizeEdge = ResizeEdge.None;
+                currentResizeEdge = ResizeEdge.None;
+                return;
+            }
+
             var dl = ImGui.GetForegroundDrawList();
 
             Vector2 windowSize = new Vector2(Window.Size.x, Window.Size.y);
@@ -755,15 +916,15 @@ namespace Fu
 
             // get hovered or active edge
             ResizeEdge edge = HoverResizeEdge;
-            if (isResizing)
+            if (IsResizing)
                 edge = currentResizeEdge;
 
             //
             // LEFT EDGE
             //
             {
-                bool hovered = (edge == ResizeEdge.Left || edge == ResizeEdge.BottomLeft);
-                bool active = isResizing && hovered;
+                bool hovered = (edge == ResizeEdge.Left);
+                bool active = IsResizing && hovered;
                 uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
                 float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
 
@@ -776,8 +937,8 @@ namespace Fu
             // RIGHT EDGE
             //
             {
-                bool hovered = (edge == ResizeEdge.Right || edge == ResizeEdge.BottomRight);
-                bool active = isResizing && hovered;
+                bool hovered = (edge == ResizeEdge.Right);
+                bool active = IsResizing && hovered;
                 uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
                 float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
 
@@ -790,8 +951,8 @@ namespace Fu
             // BOTTOM EDGE
             //
             {
-                bool hovered = (edge == ResizeEdge.Bottom || edge == ResizeEdge.BottomLeft || edge == ResizeEdge.BottomRight);
-                bool active = isResizing && hovered;
+                bool hovered = (edge == ResizeEdge.Bottom);
+                bool active = IsResizing && hovered;
                 uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
                 float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
 
@@ -805,7 +966,7 @@ namespace Fu
             //
             {
                 bool hovered = (edge == ResizeEdge.BottomRight);
-                bool active = isResizing && hovered;
+                bool active = IsResizing && hovered;
                 uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
 
                 if (hovered || active)
@@ -825,7 +986,7 @@ namespace Fu
             //
             {
                 bool hovered = (edge == ResizeEdge.BottomLeft);
-                bool active = isResizing && hovered;
+                bool active = IsResizing && hovered;
                 uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
 
                 if (hovered || active)
@@ -1192,6 +1353,65 @@ namespace Fu
             v |= v >> 16;
             v++;
             return v < 256 ? 256 : v;
+        }
+        #endregion
+
+        #region Window State Management
+        /// <summary>
+        /// Minimize the external window
+        /// </summary>
+        public void Minimize()
+        {
+            if (_isRunning && !_shouldClose && !_isClosed)
+            {
+                SDL_MinimizeWindow(SdlWindow);
+            }
+        }
+
+        public bool IsMaximized { get; private set; } = false;
+        private SDL_Rect restoreRect;
+        /// <summary>
+        /// Toggle maximize / restore of the borderless window
+        /// </summary>
+        public void ToggleMaximize()
+        {
+            if (IsMaximized)
+                RestoreBorderlessWindow();
+            else
+                MaximizeBorderlessWindow();
+        }
+
+        /// <summary>
+        /// Maximize the borderless window
+        /// </summary>
+        private void MaximizeBorderlessWindow()
+        {
+            int x = 0, y = 0, w = 0, h = 0;
+            SDL_GetWindowPosition(SdlWindow, ref x, ref y);
+            SDL_GetWindowSize(SdlWindow, ref w, ref h);
+
+            restoreRect = new SDL_Rect { x = x, y = y, w = w, h = h };
+
+            int displayIndex = SDL_GetWindowDisplayIndex(SdlWindow);
+
+            SDL_Rect usableBounds = default;
+            SDL_GetDisplayUsableBounds(displayIndex, ref usableBounds);
+
+            SDL_SetWindowPosition(SdlWindow, usableBounds.x, usableBounds.y);
+            SDL_SetWindowSize(SdlWindow, usableBounds.w, usableBounds.h);
+
+            IsMaximized = true;
+        }
+
+        /// <summary>
+        /// Restore the borderless window
+        /// </summary>
+        private void RestoreBorderlessWindow()
+        {
+            SDL_SetWindowPosition(SdlWindow, restoreRect.x, restoreRect.y);
+            SDL_SetWindowSize(SdlWindow, restoreRect.w, restoreRect.h);
+
+            IsMaximized = false;
         }
         #endregion
     }

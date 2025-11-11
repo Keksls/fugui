@@ -307,9 +307,8 @@ namespace Fu
             var externalWindowIDs = ExternalWindows.Keys.ToList();
             foreach (string windowID in externalWindowIDs)
             {
-                ((FuExternalContext)ExternalWindows[windowID].Context).Window.Close();
+                ((FuExternalContext)ExternalWindows[windowID].Context).Window.Close(null);
             }
-
 
             // Dispose Fugui Contexts
             var ids = Contexts.Keys.ToList();
@@ -680,7 +679,7 @@ namespace Fu
         /// Render each FuGui contexts
         /// </summary>
         public static void Render()
-        {   
+        {
             SDL.SDL_GetGlobalMouseState(out int x, out int y);
             AbsoluteMonitorMousePosition = new Vector2Int(x, y);
 
@@ -744,9 +743,6 @@ namespace Fu
                         {
                             context.Value.SetScale(_targetScale, _targetFontScale);
                         }
-
-                        // Draw SDL window content if it's an external context
-                        externalWindowContainer?.DrawSDL();
                     }
                 }
             }
@@ -792,12 +788,45 @@ namespace Fu
             ExternalWindows.Add(uiWindow.ID, container);
         }
 
+        public static void InternalizeWindow(FuWindow uiWindow)
+        {
+            if (uiWindow == null)
+            {
+                Debug.LogError("Cannot internalize a null Fugui window.");
+                return;
+            }
+            if (!ExternalWindows.ContainsKey(uiWindow.ID))
+            {
+                Debug.LogWarning($"No external window found for {uiWindow.ID}.");
+                return;
+            }
+            // Close the external window container
+            if(uiWindow.Container is FuExternalWindowContainer externalContainer)
+            {
+                FuExternalContext externalContext = (FuExternalContext)externalContainer.Context;
+                Vector2Int windPose = externalContext.Window.Position;
+                Vector2Int defContainerPos = DefaultContainer.Position;
+                Vector2Int finalPos = windPose - defContainerPos;
+
+                externalContext.Window.Close(() => {
+                    // Re-add the window to the default container
+                    uiWindow.TryAddToContainer(DefaultContainer);
+                    //uiWindow.LocalPosition = finalPos;
+                });
+            }
+        }
+
         /// <summary>
         /// Remove an externalized window by instance.
         /// </summary>
         internal static void RemoveExternalWindow(FuWindow uiWindow)
         {
             if (uiWindow == null) return;
+            if (FuWindow.InputFocusedWindow == uiWindow)
+            {
+                FuWindow.InputFocusedWindow = null;
+                FuWindow.NbInputFocusedWindow = 0;
+            }
             DestroyContext(uiWindow.Container.Context.ID);
         }
         #endregion

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ImGuiNET;
+using System;
 using UnityEngine;
 
 namespace Fu
@@ -50,7 +51,7 @@ namespace Fu
                 _size = window.Size;
             };
 
-            _context.Window.Create();
+            _context.Window.Create(_window.IsDragging);
         }
 
         #region Update & Render
@@ -71,7 +72,11 @@ namespace Fu
         /// </summary>
         public void RenderFuWindows()
         {
+            // render each window
             RenderFuWindow(_window);
+
+            if (_window == null || !_window.IsExternal)
+                return;
 
             // render notifications
             if (!_window.NoContextMenu)
@@ -97,18 +102,26 @@ namespace Fu
         /// <param name="window"> The FuWindow to render. </param>
         public void RenderFuWindow(FuWindow window)
         {
-            window.UpdateState(Context.IO.MouseDown[0]);
-            window.DrawWindow();
-            _context.Window.Render();
-        }
+            if (window == null)
+                return;
 
-        /// <summary>
-        /// Present the rendered content to the SDL window.
-        /// </summary>
-        public void DrawSDL()
-        {
-            // finally present the context actualy draw 
-            //_context.Window.Render();
+            window.UpdateState(Context.IO.MouseDown[0]);
+            // during window manipulation, we block fugui mouse events to avoid conflicts
+            if (_context.Window.IsResizing)
+            {
+                // to block fugui mouse events, we first need to update mouse state so manipulations update have current inputs
+                // then we clear mouse events before drawing
+                window.Mouse.UpdateState(window);
+                _context.Window.UpdateManipulation();
+                window.Mouse.Clear();
+                window.DrawWindow(true, true);
+            }
+            else
+            {
+                _context.Window.UpdateManipulation();
+                window.DrawWindow();
+            }
+            _context.Window.Render();
         }
         #endregion
 
@@ -154,5 +167,14 @@ namespace Fu
 
         public bool ForcePos() => true;
         #endregion
+
+        /// <summary>
+        /// Close the external window container and its associated window.
+        /// </summary>
+        /// <param name="onClosed"> Optional callback to execute after the window is closed. </param>
+        public void Close(Action onClosed = null)
+        {
+            _context.Window.Close(onClosed);
+        }
     }
 }

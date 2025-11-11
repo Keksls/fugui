@@ -637,9 +637,12 @@ namespace SDL2
 		public static extern int SDL_GetWindowDisplayIndex(
 			IntPtr window
 		);
-		
-		/* window refers to an SDL_Window* */
-		[DllImport(nativeLibName)]
+
+        [DllImport(nativeLibName)]
+        public static extern int SDL_GetDisplayUsableBounds(int index, ref SDL_Rect rect);
+
+        /* window refers to an SDL_Window* */
+        [DllImport(nativeLibName)]
 		public static extern int SDL_GetWindowDisplayMode(
 			IntPtr window,
 			ref SDL_DisplayMode mode
@@ -3417,6 +3420,10 @@ namespace SDL2
         /* NOTE: Not sure if x,y should be 'ref', as SDL accepts null */
         [DllImport(nativeLibName)]
         public static extern UInt32 SDL_GetMouseState(out int x, out int y);
+
+
+        [DllImport(nativeLibName)]
+        public static extern void SDL_CaptureMouse(SDL_bool enabled);
 
         /* Get the current state of the mouse */
         /* NOTE: Not sure if x,y should be 'ref', as SDL accepts null */

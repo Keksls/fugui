@@ -257,9 +257,9 @@ namespace Fu
         /// <summary>
         /// draw the window and do some camera related process
         /// </summary>
-        public override void DrawWindow()
+        public override void DrawWindow(bool preventUpdatingMouse = false, bool preventUpdatingKeyboard = false)
         {
-            base.DrawWindow();
+            base.DrawWindow(preventUpdatingMouse, preventUpdatingKeyboard);
             updateCameraRender();
             updateCameraSize();
         }

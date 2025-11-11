@@ -83,15 +83,17 @@ namespace Fu
 
         internal override void Destroy()
         {
-            base.Destroy();
+            _window?.Close(() =>
+            {
+                base.Destroy();
 
-            Fugui.SetCurrentContext(this);
-            _platform?.Shutdown(IO, PlatformIO);
-            _platform = null;
+                Fugui.SetCurrentContext(this);
+                _platform?.Shutdown(IO, PlatformIO);
+                _platform = null;
 
-            ImGui.DestroyContext(ImGuiContext);
-            _window?.Close();
-            _window = null;
+                ImGui.DestroyContext(ImGuiContext);
+                _window = null;
+            });
         }
 
         public override void SetScale(float scale, float fontScale)

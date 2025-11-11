@@ -343,7 +343,7 @@ namespace Fu
         /// <summary>
         /// Draw the UI of this window
         /// </summary>
-        public virtual void DrawWindow()
+        public virtual void DrawWindow(bool preventUpdatingMouse = false, bool preventUpdatingKeyboard = false)
         {
             if (!IsInitialized)
             {
@@ -351,6 +351,7 @@ namespace Fu
             }
 
             CheckAutoExternalize();
+            CheckAutoInternalize();
 
             _ignoreResizeForThisFrame = false;
             HasMovedThisFrame = false;
@@ -365,8 +366,11 @@ namespace Fu
             }
 
             // update mouse buttons states
-            Mouse.UpdateState(this);
-            Keyboard.UpdateState();
+            if (!preventUpdatingMouse)
+                Mouse.UpdateState(this);
+            // update keyboard state
+            if (!preventUpdatingKeyboard)
+                Keyboard.UpdateState();
 
             // we need to draw ImGui Window component (Begin/End)
             if (!IsDocked)
@@ -424,7 +428,10 @@ namespace Fu
             // ImGui want to close this window
             if (!IsOpened)
             {
-                Close(null);
+                if (IsExternal)
+                    ((FuExternalWindowContainer)Container).Close(() => { Close(null); });
+                else
+                    Close(null);
                 return;
             }
 
@@ -500,7 +507,7 @@ namespace Fu
             if (externalBefore)
             {
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
-                nativeWantDrawWindow = ImGui.Begin(ID, ref _open, _windowFlags | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
+                nativeWantDrawWindow = ImGui.Begin(ID, _windowFlags | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
             }
             else if (IsClosable)
             {
@@ -514,15 +521,6 @@ namespace Fu
             if (nativeWantDrawWindow)
             {
                 bool docked = ImGuiNative.igIsWindowDocked() != 0;
-                // prevent floating node to fake docked state
-                //if (docked)
-                //{
-                //    var dockId = ImGuiNative.igGetWindowDockID();
-                //    ImGuiDockNode* dockNode = NativeDocking.igDockBuilderGetNode(dockId);
-                //    // check if this is a floating node
-                //    bool isFloatingNode = NativeDocking.ImGuiDockNode_IsFloatingNode(dockNode);
-                //    docked = !isFloatingNode;
-                //}
                 if (docked != IsDocked)
                 {
                     IsDocked = docked;
@@ -602,7 +600,7 @@ namespace Fu
                 IsVisible = false;
                 IsHovered = false;
             }
-            if(externalBefore)
+            if (externalBefore)
             {
                 ImGui.PopStyleVar();
             }
@@ -715,16 +713,9 @@ namespace Fu
                 // draw user UI callback
                 FuStyle.Default.Push(true);
 
-                if (IsExternal)
+                if (IsExternal && Fugui.Settings.DrawDebugPanel)
                 {
                     ((FuExternalContext)Container.Context).Window.DrawDebug(Layout);
-                }
-                else
-                {
-                    if (Layout.Button("Externalize##" + ID))
-                    {
-                        Fugui.ExternalizeWindow(this);
-                    }
                 }
 
                 UI?.Invoke(this, Layout);
@@ -767,6 +758,7 @@ namespace Fu
                 if (IsExternal)
                 {
                     ((FuExternalContext)Container.Context).Window.DrawResizeHandles();
+                    DrawExternalWindowTitleButtons();
                 }
 
                 // update FPS and deltaTime
@@ -776,6 +768,148 @@ namespace Fu
                 HasJustBeenDraw = true;
                 CurrentDrawingWindow = null;
             }
+        }
+
+        /// <summary>
+        /// Draw the title buttons for external window (minimize, maximize, close)
+        /// </summary>
+        private void DrawExternalWindowTitleButtons()
+        {
+            // -----------------------------
+            // PARAMETERS
+            // -----------------------------
+            FuElementSize btnSize = new FuElementSize(16f, 16f);    // Button size
+            float btnPaddingH = 4f * Fugui.Scale;                                // Horizontal padding between buttons
+            float iconPadding = 4f * Fugui.Scale;                                // Internal padding for icons
+            float iconThickness = 1f * Fugui.Scale;                               // Icon line thickness
+            float iconRounding = 2f * Fugui.Scale;  // Icon rounding for maximize/restore
+            float TitleBar_Height = WorkingAreaPosition.y;
+            bool IsMaximized = ((FuExternalContext)((FuExternalWindowContainer)Container).Context).Window.IsMaximized;
+
+            float btnHeight = btnSize.ScaledSize.y;                      // Vertical size forced by the title bar
+            float btnCenterOffset = (TitleBar_Height - btnSize.ScaledSize.y) * 0.5f;
+
+            // Colors
+            uint iconColor = Fugui.Themes.GetColorU32(FuColors.Text);
+
+            // -----------------------------
+            // PRECALC
+            // -----------------------------
+            float fullBtnWidth = btnSize.ScaledSize.x + btnPaddingH;
+            float startX = Size.x - (fullBtnWidth * 3f) - 4f * Fugui.Scale;
+
+            ImDrawListPtr dl = ImGui.GetForegroundDrawList();
+
+            Vector2 mousePos = Mouse.Position;
+            bool mouseDown = Mouse.IsDown(FuMouseButton.Left);
+            bool mouseClicked = Mouse.IsClicked(FuMouseButton.Left);
+
+            // Helper for hit test
+            Func<Vector2, bool> isHovered = (pos) =>
+            {
+                return mousePos.x >= pos.x &&
+                       mousePos.x <= pos.x + btnSize.ScaledSize.x &&
+                       mousePos.y >= pos.y &&
+                       mousePos.y <= pos.y + TitleBar_Height;
+            };
+
+            // Helper to draw background
+            Action<Vector2, bool> drawButtonBG = (pos, hovered) =>
+            {
+                uint col = hovered
+                    ? (mouseDown
+                        ? Fugui.Themes.GetColorU32(FuColors.ButtonActive)
+                        : Fugui.Themes.GetColorU32(FuColors.ButtonHovered))
+                    : 0;
+
+                Vector2 pMin = pos;
+                Vector2 pMax = new Vector2(pos.x + btnSize.ScaledSize.x, pos.y + btnHeight);
+                dl.AddRectFilled(pMin, pMax, col, Fugui.Themes.FrameRounding);
+            };
+
+            // -------------------------------------------------------
+            // 1) MINIMIZE BUTTON
+            // -------------------------------------------------------
+            Vector2 btnPos = new Vector2(startX, btnCenterOffset);
+            bool hovered = isHovered(btnPos);
+            drawButtonBG(btnPos, hovered);
+
+            // Icon "-"
+            Vector2 lineStart = btnPos + new Vector2(iconPadding, btnSize.ScaledSize.y * 0.65f);
+            Vector2 lineEnd = btnPos + new Vector2(btnSize.ScaledSize.x - iconPadding, btnSize.ScaledSize.y * 0.65f);
+            dl.AddLine(lineStart, lineEnd, iconColor, iconThickness);
+
+            if (hovered && mouseClicked)
+                ((FuExternalContext)((FuExternalWindowContainer)Container).Context).Window.Minimize();
+
+            // -------------------------------------------------------
+            // 2) MAXIMIZE / RESTORE BUTTON
+            // -------------------------------------------------------
+            btnPos = new Vector2(startX + fullBtnWidth, btnCenterOffset);
+            hovered = isHovered(btnPos);
+            drawButtonBG(btnPos, hovered);
+
+            if (!IsMaximized)
+            {
+                // MAXIMIZE icon (□)
+                Vector2 p1 = btnPos + new Vector2(iconPadding, iconPadding);
+                Vector2 p2 = btnPos + new Vector2(btnSize.ScaledSize.x - iconPadding, btnSize.ScaledSize.y - iconPadding);
+                dl.AddRect(p1, p2, iconColor, iconRounding, ImDrawFlags.None, iconThickness);
+            }
+            else
+            {
+                // RESTORE icon (two overlapping rectangles)
+                float off = iconPadding * 0.6f;
+
+                // BASE RECTANGLES (positions)
+                Vector2 a1 = btnPos + new Vector2(iconPadding + off, iconPadding);
+                Vector2 a2 = btnPos + new Vector2(btnSize.ScaledSize.x - iconPadding, btnSize.ScaledSize.y - iconPadding - off);
+
+                Vector2 b1 = btnPos + new Vector2(iconPadding, iconPadding + off);
+                Vector2 b2 = btnPos + new Vector2(btnSize.ScaledSize.x - iconPadding - off, btnSize.ScaledSize.y - iconPadding);
+
+                // Draw the back rectangle first
+                dl.AddRect(a1, a2, iconColor, iconRounding, ImDrawFlags.None, iconThickness); // top-right
+
+                // BACKGROUND RECT (fill) for the top rectangle
+                // This prevents seeing the rear rectangle through the front one.
+                uint bgCol = hovered
+                    ? (mouseDown
+                        ? Fugui.Themes.GetColorU32(FuColors.ButtonActive)
+                        : Fugui.Themes.GetColorU32(FuColors.ButtonHovered))
+                    : Fugui.Themes.GetColorU32(FuColors.WindowBg);
+                dl.AddRectFilled(b1, b2, bgCol, iconRounding);
+                // Slightly shrink the bottom rectangle to avoid overlapping lines
+                Vector2 b1Bis = b1 - Vector2.one * iconThickness;
+                Vector2 b2Bis = b2 + Vector2.one * iconThickness;
+                dl.AddRect(b1Bis, b2Bis, bgCol, iconRounding, ImDrawFlags.None, iconThickness); // bottom-left
+
+                // Draw the front rectangle
+                dl.AddRect(b1, b2, iconColor, iconRounding, ImDrawFlags.None, iconThickness); // bottom-left
+            }
+
+            if (hovered && mouseClicked)
+                ((FuExternalContext)((FuExternalWindowContainer)Container).Context).Window.ToggleMaximize();
+
+            // -------------------------------------------------------
+            // 3) CLOSE BUTTON
+            // -------------------------------------------------------
+            btnPos = new Vector2(startX + fullBtnWidth * 2f, btnCenterOffset);
+            hovered = isHovered(btnPos);
+            drawButtonBG(btnPos, hovered);
+
+            // X icon
+            Vector2 pA1 = btnPos + new Vector2(iconPadding, iconPadding);
+            Vector2 pA2 = btnPos + new Vector2(btnSize.ScaledSize.x - iconPadding, btnSize.ScaledSize.y - iconPadding);
+
+            Vector2 pB1 = new Vector2(pA1.x, pA2.y);
+            Vector2 pB2 = new Vector2(pA2.x, pA1.y);
+
+            dl.AddLine(pA1, pA2, iconColor, iconThickness);
+            dl.AddLine(pB1, pB2, iconColor, iconThickness);
+
+            if (hovered && mouseClicked)
+                _open = false;
         }
 
         /// <summary>
@@ -887,6 +1021,37 @@ namespace Fu
             if (!containerRect.Contains(mousePos))
             {
                 Fugui.ExternalizeWindow(this);
+            }
+        }
+
+        /// <summary>
+        /// Internalize this window
+        /// </summary>
+        public void Internalize()
+        {
+            Fugui.InternalizeWindow(this);
+        }
+
+        /// <summary>
+        /// Check if we need to auto internalize this window
+        /// </summary>
+        private void CheckAutoInternalize()
+        {
+            if (!IsExternal || Container == null || Container is not FuExternalWindowContainer)
+            {
+                return;
+            }
+            FuExternalWindowContainer externalContainer = (FuExternalWindowContainer)Container;
+            FuExternalContext externalContext = (FuExternalContext)externalContainer.Context;
+            if (!externalContext.Window.CanInternalize || !externalContext.Window.IsDragging)
+                return;
+
+            FuMainWindowContainer mainContainer = Fugui.DefaultContainer;
+            Vector2Int mousePos = externalContainer.Window.Mouse.Position + externalContainer.Position;
+            Rect mainContainerRect = new Rect(mainContainer.Position, mainContainer.Size);
+            if (mainContainerRect.Contains(mousePos))
+            {
+                Fugui.InternalizeWindow(this);
             }
         }
         #endregion

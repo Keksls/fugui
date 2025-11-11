@@ -60,6 +60,34 @@ namespace Fu
         }
 
         /// <summary>
+        /// clear current mouse data
+        /// </summary>
+        internal void Clear()
+        {
+            _movement = Vector2.zero;
+            _wheel = Vector2.zero;
+            _position = Vector2Int.zero;
+            _isHoverOverlay = false;
+            _isHoverPupUp = false;
+            _isHoverTopBar = false;
+            _isHoverBottomBar = false;
+            for (int i = 0; i < ButtonStates.Length; i++)
+            {
+                ButtonStates[i] = new FuButtonState(i);
+                _virtualButtonStates[i] = new FuButtonState(i);
+            }
+            _currentPressedKeys.Clear();
+
+            // update imgui mouse data too
+            var io = ImGui.GetIO();
+            io.MousePos = _position;
+            io.MouseDown[0] = false;
+            io.MouseDown[1] = false;
+            io.MouseDown[2] = false;
+            io.MouseWheel = 0f;
+        }
+
+        /// <summary>
         /// set current mouse position
         /// </summary>
         /// <param name="window">window to set mouse position on</param>

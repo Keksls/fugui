@@ -1,7 +1,8 @@
-﻿using System;
+﻿using SDL2;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using SDL2;
+using static UnityEngine.InputManagerEntry;
 
 namespace Fu
 {
@@ -148,6 +149,11 @@ namespace Fu
             if (_eventsByWindow.TryGetValue(windowId, out Queue<SDL.SDL_Event> queue))
             {
                 queue.Enqueue(e);
+            }
+            else
+            {
+                _eventsByWindow[windowId] = new Queue<SDL.SDL_Event>();
+                _eventsByWindow[windowId].Enqueue(e);
             }
         }
         #endregion

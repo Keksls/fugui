@@ -8,12 +8,32 @@ namespace Fu
     public class FuUnityContext : FuContext
     {
         public Camera Camera;
+        public Rect PixelRect;
+        public RenderTexture TargetTexture {  get; private set; }
+        public bool IsOffscreen => TargetTexture != null;
         private PlatformBase _platform;
 
         public FuUnityContext(int index, float scale, float fontScale, Action onInitialize, Camera camera) : base(index, scale, fontScale, onInitialize)
         {
             Camera = camera;
+            PixelRect = camera != null ? camera.pixelRect : new Rect(0f, 0f, 1f, 1f);
             initialize(onInitialize);
+        }
+
+        public FuUnityContext(int index, float scale, float fontScale, Action onInitialize, Rect pixelRect) : base(index, scale, fontScale, onInitialize)
+        {
+            Camera = null;
+            PixelRect = pixelRect;
+            initialize(onInitialize);
+        }
+
+        /// <summary>
+        /// Set the target texture of this context. If it's null, this context will be rendered on screen, otherwise it will be rendered on the target texture. Don't call it, Fugui layout handle it for you
+        /// </summary>
+        /// <param name="targetTexture"> new target texture of this context</param>
+        public void SetTargetTexture(RenderTexture targetTexture)
+        {
+            TargetTexture = targetTexture;
         }
 
         /// <summary>
@@ -66,7 +86,8 @@ namespace Fu
 
             // prepare frames textures and platform data (inputs)
             TextureManager.PrepareFrame(IO);
-            _platform.PrepareFrame(IO, Camera.pixelRect, AutoUpdateMouse, AutoUpdateKeyboard);
+            Rect rect = Camera != null ? Camera.pixelRect : PixelRect;
+            _platform.PrepareFrame(IO, rect, AutoUpdateMouse, AutoUpdateKeyboard);
 
             // execute OnPrepare event if needed and return onPrepare result if not null
             if (!TryExecuteOnPrepareEvent())
@@ -79,6 +100,15 @@ namespace Fu
             // assume we are prepared
             RenderPrepared = true;
             return RenderPrepared;
+        }
+
+        /// <summary>
+        /// Set the pixel rect of this context. It will be used by the platform to update mouse position and for some renderers to set the viewport. Don't call it, Fugui layout handle it for you
+        /// </summary>
+        /// <param name="rect"> new pixel rect of this context</param>
+        public void SetPixelRect(Rect rect)
+        {
+            PixelRect = rect;
         }
 
         /// <summary>

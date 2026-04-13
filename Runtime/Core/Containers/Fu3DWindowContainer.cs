@@ -17,7 +17,6 @@ namespace Fu
         public Vector2Int Position => Vector2Int.zero;
         public Vector2Int Size => _size;
         public RenderTexture RenderTexture { get; private set; }
-        public Camera Camera { get; private set; }
         private GameObject _panelGameObject;
         public int FuguiContextID { get { return _fuguiContext.ID; } }
         public FuMouseState Mouse => _mouseState;
@@ -56,25 +55,13 @@ namespace Fu
 
             // resize the window
             Window.Size = new Vector2Int(512, 512);
-
-            // Create Camera GameObject
-            GameObject cameraGameObject = new GameObject(ID + "_Camera");
-            cameraGameObject.transform.position = Vector3.zero;
-            cameraGameObject.transform.rotation = Quaternion.identity;
-            Camera = cameraGameObject.AddComponent<Camera>();
-            Camera.pixelRect = new Rect(0f, 0f, Window.Size.x, Window.Size.y);
-            Camera.clearFlags = CameraClearFlags.SolidColor;
-            Camera.backgroundColor = Color.black;
-            Camera.cullingMask = 0;
+            _size = window.Size;
 
             // Create RenderTexture
-            RenderTexture = new RenderTexture(Window.Size.x, Window.Size.y, 24, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
+            RenderTexture = new RenderTexture(Window.Size.x, Window.Size.y, 0, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
             int aaSamples = QualitySettings.antiAliasing;
             if (aaSamples <= 0) aaSamples = 1;
-            {
-                RenderTexture.antiAliasing = aaSamples;
-            }
-            RenderTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D24_UNorm_S8_UInt;
+            RenderTexture.antiAliasing = aaSamples;
             RenderTexture.useDynamicScale = true;
             RenderTexture.Create();
 
@@ -84,21 +71,20 @@ namespace Fu
                 return;
             }
 
-            // Assignate RenderTexture to Camera
-            Camera.targetTexture = RenderTexture;
-
             // create ui material
             _uiMaterial = GameObject.Instantiate(Fugui.Settings.UIMaterial);
             _uiMaterial.SetTexture("_MainTex", RenderTexture);
 
-            // create panel game object
-            createPanel();
-
             // create the fugui 3d context
-            _fuguiContext = Fugui.CreateUnityContext(Camera, Fugui.Settings.Windows3DSuperSampling, Fugui.Settings.Windows3DFontScale);
+            Rect rect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
+            _fuguiContext = Fugui.CreateUnityContext(rect, Fugui.Settings.Windows3DSuperSampling, Fugui.Settings.Windows3DFontScale);
             _fuguiContext.OnRender += RenderFuWindows;
             _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
             _fuguiContext.AutoUpdateMouse = false;
+            _fuguiContext.SetTargetTexture(RenderTexture);
+
+            // create panel game object
+            createPanel();
 
             // instantiate inputs states
             _mouseState = new FuMouseState();
@@ -138,14 +124,13 @@ namespace Fu
             }
 
             _panelGameObject = new GameObject(ID + "_Panel");
-            _panelGameObject.transform.SetParent(Camera.transform);
             FuPanelMesh rectangleMesh = _panelGameObject.AddComponent<FuPanelMesh>();
             float round = Fugui.Themes.WindowRounding * Context.Scale;
             MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
             collider.sharedMesh = rectangleMesh.CreateMesh(Window.Size.x / Context.Scale, Window.Size.y / Context.Scale, 1f / 1000f * Fugui.Settings.Windows3DScale, round, round, round, round, Fugui.Settings.UIPanelWidth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial);
             int layer = (int)Mathf.Log(Fugui.Settings.UILayer.value, 2);
             _panelGameObject.layer = layer;
-            foreach (Transform child in Camera.transform)
+            foreach (Transform child in _panelGameObject.transform)
             {
                 child.gameObject.layer = layer;
             }
@@ -157,7 +142,7 @@ namespace Fu
         /// <param name="position">Position of the UI Panel</param>
         public void SetPosition(Vector3 position)
         {
-            Camera.transform.position = position;
+            _panelGameObject.transform.position = position;
         }
 
         /// <summary>
@@ -166,7 +151,7 @@ namespace Fu
         /// <param name="rotation">Rotation of the UI Panel</param>
         public void SetRotation(Quaternion rotation)
         {
-            Camera.transform.rotation = rotation;
+            _panelGameObject.transform.rotation = rotation;
         }
 
         /// <summary>
@@ -375,8 +360,8 @@ namespace Fu
             RenderTexture.Release();
             RenderTexture.width = _size.x;
             RenderTexture.height = _size.y;
-            Camera.targetTexture = RenderTexture;
-            Camera.pixelRect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
+            _fuguiContext.SetTargetTexture(RenderTexture);
+            _fuguiContext.SetPixelRect(new Rect(Vector2.zero, new Vector2(_size.x, _size.y)));
             createPanel();
         }
 
@@ -424,13 +409,15 @@ namespace Fu
                 Fugui.DestroyContext(_fuguiContext);
             }
             Fugui.Themes.OnThemeSet -= ThemeManager_OnThemeSet;
-            if (Camera != null)
+            if (_panelGameObject != null)
             {
-                Camera.targetTexture.Release();
-                Camera.targetTexture = null;
-                UnityEngine.Object.Destroy(Camera.gameObject);
+                UnityEngine.Object.Destroy(_panelGameObject);
             }
-            UnityEngine.Object.Destroy(RenderTexture);
+            if (RenderTexture != null)
+            {
+                RenderTexture.Release();
+                UnityEngine.Object.Destroy(RenderTexture);
+            }
         }
     }
 }

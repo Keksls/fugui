@@ -17,9 +17,10 @@ namespace Fu
             #region Variables
             private Dictionary<int, Mesh> _meshs;
             private Dictionary<int, Material> _materials;
+            private Dictionary<int, RTHandle> _targetHandles;
             private readonly Shader _shader;
             private int _textureID;
-            private int _prevSubMeshCount = 1;
+            private Dictionary<int, int> _prevSubMeshCounts;
             private TextureManager _textureManager;
             private MaterialPropertyBlock _materialProperties;
             // Skip all checks and validation when updating the mesh.
@@ -45,6 +46,8 @@ namespace Fu
                 _shader = shader;
                 _textureID = Shader.PropertyToID("_Texture");
                 _materialProperties = new MaterialPropertyBlock();
+                _prevSubMeshCounts = new Dictionary<int, int>();
+                _targetHandles = new Dictionary<int, RTHandle>();
 
                 renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
 
@@ -68,42 +71,106 @@ namespace Fu
                 TextureHandle color = urpRes.activeColorTexture;
                 TextureHandle depth = urpRes.activeDepthTexture;
 
-                // === 1️ Pass principale : contexte Unity par défaut ===
-                using (var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_MainPass", out var passData))
+                // Default context rendered on current camera color target
+                if (Fugui.DefaultContext is FuUnityContext defaultContext && defaultContext.Started)
                 {
+                    using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_MainPass", out var passData);
                     builder.AllowGlobalStateModification(true);
                     builder.SetRenderAttachment(color, 0, AccessFlags.Write);
 
-                    // Attache la depth uniquement si valide (sinon ne l’attache pas)
                     if (depth.IsValid())
+                    {
                         builder.SetRenderAttachmentDepth(depth, AccessFlags.Read);
+                    }
 
                     builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
                     {
-                        if (Fugui.DefaultContext?.Started != true) return;
-                        _textureManager = Fugui.DefaultContext.TextureManager;
-                        RenderDrawLists(Fugui.DefaultContext.ID, ctx.cmd, Fugui.DefaultContext.DrawData);
-
-                        foreach (var pair in Fugui.Contexts)
+                        if (defaultContext.DrawData.CmdListsCount <= 0 || defaultContext.DrawData.TotalVtxCount <= 0)
                         {
-                            // ignore external contexts, they have their own render pipeline
-                            if (pair.Value is FuExternalContext extCtx)
-                            {
-                                continue;
-                            }
-
-                            using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_External_{pair.Key}", out var passData);
-                            var context = pair.Value;
-                            builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
-                            {
-                                _textureManager = context.TextureManager;
-                                RenderDrawLists(context.ID, ctx.cmd, context.DrawData);
-                            });
+                            return;
                         }
+
+                        _textureManager = defaultContext.TextureManager;
+                        RenderDrawLists(defaultContext.ID, ctx.cmd, defaultContext.DrawData);
                     });
                 }
-            }
 
+                // Other contexts
+                foreach (var pair in Fugui.Contexts)
+                {
+                    var context = pair.Value;
+
+                    if (context == null || !context.Started)
+                    {
+                        continue;
+                    }
+
+                    // SDL / external windows are rendered outside Unity
+                    if (context is FuExternalContext)
+                    {
+                        continue;
+                    }
+
+                    if (context is not FuUnityContext unityContext)
+                    {
+                        continue;
+                    }
+
+                    if (unityContext.DrawData.CmdListsCount <= 0 || unityContext.DrawData.TotalVtxCount <= 0)
+                    {
+                        continue;
+                    }
+
+                    // Skip default context if also present in Fugui.Contexts
+                    if (ReferenceEquals(unityContext, Fugui.DefaultContext))
+                    {
+                        continue;
+                    }
+
+                    // Offscreen target
+                    if (unityContext.IsOffscreen)
+                    {
+                        RenderTexture targetTexture = unityContext.TargetTexture;
+
+                        if (targetTexture == null || !targetTexture.IsCreated())
+                        {
+                            continue;
+                        }
+
+                        RTHandle rtHandle = GetOrCreateTargetHandle(unityContext.ID, targetTexture);
+                        TextureHandle importedTarget = renderGraph.ImportTexture(rtHandle);
+
+                        using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_Offscreen_{unityContext.ID}", out var passData);
+                        builder.AllowGlobalStateModification(true);
+                        builder.SetRenderAttachment(importedTarget, 0, AccessFlags.Write);
+
+                        builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                        {
+                            DebugDumpDrawData("OFFSCREEN", unityContext.DrawData);
+                            _textureManager = unityContext.TextureManager;
+                            RenderDrawLists(unityContext.ID, ctx.cmd, unityContext.DrawData);
+                        });
+                    }
+                    else
+                    {
+                        using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_Context_{unityContext.ID}", out var passData);
+                        builder.AllowGlobalStateModification(true);
+                        builder.SetRenderAttachment(color, 0, AccessFlags.Write);
+
+                        if (depth.IsValid())
+                        {
+                            builder.SetRenderAttachmentDepth(depth, AccessFlags.Read);
+                        }
+
+                        builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                        {
+                            _textureManager = unityContext.TextureManager;
+                            RenderDrawLists(unityContext.ID, ctx.cmd, unityContext.DrawData);
+                        });
+                    }
+                }
+            }
+            
             /// <summary>
             /// Renders the draw lists using the provided command buffer and draw data.
             /// </summary>
@@ -138,10 +205,54 @@ namespace Fu
                 if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
 
                 // display draw data for debug
-                UpdateMesh(_mesh, _material, drawData);
+                UpdateMesh(ctxId, _mesh, _material, drawData);
                 commandBuffer.BeginSample(_sampleName);
                 CreateDrawCommands(_mesh, _material, commandBuffer, drawData, fbOSize);
                 commandBuffer.EndSample(_sampleName);
+            }
+
+            private void DebugDumpDrawData(string label, DrawData drawData)
+            {
+                try
+                {
+                    Debug.Log($"[{label}] CmdLists={drawData.CmdListsCount}, TotalVtx={drawData.TotalVtxCount}, TotalIdx={drawData.TotalIdxCount}, DisplaySize={drawData.DisplaySize}, FramebufferScale={drawData.FramebufferScale}, DisplayPos={drawData.DisplayPos}");
+
+                    for (int n = 0; n < drawData.CmdListsCount; n++)
+                    {
+                        var dl = drawData.DrawLists[n];
+                        Debug.Log($"[{label}] DrawList #{n} -> Vtx={dl.VtxBuffer.Length}, Idx={dl.IdxBuffer.Length}, Cmd={dl.CmdBuffer.Length}");
+
+                        int maxV = Mathf.Min(8, dl.VtxBuffer.Length);
+                        for (int i = 0; i < maxV; i++)
+                        {
+                            var v = dl.VtxBuffer[i];
+                            Debug.Log($"[{label}] V[{i}] pos=({v.pos.x}, {v.pos.y}) uv=({v.uv.x}, {v.uv.y}) col=0x{v.col:X8}");
+                        }
+
+                        int maxI = Mathf.Min(18, dl.IdxBuffer.Length);
+                        string idxText = "";
+                        for (int i = 0; i < maxI; i++)
+                        {
+                            idxText += dl.IdxBuffer[i].ToString();
+                            if (i < maxI - 1)
+                            {
+                                idxText += ", ";
+                            }
+                        }
+                        Debug.Log($"[{label}] Indices: {idxText}");
+
+                        int maxC = Mathf.Min(8, dl.CmdBuffer.Length);
+                        for (int i = 0; i < maxC; i++)
+                        {
+                            var cmd = dl.CmdBuffer[i];
+                            Debug.Log($"[{label}] Cmd[{i}] ElemCount={cmd.ElemCount}, IdxOffset={cmd.IdxOffset}, VtxOffset={cmd.VtxOffset}, ClipRect={cmd.ClipRect}, TextureId={cmd.TextureId}");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[{label}] Dump failed: {e}");
+                }
             }
 
             /// <summary>
@@ -162,7 +273,7 @@ namespace Fu
                 commandBuffer.SetViewProjectionMatrices(
                     Matrix4x4.Translate(new Vector3(0.5f / fbSize.x, 0.5f / fbSize.y, 0f)), // Small adjustment to improve text.
                     Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
-
+                
                 int subOf = 0;
                 for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
                 {
@@ -275,7 +386,7 @@ namespace Fu
                 if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
 
                 // display draw data for debug
-                UpdateMesh(_mesh, _material, drawData);
+                UpdateMesh(ctxId, _mesh, _material, drawData);
                 commandBuffer.BeginSample(_sampleName);
                 CreateDrawCommands(_mesh, _material, commandBuffer, drawData, fbOSize);
                 commandBuffer.EndSample(_sampleName);
@@ -299,7 +410,7 @@ namespace Fu
                 commandBuffer.SetViewProjectionMatrices(
                     Matrix4x4.Translate(new Vector3(0.5f / fbSize.x, 0.5f / fbSize.y, 0f)), // Small adjustment to improve text.
                     Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
-
+               
                 int subOf = 0;
                 for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
                 {
@@ -352,17 +463,23 @@ namespace Fu
             /// Updates the mesh with the provided draw data.
             /// </summary>
             /// <param name="drawData"> The draw data containing the vertex and index buffers.</param>
-            private void UpdateMesh(Mesh _mesh, Material _material, DrawData drawData)
+            private void UpdateMesh(int ctxId, Mesh _mesh, Material _material, DrawData drawData)
             {
                 // Nombre de submeshes = nombre total de ImDrawCmd
                 int subMeshCount = 0;
                 for (int n = 0; n < drawData.CmdListsCount; ++n)
                     subMeshCount += drawData.DrawLists[n].CmdBuffer.Length;
 
-                if (_prevSubMeshCount != subMeshCount)
+                if (!_prevSubMeshCounts.TryGetValue(ctxId, out int prevSubMeshCount))
+                {
+                    prevSubMeshCount = -1;
+                }
+
+                if (prevSubMeshCount != subMeshCount)
                 {
                     _mesh.Clear(true);
-                    _mesh.subMeshCount = _prevSubMeshCount = subMeshCount;
+                    _mesh.subMeshCount = subMeshCount;
+                    _prevSubMeshCounts[ctxId] = subMeshCount;
                 }
 
                 _mesh.SetVertexBufferParams(drawData.TotalVtxCount, _vertexAttributes);
@@ -408,6 +525,55 @@ namespace Fu
                 );
 
                 _mesh.UploadMeshData(false);
+            }
+
+            /// <summary>
+            /// Gets or creates a render target handle for the specified context ID and target texture.
+            /// </summary>
+            /// <param name="ctxId"> The context ID for which to get or create the render target handle.</param>
+            /// <param name="targetTexture"> The target texture to use for the render target handle.</param>
+            /// <returns> The render target handle for the specified context ID and target texture.</returns>
+            private RTHandle GetOrCreateTargetHandle(int ctxId, RenderTexture targetTexture)
+            {
+                if (_targetHandles.TryGetValue(ctxId, out RTHandle handle))
+                {
+                    if (handle != null && handle.rt == targetTexture)
+                    {
+                        return handle;
+                    }
+
+                    handle.Release();
+                    _targetHandles.Remove(ctxId);
+                }
+
+                handle = RTHandles.Alloc(targetTexture);
+                _targetHandles[ctxId] = handle;
+                return handle;
+            }
+
+            /// <summary>
+            /// Releases the resources associated with the specified context ID, including the mesh, material, and render target handle.
+            /// </summary>
+            /// <param name="ctxId"> The context ID for which to release the resources.</param>
+            private void ReleaseContextResources(int ctxId)
+            {
+                if (_meshs != null && _meshs.TryGetValue(ctxId, out Mesh mesh))
+                {
+                    UnityEngine.Object.Destroy(mesh);
+                    _meshs.Remove(ctxId);
+                }
+
+                if (_materials != null && _materials.TryGetValue(ctxId, out Material material))
+                {
+                    UnityEngine.Object.Destroy(material);
+                    _materials.Remove(ctxId);
+                }
+
+                if (_targetHandles != null && _targetHandles.TryGetValue(ctxId, out RTHandle handle))
+                {
+                    handle.Release();
+                    _targetHandles.Remove(ctxId);
+                }
             }
 
             /// <summary>

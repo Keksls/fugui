@@ -61,6 +61,7 @@
 
             half4 ImGuiPassFrag(Varyings i) : SV_Target
             {
+                //return half4(1, 1, 1, 1);
                 half4 tex = SAMPLE_TEXTURE2D_X(_Texture, sampler_Texture, i.uv);
                 return i.color * tex;
             }

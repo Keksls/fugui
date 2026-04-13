@@ -771,6 +771,12 @@ namespace Fu
                 return;
             }
 
+            if(!Settings.EnableExternalizations)
+            {
+                Debug.LogWarning("Externalizations are disabled in the settings.");
+                return;
+            }
+
             if (ExternalWindows.ContainsKey(uiWindow.ID))
             {
                 Debug.LogWarning($"External window for {uiWindow.ID} already exists.");
@@ -1034,6 +1040,38 @@ namespace Fu
             FuUnityContext context = new FuUnityContext(index, scale, fontScale, onInitialize, camera);
             Contexts.Add(index, context);
 
+            return context;
+        }
+
+        /// <summary>
+        /// Create a new Fugui context to render into unity
+        /// </summary>
+        /// <param name="pixelRect"> Rect in pixel to render the context into, relative to the main container camera</param>
+        /// <param name="scale"> initial scale of the context, keep 1f to use global scale from settings</param>
+        /// <param name="fontScale"> initial font scale of the context, keep 1f to use global font scale from settings</param>
+        /// <param name="onInitialize"> invoked on context initialization</param>
+        /// <returns> the context created</returns>
+        public static unsafe FuUnityContext CreateUnityContext(Rect pixelRect, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
+        {
+            return CreateUnityContext(_contextID++, pixelRect, scale, fontScale, onInitialize);
+        }
+
+        /// <summary>
+        /// Create a new Fugui context to render into unity
+        /// </summary>
+        /// <param name="index"> index of the context</param>
+        /// <param name="pixelRect"> Rect in pixel to render the context into, relative to the main container camera</param>
+        /// <param name="scale"> initial scale of the context, keep 1f to use global scale from settings</param>
+        /// <param name="fontScale"> initial font scale of the context, keep 1f to use global font scale from settings</param>
+        /// <param name="onInitialize"> invoked on context initialization</param>
+        /// <returns> the context created</returns>
+        private static FuUnityContext CreateUnityContext(int index, Rect pixelRect, float scale = 1f, float fontScale = 1f, Action onInitialize = null)
+        {
+            if (Contexts.ContainsKey(index))
+                return null;
+            // create and add context
+            FuUnityContext context = new FuUnityContext(index, scale, fontScale, onInitialize, pixelRect);
+            Contexts.Add(index, context);
             return context;
         }
 

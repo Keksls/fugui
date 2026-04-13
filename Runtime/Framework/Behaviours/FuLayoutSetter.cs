@@ -88,6 +88,21 @@ namespace Fu.Framework
                 }
             }
 
+            if (_addWindowsToMainMenu)
+            {
+                // register all windows from registered windows definitions so user can instantiate them from here
+                Fugui.RegisterMainMenuItem("3D Windows", null);
+                foreach (FuWindowDefinition windowName in Fugui.UIWindowsDefinitions.Values)
+                {
+                    Fugui.RegisterMainMenuItem("3D " + windowName.WindowName.ToString(), () =>
+                    {
+                        Fugui.CreateWindowAsync(windowName.WindowName, (window) => { 
+                        Fugui.Add3DWindow(window, new Vector3(0, 0, 5), Quaternion.identity);
+                        }, false);
+                    }, "3D Windows");
+                }
+            }
+
             // hide main menu if required
             if (_forceHideMainMenu)
             {

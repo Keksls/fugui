@@ -253,6 +253,10 @@ PrefabInstance:
       propertyPath: _settings.ManipulatingFPS
       value: 90
       objectReference: {fileID: 0}
+    - target: {fileID: 2932005272966750016, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
+      propertyPath: _settings.EnableExternalizations
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2932005272966750018, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
       propertyPath: m_Name
       value: FuguiController

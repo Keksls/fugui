@@ -322,6 +322,7 @@ namespace Fu
             }
             #endregion
 
+#if !UNITY_6000_4_OR_NEWER
             #region Old Render Pass
             /// <summary>
             /// Executes the rendering logic for Fugui.
@@ -458,7 +459,7 @@ namespace Fu
                 commandBuffer.DisableScissorRect();
             }
             #endregion
-
+#endif
             /// <summary>
             /// Updates the mesh with the provided draw data.
             /// </summary>

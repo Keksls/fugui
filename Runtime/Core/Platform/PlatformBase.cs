@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
-using UnityEngine.Assertions;
+using UnityEngine.InputSystem;
 
 namespace Fu
 {
@@ -25,6 +25,7 @@ namespace Fu
         /// <returns> True if initialization was successful, false otherwise. </returns>
         public virtual bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
+            Debug.Log($"Initializing platform: {platformName ?? "Unnamed"}");
             SetBackendPlatformName(io, platformName);
             io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 
@@ -82,6 +83,9 @@ namespace Fu
         /// <param name="cursor"> The current ImGuiMouseCursor. </param>
         protected void UpdateCursor(ImGuiIOPtr io, ImGuiMouseCursor cursor)
         {
+            if (Touchscreen.current != null)
+                return;
+
             if (Fugui.IsCursorLocked)
                 return;
 

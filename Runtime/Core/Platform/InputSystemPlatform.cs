@@ -1,8 +1,10 @@
-﻿using ImGuiNET;
+﻿using Fu.Framework;
+using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
+using UnityEngine.UIElements;
 
 namespace Fu
 {
@@ -14,6 +16,9 @@ namespace Fu
         private readonly List<char> _textInput = new List<char>();
         private Keyboard _keyboard = null;
         private Dictionary<ImGuiKey, KeyControl> _keyControls;
+        private TouchScreenKeyboard _touchKeyboard;
+        private string _lastTouchKeyboardText = string.Empty;
+        private bool _wasTextInputActive;
 
         public InputSystemPlatform() : base()
         { }
@@ -64,13 +69,30 @@ namespace Fu
             base.PrepareFrame(io, displayRect, updateMouse, updateKeyboard);
 
             if (updateKeyboard)
+            {
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+                UpdateMobileKeyboard(io);
+#else
                 UpdateKeyboard(io, Keyboard.current);
+#endif
+            }
             if (updateMouse)
+            {
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+                UpdatePointer(io);
+#else
                 UpdateMouse(io, Mouse.current);
+#endif
+            }
 
             UpdateCursor(io, ImGui.GetMouseCursor());
             UpdateGamepad(io, Gamepad.current);
         }
+
+        private static bool _touchWasPressed;
+        private static Vector2 _lastTouchPosition;
+        private static float _accumulatedScrollY;
+        private const float ScrollThreshold = 24f; // pixels avant de déclencher un scroll
 
         /// <summary>
         /// Update the ImGui input state with the current mouse state.
@@ -87,21 +109,186 @@ namespace Fu
                 mouse.WarpCursorPosition(new Vector2(io.MousePos.x, ImGui.GetIO().DisplaySize.y - io.MousePos.y));
             }
 
+            Vector2 position = new Vector2(mouse.position.x.ReadValue(), io.DisplaySize.y - mouse.position.y.ReadValue());
             // Cursor position
-            io.AddMousePosEvent(mouse.position.x.ReadValue(), io.DisplaySize.y - mouse.position.y.ReadValue());
+            io.AddMousePosEvent(position.x, position.y);
 
             // Scroll (120 = 1 "tick" Windows)
             Vector2 mouseScroll = mouse.scroll.ReadValue() * Fugui.Settings.ScrollPower;
             io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
 
             // Buttons (0 = left, 1 = right, 2 = middle)
-            io.AddMouseButtonEvent(0, mouse.leftButton.isPressed);
+            bool isPressed = mouse.leftButton.isPressed;
+            io.AddMouseButtonEvent(0, isPressed);
             io.AddMouseButtonEvent(1, mouse.rightButton.isPressed);
             io.AddMouseButtonEvent(2, mouse.middleButton.isPressed);
 
             // Optional : support for additional mouse buttons (X1, X2)
             io.AddMouseButtonEvent(3, mouse.backButton?.isPressed ?? false);  // X1
             io.AddMouseButtonEvent(4, mouse.forwardButton?.isPressed ?? false); // X2
+
+            if (isPressed)
+            {
+                if (_touchWasPressed)
+                    if (!Fugui.GetWantCaptureInputs(true) &&
+                    !Fugui.IsAnyWindowDragging() &&
+                    !Fugui.IsAnyWindowHoverContent() && 
+                    !FuLayout.IsAnyItemActive &&
+                    !Fugui.IsAnyOverlayDragging())
+                    {
+                        Vector2 delta = position - _lastTouchPosition;
+
+                        // accumulate vertical movement
+                        _accumulatedScrollY += delta.y;
+
+                        // only trigger scroll if threshold reached
+                        if (Mathf.Abs(_accumulatedScrollY) >= ScrollThreshold * Fugui.Scale)
+                        {
+                            float wheelY = -delta.y * 0.02f * Fugui.Settings.ScrollPower;
+                            io.AddMouseWheelEvent(0f, wheelY);
+                        }
+                    }
+
+                _lastTouchPosition = position;
+            }
+            else
+            {
+                _accumulatedScrollY = 0f;
+            }
+
+            _touchWasPressed = isPressed;
+        }
+
+        /// <summary>
+        /// Updates ImGui pointer state from mouse or touchscreen.
+        /// Mouse is used on desktop, primary touch is mapped to left mouse on mobile.
+        /// </summary>
+        /// <param name="io">The ImGui IO pointer.</param>
+        private static void UpdatePointer(ImGuiIOPtr io)
+        {
+            Touchscreen touch = Touchscreen.current;
+            if (touch == null)
+            {
+                return;
+            }
+
+            TouchControl primaryTouch = touch.primaryTouch;
+            if (primaryTouch == null)
+            {
+                return;
+            }
+
+            Vector2 position = primaryTouch.position.ReadValue();
+            bool isPressed = primaryTouch.press.isPressed;
+
+            Debug.Log($"Primary touch position: {position}, pressed: {isPressed}");
+
+            io.AddMousePosEvent(position.x, io.DisplaySize.y - position.y);
+            io.AddMouseButtonEvent(0, isPressed);
+
+            io.AddMouseButtonEvent(1, false);
+            io.AddMouseButtonEvent(2, false);
+            io.AddMouseButtonEvent(3, false);
+            io.AddMouseButtonEvent(4, false);
+
+            if (isPressed)
+            {
+                if (_touchWasPressed)
+                    if (!Fugui.GetWantCaptureInputs(true) &&
+                    !Fugui.IsAnyWindowDragging() &&
+                    !Fugui.IsAnyWindowHoverContent() &&
+                    !FuLayout.IsAnyItemActive &&
+                    !Fugui.IsAnyOverlayDragging())
+                    {
+                        Vector2 delta = position - _lastTouchPosition;
+
+                        // accumulate vertical movement
+                        _accumulatedScrollY += delta.y;
+
+                        // only trigger scroll if threshold reached
+                        if (Mathf.Abs(_accumulatedScrollY) >= ScrollThreshold * Fugui.Scale)
+                        {
+                            float wheelY = -delta.y * 0.02f * Fugui.Settings.ScrollPower;
+                            io.AddMouseWheelEvent(0f, wheelY);
+                        }
+                    }
+
+                _lastTouchPosition = position;
+            }
+            else
+            {
+                _accumulatedScrollY = 0f;
+            }
+
+            _touchWasPressed = isPressed;
+        }
+
+        /// <summary>
+        /// Updates the on-screen keyboard on mobile platforms and forwards typed characters to ImGui.
+        /// </summary>
+        /// <param name="io">The ImGui IO pointer.</param>
+        private void UpdateMobileKeyboard(ImGuiIOPtr io)
+        {
+#if UNITY_ANDROID || UNITY_IOS
+            bool wantsTextInput = io.WantTextInput;
+
+            if (wantsTextInput)
+            {
+                if (_touchKeyboard == null || _touchKeyboard.status == TouchScreenKeyboard.Status.Canceled || _touchKeyboard.status == TouchScreenKeyboard.Status.Done)
+                {
+                    _touchKeyboard = TouchScreenKeyboard.Open(
+                        _lastTouchKeyboardText,
+                        TouchScreenKeyboardType.Default,
+                        false,
+                        true,
+                        false,
+                        false);
+                }
+
+                if (_touchKeyboard != null)
+                {
+                    string currentText = _touchKeyboard.text ?? string.Empty;
+
+                    if (currentText.Length > _lastTouchKeyboardText.Length)
+                    {
+                        for (int i = _lastTouchKeyboardText.Length; i < currentText.Length; i++)
+                        {
+                            io.AddInputCharacter(currentText[i]);
+                        }
+                    }
+                    else if (currentText.Length < _lastTouchKeyboardText.Length)
+                    {
+                        int removedCount = _lastTouchKeyboardText.Length - currentText.Length;
+                        for (int i = 0; i < removedCount; i++)
+                        {
+                            io.AddKeyEvent(ImGuiKey.Backspace, true);
+                            io.AddKeyEvent(ImGuiKey.Backspace, false);
+                        }
+                    }
+
+                    _lastTouchKeyboardText = currentText;
+
+                    if (_touchKeyboard.status == TouchScreenKeyboard.Status.Done ||
+                        _touchKeyboard.status == TouchScreenKeyboard.Status.Canceled ||
+                        _touchKeyboard.status == TouchScreenKeyboard.Status.LostFocus)
+                    {
+                        _touchKeyboard = null;
+                    }
+                }
+            }
+            else
+            {
+                if (_touchKeyboard != null)
+                {
+                    _touchKeyboard.active = false;
+                    _touchKeyboard = null;
+                }
+
+                _lastTouchKeyboardText = string.Empty;
+            }
+
+            _wasTextInputActive = wantsTextInput;
+#endif
         }
 
         /// <summary>

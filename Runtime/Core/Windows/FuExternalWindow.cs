@@ -1,4 +1,5 @@
-﻿// Framework 4.7 compatible, IL2CPP-safe
+﻿#if FU_EXTERNALIZATION
+// Framework 4.7 compatible, IL2CPP-safe
 // Requires: SDL2-CS (native SDL2 present), GLMini.cs (mini OpenGL loader)
 // Renders Dear ImGui draw data into an external SDL2 OpenGL window (OpenGL 3.0 + GLSL 130)
 using Fu.Framework;
@@ -1087,7 +1088,7 @@ namespace Fu
             locProjMtx = -1; locTex = -1;
 
             string vs = @"
-                #version 130
+\# version 130
                 uniform mat4 ProjMtx;
                 in vec2 Position;
                 in vec2 UV;
@@ -1102,7 +1103,7 @@ namespace Fu
                 }";
 
             string fs = @"
-                #version 130
+\# version 130
                 uniform sampler2D Texture;
                 in vec2 Frag_UV;
                 in vec4 Frag_Color;
@@ -1426,3 +1427,4 @@ namespace Fu
         BottomRight
     }
 }
+#endif

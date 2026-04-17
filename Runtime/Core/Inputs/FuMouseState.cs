@@ -273,7 +273,9 @@ namespace Fu
             {
                 return false;
             }
-            return ButtonStates[(int)mouseButton].IsUp && ButtonStates[(int)mouseButton].PressedMovement.magnitude <= Fugui.Settings.ClickMaxDist;
+            float clickMaxDist = Application.isMobilePlatform ? Fugui.Settings.ClickMaxDistMobile : Fugui.Settings.ClickMaxDist;
+            clickMaxDist *= Fugui.Scale;
+            return ButtonStates[(int)mouseButton].IsUp && ButtonStates[(int)mouseButton].PressedMovement.magnitude <= clickMaxDist;
         }
 
         /// <summary>

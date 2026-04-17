@@ -26,6 +26,7 @@
  */
 #endregion
 
+#if FU_EXTERNALIZATION
 #region Using Statements
 using System;
 using System.Runtime.InteropServices;
@@ -48,7 +49,7 @@ namespace SDL2
 #else
         private const string nativeLibName = "SDL2_ttf";
 #endif
-        #endregion
+#endregion
 
         #region SDL_stdinc.h
 
@@ -63,9 +64,9 @@ namespace SDL2
 			SDL_TRUE = 1
 		}
 		
-		#endregion
+        #endregion
 		
-		#region SDL_rwops.h
+        #region SDL_rwops.h
 		
 		/* Note about SDL2# and RWops:
 		 * These functions are currently not supported for public use.
@@ -81,9 +82,9 @@ namespace SDL2
 				string mode
 		);
 		
-		#endregion
+        #endregion
 		
-		#region SDL.h
+        #region SDL.h
 		
 		public const uint SDL_INIT_TIMER =		0x00000001;
 		public const uint SDL_INIT_AUDIO =		0x00000010;
@@ -113,9 +114,9 @@ namespace SDL2
 		[DllImport(nativeLibName)]
 		public static extern uint SDL_WasInit(uint flags);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_hints.h
+        #region SDL_hints.h
 		
 		public const string SDL_HINT_FRAMEBUFFER_ACCELERATION =
 			"SDL_FRAMEBUFFER_ACCELERATION";
@@ -188,9 +189,9 @@ namespace SDL2
 			SDL_HintPriority priority
 		);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_error.h
+        #region SDL_error.h
 		
 		[DllImport(nativeLibName)]
 		public static extern void SDL_ClearError();
@@ -209,9 +210,9 @@ namespace SDL2
 			__arglist
 		);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_log.h
+        #region SDL_log.h
 		
 		/* Begin nameless enum SDL_LOG_CATEGORY */
 		public const int SDL_LOG_CATEGORY_APPLICATION = 0;
@@ -371,9 +372,9 @@ namespace SDL2
 			IntPtr userdata
 		);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_version.h, SDL_revision.h
+        #region SDL_version.h, SDL_revision.h
 		
 		[StructLayout(LayoutKind.Sequential)]
 		public struct SDL_version
@@ -398,9 +399,9 @@ namespace SDL2
 		[DllImport(nativeLibName)]
 		public static extern int SDL_GetRevisionNumber();
 		
-		#endregion
+        #endregion
 		
-		#region SDL_video.h
+        #region SDL_video.h
 		
 		/* Actually, this is from SDL_blendmode.h */
 		[Flags]
@@ -904,9 +905,9 @@ namespace SDL2
 		[DllImport(nativeLibName)]
 		public static extern void SDL_VideoQuit();
 		
-		#endregion
+        #endregion
 		
-		#region SDL_render.h
+        #region SDL_render.h
 		
 		[Flags]
 		public enum SDL_RendererFlags
@@ -1255,9 +1256,9 @@ namespace SDL2
 			int pitch
 		);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_pixels.h
+        #region SDL_pixels.h
 		
 		public static uint SDL_DEFINE_PIXELFOURCC(byte A, byte B, byte C, byte D)
 		{
@@ -1788,9 +1789,9 @@ namespace SDL2
 			IntPtr palette
 		);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_rect.h
+        #region SDL_rect.h
 		
 		[StructLayout(LayoutKind.Sequential)]
 		public struct SDL_Point
@@ -1854,9 +1855,9 @@ namespace SDL2
 			ref SDL_Rect result
 		);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_surface.h
+        #region SDL_surface.h
 		
 		public const uint SDL_SWSURFACE =	0x00000000;
 		public const uint SDL_PREALLOC =	0x00000001;
@@ -2144,9 +2145,9 @@ namespace SDL2
 			ref SDL_Rect dstrect
 		);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_clipboard.h
+        #region SDL_clipboard.h
 		
 		[DllImport(nativeLibName)]
 		public static extern SDL_bool SDL_HasClipboardText();
@@ -2166,9 +2167,9 @@ namespace SDL2
 				string text
 		);
 		
-		#endregion
+        #endregion
 
-		#region SDL_events.h
+        #region SDL_events.h
 
 		/* General keyboard/mouse state definitions. */
 		public const byte SDL_PRESSED =		0;
@@ -2701,9 +2702,9 @@ namespace SDL2
 		/* Allocate a set of user-defined events */
 		[DllImport(nativeLibName)]
 		public static extern UInt32 SDL_RegisterEvents(int numevents);
-		#endregion
+        #endregion
 		
-		#region SDL_scancode.h
+        #region SDL_scancode.h
 
 		/* Scancodes based off USB keyboard page (0x07) */
 		public enum SDL_Scancode
@@ -2978,9 +2979,9 @@ namespace SDL2
 			SDL_NUM_SCANCODES = 512
 		}
 
-		#endregion
+        #endregion
 
-		#region SDL_keycode.h
+        #region SDL_keycode.h
 
 		public const int SDLK_SCANCODE_MASK = (1 << 30);
 		public static SDL_Keycode SDL_SCANCODE_TO_KEYCODE(SDL_Scancode X)
@@ -3284,9 +3285,9 @@ namespace SDL2
 			KMOD_GUI = (KMOD_LGUI | KMOD_RGUI)
 		}
 
-		#endregion
+        #endregion
 
-		#region SDL_keyboard.h
+        #region SDL_keyboard.h
 		
 		[StructLayout(LayoutKind.Sequential)]
 		public struct SDL_Keysym
@@ -3385,9 +3386,9 @@ namespace SDL2
 		[DllImport(nativeLibName)]
 		public static extern SDL_bool SDL_IsScreenKeyboardShown(IntPtr window);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_mouse.c
+        #region SDL_mouse.c
 
 		/* Note: SDL_Cursor is a typedef normally. We'll treat it as
 		 * an IntPtr, because C# doesn't do typedefs. Yay!
@@ -3510,9 +3511,9 @@ namespace SDL2
 		public const UInt32 SDL_BUTTON_X1MASK = (1 << (3));
 		public const UInt32 SDL_BUTTON_X2MASK = (1 << (4));
 
-		#endregion
+        #endregion
 		
-		#region SDL_joystick.h
+        #region SDL_joystick.h
 		
 		public const byte SDL_HAT_CENTERED =	0x00;
 		public const byte SDL_HAT_UP =		0x01;
@@ -3659,9 +3660,9 @@ namespace SDL2
 		[DllImport(nativeLibName)]
 		public static extern int SDL_JoystickInstanceID(IntPtr joystick);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_gamecontroller.h
+        #region SDL_gamecontroller.h
 		
 		public enum SDL_GameControllerBindType
 		{
@@ -3878,9 +3879,9 @@ namespace SDL2
 			IntPtr gamecontroller
 		);
 		
-		#endregion
+        #endregion
 		
-		#region SDL_haptic.h
+        #region SDL_haptic.h
 		
 		/* SDL_HapticCondition type */
 		public const ushort SDL_HAPTIC_CONSTANT =	(1 << 0);
@@ -4195,9 +4196,9 @@ namespace SDL2
 		[DllImport(nativeLibName)]
 		public static extern int SDL_NumHaptics();
 		
-		#endregion
+        #endregion
 
-		#region SDL_audio.h
+        #region SDL_audio.h
 		
 		public const ushort SDL_AUDIO_MASK_BITSIZE =	0xFF;
 		public const ushort SDL_AUDIO_MASK_DATATYPE =	(1 << 8);
@@ -4532,3 +4533,4 @@ namespace SDL2
 }
 
 #pragma warning restore 0169
+#endif

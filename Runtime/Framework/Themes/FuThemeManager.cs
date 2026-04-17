@@ -339,7 +339,7 @@ namespace Fu
             try
             {
                 // read json data from file
-                string json = File.ReadAllText(filePath);
+                string json = Fugui.ReadAllText(filePath);
                 // deserialize json data
                 theme = JsonUtility.FromJson<FuTheme>(json);
                 theme.UpdateThemeWithExtension();

@@ -2,6 +2,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
@@ -269,6 +270,8 @@ namespace Fu
             Fonts.Clear();
             // clear default font
             DefaultFont = null;
+            // clear loaded font buffers (used for memory fallback on platforms that not support file loading, like Android)
+            _loadedFontBuffers.Clear();
 
             // generate each fonts
             foreach (FontSizeConfig font in fontConf.Fonts)
@@ -279,6 +282,9 @@ namespace Fu
                 List<SubFontConfig> regularFonts = new List<SubFontConfig>();
                 foreach (var f in font.SubFonts_Regular)
                 {
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+        regularFonts.Add(f);
+#else
                     string fullPath = Path.Combine(fontPath, f.FileName);
                     bool exists = File.Exists(fullPath);
 
@@ -286,7 +292,13 @@ namespace Fu
                     {
                         regularFonts.Add(f);
                     }
+                    else
+                    {
+                        Debug.LogWarning($"[FontLoader] Regular font file not found: {fullPath}");
+                    }
+#endif
                 }
+
                 if (processSubFont(font, regularFonts.ToArray(), out ImFontPtr fontPtrRegular))
                 {
                     Fonts[font.Size].Regular = fontPtrRegular;
@@ -296,6 +308,9 @@ namespace Fu
                 List<SubFontConfig> boldFonts = new List<SubFontConfig>();
                 foreach (var f in font.SubFonts_Bold)
                 {
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+        boldFonts.Add(f);
+#else
                     string fullPath = Path.Combine(fontPath, f.FileName);
                     bool exists = File.Exists(fullPath);
 
@@ -303,7 +318,13 @@ namespace Fu
                     {
                         boldFonts.Add(f);
                     }
+                    else
+                    {
+                        Debug.LogWarning($"[FontLoader] Bold font file not found: {fullPath}");
+                    }
+#endif
                 }
+
                 if (processSubFont(font, boldFonts.ToArray(), out ImFontPtr fontPtrBold))
                 {
                     Fonts[font.Size].Bold = fontPtrBold;
@@ -313,6 +334,9 @@ namespace Fu
                 List<SubFontConfig> italicFonts = new List<SubFontConfig>();
                 foreach (var f in font.SubFonts_Italic)
                 {
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+        italicFonts.Add(f);
+#else
                     string fullPath = Path.Combine(fontPath, f.FileName);
                     bool exists = File.Exists(fullPath);
 
@@ -320,6 +344,11 @@ namespace Fu
                     {
                         italicFonts.Add(f);
                     }
+                    else
+                    {
+                        Debug.LogWarning($"[FontLoader] Italic font file not found: {fullPath}");
+                    }
+#endif
                 }
 
                 if (processSubFont(font, italicFonts.ToArray(), out ImFontPtr fontPtrItalic))
@@ -339,30 +368,38 @@ namespace Fu
                 fontPtr = default;
 
                 if (subFonts.Length == 0)
+                {
                     return false;
+                }
 
-                fontPtr = default;
                 int subFontIndex = 0;
 
                 foreach (SubFontConfig subFont in subFonts)
                 {
-                    bool useDefaultGlyphRange = subFont.StartGlyph == 0 && subFont.EndGlyph == 0 && subFont.CustomGlyphRanges.Length == 0;
+                    bool useDefaultGlyphRange = subFont.StartGlyph == 0 &&
+                                                subFont.EndGlyph == 0 &&
+                                                subFont.CustomGlyphRanges.Length == 0;
 
-                    #region Prepare Glyphs Ranges
+                    #region Prepare Glyph Ranges
                     if (!useDefaultGlyphRange)
                     {
                         subFont.GlyphRangePtr = IntPtr.Zero;
+
                         ImFontGlyphRangesBuilder* builder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
 
                         if (subFont.CustomGlyphRanges.Length > 0)
                         {
                             for (int i = 0; i < subFont.CustomGlyphRanges.Length; i++)
+                            {
                                 ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, subFont.CustomGlyphRanges[i]);
+                            }
                         }
                         else
                         {
                             for (ushort i = subFont.StartGlyph; i <= subFont.EndGlyph; i++)
+                            {
                                 ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, i);
+                            }
                         }
 
                         ImVector vec = default;
@@ -377,39 +414,94 @@ namespace Fu
                     subFont.FontConfigPtr = new ImFontConfigPtr(conf);
                     subFont.FontConfigPtr.MergeMode = subFontIndex > 0;
                     subFont.FontConfigPtr.GlyphOffset = subFont.GlyphOffset;
+                    subFont.FontConfigPtr.FontDataOwnedByAtlas = false;
                     #endregion
 
                     string fontFilePath = Path.Combine(fontPath, subFont.FileName);
                     ImFontPtr tmpFontPtr = default;
 
-                    // Try loading from file
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+        byte[] fontData = Fugui.ReadAllBytes(fontFilePath);
+        if (fontData == null || fontData.Length == 0)
+        {
+            Debug.LogError($"[FontLoader] Unable to load font bytes for → {fontFilePath}");
+            subFontIndex++;
+            continue;
+        }
+
+        _loadedFontBuffers.Add(fontData);
+
+        fixed (byte* fontPtrRaw = fontData)
+        {
+            if (useDefaultGlyphRange)
+            {
+                tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF(
+                    (IntPtr)fontPtrRaw,
+                    fontData.Length,
+                    (font.Size + subFont.SizeOffset) * FontScale,
+                    subFont.FontConfigPtr);
+            }
+            else
+            {
+                tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF(
+                    (IntPtr)fontPtrRaw,
+                    fontData.Length,
+                    (font.Size + subFont.SizeOffset) * FontScale,
+                    subFont.FontConfigPtr,
+                    subFont.GlyphRangePtr);
+            }
+        }
+
+        Debug.Log($"[FontLoader] Trying to load font from memory → {fontFilePath} : {((IntPtr)tmpFontPtr.NativePtr != IntPtr.Zero ? "Success" : "Failed")}");
+#else
                     if (useDefaultGlyphRange)
                     {
-                        tmpFontPtr = IO.Fonts.AddFontFromFileTTF(fontFilePath, (font.Size + subFont.SizeOffset) * FontScale, subFont.FontConfigPtr);
+                        tmpFontPtr = IO.Fonts.AddFontFromFileTTF(
+                            fontFilePath,
+                            (font.Size + subFont.SizeOffset) * FontScale,
+                            subFont.FontConfigPtr);
                     }
                     else
                     {
-                        tmpFontPtr = IO.Fonts.AddFontFromFileTTF(fontFilePath, (font.Size + subFont.SizeOffset) * FontScale, subFont.FontConfigPtr, subFont.GlyphRangePtr);
+                        tmpFontPtr = IO.Fonts.AddFontFromFileTTF(
+                            fontFilePath,
+                            (font.Size + subFont.SizeOffset) * FontScale,
+                            subFont.FontConfigPtr,
+                            subFont.GlyphRangePtr);
                     }
 
-                    // If failed, fallback to memory
                     if ((IntPtr)tmpFontPtr.NativePtr == IntPtr.Zero)
                     {
                         Debug.LogWarning($"[FontLoader] Failed to load font from file → {fontFilePath}. Trying memory fallback.");
 
-                        byte[] fontData = File.ReadAllBytes(fontFilePath);
-                        unsafe
+                        byte[] fontData = Fugui.ReadAllBytes(fontFilePath);
+                        if (fontData == null || fontData.Length == 0)
                         {
-                            fixed (byte* fontPtrRaw = fontData)
+                            Debug.LogError($"[FontLoader] Memory fallback failed to read bytes for → {fontFilePath}");
+                            subFontIndex++;
+                            continue;
+                        }
+
+                        _loadedFontBuffers.Add(fontData);
+
+                        fixed (byte* fontPtrRaw = fontData)
+                        {
+                            if (useDefaultGlyphRange)
                             {
-                                if (useDefaultGlyphRange)
-                                {
-                                    tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF((IntPtr)fontPtrRaw, fontData.Length, (font.Size + subFont.SizeOffset) * FontScale, subFont.FontConfigPtr);
-                                }
-                                else
-                                {
-                                    tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF((IntPtr)fontPtrRaw, fontData.Length, (font.Size + subFont.SizeOffset) * FontScale, subFont.FontConfigPtr, subFont.GlyphRangePtr);
-                                }
+                                tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF(
+                                    (IntPtr)fontPtrRaw,
+                                    fontData.Length,
+                                    (font.Size + subFont.SizeOffset) * FontScale,
+                                    subFont.FontConfigPtr);
+                            }
+                            else
+                            {
+                                tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF(
+                                    (IntPtr)fontPtrRaw,
+                                    fontData.Length,
+                                    (font.Size + subFont.SizeOffset) * FontScale,
+                                    subFont.FontConfigPtr,
+                                    subFont.GlyphRangePtr);
                             }
                         }
 
@@ -418,8 +510,9 @@ namespace Fu
                             Debug.LogError($"[FontLoader] Memory fallback also failed for → {fontFilePath}");
                         }
                     }
+#endif
 
-                    if (subFontIndex == 0)
+                    if ((IntPtr)tmpFontPtr.NativePtr != IntPtr.Zero && subFontIndex == 0)
                     {
                         fontPtr = tmpFontPtr;
                     }
@@ -427,9 +520,11 @@ namespace Fu
                     subFontIndex++;
                 }
 
-                return true;
+                return (IntPtr)fontPtr.NativePtr != IntPtr.Zero;
             }
         }
+
+        private readonly List<byte[]> _loadedFontBuffers = new List<byte[]>();
 
         #region Drag Drop
         /// <summary>

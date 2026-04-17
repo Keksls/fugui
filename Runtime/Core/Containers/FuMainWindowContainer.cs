@@ -204,13 +204,13 @@ namespace Fu
             {
                 // clamp window size
                 Vector2Int size = window.Size;
-                if (size.x < (int)(64f * Fugui.CurrentContext.Scale))
+                if (size.x < (int)(64f * Fugui.Scale))
                 {
-                    size.x = (int)(64f * Fugui.CurrentContext.Scale);
+                    size.x = (int)(64f * Fugui.Scale);
                 }
-                if (size.y < (int)(64f * Fugui.CurrentContext.Scale))
+                if (size.y < (int)(64f * Fugui.Scale))
                 {
-                    size.y = (int)(64f * Fugui.CurrentContext.Scale);
+                    size.y = (int)(64f * Fugui.Scale);
                 }
                 if (size.x > Size.x)
                 {
@@ -229,21 +229,21 @@ namespace Fu
                 Vector2Int pos = window.LocalPosition;
 
                 // ensure that at least 32 x 32 pixels of the header of the window is visible
-                if (pos.y > Size.y - (int)(32f * Fugui.CurrentContext.Scale))
+                if (pos.y > Size.y - (int)(32f * Fugui.Scale))
                 {
-                    pos.y = Size.y - (int)(64f * Fugui.CurrentContext.Scale);
+                    pos.y = Size.y - (int)(64f * Fugui.Scale);
                 }
-                if (pos.x > Size.x - (int)(32f * Fugui.CurrentContext.Scale))
+                if (pos.x > Size.x - (int)(32f * Fugui.Scale))
                 {
-                    pos.x = Size.x - (int)(64f * Fugui.CurrentContext.Scale);
+                    pos.x = Size.x - (int)(64f * Fugui.Scale);
                 }
-                if (pos.x < -window.Size.x - (int)(32f * Fugui.CurrentContext.Scale))
+                if (pos.x < -window.Size.x - (int)(32f * Fugui.Scale))
                 {
-                    pos.x = -window.Size.x + (int)(64f * Fugui.CurrentContext.Scale);
+                    pos.x = -window.Size.x + (int)(64f * Fugui.Scale);
                 }
-                if (pos.y < -window.Size.y - (int)(32f * Fugui.CurrentContext.Scale))
+                if (pos.y < -window.Size.y - (int)(32f * Fugui.Scale))
                 {
-                    pos.y = -window.Size.y + (int)(64f * Fugui.CurrentContext.Scale);
+                    pos.y = -window.Size.y + (int)(64f * Fugui.Scale);
                 }
 
                 if (window.LocalPosition.x != pos.x || window.LocalPosition.y != pos.y)

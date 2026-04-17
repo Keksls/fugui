@@ -428,9 +428,11 @@ namespace Fu
             // ImGui want to close this window
             if (!IsOpened)
             {
+#if FU_EXTERNALIZATION
                 if (IsExternal)
                     ((FuExternalWindowContainer)Container).Close(() => { Close(null); });
                 else
+#endif
                     Close(null);
                 return;
             }
@@ -713,10 +715,12 @@ namespace Fu
                 // draw user UI callback
                 FuStyle.Default.Push(true);
 
+#if FU_EXTERNALIZATION
                 if (IsExternal && Fugui.Settings.DrawDebugPanel)
                 {
                     ((FuExternalContext)Container.Context).Window.DrawDebug(Layout);
                 }
+#endif
 
                 UI?.Invoke(this, Layout);
                 FuStyle.Content.Pop();
@@ -755,11 +759,14 @@ namespace Fu
                 DrawOverlays();
 
                 // if external, draw resize grips and resize hover feedback
+
+#if FU_EXTERNALIZATION
                 if (IsExternal)
                 {
                     ((FuExternalContext)Container.Context).Window.DrawResizeHandles();
                     DrawExternalWindowTitleButtons();
                 }
+#endif
 
                 // update FPS and deltaTime
                 DeltaTime = Fugui.Time - _lastRenderTime;
@@ -770,6 +777,7 @@ namespace Fu
             }
         }
 
+#if FU_EXTERNALIZATION
         /// <summary>
         /// Draw the title buttons for external window (minimize, maximize, close)
         /// </summary>
@@ -784,8 +792,8 @@ namespace Fu
             float iconThickness = 1f * Fugui.Scale;                               // Icon line thickness
             float iconRounding = 2f * Fugui.Scale;  // Icon rounding for maximize/restore
             float TitleBar_Height = WorkingAreaPosition.y;
-            bool IsMaximized = ((FuExternalContext)((FuExternalWindowContainer)Container).Context).Window.IsMaximized;
 
+            bool IsMaximized = ((FuExternalContext)((FuExternalWindowContainer)Container).Context).Window.IsMaximized;
             float btnHeight = btnSize.ScaledSize.y;                      // Vertical size forced by the title bar
             float btnCenterOffset = (TitleBar_Height - btnSize.ScaledSize.y) * 0.5f;
 
@@ -911,7 +919,7 @@ namespace Fu
             if (hovered && mouseClicked)
                 _open = false;
         }
-
+#endif
         /// <summary>
         /// Draw the windows Debug Panel
         /// </summary>
@@ -922,11 +930,11 @@ namespace Fu
                 return;
             }
 
-            ImGui.SetCursorPos(new Vector2(0f, 32f));
+            ImGui.SetCursorPos(new Vector2(0f, 32f * Fugui.Scale));
             ImGui.Dummy(Vector2.one);
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
             Fugui.Push(ImGuiCol.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
-            if (ImGui.BeginChild(ID + "d", new Vector2(196f, 202f)))
+            if (ImGui.BeginChild(ID + "d", new Vector2(196f, 202f) * Fugui.Scale))
             {
                 // states
                 ImGui.Text("State : " + State);
@@ -994,7 +1002,7 @@ namespace Fu
                 || _forceRedraw > 0
                 || (IsInterractable && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
         }
-        #endregion
+#endregion
 
         #region Externalization Handling
         /// <summary>
@@ -1037,6 +1045,7 @@ namespace Fu
         /// </summary>
         private void CheckAutoInternalize()
         {
+#if FU_EXTERNALIZATION
             if (!IsExternal || Container == null || Container is not FuExternalWindowContainer)
             {
                 return;
@@ -1053,8 +1062,9 @@ namespace Fu
             {
                 Fugui.InternalizeWindow(this);
             }
+#endif
         }
-        #endregion
+#endregion
 
         #region Events
         /// <summary>

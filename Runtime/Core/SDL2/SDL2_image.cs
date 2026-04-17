@@ -26,6 +26,7 @@
  */
 #endregion
 
+#if FU_EXTERNALIZATION
 #region Using Statements
 using System;
 using System.Runtime.InteropServices;
@@ -45,7 +46,7 @@ namespace SDL2
 #else
         private const string nativeLibName = "SDL2_ttf";
 #endif
-        #endregion
+#endregion
 
         #region SDL_image.h
 
@@ -99,6 +100,7 @@ namespace SDL2
 		[DllImport(nativeLibName)]
 		public static extern IntPtr IMG_ReadXPMFromArray(ref char[] xpm);
 		
-		#endregion
+        #endregion
 	}
 }
+#endif

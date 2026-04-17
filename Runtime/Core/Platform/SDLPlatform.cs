@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿#if FU_EXTERNALIZATION
+using ImGuiNET;
 using SDL2;
 using System.Collections.Generic;
 using UnityEngine;
@@ -251,3 +252,4 @@ namespace Fu
         }
     }
 }
+#endif

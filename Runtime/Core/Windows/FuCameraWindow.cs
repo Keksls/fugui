@@ -134,10 +134,10 @@ namespace Fu
                 return;
             }
 
-            ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().x - 232f, 16f));
+            ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().x - (232f * Fugui.Scale), 16f));
             Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
             Fugui.Push(ImGuiCol.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
-            if (ImGui.BeginChild(ID + "cs", new Vector2(224f, 96f)))
+            if (ImGui.BeginChild(ID + "cs", new Vector2(224f, 96f) * Fugui.Scale))
             {
                 // super sampling
                 if (ImGui.RadioButton("x0.5", _superSampling == 0.5f))

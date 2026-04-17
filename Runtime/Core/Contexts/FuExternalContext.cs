@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿#if FU_EXTERNALIZATION
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu
@@ -112,3 +113,4 @@ namespace Fu
         #endregion
     }
 }
+#endif

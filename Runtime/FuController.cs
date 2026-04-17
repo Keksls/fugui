@@ -1,3 +1,4 @@
+using ImGuiNET;
 using System;
 using UnityEngine;
 
@@ -19,8 +20,13 @@ namespace Fu
         #region Unity Methods
         void Awake()
         {
+            Debug.Log("Graphics API: " + SystemInfo.graphicsDeviceType);
+            Debug.Log("Imgui Version : " + ImGui.GetVersion());
+
             // prepare FuGui before start using it
             Fugui.Initialize(_settings, this, _uiCamera);
+
+            Debug.Log("Scale : " + Fugui.Scale);
 
             // log errors to Unity console
             if (_logErrors)
@@ -29,7 +35,7 @@ namespace Fu
             }
 
             // awake all FuWindowBehaviour instances
-            foreach (var mono in GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+            foreach (var mono in GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include))
             {
                 mono.SendMessage("FuguiAwake", SendMessageOptions.DontRequireReceiver);
             }
@@ -73,11 +79,14 @@ namespace Fu
                 if (Fugui.ContextExists(contextID))
                 {
                     FuContext context = Fugui.GetContext(contextID);
+
+#if FU_EXTERNALIZATION
                     if(context is FuExternalContext externalContext)
                     {
                         // remove external window from dictionary
                         Fugui.ExternalWindows.Remove(externalContext.Window.Window.ID);
                     }
+#endif
                     context.EndRender();
                     context.Destroy();
 
@@ -96,7 +105,7 @@ namespace Fu
         {
             Dispose();
         }
-        #endregion
+#endregion
 
         #region public Utils
         /// <summary>

@@ -18,8 +18,6 @@
             #pragma vertex ImGuiPassVertex
             #pragma fragment ImGuiPassFrag
             #pragma multi_compile_instancing
-            #pragma exclude_renderers gles // optional if you target modern
-            // #pragma target 2.0 // keep low if you need wide compat
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #ifndef UNITY_COLORSPACE_GAMMA
@@ -50,11 +48,7 @@
                 // One mul instead of two:
                 o.vertex = TransformObjectToHClip(float3(input.vertex, 0.0));
                 // Robust UV flip:
-                #if UNITY_UV_STARTS_AT_TOP
-                    o.uv = float2(input.uv.x, 1.0 - input.uv.y);
-                #else
-                    o.uv = input.uv;
-                #endif
+                o.uv = float2(input.uv.x, 1.0 - input.uv.y);
                 o.color = unpack_color(input.color);
                 return o;
             }

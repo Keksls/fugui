@@ -1,4 +1,5 @@
-﻿using SDL2;
+﻿#if FU_EXTERNALIZATION
+using SDL2;
 using System.Collections.Generic;
 
 namespace Fu
@@ -156,3 +157,4 @@ namespace Fu
         #endregion
     }
 }
+#endif

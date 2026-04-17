@@ -233,18 +233,30 @@ namespace Fu
         [Range(0.001f, 100f)]
         [FuSlider(0.001f, 100f)]
         public float ScrollPower = 1f;
-        
+
         [Tooltip("Distance threshold before considering we are dragging. (default=6.0f)")]
         [FuTooltip("Distance threshold before considering we are dragging. (default=6.0f)")]
         [Range(0.01f, 64f)]
         [FuSlider(0.1f, 64f)]
         public float DragThreshold = 6.0f;
 
+        [Tooltip("Distance threshold before considering we are dragging. (default=6.0f)")]
+        [FuTooltip("Distance threshold before considering we are dragging. (default=6.0f)")]
+        [Range(1f, 256f)]
+        [FuSlider(1f, 256f)]
+        public float DragThresholdMobile = 32.0f;
+
         [Tooltip("Distance threshold before considering we performe a click. (default=3.0f)")]
         [FuTooltip("Distance threshold before considering we performe a click. (default=3.0f)")]
         [Range(0.01f, 64f)]
         [FuSlider(0.1f, 64f)]
         public float ClickMaxDist = 3.0f;
+
+        [Tooltip("Distance threshold before considering we performe a click. (default=3.0f)")]
+        [FuTooltip("Distance threshold before considering we performe a click. (default=3.0f)")]
+        [Range(0.01f, 64f)]
+        [FuSlider(0.1f, 64f)]
+        public float ClickMaxDistMobile = 16.0f;
 
         [Tooltip("When holding a key/button, time before it starts repeating, in seconds. (default=0.250f)")]
         [FuTooltip("When holding a key/button, time before it starts repeating, in seconds. (default=0.250f)")]
@@ -258,17 +270,17 @@ namespace Fu
         [FuSlider(0.1f, 1f)]
         public float KeyRepeatRate = 0.05f;
 
-        [Tooltip("Global scale all fonts. (default=1.0f)")]
-        [FuTooltip("Global scale all fonts. (default=1.0f)")]
-        [Range(0.1f, 4f)]
-        [FuSlider(0.1f, 4f)]
-        public float FontGlobalScale = 1.0f;
-
         [Tooltip("Global scale. (default=1.0f)")]
         [FuTooltip("Global scale. (default=1.0f)")]
         [Range(0.1f, 4f)]
         [FuSlider(0.1f, 4f)]
         public float GlobalScale = 1.0f;
+
+        [Tooltip("Global scale. (default=1.0f)")]
+        [FuTooltip("Global scale. (default=1.0f)")]
+        [Range(0.1f, 4f)]
+        [FuSlider(0.1f, 4f)]
+        public float FontGlobalScale = 1.0f;
 
         [Tooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
         [FuTooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
@@ -357,12 +369,14 @@ namespace Fu
             io.BackendFlags = ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos | ImGuiBackendFlags.RendererHasVtxOffset;
             io.MouseDoubleClickTime = DoubleClickTime;
             io.MouseDoubleClickMaxDist = DoubleClickMaxDist;
-            io.MouseDragThreshold = DragThreshold;
+
+            float dragThreshold = Application.isMobilePlatform ? DragThresholdMobile : DragThreshold;
+            io.MouseDragThreshold = dragThreshold;
 
             io.KeyRepeatDelay = KeyRepeatDelay;
             io.KeyRepeatRate = KeyRepeatRate;
 
-            io.FontGlobalScale = 1f;// FontGlobalScale;
+            io.FontGlobalScale = 1f;
             io.FontAllowUserScaling = FontAllowUserScaling;
 
             io.DisplayFramebufferScale = DisplayFramebufferScale;

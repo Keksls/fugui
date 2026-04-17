@@ -3,10 +3,13 @@
 //#define FUDEBUG 
 using Fu.Framework;
 using ImGuiNET;
+#if FU_EXTERNALIZATION
 using SDL2;
+#endif
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -75,10 +78,6 @@ namespace Fu
         /// </summary>
         public static FuDockingLayoutManager Layouts { get; private set; }
         /// <summary>
-        /// The absolute mouse position on the monitor (used for multi context / multi window support)
-        /// </summary>
-        public static Vector2Int AbsoluteMonitorMousePosition { get; internal set; }
-        /// <summary>
         /// FuGui Controller instance
         /// </summary>
         internal static FuController Controller;
@@ -121,7 +120,14 @@ namespace Fu
         // The dictionary of 3D windows
         private static Dictionary<string, Fu3DWindowContainer> _3DWindows;
         // dictionary of external windows
+#if FU_EXTERNALIZATION
         internal static Dictionary<string, FuExternalWindowContainer> ExternalWindows = new Dictionary<string, FuExternalWindowContainer>();
+        internal static SDLEventRooter SDLEventRooter { get; private set; } = new SDLEventRooter();
+        /// <summary>
+        /// The absolute mouse position on the monitor (used for multi context / multi window support)
+        /// </summary>
+        public static Vector2Int AbsoluteMonitorMousePosition { get; internal set; }
+#endif
         // counter of Fugui Contexts
         private static int _contextID = 0;
         // queue of callback to execute BEFORE default render
@@ -133,7 +139,6 @@ namespace Fu
 
         private static float _targetScale = -1f;
         private static float _targetFontScale = -1f;
-        internal static SDLEventRooter SDLEventRooter { get; private set; } = new SDLEventRooter();
         #endregion
 
         #region Constants
@@ -303,20 +308,24 @@ namespace Fu
         /// </summary>
         public static void Dispose()
         {
+#if FU_EXTERNALIZATION
             // close all external windows
             var externalWindowIDs = ExternalWindows.Keys.ToList();
             foreach (string windowID in externalWindowIDs)
             {
                 ((FuExternalContext)ExternalWindows[windowID].Context).Window.Close(null);
             }
-
+#endif
             // Dispose Fugui Contexts
             var ids = Contexts.Keys.ToList();
             foreach (int contextID in ids)
             {
                 DestroyContext(contextID);
             }
+
+#if FU_EXTERNALIZATION
             SDL.SDL_Quit();
+#endif
         }
         #endregion
 
@@ -680,8 +689,10 @@ namespace Fu
         /// </summary>
         public static void Render()
         {
+#if FU_EXTERNALIZATION
             SDL.SDL_GetGlobalMouseState(out int x, out int y);
             AbsoluteMonitorMousePosition = new Vector2Int(x, y);
+#endif
 
             // clear context menu stack in case dev forgot to pop something OR exception raise between push and pop
             ClearContextMenuStack();
@@ -729,6 +740,7 @@ namespace Fu
                     {
                         HasRenderWindowThisFrame = false;
 
+#if FU_EXTERNALIZATION
                         FuExternalWindowContainer externalWindowContainer = null;
                         if (context.Value is FuExternalContext externalContext)
                         {
@@ -736,6 +748,7 @@ namespace Fu
                             externalWindowContainer = ((FuExternalWindowContainer)externalContext.Window.Window.Container);
                             externalWindowContainer.Update();
                         }
+#endif
 
                         context.Value.Render();
                         context.Value.EndRender();
@@ -759,6 +772,7 @@ namespace Fu
         /// <param name="uiWindow">The Fugui window to externalize.</param>
         public static void ExternalizeWindow(FuWindow uiWindow)
         {
+#if FU_EXTERNALIZATION
             if (uiWindow == null)
             {
                 Debug.LogError("Cannot create an external window from a null Fugui window.");
@@ -792,10 +806,15 @@ namespace Fu
 
             // 3) Register and attach the window to this container
             ExternalWindows.Add(uiWindow.ID, container);
+#else
+            Debug.LogWarning("You are trying to externalize a window but externalizations are disabled in the settings.\n" +
+                "Add FU_EXTERNALIZATION define to your build settings to enable externalizations.");
+#endif
         }
 
         public static void InternalizeWindow(FuWindow uiWindow)
         {
+#if FU_EXTERNALIZATION
             if (uiWindow == null)
             {
                 Debug.LogError("Cannot internalize a null Fugui window.");
@@ -820,6 +839,10 @@ namespace Fu
                     //uiWindow.LocalPosition = finalPos;
                 });
             }
+#else
+            Debug.LogWarning("You are trying to internalize a window but externalizations are disabled in the settings.\n" +
+                "Add FU_EXTERNALIZATION define to your build settings to enable externalizations.");
+#endif
         }
 
         /// <summary>
@@ -1326,7 +1349,102 @@ namespace Fu
         }
         #endregion
 
-        #region public Utils
+        #region Public Utils
+        /// <summary>
+        /// Check if any window is currently being dragged
+        /// </summary>
+        /// <returns> true if any window is being dragged, false otherwise</returns>
+        public static bool IsAnyWindowDragging()
+        {
+            foreach (var window in UIWindows)
+            {
+                if (window.Value.IsDragging)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether any window currently displays hover content.
+        /// </summary>
+        /// <returns>true if at least one window is displaying hover content; otherwise, false.</returns>
+        public static bool IsAnyWindowHoverContent()
+        {
+            foreach (var window in UIWindows)
+            {
+                if (window.Value.IsHoveredContent)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Check if any overlay of any window is currently being dragged
+        /// </summary>
+        /// <returns> true if any overlay is being dragged, false otherwise</returns>
+        public static bool IsAnyOverlayDragging()
+        {
+            foreach (var window in UIWindows)
+            {
+                foreach (var overlay in window.Value.Overlays)
+                {
+                    if (overlay.Value.IsDraging)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Read all bytes from a file, using UnityWebRequest on Android to support streaming assets, and File.ReadAllBytes on other platforms
+        /// </summary>
+        /// <param name="filePath"> path of the file to read</param>
+        /// <returns> byte array of the file content, or null if an error occurs</returns>
+        public static byte[] ReadAllBytes(string filePath)
+        {
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+    using (var request = UnityEngine.Networking.UnityWebRequest.Get(filePath))
+    {
+        var operation = request.SendWebRequest();
+        while (!operation.isDone)
+        {
+        }
+
+        if (request.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+        {
+            Debug.LogError($"[FontLoader] Failed to load font from streaming assets: {filePath} - {request.error}");
+            return null;
+        }
+
+        return request.downloadHandler.data;
+    }
+#else
+            if (!File.Exists(filePath))
+            {
+                Debug.LogError($"[FontLoader] Font file not found: {filePath}");
+                return null;
+            }
+
+            return File.ReadAllBytes(filePath);
+#endif
+        }
+
+        /// <summary>
+        /// Read all text from a file, using UnityWebRequest on Android to support streaming assets, and File.ReadAllText on other platforms
+        /// </summary>
+        /// <param name="filePath"> path of the file to read</param>
+        /// <returns> string of the file content, or null if an error occurs</returns>
+        public static string ReadAllText(string filePath)
+        {
+            return Encoding.UTF8.GetString(ReadAllBytes(filePath));
+        }
+
         /// <summary>
         /// Convert a string to UTF8 byte array and return the number of bytes written to the array
         /// </summary>

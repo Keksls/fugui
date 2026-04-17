@@ -838,6 +838,7 @@ namespace Fu.Framework
 
         #region element state
         private static string _activeItem = null;
+        public static bool IsAnyItemActive => !string.IsNullOrEmpty(_activeItem);
         /// <summary>
         /// Set the states of an items for this frame (until another item is draw)
         ///     LastItemHovered

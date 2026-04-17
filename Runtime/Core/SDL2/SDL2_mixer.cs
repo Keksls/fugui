@@ -26,6 +26,7 @@
  */
 #endregion
 
+#if FU_EXTERNALIZATION
 #region Using Statements
 using System;
 using System.Runtime.InteropServices;
@@ -45,7 +46,7 @@ namespace SDL2
 #else
         private const string nativeLibName = "SDL2_ttf";
 #endif
-        #endregion
+#endregion
 
         #region SDL_mixer.h
 
@@ -482,6 +483,7 @@ namespace SDL2
 		[DllImport(nativeLibName)]
 		public static extern void Mix_CloseAudio();
 		
-		#endregion
+        #endregion
 	}
 }
+#endif

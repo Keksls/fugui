@@ -76,7 +76,7 @@ namespace Fu
                 {
                     using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_MainPass", out var passData);
                     builder.AllowGlobalStateModification(true);
-                    builder.SetRenderAttachment(color, 0, AccessFlags.Write);
+                    builder.SetRenderAttachment(color, 0, AccessFlags.ReadWrite);
 
                     if (depth.IsValid())
                     {
@@ -105,11 +105,14 @@ namespace Fu
                         continue;
                     }
 
+
+#if FU_EXTERNALIZATION
                     // SDL / external windows are rendered outside Unity
                     if (context is FuExternalContext)
                     {
                         continue;
                     }
+#endif
 
                     if (context is not FuUnityContext unityContext)
                     {
@@ -320,7 +323,7 @@ namespace Fu
                 }
                 commandBuffer.DisableScissorRect();
             }
-            #endregion
+#endregion
 
 #if !UNITY_6000_4_OR_NEWER
             #region Old Render Pass

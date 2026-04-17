@@ -120,7 +120,6 @@ MonoBehaviour:
   m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
-  m_Version: 2
   m_TaaSettings:
     m_Quality: 3
     m_FrameInfluence: 0.1
@@ -128,6 +127,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!1 &2932005272966750018
 GameObject:
   m_ObjectHideFlags: 0
@@ -176,11 +176,11 @@ MonoBehaviour:
   _settings:
     FUGUI_WINDOWS_DEF_ENUM_PATH: Assets\Scripts\UI\FuWindowsNames.cs
     FUGUI_DOCKSPACE_FOLDER_PATH: Assets\StreamingAssets\Fugui\Layout\
-    EnableExternalizations: 0
+    EnableExternalizations: 1
     DisplaySettingsIfNoLayout: 1
-    IdleFPS: 8
-    ManipulatingFPS: 60
-    IdleCameraFPS: 16
+    IdleFPS: 20
+    ManipulatingFPS: 90
+    IdleCameraFPS: 30
     Windows3DScale: 10
     Windows3DSuperSampling: 2
     Windows3DFontScale: 3
@@ -215,7 +215,7 @@ MonoBehaviour:
     TabBarButtonRight: 1
     LayoutsFolder: Fugui/Layouts
     FontIconsOffset: {x: 0, y: -1}
-    ImGuiConfig: 1153
+    ImGuiConfig: 129
     DoubleClickTime: 0.3
     DoubleClickMaxDist: 6
     ScrollPower: 1
@@ -223,8 +223,8 @@ MonoBehaviour:
     ClickMaxDist: 3
     KeyRepeatDelay: 0.25
     KeyRepeatRate: 0.05
-    FontGlobalScale: 2
-    GlobalScale: 2
+    FontGlobalScale: 1
+    GlobalScale: 1
     FontAllowUserScaling: 0
     DisplayFramebufferScale: {x: 1, y: 1}
     MouseDrawCursor: 0

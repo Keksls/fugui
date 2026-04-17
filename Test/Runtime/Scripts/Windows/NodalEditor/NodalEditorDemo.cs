@@ -60,7 +60,7 @@ namespace Fu.Framework.Demo
                     {
                         string[] path = FileBrowser.OpenFilePanel("Load Nodal Graph JSON", Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "json", false);
                         if (path.Length == 0) return;
-                        string json = System.IO.File.ReadAllText(path[0]);
+                        string json = Fugui.ReadAllText(path[0]);
                         _nodalEditor.Graph.FromJson(json);
                     });
             });

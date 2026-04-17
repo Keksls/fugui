@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿#if FU_EXTERNALIZATION
+using ImGuiNET;
 using System;
 using UnityEngine;
 
@@ -178,3 +179,4 @@ namespace Fu
         }
     }
 }
+#endif

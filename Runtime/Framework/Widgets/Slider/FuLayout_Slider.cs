@@ -169,10 +169,10 @@ namespace Fu.Framework
             bool drawSlider(string text, ref float value, float min, float max, bool isInt, float knobRadius, float hoverPaddingY, float lineHeight, float width, float x, float y)
             {
                 // draw a dummy button so the cursor is well placed and we can get the state and prevent from clicking on multiple elements at time + get the state only if the widget is visible
-                ImGui.InvisibleButton(text, new Vector2(width + (4f * Fugui.CurrentContext.Scale), height), ImGuiButtonFlags.None);
+                ImGui.InvisibleButton(text, new Vector2(width + (4f * Fugui.Scale), height), ImGuiButtonFlags.None);
 
                 // is there place to draw slider
-                if (width >= 24f)
+                if (width >= 24f * Fugui.Scale)
                 {
                     // Calculate the position of the knob
                     float knobPos = (x + knobRadius) + (width - knobRadius * 2f) * (value - min) / (max - min);
@@ -233,7 +233,7 @@ namespace Fu.Framework
                     ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPos, y), (isKnobHovered || isDragging) && !LastItemDisabled ? knobRadius : knobRadius * 0.8f, ImGui.GetColorU32(knobColor), 32);
 
                     // start dragging this slider
-                    if ((isLineHovered || isKnobHovered) && !_draggingSliders.Contains(text) && ImGui.IsMouseClicked(0))
+                    if (isKnobHovered && !_draggingSliders.Contains(text) && ImGui.IsMouseClicked(0))
                     {
                         _draggingSliders.Add(text);
                     }

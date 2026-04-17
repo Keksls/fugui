@@ -272,14 +272,14 @@ namespace Fu
 
         [Tooltip("Global scale. (default=1.0f)")]
         [FuTooltip("Global scale. (default=1.0f)")]
-        [Range(0.1f, 4f)]
-        [FuSlider(0.1f, 4f)]
+        [Range(0.1f, 5f)]
+        [FuSlider(0.1f, 5f)]
         public float GlobalScale = 1.0f;
 
         [Tooltip("Global scale. (default=1.0f)")]
         [FuTooltip("Global scale. (default=1.0f)")]
-        [Range(0.1f, 4f)]
-        [FuSlider(0.1f, 4f)]
+        [Range(0.1f, 5f)]
+        [FuSlider(0.1f, 5f)]
         public float FontGlobalScale = 1.0f;
 
         [Tooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]

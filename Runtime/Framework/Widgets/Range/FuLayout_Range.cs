@@ -101,10 +101,10 @@ namespace Fu.Framework
 
             // Calculate the position and size of the slider
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
-            float knobRadius = 5f * Fugui.CurrentContext.Scale;
-            float hoverPaddingY = 4f * Fugui.CurrentContext.Scale;
+            float knobRadius = Application.isMobilePlatform ? 8f * Fugui.Scale : 5f * Fugui.Scale;
+            float hoverPaddingY = Application.isMobilePlatform ? 8f * Fugui.Scale : 5f * Fugui.Scale;
             float height = ImGui.CalcTextSize("Ap").y + (ImGui.GetStyle().FramePadding.y * 2f);
-            float lineHeight = 2f * Fugui.CurrentContext.Scale;
+            float lineHeight = Application.isMobilePlatform ? 3f * Fugui.Scale : 2f * Fugui.Scale;
             float width = ImGui.GetContentRegionAvail().x - (8f * Fugui.CurrentContext.Scale);
             float x = cursorPos.x;
             float y = cursorPos.y + height / 2f;

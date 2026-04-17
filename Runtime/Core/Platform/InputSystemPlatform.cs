@@ -131,21 +131,24 @@ namespace Fu
             {
                 if (_touchWasPressed)
                     if (!Fugui.GetWantCaptureInputs(true) &&
-                    !Fugui.IsAnyWindowDragging() &&
-                    !Fugui.IsAnyWindowHoverContent() && 
-                    !FuLayout.IsAnyItemActive &&
-                    !Fugui.IsAnyOverlayDragging())
+                        !Fugui.IsAnyWindowDragging() &&
+                        Fugui.IsAnyWindowHoverContent() &&
+                        !FuLayout.IsThereAnyDraggingSlider &&
+                        !Fugui.IsAnyOverlayDragging())
                     {
                         Vector2 delta = position - _lastTouchPosition;
-
-                        // accumulate vertical movement
                         _accumulatedScrollY += delta.y;
 
-                        // only trigger scroll if threshold reached
-                        if (Mathf.Abs(_accumulatedScrollY) >= ScrollThreshold * Fugui.Scale)
+                        float threshold = ScrollThreshold * Fugui.Scale;
+
+                        while (Mathf.Abs(_accumulatedScrollY) >= threshold)
                         {
-                            float wheelY = -delta.y * 0.02f * Fugui.Settings.ScrollPower;
+                            float direction = Mathf.Sign(_accumulatedScrollY);
+
+                            float wheelY = -direction * 0.25f * Fugui.Settings.ScrollPower;
                             io.AddMouseWheelEvent(0f, wheelY);
+
+                            _accumulatedScrollY -= direction * threshold;
                         }
                     }
 
@@ -159,6 +162,8 @@ namespace Fu
             _touchWasPressed = isPressed;
         }
 
+        private static float _lastPressTime = 0f;
+        private static bool _rightClicked = false;
         /// <summary>
         /// Updates ImGui pointer state from mouse or touchscreen.
         /// Mouse is used on desktop, primary touch is mapped to left mouse on mobile.
@@ -175,18 +180,40 @@ namespace Fu
             TouchControl primaryTouch = touch.primaryTouch;
             if (primaryTouch == null)
             {
+                _touchWasPressed = false;
+                _accumulatedScrollY = 0f;
                 return;
             }
 
             Vector2 position = primaryTouch.position.ReadValue();
             bool isPressed = primaryTouch.press.isPressed;
 
-            Debug.Log($"Primary touch position: {position}, pressed: {isPressed}");
+            // Handle right-click emulation: if the primary touch is held for more than 2 seconds, trigger a right-click event.
+            if (!_touchWasPressed && isPressed)
+            {
+                _lastPressTime = Time.time;
+                _rightClicked = false;
+            }
+            if (_touchWasPressed && !isPressed)
+            {
+                _lastPressTime = 0f;
+                _rightClicked = false;
+            }
+            if (isPressed && _touchWasPressed)
+            {
+                _lastPressTime += Time.deltaTime;
+            }
+            bool rightClick = false;
+            if (!_rightClicked && isPressed && _lastPressTime >= 2.0f)
+            {
+                _rightClicked = true;
+                rightClick = true;
+            }
 
             io.AddMousePosEvent(position.x, io.DisplaySize.y - position.y);
-            io.AddMouseButtonEvent(0, isPressed);
+            io.AddMouseButtonEvent(0, isPressed); // hack to let imgui know mouse position before click
 
-            io.AddMouseButtonEvent(1, false);
+            io.AddMouseButtonEvent(1, rightClick);
             io.AddMouseButtonEvent(2, false);
             io.AddMouseButtonEvent(3, false);
             io.AddMouseButtonEvent(4, false);
@@ -195,21 +222,24 @@ namespace Fu
             {
                 if (_touchWasPressed)
                     if (!Fugui.GetWantCaptureInputs(true) &&
-                    !Fugui.IsAnyWindowDragging() &&
-                    !Fugui.IsAnyWindowHoverContent() &&
-                    !FuLayout.IsAnyItemActive &&
-                    !Fugui.IsAnyOverlayDragging())
+                       !Fugui.IsAnyWindowDragging() &&
+                       Fugui.IsAnyWindowHoverContent() &&
+                       !FuLayout.IsThereAnyDraggingSlider &&
+                       !Fugui.IsAnyOverlayDragging())
                     {
                         Vector2 delta = position - _lastTouchPosition;
-
-                        // accumulate vertical movement
                         _accumulatedScrollY += delta.y;
 
-                        // only trigger scroll if threshold reached
-                        if (Mathf.Abs(_accumulatedScrollY) >= ScrollThreshold * Fugui.Scale)
+                        float threshold = ScrollThreshold * Fugui.Scale;
+
+                        while (Mathf.Abs(_accumulatedScrollY) >= threshold)
                         {
-                            float wheelY = -delta.y * 0.02f * Fugui.Settings.ScrollPower;
+                            float direction = Mathf.Sign(_accumulatedScrollY);
+
+                            float wheelY = -direction * 0.5f * Fugui.Settings.ScrollPower;
                             io.AddMouseWheelEvent(0f, wheelY);
+
+                            _accumulatedScrollY -= direction * threshold;
                         }
                     }
 

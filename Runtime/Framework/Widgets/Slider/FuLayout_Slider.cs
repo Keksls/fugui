@@ -94,15 +94,15 @@ namespace Fu.Framework
 
             // Calculate the position and size of the slider
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
-            float knobRadius = 5f * Fugui.CurrentContext.Scale;
-            float hoverPaddingY = 5f * Fugui.CurrentContext.Scale;
+            float knobRadius = Application.isMobilePlatform ? 8f * Fugui.Scale : 5f * Fugui.Scale;
+            float hoverPaddingY = Application.isMobilePlatform ? 8f * Fugui.Scale : 5f * Fugui.Scale;
             float height = ImGui.CalcTextSize("Ap").y + (ImGui.GetStyle().FramePadding.y * 2f);
-            float lineHeight = 2f * Fugui.CurrentContext.Scale;
-            float dragWidth = 52f * Fugui.CurrentContext.Scale;
-            float width = ImGui.GetContentRegionAvail().x - dragWidth - (8f * Fugui.CurrentContext.Scale);
+            float lineHeight = Application.isMobilePlatform ? 3f * Fugui.Scale : 2f * Fugui.Scale;
+            float dragWidth = 52f * Fugui.Scale;
+            float width = ImGui.GetContentRegionAvail().x - dragWidth - (8f * Fugui.Scale);
             if (flags.HasFlag(FuSliderFlags.NoDrag))
             {
-                width += dragWidth + (8f * Fugui.CurrentContext.Scale);
+                width += dragWidth + (8f * Fugui.Scale);
             }
             float x = cursorPos.x;
             float y = cursorPos.y + height / 2f;
@@ -123,7 +123,7 @@ namespace Fu.Framework
                     drawDrag(text, ref value, min, max, isInt);
                     _elementHoverFramedEnabled = true;
                     DrawHoverFrame();
-                    x += dragWidth + (8f * Fugui.CurrentContext.Scale);
+                    x += dragWidth + (8f * Fugui.Scale);
                     ImGui.SameLine();
                     drawSlider(text, ref value, min, max, isInt, knobRadius, hoverPaddingY, lineHeight, width, x, y);
                     _elementHoverFramedEnabled = false;

@@ -100,6 +100,7 @@ namespace Fu.Framework
         // A dictionary to store enum values as string according to the type of the enum
         private static Dictionary<Type, List<string>> _enumValuesString = new Dictionary<Type, List<string>>();
         protected bool _drawElement = true;
+        public static bool IsThereAnyDraggingSlider => _draggingSliders.Count > 0;
         #endregion
 
         public FuLayout()

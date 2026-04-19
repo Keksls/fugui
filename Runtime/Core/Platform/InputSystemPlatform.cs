@@ -1,10 +1,11 @@
-﻿using Fu.Framework;
+﻿#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
+#define FUMOBILE
+#endif
 using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
-using UnityEngine.UIElements;
 
 namespace Fu
 {
@@ -70,7 +71,8 @@ namespace Fu
 
             if (updateKeyboard)
             {
-#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+#if FUMOBILE
+Debug.LogError("Mobile Def OK");
                 UpdateMobileKeyboard(io);
 #else
                 UpdateKeyboard(io, Keyboard.current);
@@ -78,7 +80,7 @@ namespace Fu
             }
             if (updateMouse)
             {
-#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+#if FUMOBILE
                 UpdatePointer(io);
 #else
                 UpdateMouse(io, Mouse.current);
@@ -127,37 +129,37 @@ namespace Fu
             io.AddMouseButtonEvent(3, mouse.backButton?.isPressed ?? false);  // X1
             io.AddMouseButtonEvent(4, mouse.forwardButton?.isPressed ?? false); // X2
 
-            if (isPressed)
-            {
-                if (_touchWasPressed)
-                    if (!Fugui.GetWantCaptureInputs(true) &&
-                        !Fugui.IsAnyWindowDragging() &&
-                        Fugui.IsAnyWindowHoverContent() &&
-                        !FuLayout.IsThereAnyDraggingSlider &&
-                        !Fugui.IsAnyOverlayDragging())
-                    {
-                        Vector2 delta = position - _lastTouchPosition;
-                        _accumulatedScrollY += delta.y;
+            //if (isPressed)
+            //{
+            //    if (_touchWasPressed)
+            //        if (!Fugui.GetWantCaptureInputs(true) &&
+            //            !Fugui.IsAnyWindowDragging() &&
+            //            Fugui.IsAnyWindowHoverContent() &&
+            //            !FuLayout.IsThereAnyDraggingSlider &&
+            //            !Fugui.IsAnyOverlayDragging())
+            //        {
+            //            Vector2 delta = position - _lastTouchPosition;
+            //            _accumulatedScrollY += delta.y;
 
-                        float threshold = ScrollThreshold * Fugui.Scale;
+            //            float threshold = ScrollThreshold * Fugui.Scale;
 
-                        while (Mathf.Abs(_accumulatedScrollY) >= threshold)
-                        {
-                            float direction = Mathf.Sign(_accumulatedScrollY);
+            //            while (Mathf.Abs(_accumulatedScrollY) >= threshold)
+            //            {
+            //                float direction = Mathf.Sign(_accumulatedScrollY);
 
-                            float wheelY = -direction * 0.25f * Fugui.Settings.ScrollPower;
-                            io.AddMouseWheelEvent(0f, wheelY);
+            //                float wheelY = -direction * 0.25f * Fugui.Settings.ScrollPower;
+            //                io.AddMouseWheelEvent(0f, wheelY);
 
-                            _accumulatedScrollY -= direction * threshold;
-                        }
-                    }
+            //                _accumulatedScrollY -= direction * threshold;
+            //            }
+            //        }
 
-                _lastTouchPosition = position;
-            }
-            else
-            {
-                _accumulatedScrollY = 0f;
-            }
+            //    _lastTouchPosition = position;
+            //}
+            //else
+            //{
+            //    _accumulatedScrollY = 0f;
+            //}
 
             _touchWasPressed = isPressed;
         }
@@ -211,44 +213,44 @@ namespace Fu
             }
 
             io.AddMousePosEvent(position.x, io.DisplaySize.y - position.y);
-            io.AddMouseButtonEvent(0, isPressed); // hack to let imgui know mouse position before click
+            io.AddMouseButtonEvent(0, isPressed);
 
             io.AddMouseButtonEvent(1, rightClick);
             io.AddMouseButtonEvent(2, false);
             io.AddMouseButtonEvent(3, false);
             io.AddMouseButtonEvent(4, false);
 
-            if (isPressed)
-            {
-                if (_touchWasPressed)
-                    if (!Fugui.GetWantCaptureInputs(true) &&
-                       !Fugui.IsAnyWindowDragging() &&
-                       Fugui.IsAnyWindowHoverContent() &&
-                       !FuLayout.IsThereAnyDraggingSlider &&
-                       !Fugui.IsAnyOverlayDragging())
-                    {
-                        Vector2 delta = position - _lastTouchPosition;
-                        _accumulatedScrollY += delta.y;
+            //if (isPressed)
+            //{
+            //    if (_touchWasPressed)
+            //        if (!Fugui.GetWantCaptureInputs(true) &&
+            //           !Fugui.IsAnyWindowDragging() &&
+            //           Fugui.IsAnyWindowHoverContent() &&
+            //           !FuLayout.IsThereAnyDraggingSlider &&
+            //           !Fugui.IsAnyOverlayDragging())
+            //        {
+            //            Vector2 delta = position - _lastTouchPosition;
+            //            _accumulatedScrollY += delta.y;
 
-                        float threshold = ScrollThreshold * Fugui.Scale;
+            //            float threshold = ScrollThreshold * Fugui.Scale;
 
-                        while (Mathf.Abs(_accumulatedScrollY) >= threshold)
-                        {
-                            float direction = Mathf.Sign(_accumulatedScrollY);
+            //            while (Mathf.Abs(_accumulatedScrollY) >= threshold)
+            //            {
+            //                float direction = Mathf.Sign(_accumulatedScrollY);
 
-                            float wheelY = -direction * 0.5f * Fugui.Settings.ScrollPower;
-                            io.AddMouseWheelEvent(0f, wheelY);
+            //                float wheelY = -direction * 0.5f * Fugui.Settings.ScrollPower;
+            //                io.AddMouseWheelEvent(0f, wheelY);
 
-                            _accumulatedScrollY -= direction * threshold;
-                        }
-                    }
+            //                _accumulatedScrollY -= direction * threshold;
+            //            }
+            //        }
 
-                _lastTouchPosition = position;
-            }
-            else
-            {
-                _accumulatedScrollY = 0f;
-            }
+            //    _lastTouchPosition = position;
+            //}
+            //else
+            //{
+            //    _accumulatedScrollY = 0f;
+            //}
 
             _touchWasPressed = isPressed;
         }

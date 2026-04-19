@@ -561,11 +561,11 @@ namespace Fu
                 {
                     Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
                     Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0039216f
-                    if (ImGui.BeginChild(ID + "ctnr", Vector2.zero, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+                    if (Fugui.BeginChild(ID + "ctnr", Vector2.zero, ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                     {
                         TryDrawUI();
                     }
-                    ImGuiNative.igEndChild();
+                    Fugui.EndChild();
                     Fugui.PopColor();
                     Fugui.PopStyle();
                 }

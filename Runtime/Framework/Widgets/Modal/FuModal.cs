@@ -146,7 +146,7 @@ namespace Fu
                     {
                         //call the stored body callback
                         FuStyle.NoBackgroundUnpadded.Push(true);
-                        ImGui.BeginChild("FuguiModalBody", new Vector2(-1f, _currentBodySize.y));
+                        Fugui.BeginChild("FuguiModalBody", new Vector2(-1f, _currentBodySize.y));
                         float cursorY = ImGui.GetCursorScreenPos().y;
                         ImGui.Dummy(Vector2.zero);
                         using (FuLayout layout = new FuLayout())
@@ -156,7 +156,7 @@ namespace Fu
                         ImGui.Dummy(Vector2.zero);
                         // get body height for this frame
                         _currentBodyHeight = ImGui.GetCursorScreenPos().y - cursorY;
-                        ImGui.EndChild();
+                        Fugui.EndChild();
                         FuStyle.NoBackgroundUnpadded.Pop();
                     }
 

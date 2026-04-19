@@ -205,7 +205,7 @@ namespace Fu.Framework
             // clamp gradient strenght
             float gradientStrenght = 1f - Mathf.Clamp(Fugui.Themes.CurrentTheme.CollapsableGradientStrenght, 0.1f, 1f);
             // add carret width to left part offset
-            float carretWidth = drawCarret ? 24f * Fugui.CurrentContext.Scale : 0f;
+            float carretWidth = drawCarret ? 24f * Fugui.Scale : 0f;
 
             // calc label size
             Vector2 label_size = ImGui.CalcTextSize(text, true);

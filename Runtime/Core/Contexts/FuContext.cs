@@ -131,16 +131,20 @@ namespace Fu
                 Debug.LogWarning("[Fugui] Render called without PrepareRender being called or returning false. Skipping Render.");
                 return;
             }
-            // prepare for mobile scrolling
-            Fugui.BeginMobileFrame();
             // count nb push at render begin
             _nbColorPushOnFrameStart = Fugui.NbPushColor;
             _nbStylePushOnFrameStart = Fugui.NbPushStyle;
             _nbFontPushOnFrameStart = Fugui.NbPushFont;
             try
             {
+                // prepare for mobile
+                Fugui.BeginMobileFrame();
+
                 OnRender?.Invoke();
                 OnLastRender?.Invoke();
+
+                // end mobile render
+                Fugui.EndMobileFrame();
             }
             catch (Exception ex)
             {

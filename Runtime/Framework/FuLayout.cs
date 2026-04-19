@@ -221,6 +221,10 @@ namespace Fu.Framework
         /// <param name="force">force drawing over frame</param>
         public void DrawHoverFrame(bool force = false)
         {
+            if(Fugui.IsScrolling) // prevent hover frame to change during scroll (since mouse pos is changing but we are still on the same item)
+            {
+                return;
+            }
             if (_elementHoverFramedEnabled && !LastItemDisabled)
             {
                 if (ImGuiNative.igIsItemFocused() != 0)
@@ -896,7 +900,7 @@ namespace Fu.Framework
                 }
 
                 // get active state
-                if(ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                if (Fugui.GetCurrentMouse().IsDown(FuMouseButton.Left))
                 {
                     _activeItem = uniqueID;
                     _lastItemJustActivated = true;
@@ -904,7 +908,7 @@ namespace Fu.Framework
             }
 
             // current item was activated and mouse has just released left button
-            if (_activeItem == uniqueID && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+            if (_activeItem == uniqueID && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
             {
                 // item is no more actif
                 _activeItem = null;

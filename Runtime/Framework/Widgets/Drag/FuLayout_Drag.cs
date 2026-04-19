@@ -281,8 +281,8 @@ namespace Fu.Framework
             }
 
             bool valueChanged = false;
-            float colWidth = ImGui.GetContentRegionAvail().x / 3f - (2f * 2f * Fugui.CurrentContext.Scale); // 2 is the cellpadding, 2 is the nomber of padding betwen 3 columns
-            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(2f, 0f) * Fugui.CurrentContext.Scale);
+            float colWidth = ImGui.GetContentRegionAvail().x / 3f - (2f * 2f * Fugui.Scale); // 2 is the cellpadding, 2 is the nomber of padding betwen 3 columns
+            Fugui.Push(ImGuiStyleVar.CellPadding, new Vector2(2f, 0f) * Fugui.Scale);
             if (ImGui.BeginTable(text + "dragTable", 3))
             {
                 // Set up the three columns in the table

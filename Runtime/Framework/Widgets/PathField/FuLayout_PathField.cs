@@ -50,7 +50,12 @@ namespace Fu.Framework
             // display values
             float cursorPos = ImGui.GetCursorScreenPos().x;
             float width = ImGui.GetContentRegionAvail().x;
-            float buttonWidth = ImGui.CalcTextSize("...").x + 8f * Fugui.CurrentContext.Scale;
+            bool drawButton = false;
+#if UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX || UNITY_STANDALONE_LINUX
+            drawButton = true;
+#endif
+
+            float buttonWidth = drawButton ? ImGui.CalcTextSize("...").x + 8f * Fugui.CurrentContext.Scale : 0f;
 
             // draw input text
             ImGui.SetNextItemWidth(width - buttonWidth);
@@ -73,50 +78,52 @@ namespace Fu.Framework
             DrawHoverFrame();
             displayToolTip(false, true);
 
-            // draw button
-            ImGui.SameLine();
-            ImGui.SetCursorScreenPos(new Vector2(cursorPos + width - buttonWidth, ImGui.GetCursorScreenPos().y));
-            if (_customButton("...##" + text, new Vector2(buttonWidth, ImGui.GetItemRectSize().y), Vector2.zero, new Vector2(0f, -4f), FuButtonStyle.Default, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght))
+            if (drawButton)
             {
-                string[] paths = null;
-                if (onlyFolder)
+                // draw button
+                ImGui.SameLine();
+                ImGui.SetCursorScreenPos(new Vector2(cursorPos + width - buttonWidth, ImGui.GetCursorScreenPos().y));
+                if (_customButton("...##" + text, new Vector2(buttonWidth, ImGui.GetItemRectSize().y), Vector2.zero, new Vector2(0f, -4f), FuButtonStyle.Default, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght))
                 {
-                    paths = FileBrowser.OpenFolderPanel("Open Folder", defaultPath, false);
-                }
-                else
-                {
-                    paths = FileBrowser.OpenFilePanel("Open File", defaultPath, extentions, false);
-                }
-                if (paths != null && paths.Length > 0)
-                {
-                    path = paths[0];
-                    validatePath();
-                }
-            }
-            // open path on right click
-            if (LastItemClickedButton == FuMouseButton.Right)
-            {
-                try
-                {
-                    string folderPath = path;
-                    if (!Directory.Exists(folderPath))
+                    string[] paths = null;
+                    if (onlyFolder)
                     {
-                        if (File.Exists(folderPath))
+                        paths = FileBrowser.OpenFolderPanel("Open Folder", defaultPath, false);
+                    }
+                    else
+                    {
+                        paths = FileBrowser.OpenFilePanel("Open File", defaultPath, extentions, false);
+                    }
+                    if (paths != null && paths.Length > 0)
+                    {
+                        path = paths[0];
+                        validatePath();
+                    }
+                }
+                // open path on right click
+                if (LastItemClickedButton == FuMouseButton.Right)
+                {
+                    try
+                    {
+                        string folderPath = path;
+                        if (!Directory.Exists(folderPath))
                         {
-                            folderPath = Path.GetDirectoryName(folderPath);
+                            if (File.Exists(folderPath))
+                            {
+                                folderPath = Path.GetDirectoryName(folderPath);
+                            }
+                        }
+                        if (Directory.Exists(folderPath))
+                        {
+                            System.Diagnostics.Process.Start(folderPath);
                         }
                     }
-                    if (Directory.Exists(folderPath))
-                    {
-                        System.Diagnostics.Process.Start(folderPath);
-                    }
+                    catch { }
                 }
-                catch { }
+                // display ... button tooltip
+                SetToolTip(LastItemID, "Click to select file / folder.\nRight click to open folder.", LastItemHovered, !LastItemDisabled, FuTextStyle.Default);
+                _elementHoverFramedEnabled = true;
             }
-            // display ... button tooltip
-            SetToolTip(LastItemID, "Click to select file / folder.\nRight click to open folder.", LastItemHovered, !LastItemDisabled, FuTextStyle.Default);
-
-            _elementHoverFramedEnabled = true;
             endElement(style);
 
             if (edited)

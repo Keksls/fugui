@@ -27,7 +27,8 @@ namespace Fu.Framework
 
     internal class knob
     {
-        public float radius;
+        private float rad;
+        public float radius => rad * Fugui.Scale;
         public bool value_changed;
         public Vector2 center;
         public bool is_active;
@@ -41,7 +42,7 @@ namespace Fu.Framework
 
         public knob(float _radius)
         {
-            radius = _radius;
+            rad = _radius;
         }
 
         public void Draw(string _label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobFlags flags, bool disabled)

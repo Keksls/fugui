@@ -1,7 +1,7 @@
 ﻿#if (UNITY_ANDROID || UNITY_IOS)// && !UNITY_EDITOR && !FUMOBILE
 #define FUMOBILE
-using System.Collections.Generic;
 #endif
+using System.Collections.Generic;
 using ImGuiNET;
 using UnityEngine;
 
@@ -10,45 +10,38 @@ namespace Fu
     public partial class Fugui
     {
         public static bool IsScrolling => _isScrolling;
-#if FUMOBILE
         private const float ScrollStartThreshold = 8f;
+        private const float ScrollDeadZone = 0.05f;
+        private const float ScrollSpeedMultiplier = 1.0f;
+        private const float MaxScrollDeltaPerFrame = 35f;
+
+        // Inertia tuning
+        private const float VelocityLerp = 0.22f;
+        private const float ReleaseVelocityBoost = 1.08f;
+        private const float InertiaDecayPerSecond = 7.5f;
+        private const float MinInertiaSpeed = 18f;
+        private const float MaxInertiaSpeed = 2200f;
+
         private static bool _touchWasPressed;
         private static bool _isScrolling;
+        private static bool _isPressed;
+        private static bool _wasScrollingLastFrame;
+
         private static Vector2 _touchStartPosition;
         private static Vector2 _lastTouchPosition;
+        private static Vector2 _smoothedScrollDelta;
+
+        private static float _scrollVelocityY;
+        private static bool _inertiaActive;
+
         private static uint _activeChildId;
         private static Vector2 _currentChildPos;
         private static Vector2 _currentChildSize;
         private static uint _currentChildId;
-        private static bool _isPressed = false;
         private static Dictionary<uint, Rect> _childRects = new Dictionary<uint, Rect>();
-#endif
 
-        /// <summary>
-        /// Call this once per frame before drawing UI.
-        /// </summary>
-        public static void BeginMobileFrame()
-        {
-#if FUMOBILE
-            _isPressed = GetCurrentMouse().IsPressed(FuMouseButton.Left);
-            Vector2 position = DefaultContainer.LocalMousePos;
 
-            if (_isPressed && !_touchWasPressed)
-            {
-                _touchStartPosition = position;
-                _lastTouchPosition = position;
-                _isScrolling = false;
-                _activeChildId = 0;
-            }
-            else if (!_isPressed && _touchWasPressed)
-            {
-                ResetTouchState();
-            }
-
-            _touchWasPressed = _isPressed;
-#endif
-        }
-
+        #region Imgui Child Helpers
         /// <summary>
         /// Begin a child with mobile touch scroll support.
         /// </summary>
@@ -117,11 +110,59 @@ namespace Fu
             ImGuiNative.igEndChild();
 #endif
         }
+        #endregion
 
+        /// <summary>
+        /// Call this once per frame before drawing UI.
+        /// </summary>
+        private static void TouchScrollBeginFrame()
+        {
+            _isPressed = GetCurrentMouse().IsPressed(FuMouseButton.Left);
+            Vector2 position = DefaultContainer.LocalMousePos;
+
+            _wasScrollingLastFrame = _isScrolling;
+
+            if (_isPressed && !_touchWasPressed)
+            {
+                _touchStartPosition = position;
+                _lastTouchPosition = position;
+                _smoothedScrollDelta = Vector2.zero;
+                _isScrolling = false;
+                _activeChildId = 0;
+                _scrollVelocityY = 0f;
+                _inertiaActive = false;
+            }
+            else if (!_isPressed && _touchWasPressed)
+            {
+                if (_isScrolling && Mathf.Abs(_scrollVelocityY) >= MinInertiaSpeed)
+                {
+                    _scrollVelocityY *= ReleaseVelocityBoost;
+                    _scrollVelocityY = Mathf.Clamp(_scrollVelocityY, -MaxInertiaSpeed, MaxInertiaSpeed);
+                    _inertiaActive = true;
+                    _isScrolling = false;
+                }
+                else
+                {
+                    _scrollVelocityY = 0f;
+                    _inertiaActive = false;
+                    _isScrolling = false;
+                    _activeChildId = 0;
+                }
+            }
+
+            _touchWasPressed = _isPressed;
+        }
+
+        /// <summary>
+        /// Handles touch scrolling for the current child if applicable.
+        /// Should be called every frame after BeginChild and before EndChild for the child you want to have touch scroll support.
+        /// </summary>
         private static void HandleCurrentChildScroll()
         {
-#if FUMOBILE
-            if (!_childRects.ContainsKey(_currentChildId) || !_isPressed || Fugui.IsDraggingAnything())
+            if (!_childRects.ContainsKey(_currentChildId) || Fugui.IsDraggingAnything())
+                return;
+
+            if (!_isPressed && !(_inertiaActive && _activeChildId == _currentChildId))
                 return;
 
             Vector2 mousePosition = DefaultContainer.LocalMousePos;
@@ -151,35 +192,127 @@ namespace Fu
                     _isScrolling = true;
                     _activeChildId = _currentChildId;
                     _lastTouchPosition = mousePosition;
+                    _smoothedScrollDelta = Vector2.zero;
+                    _scrollVelocityY = 0f;
+                    _inertiaActive = false;
                 }
             }
 
             if (_isScrolling && _activeChildId == _currentChildId)
             {
-                Vector2 delta = mousePosition - _lastTouchPosition;
+                float dt = Mathf.Max(UnityEngine.Time.unscaledDeltaTime, 0.0001f);
+
+                Vector2 rawDelta = mousePosition - _lastTouchPosition;
                 _lastTouchPosition = mousePosition;
+
+                float absRawY = Mathf.Abs(rawDelta.y);
+
+                float adaptiveDeltaLerp = Mathf.Lerp(
+                    0.35f,
+                    0.18f,
+                    Mathf.Clamp01(absRawY / (10f * Fugui.Scale)));
+
+                _smoothedScrollDelta = Vector2.Lerp(_smoothedScrollDelta, rawDelta, adaptiveDeltaLerp);
+
+                float scrollDeltaY = _smoothedScrollDelta.y;
+                // --- Velocity-based boost ---
+                float speed = Mathf.Abs(rawDelta.y);
+
+                // Normalize speed (tweak 10f)
+                float normalizedSpeed = Mathf.Clamp01(speed / (10f * Fugui.Scale));
+
+                // Curve for stronger fast scroll (quadratic feel)
+                float speedMultiplier = 1f + (normalizedSpeed * normalizedSpeed) * 2.5f;
+
+                // Apply boost
+                scrollDeltaY *= speedMultiplier;
+
+                if (Mathf.Abs(rawDelta.y) < ScrollDeadZone * Fugui.Scale)
+                {
+                    scrollDeltaY = 0f;
+                }
+
+                if (Mathf.Abs(rawDelta.y) > ScrollDeadZone * Fugui.Scale &&
+                    Mathf.Abs(scrollDeltaY) < 0.5f * Fugui.Scale)
+                {
+                    scrollDeltaY = Mathf.Sign(rawDelta.y) * 0.5f * Fugui.Scale;
+                }
+
+                scrollDeltaY = Mathf.Clamp(
+                    scrollDeltaY * ScrollSpeedMultiplier,
+                    -MaxScrollDeltaPerFrame * Fugui.Scale,
+                    MaxScrollDeltaPerFrame * Fugui.Scale);
 
                 float currentScrollY = ImGui.GetScrollY();
                 float maxScrollY = ImGui.GetScrollMaxY();
 
-                float newScrollY = Mathf.Clamp(currentScrollY - delta.y, 0f, maxScrollY);
+                float newScrollY = Mathf.Clamp(currentScrollY - scrollDeltaY, 0f, maxScrollY);
                 ImGui.SetScrollY(newScrollY);
 
-                // for debug purpuse, draw a red rectangle around the active child
-                ImGui.GetForegroundDrawList().AddRect(childRect.position, childRect.position + childRect.size, ImGui.GetColorU32(new Vector4(1f, 0f, 0f, 0.5f)));
+                float instantaneousVelocity = (-scrollDeltaY) / dt;
+                _scrollVelocityY = Mathf.Lerp(_scrollVelocityY, instantaneousVelocity, VelocityLerp);
+                _scrollVelocityY = Mathf.Clamp(_scrollVelocityY, -MaxInertiaSpeed, MaxInertiaSpeed);
+
+                _inertiaActive = false;
+
+                ImGui.GetForegroundDrawList().AddRect(
+                    childRect.position,
+                    childRect.position + childRect.size,
+                    ImGui.GetColorU32(new Vector4(1f, 0f, 0f, 0.5f)));
             }
-#endif
+            else if (!_isPressed && _inertiaActive && _activeChildId == _currentChildId)
+            {
+                float dt = Mathf.Max(UnityEngine.Time.unscaledDeltaTime, 0.0001f);
+
+                float currentScrollY = ImGui.GetScrollY();
+                float maxScrollY = ImGui.GetScrollMaxY();
+
+                float deltaFromInertia = _scrollVelocityY * dt;
+                float newScrollY = Mathf.Clamp(currentScrollY + deltaFromInertia, 0f, maxScrollY);
+
+                ImGui.SetScrollY(newScrollY);
+
+                float decay = Mathf.Exp(-InertiaDecayPerSecond * dt);
+                _scrollVelocityY *= decay;
+
+                bool reachedTop = Mathf.Approximately(newScrollY, 0f);
+                bool reachedBottom = Mathf.Approximately(newScrollY, maxScrollY);
+
+                if (reachedTop || reachedBottom)
+                {
+                    _scrollVelocityY = 0f;
+                    _inertiaActive = false;
+                    _activeChildId = 0;
+                }
+                else if (Mathf.Abs(_scrollVelocityY) < MinInertiaSpeed)
+                {
+                    _scrollVelocityY = 0f;
+                    _inertiaActive = false;
+                    _activeChildId = 0;
+                }
+
+                //ImGui.GetForegroundDrawList().AddRect(
+                //    childRect.position,
+                //    childRect.position + childRect.size,
+                //    ImGui.GetColorU32(new Vector4(1f, 0f, 0f, 0.5f)));
+            }
         }
 
+        /// <summary>
+        /// Resets all touch scroll state.
+        /// </summary>
         private static void ResetTouchState()
         {
-#if FUMOBILE
             _touchWasPressed = false;
             _isScrolling = false;
+            _isPressed = false;
+            _wasScrollingLastFrame = false;
             _activeChildId = 0;
             _touchStartPosition = Vector2.zero;
             _lastTouchPosition = Vector2.zero;
-#endif
+            _smoothedScrollDelta = Vector2.zero;
+            _scrollVelocityY = 0f;
+            _inertiaActive = false;
         }
     }
 }

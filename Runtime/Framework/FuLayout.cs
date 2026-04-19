@@ -491,6 +491,11 @@ namespace Fu.Framework
         /// <returns>true ifhovered</returns>
         public bool IsItemHovered(Vector2 pos, Vector2 size, bool forcePanelClippingInsidePopup = false) // TODO : Remove this freak once clipping rect stack are handled
         {
+            if(Fugui.IsScrolling) // prevent hover state to change during scroll (since mouse pos is changing but we are still on the same item)
+            {
+                return false;
+            }
+
             bool isDrawingInsidePopup = Fugui.IsDrawingInsidePopup();
             // a popup is drawing
             if (isDrawingInsidePopup)

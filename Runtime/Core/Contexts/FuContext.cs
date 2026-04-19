@@ -1,8 +1,10 @@
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
+#define FUMOBILE
+#endif
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
@@ -129,7 +131,8 @@ namespace Fu
                 Debug.LogWarning("[Fugui] Render called without PrepareRender being called or returning false. Skipping Render.");
                 return;
             }
-
+            // prepare for mobile scrolling
+            Fugui.BeginMobileFrame();
             // count nb push at render begin
             _nbColorPushOnFrameStart = Fugui.NbPushColor;
             _nbStylePushOnFrameStart = Fugui.NbPushStyle;
@@ -282,7 +285,7 @@ namespace Fu
                 List<SubFontConfig> regularFonts = new List<SubFontConfig>();
                 foreach (var f in font.SubFonts_Regular)
                 {
-#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+#if FUMOBILE
         regularFonts.Add(f);
 #else
                     string fullPath = Path.Combine(fontPath, f.FileName);
@@ -308,7 +311,7 @@ namespace Fu
                 List<SubFontConfig> boldFonts = new List<SubFontConfig>();
                 foreach (var f in font.SubFonts_Bold)
                 {
-#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+#if FUMOBILE
         boldFonts.Add(f);
 #else
                     string fullPath = Path.Combine(fontPath, f.FileName);
@@ -334,7 +337,7 @@ namespace Fu
                 List<SubFontConfig> italicFonts = new List<SubFontConfig>();
                 foreach (var f in font.SubFonts_Italic)
                 {
-#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+#if FUMOBILE
         italicFonts.Add(f);
 #else
                     string fullPath = Path.Combine(fontPath, f.FileName);
@@ -420,7 +423,7 @@ namespace Fu
                     string fontFilePath = Path.Combine(fontPath, subFont.FileName);
                     ImFontPtr tmpFontPtr = default;
 
-#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+#if FUMOBILE
         byte[] fontData = Fugui.ReadAllBytes(fontFilePath);
         if (fontData == null || fontData.Length == 0)
         {

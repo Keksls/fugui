@@ -134,7 +134,7 @@ namespace Fu.Framework
 
             Vector2 panelPosition = ImGui.GetCursorScreenPos();
             // draw imgui child panel
-            _panelCreated = ImGui.BeginChild(_ID, new Vector2(width, height), childFlag, flag);
+            _panelCreated = Fugui.BeginChild(_ID, new Vector2(width, height), childFlag, flag);
             if (!_panelCreated)
             {
                 // push style if created
@@ -187,7 +187,7 @@ namespace Fu.Framework
                     Fugui.PopFont(nbMissingFont);
                 }
 
-                ImGuiNative.igEndChild();
+                Fugui.EndChild();
                 IsInsidePanel = false;
                 _currentStyle.Pop();
                 Clipper.EndFrame();

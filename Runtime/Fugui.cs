@@ -1,6 +1,9 @@
 ﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
-//#define FUDEBUG 
+//#define FUDEBUG
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
+#define FUMOBILE
+#endif
 using Fu.Framework;
 using ImGuiNET;
 #if FU_EXTERNALIZATION
@@ -1402,13 +1405,31 @@ namespace Fu
         }
 
         /// <summary>
+        /// Check if any payload is currently being dragged in any window or overlay
+        /// </summary>
+        /// <returns> true if any payload is being dragged, false otherwise</returns>
+        public static bool IsDraggingAnyPayload()
+        {
+            return CurrentContext?._isDraggingPayload ?? false;
+        }
+
+        /// <summary>
+        /// Check if any payload, window or overlay is currently being dragged
+        /// </summary>
+        /// <returns> true if any payload, window or overlay is being dragged, false otherwise</returns>
+        public static bool IsDraggingAnything()
+        {
+            return IsDraggingAnyPayload() || IsAnyWindowDragging() || IsAnyOverlayDragging();
+        }
+
+        /// <summary>
         /// Read all bytes from a file, using UnityWebRequest on Android to support streaming assets, and File.ReadAllBytes on other platforms
         /// </summary>
         /// <param name="filePath"> path of the file to read</param>
         /// <returns> byte array of the file content, or null if an error occurs</returns>
         public static byte[] ReadAllBytes(string filePath)
         {
-#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
+#if FUMOBILE
     using (var request = UnityEngine.Networking.UnityWebRequest.Get(filePath))
     {
         var operation = request.SendWebRequest();

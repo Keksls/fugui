@@ -22,5 +22,8 @@ namespace ImGuiNET
 
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern void igRenderTextClippedEx(ImDrawList* draw_list, Vector2 pos_min, Vector2 pos_max, byte* text, byte* text_end, Vector2* text_size_if_known, Vector2 align, ImRect* clip_rect);
+
+        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void igClearActiveID();
     }
 }

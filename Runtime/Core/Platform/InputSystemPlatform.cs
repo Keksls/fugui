@@ -93,6 +93,7 @@ Debug.LogError("Mobile Def OK");
 
         private static bool _touchWasPressed;
         private static Vector2 _lastTouchPosition;
+        private static bool lastFramePressed = false;
         private static float _accumulatedScrollY;
         private const float ScrollThreshold = 24f; // pixels avant de déclencher un scroll
 
@@ -111,7 +112,35 @@ Debug.LogError("Mobile Def OK");
                 mouse.WarpCursorPosition(new Vector2(io.MousePos.x, ImGui.GetIO().DisplaySize.y - io.MousePos.y));
             }
 
-            Vector2 position = new Vector2(mouse.position.x.ReadValue(), io.DisplaySize.y - mouse.position.y.ReadValue());
+            bool isPressed = mouse.leftButton.isPressed;
+            bool justReleased = lastFramePressed && !isPressed;
+
+            // Position
+            Vector2 position = new Vector2(
+                mouse.position.x.ReadValue(),
+                io.DisplaySize.y - mouse.position.y.ReadValue()
+            );
+
+            // Si pas pressé → fallback ImGui
+            if (!isPressed)
+            {
+                position = ImGui.GetMousePos();
+            }
+            else
+            {
+                _lastTouchPosition = position;
+            }
+
+            // 👉 Force pressed 1 frame après release
+            if (justReleased)
+            {
+                isPressed = true;
+                position = _lastTouchPosition;
+            }
+
+            // Update state for next frame
+            lastFramePressed = mouse.leftButton.isPressed;
+
             // Cursor position
             io.AddMousePosEvent(position.x, position.y);
 
@@ -120,7 +149,6 @@ Debug.LogError("Mobile Def OK");
             io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
 
             // Buttons (0 = left, 1 = right, 2 = middle)
-            bool isPressed = mouse.leftButton.isPressed;
             io.AddMouseButtonEvent(0, isPressed);
             io.AddMouseButtonEvent(1, mouse.rightButton.isPressed);
             io.AddMouseButtonEvent(2, mouse.middleButton.isPressed);

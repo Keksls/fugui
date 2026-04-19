@@ -127,39 +127,43 @@ namespace Fu.Framework
         /// <summary>
         /// Allow decimal characters.
         /// </summary>
-        CharsDecimal = 0x1,
+        CharsDecimal = ImGuiInputTextFlags.CharsDecimal,
         /// <summary>
         /// Allow hexadecimal characters.
         /// </summary>
-        CharsHexadecimal = 0x2,
+        CharsHexadecimal = ImGuiInputTextFlags.CharsHexadecimal,
         /// <summary>
         /// Force uppercase characters.
         /// </summary>
-        CharsUppercase = 0x4,
+        CharsUppercase = ImGuiInputTextFlags.CharsUppercase,
         /// <summary>
         /// Disallow blank characters.
         /// </summary>
-        CharsNoBlank = 0x8,
+        CharsNoBlank = ImGuiInputTextFlags.CharsNoBlank,
         /// <summary>
         /// Mask the input as a password.
         /// </summary>
-        Password = 0x8000,
+        Password = ImGuiInputTextFlags.Password,
         /// <summary>
         /// Allow scientific notation characters.
         /// </summary>
-        CharsScientific = 0x20000,
+        CharsScientific = ImGuiInputTextFlags.CharsScientific,
         /// <summary>
         /// Escape key will clear all input.
         /// </summary>
-        EscapeClearsAll = 0x100000,
+        EscapeClearsAll = ImGuiInputTextFlags.EscapeClearsAll,
         /// <summary>
         /// Validate the input text box only on Enter pressed
         /// </summary>
-        EnterReturnsTrue = 0x20,
+        EnterReturnsTrue = ImGuiInputTextFlags.EnterReturnsTrue,
         /// <summary>
         /// The input is in readonly mode, user can not edit it (prefere using DisableNextElement if you need to disable the widget)
         /// </summary>
-        ReadOnly = 0x4000
+        ReadOnly = ImGuiInputTextFlags.ReadOnly,
+        /// <summary>
+        /// Callback on pressing TAB (for completion handling)
+        /// </summary>
+        CallbackCompletion = ImGuiInputTextFlags.CallbackCompletion,
     }
 
     /// <summary>

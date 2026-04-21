@@ -714,6 +714,7 @@ namespace Fu
                     _beforeDefaultRenderStack.Dequeue()?.Invoke();
                 }
             }
+
             // Render default context
             DefaultContext.Render();
             // execute after default renderer render actions

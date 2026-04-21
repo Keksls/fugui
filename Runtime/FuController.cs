@@ -63,9 +63,6 @@ namespace Fu
             // Update Fugui Data
             Fugui.Update();
 
-            // let's update main container inputs and internal stuff
-            Fugui.DefaultContainer.Update();
-
             // Render Fugui (this will prepare the rendering data and call all fugui implementations code but it will NOT draw the UI, the Drawing is handeled by Render Feature)
             Fugui.Render();
         }

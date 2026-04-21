@@ -77,7 +77,7 @@ namespace Fu
         /// <param name="FuguiContext">Fugui Context that draw this container</param>
         public FuMainWindowContainer(FuUnityContext FuguiContext)
         {
-            // set curretn Fugui context
+            // set current Fugui context
             _fuguiContext = FuguiContext;
             // Initialize the windows dictionary
             Windows = new Dictionary<string, FuWindow>();
@@ -93,6 +93,8 @@ namespace Fu
             _fuguiContext.OnRender += _fuguiContext_OnRender;
             // Set the docking style color to current theme
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
+            // Subscribe to the PrepareFrame event of the given FuguiContext to update this container data before rendering
+            _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
         }
 
         private void _fuguiContext_OnRender()
@@ -100,7 +102,7 @@ namespace Fu
             RenderFuWindows();
         }
 
-        public void Update()
+        public bool context_OnPrepareFrame()
         {
             // update mouse state
             _fuMouseState.UpdateState(this);
@@ -151,6 +153,7 @@ namespace Fu
 #else
             _worldPosition = Screen.mainWindowPosition;
 #endif
+            return true;
         }
 
         #region Footer
@@ -309,6 +312,7 @@ namespace Fu
         private void UIWindow_OnClose(FuWindow UIWindow)
         {
             TryRemoveWindow(UIWindow.ID);
+            _fuguiContext.OnPrepareFrame -= context_OnPrepareFrame;
         }
         #endregion
 

@@ -151,6 +151,10 @@ namespace Fu
         /// <param name="window">window to set mouse position and button states on</param>
         internal void UpdateState(FuWindow window)
         {
+            // set mouse pos and wheel
+            SetPosition(window);
+            SetWheel(new Vector2(window.Container.Context.IO.MouseWheelH, window.Container.Context.IO.MouseWheel));
+
             bool btn0State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Left) != 0;
             bool btn1State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Right) != 0;
             bool btn2State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Middle) != 0;
@@ -214,10 +218,6 @@ namespace Fu
                     ButtonStates[2].SetState(false, _position);
                 }
             }
-
-            // set mouse pos and wheel
-            SetPosition(window);
-            SetWheel(new Vector2(window.Container.Context.IO.MouseWheelH, window.Container.Context.IO.MouseWheel));
         }
 
         /// <summary>

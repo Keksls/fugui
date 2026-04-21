@@ -33,6 +33,7 @@ namespace Fu
         public FuExternalWindowContainer(FuWindow window, FuExternalContext context)
         {
             _context = context;
+            _context.AddContainer(this);
 
             _mouse = new FuMouseState();
             _keyboard = new FuKeyboardState(_context.IO);
@@ -176,6 +177,7 @@ namespace Fu
         public void Close(Action onClosed = null)
         {
             _context.Window.Close(onClosed);
+            _context.RemoveContainer(this);
         }
     }
 }

@@ -17,8 +17,6 @@ namespace Fu
         public ImGuiIOPtr IO;
         public ImGuiPlatformIOPtr PlatformIO;
         public IntPtr ImGuiContext;
-        public IntPtr ImNodesContext;
-        public IntPtr ImPlotContext;
         /// <summary>
         /// Whenever the context render
         /// </summary>
@@ -131,6 +129,7 @@ namespace Fu
                 Debug.LogWarning("[Fugui] Render called without PrepareRender being called or returning false. Skipping Render.");
                 return;
             }
+
             // count nb push at render begin
             _nbColorPushOnFrameStart = Fugui.NbPushColor;
             _nbStylePushOnFrameStart = Fugui.NbPushStyle;

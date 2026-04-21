@@ -867,12 +867,9 @@ namespace Fu.Framework
         {
             _lastItemRect = new Rect(pos, size);
 
-            // do nothing if the item is disabled
             if (LastItemDisabled)
             {
-                // get hover state
                 _lastItemHovered = IsItemHovered(pos, size);
-                // the item is disabled but it was the last active
                 if (_activeItem == uniqueID)
                 {
                     _activeItem = null;
@@ -880,44 +877,41 @@ namespace Fu.Framework
                 return;
             }
 
-            // get hover state
             _lastItemHovered = IsItemHovered(pos, size);
 
-            // get click state
-            if (clickable && _lastItemHovered)
+            if (clickable)
             {
-                if (Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Left))
+                // Activation on press
+                if (_lastItemHovered && Fugui.GetCurrentMouse().IsDown(FuMouseButton.Left))
+                {
+                    _activeItem = uniqueID;
+                    _lastItemJustActivated = true;
+                }
+
+                if (_lastItemHovered && Fugui.GetCurrentMouse().IsDown(FuMouseButton.Right))
+                {
+                    _lastItemClickedButton = FuMouseButton.Right;
+                }
+
+                // Click validation on release, based on active item rather than current hover
+                if (_activeItem == uniqueID && Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Left))
                 {
                     _lastItemClickedButton = FuMouseButton.Left;
+
                     if (updateOnClick)
                     {
                         updated = true;
                     }
                 }
-                else if (Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Right))
-                {
-                    _lastItemClickedButton = FuMouseButton.Right;
-                }
-
-                // get active state
-                if (Fugui.GetCurrentMouse().IsDown(FuMouseButton.Left))
-                {
-                    _activeItem = uniqueID;
-                    _lastItemJustActivated = true;
-                }
             }
 
-            // current item was activated and mouse has just released left button
             if (_activeItem == uniqueID && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
             {
-                // item is no more actif
                 _activeItem = null;
                 _lastItemJustDeactivated = true;
             }
 
-            // get active state
             _lastItemActive = _activeItem == uniqueID;
-            // get update state
             _lastItemUpdate = updated;
         }
     }

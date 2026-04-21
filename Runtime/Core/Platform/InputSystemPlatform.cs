@@ -93,7 +93,6 @@ Debug.LogError("Mobile Def OK");
 
         private static bool _touchWasPressed;
         private static Vector2 _lastTouchPosition;
-        private static bool lastFramePressed = false;
         private static float _accumulatedScrollY;
         private const float ScrollThreshold = 24f; // pixels avant de déclencher un scroll
 
@@ -107,13 +106,12 @@ Debug.LogError("Mobile Def OK");
             if (mouse == null) return;
 
             // Update position and visibility
-            if (io.WantSetMousePos)
-            {
-                mouse.WarpCursorPosition(new Vector2(io.MousePos.x, ImGui.GetIO().DisplaySize.y - io.MousePos.y));
-            }
+            //if (io.WantSetMousePos)
+            //{
+            //    mouse.WarpCursorPosition(new Vector2(io.MousePos.x, ImGui.GetIO().DisplaySize.y - io.MousePos.y));
+            //}
 
             bool isPressed = mouse.leftButton.isPressed;
-            bool justReleased = lastFramePressed && !isPressed;
 
             // Position
             Vector2 position = new Vector2(
@@ -121,25 +119,15 @@ Debug.LogError("Mobile Def OK");
                 io.DisplaySize.y - mouse.position.y.ReadValue()
             );
 
-            // Si pas pressé → fallback ImGui
             if (!isPressed)
             {
-                position = ImGui.GetMousePos();
+                position = _lastTouchPosition;
             }
             else
             {
                 _lastTouchPosition = position;
             }
 
-            // 👉 Force pressed 1 frame après release
-            if (justReleased)
-            {
-                isPressed = true;
-                position = _lastTouchPosition;
-            }
-
-            // Update state for next frame
-            lastFramePressed = mouse.leftButton.isPressed;
 
             // Cursor position
             io.AddMousePosEvent(position.x, position.y);

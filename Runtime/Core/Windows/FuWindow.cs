@@ -365,13 +365,6 @@ namespace Fu
                 _releaseFocusNextFrame = false;
             }
 
-            // update mouse buttons states
-            if (!preventUpdatingMouse)
-                Mouse.UpdateState(this);
-            // update keyboard state
-            if (!preventUpdatingKeyboard)
-                Keyboard.UpdateState();
-
             // we need to draw ImGui Window component (Begin/End)
             if (!IsDocked)
             {
@@ -423,7 +416,7 @@ namespace Fu
                 ImGui.SetNextWindowFocus();
                 _forceFocusNextFrame = false;
             }
-            DrawWindowBody(ref newFrameSize, ref newFramePos);
+            DrawWindowBody(preventUpdatingMouse, preventUpdatingKeyboard, ref newFrameSize, ref newFramePos);
 
             // ImGui want to close this window
             if (!IsOpened)
@@ -482,7 +475,7 @@ namespace Fu
         /// </summary>
         /// <param name="newFrameSize"></param>
         /// <param name="newFramePos"></param>
-        public virtual unsafe void DrawWindowBody(ref Vector2Int newFrameSize, ref Vector2Int newFramePos)
+        public virtual unsafe void DrawWindowBody(bool preventUpdatingMouse, bool preventUpdatingKeyboard, ref Vector2Int newFrameSize, ref Vector2Int newFramePos)
         {
             Layout = new FuLayout();
             // invoke pre draw event
@@ -519,6 +512,17 @@ namespace Fu
             {
                 nativeWantDrawWindow = ImGui.Begin(ID, _windowFlags);
             }
+
+            // whatever window is hovered
+            processHoverState();
+
+            // update mouse buttons states
+            if (!preventUpdatingMouse)
+                Mouse.UpdateState(this);
+            // update keyboard state
+            if (!preventUpdatingKeyboard)
+                Keyboard.UpdateState();
+
             // draw the window body
             if (nativeWantDrawWindow)
             {
@@ -586,8 +590,6 @@ namespace Fu
                 var pos = ImGui.GetWindowPos();
                 newFramePos = new Vector2Int((int)pos.x, (int)pos.y);
                 HasFocus = ImGuiNative.igIsWindowFocused(ImGuiFocusedFlags.None) != 0;
-                // whatever window is hovered
-                processHoverState();
 
                 // draw debug data
                 DrawDebugPanel();

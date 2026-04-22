@@ -248,42 +248,48 @@ namespace Fu
         public int LoadAllThemes()
         {
             Themes = new Dictionary<string, FuTheme>();
-            // get folder path
-            string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.ThemesFolder);
-            // create folder if not exists
-            if (!Directory.Exists(folderPath))
+
+            try
             {
-                try
+                string indexPath = $"{Application.streamingAssetsPath}/{Fugui.Settings.ThemesFolder}/themes_index.json";
+                string indexJson = Fugui.ReadAllText(indexPath);
+
+                if (!string.IsNullOrEmpty(indexJson))
                 {
-                    // try to create directory if not exists
-                    Directory.CreateDirectory(folderPath);
-                }
-                catch (Exception ex)
-                {
-                    // something gone wrong, let's invoke Fugui Exception event
-                    Fugui.Fire_OnUIException(ex);
-                    return Themes.Count;
+                    FuThemeIndex index = JsonUtility.FromJson<FuThemeIndex>(indexJson);
+
+                    if (index != null && index.Themes != null)
+                    {
+                        for (int i = 0; i < index.Themes.Length; i++)
+                        {
+                            string themeName = index.Themes[i];
+
+                            if (string.IsNullOrEmpty(themeName))
+                            {
+                                continue;
+                            }
+
+                            if (LoadTheme(themeName, out FuTheme theme) && theme != null)
+                            {
+                                if (!Themes.ContainsKey(theme.ThemeName))
+                                {
+                                    Themes.Add(theme.ThemeName, theme);
+                                }
+                            }
+                        }
+                    }
                 }
             }
-
-            // iterate on each file into folder
-            foreach (string file in Directory.GetFiles(folderPath))
+            catch (Exception ex)
             {
-                // try to load theme from file
-                if (LoadTheme(Path.GetFileNameWithoutExtension(file), out FuTheme theme))
-                {
-                    // if theme loaded, add it to dic
-                    Themes.Add(theme.ThemeName, theme);
-                }
+                Fugui.Fire_OnUIException(ex);
             }
 
-            // add default Theme if needed
             if (!Themes.ContainsKey(DEFAULT_FUGUI_THEME_NAME))
             {
                 Themes.Add(DEFAULT_FUGUI_THEME_NAME, new FuTheme(DEFAULT_FUGUI_THEME_NAME));
             }
 
-            // return number of themes loaded
             return Themes.Count;
         }
 
@@ -326,31 +332,33 @@ namespace Fu
         public bool LoadTheme(string themeName, out FuTheme theme)
         {
             theme = null;
-            // get folder path
-            string folderPath = Path.Combine(Application.streamingAssetsPath, Fugui.Settings.ThemesFolder);
-            string filePath = Path.Combine(folderPath, themeName + ".fskin");
-            // check whatever thee file exists
-            if (!File.Exists(filePath))
-            {
-                return false;
-            }
 
-            // try to get theme from path
+            string filePath = $"{Application.streamingAssetsPath}/{Fugui.Settings.ThemesFolder}/{themeName}.fskin";
+
             try
             {
-                // read json data from file
                 string json = Fugui.ReadAllText(filePath);
-                // deserialize json data
+
+                if (string.IsNullOrEmpty(json))
+                {
+                    return false;
+                }
+
                 theme = JsonUtility.FromJson<FuTheme>(json);
+
+                if (theme == null)
+                {
+                    return false;
+                }
+
                 theme.UpdateThemeWithExtension();
+                return true;
             }
             catch (Exception ex)
             {
-                // something gone wrong, let's invoke Fugui Exception event
                 Fugui.Fire_OnUIException(ex);
                 return false;
             }
-            return true;
         }
 
         /// <summary>
@@ -452,5 +460,11 @@ namespace Fu
             FuTheme.ReduceThemes();
         }
         #endregion
+    }
+
+    [Serializable]
+    public class FuThemeIndex
+    {
+        public string[] Themes;
     }
 }

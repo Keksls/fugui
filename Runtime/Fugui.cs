@@ -1464,7 +1464,8 @@ namespace Fu
         /// <returns> string of the file content, or null if an error occurs</returns>
         public static string ReadAllText(string filePath)
         {
-            return Encoding.UTF8.GetString(ReadAllBytes(filePath));
+            string text = Encoding.UTF8.GetString(ReadAllBytes(filePath));
+            return text;
         }
 
         /// <summary>

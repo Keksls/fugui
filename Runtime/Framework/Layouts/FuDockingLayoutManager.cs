@@ -63,46 +63,50 @@ namespace Fu
         /// <returns>number of loaded layouts</returns>
         public int LoadLayouts(string folderPath)
         {
-            // create folder if not exists
-            if (!Directory.Exists(folderPath))
+            try
             {
-                try
+                string indexPath = $"{folderPath}/layouts_index.json";
+                string json = Fugui.ReadAllText(indexPath);
+
+                if (!string.IsNullOrEmpty(json))
                 {
-                    // try to create directory if not exists
-                    Directory.CreateDirectory(folderPath);
-                }
-                catch (Exception ex)
-                {
-                    // something gone wrong, let's invoke Fugui Exception event
-                    Fugui.Fire_OnUIException(ex);
-                    return Layouts.Count;
+                    FuLayoutIndex index = JsonUtility.FromJson<FuLayoutIndex>(json);
+
+                    if (index != null && index.Layouts != null)
+                    {
+                        for (int i = 0; i < index.Layouts.Length; i++)
+                        {
+                            string layoutName = index.Layouts[i];
+
+                            if (string.IsNullOrEmpty(layoutName))
+                                continue;
+
+                            string filePath = $"{folderPath}/{layoutName}.fdl";
+
+                            FuDockingLayoutDefinition tempLayout = FuDockingLayoutDefinition.Deserialize(filePath);
+
+                            if (tempLayout != null && !Layouts.ContainsKey(layoutName))
+                            {
+                                Layouts.Add(layoutName, tempLayout);
+                            }
+                        }
+                    }
                 }
             }
-
-            List<string> files = Directory.GetFiles(folderPath).ToList();
-
-            // iterate on each file into folder
-            foreach (string file in Directory.GetFiles(folderPath, "*.fdl"))
+            catch (Exception ex)
             {
-                string fileName = Path.GetFileNameWithoutExtension(file);
-                FuDockingLayoutDefinition tempLayout = FuDockingLayoutDefinition.Deserialize(file);
-
-                if (tempLayout != null && !Layouts.ContainsKey(fileName))
-                {
-                    Layouts.Add(fileName, tempLayout);
-                }
+                Fugui.Fire_OnUIException(ex);
             }
 
             // Select first layout
             if (CurrentLayout == null && Layouts.Count > 0)
             {
-                KeyValuePair<string, FuDockingLayoutDefinition> firstLayoutInfo = Layouts.ElementAt(0);
+                var firstLayoutInfo = Layouts.ElementAt(0);
                 CurrentLayout = firstLayoutInfo.Value;
             }
 
             OnDockLayoutReloaded?.Invoke();
 
-            // return number of themes loaded
             return Layouts.Count;
         }
 
@@ -902,5 +906,11 @@ namespace Fu
             public List<FuWindowName> WindowNames;
         }
         #endregion
+    }
+
+    [Serializable]
+    public class FuLayoutIndex
+    {
+        public string[] Layouts;
     }
 }

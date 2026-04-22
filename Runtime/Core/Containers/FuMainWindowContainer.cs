@@ -94,7 +94,7 @@ namespace Fu
             // Set the docking style color to current theme
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
             // Subscribe to the PrepareFrame event of the given FuguiContext to update this container data before rendering
-            _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
+            _fuguiContext.OnFramePrepared += context_OnFramePrepared;
         }
 
         private void _fuguiContext_OnRender()
@@ -102,8 +102,20 @@ namespace Fu
             RenderFuWindows();
         }
 
-        public bool context_OnPrepareFrame()
+        public void context_OnFramePrepared()
         {
+            // set size and pos for this frame
+            _size = new Vector2Int(Screen.width, Screen.height);
+
+            // get unity local mouse position
+            Vector2Int newMousePos = new Vector2Int((int)Context.IO.MousePos.x, (int)Context.IO.MousePos.y);
+            _mousePos = newMousePos;
+#if UNITY_EDITOR
+            _worldPosition = GameViewUtils.GetPos();
+#else
+            _worldPosition = Screen.mainWindowPosition;
+#endif
+
             // update mouse state
             _fuMouseState.UpdateState(this);
             _fuKeyboardState.UpdateState();
@@ -141,19 +153,6 @@ namespace Fu
                 window.OnClosed += UIWindow_OnClose;
                 window.InitializeOnContainer();
             }
-
-            // set size and pos for this frame
-            _size = new Vector2Int(Screen.width, Screen.height);
-
-            // get unity local mouse position
-            Vector2Int newMousePos = new Vector2Int((int)Context.IO.MousePos.x, (int)Context.IO.MousePos.y);
-            _mousePos = newMousePos;
-#if UNITY_EDITOR
-            _worldPosition = GameViewUtils.GetPos();
-#else
-            _worldPosition = Screen.mainWindowPosition;
-#endif
-            return true;
         }
 
         #region Footer
@@ -312,7 +311,7 @@ namespace Fu
         private void UIWindow_OnClose(FuWindow UIWindow)
         {
             TryRemoveWindow(UIWindow.ID);
-            _fuguiContext.OnPrepareFrame -= context_OnPrepareFrame;
+            _fuguiContext.OnFramePrepared -= context_OnFramePrepared;
         }
         #endregion
 

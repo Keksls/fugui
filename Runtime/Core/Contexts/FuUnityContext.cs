@@ -99,6 +99,10 @@ namespace Fu
             ImGui.NewFrame();
             // assume we are prepared
             RenderPrepared = true;
+
+            // execute OnFramePrepared event if needed
+            TryExecuteOnFramePreparedEvent();
+
             return RenderPrepared;
         }
 

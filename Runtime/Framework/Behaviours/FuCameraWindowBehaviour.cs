@@ -24,7 +24,7 @@ namespace Fu.Framework
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
             FuCameraWindowDefinition windowDefinition = new FuCameraWindowDefinition(_windowName, _camera, _msaa, OnUI, _position == Vector2Int.zero ? null : _position, _size == Vector2Int.zero ? null : _size, _windowFlags);
             windowDefinition.SetSupersampling(_superSampling);
-            windowDefinition.SetCustomWindowType<FuCameraWindow>();
+            windowDefinition.SetCustomWindowType((winDef) => { return new FuCameraWindow((FuCameraWindowDefinition)winDef); });
             // call the OnWindowDefinitionCreated method to allow further customization
             OnWindowDefinitionCreated(windowDefinition);
             // register the OnUIWindowCreated event to handle the window creation

@@ -30,6 +30,7 @@ namespace Fu
         /// </summary>
         public event Action OnPostRender;
         public event Func<bool> OnPrepareFrame;
+        public event Action OnFramePrepared;
         public bool AutoUpdateMouse = true;
         public bool AutoUpdateKeyboard = true;
         public TextureManager TextureManager;
@@ -257,6 +258,14 @@ namespace Fu
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// Execute OnFramePrepared Event if it's not null
+        /// </summary>
+        protected void TryExecuteOnFramePreparedEvent()
+        {
+            OnFramePrepared?.Invoke();
         }
 
         /// <summary>

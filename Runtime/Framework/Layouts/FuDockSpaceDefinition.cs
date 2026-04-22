@@ -119,10 +119,14 @@ namespace Fu
 
             try
             {
-                using (StreamReader sr = new StreamReader(pathFile))
+                string json = Fugui.ReadAllText(pathFile);
+
+                if (string.IsNullOrEmpty(json))
                 {
-                    result = JsonConvert.DeserializeObject<FuDockingLayoutDefinition>(sr.ReadToEnd());
+                    return null;
                 }
+
+                result = JsonConvert.DeserializeObject<FuDockingLayoutDefinition>(json);
             }
             catch (Exception ex)
             {

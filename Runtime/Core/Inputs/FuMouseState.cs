@@ -175,7 +175,7 @@ namespace Fu
                         // increase quantity of input holding the current input focused window
                         FuWindow.NbInputFocusedWindow++;
                         _currentPressedKeys.Add(i);
-                    }
+                     }
                 }
             }
 

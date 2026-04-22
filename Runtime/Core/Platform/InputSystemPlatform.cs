@@ -20,6 +20,10 @@ namespace Fu
         private TouchScreenKeyboard _touchKeyboard;
         private string _lastTouchKeyboardText = string.Empty;
         private bool _wasTextInputActive;
+        private static Vector2 _lastTouchPosition;
+        private static bool[] _lastFrameMouseState = new bool[5]; // left, right, middle, X1, X2
+        private static float _lastPressTime = 0f;
+        private static bool _rightClicked = false;
 
         public InputSystemPlatform() : base()
         { }
@@ -72,7 +76,6 @@ namespace Fu
             if (updateKeyboard)
             {
 #if FUMOBILE
-Debug.LogError("Mobile Def OK");
                 UpdateMobileKeyboard(io);
 #else
                 UpdateKeyboard(io, Keyboard.current);
@@ -91,11 +94,6 @@ Debug.LogError("Mobile Def OK");
             UpdateGamepad(io, Gamepad.current);
         }
 
-        private static bool _touchWasPressed;
-        private static Vector2 _lastTouchPosition;
-        private static float _accumulatedScrollY;
-        private const float ScrollThreshold = 24f; // pixels avant de déclencher un scroll
-
         /// <summary>
         /// Update the ImGui input state with the current mouse state.
         /// </summary>
@@ -105,83 +103,101 @@ Debug.LogError("Mobile Def OK");
         {
             if (mouse == null) return;
 
-            // Update position and visibility
-            //if (io.WantSetMousePos)
+            //bool simulateMobileBehaviour = false;
+            //if(simulateMobileBehaviour)
             //{
-            //    mouse.WarpCursorPosition(new Vector2(io.MousePos.x, ImGui.GetIO().DisplaySize.y - io.MousePos.y));
-            //}
+            //    // Position
+            //    Vector2 position = new Vector2(
+            //        mouse.position.x.ReadValue(),
+            //        io.DisplaySize.y - mouse.position.y.ReadValue()
+            //    );
 
-            bool isPressed = mouse.leftButton.isPressed;
+            //    // Handle right-click emulation: if the primary touch is held for more than 2 seconds, trigger a right-click event.
+            //    bool leftPressed = mouse.leftButton.isPressed;
+            //    if (leftPressed && !_lastFrameMouseState[0])
+            //    {
+            //        _lastPressTime = 0f;
+            //        _rightClicked = false;
+            //    }
+            //    if (!leftPressed && _lastFrameMouseState[0])
+            //    {
+            //        _lastPressTime = 0f;
+            //        _rightClicked = false;
+            //    }
+            //    if (_lastFrameMouseState[0] && leftPressed)
+            //    {
+            //        _lastPressTime += Time.deltaTime;
+            //    }
+            //    bool rightPressed = false;
+            //    if (!_rightClicked && leftPressed && _lastPressTime >= 1.0f)
+            //    {
+            //        _rightClicked = true;
+            //        rightPressed = true;
+            //    }
 
-            // Position
-            Vector2 position = new Vector2(
-                mouse.position.x.ReadValue(),
-                io.DisplaySize.y - mouse.position.y.ReadValue()
-            );
+            //    if (!leftPressed)
+            //    {
+            //        position = _lastTouchPosition;
+            //    }
+            //    else
+            //    {
+            //        _lastTouchPosition = position;
+            //    }
 
-            if (!isPressed)
-            {
-                position = _lastTouchPosition;
-            }
-            else
-            {
-                _lastTouchPosition = position;
-            }
+            //    // Cursor position
+            //    io.AddMousePosEvent(position.x, position.y);
 
+            //    // Scroll (120 = 1 "tick" Windows)
+            //    Vector2 mouseScroll = mouse.scroll.ReadValue() * Fugui.Settings.ScrollPower;
+            //    io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
 
-            // Cursor position
-            io.AddMousePosEvent(position.x, position.y);
+            //    // Buttons (0 = left, 1 = right, 2 = middle)
+            //    io.AddMouseButtonEvent(0, _lastFrameMouseState[0]);
+            //    io.AddMouseButtonEvent(1, _lastFrameMouseState[1]);
+            //    io.AddMouseButtonEvent(2, _lastFrameMouseState[2]);
 
-            // Scroll (120 = 1 "tick" Windows)
-            Vector2 mouseScroll = mouse.scroll.ReadValue() * Fugui.Settings.ScrollPower;
-            io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
+            //    // Optional : support for additional mouse buttons (X1, X2)
+            //    io.AddMouseButtonEvent(3, _lastFrameMouseState[3]); // X1
+            //    io.AddMouseButtonEvent(4, _lastFrameMouseState[4]); // X2
 
-            // Buttons (0 = left, 1 = right, 2 = middle)
-            io.AddMouseButtonEvent(0, isPressed);
-            io.AddMouseButtonEvent(1, mouse.rightButton.isPressed);
-            io.AddMouseButtonEvent(2, mouse.middleButton.isPressed);
-
-            // Optional : support for additional mouse buttons (X1, X2)
-            io.AddMouseButtonEvent(3, mouse.backButton?.isPressed ?? false);  // X1
-            io.AddMouseButtonEvent(4, mouse.forwardButton?.isPressed ?? false); // X2
-
-            //if (isPressed)
-            //{
-            //    if (_touchWasPressed)
-            //        if (!Fugui.GetWantCaptureInputs(true) &&
-            //            !Fugui.IsAnyWindowDragging() &&
-            //            Fugui.IsAnyWindowHoverContent() &&
-            //            !FuLayout.IsThereAnyDraggingSlider &&
-            //            !Fugui.IsAnyOverlayDragging())
-            //        {
-            //            Vector2 delta = position - _lastTouchPosition;
-            //            _accumulatedScrollY += delta.y;
-
-            //            float threshold = ScrollThreshold * Fugui.Scale;
-
-            //            while (Mathf.Abs(_accumulatedScrollY) >= threshold)
-            //            {
-            //                float direction = Mathf.Sign(_accumulatedScrollY);
-
-            //                float wheelY = -direction * 0.25f * Fugui.Settings.ScrollPower;
-            //                io.AddMouseWheelEvent(0f, wheelY);
-
-            //                _accumulatedScrollY -= direction * threshold;
-            //            }
-            //        }
-
-            //    _lastTouchPosition = position;
+            //    _lastFrameMouseState[0] = leftPressed;
+            //    _lastFrameMouseState[1] = rightPressed;
+            //    _lastFrameMouseState[2] = false;
+            //    _lastFrameMouseState[3] = false;
+            //    _lastFrameMouseState[4] = false;
             //}
             //else
             //{
-            //    _accumulatedScrollY = 0f;
-            //}
+                // Update position and visibility
+                if (io.WantSetMousePos)
+                {
+                    mouse.WarpCursorPosition(new Vector2(io.MousePos.x, ImGui.GetIO().DisplaySize.y - io.MousePos.y));
+                }
 
-            _touchWasPressed = isPressed;
+                // Position
+                Vector2 position = new Vector2(
+                    mouse.position.x.ReadValue(),
+                    io.DisplaySize.y - mouse.position.y.ReadValue()
+                );
+
+                // Cursor position
+                io.AddMousePosEvent(position.x, position.y);
+
+                // Scroll (120 = 1 "tick" Windows)
+                Vector2 mouseScroll = mouse.scroll.ReadValue() * Fugui.Settings.ScrollPower;
+                io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
+
+                // Buttons (0 = left, 1 = right, 2 = middle)
+                io.AddMouseButtonEvent(0, mouse.leftButton.isPressed);
+                io.AddMouseButtonEvent(1, mouse.rightButton.isPressed);
+                io.AddMouseButtonEvent(2, mouse.middleButton.isPressed);
+
+                // Optional : support for additional mouse buttons (X1, X2)
+                io.AddMouseButtonEvent(3, mouse.backButton?.isPressed ?? false);  // X1
+                io.AddMouseButtonEvent(4, mouse.forwardButton?.isPressed ?? false); // X2
+            //}
         }
 
-        private static float _lastPressTime = 0f;
-        private static bool _rightClicked = false;
         /// <summary>
         /// Updates ImGui pointer state from mouse or touchscreen.
         /// Mouse is used on desktop, primary touch is mapped to left mouse on mobile.
@@ -198,77 +214,51 @@ Debug.LogError("Mobile Def OK");
             TouchControl primaryTouch = touch.primaryTouch;
             if (primaryTouch == null)
             {
-                _touchWasPressed = false;
-                _accumulatedScrollY = 0f;
                 return;
             }
 
-            Vector2 position = primaryTouch.position.ReadValue();
-            bool isPressed = primaryTouch.press.isPressed;
+            bool leftPressed = primaryTouch.press.isPressed;
 
             // Handle right-click emulation: if the primary touch is held for more than 2 seconds, trigger a right-click event.
-            if (!_touchWasPressed && isPressed)
-            {
-                _lastPressTime = Time.time;
-                _rightClicked = false;
-            }
-            if (_touchWasPressed && !isPressed)
+            if (leftPressed && !_lastFrameMouseState[0])
             {
                 _lastPressTime = 0f;
                 _rightClicked = false;
             }
-            if (isPressed && _touchWasPressed)
+            if (!leftPressed && _lastFrameMouseState[0])
+            {
+                _lastPressTime = 0f;
+                _rightClicked = false;
+            }
+            if (_lastFrameMouseState[0] && leftPressed)
             {
                 _lastPressTime += Time.deltaTime;
             }
-            bool rightClick = false;
-            if (!_rightClicked && isPressed && _lastPressTime >= 2.0f)
+            bool rightPressed = false;
+            if (!_rightClicked && leftPressed && _lastPressTime >= 1.0f)
             {
                 _rightClicked = true;
-                rightClick = true;
+                rightPressed = true;
             }
 
+            // Cursor position
+            Vector2 position = primaryTouch.position.ReadValue();
             io.AddMousePosEvent(position.x, io.DisplaySize.y - position.y);
-            io.AddMouseButtonEvent(0, isPressed);
 
-            io.AddMouseButtonEvent(1, rightClick);
-            io.AddMouseButtonEvent(2, false);
-            io.AddMouseButtonEvent(3, false);
-            io.AddMouseButtonEvent(4, false);
+            // Buttons (0 = left, 1 = right, 2 = middle)
+            io.AddMouseButtonEvent(0, _lastFrameMouseState[0]);
+            io.AddMouseButtonEvent(1, _lastFrameMouseState[1]);
+            io.AddMouseButtonEvent(2, _lastFrameMouseState[2]);
 
-            //if (isPressed)
-            //{
-            //    if (_touchWasPressed)
-            //        if (!Fugui.GetWantCaptureInputs(true) &&
-            //           !Fugui.IsAnyWindowDragging() &&
-            //           Fugui.IsAnyWindowHoverContent() &&
-            //           !FuLayout.IsThereAnyDraggingSlider &&
-            //           !Fugui.IsAnyOverlayDragging())
-            //        {
-            //            Vector2 delta = position - _lastTouchPosition;
-            //            _accumulatedScrollY += delta.y;
+            // Optional : support for additional mouse buttons (X1, X2)
+            io.AddMouseButtonEvent(3, _lastFrameMouseState[3]); // X1
+            io.AddMouseButtonEvent(4, _lastFrameMouseState[4]); // X2
 
-            //            float threshold = ScrollThreshold * Fugui.Scale;
-
-            //            while (Mathf.Abs(_accumulatedScrollY) >= threshold)
-            //            {
-            //                float direction = Mathf.Sign(_accumulatedScrollY);
-
-            //                float wheelY = -direction * 0.5f * Fugui.Settings.ScrollPower;
-            //                io.AddMouseWheelEvent(0f, wheelY);
-
-            //                _accumulatedScrollY -= direction * threshold;
-            //            }
-            //        }
-
-            //    _lastTouchPosition = position;
-            //}
-            //else
-            //{
-            //    _accumulatedScrollY = 0f;
-            //}
-
-            _touchWasPressed = isPressed;
+            _lastFrameMouseState[0] = leftPressed;
+            _lastFrameMouseState[1] = rightPressed;
+            _lastFrameMouseState[2] = false;
+            _lastFrameMouseState[3] = false;
+            _lastFrameMouseState[4] = false;
         }
 
         /// <summary>

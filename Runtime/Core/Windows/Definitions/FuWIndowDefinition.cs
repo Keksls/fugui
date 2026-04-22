@@ -57,8 +57,8 @@ namespace Fu
         public float HeaderHeight { get; private set; }
         // The height of the window topBar (optional)
         public float BottomBarHeight { get; private set; }
-        // the type of the UIWindow to instantiate
-        internal Type _uiWindowType;
+        // the type of the UIWindow that will be instanciated by this window definition, by default it's just a basic UIWindow but you can set it to any subclass of UIWindow
+        internal Func<FuWindowDefinition, FuWindow> _uiWindowInstantiationFunc;
         #endregion
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Fu
             IsClosable = !flags.HasFlag(FuWindowFlags.NoClosable);
             NoDockingOverMe = !flags.HasFlag(FuWindowFlags.NoDockingOverMe);
             AllowMultipleWindow = flags.HasFlag(FuWindowFlags.AllowMultipleWindow);
-            _uiWindowType = typeof(FuWindow);
+            _uiWindowInstantiationFunc = (winDef) => new FuWindow(winDef);
             Overlays = new Dictionary<string, FuOverlay>();
 
             // external window flags
@@ -137,13 +137,15 @@ namespace Fu
 
         #region UIWindow Creation
         /// <summary>
-        /// Sets the custom type of the UI window to the specified UIWindow subclass.
+        /// Sets the custom window type for this window definition.
         /// </summary>
-        /// <typeparam name="T">The type of UIWindow subclass to set as the custom type.</typeparam>
-        public FuWindowDefinition SetCustomWindowType<T>() where T : FuWindow
+        /// <typeparam name="T"> The type of the custom window, which must be a subclass of FuWindow.</typeparam>
+        /// <param name="uiWindowInstantiationFunc"> A function that creates an instance of the specified custom window type.</param>
+        /// <returns> The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetCustomWindowType<T>(Func<FuWindowDefinition, T> uiWindowInstantiationFunc) where T : FuWindow
         {
-            // Assign the specified UIWindow subclass type to the _uiWindowType field
-            _uiWindowType = typeof(T);
+            // Set the custom window instantiation function to the specified function that creates an instance of the specified UIWindow subclass
+            _uiWindowInstantiationFunc = uiWindowInstantiationFunc;
             return this;
         }
 
@@ -161,7 +163,7 @@ namespace Fu
             }
 
             // Use the Activator class to create a new instance of the UIWindow class with the current UIWindowDefinition object as the parameter
-            window = (FuWindow)Activator.CreateInstance(_uiWindowType, this);
+            window = _uiWindowInstantiationFunc(this);
             OnUIWindowCreated?.Invoke(window);
             return true;
         }

@@ -104,8 +104,9 @@ namespace Fu.Framework
             // draw dummy to match ImGui layout
             ImGui.SetCursorScreenPos(pos);
             ImGui.Dummy(size);
+
             // set states for this element
-            setBaseElementState(text, pos, size, !noEditable, false, true);
+            setBaseElementState(text + currentText, pos, size, !noEditable, false, true);
 
             // handle click
             if (_lastItemUpdate)

@@ -894,13 +894,16 @@ namespace Fu.Framework
                 }
 
                 // Click validation on release, based on active item rather than current hover
-                if (_activeItem == uniqueID && Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Left))
+                if (_activeItem == uniqueID)
                 {
-                    _lastItemClickedButton = FuMouseButton.Left;
-
-                    if (updateOnClick)
+                    if (Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Left))
                     {
-                        updated = true;
+                        _lastItemClickedButton = FuMouseButton.Left;
+
+                        if (updateOnClick)
+                        {
+                            updated = true;
+                        }
                     }
                 }
             }

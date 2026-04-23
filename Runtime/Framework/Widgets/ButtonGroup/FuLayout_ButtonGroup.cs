@@ -154,7 +154,7 @@ namespace Fu.Framework
                     itemWidth = 8f * Fugui.CurrentContext.Scale + Mathf.Max(txtSize.x, txtSize.y + 4f * Fugui.CurrentContext.Scale);
                 }
                 cursorPos += itemWidth - 1f;
-                if (this._customButton(Fugui.AddSpacesBeforeUppercase(items[i].ToString()), new Vector2(itemWidth, 0), padding, Vector2.zero, btnStyle, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght) && !LastItemDisabled)
+                if (this._customButton(Fugui.AddSpacesBeforeUppercase(items[i].ToString()) + text, new Vector2(itemWidth, 0), padding, Vector2.zero, btnStyle, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght) && !LastItemDisabled)
                 {
                     FuSelectableBuilder.SetSelectedIndex(text, i);
                     callback?.Invoke(i);
@@ -169,7 +169,7 @@ namespace Fu.Framework
             }
             Fugui.PopStyle();
 
-            setBaseElementState(text, startPos, ImGui.GetItemRectMax() - startPos, true, updated);
+            setBaseElementState(text, startPos, ImGui.GetItemRectMax() - startPos, false, updated);
             endElement();
         }
     }

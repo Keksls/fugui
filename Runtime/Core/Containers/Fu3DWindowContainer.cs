@@ -55,6 +55,7 @@ namespace Fu
 
             // resize the window
             Window.Size = new Vector2Int(512, 512);
+            Window.Is3DWindow = true;
             _size = window.Size;
 
             // Create RenderTexture
@@ -80,6 +81,7 @@ namespace Fu
             _fuguiContext = Fugui.CreateUnityContext(rect, Fugui.Settings.Windows3DSuperSampling, Fugui.Settings.Windows3DFontScale);
             _fuguiContext.OnRender += RenderFuWindows;
             _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
+            _fuguiContext.OnFramePrepared += _fuguiContext_OnFramePrepared;
             _fuguiContext.AutoUpdateMouse = false;
             _fuguiContext.SetTargetTexture(RenderTexture);
 
@@ -165,33 +167,34 @@ namespace Fu
                 return false;
             }
 
-            // update mouse states
-            _mouseState.UpdateState(this);
-            _keyboardState.UpdateState();
-
             // get input state for this container
             InputState inputState = FuRaycasting.GetInputState(ID, _panelGameObject);
 
             // force to draw if hover in
-            if (inputState.Hovered && !Window.IsHovered)
-            {
-                Window.ForceDraw();
-            }
-
-            Vector2 scaledMousePosition = inputState.MousePosition * (1000f / Fugui.Settings.Windows3DScale) * Context.Scale;
-            // calculate IO mouse pos
-            _localMousePos = new Vector2Int((int)scaledMousePosition.x, (int)scaledMousePosition.y);
             if (inputState.Hovered)
             {
+                Vector2 scaledMousePosition = inputState.MousePosition * (1000f / Fugui.Settings.Windows3DScale) * Context.Scale;
+                // calculate IO mouse pos
+                _localMousePos = new Vector2Int((int)scaledMousePosition.x, (int)scaledMousePosition.y);
                 _localMousePos.x += _size.x / 2;
                 _localMousePos.y = Size.y - _localMousePos.y;
+            }
+            else
+            {
+                _localMousePos = new Vector2Int(-1, -1);
             }
 
             // update context mouse position
             _fuguiContext.UpdateMouse(_localMousePos, new Vector2(0f, inputState.MouseWheel), inputState.MouseDown[0], inputState.MouseDown[1], inputState.MouseDown[2]);
 
-            // return whatever the mouse need to be drawn
-            return Window.MustBeDraw();
+            return true;
+        }
+
+        private void _fuguiContext_OnFramePrepared()
+        {
+            // update mouse states
+            _mouseState.UpdateState(this);
+            _keyboardState.UpdateState();
         }
 
         /// <summary>
@@ -401,11 +404,13 @@ namespace Fu
                 Window.Container = null;
                 Window.RemoveWindowFlag(ImGuiWindowFlags.NoMove);
                 Window.RemoveWindowFlag(ImGuiWindowFlags.NoResize);
+                Window.Is3DWindow = false;
             }
             if (_fuguiContext != null)
             {
                 _fuguiContext.OnRender -= RenderFuWindows;
                 _fuguiContext.OnPrepareFrame -= context_OnPrepareFrame;
+                _fuguiContext.OnFramePrepared -= _fuguiContext_OnFramePrepared;
                 Fugui.DestroyContext(_fuguiContext);
             }
             Fugui.Themes.OnThemeSet -= ThemeManager_OnThemeSet;

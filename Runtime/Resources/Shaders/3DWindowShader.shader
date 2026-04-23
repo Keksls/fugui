@@ -6,8 +6,10 @@ Shader "Fugui/3DUIWindow"
         _Displacement ("Displacement", Range(0, 10)) = 0.1
     }
     SubShader {
-        Tags {"Queue"="Transparent" "RenderType"="Transparent"}
+        //Tags {"Queue"="Transparent" "RenderType"="Transparent"}
+        Tags {"Queue"="Opaque" "RenderType"="Opaque"}
         LOD 200
+        Cull Back
 
         Pass{
         CGPROGRAM

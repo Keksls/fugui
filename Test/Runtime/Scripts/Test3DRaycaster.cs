@@ -1,4 +1,5 @@
 using Fu;
+using ImGuiNET;
 using UnityEngine;
 
 public class Test3DRaycaster : MonoBehaviour
@@ -10,14 +11,19 @@ public class Test3DRaycaster : MonoBehaviour
     public KeyCode MouseScrollDownKey = KeyCode.KeypadMinus;
     public float ScrollForce = 1f;
 
-    private void Start()
+    private void OnEnable()
     {
         FuRaycasting.RegisterRaycaster(new FuRaycaster("3DRaycasterTest",
             () => new Ray(transform.position, transform.forward),
-            () => Input.GetKey(MouseButton0Key),
-            () => Input.GetKey(MouseButton1Key),
-            () => Input.GetKey(MouseButton2Key),
-            () => 0f + (Input.GetKeyDown(MouseScrollDownKey) ? ScrollForce : 0f) - (Input.GetKeyDown(MouseScrollUpKey) ? ScrollForce : 0f),
+            () => ImGui.GetIO().MouseDown[0],
+            () => ImGui.GetIO().MouseDown[1],
+            () => ImGui.GetIO().MouseDown[2],
+            () => 0f,
             () => true));
+    }
+
+    private void OnDisable()
+    {
+        FuRaycasting.UnRegisterRaycaster("3DRaycasterTest");
     }
 }

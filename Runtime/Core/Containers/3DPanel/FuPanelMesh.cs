@@ -16,7 +16,7 @@ namespace Fu
         private int _cornerVertexCount = 8;
         private bool _createUV = true;
         private bool _flipBackFaceUV = true;
-        private bool _doubleSided = true;
+        private bool _doubleSided = false;
         private Vector3[] _Vertices;
         private Vector3[] _Normals;
         private Vector2[] _UV;

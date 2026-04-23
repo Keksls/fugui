@@ -117,7 +117,7 @@ namespace Fu
             };
 
             // register raycaster
-            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Mouse.IsPressed(FuMouseButton.Left), () => Mouse.IsPressed(FuMouseButton.Right), () => false, () => Mouse.Wheel.y, () => IsHoveredContent);
+            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Container.Mouse.IsPressed(FuMouseButton.Left), () => Container.Mouse.IsPressed(FuMouseButton.Right), () => false, () => Container.Mouse.Wheel.y, () => Container == null ? false : LocalRect.Contains(Container.Mouse.Position));
             FuRaycasting.RegisterRaycaster(_raycaster);
         }
 

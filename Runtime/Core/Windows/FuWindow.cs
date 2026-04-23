@@ -122,6 +122,7 @@ namespace Fu
         public bool IsInterractable { get; set; }
         public bool IsVisible { get; private set; }
         public bool DrawingForced { get { return _forceRedraw > 0; } }
+        public bool Is3DWindow { get; internal set; }
 
         // events
         public event Action<FuWindow> OnResize;
@@ -254,6 +255,7 @@ namespace Fu
             WindowName = windowDefinition.WindowName;
             ID = WindowName.Name + "##" + _windowIndex;
             _windowIndex++;
+            Is3DWindow = false;
 
             if (!Fugui.TryAddUIWindow(this))
             {
@@ -425,7 +427,7 @@ namespace Fu
                     ((FuExternalWindowContainer)Container).Close(() => { Close(null); });
                 else
 #endif
-                    Close(null);
+                Close(null);
                 return;
             }
 
@@ -650,9 +652,16 @@ namespace Fu
         /// </summary>
         private void processHoverState()
         {
-            IsHovered = (LocalRect.Contains(Container.LocalMousePos) &&
-                                ImGuiNative.igIsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup) != 0) ||
-                                Fugui.WindowHasPopupOpen(this);
+            if (Is3DWindow)
+            {
+                IsHovered = LocalRect.Contains(Container.LocalMousePos);
+            }
+            else
+            {
+                IsHovered = (LocalRect.Contains(Container.LocalMousePos) &&
+                            ImGuiNative.igIsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem | ImGuiHoveredFlags.AllowWhenBlockedByPopup) != 0) ||
+                            Fugui.WindowHasPopupOpen(this);
+            }
 
             // increase window hover state according to input focused window IF we are not dragging any payload
             if (_inputFocusedWindow != null && !Fugui.CurrentContext._isDraggingPayload)
@@ -670,9 +679,6 @@ namespace Fu
             // prevent input if imgui is using mouse to resize docking area
             if (IsHovered)
             {
-                // TODO : Wrapp imguiInternal.h so we can check if imgui want to resize something and prevent input on resising window
-                // because we have no acces to ImguiInternal.h for now (not wrapper by cimgui and Imgui.NET), we are pushed to do this ugly trick
-                // so for now, all we can do is to check if the current mouse cursor is a resizing one, if it is, prevent input for this window
                 ImGuiMouseCursor currentMouseCursor = ImGui.GetMouseCursor();
                 switch (currentMouseCursor)
                 {
@@ -684,6 +690,18 @@ namespace Fu
                         IsHovered = false;
                         break;
                 }
+            }
+
+            // if a 3D window is already hovered this frame, block non-3D windows only
+            if (IsHovered && Fugui.HasHovered3DWindowThisFrame && !Is3DWindow)
+            {
+                IsHovered = false;
+            }
+
+            // register 3D hover lock only after all filters
+            if (IsHovered && Is3DWindow)
+            {
+                Fugui.HasHovered3DWindowThisFrame = true;
             }
         }
 
@@ -1081,7 +1099,7 @@ namespace Fu
             }
 #endif
         }
-#endregion
+        #endregion
 
         #region Events
         /// <summary>

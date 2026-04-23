@@ -164,18 +164,26 @@ namespace Fu
             _virtualButtonStates[1].SetState(btn1State, Vector2Int.zero);
             _virtualButtonStates[2].SetState(btn2State, Vector2Int.zero);
 
-            // check if a button is Down this frame if this window is hover and no window has been clicked for now
-            if ((FuWindow.InputFocusedWindow == null || FuWindow.InputFocusedWindow == window) && window.IsHovered)
+            // check if a button is Down this frame if this window is hover and can take focus
+            if (window.IsHovered)
             {
-                for (int i = 0; i < ButtonStates.Length; i++)
+                bool canTakeFocus =
+                    FuWindow.InputFocusedWindow == null ||
+                    FuWindow.InputFocusedWindow == window ||
+                    (window.Is3DWindow && FuWindow.InputFocusedWindow != null && !FuWindow.InputFocusedWindow.Is3DWindow);
+
+                if (canTakeFocus)
                 {
-                    if (_virtualButtonStates[i].IsDown)
+                    for (int i = 0; i < ButtonStates.Length; i++)
                     {
-                        FuWindow.InputFocusedWindow = window;
-                        // increase quantity of input holding the current input focused window
-                        FuWindow.NbInputFocusedWindow++;
-                        _currentPressedKeys.Add(i);
-                     }
+                        if (_virtualButtonStates[i].IsDown)
+                        {
+                            FuWindow.InputFocusedWindow = window;
+                            // increase quantity of input holding the current input focused window
+                            FuWindow.NbInputFocusedWindow++;
+                            _currentPressedKeys.Add(i);
+                        }
+                    }
                 }
             }
 
@@ -190,6 +198,12 @@ namespace Fu
                         FuWindow.NbInputFocusedWindow--;
                         _currentPressedKeys.Remove(i);
                     }
+                }
+
+                if (FuWindow.NbInputFocusedWindow <= 0)
+                {
+                    FuWindow.NbInputFocusedWindow = 0;
+                    FuWindow.InputFocusedWindow = null;
                 }
             }
 

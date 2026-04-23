@@ -120,6 +120,10 @@ namespace Fu
         /// Whatever cursors has just been unlocked
         /// </summary>
         internal static bool CursorsJustUnlocked = false;
+        /// <summary>
+        /// Whatever a 3D window has been hovered this frame (used for input management between 3D windows and main container)
+        /// </summary>
+        internal static bool HasHovered3DWindowThisFrame;
         // The dictionary of 3D windows
         private static Dictionary<string, Fu3DWindowContainer> _3DWindows;
         // dictionary of external windows
@@ -692,6 +696,8 @@ namespace Fu
         /// </summary>
         public static void Render()
         {
+            Fugui.HasHovered3DWindowThisFrame = false;
+
 #if FU_EXTERNALIZATION
             SDL.SDL_GetGlobalMouseState(out int x, out int y);
             AbsoluteMonitorMousePosition = new Vector2Int(x, y);
@@ -701,41 +707,8 @@ namespace Fu
             ClearContextMenuStack();
             // clean popup stack to prevent popup to stay on stack if they close unexpectedly
             CleanPopupStack();
-            // no one has render for now
-            HasRenderWindowThisFrame = false;
 
-            // prepare a new frame for default render
-            DefaultContext.PrepareRender();
-            // execute after default renderer render actions
-            if (DefaultContext.RenderPrepared)
-            {
-                while (_beforeDefaultRenderStack.Count > 0)
-                {
-                    _beforeDefaultRenderStack.Dequeue()?.Invoke();
-                }
-            }
-
-            // Render default context
-            DefaultContext.Render();
-            // execute after default renderer render actions
-            if (DefaultContext.RenderPrepared)
-            {
-                while (_afterDefaultRenderStack.Count > 0)
-                {
-                    _afterDefaultRenderStack.Dequeue()?.Invoke();
-                }
-            }
-
-            DefaultContext.EndRender();
-            if (_targetScale != -1f)
-            {
-                DefaultContext.SetScale(_targetScale, _targetFontScale);
-            }
-
-            // check if render graph is enabled
-            //bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
-
-            // render any other contexts
+            // render any other contexts BEFORE, because 3D containers need to handle input before default to handle HasHovered3DWindowThisFrame
             foreach (var context in Contexts)
             {
                 if (context.Key != 0 && context.Value.Started)
@@ -762,6 +735,36 @@ namespace Fu
                         }
                     }
                 }
+            }
+
+            // no one has render for now
+            HasRenderWindowThisFrame = false;
+            // prepare a new frame for default render
+            DefaultContext.PrepareRender();
+            // execute after default renderer render actions
+            if (DefaultContext.RenderPrepared)
+            {
+                while (_beforeDefaultRenderStack.Count > 0)
+                {
+                    _beforeDefaultRenderStack.Dequeue()?.Invoke();
+                }
+            }
+
+            // Render default context
+            DefaultContext.Render();
+            // execute after default renderer render actions
+            if (DefaultContext.RenderPrepared)
+            {
+                while (_afterDefaultRenderStack.Count > 0)
+                {
+                    _afterDefaultRenderStack.Dequeue()?.Invoke();
+                }
+            }
+
+            DefaultContext.EndRender();
+            if (_targetScale != -1f)
+            {
+                DefaultContext.SetScale(_targetScale, _targetFontScale);
             }
 
             // prevent rescaling each frames

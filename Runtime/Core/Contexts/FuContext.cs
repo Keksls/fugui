@@ -233,14 +233,13 @@ namespace Fu
         /// <param name="clickbtn2">Mouse button 2 state</param>
         public void UpdateMouse(Vector2 mousePos, Vector2 mouseWheel, bool clickbtn0, bool clickbtn1, bool clickbtn2)
         {
-            IO.MousePos = mousePos;
+            IO.AddMousePosEvent(mousePos.x, mousePos.y);
 
-            IO.MouseWheelH = mouseWheel.x;
-            IO.MouseWheel = mouseWheel.y;
+            IO.AddMouseWheelEvent(mouseWheel.x, mouseWheel.y);
 
-            IO.MouseDown[0] = clickbtn0;
-            IO.MouseDown[1] = clickbtn1;
-            IO.MouseDown[2] = clickbtn2;
+            IO.AddMouseButtonEvent(0, clickbtn0);
+            IO.AddMouseButtonEvent(1, clickbtn1);
+            IO.AddMouseButtonEvent(2, clickbtn2);
         }
 
         /// <summary>

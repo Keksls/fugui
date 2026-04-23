@@ -12,6 +12,10 @@ namespace Fu.Framework
         private Camera _camera;
         [SerializeField]
         private MSAASamples _msaa = MSAASamples.None;
+        [SerializeField]
+        private int _idleCameraFPS = 24;
+        [SerializeField]
+        private int _manipulatingCameraFPS = 60;
         public Camera Camera => _camera;
         public FuCameraWindow CameraWindow => _fuWindow as FuCameraWindow;
         [SerializeField]
@@ -21,7 +25,7 @@ namespace Fu.Framework
         public override void FuguiAwake()
         {
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
-            FuCameraWindowDefinition windowDefinition = new FuCameraWindowDefinition(_windowName, _camera, _msaa, OnUI, _position == Vector2Int.zero ? null : _position, _size == Vector2Int.zero ? null : _size, _windowFlags);
+            FuCameraWindowDefinition windowDefinition = new FuCameraWindowDefinition(_windowName, _camera, _idleCameraFPS, _manipulatingCameraFPS, _msaa, OnUI, _position == Vector2Int.zero ? null : _position, _size == Vector2Int.zero ? null : _size, _windowFlags);
             windowDefinition.SetSupersampling(_superSampling);
             windowDefinition.SetCustomWindowType((winDef) => {
                 return new FuCameraWindow((FuCameraWindowDefinition)winDef);
@@ -36,34 +40,4 @@ namespace Fu.Framework
                 Fugui.CreateWindowAsync(_windowName, null, true);
         }
     }
-
-#if UNITY_EDITOR
-    [CustomEditor(typeof(FuCameraWindowBehaviour))]
-    public class FuCameraWindowBehaviourEditor : FuWindowBehaviourEditor
-    {
-        private SerializedProperty _cameraProp;
-        private SerializedProperty _superSamplingProp;
-
-        public override void OnEnable()
-        {
-            base.OnEnable(); // Initialise les propriétés de base
-
-            _cameraProp = serializedObject.FindProperty("_camera");
-            _superSamplingProp = serializedObject.FindProperty("_superSampling");
-        }
-
-        public override void OnInspectorGUI()
-        {
-            base.OnInspectorGUI(); // Affiche les propriétés communes
-
-            // Affiche les propriétés spécifiques à FuCameraWindowBehaviour
-            EditorGUILayout.LabelField("Camera Settings", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_cameraProp);
-            EditorGUILayout.PropertyField(_superSamplingProp);
-            EditorGUILayout.Space();
-
-            serializedObject.ApplyModifiedProperties();
-        }
-    }
-#endif
 }

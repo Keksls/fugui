@@ -36,6 +36,8 @@ namespace Fu
         public IntPtr PixelsPtr { get; private set; }
         public Camera Camera { get; private set; }
         public bool AutoCameraFPS { get; set; }
+        public int IdleCameraFPS { get; private set; }
+        public int ManipulatingCameraFPS { get; private set; }
         private bool _forceCameraRender;
         private float _targetCameraDeltaTimeMs;
         private float _lastCameraRenderTime;
@@ -50,6 +52,8 @@ namespace Fu
             AutoCameraFPS = true;
             SuperSampling = windowDefinition.SuperSampling;
             Camera = windowDefinition.Camera;
+            IdleCameraFPS = windowDefinition.IdleCameraFPS;
+            ManipulatingCameraFPS = windowDefinition.ManipuatingCameraFPS;
 
             // Handle MSAA settings
             if (windowDefinition.MSAASamples != MSAASamples.None)
@@ -245,11 +249,11 @@ namespace Fu
                 {
                     default:
                     case FuWindowState.Idle:
-                        TargetCameraFPS = Fugui.Settings.IdleCameraFPS;
+                        TargetCameraFPS = IdleCameraFPS;
                         break;
 
                     case FuWindowState.Manipulating:
-                        TargetCameraFPS = Fugui.Settings.ManipulatingFPS;
+                        TargetCameraFPS = ManipulatingCameraFPS;
                         break;
                 }
             }

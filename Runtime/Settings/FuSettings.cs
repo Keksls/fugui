@@ -31,36 +31,24 @@ namespace Fu
 
         [Tooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
-        [Range(1, 120)]
-        [FuSlider(1, 120)]
-        public int IdleFPS = 8;
+        [Range(0, 120)]
+        [FuSlider(0, 120)]
+        public int IdleFPS = 0;
 
-        [Tooltip("The number of FPS to be used when the UI windows are being manipulated.")]
-        [FuTooltip("The number of FPS to be used when the UI windows are being manipulated.")]
-        [Range(1, 240)]
-        [FuSlider(1, 240)]
-        public int ManipulatingFPS = 60;
-
-        [Tooltip("The number of Camera FPS to be used when the UI windows are Idle.")]
-        [FuTooltip("The number of Camera FPS to be used when the UI windows are Idle.")]
-        [Range(1, 240)]
-        [FuSlider(1, 240)]
-        public int IdleCameraFPS = 4;
-
-        [Tooltip("The number of FPS to be used when the UI windows are being manipulated.")]
-        [FuTooltip("The number of FPS to be used when the UI windows are being manipulated.")]
+        [Tooltip("The scale of the 3D UI windows (3D world space size).")]
+        [FuTooltip("The scale of the 3D UI windows (3D world space size).")]
         [Range(1f, 100f)]
         [FuSlider(1f, 100f)]
         public float Windows3DScale = 10f;
 
-        [Tooltip("The number of FPS to be used when the UI windows are being manipulated.")]
-        [FuTooltip("The number of FPS to be used when the UI windows are being manipulated.")]
+        [Tooltip("The scale of the UI within the 3D UI windows (2D size inside the 3D world space).")]
+        [FuTooltip("The scale of the UI within the 3D UI windows (2D size inside the 3D world space).")]
         [Range(0.5f, 4f)]
         [FuSlider(0.5f, 4f)]
         public float Windows3DSuperSampling = 2f;
 
-        [Tooltip("The number of FPS to be used when the UI windows are being manipulated.")]
-        [FuTooltip("The number of FPS to be used when the UI windows are being manipulated.")]
+        [Tooltip("The scale of the font used in the 3D UI windows.")]
+        [FuTooltip("The scale of the 3D UI windows (3D world space size).")]
         [Range(1f, 10f)]
         [FuSlider(1f, 10f)]
         public float Windows3DFontScale = 2f;

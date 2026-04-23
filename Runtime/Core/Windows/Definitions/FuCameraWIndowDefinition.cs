@@ -15,6 +15,14 @@ namespace Fu
         /// </summary>
         public Camera Camera { get; private set; }
         /// <summary>
+        /// Get the default FPS for camera window when it's idle
+        /// </summary>
+        public int IdleCameraFPS { get; private set; }
+        /// <summary>
+        /// Get the default FPS for camera window when it's being manipulated (e.g., when the user is interacting with it)
+        /// </summary>
+        public int ManipuatingCameraFPS { get; private set; }
+        /// <summary>
         /// Get the default supersampling for camera window
         /// </summary>
         public float SuperSampling { get; private set; }
@@ -28,11 +36,15 @@ namespace Fu
         /// </summary>
         /// <param name="windowName">The name of the UI window.</param>
         /// <param name="camera">The camera to be displayed in the UI window.</param>
+        /// <param name="idleCameraFPS">The default FPS for the camera window when it's idle.</param>
+        /// <param name="manipulatingCameraFPS">The default FPS for the camera window when it's being manipulated (e.g., when the user is interacting with it).</param>
+        /// <param name="mSAASamples"> The MSAA samples for the camera window render texture.</param>
         /// <param name="ui">The action to be performed on the UI window.</param>
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
-        public FuCameraWindowDefinition(FuWindowName windowName, Camera camera, MSAASamples mSAASamples, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalWindowFlags = FuExternalWindowFlags.Default) : base(windowName, ui, pos, size, flags, externalWindowFlags)
+        /// <param name="externalWindowFlags">External window flags of this window definition</param>
+        public FuCameraWindowDefinition(FuWindowName windowName, Camera camera, int idleCameraFPS, int manipulatingCameraFPS, MSAASamples mSAASamples, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalWindowFlags = FuExternalWindowFlags.Default) : base(windowName, ui, pos, size, flags, externalWindowFlags)
         {
             // set default camera window supersampling
             SuperSampling = 1f;
@@ -40,6 +52,10 @@ namespace Fu
             Camera = camera;
             // Assign the specified MSAASamples to the MSAASamples field
             MSAASamples = mSAASamples;
+            // Assign the specified idleCameraFPS to the IdleCameraFPS field
+            IdleCameraFPS = idleCameraFPS;
+            // Assign the specified manipulating
+            ManipuatingCameraFPS = manipulatingCameraFPS;
         }
 
         /// <summary>
@@ -60,6 +76,17 @@ namespace Fu
         {
             // Assign the default camera supersampling
             SuperSampling = superSampling;
+        }
+
+        /// <summary>
+        /// Set the target FPS for the camera window when it's idle and when it's being manipulated.
+        /// </summary>
+        /// <param name="idleCameraFPS"> The default FPS for the camera window when it's idle.</param>
+        /// <param name="manipulatingCameraFPS"> The default FPS for the camera window when it's being manipulated (e.g., when the user is interacting with it).</param>
+        public void SetFPS(int idleCameraFPS, int manipulatingCameraFPS)
+        {
+            IdleCameraFPS = idleCameraFPS;
+            ManipuatingCameraFPS = manipulatingCameraFPS;
         }
     }
 }

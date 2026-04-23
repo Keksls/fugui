@@ -118,7 +118,6 @@ namespace Fu
         public bool IsHovered { get; internal set; }
         public bool IsHoveredContent { get { return IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup && !Mouse.IsHoverTopBar; } }
         public bool IsDocked { get; internal set; }
-        internal bool IsImguiDocked => IsDocked;
         public bool IsBusy { get; internal set; }
         public bool IsInterractable { get; set; }
         public bool IsVisible { get; private set; }
@@ -370,7 +369,7 @@ namespace Fu
             {
                 if (Container.ForcePos() || _forceLocationNextFrame)
                 {     // it's a floating dock node window, because user set 'ConfigDockingAlwaysTabBar' to true in settings
-                    if (IsImguiDocked && CurrentDockID != 0)
+                    if (IsDocked && CurrentDockID != 0)
                     {
                         unsafe
                         {
@@ -391,7 +390,7 @@ namespace Fu
                 if (_forceSizeNextFrame)
                 {
                     // it's a floating dock node window, because user set 'ConfigDockingAlwaysTabBar' to true in settings
-                    if (IsImguiDocked && CurrentDockID != 0)
+                    if (IsDocked && CurrentDockID != 0)
                     {
                         unsafe
                         {
@@ -543,7 +542,7 @@ namespace Fu
                 }
 
                 // if docked, get size according to avail w and h
-                if (IsImguiDocked || IsDocked)
+                if (IsDocked || IsDocked)
                 {
                     CurrentDockID = ImGuiNative.igGetWindowDockID();
                     if (IsDocked)
@@ -561,7 +560,7 @@ namespace Fu
                 }
 
                 // Draw UI container. this is needed to store drawList even if window is not render
-                if (IsImguiDocked)
+                if (IsDocked)
                 {
                     Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
                     Fugui.Push(ImGuiCol.ChildBg, ImGui.GetStyle().Colors[(int)ImGuiCol.WindowBg]); // it's computed by byte, not float, so minimum is 1 / 255 ~= 0.0039216f
@@ -776,6 +775,11 @@ namespace Fu
                 _lastRenderTime = Fugui.Time;
                 HasJustBeenDraw = true;
                 CurrentDrawingWindow = null;
+            }
+            else
+            {
+                CurrentFPS = 0f;
+                HasJustBeenDraw = false;
             }
         }
 
@@ -1000,11 +1004,22 @@ namespace Fu
         /// <returns>true if we must draw this UI this frame</returns>
         public bool MustBeDraw()
         {
-            return (Fugui.Time > _lastRenderTime + _targetDeltaTimeMs && ((!Fugui.HasRenderWindowThisFrame && WindowName.IdleFPS != -1) || Fugui.HasRenderWindowThisFrame))
-                || _forceRedraw > 0
-                || (IsInterractable && (IsHovered || WantCaptureKeyboard || State == FuWindowState.Manipulating));
+            bool mustBeDraw = _forceRedraw > 0;
+            switch (State)
+            {
+                default:
+                case FuWindowState.Idle:
+                    mustBeDraw |= Fugui.Time > _lastRenderTime + _targetDeltaTimeMs;
+                    break;
+
+                case FuWindowState.Manipulating:
+                    mustBeDraw |= IsInterractable;
+                    break;
+            }
+
+            return mustBeDraw;
         }
-#endregion
+        #endregion
 
         #region Externalization Handling
         /// <summary>
@@ -1259,7 +1274,7 @@ namespace Fu
             }
 
             // check for manipulating
-            if (IsDragging || IsResizing || IsHovered)
+            if (IsDragging || IsResizing || IsHovered || WantCaptureKeyboard)
             {
                 if (State != FuWindowState.Manipulating)
                 {
@@ -1310,7 +1325,7 @@ namespace Fu
                     break;
 
                 case FuWindowState.Manipulating:
-                    TargetFPS = Fugui.Settings.ManipulatingFPS;
+                    TargetFPS = int.MaxValue;
                     break;
             }
         }

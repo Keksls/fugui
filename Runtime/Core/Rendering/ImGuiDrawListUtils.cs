@@ -64,7 +64,7 @@ namespace Fu
                 {
                     if (windows.ContainsKey(name.Split('/')[0])) // it's a window's child
                     {
-                        if (windows[name.Split('/')[0]].IsImguiDocked) // the window is docked
+                        if (windows[name.Split('/')[0]].IsDocked) // the window is docked
                         {
                             if (name.Split('/').Length <= 2) // it's a direct window's child (so it may be the forced child used to store vtx)
                             {

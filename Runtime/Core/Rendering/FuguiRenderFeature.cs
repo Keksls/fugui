@@ -556,31 +556,6 @@ namespace Fu
             }
 
             /// <summary>
-            /// Releases the resources associated with the specified context ID, including the mesh, material, and render target handle.
-            /// </summary>
-            /// <param name="ctxId"> The context ID for which to release the resources.</param>
-            private void ReleaseContextResources(int ctxId)
-            {
-                if (_meshs != null && _meshs.TryGetValue(ctxId, out Mesh mesh))
-                {
-                    UnityEngine.Object.Destroy(mesh);
-                    _meshs.Remove(ctxId);
-                }
-
-                if (_materials != null && _materials.TryGetValue(ctxId, out Material material))
-                {
-                    UnityEngine.Object.Destroy(material);
-                    _materials.Remove(ctxId);
-                }
-
-                if (_targetHandles != null && _targetHandles.TryGetValue(ctxId, out RTHandle handle))
-                {
-                    handle.Release();
-                    _targetHandles.Remove(ctxId);
-                }
-            }
-
-            /// <summary>
             /// Data structure to hold the render pass data for the Fugui Render Graph Pass.
             /// </summary>
             private class PassData

@@ -178,9 +178,7 @@ MonoBehaviour:
     FUGUI_DOCKSPACE_FOLDER_PATH: Assets\StreamingAssets\Fugui\Layout\
     EnableExternalizations: 1
     DisplaySettingsIfNoLayout: 1
-    IdleFPS: 20
-    ManipulatingFPS: 90
-    IdleCameraFPS: 30
+    IdleFPS: 0
     Windows3DScale: 10
     Windows3DSuperSampling: 2
     Windows3DFontScale: 3
@@ -220,11 +218,13 @@ MonoBehaviour:
     DoubleClickMaxDist: 6
     ScrollPower: 1
     DragThreshold: 6
+    DragThresholdMobile: 64
     ClickMaxDist: 3
+    ClickMaxDistMobile: 64
     KeyRepeatDelay: 0.25
     KeyRepeatRate: 0.05
-    FontGlobalScale: 1
-    GlobalScale: 1
+    GlobalScale: 3
+    FontGlobalScale: 3
     FontAllowUserScaling: 0
     DisplayFramebufferScale: {x: 1, y: 1}
     MouseDrawCursor: 0

@@ -251,11 +251,19 @@ namespace Fu.Framework
         /// <summary>
         /// Slider can be dragged from the left
         /// </summary>
-        LeftDrag = 1,
+        LeftDrag = 1 << 0,
         /// <summary>
         /// Slider cannot be dragged
         /// </summary>
-        NoDrag = 2
+        NoDrag = 1 << 1,
+        /// <summary>
+        /// Do not draw the slider knobs, only the filled bar, and the value will be changed by clicking on the bar
+        /// </summary>
+        NoKnobs = 1 << 2,
+        /// <summary>
+        /// The value will be changed by clicking on the bar
+        /// </summary>
+        UpdateOnBarClick = 1 << 3
     }
 
     /// <summary>

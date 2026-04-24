@@ -15,6 +15,8 @@ namespace Fu
         private Camera _uiCamera;
         [SerializeField]
         private bool _logErrors = true;
+        [SerializeField]
+        private FuguiUpdateMode _updateMode = FuguiUpdateMode.Update;
         #endregion
 
         #region Unity Methods
@@ -57,6 +59,14 @@ namespace Fu
 
         private void Update()
         {
+            if (_updateMode == FuguiUpdateMode.Update)
+            {
+                FuUpdate();
+            }
+        }
+
+        public void FuUpdate()
+        {
             // Update Input Manager
             FuRaycasting.Update();
 
@@ -69,6 +79,11 @@ namespace Fu
 
         private void LateUpdate()
         {
+            if (_updateMode == FuguiUpdateMode.LateUpdate)
+            {
+                FuUpdate();
+            }
+
             // destroy contexts
             while (Fugui.ToDeleteContexts.Count > 0)
             {
@@ -102,7 +117,7 @@ namespace Fu
         {
             Dispose();
         }
-#endregion
+        #endregion
 
         #region public Utils
         /// <summary>
@@ -113,5 +128,12 @@ namespace Fu
             Fugui.Dispose();
         }
         #endregion
+    }
+
+    public enum FuguiUpdateMode
+    {
+        Update,
+        LateUpdate,
+        Manual
     }
 }

@@ -184,7 +184,7 @@ namespace Fu.Framework
             value = tmp * step;
 
             // set states for this element
-            setBaseElementState(text, _currentItemStartPos, ImGui.GetItemRectMax() - _currentItemStartPos, true, value != oldValue);
+            setBaseElementState(text, _currentItemStartPos, new Vector2(width, height), true, value != oldValue);
 
             endElement(FuFrameStyle.Default);
             return value != oldValue;

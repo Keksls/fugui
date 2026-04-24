@@ -1312,7 +1312,7 @@ namespace Fu
         /// Add a window flag to this windows
         /// </summary>
         /// <param name="flag">flag to add</param>
-        internal void AddWindowFlag(ImGuiWindowFlags flag)
+        public void AddWindowFlag(ImGuiWindowFlags flag)
         {
             _windowFlags |= flag;
         }
@@ -1321,7 +1321,7 @@ namespace Fu
         /// Remove a window flag from this window
         /// </summary>
         /// <param name="flag">flag to remove</param>
-        internal void RemoveWindowFlag(ImGuiWindowFlags flag)
+        public void RemoveWindowFlag(ImGuiWindowFlags flag)
         {
             _windowFlags &= ~flag;
         }

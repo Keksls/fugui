@@ -14,14 +14,14 @@
         /// <param name="flags">Behaviour flags of the Slider</param>
         ///<param name="format">string format of the displayed value (default is "%.2f")</param>
         /// <returns>true if value changed</returns>
-        protected override bool _customSlider(string text, ref float value, float min, float max, bool isInt, float step, FuSliderFlags flags, string format)
+        protected override bool _customSlider(string text, ref float value, float min, float max, bool isInt, float step, FuElementSize sliderSize, FuSliderFlags flags, string format)
         {
             if (!_gridCreated)
             {
                 return false;
             }
             drawElementLabel(text, FuTextStyle.Default);
-            return base._customSlider(text, ref value, min, max, isInt, step, flags, format);
+            return base._customSlider(text, ref value, min, max, isInt, step, sliderSize, flags, format);
         }
     }
 }

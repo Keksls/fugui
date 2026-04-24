@@ -429,8 +429,13 @@ public class WidgetsWindow : FuWindowBehaviour
                 grid.DisableNextElements();
             grid.Slider("slider int", ref intVal);
             grid.Slider("slider", ref floatVal);
-            grid.Slider("slider no drag##NoDrag", ref floatVal, 0.5f, FuSliderFlags.NoDrag);
-            grid.Slider("slider left drag##LeftDrag", ref floatVal, 0.5f, FuSliderFlags.LeftDrag);
+            grid.Slider("no drag##NoDrag", ref floatVal, 0.5f, FuSliderFlags.NoDrag);
+            grid.Slider("left drag##LeftDrag", ref floatVal, 0.5f, FuSliderFlags.LeftDrag);
+            grid.Slider("no knobs##NoKnobs", ref floatVal, 0.5f, FuSliderFlags.NoKnobs);
+            grid.Slider("bar click##UpdateOnBarClick", ref floatVal, 0.5f, FuSliderFlags.UpdateOnBarClick);
+            grid.Slider("bar click no drag##UpdateOnBarClickNoDrag", ref floatVal, 0f, 100f, new FuElementSize(-64f, 16f), 0.5f, FuSliderFlags.UpdateOnBarClick | FuSliderFlags.NoDrag);
+            grid.Slider("no drag no knob##NoDragNoKnobs", ref floatVal, 0f, 100f, new FuElementSize(-1f, 16f), 0.5f, FuSliderFlags.NoDrag | FuSliderFlags.NoKnobs);
+
             grid.Range("range", ref min, ref max, 0f, 30f, 0.25f);
             grid.Range("range no drag", ref min, ref max, 0f, 30f, 0.1f, FuSliderFlags.NoDrag);
             if (!_enableWidgets)

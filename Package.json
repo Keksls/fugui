@@ -20,5 +20,12 @@
     "email": "vrdtmstudio@gmail.com",
     "url": "https://github.com/Keksls/fugui"
   },
-  "type": "library"
+  "type": "library",
+  "samples": [
+    {
+      "displayName": "Fugui Demo Scene",
+      "description": "Demo scene showing Fugui usage in Unity.",
+      "path": "Samples~/Demo"
+    }
+  ]
 }

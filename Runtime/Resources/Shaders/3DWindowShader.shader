@@ -7,7 +7,7 @@ Shader "Fugui/3DUIWindow"
     }
     SubShader {
         //Tags {"Queue"="Transparent" "RenderType"="Transparent"}
-        Tags {"Queue"="Opaque" "RenderType"="Opaque"}
+        Tags {"RenderType"="Opaque"}
         LOD 200
         Cull Back
 

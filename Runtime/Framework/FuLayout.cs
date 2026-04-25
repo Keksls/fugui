@@ -906,12 +906,12 @@ namespace Fu.Framework
                         }
                     }
                 }
-            }
 
-            if (_activeItem == uniqueID && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
-            {
-                _activeItem = null;
-                _lastItemJustDeactivated = true;
+                if (_activeItem == uniqueID && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
+                {
+                    _activeItem = null;
+                    _lastItemJustDeactivated = true;
+                }
             }
 
             _lastItemActive = _activeItem == uniqueID;

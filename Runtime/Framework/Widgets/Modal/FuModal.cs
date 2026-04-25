@@ -20,6 +20,7 @@ namespace Fu
         private static float _currentFooterheight = 0f;
         private static Vector2 _currentModalPos;
         private static float _enlapsed = 0f;
+        private static readonly Vector2 _modalMinScreenSpacing = new Vector2(16f, 16f);
         #endregion
 
         #region Show Hide
@@ -104,21 +105,45 @@ namespace Fu
                 }
 
                 // calculate body size
-                _currentBodySize = _currentModalSize.Size;
-                if (_currentBodyHeight > 0f)
-                {
-                    _currentBodySize.y = _currentBodyHeight;
-                }
-                _currentBodySize.y = Mathf.Clamp(_currentBodySize.y, 32f, container.Size.y - 256f - _currentTitleHeight - _currentFooterheight);
+                Vector2 minSpacing = _modalMinScreenSpacing * Fugui.Scale;
+                Vector2 availableSize = new Vector2(
+                    Mathf.Max(32f, container.Size.x - minSpacing.x * 2f),
+                    Mathf.Max(32f, container.Size.y - minSpacing.y * 2f)
+                );
 
-                // calculate full size and pos
-                Vector2 modalSize = new Vector2(_currentBodySize.x, _currentBodySize.y + _currentFooterheight + _currentTitleHeight);
-                _currentModalPos = new Vector2(container.Size.x / 2f - modalSize.x / 2f, container.Size.y / 2f - modalSize.y / 2f);
-                Vector2 modalStartPos = new Vector2(container.Size.x / 2f - (modalSize.x * 0.01f) / 2f, 64f);
-                if (_enlapsed < 1f)
+                float targetBodyWidth = _currentModalSize.Size.x;
+                float targetBodyHeight = _currentBodyHeight > 0f ? _currentBodyHeight : _currentModalSize.Size.y;
+
+                _currentBodySize = new Vector2(
+                    Mathf.Clamp(targetBodyWidth, 32f, availableSize.x),
+                    Mathf.Clamp(targetBodyHeight, 32f, Mathf.Max(32f, availableSize.y - _currentTitleHeight - _currentFooterheight))
+                );
+
+                Vector2 modalSize = new Vector2(
+                    _currentBodySize.x,
+                    Mathf.Min(availableSize.y, _currentBodySize.y + _currentFooterheight + _currentTitleHeight)
+                );
+
+                _currentBodySize.y = Mathf.Max(32f, modalSize.y - _currentTitleHeight - _currentFooterheight);
+
+                _currentModalPos = new Vector2(
+                    Mathf.Clamp(container.Size.x / 2f - modalSize.x / 2f, minSpacing.x, Mathf.Max(minSpacing.x, container.Size.x - modalSize.x - minSpacing.x)),
+                    Mathf.Clamp(container.Size.y / 2f - modalSize.y / 2f, minSpacing.y, Mathf.Max(minSpacing.y, container.Size.y - modalSize.y - minSpacing.y))
+                );
+
+                Vector2 modalStartPos = new Vector2(
+                    container.Size.x / 2f - (modalSize.x * 0.01f) / 2f,
+                    minSpacing.y
+                );
+
+                if (_enlapsed < Settings.ModalAnimationDuration)
                 {
-                    ImGui.SetNextWindowSize(Vector2.Lerp(modalSize * 0.01f, modalSize, _enlapsed / Settings.ModalAnimationDuration), ImGuiCond.Always);
-                    ImGui.SetNextWindowPos(Vector2.Lerp(modalStartPos, _currentModalPos, _enlapsed / Settings.ModalAnimationDuration), ImGuiCond.Always);
+                    float animationRatio = Settings.ModalAnimationDuration <= 0f
+                        ? 1f
+                        : Mathf.Clamp01(_enlapsed / Settings.ModalAnimationDuration);
+
+                    ImGui.SetNextWindowSize(Vector2.Lerp(modalSize * 0.01f, modalSize, animationRatio), ImGuiCond.Always);
+                    ImGui.SetNextWindowPos(Vector2.Lerp(modalStartPos, _currentModalPos, animationRatio), ImGuiCond.Always);
                 }
                 else
                 {
@@ -146,7 +171,7 @@ namespace Fu
                     {
                         //call the stored body callback
                         FuStyle.NoBackgroundUnpadded.Push(true);
-                        Fugui.BeginChild("FuguiModalBody", new Vector2(-1f, _currentBodySize.y));
+                        Fugui.BeginChild("FuguiModalBody", _currentBodySize);
                         float cursorY = ImGui.GetCursorScreenPos().y;
                         ImGui.Dummy(Vector2.zero);
                         using (FuLayout layout = new FuLayout())

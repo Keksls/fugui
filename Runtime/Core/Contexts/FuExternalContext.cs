@@ -1,5 +1,6 @@
 ﻿#if FU_EXTERNALIZATION
 using ImGuiNET;
+using System;
 using UnityEngine;
 
 namespace Fu
@@ -90,15 +91,34 @@ namespace Fu
         {
             _window?.Close(() =>
             {
-                base.Destroy();
-
+                FuContext previousContext = Fugui.CurrentContext;
                 Fugui.SetCurrentContext(this);
                 _platform?.Shutdown(IO, PlatformIO);
                 _platform = null;
+                base.Destroy();
 
                 ImGui.DestroyContext(ImGuiContext);
+                ImGuiContext = IntPtr.Zero;
                 _window = null;
+                RestorePreviousContext(previousContext);
             });
+        }
+
+        private void RestorePreviousContext(FuContext previousContext)
+        {
+            if (previousContext != null && previousContext != this && Fugui.ContextExists(previousContext.ID))
+            {
+                Fugui.SetCurrentContext(previousContext);
+                return;
+            }
+
+            if (Fugui.DefaultContext != null && Fugui.ContextExists(Fugui.DefaultContext.ID))
+            {
+                Fugui.SetCurrentContext(Fugui.DefaultContext);
+                return;
+            }
+
+            Fugui.SetCurrentContext(null);
         }
 
         public override void SetScale(float scale, float fontScale)

@@ -88,11 +88,15 @@ namespace Fu
             _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
 
             _rTexture.antiAliasing = (int)windowDefinition.MSAASamples;
+#if UNITY_6000_4_OR_NEWER
+            _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
+#else
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>()?.enableRenderCompatibilityMode ?? false;
             if (isRenderGraphEnabled)
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
             else
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+#endif
             _rTexture.useDynamicScale = true;
             _rTexture.Create();
 

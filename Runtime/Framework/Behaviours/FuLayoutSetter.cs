@@ -20,7 +20,7 @@ namespace Fu.Framework
         [SerializeField]
         private bool _forceHideMainMenu = false;
 
-        private void Awake()
+        private void FuguiAwake()
         {
             // register DockingLayoutManager events
             Fugui.Layouts.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
@@ -60,7 +60,7 @@ namespace Fu.Framework
                 // add Fugui menu
                 Fugui.RegisterMainMenuItem("Fugui", null);
                 // add 'Settings' menu items to open settings (its a child of 'Fugui' item)
-                Fugui.RegisterMainMenuItem(FuIcons.Settings_duotone + " Settings", () => Fugui.CreateWindowAsync(FuSystemWindowsNames.FuguiSettings, null), "Fugui");
+                Fugui.RegisterMainMenuItem(FuIcons.Settings_duotone + " Settings", () => Fugui.CreateWindow(FuSystemWindowsNames.FuguiSettings), "Fugui");
                 // add 'Settings' menu items to open settings (its a child of 'Fugui' item)
                 Fugui.RegisterMainMenuItem(FuIcons.Screen_duotone + " Imgui Demo", () => { _showImGuiDemoWindow = true; }, "Fugui");
             }
@@ -84,7 +84,7 @@ namespace Fu.Framework
                 Fugui.RegisterMainMenuItem("Windows", null);
                 foreach (FuWindowDefinition windowName in Fugui.UIWindowsDefinitions.Values)
                 {
-                    Fugui.RegisterMainMenuItem(windowName.WindowName.ToString(), () => Fugui.CreateWindowAsync(windowName.WindowName, null), "Windows");
+                    Fugui.RegisterMainMenuItem(windowName.WindowName.ToString(), () => Fugui.CreateWindow(windowName.WindowName), "Windows");
                 }
             }
 
@@ -96,9 +96,11 @@ namespace Fu.Framework
                 {
                     Fugui.RegisterMainMenuItem("3D " + windowName.WindowName.ToString(), () =>
                     {
-                        Fugui.CreateWindowAsync(windowName.WindowName, (window) => { 
-                        Fugui.Add3DWindow(window, new Vector3(0, 0, 5), Quaternion.identity);
-                        }, false);
+                        FuWindow window = Fugui.CreateWindow(windowName.WindowName, false);
+                        if (window != null)
+                            Fugui.Add3DWindow(window, new Vector3(0, 0, 5), Quaternion.identity);
+                        else
+                            Debug.LogError("Failed to create window " + windowName.WindowName.ToString() + " as a 3D Window");
                     }, "3D Windows");
                 }
             }

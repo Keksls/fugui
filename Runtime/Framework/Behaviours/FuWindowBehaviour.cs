@@ -43,7 +43,7 @@ namespace Fu.Framework
 
             // Force the creation of the window immediately on Awake
             if (_forceCreateAloneOnAwake)
-                Fugui.CreateWindowAsync(_windowName, null, true);
+                Fugui.CreateWindow(_windowName, true);
         }
 
         /// <summary>

@@ -424,10 +424,10 @@ namespace Fu
             {
 #if FU_EXTERNALIZATION
                 if (IsExternal)
-                    ((FuExternalWindowContainer)Container).Close(() => { Close(null); });
+                    ((FuExternalWindowContainer)Container).Close(() => { Close(); });
                 else
 #endif
-                Close(null);
+                Close();
                 return;
             }
 
@@ -1242,27 +1242,34 @@ namespace Fu
         /// <summary>
         /// Remove this window from it container and from Manager windows list
         /// </summary>
-        public void Close(Action callback)
+        /// <summary>
+        /// Remove this window from its container and from the manager windows list.
+        /// </summary>
+        public void Close()
         {
-            // on removeFromContainer delegate
-            void onremovedFromContainerDelegate(FuWindow window)
+            void onRemovedFromContainerDelegate(FuWindow window)
             {
-                window.OnRemovedFromContainer -= onremovedFromContainerDelegate;
-                Fugui.TryRemoveUIWindow(this);
-                OnClosed?.Invoke(this);
-                Fugui.Fire_OnWindowClosed(this);
-                callback?.Invoke();
+                window.OnRemovedFromContainer -= onRemovedFromContainerDelegate;
+                FinalizeClose();
             }
 
-            OnRemovedFromContainer += onremovedFromContainerDelegate;
+            OnRemovedFromContainer += onRemovedFromContainerDelegate;
 
             if (!TryRemoveFromContainer())
             {
-                Fugui.TryRemoveUIWindow(this);
-                OnClosed?.Invoke(this);
-                Fugui.Fire_OnWindowClosed(this);
-                callback?.Invoke();
+                OnRemovedFromContainer -= onRemovedFromContainerDelegate;
+                FinalizeClose();
             }
+        }
+
+        /// <summary>
+        /// Finalizes the window close process.
+        /// </summary>
+        private void FinalizeClose()
+        {
+            Fugui.TryRemoveUIWindow(this);
+            OnClosed?.Invoke(this);
+            Fugui.Fire_OnWindowClosed(this);
         }
 
         /// <summary>

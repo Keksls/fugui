@@ -276,7 +276,6 @@ namespace Fu
 
             // create Default Fugui Context and initialize themeManager
             DefaultContext = CreateUnityContext(mainContainerUICamera, Settings.GlobalScale, Settings.FontGlobalScale, Fugui.Themes.Initialize);
-            //DefaultContext.PrepareRender();
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
             DefaultContainer = new FuMainWindowContainer(DefaultContext);
@@ -389,15 +388,22 @@ namespace Fu
         /// Adds an UI window to be in 3D context.
         /// </summary>
         /// <param name="uiWindow">The UI window to be display in 3D.</param>
-        public static void Add3DWindow(FuWindow uiWindow, Vector3? position = null, Quaternion? rotation = null)
+        public static Fu3DWindowContainer Add3DWindow(FuWindow uiWindow, Vector3? position = null, Quaternion? rotation = null)
         {
             if (uiWindow == null)
             {
                 Debug.Log("You are trying to create a 3D context to draw a null window.");
-                return;
+                return null;
             }
-            // Add the UIwindow to it's own 3DContainer
-            _3DWindows.Add(uiWindow.ID, new Fu3DWindowContainer(uiWindow, position, rotation));
+
+            if (_3DWindows.TryGetValue(uiWindow.ID, out Fu3DWindowContainer existingContainer))
+            {
+                return existingContainer;
+            }
+
+            Fu3DWindowContainer container = new Fu3DWindowContainer(uiWindow, position, rotation);
+            _3DWindows.Add(uiWindow.ID, container);
+            return container;
         }
 
         /// <summary>
@@ -422,7 +428,30 @@ namespace Fu
                 return;
             }
             // Close the 3D window and remove it from the list
-            _3DWindows[id].Close();
+            Fu3DWindowContainer container = _3DWindows[id];
+            _3DWindows.Remove(id);
+            if (container.Window != null)
+            {
+                container.Window.Close();
+            }
+            else
+            {
+                container.Close();
+            }
+        }
+
+        /// <summary>
+        /// Remove a 3D window container from Fugui registry without closing it again.
+        /// </summary>
+        /// <param name="id">Window ID associated with the 3D container.</param>
+        internal static void Unregister3DWindow(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return;
+            }
+
+            _3DWindows.Remove(id);
         }
 
         /// <summary>
@@ -465,128 +494,194 @@ namespace Fu
         }
 
         /// <summary>
-        /// Closes all UI windows asynchronously.
+        /// Closes all UI windows.
+        /// </summary>
+        public static void CloseAllWindows()
+        {
+            CloseAllWindowsAsync(null);
+        }
+
+        /// <summary>
+        /// Closes all UI windows and invokes a callback when every container has removed its window.
         /// </summary>
         /// <param name="callback">A callback to be invoked after all windows are closed.</param>
         public static void CloseAllWindowsAsync(Action callback)
         {
             ForceDrawAllWindows();
-            // Get a list of all UI windows
+
             List<FuWindow> windows = UIWindows.Values.ToList();
             if (windows.Count == 0)
             {
                 callback?.Invoke();
+                return;
             }
-            else
+
+            foreach (FuWindow window in windows)
             {
-                // Iterate over the windows
-                foreach (FuWindow window in windows)
+                void onWindowClosed(FuWindow closedWindow)
                 {
-                    // Close this window
-                    window.Close(() =>
+                    closedWindow.OnClosed -= onWindowClosed;
+                    if (UIWindows.Count == 0)
                     {
-                        if (UIWindows.Count == 0)
-                        {
-                            callback?.Invoke();
-                        }
-                    });
+                        callback?.Invoke();
+                    }
                 }
+
+                window.OnClosed += onWindowClosed;
+                window.Close();
             }
         }
 
         /// <summary>
-        /// Creates UI windows asynchronously.
+        /// Creates a UI window.
         /// </summary>
-        /// <param name="windowToGet">window names to be created.</param>
-        /// <param name="callback">A callback to be invoked after the windows was created, passing the instance of the created windows (null if fail).</param>
-        /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
+        /// <param name="windowToGet">The window name to create.</param>
+        /// <param name="autoAddToMainContainer">Add the window to the main container.</param>
+        /// <returns>The created window, or null if creation failed.</returns>
+        public static FuWindow CreateWindow(FuWindowName windowToGet, bool autoAddToMainContainer = true)
+        {
+            List<(FuWindowName, FuWindow)> windows = CreateWindows(
+                new List<FuWindowName> { windowToGet },
+                autoAddToMainContainer);
+
+            if (windows.Count == 0)
+            {
+                return null;
+            }
+
+            return windows[0].Item2;
+        }
+
+        /// <summary>
+        /// Creates a UI window and invokes the callback once the window is ready.
+        /// </summary>
+        /// <param name="windowToGet">The window name to create.</param>
+        /// <param name="callback">A callback invoked with the created window, or null if creation failed.</param>
+        /// <param name="autoAddToMainContainer">Add the window to the main container.</param>
         public static void CreateWindowAsync(FuWindowName windowToGet, Action<FuWindow> callback, bool autoAddToMainContainer = true)
         {
-            CreateWindowsAsync(new List<FuWindowName>() { windowToGet }, (windows) =>
+            CreateWindowsAsync(new List<FuWindowName> { windowToGet }, (windows) =>
             {
                 if (windows.Count > 0 && windows[0].Item1.Equals(windowToGet))
                 {
                     callback?.Invoke(windows[0].Item2);
+                    return;
                 }
-                else
-                {
-                    callback?.Invoke(null);
-                }
+
+                callback?.Invoke(null);
             }, autoAddToMainContainer);
         }
 
         /// <summary>
-        /// Creates UI windows asynchronously.
+        /// Creates UI windows.
         /// </summary>
-        /// <param name="windowsToGet">A list of window names to be created.</param>
-        /// <param name="callback">A callback to be invoked after all windows are created, passing a dictionary of the created windows.</param>
-        /// <param name="autoAddToMainContainer">Add the window to the Main Container</param>
+        /// <param name="windowsToGet">The window names to create.</param>
+        /// <param name="autoAddToMainContainer">Add the windows to the main container.</param>
+        /// <returns>The created windows.</returns>
+        public static List<(FuWindowName, FuWindow)> CreateWindows(List<FuWindowName> windowsToGet, bool autoAddToMainContainer = true)
+        {
+            List<(FuWindowName, FuWindow)> windows = new List<(FuWindowName, FuWindow)>();
+
+            foreach (FuWindowName windowName in windowsToGet)
+            {
+                if (!UIWindowsDefinitions.TryGetValue(windowName, out FuWindowDefinition windowDefinition))
+                {
+                    continue;
+                }
+
+                if (!windowDefinition.CreateUIWindow(out FuWindow window))
+                {
+                    continue;
+                }
+
+                if (autoAddToMainContainer)
+                {
+                    window.Size = new Vector2Int(
+                        (int)(windowDefinition.Size.x * DefaultContainer.Context.Scale),
+                        (int)(windowDefinition.Size.y * DefaultContainer.Context.Scale));
+
+                    window.TryAddToContainer(DefaultContainer);
+                }
+
+                window.ForceDraw();
+                windows.Add((windowDefinition.WindowName, window));
+            }
+
+            return windows;
+        }
+
+        /// <summary>
+        /// Creates UI windows and invokes the callback once every requested window has either failed or is ready.
+        /// </summary>
+        /// <param name="windowsToGet">The window names to create.</param>
+        /// <param name="callback">A callback invoked with the created windows.</param>
+        /// <param name="autoAddToMainContainer">Add the windows to the main container.</param>
         public static void CreateWindowsAsync(List<FuWindowName> windowsToGet, Action<List<(FuWindowName, FuWindow)>> callback, bool autoAddToMainContainer = true)
         {
-            // Initialize counters for the number of windows to add and the number of windows added
-            int nbWIndowToAdd = 0;
-            int nbWIndowAdded = 0;
+            List<(FuWindowName, FuWindow)> windows = new List<(FuWindowName, FuWindow)>();
+            List<FuWindowDefinition> windowDefinitions = new List<FuWindowDefinition>();
 
-            // Initialize a list of window definitions
-            List<FuWindowDefinition> winDefs = new List<FuWindowDefinition>();
-            // Iterate over the window names
-            foreach (FuWindowName windowID in windowsToGet)
+            foreach (FuWindowName windowName in windowsToGet)
             {
-                // Check if a window definition with the specified name exists
-                if (UIWindowsDefinitions.ContainsKey(windowID))
+                if (UIWindowsDefinitions.TryGetValue(windowName, out FuWindowDefinition windowDefinition))
                 {
-                    // Add the window definition to the list and increment the window to add counter
-                    winDefs.Add(UIWindowsDefinitions[windowID]);
-                    nbWIndowToAdd++;
+                    windowDefinitions.Add(windowDefinition);
                 }
             }
 
-            // Initialize a dictionary of UI windows
-            List<(FuWindowName, FuWindow)> windows = new List<(FuWindowName, FuWindow)>();
-            // Iterate over the window definitions
-            foreach (FuWindowDefinition winDef in winDefs)
+            if (windowDefinitions.Count == 0)
             {
-                // Create an event handler for the OnReady event of the window
-                Action<FuWindow> onWindowReady = null;
-                onWindowReady = (window) =>
+                callback?.Invoke(windows);
+                return;
+            }
+
+            int pendingWindows = windowDefinitions.Count;
+
+            void completeOne()
+            {
+                pendingWindows--;
+                if (pendingWindows <= 0)
                 {
-                    // Add the window to the dictionary and increment the window added counter
-                    windows.Add(new(winDef.WindowName, window));
-                    nbWIndowAdded++;
-                    // Force window to draw first frame
-                    window.ForceDraw();
-                    // Unsubscribe from the OnReady event
-                    window.OnInitialized -= onWindowReady;
-                    // Invoke the callback if all windows are added
-                    if (nbWIndowAdded == nbWIndowToAdd)
-                    {
-                        callback?.Invoke(windows);
-                    }
-                };
-                // create the UIWindow
-                if (winDef.CreateUIWindow(out FuWindow win))
-                {
-                    if (autoAddToMainContainer)
-                    {
-                        // Subscribe to the OnReady event of the window
-                        win.OnInitialized += onWindowReady;
-                        win.Size = new Vector2Int((int)(winDef.Size.x * DefaultContainer.Context.Scale), (int)(winDef.Size.y * DefaultContainer.Context.Scale));
-                        // add UIWindow to main container
-                        win.TryAddToContainer(DefaultContainer);
-                    }
-                    else
-                    {
-                        onWindowReady?.Invoke(win);
-                    }
+                    callback?.Invoke(windows);
                 }
-                else
+            }
+
+            foreach (FuWindowDefinition windowDefinition in windowDefinitions)
+            {
+                if (!windowDefinition.CreateUIWindow(out FuWindow window))
                 {
-                    nbWIndowAdded++;
-                    // Invoke the callback if all windows are added
-                    if (nbWIndowAdded == nbWIndowToAdd)
-                    {
-                        callback(windows);
-                    }
+                    completeOne();
+                    continue;
+                }
+
+                if (!autoAddToMainContainer)
+                {
+                    window.ForceDraw();
+                    windows.Add((windowDefinition.WindowName, window));
+                    completeOne();
+                    continue;
+                }
+
+                Action<FuWindow> onWindowInitialized = null;
+                onWindowInitialized = (initializedWindow) =>
+                {
+                    initializedWindow.OnInitialized -= onWindowInitialized;
+                    initializedWindow.ForceDraw();
+                    windows.Add((windowDefinition.WindowName, initializedWindow));
+                    completeOne();
+                };
+
+                window.OnInitialized += onWindowInitialized;
+                window.Size = new Vector2Int(
+                    (int)(windowDefinition.Size.x * DefaultContainer.Context.Scale),
+                    (int)(windowDefinition.Size.y * DefaultContainer.Context.Scale));
+
+                if (!window.TryAddToContainer(DefaultContainer))
+                {
+                    window.OnInitialized -= onWindowInitialized;
+                    window.ForceDraw();
+                    windows.Add((windowDefinition.WindowName, window));
+                    completeOne();
                 }
             }
         }
@@ -1005,7 +1100,13 @@ namespace Fu
         /// <returns> size of the current font</returns>
         public static int GetFontSize()
         {
-            return (int)(ImGuiNative.igGetFontSize() / Scale);
+            float fontScale = CurrentContext != null ? CurrentContext.FontScale : 1f;
+            if (fontScale <= 0f)
+            {
+                fontScale = 1f;
+            }
+
+            return Mathf.RoundToInt(ImGuiNative.igGetFontSize() / fontScale);
         }
 
         /// <summary>
@@ -1114,7 +1215,10 @@ namespace Fu
             if (ContextExists(contextID))
             {
                 GetContext(contextID).Stop();
-                ToDeleteContexts.Enqueue(contextID);
+                if (!ToDeleteContexts.Contains(contextID))
+                {
+                    ToDeleteContexts.Enqueue(contextID);
+                }
             }
         }
 
@@ -1124,7 +1228,12 @@ namespace Fu
         /// <param name="context">the fugui context to destroy</param>
         public static void DestroyContext(FuContext context)
         {
-            ToDeleteContexts.Enqueue(context.ID);
+            if (context == null)
+            {
+                return;
+            }
+
+            DestroyContext(context.ID);
         }
 
         /// <summary>

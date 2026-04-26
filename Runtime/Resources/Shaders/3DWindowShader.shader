@@ -2,8 +2,6 @@ Shader "Fugui/3DUIWindow"
 {
     Properties {
         _MainTex ("Texture", 2D) = "white" {}
-        _BackColor ("Back Color", Color) = (1, 1, 1, 1)
-        _Displacement ("Displacement", Range(0, 10)) = 0.1
     }
     SubShader {
         //Tags {"Queue"="Transparent" "RenderType"="Transparent"}
@@ -36,11 +34,6 @@ Shader "Fugui/3DUIWindow"
             v2f o;
             o.vertex = UnityObjectToClipPos(v.vertex);
             o.uv = v.uv;
-            fixed4 col = tex2Dlod(_MainTex, float4(v.uv,0,0));
-            if(col.r != _BackColor.r && col.g != _BackColor.g && col.b != _BackColor.b) {
-                o.vertex.xyz += col.rgb * _Displacement;
-            }
-
             return o;
         }
 

@@ -77,12 +77,15 @@ namespace Fu.Framework
             }
 
             // if render graph is enabled, we need a depth buffer to avoid issues
+#if UNITY_6000_4_OR_NEWER
+            Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
+#else
             bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode;
             if (isRenderGraphEnabled)
                 Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
             else
                 Texture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
-
+#endif
             Texture.useDynamicScale = true;
             Texture.Create();
             Player.targetTexture = Texture;

@@ -1,4 +1,3 @@
-using ImGuiNET;
 using System;
 using UnityEngine;
 
@@ -22,13 +21,8 @@ namespace Fu
         #region Unity Methods
         void Awake()
         {
-            Debug.Log("Graphics API: " + SystemInfo.graphicsDeviceType);
-            Debug.Log("Imgui Version : " + ImGui.GetVersion());
-
             // prepare FuGui before start using it
             Fugui.Initialize(_settings, this, _uiCamera);
-
-            Debug.Log("Scale : " + Fugui.Scale);
 
             // log errors to Unity console
             if (_logErrors)
@@ -48,7 +42,7 @@ namespace Fu
             // if no layouts and settings is set so, display Fugui settings to avoid 'softLocked scene'
             if (Fugui.Layouts.CurrentLayout == null && Fugui.Layouts.Layouts.Count == 0 && Fugui.Settings.DisplaySettingsIfNoLayout)
             {
-                Fugui.CreateWindowAsync(FuSystemWindowsNames.FuguiSettings, null);
+                Fugui.CreateWindow(FuSystemWindowsNames.FuguiSettings);
             }
         }
 
@@ -99,7 +93,10 @@ namespace Fu
                         Fugui.ExternalWindows.Remove(externalContext.Window.Window.ID);
                     }
 #endif
-                    context.EndRender();
+                    if (context.RenderPrepared)
+                    {
+                        context.EndRender();
+                    }
                     context.Destroy();
 
                     Fugui.Contexts.Remove(context.ID);

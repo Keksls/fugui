@@ -13,12 +13,13 @@ namespace Fu
         public string ID { get; private set; }
         public FuWindow Window { get; private set; }
         public FuContext Context => _fuguiContext;
+        public bool IsClosed { get; private set; }
         public Vector2Int LocalMousePos => _localMousePos;
         public Vector2Int Position => Vector2Int.zero;
         public Vector2Int Size => _size;
         public RenderTexture RenderTexture { get; private set; }
         private GameObject _panelGameObject;
-        public int FuguiContextID { get { return _fuguiContext.ID; } }
+        public int FuguiContextID { get { return _fuguiContext != null ? _fuguiContext.ID : -1; } }
         public FuMouseState Mouse => _mouseState;
         public FuKeyboardState Keyboard => _keyboardState;
         private FuMouseState _mouseState;
@@ -59,12 +60,7 @@ namespace Fu
             _size = window.Size;
 
             // Create RenderTexture
-            RenderTexture = new RenderTexture(Window.Size.x, Window.Size.y, 0, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
-            int aaSamples = QualitySettings.antiAliasing;
-            if (aaSamples <= 0) aaSamples = 1;
-            RenderTexture.antiAliasing = aaSamples;
-            RenderTexture.useDynamicScale = true;
-            RenderTexture.Create();
+            RenderTexture = createRenderTexture(_size);
 
             if (!RenderTexture.IsCreated())
             {
@@ -116,12 +112,96 @@ namespace Fu
         }
 
         /// <summary>
+        /// Create the render texture used by the 3D UI panel.
+        /// </summary>
+        /// <param name="size">Pixel size of the render target.</param>
+        /// <returns>The created render texture.</returns>
+        private RenderTexture createRenderTexture(Vector2Int size)
+        {
+            size = sanitizeSize(size);
+
+            RenderTexture renderTexture = new RenderTexture(size.x, size.y, 0, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
+            int aaSamples = QualitySettings.antiAliasing;
+            if (aaSamples <= 0)
+                aaSamples = 1;
+
+            renderTexture.antiAliasing = aaSamples;
+            renderTexture.useDynamicScale = false;
+            renderTexture.Create();
+
+            return renderTexture;
+        }
+
+        /// <summary>
+        /// Clamp render target sizes to values Unity and ImGui can use.
+        /// </summary>
+        /// <param name="size">Requested size.</param>
+        /// <returns>Sanitized size.</returns>
+        private Vector2Int sanitizeSize(Vector2Int size)
+        {
+            return new Vector2Int(
+                Mathf.Max(1, size.x),
+                Mathf.Max(1, size.y)
+            );
+        }
+
+        /// <summary>
+        /// Apply a new render size to the render texture, Fugui context, material and panel mesh.
+        /// </summary>
+        /// <param name="size">Target render size in pixels.</param>
+        private void setRenderSize(Vector2Int size)
+        {
+            size = sanitizeSize(size);
+
+            bool sizeChanged = _size != size;
+            bool textureInvalid = RenderTexture == null ||
+                                  RenderTexture.width != size.x ||
+                                  RenderTexture.height != size.y ||
+                                  !RenderTexture.IsCreated();
+
+            _size = size;
+
+            if (textureInvalid)
+            {
+                RenderTexture oldTexture = RenderTexture;
+                RenderTexture = createRenderTexture(_size);
+                _uiMaterial?.SetTexture("_MainTex", RenderTexture);
+
+                if (_fuguiContext != null)
+                {
+                    _fuguiContext.SetTargetTexture(RenderTexture);
+                }
+
+                if (oldTexture != null)
+                {
+                    oldTexture.Release();
+                    UnityEngine.Object.Destroy(oldTexture);
+                }
+            }
+
+            if (_fuguiContext != null)
+            {
+                _fuguiContext.SetPixelRect(new Rect(Vector2.zero, new Vector2(_size.x, _size.y)));
+                _fuguiContext.SetTargetTexture(RenderTexture);
+            }
+
+            if (sizeChanged || _panelGameObject == null)
+            {
+                createPanel();
+            }
+        }
+
+        /// <summary>
         /// Create the 3D UI Panel GameObject of this container
         /// </summary>
         private void createPanel()
         {
+            Vector3 position = Vector3.zero;
+            Quaternion rotation = Quaternion.identity;
             if (_panelGameObject != null)
             {
+                position = _panelGameObject.transform.position;
+                rotation = _panelGameObject.transform.rotation;
                 GameObject.Destroy(_panelGameObject);
             }
 
@@ -129,13 +209,15 @@ namespace Fu
             FuPanelMesh rectangleMesh = _panelGameObject.AddComponent<FuPanelMesh>();
             float round = Fugui.Themes.WindowRounding * Context.Scale;
             MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
-            collider.sharedMesh = rectangleMesh.CreateMesh(Window.Size.x / Context.Scale, Window.Size.y / Context.Scale, 1f / 1000f * Fugui.Settings.Windows3DScale, round, round, round, round, Fugui.Settings.UIPanelWidth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial);
+            collider.sharedMesh = rectangleMesh.CreateMesh(_size.x / Context.Scale, _size.y / Context.Scale, 1f / 1000f * Fugui.Settings.Windows3DScale, round, round, round, round, Fugui.Settings.UIPanelWidth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial);
             int layer = (int)Mathf.Log(Fugui.Settings.UILayer.value, 2);
             _panelGameObject.layer = layer;
             foreach (Transform child in _panelGameObject.transform)
             {
                 child.gameObject.layer = layer;
             }
+            _panelGameObject.transform.position = position;
+            _panelGameObject.transform.rotation = rotation;
         }
 
         /// <summary>
@@ -144,6 +226,9 @@ namespace Fu
         /// <param name="position">Position of the UI Panel</param>
         public void SetPosition(Vector3 position)
         {
+            if (IsClosed || _panelGameObject == null)
+                return;
+
             _panelGameObject.transform.position = position;
         }
 
@@ -153,6 +238,9 @@ namespace Fu
         /// <param name="rotation">Rotation of the UI Panel</param>
         public void SetRotation(Quaternion rotation)
         {
+            if (IsClosed || _panelGameObject == null)
+                return;
+
             _panelGameObject.transform.rotation = rotation;
         }
 
@@ -223,6 +311,40 @@ namespace Fu
         public void OnEachWindow(Action<FuWindow> callback)
         {
             callback?.Invoke(Window);
+        }
+
+        /// <summary>
+        /// Resize the 3D window so the generated panel mesh matches a target local world size.
+        /// </summary>
+        /// <param name="localSize">Target local size of the 3D placeholder.</param>
+        public void SetLocalSize(Vector2 localSize)
+        {
+            if (IsClosed || Window == null || Context == null)
+                return;
+
+            float inversePanelScale = 1000f / Fugui.Settings.Windows3DScale;
+
+            Vector2Int targetSize = new Vector2Int(
+                Mathf.Max(1, Mathf.RoundToInt(localSize.x * Context.Scale * inversePanelScale)),
+                Mathf.Max(1, Mathf.RoundToInt(localSize.y * Context.Scale * inversePanelScale))
+            );
+
+            if (Window.Size == targetSize &&
+                _size == targetSize &&
+                RenderTexture != null &&
+                RenderTexture.width == targetSize.x &&
+                RenderTexture.height == targetSize.y &&
+                RenderTexture.IsCreated())
+            {
+                return;
+            }
+
+            if (Window.Size != targetSize)
+            {
+                Window.Size = targetSize;
+            }
+
+            setRenderSize(targetSize);
         }
 
         #region Image & ImageButton
@@ -338,6 +460,9 @@ namespace Fu
         /// <returns></returns>
         public bool TryAddWindow(FuWindow FuWindow)
         {
+            if (IsClosed)
+                return false;
+
             if (Window == null)
             {
                 Window = FuWindow;
@@ -359,13 +484,7 @@ namespace Fu
         /// <param name="window">the resized window</param>
         private void Window_OnResized(FuWindow window)
         {
-            _size = window.Size;
-            RenderTexture.Release();
-            RenderTexture.width = _size.x;
-            RenderTexture.height = _size.y;
-            _fuguiContext.SetTargetTexture(RenderTexture);
-            _fuguiContext.SetPixelRect(new Rect(Vector2.zero, new Vector2(_size.x, _size.y)));
-            createPanel();
+            setRenderSize(window.Size);
         }
 
         /// <summary>
@@ -397,14 +516,21 @@ namespace Fu
         /// </summary>
         public void Close()
         {
+            if (IsClosed)
+                return;
+
+            IsClosed = true;
+            string windowID = Window?.ID;
+
             if (Window != null)
             {
                 Window.OnClosed -= Window_OnClosed;
-                Window.OnResized -= Window_OnResized;
+                Window.OnResize -= Window_OnResized;
                 Window.Container = null;
                 Window.RemoveWindowFlag(ImGuiWindowFlags.NoMove);
                 Window.RemoveWindowFlag(ImGuiWindowFlags.NoResize);
                 Window.Is3DWindow = false;
+                Window = null;
             }
             if (_fuguiContext != null)
             {
@@ -412,17 +538,22 @@ namespace Fu
                 _fuguiContext.OnPrepareFrame -= context_OnPrepareFrame;
                 _fuguiContext.OnFramePrepared -= _fuguiContext_OnFramePrepared;
                 Fugui.DestroyContext(_fuguiContext);
+                _fuguiContext = null;
             }
             Fugui.Themes.OnThemeSet -= ThemeManager_OnThemeSet;
             if (_panelGameObject != null)
             {
                 UnityEngine.Object.Destroy(_panelGameObject);
+                _panelGameObject = null;
             }
             if (RenderTexture != null)
             {
                 RenderTexture.Release();
                 UnityEngine.Object.Destroy(RenderTexture);
+                RenderTexture = null;
             }
+
+            Fugui.Unregister3DWindow(windowID);
         }
     }
 }

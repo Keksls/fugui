@@ -23,6 +23,10 @@ namespace Fu
         /// Whatever we are setting a layout right now
         /// </summary>
         public bool IsSettingLayout { get; private set; }
+        private bool _hasPendingLayoutRequest;
+        private bool _pendingLayoutRetryQueued;
+        private FuDockingLayoutDefinition _pendingLayout;
+        private bool _pendingGetOnlyAutoInstantiated;
         public event Action OnDockLayoutSet;
         public event Action OnBeforeDockLayoutSet;
         public event Action OnDockLayoutReloaded;
@@ -217,6 +221,7 @@ namespace Fu
             // check whatever we car set Layer
             if (!canSetLayer())
             {
+                requestLayoutWhenReady(layout, getOnlyAutoInstantiated);
                 return;
             }
 
@@ -227,8 +232,8 @@ namespace Fu
             // break the current docking nodes data before removing windows
             breakDockingLayout();
 
-            // close all opened UI Window
-            Fugui.CloseAllWindowsAsync(() =>
+            // close only windows owned by the regular docking layout.
+            closeLayoutWindowsAsync(() =>
             {
                 if (layout == null)
                 {
@@ -239,6 +244,81 @@ namespace Fu
                     createDynamicLayout(layout, getOnlyAutoInstantiated);
                 }
             });
+        }
+
+        /// <summary>
+        /// Keep the latest layout request and retry it once current window/container transitions are finished.
+        /// </summary>
+        /// <param name="layout">Layout to set. Null means configuration layout.</param>
+        /// <param name="getOnlyAutoInstantiated">Whatever only auto-instantiated windows should be created.</param>
+        private void requestLayoutWhenReady(FuDockingLayoutDefinition layout, bool getOnlyAutoInstantiated)
+        {
+            _pendingLayout = layout;
+            _pendingGetOnlyAutoInstantiated = getOnlyAutoInstantiated;
+            _hasPendingLayoutRequest = true;
+
+            if (_pendingLayoutRetryQueued)
+            {
+                return;
+            }
+
+            _pendingLayoutRetryQueued = true;
+            Fugui.ExecuteInMainThread(trySetPendingLayout);
+        }
+
+        /// <summary>
+        /// Retry the latest pending layout request.
+        /// </summary>
+        private void trySetPendingLayout()
+        {
+            _pendingLayoutRetryQueued = false;
+
+            if (!_hasPendingLayoutRequest)
+            {
+                return;
+            }
+
+            FuDockingLayoutDefinition layout = _pendingLayout;
+            bool getOnlyAutoInstantiated = _pendingGetOnlyAutoInstantiated;
+            _hasPendingLayoutRequest = false;
+
+            SetLayout(layout, getOnlyAutoInstantiated);
+        }
+
+        /// <summary>
+        /// Close windows managed by the main docking layout without touching 3D window containers.
+        /// </summary>
+        /// <param name="callback">Callback invoked once all layout windows are closed.</param>
+        private void closeLayoutWindowsAsync(Action callback)
+        {
+            Fugui.ForceDrawAllWindows();
+
+            List<FuWindow> windows = Fugui.UIWindows.Values
+                .Where(window => !window.Is3DWindow)
+                .ToList();
+
+            if (windows.Count == 0)
+            {
+                callback?.Invoke();
+                return;
+            }
+
+            foreach (FuWindow window in windows)
+            {
+                void onWindowClosed(FuWindow closedWindow)
+                {
+                    closedWindow.OnClosed -= onWindowClosed;
+
+                    bool hasLayoutWindows = Fugui.UIWindows.Values.Any(openWindow => !openWindow.Is3DWindow);
+                    if (!hasLayoutWindows)
+                    {
+                        callback?.Invoke();
+                    }
+                }
+
+                window.OnClosed += onWindowClosed;
+                window.Close();
+            }
         }
 
         /// <summary>
@@ -355,6 +435,11 @@ namespace Fu
             // check whatever a window is busy (changing container, initializing or quitting contexts, etc)
             foreach (var pair in Fugui.UIWindows)
             {
+                if (pair.Value.Is3DWindow)
+                {
+                    continue;
+                }
+
                 if (pair.Value.IsBusy)
                 {
                     return false;
@@ -410,6 +495,7 @@ namespace Fu
                 if (windows.Count != windowsToGet.Count)
                 {
                     Debug.LogError("Layout Error : windows created don't match requested ones. aborted.");
+                    endSettingLayout();
                     return;
                 }
 
@@ -420,7 +506,7 @@ namespace Fu
 
                 var id = windows.First(w => w.Item1.Equals(FuSystemWindowsNames.DockSpaceManager)).Item2.ID;
                 ImGuiDocking.DockBuilderDockWindow(id, left);
-                id = windows.First(w => w.Item1.Equals(FuSystemWindowsNames.DockSpaceManager)).Item2.ID;
+                id = windows.First(w => w.Item1.Equals(FuSystemWindowsNames.WindowsDefinitionManager)).Item2.ID;
                 ImGuiDocking.DockBuilderDockWindow(id, right);
                 ImGuiDocking.DockBuilderFinish(Dockspace_id);
 

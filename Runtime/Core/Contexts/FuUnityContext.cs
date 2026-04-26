@@ -41,11 +41,30 @@ namespace Fu
         /// </summary>
         internal override void Destroy()
         {
-            base.Destroy();
+            FuContext previousContext = Fugui.CurrentContext;
             Fugui.SetCurrentContext(this);
+            base.Destroy();
             SetPlatform(null, IO, PlatformIO);
-            Fugui.SetCurrentContext(null);
             ImGui.DestroyContext(ImGuiContext);
+            ImGuiContext = IntPtr.Zero;
+            RestorePreviousContext(previousContext);
+        }
+
+        private void RestorePreviousContext(FuContext previousContext)
+        {
+            if (previousContext != null && previousContext != this && Fugui.ContextExists(previousContext.ID))
+            {
+                Fugui.SetCurrentContext(previousContext);
+                return;
+            }
+
+            if (Fugui.DefaultContext != null && Fugui.ContextExists(Fugui.DefaultContext.ID))
+            {
+                Fugui.SetCurrentContext(Fugui.DefaultContext);
+                return;
+            }
+
+            Fugui.SetCurrentContext(null);
         }
 
         /// <summary>

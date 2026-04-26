@@ -1172,6 +1172,10 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5027617569530411785, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5027617569551273149, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 0
@@ -1291,6 +1295,10 @@ PrefabInstance:
     - target: {fileID: 5027617570534259322, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5027617570534833870, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5027617570552779775, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -1571,6 +1579,10 @@ PrefabInstance:
     - target: {fileID: 6843873115078220759, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6858132336863804837, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6863642949591362502, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -2242,9 +2254,17 @@ PrefabInstance:
     - {fileID: 7987701856982145824, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
     - {fileID: 6623857099734809141, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
     - {fileID: 8785113200481525893, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 131582004965259276, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1572739544}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+--- !u!4 &421292815 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 131582004965259276, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
+  m_PrefabInstance: {fileID: 265814709}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1203538079
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2310,6 +2330,57 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
+--- !u!1 &1572739543
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1572739544}
+  - component: {fileID: 1572739545}
+  m_Layer: 0
+  m_Name: 3DWindow
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1572739544
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1572739543}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.74, y: 2.743244, z: -2.9}
+  m_LocalScale: {x: 5.020803, y: 6.2360277, z: 0.01}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 421292815}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1572739545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1572739543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c572d04e995d91642a87e54a2a450327, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fugui::Fu.Framework.Fu3DWindowBehaviour
+  _windowName:
+    _id: 65532
+    _name: Fugui Settings
+    _autoInstantiateWindowOnlayoutSet: 1
+    _idleFPS: -1
+  _windowFlags: 64
+  _forceCreateAloneOnAwake: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -98,9 +98,20 @@ namespace Fu.Framework
                     {
                         FuWindow window = Fugui.CreateWindow(windowName.WindowName, false);
                         if (window != null)
-                            Fugui.Add3DWindow(window, new Vector3(0, 0, 5), Quaternion.identity);
+                        {
+                            float panelDepth = Fugui.Settings != null ? Mathf.Max(0.0001f, Fugui.Settings.UIPanelWidth) : 0.01f;
+                            Fugui.Add3DWindow(
+                                window,
+                                new Vector2(1f, 1f),
+                                window.Size,
+                                new Vector3(0, 0, 5),
+                                Quaternion.identity,
+                                panelDepth: panelDepth);
+                        }
                         else
+                        {
                             Debug.LogError("Failed to create window " + windowName.WindowName.ToString() + " as a 3D Window");
+                        }
                     }, "3D Windows");
                 }
             }

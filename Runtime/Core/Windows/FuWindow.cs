@@ -494,6 +494,12 @@ namespace Fu
                 Fugui.Push(ImGuiCol.TabDimmedSelected, Fugui.Themes.GetColor(FuColors.TabDimmedSelected));
             }
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(6f, 4f));
+            int windowStylePushCount = 1;
+            if (Is3DWindow)
+            {
+                Fugui.Push(ImGuiStyleVar.WindowMinSize, Vector2.one);
+                windowStylePushCount++;
+            }
 
             // get last frame Hovered state
             bool _lastFrameHovered = IsHovered;
@@ -583,9 +589,16 @@ namespace Fu
                 // if not docked, get size according to window size api
                 if (!IsDocked)
                 {
-                    // get size of this window
-                    var size = ImGui.GetWindowSize();
-                    newFrameSize = new Vector2Int((int)size.x, (int)size.y);
+                    if (Is3DWindow)
+                    {
+                        newFrameSize = Size;
+                    }
+                    else
+                    {
+                        // get size of this window
+                        var size = ImGui.GetWindowSize();
+                        newFrameSize = new Vector2Int((int)size.x, (int)size.y);
+                    }
                 }
                 // get pos of this window
                 var pos = ImGui.GetWindowPos();
@@ -595,13 +608,13 @@ namespace Fu
                 // draw debug data
                 DrawDebugPanel();
                 ImGui.End();
-                Fugui.PopStyle();
+                Fugui.PopStyle(windowStylePushCount);
                 IsVisible = true;
             }
             else
             {
                 ImGui.End();
-                Fugui.PopStyle();
+                Fugui.PopStyle(windowStylePushCount);
                 IsVisible = false;
                 IsHovered = false;
             }

@@ -5,6 +5,191 @@ using UnityEngine;
 namespace Fu
 {
     /// <summary>
+    /// Creation settings for a 3D Fugui window.
+    /// PanelSize is the world/local size of the 3D panel, Resolution is the render texture and ImGui context size.
+    /// </summary>
+    [Serializable]
+    public struct Fu3DWindowSettings
+    {
+        public Vector2 PanelSize;
+        public Vector2Int Resolution;
+        public bool ScaleResolutionWithPanel;
+        public bool MatchResolutionToPanelAspect;
+        public Vector2 ReferencePanelSize;
+        public Vector2Int ReferenceResolution;
+        public Vector2Int MinResolution;
+        public Vector2Int MaxResolution;
+        public float ContextScale;
+        public float FontScale;
+        public float PanelDepth;
+        public FuContainerScaleConfig ContainerScaleConfig;
+
+        public static Fu3DWindowSettings FixedResolution(
+            Vector2 panelSize,
+            Vector2Int resolution,
+            float contextScale = 1f,
+            float fontScale = 1f,
+            float panelDepth = 0.01f)
+        {
+            Fu3DWindowSettings settings = new Fu3DWindowSettings
+            {
+                PanelSize = panelSize,
+                Resolution = resolution,
+                ScaleResolutionWithPanel = false,
+                MatchResolutionToPanelAspect = false,
+                ReferencePanelSize = panelSize,
+                ReferenceResolution = resolution,
+                MinResolution = Vector2Int.one,
+                MaxResolution = Vector2Int.zero,
+                ContextScale = contextScale,
+                FontScale = fontScale,
+                PanelDepth = panelDepth,
+                ContainerScaleConfig = FuContainerScaleConfig.Disabled(contextScale, fontScale)
+            };
+            settings.Sanitize();
+            return settings;
+        }
+
+        public static Fu3DWindowSettings ScaledResolutionWithPanel(
+            Vector2 panelSize,
+            Vector2Int referenceResolution,
+            Vector2 referencePanelSize,
+            float contextScale = 1f,
+            float fontScale = 1f,
+            Vector2Int? minResolution = null,
+            Vector2Int? maxResolution = null,
+            float panelDepth = 0.01f)
+        {
+            Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth);
+            settings.ScaleResolutionWithPanel = true;
+            settings.MatchResolutionToPanelAspect = false;
+            settings.ReferencePanelSize = referencePanelSize;
+            settings.ReferenceResolution = referenceResolution;
+            settings.MinResolution = minResolution ?? Vector2Int.one;
+            settings.MaxResolution = maxResolution ?? Vector2Int.zero;
+            settings.Sanitize();
+            return settings;
+        }
+
+        public static Fu3DWindowSettings FixedResolutionMatchingPanelAspect(
+            Vector2 panelSize,
+            Vector2Int referenceResolution,
+            Vector2 referencePanelSize,
+            float contextScale = 1f,
+            float fontScale = 1f,
+            Vector2Int? minResolution = null,
+            Vector2Int? maxResolution = null,
+            float panelDepth = 0.01f)
+        {
+            Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth);
+            settings.MatchResolutionToPanelAspect = true;
+            settings.ReferencePanelSize = referencePanelSize;
+            settings.ReferenceResolution = referenceResolution;
+            settings.MinResolution = minResolution ?? Vector2Int.one;
+            settings.MaxResolution = maxResolution ?? Vector2Int.zero;
+            settings.Sanitize();
+            return settings;
+        }
+
+        public void Sanitize()
+        {
+            PanelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(PanelSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(PanelSize.y)));
+            ReferencePanelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.x > 0f ? ReferencePanelSize.x : PanelSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.y > 0f ? ReferencePanelSize.y : PanelSize.y)));
+            Resolution = new Vector2Int(
+                Mathf.Max(1, Resolution.x),
+                Mathf.Max(1, Resolution.y));
+            ReferenceResolution = new Vector2Int(
+                Mathf.Max(1, ReferenceResolution.x > 0 ? ReferenceResolution.x : Resolution.x),
+                Mathf.Max(1, ReferenceResolution.y > 0 ? ReferenceResolution.y : Resolution.y));
+            MinResolution = new Vector2Int(
+                Mathf.Max(1, MinResolution.x),
+                Mathf.Max(1, MinResolution.y));
+
+            int maxTextureSize = Mathf.Max(1, SystemInfo.maxTextureSize);
+            MaxResolution = new Vector2Int(
+                MaxResolution.x > 0 ? MaxResolution.x : maxTextureSize,
+                MaxResolution.y > 0 ? MaxResolution.y : maxTextureSize);
+            MaxResolution = new Vector2Int(
+                Mathf.Max(MinResolution.x, MaxResolution.x),
+                Mathf.Max(MinResolution.y, MaxResolution.y));
+
+            ContextScale = Mathf.Max(0.0001f, ContextScale);
+            FontScale = Mathf.Max(0.0001f, FontScale);
+            PanelDepth = Mathf.Max(0.0001f, PanelDepth);
+            if (ScaleResolutionWithPanel)
+            {
+                Resolution = ComputeResolution(PanelSize);
+            }
+            else if (MatchResolutionToPanelAspect)
+            {
+                Resolution = ComputeAspectMatchedResolution(PanelSize);
+            }
+            if (ContainerScaleConfig.BaseScale <= 0f || ContainerScaleConfig.BaseFontScale <= 0f)
+            {
+                ContainerScaleConfig = FuContainerScaleConfig.Disabled(ContextScale, FontScale);
+            }
+            else
+            {
+                ContainerScaleConfig.Sanitize();
+            }
+        }
+
+        public Vector2Int ComputeResolution(Vector2 panelSize)
+        {
+            panelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(panelSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(panelSize.y)));
+
+            Vector2 referencePanelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.y)));
+
+            Vector2 scale = new Vector2(
+                panelSize.x / referencePanelSize.x,
+                panelSize.y / referencePanelSize.y);
+
+            Vector2Int resolution = new Vector2Int(
+                Mathf.RoundToInt(ReferenceResolution.x * scale.x),
+                Mathf.RoundToInt(ReferenceResolution.y * scale.y));
+
+            return new Vector2Int(
+                Mathf.Clamp(resolution.x, MinResolution.x, MaxResolution.x),
+                Mathf.Clamp(resolution.y, MinResolution.y, MaxResolution.y));
+        }
+
+        public Vector2Int ComputeAspectMatchedResolution(Vector2 panelSize)
+        {
+            panelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(panelSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(panelSize.y)));
+
+            Vector2 referencePanelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.y)));
+
+            float panelAspect = panelSize.x / panelSize.y;
+            float referencePanelAspect = referencePanelSize.x / referencePanelSize.y;
+            float referenceResolutionAspect = ReferenceResolution.x / (float)ReferenceResolution.y;
+            float targetAspect = referenceResolutionAspect * (panelAspect / referencePanelAspect);
+            float referenceArea = Mathf.Max(1f, ReferenceResolution.x * ReferenceResolution.y);
+            int width = Mathf.RoundToInt(Mathf.Sqrt(referenceArea * targetAspect));
+            int height = Mathf.RoundToInt(width / targetAspect);
+
+            Vector2Int resolution = new Vector2Int(
+                Mathf.Max(1, width),
+                Mathf.Max(1, height));
+
+            return new Vector2Int(
+                Mathf.Clamp(resolution.x, MinResolution.x, MaxResolution.x),
+                Mathf.Clamp(resolution.y, MinResolution.y, MaxResolution.y));
+        }
+    }
+
+    /// <summary>
     /// A class that represent a 3D UI Container
     /// </summary>
     public class Fu3DWindowContainer : IFuWindowContainer
@@ -13,8 +198,13 @@ namespace Fu
         public string ID { get; private set; }
         public FuWindow Window { get; private set; }
         public FuContext Context => _fuguiContext;
+        public FuContainerScaleConfig ContainerScaleConfig => _fuguiContext != null ? _fuguiContext.ContainerScaleConfig : getDefault3DScaleConfig();
         public bool IsClosed { get; private set; }
         public bool RuntimeResizable => _runtimeResizable;
+        public bool IsRuntimeResizing => _activeResizeHandleIndex != -1;
+        public float Scale3D => _windows3DScale;
+        public Vector2 LocalSize => getCurrentLocalSize();
+        public Vector2Int RenderResolution => _useExplicitResolution ? _explicitResolution : _size;
         public Vector2Int LocalMousePos => _localMousePos;
         public Vector2Int Position => Vector2Int.zero;
         public Vector2Int Size => _size;
@@ -28,6 +218,17 @@ namespace Fu
         private FuKeyboardState _keyboardState;
         private Vector2Int _localMousePos;
         private Vector2Int _size;
+        private Vector2 _localSize = Vector2.one;
+        private float _windows3DScale;
+        private bool _useExplicitResolution;
+        private Vector2Int _explicitResolution;
+        private bool _scaleResolutionWithPanel;
+        private bool _matchResolutionToPanelAspect;
+        private Vector2 _referenceLocalSize = Vector2.one;
+        private Vector2Int _referenceResolution = Vector2Int.one;
+        private Vector2Int _minResolution = Vector2Int.one;
+        private Vector2Int _maxResolution = Vector2Int.zero;
+        private float _panelDepth = 0.01f;
         private FuUnityContext _fuguiContext;
         private static int _3DContextindex = 0;
         private Material _uiMaterial;
@@ -48,7 +249,7 @@ namespace Fu
         private const float ResizeHoverMarginMin = 0.045f;
         private const float ResizeHoverMarginMax = 0.18f;
         private const float ResizeHandleFrontOffset = -0.01f;
-        private const float RuntimeResizeMinSize = 0.05f;
+        private const float RuntimeResizeMinSize = 0.0001f;
         #endregion
 
         /// <summary>
@@ -57,12 +258,16 @@ namespace Fu
         /// <param name="window">Window to add to this container</param>
         /// <param name="position">world 3D position of this container</param>
         /// <param name="rotation">world 3D rotation of this container</param>
-        public Fu3DWindowContainer(FuWindow window, Vector3? position = null, Quaternion? rotation = null)
+        public Fu3DWindowContainer(FuWindow window, Fu3DWindowSettings settings, Vector3? position = null, Quaternion? rotation = null)
         {
+            settings.Sanitize();
             _3DContextindex++;
             ID = "3DContext_" + _3DContextindex;
 
             _localMousePos = new Vector2Int(-1, -1);
+            _useExplicitResolution = true;
+            applyResolutionSettings(settings, true);
+            _windows3DScale = getLegacyScaleFromSettings(settings);
 
             // remove the window from it's old container if has one
             window.TryRemoveFromContainer();
@@ -75,7 +280,7 @@ namespace Fu
             }
 
             // resize the window
-            Window.Size = new Vector2Int(512, 512);
+            Window.Size = settings.Resolution;
             Window.Is3DWindow = true;
             _size = window.Size;
 
@@ -94,12 +299,13 @@ namespace Fu
 
             // create the fugui 3d context
             Rect rect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
-            _fuguiContext = Fugui.CreateUnityContext(rect, Fugui.Settings.Windows3DSuperSampling, Fugui.Settings.Windows3DFontScale);
+            _fuguiContext = Fugui.CreateUnityContext(rect, settings.ContextScale, settings.FontScale);
             _fuguiContext.OnRender += RenderFuWindows;
             _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
             _fuguiContext.OnFramePrepared += _fuguiContext_OnFramePrepared;
             _fuguiContext.AutoUpdateMouse = false;
             _fuguiContext.SetTargetTexture(RenderTexture);
+            _fuguiContext.SetContainerScaleConfig(settings.ContainerScaleConfig, _size);
 
             // create panel game object
             createPanel();
@@ -120,6 +326,14 @@ namespace Fu
 
             // initialize the window
             window.InitializeOnContainer();
+        }
+
+        [Obsolete("Use Fu3DWindowContainer(FuWindow, Fu3DWindowSettings, ...) to provide panel size and render resolution explicitly.")]
+        public Fu3DWindowContainer(FuWindow window, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float? scale3D = null)
+            : this(window, getLegacySettings(scaleConfig, scale3D), position, rotation)
+        {
+            _useExplicitResolution = false;
+            _explicitResolution = Vector2Int.zero;
         }
 
         /// <summary>
@@ -154,6 +368,112 @@ namespace Fu
         }
 
         /// <summary>
+        /// Set the world-space size factor used to convert panel local size to render pixels.
+        /// Smaller values keep more render pixels when the 3D panel is physically small.
+        /// </summary>
+        /// <param name="scale3D">World-space units per 1000 logical pixels.</param>
+        public void Set3DScale(float scale3D)
+        {
+            scale3D = Mathf.Max(0.0001f, scale3D);
+            if (Mathf.Abs(_windows3DScale - scale3D) < 0.0001f)
+            {
+                return;
+            }
+
+            _windows3DScale = scale3D;
+            if (!IsClosed)
+            {
+                SetLocalSize(_localSize);
+            }
+        }
+
+        /// <summary>
+        /// Configure how this 3D container scales its context from the panel size.
+        /// </summary>
+        /// <param name="config">Scale configuration.</param>
+        public void SetContainerScaleConfig(FuContainerScaleConfig config)
+        {
+            if (IsClosed || _fuguiContext == null)
+                return;
+
+            config.Sanitize();
+            if (_localSize.x <= 0f || _localSize.y <= 0f)
+            {
+                _localSize = getCurrentLocalSize();
+            }
+
+            _fuguiContext.SetContainerScaleConfig(config, getScaleSourceSize(_localSize, config));
+            SetLocalSize(_localSize);
+        }
+
+        /// <summary>
+        /// Apply explicit 3D window settings. Resolution drives the render texture and ImGui context size;
+        /// panel size drives only the world-space mesh size.
+        /// </summary>
+        /// <param name="settings">3D window settings.</param>
+        public void Set3DWindowSettings(Fu3DWindowSettings settings)
+        {
+            if (IsClosed || _fuguiContext == null)
+                return;
+
+            settings.Sanitize();
+            bool panelDepthChanged = Mathf.Abs(_panelDepth - settings.PanelDepth) > 0.0001f;
+            Vector2 previousLocalSize = _localSize;
+            Vector2Int previousResolution = _explicitResolution;
+            _useExplicitResolution = true;
+            applyResolutionSettings(settings, false);
+            _windows3DScale = getLegacyScaleFromSettings(settings);
+            _fuguiContext.SetContainerScaleConfig(settings.ContainerScaleConfig, _explicitResolution);
+            SetLocalSize(settings.PanelSize);
+            if (panelDepthChanged &&
+                previousResolution == _explicitResolution &&
+                (previousLocalSize - settings.PanelSize).sqrMagnitude <= 0.00000001f)
+            {
+                createPanel();
+                updateResizeHandleTransforms();
+            }
+        }
+
+        /// <summary>
+        /// Change only the render texture and ImGui context resolution while preserving the current panel size.
+        /// </summary>
+        /// <param name="resolution">New render resolution.</param>
+        public void SetRenderResolution(Vector2Int resolution)
+        {
+            Fu3DWindowSettings settings = Fu3DWindowSettings.FixedResolution(
+                getCurrentLocalSize(),
+                resolution,
+                _fuguiContext != null ? _fuguiContext.ContainerScaleConfig.BaseScale : 1f,
+                _fuguiContext != null ? _fuguiContext.ContainerScaleConfig.BaseFontScale : 1f,
+                _panelDepth);
+            if (_fuguiContext != null)
+            {
+                settings.ContainerScaleConfig = _fuguiContext.ContainerScaleConfig;
+            }
+            Set3DWindowSettings(settings);
+        }
+
+        /// <summary>
+        /// Change the generated panel extrusion depth without changing the window content.
+        /// </summary>
+        /// <param name="depth">Depth of the generated panel extrusion.</param>
+        public void SetPanelDepth(float depth)
+        {
+            depth = Mathf.Max(0.0001f, depth);
+            if (Mathf.Abs(_panelDepth - depth) < 0.0001f)
+            {
+                return;
+            }
+
+            _panelDepth = depth;
+            if (!IsClosed)
+            {
+                createPanel();
+                updateResizeHandleTransforms();
+            }
+        }
+
+        /// <summary>
         /// Create the render texture used by the 3D UI panel.
         /// </summary>
         /// <param name="size">Pixel size of the render target.</param>
@@ -185,6 +505,64 @@ namespace Fu
                 Mathf.Max(1, size.x),
                 Mathf.Max(1, size.y)
             );
+        }
+
+        private static FuContainerScaleConfig getDefault3DScaleConfig()
+        {
+            float baseScale = Fugui.Settings != null ? Fugui.Settings.Windows3DSuperSampling : 1f;
+            float baseFontScale = Fugui.Settings != null ? Fugui.Settings.Windows3DFontScale : 1f;
+            return FuContainerScaleConfig.Disabled(baseScale, baseFontScale);
+        }
+
+        private static float getDefault3DScale()
+        {
+            return Fugui.Settings != null ? Mathf.Max(0.0001f, Fugui.Settings.Windows3DScale) : 10f;
+        }
+
+        private static Fu3DWindowSettings getLegacySettings(FuContainerScaleConfig? scaleConfig, float? scale3D)
+        {
+            float contextScale = Fugui.Settings != null ? Fugui.Settings.Windows3DSuperSampling : 1f;
+            float fontScale = Fugui.Settings != null ? Fugui.Settings.Windows3DFontScale : 1f;
+            float windows3DScale = scale3D.HasValue ? Mathf.Max(0.0001f, scale3D.Value) : getDefault3DScale();
+            Vector2Int resolution = new Vector2Int(512, 512);
+            Vector2 panelSize = new Vector2(
+                resolution.x / contextScale * windows3DScale / 1000f,
+                resolution.y / contextScale * windows3DScale / 1000f);
+
+            float panelDepth = Fugui.Settings != null ? Mathf.Max(0.0001f, Fugui.Settings.UIPanelWidth) : 0.01f;
+            Fu3DWindowSettings settings = Fu3DWindowSettings.FixedResolution(panelSize, resolution, contextScale, fontScale, panelDepth);
+            if (scaleConfig.HasValue)
+            {
+                settings.ContainerScaleConfig = scaleConfig.Value;
+            }
+            return settings;
+        }
+
+        private void applyResolutionSettings(Fu3DWindowSettings settings, bool applyPanelSize)
+        {
+            settings.Sanitize();
+            _scaleResolutionWithPanel = settings.ScaleResolutionWithPanel;
+            _matchResolutionToPanelAspect = settings.MatchResolutionToPanelAspect;
+            _referenceLocalSize = settings.ReferencePanelSize;
+            _referenceResolution = settings.ReferenceResolution;
+            _minResolution = settings.MinResolution;
+            _maxResolution = settings.MaxResolution;
+            _panelDepth = settings.PanelDepth;
+            if (applyPanelSize)
+            {
+                _localSize = settings.PanelSize;
+            }
+            _explicitResolution = getExplicitResolutionForLocalSize(settings.PanelSize);
+        }
+
+        private static float getLegacyScaleFromSettings(Fu3DWindowSettings settings)
+        {
+            if (settings.Resolution.x <= 0)
+            {
+                return getDefault3DScale();
+            }
+
+            return Mathf.Max(0.0001f, settings.PanelSize.x * settings.ContextScale * 1000f / settings.Resolution.x);
         }
 
         /// <summary>
@@ -251,9 +629,11 @@ namespace Fu
             _resizeHandlesVisible = false;
             _panelGameObject = new GameObject(ID + "_Panel");
             FuPanelMesh rectangleMesh = _panelGameObject.AddComponent<FuPanelMesh>();
+            float meshScale = getMeshScale();
+            Vector2 meshSize = getMeshSize(meshScale);
             float round = Fugui.Themes.WindowRounding * Context.Scale;
             MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
-            collider.sharedMesh = rectangleMesh.CreateMesh(_size.x / Context.Scale, _size.y / Context.Scale, 1f / 1000f * Fugui.Settings.Windows3DScale, round, round, round, round, Fugui.Settings.UIPanelWidth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial);
+            collider.sharedMesh = rectangleMesh.CreateMesh(meshSize.x, meshSize.y, meshScale, round, round, round, round, _panelDepth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial);
             int layer = (int)Mathf.Log(Fugui.Settings.UILayer.value, 2);
             _panelGameObject.layer = layer;
             foreach (Transform child in _panelGameObject.transform)
@@ -482,7 +862,7 @@ namespace Fu
 
             SetPosition(newPanelPosition);
             SetRotation(_resizeStartPanelRotation);
-            SetLocalSize(newLocalSize);
+            SetLocalSize(newLocalSize, false);
             setResizeHandlesVisible(true);
             OnRuntimeResized?.Invoke(newPanelPosition, newLocalSize);
             Window?.ForceDraw(2);
@@ -490,8 +870,13 @@ namespace Fu
 
         private void finishRuntimeResize()
         {
+            bool wasResizing = _activeResizeHandleIndex != -1;
             _activeResizeHandleIndex = -1;
             _activeResizeRaycasterID = null;
+            if (wasResizing)
+            {
+                Window?.Fire_OnResized();
+            }
             setResizeHandlesVisible(false);
             Window?.ForceDraw(2);
         }
@@ -607,9 +992,128 @@ namespace Fu
 
         private Vector2 getCurrentLocalSize()
         {
+            if (_useExplicitResolution)
+            {
+                return _localSize;
+            }
+
             float contextScale = Context != null && Context.Scale > 0f ? Context.Scale : 1f;
-            float panelScale = Fugui.Settings.Windows3DScale / 1000f;
+            float panelScale = _windows3DScale / 1000f;
             return new Vector2(_size.x / contextScale * panelScale, _size.y / contextScale * panelScale);
+        }
+
+        private float getMeshScale()
+        {
+            if (!_useExplicitResolution)
+            {
+                return _windows3DScale / 1000f;
+            }
+
+            float contextScale = Context != null && Context.Scale > 0f ? Context.Scale : 1f;
+            float logicalWidth = Mathf.Max(1f, _size.x / contextScale);
+            float logicalHeight = Mathf.Max(1f, _size.y / contextScale);
+            float xScale = _localSize.x / logicalWidth;
+            float yScale = _localSize.y / logicalHeight;
+            return Mathf.Max(0.0001f, Mathf.Min(xScale, yScale));
+        }
+
+        private Vector2 getMeshSize(float meshScale)
+        {
+            if (_useExplicitResolution)
+            {
+                return _localSize / Mathf.Max(0.0001f, meshScale);
+            }
+
+            float contextScale = Context != null && Context.Scale > 0f ? Context.Scale : 1f;
+            return new Vector2(_size.x / contextScale, _size.y / contextScale);
+        }
+
+        private Vector2Int getScaleSourceSize(Vector2 localSize, FuContainerScaleConfig config)
+        {
+            if (_useExplicitResolution)
+            {
+                return getExplicitResolutionForLocalSize(localSize);
+            }
+
+            return getRenderSizeForLocalSize(localSize, config.BaseScale);
+        }
+
+        private Vector2Int getRenderSizeForLocalSize(Vector2 localSize, float contextScale)
+        {
+            if (_useExplicitResolution)
+            {
+                return getExplicitResolutionForLocalSize(localSize);
+            }
+
+            float inversePanelScale = 1000f / Mathf.Max(0.0001f, _windows3DScale);
+
+            return new Vector2Int(
+                Mathf.Max(1, Mathf.RoundToInt(Mathf.Abs(localSize.x) * contextScale * inversePanelScale)),
+                Mathf.Max(1, Mathf.RoundToInt(Mathf.Abs(localSize.y) * contextScale * inversePanelScale))
+            );
+        }
+
+        private Vector2Int getExplicitResolutionForLocalSize(Vector2 localSize)
+        {
+            if (!_scaleResolutionWithPanel)
+            {
+                return _matchResolutionToPanelAspect
+                    ? getAspectMatchedResolutionForLocalSize(localSize)
+                    : sanitizeSize(_referenceResolution);
+            }
+
+            Vector2 panelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(localSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(localSize.y)));
+            Vector2 referencePanelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(_referenceLocalSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(_referenceLocalSize.y)));
+
+            Vector2 scale = new Vector2(
+                panelSize.x / referencePanelSize.x,
+                panelSize.y / referencePanelSize.y);
+
+            Vector2Int resolution = new Vector2Int(
+                Mathf.RoundToInt(_referenceResolution.x * scale.x),
+                Mathf.RoundToInt(_referenceResolution.y * scale.y));
+
+            Vector2Int minResolution = sanitizeSize(_minResolution);
+            Vector2Int maxResolution = _maxResolution.x > 0 && _maxResolution.y > 0
+                ? _maxResolution
+                : new Vector2Int(Mathf.Max(1, SystemInfo.maxTextureSize), Mathf.Max(1, SystemInfo.maxTextureSize));
+
+            return new Vector2Int(
+                Mathf.Clamp(resolution.x, minResolution.x, Mathf.Max(minResolution.x, maxResolution.x)),
+                Mathf.Clamp(resolution.y, minResolution.y, Mathf.Max(minResolution.y, maxResolution.y)));
+        }
+
+        private Vector2Int getAspectMatchedResolutionForLocalSize(Vector2 localSize)
+        {
+            Vector2 panelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(localSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(localSize.y)));
+            Vector2 referencePanelSize = new Vector2(
+                Mathf.Max(0.0001f, Mathf.Abs(_referenceLocalSize.x)),
+                Mathf.Max(0.0001f, Mathf.Abs(_referenceLocalSize.y)));
+
+            float panelAspect = panelSize.x / panelSize.y;
+            float referencePanelAspect = referencePanelSize.x / referencePanelSize.y;
+            float referenceResolutionAspect = _referenceResolution.x / (float)Mathf.Max(1, _referenceResolution.y);
+            float targetAspect = Mathf.Max(0.0001f, referenceResolutionAspect * (panelAspect / referencePanelAspect));
+            float referenceArea = Mathf.Max(1f, _referenceResolution.x * _referenceResolution.y);
+
+            Vector2Int resolution = new Vector2Int(
+                Mathf.Max(1, Mathf.RoundToInt(Mathf.Sqrt(referenceArea * targetAspect))),
+                Mathf.Max(1, Mathf.RoundToInt(Mathf.Sqrt(referenceArea / targetAspect))));
+
+            Vector2Int minResolution = sanitizeSize(_minResolution);
+            Vector2Int maxResolution = _maxResolution.x > 0 && _maxResolution.y > 0
+                ? _maxResolution
+                : new Vector2Int(Mathf.Max(1, SystemInfo.maxTextureSize), Mathf.Max(1, SystemInfo.maxTextureSize));
+
+            return new Vector2Int(
+                Mathf.Clamp(resolution.x, minResolution.x, Mathf.Max(minResolution.x, maxResolution.x)),
+                Mathf.Clamp(resolution.y, minResolution.y, Mathf.Max(minResolution.y, maxResolution.y)));
         }
 
         private Vector3 getResizeHandleLocalPosition(int handleIndex, Vector2 localSize)
@@ -707,11 +1211,22 @@ namespace Fu
             // force to draw if hover in
             if (inputState.Hovered && !blockWindowInput)
             {
-                Vector2 scaledMousePosition = inputState.MousePosition * (1000f / Fugui.Settings.Windows3DScale) * Context.Scale;
-                // calculate IO mouse pos
-                _localMousePos = new Vector2Int((int)scaledMousePosition.x, (int)scaledMousePosition.y);
-                _localMousePos.x += _size.x / 2;
-                _localMousePos.y = Size.y - _localMousePos.y;
+                if (_useExplicitResolution)
+                {
+                    float normalizedX = (inputState.MousePosition.x + (_localSize.x * 0.5f)) / Mathf.Max(0.0001f, _localSize.x);
+                    float normalizedY = inputState.MousePosition.y / Mathf.Max(0.0001f, _localSize.y);
+                    _localMousePos = new Vector2Int(
+                        Mathf.RoundToInt(normalizedX * _size.x),
+                        Mathf.RoundToInt((1f - normalizedY) * _size.y));
+                }
+                else
+                {
+                    Vector2 scaledMousePosition = inputState.MousePosition * (1000f / Mathf.Max(0.0001f, _windows3DScale)) * Context.Scale;
+                    // calculate IO mouse pos
+                    _localMousePos = new Vector2Int((int)scaledMousePosition.x, (int)scaledMousePosition.y);
+                    _localMousePos.x += _size.x / 2;
+                    _localMousePos.y = Size.y - _localMousePos.y;
+                }
             }
             else
             {
@@ -770,15 +1285,46 @@ namespace Fu
         /// <param name="localSize">Target local size of the 3D placeholder.</param>
         public void SetLocalSize(Vector2 localSize)
         {
+            SetLocalSize(localSize, true);
+        }
+
+        private void SetLocalSize(Vector2 localSize, bool refreshRender)
+        {
             if (IsClosed || Window == null || Context == null)
                 return;
 
-            float inversePanelScale = 1000f / Fugui.Settings.Windows3DScale;
-
-            Vector2Int targetSize = new Vector2Int(
-                Mathf.Max(1, Mathf.RoundToInt(localSize.x * Context.Scale * inversePanelScale)),
-                Mathf.Max(1, Mathf.RoundToInt(localSize.y * Context.Scale * inversePanelScale))
+            Vector2 previousLocalSize = _localSize;
+            localSize = new Vector2(
+                Mathf.Max(RuntimeResizeMinSize, Mathf.Abs(localSize.x)),
+                Mathf.Max(RuntimeResizeMinSize, Mathf.Abs(localSize.y))
             );
+            _localSize = localSize;
+            bool localSizeChanged = (previousLocalSize - localSize).sqrMagnitude > 0.00000001f;
+
+            if (!refreshRender)
+            {
+                if (localSizeChanged)
+                {
+                    createPanel();
+                }
+
+                updateResizeHandleTransforms();
+                return;
+            }
+
+            if (_useExplicitResolution)
+            {
+                refreshExplicitRenderSize(localSizeChanged);
+                return;
+            }
+
+            if (_fuguiContext.ContainerScaleConfig.Enabled)
+            {
+                _fuguiContext.UpdateContainerScale(getScaleSourceSize(localSize, _fuguiContext.ContainerScaleConfig));
+                _localSize = localSize;
+            }
+
+            Vector2Int targetSize = getRenderSizeForLocalSize(localSize, Context.Scale);
 
             if (Window.Size == targetSize &&
                 _size == targetSize &&
@@ -796,6 +1342,37 @@ namespace Fu
             }
 
             setRenderSize(targetSize);
+            updateResizeHandleTransforms();
+        }
+
+        private void refreshExplicitRenderSize(bool rebuildPanelWhenOnlyLocalSizeChanged)
+        {
+            Vector2Int targetResolution = getExplicitResolutionForLocalSize(_localSize);
+            _explicitResolution = targetResolution;
+
+            if (_fuguiContext.ContainerScaleConfig.Enabled)
+            {
+                _fuguiContext.UpdateContainerScale(targetResolution);
+            }
+
+            if (Window.Size != targetResolution)
+            {
+                Window.Size = targetResolution;
+            }
+
+            bool renderSizeChanged = _size != targetResolution ||
+                                     RenderTexture == null ||
+                                     RenderTexture.width != targetResolution.x ||
+                                     RenderTexture.height != targetResolution.y ||
+                                     !RenderTexture.IsCreated();
+
+            setRenderSize(targetResolution);
+
+            if (rebuildPanelWhenOnlyLocalSizeChanged && !renderSizeChanged)
+            {
+                createPanel();
+            }
+
             updateResizeHandleTransforms();
         }
 
@@ -919,7 +1496,7 @@ namespace Fu
             {
                 Window = FuWindow;
                 Window.OnClosed += Window_OnClosed;
-                Window.OnResize += Window_OnResized;
+                Window.OnResized += Window_OnResized;
                 Window.LocalPosition = Vector2Int.zero;
                 Window.Container = this;
                 Window.LocalPosition = Vector2Int.zero;
@@ -936,7 +1513,15 @@ namespace Fu
         /// <param name="window">the resized window</param>
         private void Window_OnResized(FuWindow window)
         {
+            if (_useExplicitResolution)
+            {
+                refreshExplicitRenderSize(false);
+                return;
+            }
+
             setRenderSize(window.Size);
+            _localSize = getCurrentLocalSize();
+            updateResizeHandleTransforms();
         }
 
         /// <summary>
@@ -977,7 +1562,7 @@ namespace Fu
             if (Window != null)
             {
                 Window.OnClosed -= Window_OnClosed;
-                Window.OnResize -= Window_OnResized;
+                Window.OnResized -= Window_OnResized;
                 Window.Container = null;
                 Window.RemoveWindowFlag(ImGuiWindowFlags.NoMove);
                 Window.RemoveWindowFlag(ImGuiWindowFlags.NoResize);

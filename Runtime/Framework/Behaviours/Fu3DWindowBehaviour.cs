@@ -10,7 +10,8 @@ namespace Fu.Framework
     [ExecuteAlways]
     public class Fu3DWindowBehaviour : MonoBehaviour
     {
-        public const float Depth = 0.01f;
+        [Tooltip("Depth of the generated 3D panel extrusion.")]
+        public float Depth = 0.01f;
 
         [SerializeField]
         protected FuWindowName _windowName;
@@ -24,8 +25,50 @@ namespace Fu.Framework
         [SerializeField]
         protected bool _runtimeResizable = true;
 
+        [SerializeField]
+        [Tooltip("Render texture and ImGui context resolution for this 3D window.")]
+        protected Vector2Int _renderResolution = new Vector2Int(1024, 1024);
+
+        [SerializeField, HideInInspector]
+        protected bool _scaleResolutionWithPanel = false;
+
+        [SerializeField, HideInInspector]
+        protected Vector2 _referencePanelSize = Vector2.zero;
+
+        [SerializeField, HideInInspector]
+        protected Vector2Int _minRenderResolution = Vector2Int.one;
+
+        [SerializeField, HideInInspector]
+        protected Vector2Int _maxRenderResolution = Vector2Int.zero;
+
+        [SerializeField]
+        protected bool _useContainerScaler = false;
+
+        [SerializeField]
+        protected Vector2Int _referenceResolution = new Vector2Int(1920, 1080);
+
+        [SerializeField, Range(0f, 1f)]
+        protected float _matchWidthOrHeight = 0.5f;
+
+        [SerializeField]
+        protected float _minContainerScale = 0.5f;
+
+        [SerializeField]
+        protected float _maxContainerScale = 4f;
+
+        [SerializeField]
+        protected float _baseContextScale = 0f;
+
+        [SerializeField]
+        protected float _baseFontScale = 0f;
+
+        [SerializeField]
+        protected bool _scaleFontWithContainer = true;
+
         protected FuWindow _fuWindow;
         protected Fu3DWindowContainer _container;
+        protected FuWindowDefinition _windowDefinition;
+        private Vector2 _autoReferencePanelSize = Vector2.zero;
 
         public FuWindow Window
         {
@@ -37,6 +80,11 @@ namespace Fu.Framework
             get { return _container; }
         }
 
+        public FuWindowDefinition WindowDefinition
+        {
+            get { return _windowDefinition; }
+        }
+
         /// <summary>
         /// Register the window definition and create the window instance if needed.
         /// </summary>
@@ -45,25 +93,87 @@ namespace Fu.Framework
             if (!enabled)
                 return;
 
-            FuWindowDefinition windowDefinition = new FuWindowDefinition(
-                _windowName,
-                OnUI,
-                Vector2Int.zero,
-                GetWindowSizeFromPlaceholder(),
-                _windowFlags,
-                FuExternalWindowFlags.Default
-            );
-
-            OnWindowDefinitionCreated(windowDefinition);
+            EnsureWindowDefinitionRegistered();
 
             if (_forceCreateAloneOnAwake)
             {
-                FuWindow window = Fugui.CreateWindow(_windowName, false);
-                if (window != null)
+                Create3DWindow();
+            }
+        }
+
+        public FuWindowDefinition EnsureWindowDefinitionRegistered()
+        {
+            if (_windowDefinition != null)
+            {
+                return _windowDefinition;
+            }
+
+            if (Fugui.UIWindowsDefinitions != null &&
+                Fugui.UIWindowsDefinitions.TryGetValue(_windowName, out FuWindowDefinition existingDefinition))
+            {
+                _windowDefinition = existingDefinition;
+            }
+            else
+            {
+                _windowDefinition = new FuWindowDefinition(
+                    _windowName,
+                    OnUI,
+                    Vector2Int.zero,
+                    GetWindowSizeFromPlaceholder(),
+                    _windowFlags,
+                    FuExternalWindowFlags.Default
+                );
+
+                OnWindowDefinitionCreated(_windowDefinition);
+            }
+
+            _windowDefinition.OnUIWindowCreated -= WindowDefinition_OnUIWindowCreated;
+            _windowDefinition.OnUIWindowCreated += WindowDefinition_OnUIWindowCreated;
+            return _windowDefinition;
+        }
+
+        public Fu3DWindowContainer Create3DWindow()
+        {
+            if (_container != null && !_container.IsClosed)
+            {
+                return _container;
+            }
+
+            EnsureWindowDefinitionRegistered();
+            FuWindow window = Fugui.CreateWindow(_windowName, false);
+            if (window != null && (_container == null || _container.IsClosed))
+            {
+                AttachWindow(window);
+            }
+
+            if ((_container == null || _container.IsClosed) && Fugui.UIWindows != null)
+            {
+                foreach (FuWindow existingWindow in Fugui.UIWindows.Values)
                 {
-                    WindowDefinition_OnUIWindowCreated(window);
+                    if (existingWindow != null && existingWindow.WindowName.Equals(_windowName))
+                    {
+                        AttachWindow(existingWindow);
+                        break;
+                    }
                 }
             }
+            return _container;
+        }
+
+        public Fu3DWindowContainer AttachWindow(FuWindow window)
+        {
+            if (window == null)
+            {
+                return null;
+            }
+
+            WindowDefinition_OnUIWindowCreated(window);
+            return _container;
+        }
+
+        public void Close3DWindow()
+        {
+            _fuWindow?.Close();
         }
 
         /// <summary>
@@ -87,7 +197,11 @@ namespace Fu.Framework
 
             _fuWindow = window;
             _fuWindow.OnClosed += Window_OnClosed;
-            _container = Fugui.Add3DWindow(_fuWindow, transform.position, transform.rotation);
+            if (_autoReferencePanelSize.x <= 0f || _autoReferencePanelSize.y <= 0f)
+            {
+                _autoReferencePanelSize = GetPlaceholderSize();
+            }
+            _container = Fugui.Add3DWindow(_fuWindow, Get3DWindowSettings(), transform.position, transform.rotation);
             if (_container != null)
             {
                 _container.OnRuntimeResized -= Container_OnRuntimeResized;
@@ -132,6 +246,11 @@ namespace Fu.Framework
         /// <param name="value">The window name.</param>
         public void SetWindowName(FuWindowName value)
         {
+            if (_windowDefinition != null)
+            {
+                _windowDefinition.OnUIWindowCreated -= WindowDefinition_OnUIWindowCreated;
+                _windowDefinition = null;
+            }
             _windowName = value;
         }
 
@@ -144,6 +263,79 @@ namespace Fu.Framework
         {
             _runtimeResizable = value;
             _container?.SetRuntimeResizable(value);
+        }
+
+        public FuContainerScaleConfig GetContainerScaleConfig()
+        {
+            float baseScale = _baseContextScale > 0f
+                ? _baseContextScale
+                : 1f;
+            float baseFontScale = _baseFontScale > 0f
+                ? _baseFontScale
+                : 1f;
+
+            if (!_useContainerScaler)
+            {
+                return FuContainerScaleConfig.Disabled(baseScale, baseFontScale);
+            }
+
+            return FuContainerScaleConfig.Reference(
+                _referenceResolution,
+                _matchWidthOrHeight,
+                _minContainerScale,
+                _maxContainerScale,
+                baseScale,
+                baseFontScale,
+                _scaleFontWithContainer
+            );
+        }
+
+        public void SetContainerScaleConfig(FuContainerScaleConfig config)
+        {
+            config.Sanitize();
+            _useContainerScaler = config.Enabled;
+            _referenceResolution = config.ReferenceResolution;
+            _matchWidthOrHeight = config.MatchWidthOrHeight;
+            _minContainerScale = config.MinScale;
+            _maxContainerScale = config.MaxScale;
+            _baseContextScale = config.BaseScale;
+            _baseFontScale = config.BaseFontScale;
+            _scaleFontWithContainer = config.ScaleFont;
+            _container?.SetContainerScaleConfig(config);
+        }
+
+        public Fu3DWindowSettings Get3DWindowSettings()
+        {
+            float contextScale = _baseContextScale > 0f ? _baseContextScale : 1f;
+            float fontScale = _baseFontScale > 0f ? _baseFontScale : 1f;
+            Vector2 panelSize = GetPlaceholderSize();
+            Fu3DWindowSettings settings = Fu3DWindowSettings.FixedResolutionMatchingPanelAspect(
+                panelSize,
+                _renderResolution,
+                GetResolutionReferencePanelSize(),
+                contextScale,
+                fontScale,
+                _minRenderResolution,
+                _maxRenderResolution,
+                Depth);
+            settings.ContainerScaleConfig = GetContainerScaleConfig();
+            settings.Sanitize();
+            return settings;
+        }
+
+        private Vector2 GetResolutionReferencePanelSize()
+        {
+            if (_referencePanelSize.x > 0f && _referencePanelSize.y > 0f)
+            {
+                return _referencePanelSize;
+            }
+
+            if (_autoReferencePanelSize.x <= 0f || _autoReferencePanelSize.y <= 0f)
+            {
+                _autoReferencePanelSize = GetPlaceholderSize();
+            }
+
+            return _autoReferencePanelSize;
         }
 
         private void LateUpdate()
@@ -162,7 +354,10 @@ namespace Fu.Framework
 
             _container.SetPosition(transform.position);
             _container.SetRotation(transform.rotation);
-            _container.SetLocalSize(GetPlaceholderSize());
+            if (!_container.IsRuntimeResizing)
+            {
+                _container.Set3DWindowSettings(Get3DWindowSettings());
+            }
             _container.SetRuntimeResizable(_runtimeResizable);
         }
 
@@ -178,6 +373,7 @@ namespace Fu.Framework
             }
             _fuWindow = null;
             _container = null;
+            _autoReferencePanelSize = Vector2.zero;
         }
 
         private void Container_OnRuntimeResized(Vector3 position, Vector2 localSize)
@@ -207,6 +403,11 @@ namespace Fu.Framework
 
         private void OnDestroy()
         {
+            if (_windowDefinition != null)
+            {
+                _windowDefinition.OnUIWindowCreated -= WindowDefinition_OnUIWindowCreated;
+            }
+
             if (_fuWindow != null)
             {
                 _fuWindow.OnClosed -= Window_OnClosed;
@@ -230,11 +431,9 @@ namespace Fu.Framework
 
         private Vector2Int GetWindowSizeFromPlaceholder()
         {
-            Vector2 placeholderSize = GetPlaceholderSize();
-
             return new Vector2Int(
-                Mathf.Max(1, Mathf.RoundToInt(placeholderSize.x)),
-                Mathf.Max(1, Mathf.RoundToInt(placeholderSize.y))
+                Mathf.Max(1, _renderResolution.x),
+                Mathf.Max(1, _renderResolution.y)
             );
         }
 
@@ -252,7 +451,45 @@ namespace Fu.Framework
 #if UNITY_EDITOR
         private void OnValidate()
         {
+            Depth = Mathf.Max(0.0001f, Depth);
             EnforceDepth();
+            _referenceResolution = new Vector2Int(
+                Mathf.Max(1, _referenceResolution.x),
+                Mathf.Max(1, _referenceResolution.y)
+            );
+            _matchWidthOrHeight = Mathf.Clamp01(_matchWidthOrHeight);
+            _minContainerScale = Mathf.Max(0.0001f, _minContainerScale);
+            _maxContainerScale = Mathf.Max(_minContainerScale, _maxContainerScale);
+            _baseContextScale = Mathf.Max(0f, _baseContextScale);
+            _baseFontScale = Mathf.Max(0f, _baseFontScale);
+            _renderResolution = new Vector2Int(
+                Mathf.Max(1, _renderResolution.x),
+                Mathf.Max(1, _renderResolution.y)
+            );
+            _referencePanelSize = new Vector2(
+                Mathf.Max(0f, _referencePanelSize.x),
+                Mathf.Max(0f, _referencePanelSize.y)
+            );
+            _minRenderResolution = new Vector2Int(
+                Mathf.Max(1, _minRenderResolution.x),
+                Mathf.Max(1, _minRenderResolution.y)
+            );
+            _maxRenderResolution = new Vector2Int(
+                Mathf.Max(0, _maxRenderResolution.x),
+                Mathf.Max(0, _maxRenderResolution.y)
+            );
+            if (_maxRenderResolution.x > 0)
+            {
+                _maxRenderResolution.x = Mathf.Max(_minRenderResolution.x, _maxRenderResolution.x);
+            }
+            if (_maxRenderResolution.y > 0)
+            {
+                _maxRenderResolution.y = Mathf.Max(_minRenderResolution.y, _maxRenderResolution.y);
+            }
+            if (!Application.isPlaying)
+            {
+                _autoReferencePanelSize = Vector2.zero;
+            }
         }
 
         private void OnDrawGizmos()
@@ -273,7 +510,7 @@ namespace Fu.Framework
     public class Fu3DWindowBehaviourEditor : Editor
     {
         private const float HandleSize = 0.08f;
-        private const float MinSize = 0.01f;
+        private const float MinSize = 0.0001f;
 
         private List<FuWindowName> availableNames;
         private string[] windowNameOptions;
@@ -282,6 +519,16 @@ namespace Fu.Framework
         private SerializedProperty windowFlagsProp;
         private SerializedProperty forceCreateProp;
         private SerializedProperty runtimeResizableProp;
+        private SerializedProperty depthProp;
+        private SerializedProperty renderResolutionProp;
+        private SerializedProperty useContainerScalerProp;
+        private SerializedProperty referenceResolutionProp;
+        private SerializedProperty matchWidthOrHeightProp;
+        private SerializedProperty minContainerScaleProp;
+        private SerializedProperty maxContainerScaleProp;
+        private SerializedProperty baseContextScaleProp;
+        private SerializedProperty baseFontScaleProp;
+        private SerializedProperty scaleFontWithContainerProp;
 
         protected readonly HashSet<string> _excludedProps = new HashSet<string>
         {
@@ -289,6 +536,20 @@ namespace Fu.Framework
             "_windowFlags",
             "_forceCreateAloneOnAwake",
             "_runtimeResizable",
+            "Depth",
+            "_renderResolution",
+            "_scaleResolutionWithPanel",
+            "_referencePanelSize",
+            "_minRenderResolution",
+            "_maxRenderResolution",
+            "_useContainerScaler",
+            "_referenceResolution",
+            "_matchWidthOrHeight",
+            "_minContainerScale",
+            "_maxContainerScale",
+            "_baseContextScale",
+            "_baseFontScale",
+            "_scaleFontWithContainer",
             "x",
             "y",
             "z"
@@ -305,6 +566,16 @@ namespace Fu.Framework
             windowFlagsProp = serializedObject.FindProperty("_windowFlags");
             forceCreateProp = serializedObject.FindProperty("_forceCreateAloneOnAwake");
             runtimeResizableProp = serializedObject.FindProperty("_runtimeResizable");
+            depthProp = serializedObject.FindProperty("Depth");
+            renderResolutionProp = serializedObject.FindProperty("_renderResolution");
+            useContainerScalerProp = serializedObject.FindProperty("_useContainerScaler");
+            referenceResolutionProp = serializedObject.FindProperty("_referenceResolution");
+            matchWidthOrHeightProp = serializedObject.FindProperty("_matchWidthOrHeight");
+            minContainerScaleProp = serializedObject.FindProperty("_minContainerScale");
+            maxContainerScaleProp = serializedObject.FindProperty("_maxContainerScale");
+            baseContextScaleProp = serializedObject.FindProperty("_baseContextScale");
+            baseFontScaleProp = serializedObject.FindProperty("_baseFontScale");
+            scaleFontWithContainerProp = serializedObject.FindProperty("_scaleFontWithContainer");
         }
 
         public override void OnInspectorGUI()
@@ -325,10 +596,25 @@ namespace Fu.Framework
             EditorGUILayout.PropertyField(windowFlagsProp);
             EditorGUILayout.PropertyField(forceCreateProp);
             EditorGUILayout.PropertyField(runtimeResizableProp);
+            EditorGUILayout.PropertyField(depthProp);
+            EditorGUILayout.PropertyField(renderResolutionProp);
+            EditorGUILayout.PropertyField(useContainerScalerProp);
+
+            using (new EditorGUI.DisabledScope(!useContainerScalerProp.boolValue))
+            {
+                EditorGUILayout.PropertyField(referenceResolutionProp);
+                EditorGUILayout.PropertyField(matchWidthOrHeightProp);
+                EditorGUILayout.PropertyField(minContainerScaleProp);
+                EditorGUILayout.PropertyField(maxContainerScaleProp);
+                EditorGUILayout.PropertyField(scaleFontWithContainerProp);
+            }
+
+            EditorGUILayout.PropertyField(baseContextScaleProp);
+            EditorGUILayout.PropertyField(baseFontScaleProp);
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "The 3D window size is driven by the placeholder scale X/Y. Scale Z is locked to 0.01.",
+                "The 3D panel size is driven by the placeholder scale X/Y. Render Resolution drives the texture and ImGui context size. Scale Z is locked to Depth.",
                 MessageType.Info
             );
 
@@ -402,38 +688,38 @@ namespace Fu.Framework
             Undo.RecordObject(transform, "Resize Fu 3D Window");
 
             Vector3 worldDelta = newWorldPosition - worldPosition;
-            Vector3 localDelta = transform.InverseTransformVector(worldDelta);
+            float scaleDelta = getLocalAxisDeltaFromWorldDelta(transform, localDirection, worldDelta);
 
             Vector3 scale = transform.localScale;
             Vector3 position = transform.localPosition;
 
             if (localDirection.x > 0f)
             {
-                float delta = localDelta.x;
+                float delta = scaleDelta;
                 scale.x = Mathf.Max(MinSize, scale.x + delta);
                 position += transform.localRotation * new Vector3(delta * 0.5f, 0f, 0f);
             }
             else if (localDirection.x < 0f)
             {
-                float delta = localDelta.x;
+                float delta = scaleDelta;
                 scale.x = Mathf.Max(MinSize, scale.x - delta);
                 position += transform.localRotation * new Vector3(delta * 0.5f, 0f, 0f);
             }
             else if (localDirection.y > 0f)
             {
-                float delta = localDelta.y;
+                float delta = scaleDelta;
                 scale.y = Mathf.Max(MinSize, scale.y + delta);
 
                 // Pivot bas : pas besoin de déplacer le transform quand on resize par le haut.
             }
             else if (localDirection.y < 0f)
             {
-                float delta = localDelta.y;
+                float delta = scaleDelta;
                 scale.y = Mathf.Max(MinSize, scale.y - delta);
                 position += transform.localRotation * new Vector3(0f, delta, 0f);
             }
 
-            scale.z = Fu3DWindowBehaviour.Depth;
+            scale.z = window.Depth;
 
             transform.localScale = scale;
             transform.localPosition = position;
@@ -441,15 +727,35 @@ namespace Fu.Framework
             EditorUtility.SetDirty(window);
         }
 
+        private float getLocalAxisDeltaFromWorldDelta(Transform transform, Vector3 localDirection, Vector3 worldDelta)
+        {
+            Vector3 localAxis = Mathf.Abs(localDirection.x) > 0f ? Vector3.right : Vector3.up;
+            Vector3 worldAxis = transform.TransformDirection(localAxis).normalized;
+            float worldDeltaOnAxis = Vector3.Dot(worldDelta, worldAxis);
+            float parentScale = getParentScaleOnLocalAxis(transform, localAxis);
+            return worldDeltaOnAxis / parentScale;
+        }
+
+        private float getParentScaleOnLocalAxis(Transform transform, Vector3 localDirection)
+        {
+            Vector3 axisInParentSpace = transform.localRotation * localDirection.normalized;
+            Vector3 axisInWorld = transform.parent != null
+                ? transform.parent.TransformVector(axisInParentSpace)
+                : axisInParentSpace;
+
+            return Mathf.Max(0.0001f, axisInWorld.magnitude);
+        }
+
         private void EnforceEditorDepth(Transform transform)
         {
+            Fu3DWindowBehaviour window = (Fu3DWindowBehaviour)target;
             Vector3 scale = transform.localScale;
 
-            if (Mathf.Abs(scale.z - Fu3DWindowBehaviour.Depth) <= 0.0001f)
+            if (Mathf.Abs(scale.z - window.Depth) <= 0.0001f)
                 return;
 
             Undo.RecordObject(transform, "Lock Fu 3D Window Depth");
-            scale.z = Fu3DWindowBehaviour.Depth;
+            scale.z = window.Depth;
             transform.localScale = scale;
         }
     }

@@ -40,8 +40,10 @@ namespace Fu
         protected DrawData _drawData = new DrawData();
         public DrawData DrawData => _drawData;
         public bool RenderPrepared { get; protected set; } = false;
+        public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
         internal FontSet DefaultFont { get; set; }
+        private Vector2Int _lastContainerScaleSize = new Vector2Int(-1, -1);
         // var to count how many push are at frame start, so we can pop missing push
         private static int _nbColorPushOnFrameStart = 0;
         private static int _nbStylePushOnFrameStart = 0;
@@ -63,6 +65,7 @@ namespace Fu
         {
             Scale = scale;
             FontScale = fontScale;
+            ContainerScaleConfig = FuContainerScaleConfig.Disabled(scale, fontScale);
             ID = index;
             TextureManager = new TextureManager();
         }
@@ -190,6 +193,77 @@ namespace Fu
         /// End the context render. Don't call it, Fugui layout handle it for you
         /// </summary>
         internal abstract bool EndRender();
+
+        /// <summary>
+        /// Configure this context to scale from its container size.
+        /// </summary>
+        /// <param name="config">Scaler configuration.</param>
+        /// <param name="containerSize">Current container size in pixels.</param>
+        public void SetContainerScaleConfig(FuContainerScaleConfig config, Vector2Int containerSize)
+        {
+            config.Sanitize();
+            ContainerScaleConfig = config;
+            _lastContainerScaleSize = new Vector2Int(-1, -1);
+
+            if (ContainerScaleConfig.Enabled)
+            {
+                UpdateContainerScale(containerSize);
+            }
+            else
+            {
+                applyScaleIfNeeded(ContainerScaleConfig.BaseScale, ContainerScaleConfig.BaseFontScale, false);
+            }
+        }
+
+        /// <summary>
+        /// Update context scale from a container size when container scaling is enabled.
+        /// </summary>
+        /// <param name="containerSize">Current container size in pixels.</param>
+        /// <param name="force">Force the scale application even if size did not change.</param>
+        /// <returns>True when the scale changed.</returns>
+        public bool UpdateContainerScale(Vector2Int containerSize, bool force = false)
+        {
+            if (!ContainerScaleConfig.Enabled)
+            {
+                return false;
+            }
+
+            if (!force && _lastContainerScaleSize == containerSize)
+            {
+                return false;
+            }
+
+            _lastContainerScaleSize = containerSize;
+            float scaleFactor = ContainerScaleConfig.ComputeScale(containerSize);
+            float targetScale = Mathf.Clamp(
+                ContainerScaleConfig.BaseScale * scaleFactor,
+                ContainerScaleConfig.MinScale,
+                ContainerScaleConfig.MaxScale);
+            float targetFontScale = ContainerScaleConfig.ScaleFont
+                ? Mathf.Clamp(
+                    ContainerScaleConfig.BaseFontScale * scaleFactor,
+                    ContainerScaleConfig.MinScale,
+                    ContainerScaleConfig.MaxScale)
+                : ContainerScaleConfig.BaseFontScale;
+
+            return applyScaleIfNeeded(targetScale, targetFontScale, force);
+        }
+
+        private bool applyScaleIfNeeded(float targetScale, float targetFontScale, bool force)
+        {
+            targetScale = Mathf.Max(0.0001f, targetScale);
+            targetFontScale = Mathf.Max(0.0001f, targetFontScale);
+
+            if (!force &&
+                Mathf.Abs(Scale - targetScale) < 0.0001f &&
+                Mathf.Abs(FontScale - targetFontScale) < 0.0001f)
+            {
+                return false;
+            }
+
+            SetScale(targetScale, targetFontScale);
+            return true;
+        }
 
         /// <summary>
         /// Destroy this context. Don't call it, Fugui layout handle it for you

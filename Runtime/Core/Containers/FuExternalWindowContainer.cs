@@ -17,6 +17,7 @@ namespace Fu
         public Vector2Int Size => _size;
         public FuKeyboardState Keyboard => _keyboard;
         public FuMouseState Mouse => _mouse;
+        public FuContainerScaleConfig ContainerScaleConfig => _context.ContainerScaleConfig;
         public FuWindow Window => _window;
 
         private readonly FuExternalContext _context;
@@ -38,6 +39,7 @@ namespace Fu
             _mouse = new FuMouseState();
             _keyboard = new FuKeyboardState(_context.IO);
             _size = window.Size;
+            _context.OnPrepareFrame += context_OnPrepareFrame;
             _context.OnRender += RenderFuWindows;
 
             Vector2Int absMousePos = Fugui.AbsoluteMonitorMousePosition;
@@ -62,11 +64,29 @@ namespace Fu
         /// </summary>
         public void Update()
         {
+            Vector2Int contextSize = new Vector2Int(_context.Width, _context.Height);
+            if (contextSize.x > 0 && contextSize.y > 0 && contextSize != _size)
+            {
+                _size = contextSize;
+            }
+
             Vector2 mousePos = Context.IO.MousePos;
             bool leftMousePressed = Context.IO.MouseDown[0];
             _mousePos = new Vector2Int((int)mousePos.x, (int)mousePos.y);
             _mouse.UpdateState(this);
             _keyboard.UpdateState();
+        }
+
+        private bool context_OnPrepareFrame()
+        {
+            Vector2Int contextSize = new Vector2Int(_context.Width, _context.Height);
+            if (contextSize.x > 0 && contextSize.y > 0)
+            {
+                _size = contextSize;
+            }
+
+            _context.UpdateContainerScale(_size);
+            return true;
         }
 
         /// <summary>
@@ -168,6 +188,15 @@ namespace Fu
         }
 
         public bool ForcePos() => true;
+
+        /// <summary>
+        /// Configure how this container scales its context.
+        /// </summary>
+        /// <param name="config">Scale configuration.</param>
+        public void SetContainerScaleConfig(FuContainerScaleConfig config)
+        {
+            _context.SetContainerScaleConfig(config, _size);
+        }
         #endregion
 
         /// <summary>
@@ -176,6 +205,8 @@ namespace Fu
         /// <param name="onClosed"> Optional callback to execute after the window is closed. </param>
         public void Close(Action onClosed = null)
         {
+            _context.OnPrepareFrame -= context_OnPrepareFrame;
+            _context.OnRender -= RenderFuWindows;
             _context.Window.Close(onClosed);
             _context.RemoveContainer(this);
         }

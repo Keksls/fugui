@@ -279,6 +279,7 @@ namespace Fu
 
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
             DefaultContainer = new FuMainWindowContainer(DefaultContext);
+            DefaultContainer.SetContainerScaleConfig(GetDefaultContainerScaleConfig());
 
             // register Fugui Settings Window
             new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, DrawSettings, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
@@ -287,6 +288,54 @@ namespace Fu
             // initialize debug tool if debug is enabled
             initDebugTool();
 #endif
+        }
+
+        /// <summary>
+        /// Build the default scale configuration used by main and external containers.
+        /// </summary>
+        /// <returns>The default container scale configuration.</returns>
+        public static FuContainerScaleConfig GetDefaultContainerScaleConfig()
+        {
+            if (Settings == null)
+            {
+                return FuContainerScaleConfig.Disabled(1f, 1f);
+            }
+
+            if (!Settings.EnableContainerScaler)
+            {
+                return FuContainerScaleConfig.Disabled(Settings.GlobalScale, Settings.FontGlobalScale);
+            }
+
+            return FuContainerScaleConfig.Reference(
+                Settings.ContainerReferenceResolution,
+                Settings.ContainerMatchWidthOrHeight,
+                Settings.ContainerMinScale,
+                Settings.ContainerMaxScale,
+                Settings.GlobalScale,
+                Settings.FontGlobalScale,
+                Settings.ContainerScaleFonts
+            );
+        }
+
+        private static Fu3DWindowSettings getLegacy3DWindowSettings(FuContainerScaleConfig? scaleConfig, float? scale3D)
+        {
+            float contextScale = Settings != null ? Settings.Windows3DSuperSampling : 1f;
+            float fontScale = Settings != null ? Settings.Windows3DFontScale : 1f;
+            float windows3DScale = scale3D.HasValue
+                ? Mathf.Max(0.0001f, scale3D.Value)
+                : (Settings != null ? Mathf.Max(0.0001f, Settings.Windows3DScale) : 10f);
+            Vector2Int resolution = new Vector2Int(512, 512);
+            Vector2 panelSize = new Vector2(
+                resolution.x / contextScale * windows3DScale / 1000f,
+                resolution.y / contextScale * windows3DScale / 1000f);
+
+            float panelDepth = Settings != null ? Mathf.Max(0.0001f, Settings.UIPanelWidth) : 0.01f;
+            Fu3DWindowSettings settings = Fu3DWindowSettings.FixedResolution(panelSize, resolution, contextScale, fontScale, panelDepth);
+            if (scaleConfig.HasValue)
+            {
+                settings.ContainerScaleConfig = scaleConfig.Value;
+            }
+            return settings;
         }
 
         /// <summary>
@@ -388,7 +437,7 @@ namespace Fu
         /// Adds an UI window to be in 3D context.
         /// </summary>
         /// <param name="uiWindow">The UI window to be display in 3D.</param>
-        public static Fu3DWindowContainer Add3DWindow(FuWindow uiWindow, Vector3? position = null, Quaternion? rotation = null)
+        public static Fu3DWindowContainer Add3DWindow(FuWindow uiWindow, Fu3DWindowSettings settings, Vector3? position = null, Quaternion? rotation = null)
         {
             if (uiWindow == null)
             {
@@ -398,12 +447,102 @@ namespace Fu
 
             if (_3DWindows.TryGetValue(uiWindow.ID, out Fu3DWindowContainer existingContainer))
             {
+                existingContainer.Set3DWindowSettings(settings);
                 return existingContainer;
             }
 
-            Fu3DWindowContainer container = new Fu3DWindowContainer(uiWindow, position, rotation);
+            Fu3DWindowContainer container = new Fu3DWindowContainer(uiWindow, settings, position, rotation);
             _3DWindows.Add(uiWindow.ID, container);
             return container;
+        }
+
+        /// <summary>
+        /// Adds a UI window to a 3D panel with an explicit panel size and fixed render resolution.
+        /// </summary>
+        /// <param name="uiWindow">The UI window to display in 3D.</param>
+        /// <param name="panelSize">The world/local size of the 3D panel.</param>
+        /// <param name="renderResolution">The render texture and ImGui context resolution.</param>
+        /// <param name="position">World 3D position of this container.</param>
+        /// <param name="rotation">World 3D rotation of this container.</param>
+        /// <param name="scaleConfig">Optional container scaler configuration.</param>
+        /// <param name="contextScale">Base context scale.</param>
+        /// <param name="fontScale">Base font scale.</param>
+        /// <param name="matchPanelAspect">When true, resize changes keep the base render area but adapt the render ratio to the panel ratio.</param>
+        /// <param name="panelDepth">Depth of the generated panel extrusion.</param>
+        public static Fu3DWindowContainer Add3DWindow(
+            FuWindow uiWindow,
+            Vector2 panelSize,
+            Vector2Int renderResolution,
+            Vector3? position = null,
+            Quaternion? rotation = null,
+            FuContainerScaleConfig? scaleConfig = null,
+            float contextScale = 1f,
+            float fontScale = 1f,
+            bool matchPanelAspect = true,
+            float panelDepth = 0.01f)
+        {
+            Fu3DWindowSettings settings = matchPanelAspect
+                ? Fu3DWindowSettings.FixedResolutionMatchingPanelAspect(
+                    panelSize,
+                    renderResolution,
+                    panelSize,
+                    contextScale,
+                    fontScale,
+                    panelDepth: panelDepth)
+                : Fu3DWindowSettings.FixedResolution(
+                    panelSize,
+                    renderResolution,
+                    contextScale,
+                    fontScale,
+                    panelDepth);
+
+            if (scaleConfig.HasValue)
+            {
+                settings.ContainerScaleConfig = scaleConfig.Value;
+            }
+
+            return Add3DWindow(uiWindow, settings, position, rotation);
+        }
+
+        /// <summary>
+        /// Adds a UI window to a 3D panel whose render resolution follows panel size from a reference size.
+        /// </summary>
+        public static Fu3DWindowContainer Add3DWindowScaledWithPanel(
+            FuWindow uiWindow,
+            Vector2 panelSize,
+            Vector2Int referenceResolution,
+            Vector2 referencePanelSize,
+            Vector3? position = null,
+            Quaternion? rotation = null,
+            FuContainerScaleConfig? scaleConfig = null,
+            float contextScale = 1f,
+            float fontScale = 1f,
+            Vector2Int? minResolution = null,
+            Vector2Int? maxResolution = null,
+            float panelDepth = 0.01f)
+        {
+            Fu3DWindowSettings settings = Fu3DWindowSettings.ScaledResolutionWithPanel(
+                panelSize,
+                referenceResolution,
+                referencePanelSize,
+                contextScale,
+                fontScale,
+                minResolution,
+                maxResolution,
+                panelDepth);
+
+            if (scaleConfig.HasValue)
+            {
+                settings.ContainerScaleConfig = scaleConfig.Value;
+            }
+
+            return Add3DWindow(uiWindow, settings, position, rotation);
+        }
+
+        [Obsolete("Use Add3DWindow(FuWindow, Fu3DWindowSettings, ...) to provide panel size and render resolution explicitly.")]
+        public static Fu3DWindowContainer Add3DWindow(FuWindow uiWindow, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float? scale3D = null)
+        {
+            return Add3DWindow(uiWindow, getLegacy3DWindowSettings(scaleConfig, scale3D), position, rotation);
         }
 
         /// <summary>
@@ -905,6 +1044,7 @@ namespace Fu
 
             // 2) Create the external container bound to this context
             var container = new FuExternalWindowContainer(uiWindow, context);
+            container.SetContainerScaleConfig(GetDefaultContainerScaleConfig());
 
             // 3) Register and attach the window to this container
             ExternalWindows.Add(uiWindow.ID, container);

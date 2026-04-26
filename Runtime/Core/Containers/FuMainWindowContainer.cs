@@ -23,6 +23,10 @@ namespace Fu
         /// </summary>
         public FuContext Context => _fuguiContext;
         /// <summary>
+        /// The scale configuration applied to this container.
+        /// </summary>
+        public FuContainerScaleConfig ContainerScaleConfig => _fuguiContext.ContainerScaleConfig;
+        /// <summary>
         /// The position of the container in world space.
         /// </summary>
         public Vector2Int Position => _worldPosition;
@@ -93,6 +97,8 @@ namespace Fu
             _fuguiContext.OnRender += _fuguiContext_OnRender;
             // Set the docking style color to current theme
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
+            // Subscribe to the PrepareFrame event to update scale before ImGui.NewFrame.
+            _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
             // Subscribe to the PrepareFrame event of the given FuguiContext to update this container data before rendering
             _fuguiContext.OnFramePrepared += context_OnFramePrepared;
         }
@@ -100,6 +106,13 @@ namespace Fu
         private void _fuguiContext_OnRender()
         {
             RenderFuWindows();
+        }
+
+        public bool context_OnPrepareFrame()
+        {
+            _size = new Vector2Int(Screen.width, Screen.height);
+            _fuguiContext.UpdateContainerScale(_size);
+            return true;
         }
 
         public void context_OnFramePrepared()
@@ -169,6 +182,18 @@ namespace Fu
         #endregion
 
         #region Container
+        /// <summary>
+        /// Configure how this container scales its context.
+        /// </summary>
+        /// <param name="config">Scale configuration.</param>
+        public void SetContainerScaleConfig(FuContainerScaleConfig config)
+        {
+            Vector2Int size = _size.x > 0 && _size.y > 0
+                ? _size
+                : new Vector2Int(Screen.width, Screen.height);
+            _fuguiContext.SetContainerScaleConfig(config, size);
+        }
+
         /// <summary>
         /// Execute a callback on each windows on this container
         /// </summary>
@@ -311,7 +336,6 @@ namespace Fu
         private void UIWindow_OnClose(FuWindow UIWindow)
         {
             TryRemoveWindow(UIWindow.ID);
-            _fuguiContext.OnFramePrepared -= context_OnFramePrepared;
         }
         #endregion
 

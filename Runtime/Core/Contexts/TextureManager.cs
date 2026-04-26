@@ -17,6 +17,7 @@ namespace Fu
         private readonly Dictionary<UTexture, IntPtr> _textureIds = new Dictionary<UTexture, IntPtr>();
         private readonly Dictionary<Sprite, SpriteInfo> _spriteData = new Dictionary<Sprite, SpriteInfo>();
         private ImFontAtlasPtr _fontAtlas;
+        private int _nextTextureId = 1;
 
 #if FUGUI_USE_TEXTUREARRAY
         private static Dictionary<float, Texture2DArray> _atlasTexture = new Dictionary<float, Texture2DArray>();
@@ -106,46 +107,59 @@ namespace Fu
         }
 #else
         private static Dictionary<float, Texture2D> _atlasTexture = new Dictionary<float, Texture2D>();
+        private const int FontAtlasCleanupDelayFrames = 4;
+        private struct PendingFontAtlasCleanup
+        {
+            public Texture2D Atlas;
+            public int EarliestFrame;
+        }
+        private static readonly List<PendingFontAtlasCleanup> _pendingFontAtlasCleanups = new List<PendingFontAtlasCleanup>();
+
         public unsafe void InitializeFontAtlas(ImGuiIOPtr io)
         {
-            // ignore this font atlas if already exists
-            if (_atlasTexture.ContainsKey(Fugui.CurrentContext.FontScale))
+            FlushPendingFontAtlasCleanups();
+
+            float fontScale = Fugui.CurrentContext.FontScale;
+            if (!_atlasTexture.TryGetValue(fontScale, out Texture2D atlas) || atlas == null)
             {
-                return;
-            }
+                if (!ReferenceEquals(atlas, null))
+                {
+                    UnregisterTextureFromAllManagers(atlas);
+                }
 
-            _fontAtlas = io.Fonts;
-            _fontAtlas.GetTexDataAsRGBA32(out byte* pixels, out int width, out int height, out int bytesPerPixel);
+                _fontAtlas = io.Fonts;
+                _fontAtlas.GetTexDataAsRGBA32(out byte* pixels, out int width, out int height, out int bytesPerPixel);
 
-            if (width > SystemInfo.maxTextureSize || height > SystemInfo.maxTextureSize)
-            {
-                Debug.LogError("The font atlas you are trying to created is too big and exced the unity max texture size.\nconsidere reducing the size of the font, the number of different font sizes or the quantity of icons.");
-            }
-            if (width > SystemInfo.maxTextureSize)
-                width = SystemInfo.maxTextureSize;
-            if (height > SystemInfo.maxTextureSize)
-                height = SystemInfo.maxTextureSize;
+                if (width > SystemInfo.maxTextureSize || height > SystemInfo.maxTextureSize)
+                {
+                    Debug.LogError("The font atlas you are trying to created is too big and exced the unity max texture size.\nconsidere reducing the size of the font, the number of different font sizes or the quantity of icons.");
+                }
+                if (width > SystemInfo.maxTextureSize)
+                    width = SystemInfo.maxTextureSize;
+                if (height > SystemInfo.maxTextureSize)
+                    height = SystemInfo.maxTextureSize;
 
-            Texture2D atlas = new Texture2D(width, height, TextureFormat.RGBA32, false, false)
-            {
-                filterMode = FilterMode.Point
-            };
+                atlas = new Texture2D(width, height, TextureFormat.RGBA32, false, false)
+                {
+                    filterMode = FilterMode.Point
+                };
 
-            // TODO: Remove collections and make native array manually.
-            NativeArray<byte> srcData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(pixels, width * height * bytesPerPixel, Allocator.None);
+                // TODO: Remove collections and make native array manually.
+                NativeArray<byte> srcData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(pixels, width * height * bytesPerPixel, Allocator.None);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref srcData, AtomicSafetyHandle.GetTempMemoryHandle());
+                NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref srcData, AtomicSafetyHandle.GetTempMemoryHandle());
 #endif
-            // Invert y while copying the atlas texture.
-            NativeArray<byte> dstData = atlas.GetRawTextureData<byte>();
-            int stride = width * bytesPerPixel;
-            for (int y = 0; y < height; ++y)
-            {
-                NativeArray<byte>.Copy(srcData, y * stride, dstData, (height - y - 1) * stride, stride);
-            }
-            atlas.Apply();
+                // Invert y while copying the atlas texture.
+                NativeArray<byte> dstData = atlas.GetRawTextureData<byte>();
+                int stride = width * bytesPerPixel;
+                for (int y = 0; y < height; ++y)
+                {
+                    NativeArray<byte>.Copy(srcData, y * stride, dstData, (height - y - 1) * stride, stride);
+                }
+                atlas.Apply();
 
-            _atlasTexture.Add(Fugui.CurrentContext.FontScale, atlas);
+                _atlasTexture[fontScale] = atlas;
+            }
 
             // register atlas texture
             IntPtr texId = RegisterTexture(atlas);
@@ -158,16 +172,76 @@ namespace Fu
         /// <param name="oldScale">scale to remove from texture manager</param>
         public void ClearFontAtlas(float oldScale)
         {
-            if (_atlasTexture.ContainsKey(oldScale))
+            if (!_atlasTexture.ContainsKey(oldScale))
             {
                 return;
             }
-            IntPtr textureID = _textureIds[_atlasTexture[oldScale]];
-            _textures.Remove(textureID);
-            _textureIds.Remove(_atlasTexture[oldScale]);
-            UnityEngine.Object.Destroy(_atlasTexture[oldScale]);
-            _atlasTexture.Remove(oldScale);
 
+            foreach (FuContext context in Fugui.Contexts.Values)
+            {
+                if (Mathf.Abs(context.FontScale - oldScale) < 0.0001f)
+                {
+                    return;
+                }
+            }
+
+            Texture2D atlas = _atlasTexture[oldScale];
+            _atlasTexture.Remove(oldScale);
+            ScheduleFontAtlasCleanup(atlas);
+        }
+
+        private static void ScheduleFontAtlasCleanup(Texture2D atlas)
+        {
+            if (ReferenceEquals(atlas, null) || atlas == null)
+            {
+                return;
+            }
+
+            int earliestFrame = Time.frameCount + FontAtlasCleanupDelayFrames;
+            for (int i = 0; i < _pendingFontAtlasCleanups.Count; i++)
+            {
+                PendingFontAtlasCleanup pending = _pendingFontAtlasCleanups[i];
+                if (ReferenceEquals(pending.Atlas, atlas))
+                {
+                    pending.EarliestFrame = Mathf.Max(pending.EarliestFrame, earliestFrame);
+                    _pendingFontAtlasCleanups[i] = pending;
+                    return;
+                }
+            }
+
+            _pendingFontAtlasCleanups.Add(new PendingFontAtlasCleanup
+            {
+                Atlas = atlas,
+                EarliestFrame = earliestFrame
+            });
+        }
+
+        private static void FlushPendingFontAtlasCleanups()
+        {
+            for (int i = _pendingFontAtlasCleanups.Count - 1; i >= 0; i--)
+            {
+                PendingFontAtlasCleanup pending = _pendingFontAtlasCleanups[i];
+                if (ReferenceEquals(pending.Atlas, null) || pending.Atlas == null)
+                {
+                    _pendingFontAtlasCleanups.RemoveAt(i);
+                    continue;
+                }
+
+                if (Time.frameCount < pending.EarliestFrame)
+                {
+                    continue;
+                }
+
+                if (_atlasTexture.ContainsValue(pending.Atlas))
+                {
+                    _pendingFontAtlasCleanups.RemoveAt(i);
+                    continue;
+                }
+
+                UnregisterTextureFromAllManagers(pending.Atlas);
+                UnityEngine.Object.Destroy(pending.Atlas);
+                _pendingFontAtlasCleanups.RemoveAt(i);
+            }
         }
 #endif
         public unsafe void Shutdown()
@@ -183,7 +257,7 @@ namespace Fu
                 bool destroyFontAtlas = true;
                 foreach (FuContext context in Fugui.Contexts.Values)
                 {
-                    if (context.FontScale == scale)
+                    if (context != Fugui.CurrentContext && Mathf.Abs(context.FontScale - scale) < 0.0001f)
                     {
                         destroyFontAtlas = false;
                         break;
@@ -191,6 +265,7 @@ namespace Fu
                 }
                 if (destroyFontAtlas)
                 {
+                    UnregisterTextureFromAllManagers(_atlasTexture[scale]);
                     UnityEngine.Object.Destroy(_atlasTexture[scale]);
                     _atlasTexture[scale] = null;
                     _atlasTexture.Remove(scale);
@@ -202,18 +277,55 @@ namespace Fu
 
         public void PrepareFrame(ImGuiIOPtr io)
         {
-            IntPtr id = GetTextureId(_atlasTexture[Fugui.CurrentContext.FontScale]);
+            float fontScale = Fugui.CurrentContext.FontScale;
+            if (!_atlasTexture.ContainsKey(fontScale))
+            {
+                InitializeFontAtlas(io);
+            }
+
+            IntPtr id = GetTextureId(_atlasTexture[fontScale]);
             io.Fonts.SetTexID(id);
         }
 
         public bool TryGetTexture(IntPtr id, out UTexture texture)
         {
-            return _textures.TryGetValue(id, out texture);
+            if (!_textures.TryGetValue(id, out texture))
+            {
+                return false;
+            }
+
+            if (texture != null)
+            {
+                return true;
+            }
+
+            _textures.Remove(id);
+            if (!ReferenceEquals(texture, null))
+            {
+                _textureIds.Remove(texture);
+            }
+            return false;
         }
 
         public IntPtr GetTextureId(UTexture texture)
         {
-            return _textureIds.TryGetValue(texture, out IntPtr id) ? id : RegisterTexture(texture);
+            if (texture == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            if (_textureIds.TryGetValue(texture, out IntPtr id))
+            {
+                if (_textures.TryGetValue(id, out UTexture registeredTexture) && registeredTexture == texture)
+                {
+                    return id;
+                }
+
+                _textureIds.Remove(texture);
+                _textures.Remove(id);
+            }
+
+            return RegisterTexture(texture);
         }
 
         public IntPtr GetFontAtlasTextureId()
@@ -239,16 +351,52 @@ namespace Fu
 
         private IntPtr RegisterTexture(UTexture texture)
         {
-            if (_textureIds.ContainsKey(texture))
+            if (texture == null)
             {
-                return GetTextureId(texture);
+                return IntPtr.Zero;
             }
-            else
+
+            if (_textureIds.TryGetValue(texture, out IntPtr textureId))
             {
-                IntPtr id = new IntPtr(_textures.Count + 1);
-                _textures.Add(id, texture);
-                _textureIds.Add(texture, id);
-                return id;
+                return textureId;
+            }
+
+            IntPtr id;
+            do
+            {
+                id = new IntPtr(_nextTextureId++);
+            }
+            while (_textures.ContainsKey(id));
+
+            _textures.Add(id, texture);
+            _textureIds.Add(texture, id);
+            return id;
+        }
+
+        private static void UnregisterTextureFromAllManagers(UTexture texture)
+        {
+            if (ReferenceEquals(texture, null))
+            {
+                return;
+            }
+
+            foreach (FuContext context in Fugui.Contexts.Values)
+            {
+                context.TextureManager?.UnregisterTexture(texture);
+            }
+        }
+
+        private void UnregisterTexture(UTexture texture)
+        {
+            if (ReferenceEquals(texture, null))
+            {
+                return;
+            }
+
+            if (_textureIds.TryGetValue(texture, out IntPtr textureId))
+            {
+                _textures.Remove(textureId);
+                _textureIds.Remove(texture);
             }
         }
     }

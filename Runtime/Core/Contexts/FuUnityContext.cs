@@ -201,13 +201,19 @@ namespace Fu
         {
             // store old scale
             float oldScale = Scale;
+            float oldFontScale = FontScale;
+
+            if (Mathf.Abs(Scale - scale) < 0.0001f && Mathf.Abs(FontScale - fontScale) < 0.0001f)
+            {
+                return;
+            }
 
             // set scale
             Scale = scale;
             FontScale = fontScale;
 
             // update font scale
-            TextureManager.ClearFontAtlas(oldScale);
+            TextureManager.ClearFontAtlas(oldFontScale);
             LoadFonts();
             IO.Fonts.Build();  
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
@@ -215,7 +221,7 @@ namespace Fu
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
 
             // scale windows sizes for windows NOT docked, visible and in this context
-            Fugui.UIWindows.Where(win => win.Value.Container.Context == this && win.Value.IsVisible && !win.Value.IsDocked).ToList()
+            Fugui.UIWindows.Where(win => win.Value.Container.Context == this && win.Value.IsVisible && !win.Value.IsDocked && !win.Value.Is3DWindow).ToList()
                 .ForEach((win) =>
                 {
                     win.Value.Size = new Vector2Int((int)(win.Value.Size.x * (scale / oldScale)), (int)(win.Value.Size.y * (scale / oldScale)));

@@ -123,12 +123,17 @@ namespace Fu
 
         public override void SetScale(float scale, float fontScale)
         {
-            float oldScale = Scale;
+            float oldFontScale = FontScale;
+
+            if (Mathf.Abs(Scale - scale) < 0.0001f && Mathf.Abs(FontScale - fontScale) < 0.0001f)
+            {
+                return;
+            }
 
             Scale = scale;
             FontScale = fontScale;
 
-            TextureManager.ClearFontAtlas(oldScale);
+            TextureManager.ClearFontAtlas(oldFontScale);
             LoadFonts();
             IO.Fonts.Build();
             TextureManager.InitializeFontAtlas(IO);

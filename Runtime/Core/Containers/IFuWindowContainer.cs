@@ -4,6 +4,83 @@ using UnityEngine;
 namespace Fu
 {
     /// <summary>
+    /// Defines how a container context scale should be computed from the container size.
+    /// </summary>
+    [Serializable]
+    public struct FuContainerScaleConfig
+    {
+        public bool Enabled;
+        public Vector2Int ReferenceResolution;
+        [Range(0f, 1f)]
+        public float MatchWidthOrHeight;
+        public float MinScale;
+        public float MaxScale;
+        public float BaseScale;
+        public float BaseFontScale;
+        public bool ScaleFont;
+
+        public static FuContainerScaleConfig Disabled(float baseScale, float baseFontScale)
+        {
+            return new FuContainerScaleConfig
+            {
+                Enabled = false,
+                ReferenceResolution = new Vector2Int(1920, 1080),
+                MatchWidthOrHeight = 0.5f,
+                MinScale = 0.25f,
+                MaxScale = 4f,
+                BaseScale = Mathf.Max(0.0001f, baseScale),
+                BaseFontScale = Mathf.Max(0.0001f, baseFontScale),
+                ScaleFont = true
+            };
+        }
+
+        public static FuContainerScaleConfig Reference(
+            Vector2Int referenceResolution,
+            float matchWidthOrHeight,
+            float minScale,
+            float maxScale,
+            float baseScale,
+            float baseFontScale,
+            bool scaleFont = true)
+        {
+            FuContainerScaleConfig config = Disabled(baseScale, baseFontScale);
+            config.Enabled = true;
+            config.ReferenceResolution = referenceResolution;
+            config.MatchWidthOrHeight = matchWidthOrHeight;
+            config.MinScale = minScale;
+            config.MaxScale = maxScale;
+            config.ScaleFont = scaleFont;
+            config.Sanitize();
+            return config;
+        }
+
+        public void Sanitize()
+        {
+            ReferenceResolution = new Vector2Int(
+                Mathf.Max(1, ReferenceResolution.x),
+                Mathf.Max(1, ReferenceResolution.y));
+
+            MatchWidthOrHeight = Mathf.Clamp01(MatchWidthOrHeight);
+            MinScale = Mathf.Max(0.0001f, MinScale);
+            MaxScale = Mathf.Max(MinScale, MaxScale);
+            BaseScale = Mathf.Max(0.0001f, BaseScale);
+            BaseFontScale = Mathf.Max(0.0001f, BaseFontScale);
+        }
+
+        public float ComputeScale(Vector2Int containerSize)
+        {
+            Sanitize();
+
+            float widthScale = Mathf.Max(1, containerSize.x) / (float)ReferenceResolution.x;
+            float heightScale = Mathf.Max(1, containerSize.y) / (float)ReferenceResolution.y;
+            float logWidthScale = Mathf.Log(widthScale, 2f);
+            float logHeightScale = Mathf.Log(heightScale, 2f);
+            float scale = Mathf.Pow(2f, Mathf.Lerp(logWidthScale, logHeightScale, MatchWidthOrHeight));
+            return Mathf.Max(0.0001f, scale);
+        }
+    }
+
+    /// <summary>
     /// Interface that represent what should implement an UI window container
     /// A container is a piece of code that can host UI windows
     /// - Unity main Window Container : should be unique instance
@@ -17,6 +94,13 @@ namespace Fu
         public Vector2Int Size { get; }
         public FuKeyboardState Keyboard { get; }
         public FuMouseState Mouse { get; }
+        public FuContainerScaleConfig ContainerScaleConfig { get; }
+
+        /// <summary>
+        /// Configure how this container scales its context.
+        /// </summary>
+        /// <param name="config">Scale configuration.</param>
+        public void SetContainerScaleConfig(FuContainerScaleConfig config);
 
         /// <summary>
         /// Execute a callback on each windows on this container

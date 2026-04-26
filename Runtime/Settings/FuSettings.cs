@@ -270,6 +270,38 @@ namespace Fu
         [FuSlider(0.1f, 5f)]
         public float FontGlobalScale = 1.0f;
 
+        [Tooltip("Enable automatic context scaling from each container size.")]
+        [FuTooltip("Enable automatic context scaling from each container size.")]
+        [FuToggle]
+        public bool EnableContainerScaler = false;
+
+        [Tooltip("Resolution the UI was authored for when container scaling is enabled.")]
+        [FuTooltip("Resolution the UI was authored for when container scaling is enabled.")]
+        public Vector2Int ContainerReferenceResolution = new Vector2Int(1920, 1080);
+
+        [Tooltip("Blend between width and height when computing container scale. 0 uses width, 1 uses height.")]
+        [FuTooltip("Blend between width and height when computing container scale. 0 uses width, 1 uses height.")]
+        [Range(0f, 1f)]
+        [FuSlider(0f, 1f)]
+        public float ContainerMatchWidthOrHeight = 0.5f;
+
+        [Tooltip("Minimum automatic context scale when container scaling is enabled.")]
+        [FuTooltip("Minimum automatic context scale when container scaling is enabled.")]
+        [Range(0.1f, 10f)]
+        [FuSlider(0.1f, 10f)]
+        public float ContainerMinScale = 0.5f;
+
+        [Tooltip("Maximum automatic context scale when container scaling is enabled.")]
+        [FuTooltip("Maximum automatic context scale when container scaling is enabled.")]
+        [Range(0.1f, 10f)]
+        [FuSlider(0.1f, 10f)]
+        public float ContainerMaxScale = 4f;
+
+        [Tooltip("Scale fonts together with the container context scale.")]
+        [FuTooltip("Scale fonts together with the container context scale.")]
+        [FuToggle]
+        public bool ContainerScaleFonts = true;
+
         [Tooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
         [FuTooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
         [FuToggle]

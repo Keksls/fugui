@@ -63,6 +63,11 @@ namespace Fu
             return _raycasters.Remove(raycasterName);
         }
 
+        public static bool TryGetRaycaster(string raycasterName, out FuRaycaster raycaster)
+        {
+            return _raycasters.TryGetValue(raycasterName, out raycaster);
+        }
+
         public static IEnumerable<FuRaycaster> GetAllRaycasters()
         {
             return _raycasters.Values;

@@ -21,6 +21,9 @@ namespace Fu.Framework
         [SerializeField]
         protected bool _forceCreateAloneOnAwake = false;
 
+        [SerializeField]
+        protected bool _runtimeResizable = true;
+
         protected FuWindow _fuWindow;
         protected Fu3DWindowContainer _container;
 
@@ -85,6 +88,12 @@ namespace Fu.Framework
             _fuWindow = window;
             _fuWindow.OnClosed += Window_OnClosed;
             _container = Fugui.Add3DWindow(_fuWindow, transform.position, transform.rotation);
+            if (_container != null)
+            {
+                _container.OnRuntimeResized -= Container_OnRuntimeResized;
+                _container.OnRuntimeResized += Container_OnRuntimeResized;
+                _container.SetRuntimeResizable(_runtimeResizable);
+            }
 
             ApplyPlaceholderToContainer();
 
@@ -126,6 +135,17 @@ namespace Fu.Framework
             _windowName = value;
         }
 
+        public bool IsRuntimeResizable()
+        {
+            return _runtimeResizable;
+        }
+
+        public void SetRuntimeResizable(bool value)
+        {
+            _runtimeResizable = value;
+            _container?.SetRuntimeResizable(value);
+        }
+
         private void LateUpdate()
         {
             EnforceDepth();
@@ -143,6 +163,7 @@ namespace Fu.Framework
             _container.SetPosition(transform.position);
             _container.SetRotation(transform.rotation);
             _container.SetLocalSize(GetPlaceholderSize());
+            _container.SetRuntimeResizable(_runtimeResizable);
         }
 
         private void Window_OnClosed(FuWindow window)
@@ -151,8 +172,50 @@ namespace Fu.Framework
                 return;
 
             _fuWindow.OnClosed -= Window_OnClosed;
+            if (_container != null)
+            {
+                _container.OnRuntimeResized -= Container_OnRuntimeResized;
+            }
             _fuWindow = null;
             _container = null;
+        }
+
+        private void Container_OnRuntimeResized(Vector3 position, Vector2 localSize)
+        {
+            transform.position = position;
+
+            Vector3 localScale = transform.localScale;
+            Vector3 parentScale = transform.parent != null ? transform.parent.lossyScale : Vector3.one;
+
+            localScale.x = getSignedScale(localScale.x, localSize.x, parentScale.x);
+            localScale.y = getSignedScale(localScale.y, localSize.y, parentScale.y);
+            localScale.z = Depth;
+            transform.localScale = localScale;
+        }
+
+        private float getSignedScale(float currentLocalScale, float targetWorldSize, float parentWorldScale)
+        {
+            float sign = currentLocalScale < 0f ? -1f : 1f;
+            float parentScale = Mathf.Abs(parentWorldScale);
+            if (parentScale < 0.0001f)
+            {
+                parentScale = 1f;
+            }
+
+            return sign * Mathf.Max(0.0001f, targetWorldSize / parentScale);
+        }
+
+        private void OnDestroy()
+        {
+            if (_fuWindow != null)
+            {
+                _fuWindow.OnClosed -= Window_OnClosed;
+            }
+
+            if (_container != null)
+            {
+                _container.OnRuntimeResized -= Container_OnRuntimeResized;
+            }
         }
 
         private Vector2 GetPlaceholderSize()
@@ -218,12 +281,14 @@ namespace Fu.Framework
 
         private SerializedProperty windowFlagsProp;
         private SerializedProperty forceCreateProp;
+        private SerializedProperty runtimeResizableProp;
 
         protected readonly HashSet<string> _excludedProps = new HashSet<string>
         {
             "_windowName",
             "_windowFlags",
             "_forceCreateAloneOnAwake",
+            "_runtimeResizable",
             "x",
             "y",
             "z"
@@ -239,6 +304,7 @@ namespace Fu.Framework
 
             windowFlagsProp = serializedObject.FindProperty("_windowFlags");
             forceCreateProp = serializedObject.FindProperty("_forceCreateAloneOnAwake");
+            runtimeResizableProp = serializedObject.FindProperty("_runtimeResizable");
         }
 
         public override void OnInspectorGUI()
@@ -258,6 +324,7 @@ namespace Fu.Framework
 
             EditorGUILayout.PropertyField(windowFlagsProp);
             EditorGUILayout.PropertyField(forceCreateProp);
+            EditorGUILayout.PropertyField(runtimeResizableProp);
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(

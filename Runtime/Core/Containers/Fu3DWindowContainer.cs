@@ -14,10 +14,12 @@ namespace Fu
         public FuWindow Window { get; private set; }
         public FuContext Context => _fuguiContext;
         public bool IsClosed { get; private set; }
+        public bool RuntimeResizable => _runtimeResizable;
         public Vector2Int LocalMousePos => _localMousePos;
         public Vector2Int Position => Vector2Int.zero;
         public Vector2Int Size => _size;
         public RenderTexture RenderTexture { get; private set; }
+        public event Action<Vector3, Vector2> OnRuntimeResized;
         private GameObject _panelGameObject;
         public int FuguiContextID { get { return _fuguiContext != null ? _fuguiContext.ID : -1; } }
         public FuMouseState Mouse => _mouseState;
@@ -29,6 +31,24 @@ namespace Fu
         private FuUnityContext _fuguiContext;
         private static int _3DContextindex = 0;
         private Material _uiMaterial;
+        private Material _resizeHandleMaterial;
+        private GameObject[] _resizeHandles;
+        private bool _runtimeResizable;
+        private bool _resizeHandlesVisible;
+        private int _activeResizeHandleIndex = -1;
+        private string _activeResizeRaycasterID;
+        private Vector3 _resizeStartPanelPosition;
+        private Quaternion _resizeStartPanelRotation;
+        private Vector2 _resizeStartLocalSize;
+        private Vector2 _resizeStartHitLocal;
+        private const float ResizeHandleSizeRatio = 0.08f;
+        private const float ResizeHandleMinSize = 0.035f;
+        private const float ResizeHandleMaxSize = 0.16f;
+        private const float ResizeHoverMarginRatio = 0.08f;
+        private const float ResizeHoverMarginMin = 0.045f;
+        private const float ResizeHoverMarginMax = 0.18f;
+        private const float ResizeHandleFrontOffset = -0.01f;
+        private const float RuntimeResizeMinSize = 0.05f;
         #endregion
 
         /// <summary>
@@ -109,6 +129,28 @@ namespace Fu
         private void ThemeManager_OnThemeSet(FuTheme theme)
         {
             createPanel();
+        }
+
+        /// <summary>
+        /// Enable or disable runtime resizing through 3D raycast handles.
+        /// </summary>
+        /// <param name="resizable">True to expose runtime resize handles.</param>
+        public void SetRuntimeResizable(bool resizable)
+        {
+            if (IsClosed)
+                return;
+
+            _runtimeResizable = resizable;
+
+            if (!_runtimeResizable)
+            {
+                cancelRuntimeResize();
+                setResizeHandlesVisible(false);
+                return;
+            }
+
+            ensureResizeHandles();
+            updateResizeHandleTransforms();
         }
 
         /// <summary>
@@ -205,6 +247,8 @@ namespace Fu
                 GameObject.Destroy(_panelGameObject);
             }
 
+            _resizeHandles = null;
+            _resizeHandlesVisible = false;
             _panelGameObject = new GameObject(ID + "_Panel");
             FuPanelMesh rectangleMesh = _panelGameObject.AddComponent<FuPanelMesh>();
             float round = Fugui.Themes.WindowRounding * Context.Scale;
@@ -218,6 +262,11 @@ namespace Fu
             }
             _panelGameObject.transform.position = position;
             _panelGameObject.transform.rotation = rotation;
+
+            if (_runtimeResizable)
+            {
+                ensureResizeHandles();
+            }
         }
 
         /// <summary>
@@ -244,6 +293,402 @@ namespace Fu
             _panelGameObject.transform.rotation = rotation;
         }
 
+        private bool updateRuntimeResize(InputState panelInputState)
+        {
+            if (!_runtimeResizable || _panelGameObject == null || Window == null)
+            {
+                cancelRuntimeResize();
+                setResizeHandlesVisible(false);
+                return false;
+            }
+
+            if (_activeResizeHandleIndex != -1)
+            {
+                setResizeHandlesVisible(true);
+                continueRuntimeResize();
+                Window.ForceDraw(2);
+                return true;
+            }
+
+            bool handleHovered = tryGetHoveredResizeHandle(out int hoveredHandleIndex, out InputState handleInputState);
+            if (handleHovered && handleInputState.MouseDown[0])
+            {
+                startRuntimeResize(hoveredHandleIndex, handleInputState.RaycasterID);
+            }
+
+            bool nearResizeCorner = panelInputState.Hovered && isNearResizeCorner(panelInputState.MousePosition);
+            bool handlesShouldBeVisible = handleHovered || nearResizeCorner || _activeResizeHandleIndex != -1;
+
+            setResizeHandlesVisible(handlesShouldBeVisible);
+
+            if (handlesShouldBeVisible)
+            {
+                Window.ForceDraw(2);
+            }
+
+            return handleHovered || nearResizeCorner || _activeResizeHandleIndex != -1;
+        }
+
+        private bool isNearResizeCorner(Vector2 localPosition)
+        {
+            Vector2 localSize = getCurrentLocalSize();
+            float margin = Mathf.Clamp(
+                Mathf.Min(localSize.x, localSize.y) * ResizeHoverMarginRatio,
+                ResizeHoverMarginMin,
+                ResizeHoverMarginMax);
+
+            float left = -localSize.x * 0.5f;
+            float right = localSize.x * 0.5f;
+            float bottom = 0f;
+            float top = localSize.y;
+
+            bool nearLeft = Mathf.Abs(localPosition.x - left) <= margin;
+            bool nearRight = Mathf.Abs(localPosition.x - right) <= margin;
+            bool nearBottom = Mathf.Abs(localPosition.y - bottom) <= margin;
+            bool nearTop = Mathf.Abs(localPosition.y - top) <= margin;
+
+            return (nearLeft || nearRight) && (nearBottom || nearTop);
+        }
+
+        private bool tryGetHoveredResizeHandle(out int handleIndex, out InputState inputState)
+        {
+            handleIndex = -1;
+            inputState = default;
+
+            if (!_resizeHandlesVisible || _resizeHandles == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _resizeHandles.Length; i++)
+            {
+                GameObject handle = _resizeHandles[i];
+                if (handle == null || !handle.activeSelf)
+                {
+                    continue;
+                }
+
+                InputState handleInputState = FuRaycasting.GetInputState(getResizeHandleID(i), handle);
+                if (!handleInputState.Hovered)
+                {
+                    continue;
+                }
+
+                handleIndex = i;
+                inputState = handleInputState;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void startRuntimeResize(int handleIndex, string raycasterID)
+        {
+            if (string.IsNullOrEmpty(raycasterID) ||
+                !FuRaycasting.TryGetRaycaster(raycasterID, out FuRaycaster raycaster) ||
+                !tryGetRayLocalPoint(raycaster, _panelGameObject.transform.position, _panelGameObject.transform.rotation, out Vector2 hitLocal))
+            {
+                return;
+            }
+
+            _activeResizeHandleIndex = handleIndex;
+            _activeResizeRaycasterID = raycasterID;
+            _resizeStartPanelPosition = _panelGameObject.transform.position;
+            _resizeStartPanelRotation = _panelGameObject.transform.rotation;
+            _resizeStartLocalSize = getCurrentLocalSize();
+            _resizeStartHitLocal = hitLocal;
+            setResizeHandlesVisible(true);
+            Window?.ForceDraw(10);
+        }
+
+        private void continueRuntimeResize()
+        {
+            if (_activeResizeHandleIndex == -1)
+            {
+                return;
+            }
+
+            if (!FuRaycasting.TryGetRaycaster(_activeResizeRaycasterID, out FuRaycaster raycaster) ||
+                !raycaster.MouseButton0())
+            {
+                finishRuntimeResize();
+                return;
+            }
+
+            if (!tryGetRayLocalPoint(raycaster, _resizeStartPanelPosition, _resizeStartPanelRotation, out Vector2 currentHitLocal))
+            {
+                return;
+            }
+
+            applyRuntimeResize(currentHitLocal);
+        }
+
+        private void applyRuntimeResize(Vector2 currentHitLocal)
+        {
+            Vector2 delta = currentHitLocal - _resizeStartHitLocal;
+
+            float left = -_resizeStartLocalSize.x * 0.5f;
+            float right = _resizeStartLocalSize.x * 0.5f;
+            float bottom = 0f;
+            float top = _resizeStartLocalSize.y;
+
+            bool resizeLeft = isLeftHandle(_activeResizeHandleIndex);
+            bool resizeBottom = isBottomHandle(_activeResizeHandleIndex);
+
+            if (resizeLeft)
+            {
+                left += delta.x;
+            }
+            else
+            {
+                right += delta.x;
+            }
+
+            if (resizeBottom)
+            {
+                bottom += delta.y;
+            }
+            else
+            {
+                top += delta.y;
+            }
+
+            if (right - left < RuntimeResizeMinSize)
+            {
+                if (resizeLeft)
+                {
+                    left = right - RuntimeResizeMinSize;
+                }
+                else
+                {
+                    right = left + RuntimeResizeMinSize;
+                }
+            }
+
+            if (top - bottom < RuntimeResizeMinSize)
+            {
+                if (resizeBottom)
+                {
+                    bottom = top - RuntimeResizeMinSize;
+                }
+                else
+                {
+                    top = bottom + RuntimeResizeMinSize;
+                }
+            }
+
+            Vector2 newLocalSize = new Vector2(right - left, top - bottom);
+            Vector3 newPanelPosition = _resizeStartPanelPosition + _resizeStartPanelRotation * new Vector3((left + right) * 0.5f, bottom, 0f);
+
+            SetPosition(newPanelPosition);
+            SetRotation(_resizeStartPanelRotation);
+            SetLocalSize(newLocalSize);
+            setResizeHandlesVisible(true);
+            OnRuntimeResized?.Invoke(newPanelPosition, newLocalSize);
+            Window?.ForceDraw(2);
+        }
+
+        private void finishRuntimeResize()
+        {
+            _activeResizeHandleIndex = -1;
+            _activeResizeRaycasterID = null;
+            setResizeHandlesVisible(false);
+            Window?.ForceDraw(2);
+        }
+
+        private void cancelRuntimeResize()
+        {
+            _activeResizeHandleIndex = -1;
+            _activeResizeRaycasterID = null;
+        }
+
+        private bool tryGetRayLocalPoint(FuRaycaster raycaster, Vector3 planePosition, Quaternion planeRotation, out Vector2 localPoint)
+        {
+            localPoint = Vector2.zero;
+
+            if (raycaster == null)
+            {
+                return false;
+            }
+
+            Ray ray = raycaster.GetRay();
+            Vector3 normal = planeRotation * Vector3.forward;
+            float denominator = Vector3.Dot(normal, ray.direction);
+
+            if (Mathf.Abs(denominator) < 0.0001f)
+            {
+                return false;
+            }
+
+            float distance = Vector3.Dot(planePosition - ray.origin, normal) / denominator;
+            if (distance < 0f)
+            {
+                return false;
+            }
+
+            Vector3 hitPoint = ray.GetPoint(distance);
+            Vector3 localPoint3D = Quaternion.Inverse(planeRotation) * (hitPoint - planePosition);
+            localPoint = new Vector2(localPoint3D.x, localPoint3D.y);
+            return true;
+        }
+
+        private bool isLeftHandle(int handleIndex)
+        {
+            return handleIndex == 0 || handleIndex == 2;
+        }
+
+        private bool isBottomHandle(int handleIndex)
+        {
+            return handleIndex == 0 || handleIndex == 1;
+        }
+
+        private void ensureResizeHandles()
+        {
+            if (!_runtimeResizable || _panelGameObject == null)
+            {
+                return;
+            }
+
+            if (_resizeHandles != null && _resizeHandles.Length == 4 && _resizeHandles[0] != null)
+            {
+                return;
+            }
+
+            _resizeHandles = new GameObject[4];
+
+            for (int i = 0; i < _resizeHandles.Length; i++)
+            {
+                GameObject handle = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                handle.name = getResizeHandleID(i);
+                handle.layer = _panelGameObject.layer;
+                handle.transform.SetParent(_panelGameObject.transform, false);
+                handle.transform.localRotation = Quaternion.identity;
+
+                MeshRenderer renderer = handle.GetComponent<MeshRenderer>();
+                if (renderer != null)
+                {
+                    renderer.sharedMaterial = getResizeHandleMaterial();
+                }
+
+                _resizeHandles[i] = handle;
+                handle.SetActive(false);
+            }
+
+            updateResizeHandleTransforms();
+        }
+
+        private void updateResizeHandleTransforms()
+        {
+            if (!_runtimeResizable || _resizeHandles == null)
+            {
+                return;
+            }
+
+            Vector2 localSize = getCurrentLocalSize();
+            float handleSize = Mathf.Clamp(
+                Mathf.Min(localSize.x, localSize.y) * ResizeHandleSizeRatio,
+                ResizeHandleMinSize,
+                ResizeHandleMaxSize);
+
+            for (int i = 0; i < _resizeHandles.Length; i++)
+            {
+                GameObject handle = _resizeHandles[i];
+                if (handle == null)
+                {
+                    continue;
+                }
+
+                handle.transform.localPosition = getResizeHandleLocalPosition(i, localSize);
+                handle.transform.localScale = Vector3.one * handleSize;
+                handle.transform.localRotation = Quaternion.identity;
+                handle.layer = _panelGameObject != null ? _panelGameObject.layer : handle.layer;
+            }
+        }
+
+        private Vector2 getCurrentLocalSize()
+        {
+            float contextScale = Context != null && Context.Scale > 0f ? Context.Scale : 1f;
+            float panelScale = Fugui.Settings.Windows3DScale / 1000f;
+            return new Vector2(_size.x / contextScale * panelScale, _size.y / contextScale * panelScale);
+        }
+
+        private Vector3 getResizeHandleLocalPosition(int handleIndex, Vector2 localSize)
+        {
+            float x = isLeftHandle(handleIndex) ? -localSize.x * 0.5f : localSize.x * 0.5f;
+            float y = isBottomHandle(handleIndex) ? 0f : localSize.y;
+            return new Vector3(x, y, ResizeHandleFrontOffset);
+        }
+
+        private void setResizeHandlesVisible(bool visible)
+        {
+            if (visible)
+            {
+                ensureResizeHandles();
+                updateResizeHandleTransforms();
+            }
+
+            if (_resizeHandles == null)
+            {
+                _resizeHandlesVisible = false;
+                return;
+            }
+
+            _resizeHandlesVisible = visible && _runtimeResizable;
+
+            for (int i = 0; i < _resizeHandles.Length; i++)
+            {
+                if (_resizeHandles[i] != null)
+                {
+                    _resizeHandles[i].SetActive(_resizeHandlesVisible);
+                }
+            }
+        }
+
+        private string getResizeHandleID(int handleIndex)
+        {
+            return ID + "_ResizeHandle_" + handleIndex;
+        }
+
+        private Material getResizeHandleMaterial()
+        {
+            if (_resizeHandleMaterial != null)
+            {
+                return _resizeHandleMaterial;
+            }
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Color");
+            }
+            if (shader == null)
+            {
+                shader = Shader.Find("Standard");
+            }
+
+            _resizeHandleMaterial = shader != null ? new Material(shader) : GameObject.Instantiate(Fugui.Settings.UIPanelMaterial);
+            setMaterialColor(_resizeHandleMaterial, new Color(0f, 0.72f, 1f, 0.9f));
+            return _resizeHandleMaterial;
+        }
+
+        private void setMaterialColor(Material material, Color color)
+        {
+            if (material == null)
+            {
+                return;
+            }
+
+            if (material.HasProperty("_BaseColor"))
+            {
+                material.SetColor("_BaseColor", color);
+            }
+
+            if (material.HasProperty("_Color"))
+            {
+                material.SetColor("_Color", color);
+            }
+        }
+
         /// <summary>
         /// Try to prepare the Fugui Context rendering (time to inject inputs)
         /// </summary>
@@ -257,9 +702,10 @@ namespace Fu
 
             // get input state for this container
             InputState inputState = FuRaycasting.GetInputState(ID, _panelGameObject);
+            bool blockWindowInput = updateRuntimeResize(inputState);
 
             // force to draw if hover in
-            if (inputState.Hovered)
+            if (inputState.Hovered && !blockWindowInput)
             {
                 Vector2 scaledMousePosition = inputState.MousePosition * (1000f / Fugui.Settings.Windows3DScale) * Context.Scale;
                 // calculate IO mouse pos
@@ -273,7 +719,12 @@ namespace Fu
             }
 
             // update context mouse position
-            _fuguiContext.UpdateMouse(_localMousePos, new Vector2(0f, inputState.MouseWheel), inputState.MouseDown[0], inputState.MouseDown[1], inputState.MouseDown[2]);
+            _fuguiContext.UpdateMouse(
+                _localMousePos,
+                blockWindowInput ? Vector2.zero : new Vector2(0f, inputState.MouseWheel),
+                !blockWindowInput && inputState.MouseDown[0],
+                !blockWindowInput && inputState.MouseDown[1],
+                !blockWindowInput && inputState.MouseDown[2]);
 
             return true;
         }
@@ -345,6 +796,7 @@ namespace Fu
             }
 
             setRenderSize(targetSize);
+            updateResizeHandleTransforms();
         }
 
         #region Image & ImageButton
@@ -546,6 +998,12 @@ namespace Fu
                 UnityEngine.Object.Destroy(_panelGameObject);
                 _panelGameObject = null;
             }
+            _resizeHandles = null;
+            if (_resizeHandleMaterial != null)
+            {
+                UnityEngine.Object.Destroy(_resizeHandleMaterial);
+                _resizeHandleMaterial = null;
+            }
             if (RenderTexture != null)
             {
                 RenderTexture.Release();
@@ -553,6 +1011,7 @@ namespace Fu
                 RenderTexture = null;
             }
 
+            OnRuntimeResized = null;
             Fugui.Unregister3DWindow(windowID);
         }
     }

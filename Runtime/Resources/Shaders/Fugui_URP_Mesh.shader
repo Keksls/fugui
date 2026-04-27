@@ -29,7 +29,7 @@
                 float4 _Texture_ST; // if you need ST; keep an empty cbuffer to enable SRP Batcher
             CBUFFER_END
 
-            TEXTURE2D_X(_Texture);
+            TEXTURE2D(_Texture);
             SAMPLER(sampler_Texture);
 
             half4 unpack_color(uint c)
@@ -56,7 +56,7 @@
             half4 ImGuiPassFrag(Varyings i) : SV_Target
             {
                 //return half4(1, 1, 1, 1);
-                half4 tex = SAMPLE_TEXTURE2D_X(_Texture, sampler_Texture, i.uv);
+                half4 tex = SAMPLE_TEXTURE2D(_Texture, sampler_Texture, i.uv);
                 return i.color * tex;
             }
             ENDHLSL

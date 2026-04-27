@@ -15,8 +15,7 @@ namespace Fu
         // Camera used to render main UI container
         [SerializeField]
         private Camera _uiCamera;
-        [SerializeField]
-        private bool _enableMainContainer = true;
+        public bool EnableMainContainer = true;
         [SerializeField]
         private bool _logErrors = true;
         [SerializeField]
@@ -29,7 +28,7 @@ namespace Fu
         void Awake()
         {
             // prepare FuGui before start using it
-            Fugui.Initialize(_settings, this, _uiCamera, _enableMainContainer);
+            Fugui.Initialize(_settings, this, _uiCamera, EnableMainContainer);
 
             // log errors to Unity console
             if (_logErrors)

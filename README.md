@@ -101,6 +101,10 @@ Le rendu principal est prevu pour URP avec `FuguiRenderFeature`.
 
 ## Setup Unity
 
+### Setup automatique
+
+Ouvre `Tools > Fugui > Setup Wizard` pour diagnostiquer le projet et appliquer les correctifs courants: ajout du prefab `FuguiController`, installation/reparation de `FuguiRenderFeature` sur le renderer URP actif, copie de `StreamingAssets/Fugui`, verification des fonts et conseil sur l'input handling.
+
 ### 1. Ajouter le controller
 
 Ajoute le prefab `Runtime/Resources/FuguiController.prefab` dans ta scene, ou cree un GameObject avec `FuController`.

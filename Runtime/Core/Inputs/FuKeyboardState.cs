@@ -8,16 +8,21 @@ namespace Fu
     /// </summary>
     public class FuKeyboardState
     {
+        #region State
         private readonly FuWindow _window;
         private readonly ImGuiIOPtr _io;
+
         public bool KeyAlt { get { return (_window == null || _window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window) && _io.KeyAlt; } }
         public bool KeyCtrl { get { return (_window == null || _window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window) && _io.KeyCtrl; } }
         public bool KeyShift { get { return (_window == null || _window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window) && _io.KeyShift; } }
         public bool KeySuper { get { return (_window == null || _window.State == FuWindowState.Manipulating || FuWindow.InputFocusedWindow == _window) && _io.KeySuper; } }
+
         private static readonly HashSet<FuKeysCode> _currentPressedKeys = new HashSet<FuKeysCode>();
         private readonly FuKeyState[] _keysStates;
         private static int _minKeyValue;
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// instantiate a new FuKeyboardState relatif to a FuWindow
         /// </summar>
@@ -39,7 +44,9 @@ namespace Fu
                 _keysStates[key] = new FuKeyState(key + _minKeyValue);
             }
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Whatever a keyboard key is pressed
         /// </summary>
@@ -153,5 +160,6 @@ namespace Fu
                     break;
             }
         }
+        #endregion
     }
 }

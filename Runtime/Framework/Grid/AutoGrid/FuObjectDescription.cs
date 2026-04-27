@@ -1,15 +1,24 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Object Description type.
+    /// </summary>
     internal class FuObjectDescription
     {
+        #region State
         internal Dictionary<string, FuField> Fields = null;
         private static Dictionary<HashSet<Type>, Func<FieldInfo, FuField>> _uiFieldBinding = null;
+        #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Object Description class.
+        /// </summary>
         internal FuObjectDescription()
         {
             // bind Type/UIField mapping
@@ -18,7 +27,9 @@ namespace Fu.Framework
                 bindFieldTypeDictionary();
             }
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// bind te dictionary that represend mapping between field type and UIField type
         /// </summary>
@@ -283,8 +294,12 @@ namespace Fu.Framework
 
             return NumericFieldType.None;
         }
+        #endregion
     }
 
+    /// <summary>
+    /// Lists the available Numeric Field Type values.
+    /// </summary>
     internal enum NumericFieldType
     {
         None,

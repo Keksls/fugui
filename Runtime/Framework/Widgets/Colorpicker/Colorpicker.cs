@@ -1,19 +1,24 @@
-﻿using ImGuiNET;
-using System;
+using ImGuiNET;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
+        #region State
         // Standard Drag and Drop payload types. You can define you own payload types using short strings. Types starting with '_' are defined by Dear ImGui.
         public static readonly string IMGUI_PAYLOAD_TYPE_COLOR_3F = "_COL3F"; // float[3]: Standard type for colors, without alpha. User code may use this type.
         public static readonly string IMGUI_PAYLOAD_TYPE_COLOR_4F = "_COL4F"; // float[4]: Standard type for colors. User code may use this type.
         private static Vector4 _colorpickerBackupColor;
         private static Vector4[] _colorpickerPalette;
         private static string _colorpickerCurrentID = string.Empty;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Initialize the colorpicker palette
         /// </summary>
@@ -116,5 +121,6 @@ namespace Fu
             ImGui.EndGroup();
             return edited;
         }
+        #endregion
     }
 }

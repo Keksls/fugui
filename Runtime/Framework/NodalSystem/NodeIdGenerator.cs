@@ -1,12 +1,18 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Node Id type.
+    /// </summary>
     public static class FuNodeId
     {
+        #region State
         private static int _nextId = 1;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Generates a new unique integer ID for a node.
         /// </summary>
@@ -42,5 +48,6 @@ namespace Fu.Framework
                 startValue = 1;
             _nextId = startValue;
         }
+        #endregion
     }
 }

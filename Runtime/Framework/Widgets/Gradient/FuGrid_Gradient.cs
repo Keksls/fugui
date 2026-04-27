@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Draw a gradient picker
         /// </summary>
@@ -25,5 +27,6 @@ namespace Fu.Framework
             drawElementLabel(text, FuTextStyle.Default);
             return base.Gradient(text, ref gradient, addKeyOnGradientClick, allowAlpha, relativeMin, relativeMax, defaultGradientValues);
         }
+        #endregion
     }
 }

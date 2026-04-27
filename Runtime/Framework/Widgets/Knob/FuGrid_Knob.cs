@@ -1,7 +1,11 @@
-﻿namespace Fu.Framework
+namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Draw a knob button
         /// </summary>
@@ -25,5 +29,6 @@
             drawElementLabel(label, FuTextStyle.Default);
             return base.Knob(label, ref value, min, max, variant, steps, speed, format, size, flags);
         }
+        #endregion
     }
 }

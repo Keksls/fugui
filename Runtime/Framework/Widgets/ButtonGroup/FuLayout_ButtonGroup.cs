@@ -1,13 +1,16 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
-        #region Enum Types List
+        #region Methods
         /// <summary>
         /// Displays a ButtonGroup with all the enum values of type TEnum. The selected item can be changed by the user, and the change will be reported through the itemChange action.
         /// </summary>
@@ -44,9 +47,7 @@ namespace Fu.Framework
                 itemChange?.Invoke(enumValues[index]);
             }, () => { return itemGetter?.Invoke().ToString(); }, width, padding, flags, style);
         }
-        #endregion
 
-        #region Generic Types List
         /// <summary>
         /// Displays a ButtonGroup with a list of items of type T and calls the specified action with the selected item when changed.
         /// </summary>
@@ -80,7 +81,6 @@ namespace Fu.Framework
         {
             _buttonsGroup<T>(text, items, callback, itemGetter, width, padding, flags, style);
         }
-        #endregion
 
         /// <summary>
         /// Displays a ButtonGroup with a list of items of type T and calls the specified action with the selected item when changed.
@@ -172,5 +172,6 @@ namespace Fu.Framework
             setBaseElementState(text, startPos, ImGui.GetItemRectMax() - startPos, false, updated);
             endElement();
         }
+        #endregion
     }
 }

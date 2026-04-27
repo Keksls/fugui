@@ -6,8 +6,12 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
+        #region State
         /// <summary>
         /// Whatever the main menu is currently disabled (will disable each menu items)
         /// </summary>
@@ -16,15 +20,19 @@ namespace Fu
         /// Whatever the main menu is currently visible
         /// </summary>
         public static bool IsMainMenuVisible { get; private set; } = true;
+
         /// <summary>
         /// Event fired after main menu draw, The rect given is the available rect after menu items
         /// </summary>
         public static event Action<Rect> OnMainMenuDraw;
+
         /// <summary>
         /// menu items of the main menu
         /// </summary>
         private static readonly Dictionary<string, MainMenuItem> _mainMenuItems = new Dictionary<string, MainMenuItem>();
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Registers a new menu item with the provided name, callback action, and optional parent menu item,
         /// shortcut key, enabled/disabled status, and selected/unselected status. If a menu item with the
@@ -311,5 +319,6 @@ namespace Fu
             }
             PopStyle();
         }
+        #endregion
     }
 }

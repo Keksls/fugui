@@ -1,4 +1,4 @@
-﻿using Fu;
+using Fu;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -7,10 +7,16 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region State
         private static Dictionary<string, List<List<int>>> _hierarchicalPathRedo = new Dictionary<string, List<List<int>>>();
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Draw an interactive hierarchical path using given path
         /// </summary>
@@ -22,7 +28,6 @@ namespace Fu.Framework
         /// <param name="height">height of the path</param>
         public void HierarchicalPath(string ID, List<string> rootItems, List<(string, List<string>)> path, Action<List<int>> onPathUpdated, float width = 0f, float height = 22f)
         {
-            #region drawing variables
             // determinate available width
             if (width == 0f)
             {
@@ -49,14 +54,12 @@ namespace Fu.Framework
 
             // get current MouseState
             FuMouseState mouse = FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Mouse : Fugui.DefaultContainer.Mouse;
-            #endregion
 
             // draw path rect
             Rect pathRect = new Rect(ImGui.GetCursorScreenPos(), new Vector2(width, height));
             drawList.AddRectFilled(pathRect.position, pathRect.position + pathRect.size, ImGui.GetColorU32(ImGuiCol.FrameBg));
             drawList.AddRect(pathRect.position, pathRect.position + pathRect.size, ImGui.GetColorU32(ImGuiCol.Border));
 
-            #region undo redo buttons
             // draw undo button
             Rect undoRect = new Rect(ImGui.GetCursorScreenPos(), new Vector2(height, height));
             bool isUndoHovered = IsItemHovered(undoRect.position, undoRect.size);
@@ -118,9 +121,7 @@ namespace Fu.Framework
             // place cursor
             Fugui.MoveXUnscaled(redoRect.size.x);
             drawedWidth += redoRect.size.x;
-            #endregion
 
-            #region root items
             // draw root items carret
             Rect rootItemsRect = new Rect(ImGui.GetCursorScreenPos(), new Vector2(itemCarretSize.x, height));
             bool isRootItemsHovered = IsItemHovered(rootItemsRect.position, rootItemsRect.size);
@@ -168,9 +169,7 @@ namespace Fu.Framework
             // move cursor to draw items after it
             Fugui.MoveXUnscaled(rootItemsRect.size.x);
             drawedWidth += rootItemsRect.size.x;
-            #endregion
 
-            #region precalculate visible items
             // count nb visible items, starting by the end
             int nbVisibleItems = 0;
             float currentWidth = 0f;
@@ -184,9 +183,7 @@ namespace Fu.Framework
                 currentWidth += itemWidth;
                 nbVisibleItems++;
             }
-            #endregion
 
-            #region draw items
             // draw items side by side using clickableText
             for (int i = path.Count - nbVisibleItems; i < path.Count; i++)
             {
@@ -335,7 +332,6 @@ namespace Fu.Framework
                 // move cursor after drawing item
                 Fugui.MoveXUnscaled(rect.size.x);
             }
-            #endregion
 
             // Draw dummy to place cursor for ImGui
             ImGui.SetCursorScreenPos(pathRect.min);
@@ -434,5 +430,6 @@ namespace Fu.Framework
         {
             _hierarchicalPathRedo.Remove(ID);
         }
+        #endregion
     }
 }

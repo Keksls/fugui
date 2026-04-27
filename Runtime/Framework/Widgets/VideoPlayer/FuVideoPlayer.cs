@@ -1,16 +1,18 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.Video;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Video Player type.
+    /// </summary>
     public class FuVideoPlayer
     {
-        #region Variables
+        #region State
         // public properties
         public string ID { get; private set; }
         public string CurrentFilePath => Player?.url ?? string.Empty;
@@ -27,6 +29,7 @@ namespace Fu.Framework
         public Dictionary<long, string> TimeStamps => _timeStamps;
         // private variables
         public VideoPlayer Player { get; private set; }
+
         private GameObject _playerGameObject;
         private long _lastFramePlayed = 0;
         private Dictionary<long, string> _timeStamps;
@@ -38,7 +41,7 @@ namespace Fu.Framework
         private bool _isPreparing = false;
         #endregion
 
-        #region Initialization
+        #region Constructors
         /// <summary>
         /// Create a new instance a FuVideoPlayer with the given ID
         /// Must be call only y fugui. If you need an instance of FuVideoPlayer, please call layout.GetVideoPlayer() instead
@@ -55,6 +58,7 @@ namespace Fu.Framework
                 Player.prepareCompleted += _player_prepareCompleted;
             });
         }
+        #endregion
 
         /// <summary>
         /// Whenever the video player is prepared with a given media
@@ -97,7 +101,6 @@ namespace Fu.Framework
             }
             _isPreparing = false;
         }
-        #endregion
 
         /// <summary>
         /// Execute a callback once the video player is prepared

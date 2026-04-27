@@ -1,7 +1,11 @@
-﻿namespace Fu.Framework
+namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Input Text Element
         /// </summary>
@@ -23,5 +27,6 @@
             label = "##" + label;
             return base.TextInput(label, hint, ref text, size, height, style, width, flags);
         }
+        #endregion
     }
 }

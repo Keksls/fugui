@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using UnityEngine;
 
@@ -7,7 +7,7 @@ namespace Fu.Framework
     /// <summary>Notification card: accent side/top/bottom per anchor, header click-to-collapse, body bg, AutoResizeY.</summary>
     internal class FuguiNotification
     {
-        #region Data
+        #region State
         internal string Title;
         internal string Message;
         internal StateType Type;
@@ -30,7 +30,7 @@ namespace Fu.Framework
         private float _initialDuration;
         #endregion
 
-        #region Ctor
+        #region Constructors
         /// <summary>Instantiate a new Notification object.</summary>
         internal FuguiNotification(string title, string message, StateType type, float duration, Action onClick = null, bool? startCollapsed = null)
         {
@@ -61,7 +61,7 @@ namespace Fu.Framework
         }
         #endregion
 
-        #region Public API
+        #region Methods
         /// <summary>Remove this notification (animated).</summary>
         public void Close() { _removing = true; _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration; }
 
@@ -70,9 +70,7 @@ namespace Fu.Framework
 
         /// <summary>Force collapsed state if collapsible.</summary>
         public void ForceCollapsed(bool collapsed) { if (CanCollapse) IsCollapsed = collapsed; }
-        #endregion
 
-        #region Rendering
         /// <summary>Draw the card (accent per anchor, header click collapse, body background, AutoResizeY).</summary>
         public bool Draw(ImDrawListPtr parentDrawList, int i, float deltaTime)
         {
@@ -215,9 +213,7 @@ namespace Fu.Framework
                 ImGuiNative.igEndChild();
             return false;
         }
-        #endregion
 
-        #region Internals
         /// <summary>Update animation and lifetime. Returns true when the card must be removed.</summary>
         private bool update(float deltaTime, bool pauseTimer)
         {

@@ -1,13 +1,16 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public unsafe partial class FuGrid : FuLayout
     {
-        #region Variables
+        #region State
         // comment : The current column index being used in the grid
         private int _currentColIndex = 0;
         // The current row index being used in the grid
@@ -36,6 +39,7 @@ namespace Fu.Framework
         private bool disposed = false;
         #endregion
 
+        #region Constructors
         /// <summary>
         /// Create a new UI Grid
         /// </summary>
@@ -72,8 +76,9 @@ namespace Fu.Framework
             _currentGridDef = gridDef;
             setGrid(flags.HasFlag(FuGridFlag.LinesBackground), cellPadding, rowsPadding, outterPadding, width);
         }
+        #endregion
 
-        #region Grid
+        #region Methods
         /// <summary>
         /// Switch from current column to the next.
         /// this is automaticaly call, use it only for custom cases
@@ -152,9 +157,7 @@ namespace Fu.Framework
             ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
             _gridCreated = _currentGridDef.SetupTable(_ID, cellPadding, outterPadding, linesBg, ref _isResponsivelyResized, width);
         }
-        #endregion
 
-        #region private Layout
         /// <summary>
         /// call this right before drawing an element. this will apply style and handle the grid layout for you
         /// </summary>
@@ -207,7 +210,6 @@ namespace Fu.Framework
 
             if (!_drawElement)
             {
-
             }
             float lineHeight = ImGuiNative.igGetCursorPosY() - _beginElementCursorY;
             if (lineHeight < _minLineHeight * Fugui.Scale)
@@ -235,9 +237,7 @@ namespace Fu.Framework
             ImGui.PopStyleVar();
             disposed = true;
         }
-        #endregion
 
-        #region Object
         /// <summary>
         /// Draw the object instance
         /// </summary>
@@ -257,9 +257,7 @@ namespace Fu.Framework
             // draw object into this grid
             return _objectsDescriptions[type].DrawObject<T>(objectID, this, objectInstance);
         }
-        #endregion
 
-        #region private Utils
         /// <summary>
         /// Draw the Label of an element (if _autoDrawLabel is set to true)
         /// </summary>

@@ -1,6 +1,5 @@
-﻿using Fu;
+using Fu;
 using ImGuiNET;
-using SharpFont.PostScript;
 using System;
 using System.Diagnostics;
 using System.Text;
@@ -8,11 +7,16 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region State
         private static StringBuilder _textChunkStringBuilder = new StringBuilder();
+        #endregion
 
-        #region Text
+        #region Methods
         /// <summary>
         /// Displays a text string.
         /// </summary>
@@ -70,9 +74,7 @@ namespace Fu.Framework
             }
             endElement(style); //remove the style from the element
         }
-        #endregion
 
-        #region Smart
         /// <summary>
         /// A lot more perf cost than just display a text, use it only if truely needed.
         /// Display a RichText that take some tags. The text automaticaly line break is cursor pass throw container
@@ -287,9 +289,7 @@ namespace Fu.Framework
                 nbFontPush--;
             }
         }
-        #endregion
 
-        #region Frammed
         /// <summary>
         /// Draw a text inside a frame background
         /// </summary>
@@ -385,9 +385,7 @@ namespace Fu.Framework
             }
             endElement(style);
         }
-        #endregion
 
-        #region Enboxed
         /// <summary>
         /// Draw a text inside a box
         /// </summary>
@@ -426,9 +424,7 @@ namespace Fu.Framework
             Vector2 text_offset = maxTextSize - textSize;
             return boxPos + padding + offset + new Vector2(Mathf.Lerp(0f, text_offset.x, Mathf.Clamp01(alignment.x)), Mathf.Lerp(0f, text_offset.y, Mathf.Clamp01(alignment.y)));
         }
-        #endregion
 
-        #region Clickable
         /// <summary>
         /// Draw a clickable text element
         /// </summary>
@@ -468,6 +464,14 @@ namespace Fu.Framework
             return clicked;
         }
 
+        /// <summary>
+        /// Returns the internal clickable text result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="style">The style value.</param>
+        /// <param name="textRect">The text Rect value.</param>
+        /// <param name="wrapping">The wrapping value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool _internalClickableText(string text, FuTextStyle style, Rect textRect, FuTextWrapping wrapping)
         {
             bool hovered = IsItemHovered(textRect.min, textRect.size);
@@ -580,9 +584,7 @@ namespace Fu.Framework
             }
             endElement(style);
         }
-        #endregion
 
-        #region Clipped
         /// <summary>
         /// Draw a text that clip and replace the end by '...' if there is not enought place to fully display it
         /// The text will not displace cursor, so please do it yourself if needed
@@ -744,6 +746,17 @@ namespace Fu.Framework
             return size;
         }
 
+        /// <summary>
+        /// Returns the custom text clipped result.
+        /// </summary>
+        /// <param name="pos_min">The pos min value.</param>
+        /// <param name="pos_max">The pos max value.</param>
+        /// <param name="label">The label value.</param>
+        /// <param name="text_size_if_known">The text size if known value.</param>
+        /// <param name="align">The align value.</param>
+        /// <param name="clip_rect">The clip rect value.</param>
+        /// <param name="style">The style value.</param>
+        /// <returns>The result of the operation.</returns>
         private unsafe Vector2 _customTextClipped(Vector2 pos_min, Vector2 pos_max, string label, Vector2 text_size_if_known, Vector2 align, ImRect clip_rect, FuTextStyle style)
         {
             style.Push(!LastItemDisabled);
@@ -769,7 +782,6 @@ namespace Fu.Framework
             style.Pop();
             return size;
         }
-        #endregion
 
         /// <summary>
         /// Draw a text with wrapping type and Duotone icons handling
@@ -990,5 +1002,6 @@ namespace Fu.Framework
                 }
             }
         }
+        #endregion
     }
 }

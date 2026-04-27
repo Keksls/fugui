@@ -1,14 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Window Name Provider type.
+    /// </summary>
     public static class FuWindowNameProvider
     {
+        #region State
         private static Dictionary<ushort, FuWindowName> _cached;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Add a new window name to the cache or update an existing one.
         /// </summary>
@@ -68,5 +74,6 @@ namespace Fu
             // Fallback
             return new Dictionary<ushort, FuWindowName>();
         }
+        #endregion
     }
 }

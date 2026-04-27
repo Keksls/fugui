@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -6,12 +6,15 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
-        #region Drag Float
-        ///<summary>
+        #region Methods
+        /// <summary>
         /// Creates a draggable float input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The float value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
@@ -23,9 +26,9 @@ namespace Fu.Framework
             return Drag(text, ref value, vString, 0, 100, FuFrameStyle.Default, speed, format);
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable float input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The float value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
@@ -39,9 +42,9 @@ namespace Fu.Framework
             return Drag(text, ref value, vString, min, max, FuFrameStyle.Default, speed, format);
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable float input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The float value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
@@ -64,9 +67,9 @@ namespace Fu.Framework
             return valueChanged;
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable float input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The float value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
@@ -119,12 +122,10 @@ namespace Fu.Framework
 
             return valueChanged;
         }
-        #endregion
 
-        #region Drag Vector2
-        ///<summary>
+        /// <summary>
         /// Creates a draggable Vector2 input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The Vector2 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
@@ -138,9 +139,9 @@ namespace Fu.Framework
             return Drag(text, ref value, v1String, v2String, 0f, 100f, FuFrameStyle.Default, speed, format, disabledInputs);
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable Vector2 input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The Vector2 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
@@ -156,9 +157,9 @@ namespace Fu.Framework
             return Drag(text, ref value, v1String, v2String, min, max, FuFrameStyle.Default, speed, format, disabledInputs);
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable Vector2 input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The Vector2 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
@@ -217,12 +218,10 @@ namespace Fu.Framework
             endElement(style);
             return valueChanged;
         }
-        #endregion
 
-        #region Drag Vector3
-        ///<summary>
+        /// <summary>
         /// Creates a draggable Vector3 input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The Vector3 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
@@ -237,9 +236,9 @@ namespace Fu.Framework
             return Drag(text, ref value, v1String, v2String, v3String, 0f, 100f, FuFrameStyle.Default, speed, format, disabledInputs);
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable Vector3 input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The Vector3 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
@@ -256,9 +255,9 @@ namespace Fu.Framework
             return Drag(text, ref value, v1String, v2String, v3String, min, max, FuFrameStyle.Default, speed, format, disabledInputs);
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable Vector3 input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The Vector3 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
@@ -324,12 +323,10 @@ namespace Fu.Framework
             endElement(style);
             return valueChanged;
         }
-        #endregion
 
-        #region Drag Vector4
-        ///<summary>
+        /// <summary>
         /// Creates a draggable Vector4 input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The Vector4 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
@@ -344,9 +341,9 @@ namespace Fu.Framework
         {
             return Drag(text, ref value, v1String, v2String, v3String, v4String, 0f, 100f, FuFrameStyle.Default, speed, format, disabledInputs);
         }
-        ///<summary>
+        /// <summary>
         /// Creates a draggable Vector4 input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The Vector4 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
@@ -363,9 +360,9 @@ namespace Fu.Framework
         {
             return Drag(text, ref value, v1String, v2String, v3String, v4String, min, max, FuFrameStyle.Default, speed, format, disabledInputs);
         }
-        ///<summary>
+        /// <summary>
         /// Creates a draggable Vector4 input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The Vector4 value to be displayed in the input field.</param>
         ///<param name="v1String">A string to be displayed before the input field X. If empty, no string will be displayed.</param>
@@ -424,12 +421,10 @@ namespace Fu.Framework
             endElement(style);
             return valueChanged;
         }
-        #endregion
 
-        #region Drag Int
-        ///<summary>
+        /// <summary>
         /// Creates a draggable int input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<param name="format">string format of the displayed value (default is "%d")</param>
@@ -439,9 +434,9 @@ namespace Fu.Framework
             return Drag(text, null, ref value, 0, 100, FuFrameStyle.Default, format);
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable int input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
@@ -452,9 +447,9 @@ namespace Fu.Framework
             return Drag(text, vString, ref value, 0, 100, FuFrameStyle.Default, format);
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable int input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<param name="vString">A string to be displayed before the input field. If empty, no string will be displayed.</param>
@@ -467,9 +462,9 @@ namespace Fu.Framework
             return Drag(text, vString, ref value, min, max, FuFrameStyle.Default, format);
         }
 
-        ///<summary>
+        /// <summary>
         /// Creates a draggable int input field.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The identifier for the input field.</param>
         ///<param name="value">The int value to be displayed in the input field.</param>
         ///<param name="min">The minimum allowed value for the input field.</param>
@@ -537,10 +532,13 @@ namespace Fu.Framework
         }
         #endregion
 
-        #region Optimisation helpers
+        #region State
         // Pre-allocated format strings, no concat per frame
-        private static readonly string[] _formats = { "%.0f", "%.1f", "%.2f", "%.3f", "%.4f", "%.5f", "%.6f", "%.7f", "%.8f" };
 
+        private static readonly string[] _formats = { "%.0f", "%.1f", "%.2f", "%.3f", "%.4f", "%.5f", "%.6f", "%.7f", "%.8f" };
+        #endregion
+
+        #region Methods
         /// <summary>
         /// Get a cached format string based on the value magnitude
         /// </summary>
@@ -564,10 +562,15 @@ namespace Fu.Framework
                 abs < 1f ? 1 : 0;
             return _formats[idx];
         }
+        #endregion
 
+        #region State
         // Cache for IDs, avoids "##" + text alloc à chaque frame
-        [ThreadStatic] private static StringBuilder _idBuilder;
 
+        [ThreadStatic] private static StringBuilder _idBuilder;
+        #endregion
+
+        #region Methods
         /// <summary>
         /// Generates a unique ImGui ID string by appending "##" to the provided text.
         /// </summary>

@@ -1,36 +1,39 @@
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using Newtonsoft.Json;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Docking Layout Definition type.
+    /// </summary>
     public class FuDockingLayoutDefinition
     {
+        #region State
         /// <summary>
         /// The name of the dock space
-        ///</summary>
+        /// </summary>
         public string Name;
         /// <summary>
         /// The unique identifier of the dock space
-        ///</summary>
+        /// </summary>
         public uint ID;
         /// <summary>
         /// The proportion of the dock space relative to its parent
-        ///</summary>
+        /// </summary>
         public float Proportion;
         /// <summary>
         /// The orientation of the dock space
-        ///</summary>
+        /// </summary>
         public UIDockSpaceOrientation Orientation;
         /// <summary>
         /// A list of child dock spaces
-        ///</summary>
+        /// </summary>
         [JsonProperty]
         public List<FuDockingLayoutDefinition> Children;
         /// <summary>
         /// A list of binded windowsdefintion
-        ///</summary>
+        /// </summary>
         [JsonProperty]
         public List<ushort> WindowsDefinition;
         /// <summary>
@@ -41,13 +44,14 @@ namespace Fu
         /// Custom var that you can use to store a flag that identify the type of this layout (create your own enum if needed)
         /// </summary>
         public byte LayoutType;
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Default constructor, used for serialization purposes
         /// </summary>
         public FuDockingLayoutDefinition()
         {
-
         }
 
         /// <summary>
@@ -81,7 +85,9 @@ namespace Fu
             Children = new List<FuDockingLayoutDefinition>();
             WindowsDefinition = new List<ushort>();
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Method that returns the total number of children, including all children of children
         /// </summary>
@@ -225,9 +231,12 @@ namespace Fu
             }
 
             return windows;
-
         }
 
+        /// <summary>
+        /// Gets the copy.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         internal FuDockingLayoutDefinition GetCopy()
         {
             FuDockingLayoutDefinition clone = new FuDockingLayoutDefinition(Name, ID, Proportion, Orientation);
@@ -239,6 +248,7 @@ namespace Fu
             }
             return clone;
         }
+        #endregion
     }
 
     /// <summary>

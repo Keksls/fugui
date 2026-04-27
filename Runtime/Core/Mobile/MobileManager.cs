@@ -1,4 +1,4 @@
-﻿#if (UNITY_ANDROID || UNITY_IOS)// && !UNITY_EDITOR && !FUMOBILE
+#if (UNITY_ANDROID || UNITY_IOS)// && !UNITY_EDITOR && !FUMOBILE
 #define FUMOBILE
 #endif
 using System.Collections.Generic;
@@ -6,10 +6,18 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public partial class Fugui
     {
+        #region State
         private static List<Vector2> mobileTouches = new List<Vector2>();
+        #endregion
 
+        /// <summary>
+        /// Runs the begin mobile frame workflow.
+        /// </summary>
         public static void BeginMobileFrame()
         {
 #if FUMOBILE
@@ -18,6 +26,9 @@ namespace Fu
 #endif
         }
 
+        /// <summary>
+        /// Runs the end mobile frame workflow.
+        /// </summary>
         public static void EndMobileFrame()
         {
 #if FUMOBILE
@@ -25,6 +36,9 @@ namespace Fu
 #endif
         }
 
+        /// <summary>
+        /// Runs the handle mobile touches workflow.
+        /// </summary>
         private static void handleMobileTouches()
         {
 #if FUMOBILE

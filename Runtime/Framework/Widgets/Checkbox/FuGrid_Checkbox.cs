@@ -1,7 +1,11 @@
-﻿namespace Fu.Framework
+namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Draw a CheckBox
         /// </summary>
@@ -17,5 +21,6 @@
             drawElementLabel(text, FuTextStyle.Default);
             return base.CheckBox("##" + text, ref isChecked);
         }
+        #endregion
     }
 }

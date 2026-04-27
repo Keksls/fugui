@@ -1,4 +1,4 @@
-﻿//#define FUGUI_USE_TEXTUREARRAY
+//#define FUGUI_USE_TEXTUREARRAY
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -11,6 +11,9 @@ using UTexture = UnityEngine.Texture;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Texture Manager type.
+    /// </summary>
     public class TextureManager
     {
         private readonly Dictionary<IntPtr, UTexture> _textures = new Dictionary<IntPtr, UTexture>();
@@ -108,13 +111,28 @@ namespace Fu
 #else
         private static Dictionary<float, Texture2D> _atlasTexture = new Dictionary<float, Texture2D>();
         private const int FontAtlasCleanupDelayFrames = 4;
+
+        #region Nested Types
+        /// <summary>
+        /// Represents the Pending Font Atlas Cleanup data structure.
+        /// </summary>
         private struct PendingFontAtlasCleanup
         {
+            #region State
             public Texture2D Atlas;
             public int EarliestFrame;
+            #endregion
         }
-        private static readonly List<PendingFontAtlasCleanup> _pendingFontAtlasCleanups = new List<PendingFontAtlasCleanup>();
+        #endregion
 
+        #region State
+        private static readonly List<PendingFontAtlasCleanup> _pendingFontAtlasCleanups = new List<PendingFontAtlasCleanup>();
+        #endregion
+
+        /// <summary>
+        /// Initializes the initialize font atlas workflow.
+        /// </summary>
+        /// <param name="io">The io value.</param>
         public unsafe void InitializeFontAtlas(ImGuiIOPtr io)
         {
             FlushPendingFontAtlasCleanups();
@@ -190,6 +208,10 @@ namespace Fu
             ScheduleFontAtlasCleanup(atlas);
         }
 
+        /// <summary>
+        /// Runs the schedule font atlas cleanup workflow.
+        /// </summary>
+        /// <param name="atlas">The atlas value.</param>
         private static void ScheduleFontAtlasCleanup(Texture2D atlas)
         {
             if (ReferenceEquals(atlas, null) || atlas == null)
@@ -216,6 +238,9 @@ namespace Fu
             });
         }
 
+        /// <summary>
+        /// Runs the flush pending font atlas cleanups workflow.
+        /// </summary>
         private static void FlushPendingFontAtlasCleanups()
         {
             for (int i = _pendingFontAtlasCleanups.Count - 1; i >= 0; i--)
@@ -244,6 +269,10 @@ namespace Fu
             }
         }
 #endif
+
+        /// <summary>
+        /// Runs the shutdown workflow.
+        /// </summary>
         public unsafe void Shutdown()
         {
             _textures.Clear();
@@ -275,6 +304,10 @@ namespace Fu
             ImGui.GetIO().NativePtr->FontDefault = default; // NULL uses Fonts[0].
         }
 
+        /// <summary>
+        /// Runs the prepare frame workflow.
+        /// </summary>
+        /// <param name="io">The io value.</param>
         public void PrepareFrame(ImGuiIOPtr io)
         {
             float fontScale = Fugui.CurrentContext.FontScale;
@@ -287,6 +320,12 @@ namespace Fu
             io.Fonts.SetTexID(id);
         }
 
+        /// <summary>
+        /// Attempts to get texture.
+        /// </summary>
+        /// <param name="id">The id value.</param>
+        /// <param name="texture">The texture value.</param>
+        /// <returns>The result of the operation.</returns>
         public bool TryGetTexture(IntPtr id, out UTexture texture)
         {
             if (!_textures.TryGetValue(id, out texture))
@@ -307,6 +346,11 @@ namespace Fu
             return false;
         }
 
+        /// <summary>
+        /// Gets the texture id.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <returns>The result of the operation.</returns>
         public IntPtr GetTextureId(UTexture texture)
         {
             if (texture == null)
@@ -328,11 +372,20 @@ namespace Fu
             return RegisterTexture(texture);
         }
 
+        /// <summary>
+        /// Gets the font atlas texture id.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public IntPtr GetFontAtlasTextureId()
         {
             return GetTextureId(_atlasTexture[Fugui.CurrentContext.FontScale]);
         }
 
+        /// <summary>
+        /// Gets the sprite info.
+        /// </summary>
+        /// <param name="sprite">The sprite value.</param>
+        /// <returns>The result of the operation.</returns>
         internal SpriteInfo GetSpriteInfo(Sprite sprite)
         {
             if (!_spriteData.TryGetValue(sprite, out SpriteInfo spriteInfo))
@@ -349,6 +402,11 @@ namespace Fu
             return spriteInfo;
         }
 
+        /// <summary>
+        /// Returns the register texture result.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <returns>The result of the operation.</returns>
         private IntPtr RegisterTexture(UTexture texture)
         {
             if (texture == null)
@@ -373,6 +431,10 @@ namespace Fu
             return id;
         }
 
+        /// <summary>
+        /// Runs the unregister texture from all managers workflow.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
         private static void UnregisterTextureFromAllManagers(UTexture texture)
         {
             if (ReferenceEquals(texture, null))
@@ -386,6 +448,10 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Runs the unregister texture workflow.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
         private void UnregisterTexture(UTexture texture)
         {
             if (ReferenceEquals(texture, null))
@@ -399,13 +465,5 @@ namespace Fu
                 _textureIds.Remove(texture);
             }
         }
-    }
-
-    internal sealed class SpriteInfo
-    {
-        public UTexture Texture;
-        public Vector2 Size;
-        public Vector2 UV0;
-        public Vector2 UV1;
     }
 }

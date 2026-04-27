@@ -1,22 +1,29 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Nodal Graph type.
+    /// </summary>
     public sealed class FuNodalGraph
     {
+        #region State
         public string Version { get; set; } = "1.0.0";
         public int Id { get; set; } = FuNodeId.New();
         public string Name { get; set; } = "New Graph";
         public List<FuNode> Nodes { get; set; } = new List<FuNode>();
         public List<FuNodalEdge> Edges { get; set; } = new List<FuNodalEdge>();
         public FuNodalRegistry Registry { get; private set; } = new FuNodalRegistry();
+
         private bool _isDirty = false;
         private List<FuNode> _clipboardNodes = new List<FuNode>();
         private List<FuNodalEdge> _clipboardEdges = new List<FuNodalEdge>();
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Find a node by its unique identifier
         /// </summary>
@@ -30,7 +37,6 @@ namespace Fu.Framework
             return null;
         }
 
-        #region Edge Management
         /// <summary>
         /// Check if connecting two nodes would create a cycle in the graph
         /// </summary>
@@ -161,9 +167,7 @@ namespace Fu.Framework
             Edges.Remove(edge);
             _isDirty = true;
         }
-        #endregion
 
-        #region Compute and Dirtyness
         /// <summary>
         /// Compute the whole graph in a valid dependency order (inputs before consumers).
         /// Starts from nodes with no incoming edges, then propagates.
@@ -337,9 +341,7 @@ namespace Fu.Framework
         {
             _isDirty = true;
         }
-        #endregion
 
-        #region Copy Paste
         /// <summary>
         /// Copy selected nodes and their edges to the clipboard.
         /// </summary>
@@ -349,17 +351,21 @@ namespace Fu.Framework
             var nodesList = Nodes.Where(n => nodesToCopy.Contains(n.Id)).ToList();
             CopyNodesToClipboard(nodesList);
         }
+        #endregion
 
+        #region Nested Types
         /// <summary>
         /// Lightweight clipboard node payload.
         /// </summary>
         private sealed class ClipboardNode
         {
+            #region State
             public int OriginalNodeId { get; set; }
             public string NodeTypeId { get; set; }
             public string Json { get; set; }
             public float OffsetX { get; set; }
             public float OffsetY { get; set; }
+            #endregion
         }
 
         /// <summary>
@@ -367,15 +373,21 @@ namespace Fu.Framework
         /// </summary>
         private sealed class ClipboardEdge
         {
+            #region State
             public int FromOriginalNodeId { get; set; }
             public string FromPortName { get; set; }
             public int ToOriginalNodeId { get; set; }
             public string ToPortName { get; set; }
+            #endregion
         }
+        #endregion
 
+        #region State
         private readonly Dictionary<int, ClipboardNode> _clipNodes = new Dictionary<int, ClipboardNode>();
         private readonly List<ClipboardEdge> _clipEdges = new List<ClipboardEdge>();
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Copy a set of nodes and their internal edges to the clipboard.
         /// Ports are recorded by NAME so they can be resolved after re-instantiation.
@@ -514,9 +526,7 @@ namespace Fu.Framework
                     return p.Value.Id;
             return 0;
         }
-        #endregion
 
-        #region Registery
         /// <summary>
         /// Set the nodal registry for this graph.
         /// </summary>
@@ -525,7 +535,6 @@ namespace Fu.Framework
         {
             Registry = registry;
         }
-        #endregion
 
         /// <summary>
         /// Delete a node and all its associated edges.
@@ -556,5 +565,6 @@ namespace Fu.Framework
             if (!Nodes.Contains(node))
                 Nodes.Add(node);
         }
+        #endregion
     }
 }

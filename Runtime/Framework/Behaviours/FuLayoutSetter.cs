@@ -3,8 +3,12 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout Setter type.
+    /// </summary>
     public class FuLayoutSetter : MonoBehaviour
     {
+        #region State
         [SerializeField]
         private string _layoutName;
         [SerializeField]
@@ -19,7 +23,12 @@ namespace Fu.Framework
         private bool _showImGuiDemoWindow = false;
         [SerializeField]
         private bool _forceHideMainMenu = false;
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Runs the fugui awake workflow.
+        /// </summary>
         private void FuguiAwake()
         {
             // register DockingLayoutManager events
@@ -28,6 +37,9 @@ namespace Fu.Framework
             Fugui.DefaultContainer.Context.OnRender += MainContainerContext_OnRender;
         }
 
+        /// <summary>
+        /// Runs the start workflow.
+        /// </summary>
         private void Start()
         {
             // register the main menu items
@@ -158,5 +170,6 @@ namespace Fu.Framework
                 ImGuiNET.ImGui.ShowDemoWindow(ref _showImGuiDemoWindow);
             }
         }
+        #endregion
     }
 }

@@ -1,13 +1,19 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region State
         // use this to store the position of the current active button. We don't use the ID, because the ID of a button is sometimes multiple on some button (eg. Icons). So position is more accurate
         private static Vector2 _currentActiveButtonPosition = Vector2.zero;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Render a button with the given style and size
         /// </summary>
@@ -224,5 +230,6 @@ namespace Fu.Framework
             // return whatever the button is clicked
             return _lastItemUpdate;
         }
+        #endregion
     }
 }

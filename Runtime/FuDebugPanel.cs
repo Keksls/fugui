@@ -1,11 +1,3 @@
-﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
-// it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
-//#define FUDEBUG 
-using Fu.Framework;
-using ImGuiNET;
-using System;
-using System.Collections.Generic;
-using UnityEngine;
 
 namespace Fu
 {

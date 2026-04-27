@@ -1,11 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Displays a ButtonGroup with a list of items of type T and calls the specified action with the selected item when changed.
         /// </summary>
@@ -28,5 +32,6 @@ namespace Fu.Framework
             drawElementLabel(text, FuTextStyle.Default);
             base._buttonsGroup<T>(text, items, callback, itemGetter, width, padding, flags, style);
         }
+        #endregion
     }
 }

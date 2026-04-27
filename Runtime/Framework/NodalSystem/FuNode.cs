@@ -1,12 +1,15 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Node type.
+    /// </summary>
     public abstract class FuNode
     {
+        #region State
         public int Id { get; set; } = FuNodeId.New();
         public abstract string Title { get; }
         public abstract float Width { get; }
@@ -17,8 +20,9 @@ namespace Fu.Framework
         public FuNodalGraph Graph { get;  internal set; }
         internal bool Dirty { get; set; } = false;
         internal FuNodeEditorData EditorData { get; set; } = new FuNodeEditorData();
+        #endregion
 
-        #region Abstract Methods
+        #region Methods
         /// <summary>
         /// Override to draw custom UI inside the node
         /// </summary>
@@ -73,9 +77,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="data"> A string representation of the node's data.</param>
         public virtual void Deserialize(string data) { }
-        #endregion
 
-        #region Public Methods
         /// <summary>
         /// Mark the node as dirty, indicating that it needs to be recomputed
         /// </summary>
@@ -223,85 +225,5 @@ namespace Fu.Framework
             return Graph.GetNode(edge.FromNodeId);
         }
         #endregion
-    }
-
-    /// <summary>
-    /// Struct holding precalculated geometry for a node to optimize drawing and interaction.
-    /// </summary>
-    public class FuNodeEditorData
-    {
-        public bool MustRecalculate = true;
-
-        public Vector2 rectMin, rectMax;
-        public float headerHeight;
-
-        public float portLineHeight;
-        public float portsStartY;
-        public float portsEndY;
-
-        public bool hasIn;
-        public bool hasOut;
-
-        public float leftMinX;
-        public float leftMaxX;
-        public float rightMinX;
-        public float rightMaxX;
-    }
-
-    public sealed class FuNodalPort
-    {
-        public int Id { get; set; } = FuNodeId.New();
-        public string Name { get; set; }
-        public FuNodalPortDirection Direction { get; set; }
-        public FuNodalMultiplicity Multiplicity { get; set; } = FuNodalMultiplicity.Single;
-        public HashSet<string> AllowedTypes { get; set; } = new HashSet<string>();
-
-        public string DataType { get; set; }
-        public object Data { get; set; }
-    }
-
-    public sealed class FuNodalEdge
-    {
-        public int Id { get; set; } = FuNodeId.New();
-        public int FromNodeId { get; set; }
-        public int FromPortId { get; set; }
-        public int ToNodeId { get; set; }
-        public int ToPortId { get; set; }
-    }
-
-    public sealed class FuNodalType
-    {
-        public string Name { get; private set; }
-        public Type Type { get; private set; }
-        public Color? Color { get; private set; }
-        public object DefaultValue { get; private set; }
-        public Func<object, bool> ValidationFunc { get; private set; } = null;
-        public Func<object, string> SerializationFunc { get; private set; } = null;
-        public Func<string, object> DeserializationFunc { get; private set; } = null;
-
-        /// <summary>
-        /// Create a new FuNodalType instance with the specified parameters.
-        /// </summary>
-        /// <typeparam name="T"> The type of the nodal type. Must be a non-nullable type.</typeparam>
-        /// <param name="name"> The name of the nodal type.</param>
-        /// <param name="defaultValue"> The default value for the nodal type.</param>
-        /// <param name="serializationFunc"> A function that serializes the nodal type value to a string.</param>
-        /// <param name="deserializationFunc"> A function that deserializes a string to the nodal type value.</param>
-        /// <param name="validationFunc"> An optional function that validates the nodal type value. If not provided, a default validation function that checks if the value is of type T will be used.</param>
-        /// <param name="color"> An optional color associated with the nodal type.</param>
-        /// <returns> A new instance of FuNodalType with the specified parameters.</returns>
-        public static FuNodalType Create<T>(string name, T defaultValue, Func<T, string> serializationFunc, Func<string, T> deserializationFunc, Func<object, bool> validationFunc = null, Color? color = null)
-        {
-            return new FuNodalType()
-            {
-                Type = typeof(T),
-                Name = name,
-                DefaultValue = defaultValue,
-                Color = color,
-                ValidationFunc = validationFunc == null ? (obj) => obj is T : validationFunc,
-                SerializationFunc = (obj) => serializationFunc((T)obj),
-                DeserializationFunc = (str) => deserializationFunc(str)
-            };
-        }
     }
 }

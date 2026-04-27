@@ -1,5 +1,8 @@
-﻿namespace Fu
+namespace Fu
 {
+    /// <summary>
+    /// Lists the available Fu Keys Code values.
+    /// </summary>
     public enum FuKeysCode
     {
         None = 0,

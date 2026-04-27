@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Fu {
 
     public class StandaloneFileBrowserLinux : IStandaloneFileBrowser {
-        
+
         private static Action<string[]> _openFileCb;
         private static Action<string[]> _openFolderCb;
         private static Action<string> _saveFileCb;

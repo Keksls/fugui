@@ -1,17 +1,21 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Represents the Fu Gradient type.
+/// </summary>
 [Serializable]
 public class FuGradient
 {
-    #region Variables
-    ///<summary>
+    #region State
+    /// <summary>
     ///The blend mode for the gradient.
-    ///</summary>
+    /// </summary>
     public FuGradientBlendMode BlendMode { get; private set; }
     // The maximum number of colors that can be in a Unity gradient.
+
     private const int MAX_COLORS_IN_UNITY_GRADIENT = 8;
     // The list of color keys for the gradient.
     [SerializeField]
@@ -23,9 +27,9 @@ public class FuGradient
     #endregion
 
     #region Constructors
-    ///<summary>
+    /// <summary>
     ///Creates a new instance of the FuGradient class with default color keys.
-    ///</summary>
+    /// </summary>
     ///<param name="blendMode">The blend mode for the gradient.</param>
     public FuGradient(FuGradientBlendMode blendMode = FuGradientBlendMode.Continious)
     {
@@ -37,9 +41,9 @@ public class FuGradient
         BlendMode = blendMode;
     }
 
-    ///<summary>
+    /// <summary>
     ///Creates a new instance of the FuGradient class with the specified start and end colors.
-    ///</summary>
+    /// </summary>
     ///<param name="start">The start color of the gradient.</param>
     ///<param name="end">The end color of the gradient.</param>
     ///<param name="blendMode">The blend mode for the gradient.</param>
@@ -53,9 +57,9 @@ public class FuGradient
         BlendMode = blendMode;
     }
 
-    ///<summary>
+    /// <summary>
     ///Creates a new instance of the FuGradient class with the specified color keys.
-    ///</summary>
+    /// </summary>
     ///<param name="keys">The color keys for the gradient.</param>
     ///<param name="blendMode">The blend mode for the gradient.</param>
     ///<param name="relativeMin">The value represented when time = 0. If bigger or equal to RelativeMax, gradient will not take this in account</param>
@@ -81,10 +85,10 @@ public class FuGradient
     }
     #endregion
 
-    #region Public utils
-    ///<summary>
+    #region Methods
+    /// <summary>
     ///Evaluates the gradient at the specified time and returns the resulting color.
-    ///</summary>
+    /// </summary>
     ///<param name="time">The time at which to evaluate the gradient.</param>
     ///<returns>The color at the specified time.</returns>
     public Color Evaluate(float time)
@@ -129,9 +133,9 @@ public class FuGradient
         return keyAfter.Color;
     }
 
-    ///<summary>
+    /// <summary>
     ///Converts the gradient to a Unity gradient object.
-    ///</summary>
+    /// </summary>
     ///<returns>The Unity gradient object.</returns>
     public Gradient ToUnityGradient()
     {
@@ -160,7 +164,6 @@ public class FuGradient
 
             // Set the color and alpha keys of the Gradient object
             tempGradient.SetKeys(colorsKeys, alphaKeys);
-
         }
         else
         {
@@ -197,9 +200,9 @@ public class FuGradient
         return tempGradient;
     }
 
-    ///<summary>
+    /// <summary>
     ///Adds a color key to the gradient.
-    ///</summary>
+    /// </summary>
     ///<param name="time">The time of the color key.</param>
     ///<param name="color">The color of the color key.</param>
     public int AddColorKey(float time, Color color)
@@ -237,9 +240,9 @@ public class FuGradient
         return keyIndex;
     }
 
-    ///<summary>
+    /// <summary>
     ///Removes a color key from the gradient.
-    ///</summary>
+    /// </summary>
     ///<param name="index">The index of the color key to remove.</param>
     public void RemoveColorKey(int index)
     {
@@ -253,9 +256,9 @@ public class FuGradient
         }
     }
 
-    ///<summary>
+    /// <summary>
     ///Sets the time of a color key in the gradient.
-    ///</summary>
+    /// </summary>
     ///<param name="index">The index of the color key to modify.</param>
     ///<param name="time">The new time of the color key.</param>
     public void SetKeyTime(int index, float time)
@@ -276,9 +279,9 @@ public class FuGradient
         }
     }
 
-    ///<summary>
+    /// <summary>
     ///Sets the color of a color key in the gradient.
-    ///</summary>
+    /// </summary>
     ///<param name="index">The index of the color key to modify.</param>
     ///<param name="color">The new color of the color key.</param>
     public void SetKeyColor(int index, Color color)
@@ -290,7 +293,6 @@ public class FuGradient
             _keys[index] = new FuGradientColorKey(_keys[index].Time, color);
             // Generate gradient textures with the updated key values
             UpdateGradientTextures();
-
         }
     }
 
@@ -308,9 +310,9 @@ public class FuGradient
         UpdateGradientTextures();
     }
 
-    ///<summary>
+    /// <summary>
     ///Gets a color key from the gradient.
-    ///</summary>
+    /// </summary>
     ///<param name="index">The index of the color key to retrieve.</param>
     ///<param name="colorKey">The color key at the specified index, if it exists.</param>
     ///<returns>True if the color key exists, false otherwise.</returns>
@@ -332,9 +334,9 @@ public class FuGradient
         }
     }
 
-    ///<summary>
+    /// <summary>
     ///Gets the gradient texture for the gradient.
-    ///</summary>
+    /// </summary>
     ///<param name="vertical">Whether to retrieve the vertical or horizontal texture.</param>
     ///<returns>The gradient texture.</returns>
     public Texture2D GetGradientTexture(bool vertical = false)
@@ -343,9 +345,9 @@ public class FuGradient
         return vertical ? _verticalTexture : _horizontalTexture;
     }
 
-    ///<summary>
+    /// <summary>
     ///Gets the number of color keys in the gradient.
-    ///</summary>
+    /// </summary>
     ///<returns>The number of color keys in the gradient.</returns>
     public int GetKeysCount()
     {
@@ -362,9 +364,9 @@ public class FuGradient
         UpdateGradientTextures();
     }
 
-    ///<summary>
+    /// <summary>
     ///Generates the gradient textures for the gradient.
-    ///</summary>
+    /// </summary>
     public void UpdateGradientTextures()
     {
         if (_horizontalTexture == null || _verticalTexture == null)
@@ -376,7 +378,6 @@ public class FuGradient
             // Set the wrap mode of the texture objects to clamp
             _horizontalTexture.wrapMode = TextureWrapMode.Clamp;
             _verticalTexture.wrapMode = TextureWrapMode.Clamp;
-
         }
         // Create an array of colors with the specified size
         Color[] colors = new Color[512];
@@ -412,8 +413,5 @@ public class FuGradient
         _keys.AddRange(newKeys);
         UpdateGradientTextures();
     }
-    #endregion
-
-    #region Private Utils
     #endregion
 }

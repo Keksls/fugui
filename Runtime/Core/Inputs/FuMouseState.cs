@@ -9,27 +9,44 @@ namespace Fu
     /// </summary>
     public class FuMouseState
     {
+        #region State
         /// <summary>
         /// button states by buttons (0 is left, 1 is right)
         /// </summary>
         internal FuButtonState[] ButtonStates;
         private readonly FuButtonState[] _virtualButtonStates;
         private Vector2 _movement;
-        public Vector2 Movement { get { return _movement; } }
-        private Vector2 _wheel;
-        public Vector2 Wheel { get { return _wheel; } }
-        private Vector2Int _position;
-        public Vector2Int Position { get { return _position; } }
-        private bool _isHoverOverlay;
-        public bool IsHoverOverlay { get { return _isHoverOverlay; } }
-        private bool _isHoverPupUp;
-        public bool IsHoverPopup { get { return _isHoverPupUp; } }
-        private bool _isHoverTopBar;
-        public bool IsHoverTopBar { get { return _isHoverTopBar; } }
-        private bool _isHoverBottomBar;
-        public bool IsHoverBottomBar { get { return _isHoverBottomBar; } }
-        private static readonly HashSet<int> _currentPressedKeys = new HashSet<int>();
 
+        public Vector2 Movement { get { return _movement; } }
+
+        private Vector2 _wheel;
+
+        public Vector2 Wheel { get { return _wheel; } }
+
+        private Vector2Int _position;
+
+        public Vector2Int Position { get { return _position; } }
+
+        private bool _isHoverOverlay;
+
+        public bool IsHoverOverlay { get { return _isHoverOverlay; } }
+
+        private bool _isHoverPupUp;
+
+        public bool IsHoverPopup { get { return _isHoverPupUp; } }
+
+        private bool _isHoverTopBar;
+
+        public bool IsHoverTopBar { get { return _isHoverTopBar; } }
+
+        private bool _isHoverBottomBar;
+
+        public bool IsHoverBottomBar { get { return _isHoverBottomBar; } }
+
+        private static readonly HashSet<int> _currentPressedKeys = new HashSet<int>();
+        #endregion
+
+        #region Constructors
         /// <summary>
         /// instantiate a new UIMouseState and init mouse Buttons array
         /// </summary>
@@ -49,7 +66,9 @@ namespace Fu
             _virtualButtonStates[1] = new FuButtonState(1);
             _virtualButtonStates[2] = new FuButtonState(2);
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// set current mouse wheel
         /// </summary>
@@ -305,5 +324,6 @@ namespace Fu
             }
             return ButtonStates[(int)mouseButton].PressedMovement;
         }
+        #endregion
     }
 }

@@ -1,20 +1,24 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
-        ///<summary>
+        #region Methods
+        /// <summary>
         /// Draws a downward-pointing caret.
         /// <param name="drawList">Drawing list to add the caret to.</param>
         /// <param name="pos">Position of the caret.</param>
         /// <param name="carretSize">Size of the caret.</param>
         /// <param name="containerHeight">Height of the container.</param>
         /// <param name="color">Color of the caret.</param>
-        ///</summary>
+        /// </summary>
         public static void DrawCarret_Down(ImDrawListPtr drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
         {
             // Add a filled triangle with vertices pointing downwards
@@ -25,14 +29,14 @@ namespace Fu
                 ImGui.GetColorU32(color));
         }
 
-        ///<summary>
+        /// <summary>
         /// Draws an upward-pointing caret.
         /// <param name="drawList">Drawing list to add the caret to.</param>
         /// <param name="pos">Position of the caret.</param>
         /// <param name="carretSize">Size of the caret.</param>
         /// <param name="containerHeight">Height of the container.</param>
         /// <param name="color">Color of the caret.</param>
-        ///</summary>
+        /// </summary>
         public static void DrawCarret_Top(ImDrawListPtr drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
         {
             // Add a filled triangle with vertices pointing upwards
@@ -43,14 +47,14 @@ namespace Fu
                 ImGui.GetColorU32(color));
         }
 
-        ///<summary>
+        /// <summary>
         /// Draws a right-pointing caret.
         /// <param name="drawList">Drawing list to add the caret to.</param>
         /// <param name="pos">Position of the caret.</param>
         /// <param name="carretSize">Size of the caret.</param>
         /// <param name="containerHeight">Height of the container.</param>
         /// <param name="color">Color of the caret.</param>
-        ///</summary>
+        /// </summary>
         public static void DrawCarret_Right(ImDrawListPtr drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
         {
             // Add a filled triangle with vertices pointing to the right
@@ -61,14 +65,14 @@ namespace Fu
                 ImGui.GetColorU32(color));
         }
 
-        ///<summary>
+        /// <summary>
         /// Draws a left-pointing caret.
         /// <param name="drawList">Drawing list to add the caret to.</param>
         /// <param name="pos">Position of the caret.</param>
         /// <param name="carretSize">Size of the caret.</param>
         /// <param name="containerHeight">Height of the container.</param>
         /// <param name="color">Color of the caret.</param>
-        ///</summary>
+        /// </summary>
         public static void DrawCarret_Left(ImDrawListPtr drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
         {
             // Add a filled triangle with vertices pointing to the left
@@ -256,10 +260,10 @@ namespace Fu
             ImGui.SetCursorPosY(y * Scale);
         }
 
-        ///<summary>
+        /// <summary>
         /// This method generates a tiled background using a given number of rows and an alternating pattern of dark and light tiles.
         /// It takes in an ImDrawList object, which is used to draw the tiles, as well as the position and size of the background.
-        ///</summary>
+        /// </summary>
         /// <param name="drawList">The ImDrawList object used to draw the tiles.</param>
         /// <param name="pos">The position of the tiled background.</param>
         /// <param name="size">The size of the tiled background.</param>
@@ -423,5 +427,6 @@ namespace Fu
 
             return (uint)((a << 24) | (b << 16) | (g << 8) | r);
         }
+        #endregion
     }
 }

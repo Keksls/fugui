@@ -4,13 +4,22 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Represents the Popups Window type.
+/// </summary>
 public class PopupsWindow : FuWindowBehaviour
 {
+    #region State
     [SerializeField] private Texture2D _testImage;
     private List<FuContextMenuItem> someContextMenuItems;
     private List<FuContextMenuItem> someMoreContextMenuItems;
     private List<FuContextMenuItem> yetAnotherContextMenuItem;
+    #endregion
 
+    #region Methods
+    /// <summary>
+    /// Runs the awake workflow.
+    /// </summary>
     private void Awake()
     {
         // create some context menu items
@@ -56,6 +65,11 @@ public class PopupsWindow : FuWindowBehaviour
             .Build();
     }
 
+    /// <summary>
+    /// Handles the UI event.
+    /// </summary>
+    /// <param name="window">The window value.</param>
+    /// <param name="layout">The layout value.</param>
     public override void OnUI(FuWindow window, FuLayout layout)
     {
         using (FuPanel panel = new FuPanel("popupWindowPanel", FuStyle.Unpadded))
@@ -175,4 +189,5 @@ public class PopupsWindow : FuWindowBehaviour
             Fugui.PopContextMenuItems();
         }
     }
+    #endregion
 }

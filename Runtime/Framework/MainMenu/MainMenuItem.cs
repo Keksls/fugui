@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Fu.Framework
@@ -8,6 +8,7 @@ namespace Fu.Framework
     /// </summary>
     internal class MainMenuItem
     {
+        #region State
         /// <summary>
         /// The name of the menu item.
         /// </summary>
@@ -52,7 +53,9 @@ namespace Fu.Framework
         /// The callback action to be executed after drawing the item.
         /// </summary>
         public Action PostDrawCallback { get; private set; }
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Creates a new menu item with the provided name, shortcut key, enabled/disabled status,
         /// selected/unselected status, callback action, and parent menu item. If a parent menu item is
@@ -99,5 +102,6 @@ namespace Fu.Framework
                 parent.Children.Add(this);
             }
         }
+        #endregion
     }
 }

@@ -4,66 +4,92 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Style data structure.
+    /// </summary>
     public struct FuStyle : IFuElementStyle
     {
+        #region State
         private FuTextStyle _textStyle;
         private FuFrameStyle _frameStyle;
         private FuPanelStyle _containerStyle;
+
         public Vector2 FramePadding { get; private set; }
         public Vector2 WindowPadding { get; private set; }
 
-        #region Pressets
         // default layout style
+
         static FuStyle _contentGridStyle;
+
         /// <summary>
         /// Default style, use panel, frame, text default styles, (6,1) frame padding, (2,2) window padding
         /// </summary>
         public static FuStyle Content { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _contentGridStyle; } }
 
         // panel layout style
+
         static FuStyle _defaultGridStyle;
+
         /// <summary>
         /// Default style, use panel, frame, text default styles, (6,1) frame padding, (2,2) window padding
         /// </summary>
         public static FuStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultGridStyle; } }
 
         // no BG layout style
+
         static FuStyle _noBGGridStyle;
+
         /// <summary>
         /// Default style, use transparent panel and frame, text default styles, (6,1) frame padding, (2,2) window padding
         /// </summary>
         public static FuStyle NoBackground { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGGridStyle; } }
 
         // no BG unpadded layout style
+
         static FuStyle _noBGUnpaddedGridStyle;
+
         /// <summary>
         /// Default style, use transparent panel and frame, text default styles, (6,1) frame padding, (0,0) window padding
         /// </summary>
         public static FuStyle NoBackgroundUnpadded { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGUnpaddedGridStyle; } }
 
         // unpadded layout style
+
         static FuStyle _unpaddedGridStyle;
+
         /// <summary>
         /// Default style, use panel, frame, text default styles, (6,1) frame padding, (0,0) window padding
         /// </summary>
         public static FuStyle Unpadded { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _unpaddedGridStyle; } }
 
         // overlay layout style
+
         static FuStyle _overlayGridStyle;
+
         /// <summary>
         /// Default style, use panel, frame, text default styles, (6,1) frame padding, (8,8) window padding
         /// </summary>
         public static FuStyle Overlay { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _overlayGridStyle; } }
 
         // overlay layout style
+
         static FuStyle _noBGOverlayGridStyle;
+
         /// <summary>
         /// Default style, use transparent panel and frame, text default styles, (6,1) frame padding, (8,8) window padding
         /// </summary>
         public static FuStyle NoBackgroundOverlay { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _noBGOverlayGridStyle; } }
         #endregion
 
-        #region constructor
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Style class.
+        /// </summary>
+        /// <param name="textStyle">The text Style value.</param>
+        /// <param name="frameStyle">The frame Style value.</param>
+        /// <param name="containerStyle">The container Style value.</param>
+        /// <param name="framePadding">The frame Padding value.</param>
+        /// <param name="windowPadding">The window Padding value.</param>
         public FuStyle(FuTextStyle textStyle, FuFrameStyle frameStyle, FuPanelStyle containerStyle, Vector2 framePadding, Vector2 windowPadding)
         {
             _textStyle = textStyle;
@@ -74,6 +100,11 @@ namespace Fu.Framework
         }
         #endregion
 
+        #region Methods
+        /// <summary>
+        /// Runs the push workflow.
+        /// </summary>
+        /// <param name="enabled">The enabled value.</param>
         public void Push(bool enabled)
         {
             _frameStyle.Push(enabled);
@@ -83,6 +114,9 @@ namespace Fu.Framework
             Fugui.Push(ImGuiStyleVar.WindowPadding, WindowPadding);
         }
 
+        /// <summary>
+        /// Runs the pop workflow.
+        /// </summary>
         public void Pop()
         {
             Fugui.PopStyle(2);
@@ -167,5 +201,6 @@ namespace Fu.Framework
                 WindowPadding = new Vector2(8f, 8f)
             };
         }
+        #endregion
     }
 }

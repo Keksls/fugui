@@ -2,12 +2,23 @@ using Fu;
 using Fu.Framework;
 using UnityEngine;
 
+/// <summary>
+/// Represents the Inspector Window type.
+/// </summary>
 public class InspectorWindow : FuWindowBehaviour
 {
+    #region State
     public Camera Camera;
     public Test3DRaycaster Raycaster;
     public CameraWindow CameraWindow;
+    #endregion
 
+    #region Methods
+    /// <summary>
+    /// Handles the UI event.
+    /// </summary>
+    /// <param name="window">The window value.</param>
+    /// <param name="layout">The layout value.</param>
     public override void OnUI(FuWindow window, FuLayout layout)
     {
         using (new FuPanel("demoContainer", FuStyle.Unpadded))
@@ -112,4 +123,5 @@ public class InspectorWindow : FuWindowBehaviour
             });
         }
     }
+    #endregion
 }

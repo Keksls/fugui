@@ -6,8 +6,12 @@ using UnityEditor;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Camera Window Behaviour type.
+    /// </summary>
     public class FuCameraWindowBehaviour : FuWindowBehaviour
     {
+        #region State
         [SerializeField]
         private Camera _camera;
         [SerializeField]
@@ -16,12 +20,19 @@ namespace Fu.Framework
         private int _idleCameraFPS = 24;
         [SerializeField]
         private int _manipulatingCameraFPS = 60;
+
         public Camera Camera => _camera;
         public FuCameraWindow CameraWindow => _fuWindow as FuCameraWindow;
+
         [SerializeField]
         [Range(0.5f, 2f)]
         private float _superSampling = 2f;
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Runs the fugui awake workflow.
+        /// </summary>
         public override void FuguiAwake()
         {
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
@@ -39,5 +50,6 @@ namespace Fu.Framework
             if (_forceCreateAloneOnAwake)
                 Fugui.CreateWindow(_windowName, true);
         }
+        #endregion
     }
 }

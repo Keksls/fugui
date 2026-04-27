@@ -1,4 +1,4 @@
-﻿#if FU_EXTERNALIZATION
+#if FU_EXTERNALIZATION
 // Framework 4.7 compatible, IL2CPP-safe
 // Requires: SDL2-CS (native SDL2 present), GLMini.cs (mini OpenGL loader)
 // Renders Dear ImGui draw data into an external SDL2 OpenGL window (OpenGL 3.0 + GLSL 130)
@@ -18,7 +18,6 @@ namespace Fu
 {
     public class FuExternalWindow
     {
-        #region Variables
         public FuWindow Window;
         public IntPtr SdlWindow { get; private set; }
         public uint SdlWindowId { get; private set; }
@@ -63,7 +62,6 @@ namespace Fu
         // CPU-side scratch (resized on demand)
         private int _vbCapacity;
         private int _ibCapacity;
-        #endregion
 
         public FuExternalWindow(FuWindow window)
         {
@@ -72,7 +70,6 @@ namespace Fu
             Title = Window.WindowName.Name;
         }
 
-        #region Workflow
         /// <summary>
         /// Create and start the external SDL2 OpenGL window
         /// </summary>
@@ -352,9 +349,7 @@ namespace Fu
             _isMouseHover = absMousePos.x >= windowPos.x && absMousePos.x < windowPos.x + windowSize.x &&
                              absMousePos.y >= windowPos.y && absMousePos.y < windowPos.y + windowSize.y;
         }
-        #endregion
 
-        #region Textures Management
         // Fallback white texture (1x1) used when a texture is missing
         private uint _fallbackWhiteTex = 0;
         // Keep for compatibility with rest of the pipeline
@@ -598,7 +593,6 @@ namespace Fu
                 return _gpu[unityId].glTex;
             }
 
-
             // RenderTexture: schedule/consume async readbacks
             if (tex is RenderTexture rt)
             {
@@ -610,9 +604,7 @@ namespace Fu
             // Unsupported types → fallback
             return _fallbackWhiteTex;
         }
-        #endregion
 
-        #region SDL events
         /// <summary>
         /// Handle an SDL event
         /// </summary>
@@ -659,9 +651,7 @@ namespace Fu
                 Fugui.SDLEventRooter.Push(SdlWindowId, ref e);
             }
         }
-        #endregion
 
-        #region Update: Dragging & Resizing
         public bool IsDragging { get; private set; } = false;
         private Vector2Int dragStartMousePos;
         private Vector2Int dragStartWindowPos;
@@ -1002,9 +992,7 @@ namespace Fu
                 }
             }
         }
-        #endregion
 
-        #region GL helpers (minimal P/Invoke for deletes / attrib binding not in GLMini)
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void glDeleteVertexArrays_t(int n, ref uint arrays);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void glDeleteBuffers_t(int n, ref uint buffers);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void glBindAttribLocation_t(uint program, uint index, string name);
@@ -1031,9 +1019,7 @@ namespace Fu
         private static void glBindAttribLocation(uint program, uint index, string name) { EnsureExtraFns(); _glBindAttribLocation(program, index, name); }
         private static void glDeleteProgram(uint program) { EnsureExtraFns(); _glDeleteProgram(program); }
         private static void glDeleteTexture(uint id) { EnsureExtraFns(); _glDeleteTextures(1, ref id); }
-        #endregion
 
-        #region Pipeline & Shader
         /// <summary>
         /// Create GL pipeline for ImGui rendering
         /// </summary>
@@ -1205,9 +1191,7 @@ namespace Fu
             }
             finally { Marshal.FreeHGlobal(buf); }
         }
-        #endregion
 
-        #region Frame rendering (OpenGL)
         /// <summary>
         /// Render a frame into the external window
         /// </summary>
@@ -1355,9 +1339,7 @@ namespace Fu
             v++;
             return v < 256 ? 256 : v;
         }
-        #endregion
 
-        #region Window State Management
         /// <summary>
         /// Minimize the external window
         /// </summary>
@@ -1414,7 +1396,6 @@ namespace Fu
 
             IsMaximized = false;
         }
-        #endregion
     }
 
     public enum ResizeEdge

@@ -1,4 +1,4 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -7,12 +7,18 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
+        #region State
         // the index of the current popup
         private static int _currentPopupIndex = 0;
         private static Dictionary<string, FuPopupData> _registeredPopups = new Dictionary<string, FuPopupData>();
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Get the PopupID unique by current drawing window
         /// </summary>
@@ -289,10 +295,15 @@ namespace Fu
                 }
             }
         }
+        #endregion
 
-        #region private class
+        #region Nested Types
+        /// <summary>
+        /// Represents the Fu Popup Data type.
+        /// </summary>
         private class FuPopupData
         {
+            #region State
             public int LastFrameRender = 0;
             public int PopupIndex = -1;
             public Action UI;
@@ -301,6 +312,7 @@ namespace Fu
             public bool OpenThisFrame = false;
             public bool CloseThisFrame = false;
             public Vector2 Size;
+            #endregion
         }
         #endregion
     }

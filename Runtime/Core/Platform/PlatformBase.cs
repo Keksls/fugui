@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -8,14 +8,25 @@ using UnityEngine.InputSystem;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Platform Base type.
+    /// </summary>
     public abstract class PlatformBase
     {
+        #region State
         public readonly PlatformCallbacks _callbacks = new PlatformCallbacks();
         public ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
         private readonly HashSet<IntPtr> _managedAllocations = new HashSet<IntPtr>();
+        #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Platform Base class.
+        /// </summary>
         public PlatformBase() { }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Initialize the platform backend with the given ImGuiIO and ImGuiPlatformIO instances.
         /// </summary>
@@ -199,5 +210,6 @@ namespace Fu
                 _managedAllocations.Add((IntPtr)nativeName);
             }
         }
+        #endregion
     }
 }

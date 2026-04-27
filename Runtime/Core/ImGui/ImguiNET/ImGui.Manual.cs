@@ -1,46 +1,66 @@
-﻿using System;
+using System;
 using UnityEngine;
 using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace ImGuiNET
 {
+    /// <summary>
+    /// Represents the Im Gui type.
+    /// </summary>
     public static unsafe partial class ImGui
     {
-        public static bool InputText(
-            string label,
-            byte[] buf,
-            uint buf_size)
+        #region Methods
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="buf">The buf value.</param>
+        /// <param name="buf_size">The buf size value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, byte[] buf, uint buf_size)
         {
             return InputText(label, buf, buf_size, 0, null, IntPtr.Zero);
         }
 
-        public static bool InputText(
-            string label,
-            byte[] buf,
-            uint buf_size,
-            ImGuiInputTextFlags flags)
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="buf">The buf value.</param>
+        /// <param name="buf_size">The buf size value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, byte[] buf, uint buf_size, ImGuiInputTextFlags flags)
         {
             return InputText(label, buf, buf_size, flags, null, IntPtr.Zero);
         }
 
-        public static bool InputText(
-            string label,
-            byte[] buf,
-            uint buf_size,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback)
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="buf">The buf value.</param>
+        /// <param name="buf_size">The buf size value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, byte[] buf, uint buf_size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback)
         {
             return InputText(label, buf, buf_size, flags, callback, IntPtr.Zero);
         }
 
-        public static bool InputText(
-            string label,
-            byte[] buf,
-            uint buf_size,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback,
-            IntPtr user_data)
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="buf">The buf value.</param>
+        /// <param name="buf_size">The buf size value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="user_data">The user data value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, byte[] buf, uint buf_size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, IntPtr user_data)
         {
             int utf8LabelByteCount = Encoding.UTF8.GetByteCount(label);
             byte* utf8LabelBytes;
@@ -69,31 +89,47 @@ namespace ImGuiNET
             return ret;
         }
 
-        public static bool InputText(
-            string label,
-            ref string input,
-            uint maxLength) => InputText(label, ref input, maxLength, 0, null, IntPtr.Zero);
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, ref string input, uint maxLength) => InputText(label, ref input, maxLength, 0, null, IntPtr.Zero);
 
-        public static bool InputText(
-            string label,
-            ref string input,
-            uint maxLength,
-            ImGuiInputTextFlags flags) => InputText(label, ref input, maxLength, flags, null, IntPtr.Zero);
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, ref string input, uint maxLength, ImGuiInputTextFlags flags) => InputText(label, ref input, maxLength, flags, null, IntPtr.Zero);
 
-        public static bool InputText(
-            string label,
-            ref string input,
-            uint maxLength,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback) => InputText(label, ref input, maxLength, flags, callback, IntPtr.Zero);
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, ref string input, uint maxLength, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback) => InputText(label, ref input, maxLength, flags, callback, IntPtr.Zero);
 
-        public static bool InputText(
-            string label,
-            ref string input,
-            uint maxLength,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback,
-            IntPtr user_data)
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="user_data">The user data value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, ref string input, uint maxLength, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, IntPtr user_data)
         {
             int utf8LabelByteCount = Encoding.UTF8.GetByteCount(label);
             byte* utf8LabelBytes;
@@ -155,35 +191,51 @@ namespace ImGuiNET
             return result != 0;
         }
 
-        public static bool InputTextMultiline(
-            string label,
-            ref string input,
-            uint maxLength,
-            Vector2 size) => InputTextMultiline(label, ref input, maxLength, size, 0, null, IntPtr.Zero);
+        /// <summary>
+        /// Returns the input text multiline result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="size">The size value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputTextMultiline(string label, ref string input, uint maxLength, Vector2 size) => InputTextMultiline(label, ref input, maxLength, size, 0, null, IntPtr.Zero);
 
-        public static bool InputTextMultiline(
-            string label,
-            ref string input,
-            uint maxLength,
-            Vector2 size,
-            ImGuiInputTextFlags flags) => InputTextMultiline(label, ref input, maxLength, size, flags, null, IntPtr.Zero);
+        /// <summary>
+        /// Returns the input text multiline result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputTextMultiline(string label, ref string input, uint maxLength, Vector2 size, ImGuiInputTextFlags flags) => InputTextMultiline(label, ref input, maxLength, size, flags, null, IntPtr.Zero);
 
-        public static bool InputTextMultiline(
-            string label,
-            ref string input,
-            uint maxLength,
-            Vector2 size,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback) => InputTextMultiline(label, ref input, maxLength, size, flags, callback, IntPtr.Zero);
+        /// <summary>
+        /// Returns the input text multiline result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputTextMultiline(string label, ref string input, uint maxLength, Vector2 size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback) => InputTextMultiline(label, ref input, maxLength, size, flags, callback, IntPtr.Zero);
 
-        public static bool InputTextMultiline(
-            string label,
-            ref string input,
-            uint maxLength,
-            Vector2 size,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback,
-            IntPtr user_data)
+        /// <summary>
+        /// Returns the input text multiline result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="user_data">The user data value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputTextMultiline(string label, ref string input, uint maxLength, Vector2 size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, IntPtr user_data)
         {
             int utf8LabelByteCount = Encoding.UTF8.GetByteCount(label);
             byte* utf8LabelBytes;
@@ -246,35 +298,51 @@ namespace ImGuiNET
             return result != 0;
         }
 
-        public static bool InputTextWithHint(
-            string label,
-            string hint,
-            ref string input,
-            uint maxLength) => InputTextWithHint(label, hint, ref input, maxLength, 0, null, IntPtr.Zero);
+        /// <summary>
+        /// Returns the input text with hint result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="hint">The hint value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputTextWithHint(string label, string hint, ref string input, uint maxLength) => InputTextWithHint(label, hint, ref input, maxLength, 0, null, IntPtr.Zero);
 
-        public static bool InputTextWithHint(
-            string label,
-            string hint,
-            ref string input,
-            uint maxLength,
-            ImGuiInputTextFlags flags) => InputTextWithHint(label, hint, ref input, maxLength, flags, null, IntPtr.Zero);
+        /// <summary>
+        /// Returns the input text with hint result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="hint">The hint value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputTextWithHint(string label, string hint, ref string input, uint maxLength, ImGuiInputTextFlags flags) => InputTextWithHint(label, hint, ref input, maxLength, flags, null, IntPtr.Zero);
 
-        public static bool InputTextWithHint(
-            string label,
-            string hint,
-            ref string input,
-            uint maxLength,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback) => InputTextWithHint(label, hint, ref input, maxLength, flags, callback, IntPtr.Zero);
+        /// <summary>
+        /// Returns the input text with hint result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="hint">The hint value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputTextWithHint(string label, string hint, ref string input, uint maxLength, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback) => InputTextWithHint(label, hint, ref input, maxLength, flags, callback, IntPtr.Zero);
 
-        public static bool InputTextWithHint(
-            string label,
-            string hint,
-            ref string input,
-            uint maxLength,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback,
-            IntPtr user_data)
+        /// <summary>
+        /// Returns the input text with hint result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="hint">The hint value.</param>
+        /// <param name="input">The input value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="user_data">The user data value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputTextWithHint(string label, string hint, ref string input, uint maxLength, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, IntPtr user_data)
         {
             int utf8LabelByteCount = Encoding.UTF8.GetByteCount(label);
             byte* utf8LabelBytes;
@@ -354,74 +422,152 @@ namespace ImGuiNET
             return result != 0;
         }
 
+        /// <summary>
+        /// Returns the calc text size result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="start">The start value.</param>
+        /// <returns>The result of the operation.</returns>
         public static Vector2 CalcTextSize(string text, int start)
             => CalcTextSizeImpl(text, start);
 
+        /// <summary>
+        /// Returns the calc text size result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="wrapWidth">The wrap Width value.</param>
+        /// <returns>The result of the operation.</returns>
         public static Vector2 CalcTextSize(string text, float wrapWidth)
             => CalcTextSizeImpl(text, wrapWidth: wrapWidth);
 
+        /// <summary>
+        /// Returns the calc text size result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="start">The start value.</param>
+        /// <param name="length">The length value.</param>
+        /// <returns>The result of the operation.</returns>
         public static Vector2 CalcTextSize(string text, int start, int length)
             => CalcTextSizeImpl(text, start, length);
 
+        /// <summary>
+        /// Returns the calc text size result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="start">The start value.</param>
+        /// <param name="hideTextAfterDoubleHash">The hide Text After Double Hash value.</param>
+        /// <returns>The result of the operation.</returns>
         public static Vector2 CalcTextSize(string text, int start, bool hideTextAfterDoubleHash)
             => CalcTextSizeImpl(text, start, hideTextAfterDoubleHash: hideTextAfterDoubleHash);
 
+        /// <summary>
+        /// Returns the calc text size result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="start">The start value.</param>
+        /// <param name="wrapWidth">The wrap Width value.</param>
+        /// <returns>The result of the operation.</returns>
         public static Vector2 CalcTextSize(string text, int start, float wrapWidth)
             => CalcTextSizeImpl(text, start, wrapWidth: wrapWidth);
 
+        /// <summary>
+        /// Returns the calc text size result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="start">The start value.</param>
+        /// <param name="length">The length value.</param>
+        /// <param name="hideTextAfterDoubleHash">The hide Text After Double Hash value.</param>
+        /// <returns>The result of the operation.</returns>
         public static Vector2 CalcTextSize(string text, int start, int length, bool hideTextAfterDoubleHash)
             => CalcTextSizeImpl(text, start, length, hideTextAfterDoubleHash);
 
+        /// <summary>
+        /// Returns the calc text size result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="start">The start value.</param>
+        /// <param name="length">The length value.</param>
+        /// <param name="wrapWidth">The wrap Width value.</param>
+        /// <returns>The result of the operation.</returns>
         public static Vector2 CalcTextSize(string text, int start, int length, float wrapWidth)
             => CalcTextSizeImpl(text, start, length, wrapWidth: wrapWidth);
 
+        /// <summary>
+        /// Returns the calc text size result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="start">The start value.</param>
+        /// <param name="length">The length value.</param>
+        /// <param name="hideTextAfterDoubleHash">The hide Text After Double Hash value.</param>
+        /// <param name="wrapWidth">The wrap Width value.</param>
+        /// <returns>The result of the operation.</returns>
         public static Vector2 CalcTextSize(string text, int start, int length, bool hideTextAfterDoubleHash, float wrapWidth)
             => CalcTextSizeImpl(text, start, length, hideTextAfterDoubleHash, wrapWidth);
 
-        private static Vector2 CalcTextSizeImpl(
-            string text,
-            int start = 0,
-            int? length = null,
-            bool hideTextAfterDoubleHash = false,
-            float wrapWidth = -1.0f)
+        /// <summary>
+        /// Returns the calc text size impl result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="start">The start value.</param>
+        /// <param name="length">The length value.</param>
+        /// <param name="hideTextAfterDoubleHash">The hide Text After Double Hash value.</param>
+        /// <param name="wrapWidth">The wrap Width value.</param>
+        /// <returns>The result of the operation.</returns>
+        private static Vector2 CalcTextSizeImpl(string text, int start = 0, int? length = null, bool hideTextAfterDoubleHash = false, float wrapWidth = -1.0f)
         {
             return CalcTextSize(text.Substring(start, length ?? text.Length-start), hideTextAfterDoubleHash, wrapWidth);
         }
 
-        public static bool InputText(
-            string label,
-            IntPtr buf,
-            uint buf_size)
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="buf">The buf value.</param>
+        /// <param name="buf_size">The buf size value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, IntPtr buf, uint buf_size)
         {
             return InputText(label, buf, buf_size, 0, null, IntPtr.Zero);
         }
 
-        public static bool InputText(
-            string label,
-            IntPtr buf,
-            uint buf_size,
-            ImGuiInputTextFlags flags)
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="buf">The buf value.</param>
+        /// <param name="buf_size">The buf size value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, IntPtr buf, uint buf_size, ImGuiInputTextFlags flags)
         {
             return InputText(label, buf, buf_size, flags, null, IntPtr.Zero);
         }
 
-        public static bool InputText(
-            string label,
-            IntPtr buf,
-            uint buf_size,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback)
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="buf">The buf value.</param>
+        /// <param name="buf_size">The buf size value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, IntPtr buf, uint buf_size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback)
         {
             return InputText(label, buf, buf_size, flags, callback, IntPtr.Zero);
         }
 
-        public static bool InputText(
-            string label,
-            IntPtr buf,
-            uint buf_size,
-            ImGuiInputTextFlags flags,
-            ImGuiInputTextCallback callback,
-            IntPtr user_data)
+        /// <summary>
+        /// Returns the input text result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="buf">The buf value.</param>
+        /// <param name="buf_size">The buf size value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="user_data">The user data value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static bool InputText(string label, IntPtr buf, uint buf_size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, IntPtr user_data)
         {
             int utf8LabelByteCount = Encoding.UTF8.GetByteCount(label);
             byte* utf8LabelBytes;
@@ -446,6 +592,12 @@ namespace ImGuiNET
             return ret;
         }
 
+        /// <summary>
+        /// Returns the begin result.
+        /// </summary>
+        /// <param name="name">The name value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <returns>The result of the operation.</returns>
         public static bool Begin(string name, ImGuiWindowFlags flags)
         {
             int utf8NameByteCount = Encoding.UTF8.GetByteCount(name);
@@ -472,11 +624,23 @@ namespace ImGuiNET
             return ret != 0;
         }
 
+        /// <summary>
+        /// Returns the menu item result.
+        /// </summary>
+        /// <param name="label">The label value.</param>
+        /// <param name="enabled">The enabled value.</param>
+        /// <returns>The result of the operation.</returns>
         public static bool MenuItem(string label, bool enabled)
         {
             return MenuItem(label, string.Empty, false, enabled);
         }
 
+        /// <summary>
+        /// Returns the begin popup modal result.
+        /// </summary>
+        /// <param name="name">The name value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <returns>The result of the operation.</returns>
         public static bool BeginPopupModal(string name, ImGuiWindowFlags flags)
         {
             byte* native_name;
@@ -506,5 +670,6 @@ namespace ImGuiNET
 
             return ret != 0;
         }
+        #endregion
     }
 }

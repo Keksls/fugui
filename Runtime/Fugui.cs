@@ -1,4 +1,4 @@
-﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
+// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
 //#define FUDEBUG
 #if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
@@ -21,9 +21,11 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
-        #region Variables
         /// <summary>
         /// The current Context Fugui is drawing on
         /// </summary>
@@ -53,6 +55,10 @@ namespace Fu
         /// </summary>
         public static FuMainWindowContainer DefaultContainer { get; internal set; }
         /// <summary>
+        /// Whether the fullscreen main UI container is rendered and receives global flat input.
+        /// </summary>
+        public static bool MainContainerEnabled { get; set; } = true;
+        /// <summary>
         /// Default Fugui Context (it's the main unity context)
         /// </summary>
         public static FuUnityContext DefaultContext { get; internal set; }
@@ -80,10 +86,12 @@ namespace Fu
         /// The Fugui Docking Layout Manager instance
         /// </summary>
         public static FuDockingLayoutManager Layouts { get; private set; }
+
         /// <summary>
         /// FuGui Controller instance
         /// </summary>
         internal static FuController Controller;
+
         /// <summary>
         /// counter of color push
         /// </summary>
@@ -116,6 +124,7 @@ namespace Fu
         /// A flag indicating whether the popup has focus
         /// </summary>
         internal static List<bool> IsPopupFocused { get; private set; } = new List<bool>();
+
         /// <summary>
         /// Whatever cursors has just been unlocked
         /// </summary>
@@ -146,34 +155,39 @@ namespace Fu
 
         private static float _targetScale = -1f;
         private static float _targetFontScale = -1f;
-        #endregion
 
-        #region Constants
         private const ushort MIN_DUOTONE_GLYPH_RANGE = 60543;
         private const ushort MAX_DUOTONE_GLYPH_RANGE = 63743;
-        #endregion
 
-        #region Events
         /// <summary>
         /// Event invoken whenever an exception happend within the UI render loop
         /// </summary>
         public static event Action<Exception> OnUIException;
+
+        #region Methods
         /// <summary>
         /// Fire the UI exception event
         /// </summary>
         /// <param name="ex">exception of the event</param>
         internal static void Fire_OnUIException(Exception ex) => OnUIException?.Invoke(ex);
+        #endregion
+
+        #region State
         /// <summary>
         /// Event invoken whenever a FuWindow is externalized from main container to external window container
         /// </summary>
         public static event Action<FuWindow> OnWindowExternalized;
+        #endregion
+
+        #region Methods
         /// <summary>
         /// Fire the Event invoken whenever a FuWindow is externalized from main container to external window container
         /// </summary>
         /// <param name="window">FuWindow that has just been externalized</param>
         internal static void Fire_OnWindowExternalized(FuWindow window) => OnWindowExternalized?.Invoke(window);
+        #endregion
 
-        #region Global Windows Events
+        #region State
         /// <summary>
         /// Whenever a window is resized
         /// </summary>
@@ -198,7 +212,9 @@ namespace Fu
         /// Whenever a window is removed from a container
         /// </summary>
         public static event Action<FuWindow> OnWindowRemovedFromContainer;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Fire event whenever a window is resized
         /// </summary>
@@ -242,22 +258,26 @@ namespace Fu
             OnWindowRemovedFromContainer?.Invoke(window);
         }
         #endregion
-        #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fugui class.
+        /// </summary>
         static Fugui()
         {
             Initialize(null, null, null);
         }
+        #endregion
 
-        #region Workflow
         /// <summary>
         /// Initialize FuGui and create Main Container
         /// </summary>
         /// <param name="mainContainerUICamera">Camera that will display UI of main container</param>
-        public static void Initialize(FuSettings settings, FuController controller, Camera mainContainerUICamera)
+        public static void Initialize(FuSettings settings, FuController controller, Camera mainContainerUICamera, bool enableMainContainer = true)
         {
             Settings = settings;
             Controller = controller;
+            MainContainerEnabled = enableMainContainer;
             // instantiate UIWindows 
             UIWindows = new Dictionary<string, FuWindow>();
             UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
@@ -317,6 +337,12 @@ namespace Fu
             );
         }
 
+        /// <summary>
+        /// Returns the get legacy3 dwindow settings result.
+        /// </summary>
+        /// <param name="scaleConfig">The scale Config value.</param>
+        /// <param name="scale3D">The scale3 D value.</param>
+        /// <returns>The result of the operation.</returns>
         private static Fu3DWindowSettings getLegacy3DWindowSettings(FuContainerScaleConfig? scaleConfig, float? scale3D)
         {
             float contextScale = Settings != null ? Settings.Windows3DSuperSampling : 1f;
@@ -382,9 +408,7 @@ namespace Fu
             SDL.SDL_Quit();
 #endif
         }
-        #endregion
 
-        #region public Utils
         /// <summary>
         /// Lock fugui auto set cursor icons
         /// </summary>
@@ -469,17 +493,7 @@ namespace Fu
         /// <param name="fontScale">Base font scale.</param>
         /// <param name="matchPanelAspect">When true, resize changes keep the base render area but adapt the render ratio to the panel ratio.</param>
         /// <param name="panelDepth">Depth of the generated panel extrusion.</param>
-        public static Fu3DWindowContainer Add3DWindow(
-            FuWindow uiWindow,
-            Vector2 panelSize,
-            Vector2Int renderResolution,
-            Vector3? position = null,
-            Quaternion? rotation = null,
-            FuContainerScaleConfig? scaleConfig = null,
-            float contextScale = 1f,
-            float fontScale = 1f,
-            bool matchPanelAspect = true,
-            float panelDepth = 0.01f)
+        public static Fu3DWindowContainer Add3DWindow(FuWindow uiWindow, Vector2 panelSize, Vector2Int renderResolution, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float contextScale = 1f, float fontScale = 1f, bool matchPanelAspect = true, float panelDepth = 0.01f)
         {
             Fu3DWindowSettings settings = matchPanelAspect
                 ? Fu3DWindowSettings.FixedResolutionMatchingPanelAspect(
@@ -507,19 +521,7 @@ namespace Fu
         /// <summary>
         /// Adds a UI window to a 3D panel whose render resolution follows panel size from a reference size.
         /// </summary>
-        public static Fu3DWindowContainer Add3DWindowScaledWithPanel(
-            FuWindow uiWindow,
-            Vector2 panelSize,
-            Vector2Int referenceResolution,
-            Vector2 referencePanelSize,
-            Vector3? position = null,
-            Quaternion? rotation = null,
-            FuContainerScaleConfig? scaleConfig = null,
-            float contextScale = 1f,
-            float fontScale = 1f,
-            Vector2Int? minResolution = null,
-            Vector2Int? maxResolution = null,
-            float panelDepth = 0.01f)
+        public static Fu3DWindowContainer Add3DWindowScaledWithPanel(FuWindow uiWindow, Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f)
         {
             Fu3DWindowSettings settings = Fu3DWindowSettings.ScaledResolutionWithPanel(
                 panelSize,
@@ -539,6 +541,15 @@ namespace Fu
             return Add3DWindow(uiWindow, settings, position, rotation);
         }
 
+        /// <summary>
+        /// Returns the add3 dwindow result.
+        /// </summary>
+        /// <param name="uiWindow">The ui Window value.</param>
+        /// <param name="position">The position value.</param>
+        /// <param name="rotation">The rotation value.</param>
+        /// <param name="scaleConfig">The scale Config value.</param>
+        /// <param name="scale3D">The scale3 D value.</param>
+        /// <returns>The result of the operation.</returns>
         [Obsolete("Use Add3DWindow(FuWindow, Fu3DWindowSettings, ...) to provide panel size and render resolution explicitly.")]
         public static Fu3DWindowContainer Add3DWindow(FuWindow uiWindow, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float? scale3D = null)
         {
@@ -922,9 +933,7 @@ namespace Fu
             }
             return nbWindows;
         }
-        #endregion
 
-        #region Rendering
         /// <summary>
         /// Render each FuGui contexts
         /// </summary>
@@ -971,32 +980,50 @@ namespace Fu
                 }
             }
 
-            // no one has render for now
-            HasRenderWindowThisFrame = false;
-            // prepare a new frame for default render
-            DefaultContext.PrepareRender();
-            // execute after default renderer render actions
-            if (DefaultContext.RenderPrepared)
+            if (MainContainerEnabled && DefaultContext != null)
+            {
+                // no one has render for now
+                HasRenderWindowThisFrame = false;
+                // prepare a new frame for default render
+                DefaultContext.PrepareRender();
+                // execute before default renderer render actions
+                if (DefaultContext.RenderPrepared)
+                {
+                    while (_beforeDefaultRenderStack.Count > 0)
+                    {
+                        _beforeDefaultRenderStack.Dequeue()?.Invoke();
+                    }
+                }
+
+                // Render default context
+                DefaultContext.Render();
+                // execute after default renderer render actions
+                if (DefaultContext.RenderPrepared)
+                {
+                    while (_afterDefaultRenderStack.Count > 0)
+                    {
+                        _afterDefaultRenderStack.Dequeue()?.Invoke();
+                    }
+                }
+
+                DefaultContext.EndRender();
+            }
+            else if (DefaultContext != null)
             {
                 while (_beforeDefaultRenderStack.Count > 0)
                 {
-                    _beforeDefaultRenderStack.Dequeue()?.Invoke();
+                    _beforeDefaultRenderStack.Dequeue();
                 }
-            }
 
-            // Render default context
-            DefaultContext.Render();
-            // execute after default renderer render actions
-            if (DefaultContext.RenderPrepared)
-            {
                 while (_afterDefaultRenderStack.Count > 0)
                 {
-                    _afterDefaultRenderStack.Dequeue()?.Invoke();
+                    _afterDefaultRenderStack.Dequeue();
                 }
+
+                SetCurrentContext(DefaultContext);
             }
 
-            DefaultContext.EndRender();
-            if (_targetScale != -1f)
+            if (_targetScale != -1f && DefaultContext != null)
             {
                 DefaultContext.SetScale(_targetScale, _targetFontScale);
             }
@@ -1004,9 +1031,7 @@ namespace Fu
             // prevent rescaling each frames
             _targetScale = -1f;
         }
-        #endregion
 
-        #region External Windows
         /// <summary>
         /// Externalize a Fugui window into a native external window.
         /// </summary>
@@ -1054,6 +1079,10 @@ namespace Fu
 #endif
         }
 
+        /// <summary>
+        /// Runs the internalize window workflow.
+        /// </summary>
+        /// <param name="uiWindow">The ui Window value.</param>
         public static void InternalizeWindow(FuWindow uiWindow)
         {
 #if FU_EXTERNALIZATION
@@ -1100,10 +1129,9 @@ namespace Fu
             }
             DestroyContext(uiWindow.Container.Context.ID);
         }
-        #endregion
 
-        #region Styles and Colors
 #if !FUDEBUG
+
         /// <summary>
         /// Push a color style to ImGui color stack
         /// </summary>
@@ -1194,9 +1222,7 @@ namespace Fu
             }
         }
 #endif
-        #endregion
 
-        #region Fonts
         /// <summary>
         /// Push the current font
         /// </summary>
@@ -1281,9 +1307,7 @@ namespace Fu
             ImGui.PushFont(CurrentContext.DefaultFont.Regular);
             NbPushFont++;
         }
-        #endregion
 
-        #region Contexts
         /// <summary>
         /// Create a new Fugui context to render into unity
         /// </summary>
@@ -1429,9 +1453,7 @@ namespace Fu
                 ImGui.SetCurrentContext(IntPtr.Zero);
             }
         }
-        #endregion
 
-        #region Font Utils
         /// <summary>
         /// Get text size according to it's wrapping behaviour
         /// </summary>
@@ -1603,9 +1625,7 @@ namespace Fu
                    MathF.Abs(a.z - b.z) < tolerance &&
                    MathF.Abs(a.w - b.w) < tolerance;
         }
-        #endregion
 
-        #region Public Utils
         /// <summary>
         /// Check if any window is currently being dragged
         /// </summary>
@@ -1759,12 +1779,21 @@ namespace Fu
             }
         }
 
+        #region State
         /// <summary>
         /// Adds spaces before uppercase letters in the input string.
         /// </summary>
         /// <param name="input">The input string.</param>
         /// <returns>The input string with spaces added before uppercase letters.</returns>
         static Dictionary<string, string> _niceStrings = new Dictionary<string, string>();
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Returns the add spaces before uppercase result.
+        /// </summary>
+        /// <param name="input">The input value.</param>
+        /// <returns>The result of the operation.</returns>
         public static string AddSpacesBeforeUppercase(string input)
         {
             if (string.IsNullOrEmpty(input))
@@ -1792,8 +1821,13 @@ namespace Fu
             }
             return Regex.Replace(input, @"(?<=[a-z])(?=[A-Z])", " ");
         }
+        #endregion
 
+        #region State
         private static Dictionary<string, string> _untagedStrings = new Dictionary<string, string>();
+        #endregion
+
+        #region Methods
         /// <summary>
         /// Get a text without tag "##xxxxxx"
         /// </summary>
@@ -1860,9 +1894,15 @@ namespace Fu
         {
             return Regex.Replace(input, @"\s([a-zA-Z0-9])", x => x.Groups[1].Value.ToUpper());
         }
+        #endregion
 
+        #region State
         // Clipper
+
         private static Dictionary<int, ImGuiListClipperPtr> _clippers = new Dictionary<int, ImGuiListClipperPtr>();
+        #endregion
+
+        #region Methods
         //private static unsafe readonly ImGuiListClipper* _clipper = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
 
         /// <summary>
@@ -1968,6 +2008,11 @@ namespace Fu
                     bool wantCapture = false;
                     foreach (FuContext context in Contexts.Values)
                     {
+                        if (!MainContainerEnabled && ReferenceEquals(context, DefaultContext))
+                        {
+                            continue;
+                        }
+
                         wantCapture |= context.IO.WantTextInput;
                     }
                     return wantCapture;
@@ -1986,7 +2031,7 @@ namespace Fu
             bool isDown = false;
             if (windowsNames == null || windowsNames.Length == 0)
             {
-                isDown |= DefaultContainer.Keyboard.GetKeyDown(key);
+                isDown |= MainContainerEnabled && DefaultContainer != null && DefaultContainer.Keyboard.GetKeyDown(key);
                 if (!isDown)
                 {
                     foreach (var threeDWindowContainer in _3DWindows.Values)
@@ -2035,7 +2080,7 @@ namespace Fu
             bool isPressed = false;
             if (windowsNames == null || windowsNames.Length == 0)
             {
-                isPressed |= DefaultContainer.Keyboard.GetKeyPressed(key);
+                isPressed |= MainContainerEnabled && DefaultContainer != null && DefaultContainer.Keyboard.GetKeyPressed(key);
                 if (!isPressed)
                 {
                     foreach (var threeDWindowContainer in _3DWindows.Values)
@@ -2084,7 +2129,7 @@ namespace Fu
             bool isUp = false;
             if (windowsNames == null || windowsNames.Length == 0)
             {
-                isUp |= DefaultContainer.Keyboard.GetKeyUp(key);
+                isUp |= MainContainerEnabled && DefaultContainer != null && DefaultContainer.Keyboard.GetKeyUp(key);
                 if (!isUp)
                 {
                     foreach (var threeDWindowContainer in _3DWindows.Values)
@@ -2133,9 +2178,7 @@ namespace Fu
             }
             return DefaultContainer.Mouse;
         }
-        #endregion
 
-        #region Popup Utils
         /// <summary>
         /// Whatever a popup is open from a specific window
         /// </summary>
@@ -2189,9 +2232,7 @@ namespace Fu
             }
             return false;
         }
-        #endregion
 
-        #region Drag Drop
         /// <summary>
         /// Must be placed just after an UI element so this one can be dragged
         /// </summary>
@@ -2243,9 +2284,7 @@ namespace Fu
         {
             return CurrentContext.IsDraggingPayload(payloadID);
         }
-        #endregion
 
-        #region Scaling
         /// <summary>
         /// Set the scale of all context
         /// </summary>

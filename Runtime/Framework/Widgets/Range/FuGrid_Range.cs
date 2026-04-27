@@ -1,7 +1,11 @@
-﻿namespace Fu.Framework
+namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Draw a custom unity-style slider (slider + input)
         /// </summary>
@@ -24,5 +28,6 @@
             drawElementLabel(text, FuTextStyle.Default);
             return base._customRange(text, ref valueMin, ref valueMax, min, max, isInt, step, flags, format);
         }
+        #endregion
     }
 }

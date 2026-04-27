@@ -1,15 +1,19 @@
 using Fu;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Window Behaviour type.
+    /// </summary>
     public class FuWindowBehaviour : MonoBehaviour
     {
+        #region State
         [SerializeField]
         protected FuWindowName _windowName;
         [SerializeField]
@@ -23,8 +27,11 @@ namespace Fu.Framework
         [SerializeField]
         protected bool _forceCreateAloneOnAwake = false;
         protected FuWindow _fuWindow;
-        public FuWindow Window => _fuWindow;
 
+        public FuWindow Window => _fuWindow;
+        #endregion
+
+        #region Methods
         /// <summary>
         /// Register the window definition and create the window instance if needed.
         /// </summary>
@@ -92,6 +99,7 @@ namespace Fu.Framework
         {
             _windowName = value;
         }
+        #endregion
     }
 
 #if UNITY_EDITOR

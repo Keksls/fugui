@@ -1,13 +1,19 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region State
         private string _loaderFakeID = string.Empty;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Drraw a dots spinner that fade around a circle
         /// </summary>
@@ -476,5 +482,6 @@ namespace Fu.Framework
 
             endElement();
         }
+        #endregion
     }
 }

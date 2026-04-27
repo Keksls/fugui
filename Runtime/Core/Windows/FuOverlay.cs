@@ -5,15 +5,20 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Overlay type.
+    /// </summary>
     public class FuOverlay
     {
-        #region Variables
+        #region State
         // ID of the Overlay
         public string ID { get; private set; }
         public FuLayout Layout { get; private set; }
         // unscaled private size of  the Overlay
+
         private Vector2Int _size;
         // unscaled public size of  the Overlay
+
         public Vector2Int UnscaledSize => _size;
         // Size of the Overlay
         public Vector2Int Size
@@ -28,8 +33,10 @@ namespace Fu
             }
         }
         // unscaled private Offset of the anchor point from the top-left corner of the overlay
+
         private Vector2Int _anchorOffset;
         // Offset of the anchor point from the top-left corner of the overlay
+
         public Vector2Int AnchorOffset
         {
             get
@@ -44,10 +51,12 @@ namespace Fu
         // Custom UI display function for the overlay
         public Action<FuOverlay, FuLayout> UI { get; private set; }
         // Whenever the Overlay will render just right now
+
         public event Action OnPreRender;
         // Whenever the Overlay just render right now
         public event Action OnPostRender;
         // Public variable that store local Rect of this overlay
+
         public Rect LocalRect { get; private set; }
         // Public variable that store local Rect of this overlay
         public Rect WorldRect { get => new Rect(LocalRect.x + Window.LocalRect.x, LocalRect.y + Window.LocalRect.y, LocalRect.width, LocalRect.height); }
@@ -57,6 +66,7 @@ namespace Fu
         public Vector2Int MinimumWindowSize { get; private set; }
 
         // Flag to indicate if the window is collapsible
+
         private bool _collapsable;
         // Flag to indicate if the window is draggable
         private bool _draggable;
@@ -71,8 +81,10 @@ namespace Fu
         // Private variable to track the hover state of the drag button
         private bool _dragButtonHovered = false;
         // Private variable to track the dragging state of the window
+
         public bool IsDraging { get; private set; } = false;
         // Private variable to track the mouse position during a drag operation
+
         private Vector2 _dragMousePosition = Vector2.zero;
         // Private variable to track the offset of the window during a drag operation
         private Vector2 _dragOffset = Vector2.zero;
@@ -82,12 +94,16 @@ namespace Fu
         private FuOverlayDragPosition _dragButtonPosition;
         // Private constant for the width of the collapse button
         private float _retractButtonWidth = 12f;
+
         private float retractButtonWidth => _retractButtonWidth * Fugui.Scale;
         // Private constant for the drag step size
+
         private float _dragStep = 32f;
+
         private float dragStep => _dragStep * Fugui.Scale;
 
         // Private constant for the color of the snap grid
+
         private Vector4 _gridColor = new Vector4(.1f, .1f, .1f, .25f);
         // Private constant for the width of the snap grid lines
         private float _gridWidth = 1f;
@@ -105,6 +121,7 @@ namespace Fu
         private bool _isVisible = true;
         #endregion
 
+        #region Constructors
         /// <summary>
         /// Instantiate an UI Overlay object
         /// </summary>
@@ -148,8 +165,9 @@ namespace Fu
             // show the overlay
             _isVisible = true;
         }
+        #endregion
 
-        #region Public Utils
+        #region Methods
         /// <summary>
         /// Show the overlay. It will be drawn until you call Hide()
         /// </summary>
@@ -295,7 +313,6 @@ namespace Fu
         {
             LocalRect = rect;
         }
-        #endregion
 
         /// <summary>
         /// Draw the overlay, will be call by anchored window
@@ -400,7 +417,7 @@ namespace Fu
                 ImGuiNative.igEndChild();
                 Fugui.PopColor();
 
-                // force render window next frame in case we are dragging but ùouse is out of window
+                // force render window next frame in case we are dragging but ï¿½ouse is out of window
                 Window.ForceDraw();
             }
 
@@ -479,7 +496,6 @@ namespace Fu
             }
         }
 
-        #region Private utils
         /// <summary>
         /// Draw the drag button
         /// </summary>

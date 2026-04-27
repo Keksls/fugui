@@ -1,11 +1,15 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Displays a combobox that allows the user to choose from a list of predefined items. 
         /// When an item is selected, the specified callback function is called.
@@ -27,5 +31,6 @@ namespace Fu.Framework
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             base.Combobox("##" + text, selectedItemText, callback, size, popupSize, style, popupPosition);
         }
+        #endregion
     }
 }

@@ -1,12 +1,15 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
-        #region Slider Int
+        #region Methods
         /// <summary>
         /// Creates a horizontal slider widget that allows the user to choose an integer value from a range.
         /// </summary>
@@ -41,9 +44,7 @@ namespace Fu.Framework
             valueMax = (int)valMax;
             return valueChange;
         }
-        #endregion
 
-        #region Slider Float
         /// <summary>
         /// Creates a horizontal slider widget that allows the user to choose an integer value from a range.
         /// </summary>
@@ -75,7 +76,6 @@ namespace Fu.Framework
         {
             return _customRange(text, ref valueMin, ref valueMax, min, max, false, step, flags, format);
         }
-        #endregion
 
         /// <summary>
         /// Draw a custom unity-style slider (slider + input)
@@ -336,5 +336,6 @@ namespace Fu.Framework
                 return false;
             }
         }
+        #endregion
     }
 }

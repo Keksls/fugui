@@ -1,10 +1,14 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region Methods
         /// <summary>
         /// Renders a checkbox with the given text and returns true if the checkbox was clicked. The value of the checkbox is stored in the provided boolean variable.
         /// </summary>
@@ -161,5 +165,6 @@ namespace Fu.Framework
 
             return _lastItemUpdate;
         }
+        #endregion
     }
 }

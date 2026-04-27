@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework.Demo
@@ -9,18 +9,25 @@ namespace Fu.Framework.Demo
     /// </summary>
     public abstract class BinaryOperationNode : FuNode
     {
+        #region State
         public override float Width => 128f;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Operation delegate applied to two float values.
         /// </summary>
         protected abstract float Operate(float a, float b);
+        #endregion
 
+        #region State
         /// <summary>
         /// The default value used for initialization (e.g., 0 for Add/Sub, 1 for Mul/Div).
         /// </summary>
         protected abstract float DefaultValue { get; }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Creates the default ports for this node.
         /// </summary>
@@ -98,6 +105,11 @@ namespace Fu.Framework.Demo
             return "core/float";
         }
 
+        /// <summary>
+        /// Gets the dimension.
+        /// </summary>
+        /// <param name="t">The t value.</param>
+        /// <returns>The result of the operation.</returns>
         private int GetDimension(string t)
         {
             switch (t)
@@ -109,6 +121,12 @@ namespace Fu.Framework.Demo
             }
         }
 
+        /// <summary>
+        /// Gets the scalar.
+        /// </summary>
+        /// <param name="port">The port value.</param>
+        /// <param name="t">The t value.</param>
+        /// <returns>The result of the operation.</returns>
         private float GetScalar(string port, string t)
         {
             if (t == "core/int") return (float)GetPortValue<int>(port, (int)DefaultValue);
@@ -119,6 +137,12 @@ namespace Fu.Framework.Demo
             return DefaultValue;
         }
 
+        /// <summary>
+        /// Gets the vec4.
+        /// </summary>
+        /// <param name="port">The port value.</param>
+        /// <param name="t">The t value.</param>
+        /// <returns>The result of the operation.</returns>
         private Vector4 GetVec4(string port, string t)
         {
             if (t == "core/int" || t == "core/float")
@@ -141,6 +165,10 @@ namespace Fu.Framework.Demo
             return Vector4.zero;
         }
 
+        /// <summary>
+        /// Handles the Draw event.
+        /// </summary>
+        /// <param name="layout">The layout value.</param>
         public override void OnDraw(FuLayout layout)
         {
             string dataType = GetPortType("Out");
@@ -168,12 +196,21 @@ namespace Fu.Framework.Demo
             }
         }
 
+        /// <summary>
+        /// Sets the default values.
+        /// </summary>
+        /// <param name="port">The port value.</param>
         public override void SetDefaultValues(FuNodalPort port)
         {
             port.Data = 1f;
             port.DataType = "core/float";
         }
 
+        /// <summary>
+        /// Gets the current converted type.
+        /// </summary>
+        /// <param name="port">The port value.</param>
+        /// <returns>The result of the operation.</returns>
         public override string GetCurrentConvertedType(FuNodalPort port)
         {
             if (port.Name != "A" && port.Name != "B")
@@ -183,5 +220,6 @@ namespace Fu.Framework.Demo
             string otherPort = GetPortType(port.Name == "A" ? "B" : "A");
             return ResolveOutputType(thisPort, otherPort);
         }
+        #endregion
     }
 }

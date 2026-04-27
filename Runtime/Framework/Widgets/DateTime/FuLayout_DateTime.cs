@@ -1,19 +1,31 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using UnityEngine;
 using System;
 using Fu;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region State
         string[] monthStr = new string[] {
                     "January", "February", "March", "April", "May", "June",
                     "July", "August", "September", "October", "November", "December" };
         private static DateTime _currentDateTimeValue;
         private static DateTime _updatedDateTime;
         private static bool _datetimeUpdated = false;
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Returns the date time picker popup result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="currentDate">The current Date value.</param>
+        /// <returns>The result of the operation.</returns>
         public bool DateTimePickerPopup(string text, ref DateTime currentDate)
         {
             string ppID = "dtPkr" + text;
@@ -44,6 +56,12 @@ namespace Fu.Framework
             return _datetimeUpdated;
         }
 
+        /// <summary>
+        /// Returns the date time picker result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="currentDate">The current Date value.</param>
+        /// <returns>The result of the operation.</returns>
         public bool DateTimePicker(string text, ref DateTime currentDate)
         {
             beginElement(ref text);
@@ -52,7 +70,6 @@ namespace Fu.Framework
             _currentDateTimeValue = currentDate;
             _updatedDateTime = _currentDateTimeValue;
 
-            #region values calculations
             // get current month data
             int month = currentDate.Month;
             int year = currentDate.Year;
@@ -75,7 +92,6 @@ namespace Fu.Framework
             Vector2 btnSize = ImGui.CalcTextSize("99");
             btnSize += (Fugui.CurrentContext.Scale * Fugui.Themes.FramePadding);
             btnSize.y = btnSize.x;
-            #endregion
 
             // ========================= CALENDAR HEADER
             // Last month
@@ -220,5 +236,6 @@ namespace Fu.Framework
 
             return _datetimeUpdated;
         }
+        #endregion
     }
 }

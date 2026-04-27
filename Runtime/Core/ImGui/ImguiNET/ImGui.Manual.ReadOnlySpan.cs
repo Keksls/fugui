@@ -1,8 +1,7 @@
 using System;
-using UnityEngine;
 using System.Runtime.CompilerServices;
 using System.Text;
-
+using UnityEngine;
 // NOTE:
 // This is a direct copy from ImGui.Manual.cs with all string parameters (not ref string) changed to ReadOnlySpan<char>.
 // TODO: This is far from ideal right now, maybe we could update the generator to do this for us.

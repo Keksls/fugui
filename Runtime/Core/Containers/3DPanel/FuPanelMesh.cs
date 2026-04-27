@@ -2,8 +2,12 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Panel Mesh type.
+    /// </summary>
     public class FuPanelMesh : MonoBehaviour
     {
+        #region State
         private float _roundEdges = 0.5f;
         private float _roundTopLeft = 0.0f;
         private float _roundTopRight = 0.0f;
@@ -18,7 +22,24 @@ namespace Fu
         private Vector3[] _Normals;
         private Vector2[] _UV;
         private int[] _Triangles;
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Creates the mesh.
+        /// </summary>
+        /// <param name="width">The width value.</param>
+        /// <param name="height">The height value.</param>
+        /// <param name="scale">The scale value.</param>
+        /// <param name="TLRounding">The TLRounding value.</param>
+        /// <param name="TRRounding">The TRRounding value.</param>
+        /// <param name="BLRounding">The BLRounding value.</param>
+        /// <param name="BRRounding">The BRRounding value.</param>
+        /// <param name="extrusionDistance">The extrusion Distance value.</param>
+        /// <param name="roundTriangles">The round Triangles value.</param>
+        /// <param name="UImaterial">The UImaterial value.</param>
+        /// <param name="PanelMaterial">The Panel Material value.</param>
+        /// <returns>The result of the operation.</returns>
         public Mesh CreateMesh(float width, float height, float scale, float TLRounding, float TRRounding, float BLRounding, float BRRounding, float extrusionDistance, int roundTriangles, Material UImaterial, Material PanelMaterial)
         {
             _roundEdges = 0f;
@@ -59,6 +80,11 @@ namespace Fu
             return uiMesh;
         }
 
+        /// <summary>
+        /// Returns the create rounded rectangle mesh result.
+        /// </summary>
+        /// <param name="uiMesh">The ui Mesh value.</param>
+        /// <returns>The result of the operation.</returns>
         private Mesh createRoundedRectangleMesh(Mesh uiMesh)
         {
             if (_cornerVertexCount < 2)
@@ -163,6 +189,17 @@ namespace Fu
             return uiMesh;
         }
 
+        /// <summary>
+        /// Runs the add corner workflow.
+        /// </summary>
+        /// <param name="startIndex">The start Index value.</param>
+        /// <param name="center">The center value.</param>
+        /// <param name="radius">The radius value.</param>
+        /// <param name="startAngle">The start Angle value.</param>
+        /// <param name="endAngle">The end Angle value.</param>
+        /// <param name="rs">The rs value.</param>
+        /// <param name="a1">The a1 value.</param>
+        /// <param name="a2">The a2 value.</param>
         private void AddCorner(int startIndex, Vector2 center, float radius, float startAngle, float endAngle, Vector2 rs, float a1, float a2)
         {
             for (int i = 0; i < _cornerVertexCount; i++)
@@ -191,16 +228,32 @@ namespace Fu
                 }
             }
         }
+        #endregion
 
+        #region Nested Types
+        /// <summary>
+        /// Represents the Edge type.
+        /// </summary>
         private class Edge
         {
+            #region State
             // The indiex to each vertex
             public int[] vertexIndex = new int[2];
             // The index into the face.
             // (faceindex[0] == faceindex[1] means the edge connects to only one triangle)
             public int[] faceIndex = new int[2];
+            #endregion
         }
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Runs the extrude mesh workflow.
+        /// </summary>
+        /// <param name="srcMesh">The src Mesh value.</param>
+        /// <param name="extrudedMesh">The extruded Mesh value.</param>
+        /// <param name="extrusion">The extrusion value.</param>
+        /// <param name="invertFaces">The invert Faces value.</param>
         private void extrudeMesh(Mesh srcMesh, Mesh extrudedMesh, Matrix4x4[] extrusion, bool invertFaces)
         {
             //Edge[] edges = BuildManifoldEdges(srcMesh);
@@ -216,6 +269,14 @@ namespace Fu
             extrudeMesh(srcMesh, extrudedMesh, extrusion, edges, invertFaces);
         }
 
+        /// <summary>
+        /// Runs the extrude mesh workflow.
+        /// </summary>
+        /// <param name="srcMesh">The src Mesh value.</param>
+        /// <param name="extrudedMesh">The extruded Mesh value.</param>
+        /// <param name="extrusion">The extrusion value.</param>
+        /// <param name="edges">The edges value.</param>
+        /// <param name="invertFaces">The invert Faces value.</param>
         private static void extrudeMesh(Mesh srcMesh, Mesh extrudedMesh, Matrix4x4[] extrusion, Edge[] edges, bool invertFaces)
         {
             int extrudedVertexCount = edges.Length * 2 * extrusion.Length;
@@ -322,5 +383,6 @@ namespace Fu
             extrudedMesh.triangles = triangles;
             extrudedMesh.RecalculateNormals();
         }
+        #endregion
     }
 }

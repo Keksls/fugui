@@ -1,13 +1,16 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
-        #region Variables
+        #region State
         private static bool _showModal = false;
         private static bool _preventCloseModal = false;
         private static string _modalTitle;
@@ -23,7 +26,7 @@ namespace Fu
         private static readonly Vector2 _modalMinScreenSpacing = new Vector2(16f, 16f);
         #endregion
 
-        #region Show Hide
+        #region Methods
         /// <summary>
         /// Show a modal with a custom title, body, and buttons
         /// </summary>
@@ -79,9 +82,7 @@ namespace Fu
         {
             _preventCloseModal = true;
         }
-        #endregion
 
-        #region Drawing
         /// <summary>
         /// Render the currently shown modal
         /// </summary>
@@ -262,9 +263,7 @@ namespace Fu
             }
             _enlapsed += ImGui.GetIO().DeltaTime;
         }
-        #endregion
 
-        #region Modals
         /// <summary>
         /// Show a modal with yes and no buttons
         /// </summary>

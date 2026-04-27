@@ -5,36 +5,44 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid Definition data structure.
+    /// </summary>
     public struct FuGridDefinition
     {
+        #region State
         public int NbColumns { get; private set; }
         public int MinSecondColumnSize { get; private set; }
         public float[] ColumnsWidth { get; private set; }
         public int ColumnWidth { get; private set; }
         public float ResponsiveMinWidth { get; private set; }
         public FuGridType GridType { get; private set; }
+
         public const float MINIMUM_GRID_WIDTH_BEFORE_FORCE_RESPONSIVE_RESIZE = 196f;
 
-        #region Pressets
         static readonly FuGridDefinition _defaultAutoGrid = new FuGridDefinition(2);
+
         /// <summary>
         /// Create a default TwoColumns auto-width grid
         /// </summary>
         public static FuGridDefinition DefaultAuto { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultAutoGrid; } }
 
         static readonly FuGridDefinition _defaultFixedGrid = new FuGridDefinition(2, new int[] { 96 }, 196);
+
         /// <summary>
         /// Create a default TwoColumns FixedSize grid. The first row is 96px, the second is remaning width. If the second go under 196px, the first will start reduce untill the all goes under min responsive width
         /// </summary>
         public static FuGridDefinition DefaultFixed { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultFixedGrid; } }
 
         static readonly FuGridDefinition _defaultRatioGrid = new FuGridDefinition(2, new float[] { 0.5f }, 196);
+
         /// <summary>
         /// Create a default TwoColumns FixedSize grid. The first row is 50% of the H space, se second is remaning width. If the second go under 196px, the first will start reduce untill the all goes under min responsive width
         /// </summary>
         public static FuGridDefinition DefaultRatio { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultRatioGrid; } }
 
         static readonly FuGridDefinition _defaultFlexible = new FuGridDefinition(64f);
+
         /// <summary>
         /// Create a default Flexible grid. The number of cols will be determinated by the fixed (pixels) columns width and available H width
         /// </summary>
@@ -114,6 +122,7 @@ namespace Fu.Framework
         }
         #endregion
 
+        #region Methods
         /// <summary>
         /// Setup the current table columns according to this grid definition
         /// </summary>
@@ -270,5 +279,6 @@ namespace Fu.Framework
             }
             return true;
         }
+        #endregion
     }
 }

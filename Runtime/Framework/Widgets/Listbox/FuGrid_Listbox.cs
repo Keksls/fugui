@@ -3,8 +3,12 @@ using System;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Draw a listbox using fully custom UI
         /// </summary>
@@ -22,5 +26,6 @@ namespace Fu.Framework
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             base.ListBox("##" + text, callback, size);
         }
+        #endregion
     }
 }

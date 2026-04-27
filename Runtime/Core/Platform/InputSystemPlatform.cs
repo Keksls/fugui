@@ -1,4 +1,4 @@
-﻿#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
 #define FUMOBILE
 #endif
 using ImGuiNET;
@@ -14,6 +14,7 @@ namespace Fu
     /// </summary>
     internal sealed class InputSystemPlatform : PlatformBase
     {
+        #region State
         private readonly List<char> _textInput = new List<char>();
         private Keyboard _keyboard = null;
         private Dictionary<ImGuiKey, KeyControl> _keyControls;
@@ -25,9 +26,15 @@ namespace Fu
         private static float _lastPressTime = 0f;
         private static bool _rightClicked = false;
         private static int _nbFramesSinceMouseLeftUp = 0;
+        #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Input System Platform class.
+        /// </summary>
         public InputSystemPlatform() : base()
         { }
+        #endregion
 
         /// <summary>
         /// Initialize the ImGui input system, setting up event listeners and configuring ImGui IO.
@@ -426,7 +433,6 @@ namespace Fu
                 { ImGuiKey.Z, keyboard.FindKeyOnCurrentKeyboardLayout("z") }
             };
         }
-
 
         /// <summary>
         /// Update the ImGui input state with the current keyboard state.

@@ -4,30 +4,39 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Element Animation Data type.
+    /// </summary>
     public class FuElementAnimationData
     {
-        ///<summary>
+        #region State
+        /// <summary>
         /// Property that returns the current value of the animation
-        ///</summary>
+        /// </summary>
         public float CurrentValue { get { return _currentValue; } }
+
         private float _currentValue;
         private bool _animating;
         private bool _lastFrameValue;
         private float _targetValue;
         private float _startValue;
         private float _enlapsed;
+        #endregion
 
-        ///<summary>
+        #region Constructors
+        /// <summary>
         /// Constructor that takes a boolean "defaultValue" and sets the initial value of _lastFrameValue
-        ///</summary>
+        /// </summary>
         public FuElementAnimationData(bool defaultValue)
         {
             _lastFrameValue = defaultValue;
         }
+        #endregion
 
-        ///<summary>
+        #region Methods
+        /// <summary>
         /// Private method that sets the initial values for the animation
-        ///</summary>
+        /// </summary>
         private void animate(bool value)
         {
             _animating = true;
@@ -37,9 +46,9 @@ namespace Fu.Framework
             _enlapsed = 0f;
         }
 
-        ///<summary>
+        /// <summary>
         /// Public method that updates the animation based on the current state of the element and a boolean "enableAnimation" flag
-        ///</summary>
+        /// </summary>
         public void Update(bool value, bool enableAnimation)
         {
             if (!enableAnimation)
@@ -82,5 +91,6 @@ namespace Fu.Framework
                 _currentValue = _targetValue;
             }
         }
+        #endregion
     }
 }

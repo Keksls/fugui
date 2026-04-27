@@ -1,4 +1,3 @@
-﻿using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,6 +9,7 @@ namespace Fu.Framework
     /// </summary>
     public class FuContextMenuItem
     {
+        #region State
         // Label for the item
         public string Label;
         // Shortcut for the item
@@ -28,7 +28,9 @@ namespace Fu.Framework
         public int Border;
         // Defines the type of this item (Normal, Separator, or Image)
         public FuContextMenuItemType Type;
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Constructor for a centered title item (displayed at the top of the context menu)
         /// </summary>
@@ -81,6 +83,7 @@ namespace Fu.Framework
             Type = FuContextMenuItemType.Item;
             Border = 0;
         }
+        #endregion
     }
 
     /// <summary>

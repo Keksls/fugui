@@ -1,11 +1,15 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Panel Clipper type.
+    /// </summary>
     internal class FuPanelClipper
     {
+        #region State
         internal List<Rect> itemRects = new List<Rect>();
         internal List<Rect> lastItemRects = new List<Rect>();
         internal Vector2 scrollRectY;
@@ -14,7 +18,12 @@ namespace Fu.Framework
         private bool _drawItem = true;
         private Vector2 _screenToLocalOffset = default;
         internal bool ForceUpdateNextFrame = false;
+        #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Panel Clipper class.
+        /// </summary>
         internal FuPanelClipper()
         {
             if (FuWindow.CurrentDrawingWindow != null)
@@ -23,17 +32,31 @@ namespace Fu.Framework
                 FuWindow.CurrentDrawingWindow.OnClosed += CurrentDrawingWindow_OnClosed;
             }
         }
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Runs the current drawing window on closed workflow.
+        /// </summary>
+        /// <param name="window">The window value.</param>
         private void CurrentDrawingWindow_OnClosed(FuWindow window)
         {
             window.OnResized -= CurrentDrawingWindow_OnResized;
         }
 
+        /// <summary>
+        /// Runs the current drawing window on resized workflow.
+        /// </summary>
+        /// <param name="window">The window value.</param>
         private void CurrentDrawingWindow_OnResized(FuWindow window)
         {
             ForceUpdateNextFrame = true;
         }
 
+        /// <summary>
+        /// Runs the new frame workflow.
+        /// </summary>
+        /// <param name="autoClipOutOfView">The auto Clip Out Of View value.</param>
         internal void NewFrame(bool autoClipOutOfView)
         {
             // whatever we want to clip OutOfBounds content
@@ -55,6 +78,9 @@ namespace Fu.Framework
             }
         }
 
+        /// <summary>
+        /// Runs the end frame workflow.
+        /// </summary>
         internal void EndFrame()
         {
             if (itemRects.Count > 0)
@@ -64,6 +90,11 @@ namespace Fu.Framework
             }
         }
 
+        /// <summary>
+        /// Returns the begin draw element result.
+        /// </summary>
+        /// <param name="canBeHidden">The can Be Hidden value.</param>
+        /// <returns>The result of the operation.</returns>
         internal bool BeginDrawElement(bool canBeHidden)
         {
             _drawItem = true;
@@ -97,6 +128,9 @@ namespace Fu.Framework
             return _drawItem;
         }
 
+        /// <summary>
+        /// Runs the end draw element workflow.
+        /// </summary>
         internal void EndDrawElement()
         {
             // the item has just been draw
@@ -110,5 +144,6 @@ namespace Fu.Framework
                 itemRects.Add(lastItemRects[itemIndex]);
             }
         }
+        #endregion
     }
 }

@@ -1,7 +1,11 @@
-﻿namespace Fu.Framework
+namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Draw a Radio Button
         /// </summary>
@@ -18,5 +22,6 @@
             drawElementLabel(text, style.TextStyle);
             return base.RadioButton("##" + text, isChecked, style);
         }
+        #endregion
     }
 }

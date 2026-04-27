@@ -1,9 +1,13 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Display a custom color picker
         /// </summary>
@@ -21,5 +25,6 @@ namespace Fu.Framework
             drawElementLabel(text, FuTextStyle.Default);
             return base._customColorPicker(text, alpha, ref color, style);
         }
+        #endregion
     }
 }

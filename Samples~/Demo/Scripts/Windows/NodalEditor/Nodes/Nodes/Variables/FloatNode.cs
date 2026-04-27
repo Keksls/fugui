@@ -6,21 +6,42 @@ namespace Fu.Framework.Demo
     /// <summary>Float variable node.</summary>
     public sealed class FloatNode : FuNode
     {
+        #region State
         public override string Title => "Float";
         public override float Width => 96f;
         public override Color? NodeColor => _color;
+
         private Color _color;
         private bool _slider = false;
         private float _min = 0f, _max = 100f;
-        public FloatNode(Color color) { _color = color; }
+        #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Float Node class.
+        /// </summary>
+        /// <param name="color">The color value.</param>
+        public FloatNode(Color color) { _color = color; }
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Creates the default ports.
+        /// </summary>
         public override void CreateDefaultPorts()
         {
             AddPort(new FuNodalPort { Name = "Out", Direction = FuNodalPortDirection.Out, DataType = "core/float", AllowedTypes = new HashSet<string> { "core/float" }, Data = 1f, Multiplicity = FuNodalMultiplicity.Many });
         }
 
+        /// <summary>
+        /// Runs the compute workflow.
+        /// </summary>
         public override void Compute() { }
 
+        /// <summary>
+        /// Handles the Draw event.
+        /// </summary>
+        /// <param name="layout">The layout value.</param>
         public override void OnDraw(FuLayout layout)
         {
             float v = GetPortValue<float>("Out", 0f);
@@ -46,10 +67,15 @@ namespace Fu.Framework.Demo
             }
         }
 
+        /// <summary>
+        /// Sets the default values.
+        /// </summary>
+        /// <param name="port">The port value.</param>
         public override void SetDefaultValues(FuNodalPort port)
         {
             port.DataType = "core/float";
             port.Data = 1f;
         }
+        #endregion
     }
 }

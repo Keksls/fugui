@@ -1,10 +1,17 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public partial class Fugui
     {
+        #region Methods
+        /// <summary>
+        /// Draws the mobile touch feedback.
+        /// </summary>
         private static void DrawMobileTouchFeedback()
         {
             ImDrawListPtr drawList = ImGui.GetForegroundDrawList();
@@ -21,5 +28,6 @@ namespace Fu
                 drawList.AddCircle(pos, circleRadius, ImGui.ColorConvertFloat4ToU32(borderColor), 0, 2f);
             }
         }
+        #endregion
     }
 }

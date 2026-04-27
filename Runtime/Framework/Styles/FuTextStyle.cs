@@ -4,8 +4,12 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Text Style data structure.
+    /// </summary>
     public struct FuTextStyle : IFuElementStyle
     {
+        #region State
         // enabled
         internal Color Text;
         // enabled
@@ -13,63 +17,83 @@ namespace Fu.Framework
         // disabled
         internal Color DisabledText;
 
-        #region Pressets
         static FuTextStyle _defaultTextStyle;
+
         /// <summary>
         /// Default text style, use 'Text' theme colors
         /// </summary>
         public static FuTextStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultTextStyle; } }
 
         static FuTextStyle _defaultDeactivated;
+
         /// <summary>
         /// Default text style, use 'Text' theme colors
         /// </summary>
         public static FuTextStyle Deactivated { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultDeactivated; } }
-        
+
         static FuTextStyle _selectedTextStyle;
+
         /// <summary>
         /// Selected text style, use 'SelectedText' theme colors
         /// </summary>
         public static FuTextStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedTextStyle; } }
-       
+
         static FuTextStyle _highlightTextStyle;
+
         /// <summary>
         /// Highlight text style, use 'HighlightText' theme colors
         /// </summary>
         public static FuTextStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightTextStyle; } }
-        
+
         static FuTextStyle _infoTextStyle;
+
         /// <summary>
         /// Info text style, use 'InfoText' theme colors
         /// </summary>
         public static FuTextStyle Info { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _infoTextStyle; } }
-        
+
         static FuTextStyle _warningTextStyle;
+
         /// <summary>
         /// Warning text style, use 'WarningText' theme colors
         /// </summary>
         public static FuTextStyle Warning { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _warningTextStyle; } }
-        
+
         static FuTextStyle _dangerTextStyle;
+
         /// <summary>
         /// Danger text style, use 'DangerText' theme colors
         /// </summary>
         public static FuTextStyle Danger { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _dangerTextStyle; } }
-        
+
         static FuTextStyle _successTextStyle;
+
         /// <summary>
         /// Success text style, use 'SuccessText' theme colors
         /// </summary>
         public static FuTextStyle Success { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _successTextStyle; } }
         #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Text Style class.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="linkText">The link Text value.</param>
+        /// <param name="disabledText">The disabled Text value.</param>
         public FuTextStyle(Color text, Color linkText, Color disabledText)
         {
             Text = text;
             LinkText = linkText;
             DisabledText = disabledText;
         }
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Runs the push workflow.
+        /// </summary>
+        /// <param name="enabled">The enabled value.</param>
         public void Push(bool enabled)
         {
             if (enabled)
@@ -84,6 +108,9 @@ namespace Fu.Framework
             }
         }
 
+        /// <summary>
+        /// Runs the pop workflow.
+        /// </summary>
         public void Pop()
         {
             Fugui.PopColor(2);
@@ -151,5 +178,6 @@ namespace Fu.Framework
                 DisabledText = Fugui.Themes.GetColor(FuColors.TextWarning) * 0.5f
             };
         }
+        #endregion
     }
 }

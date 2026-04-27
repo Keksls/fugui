@@ -7,17 +7,20 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Theme Manager type.
+    /// </summary>
     public class FuThemeManager
     {
-        #region Variables
+        #region State
         public event Action<FuTheme> OnThemeSet;
+
         public FuTheme CurrentTheme { get; private set; }
         public Dictionary<string, FuTheme> Themes { get; private set; }
+
         private List<Type> _uiElementStyleTypes;
         public const string DEFAULT_FUGUI_THEME_NAME = "DarkSky";
-        #endregion
 
-        #region Current Theme Variables
         public Vector2 WindowPadding { get; private set; }
         public Vector2 WindowMinSize { get; private set; }
         public Vector2 FramePadding { get; private set; }
@@ -43,7 +46,9 @@ namespace Fu
         public float TabMinWidthForCloseButton { get; private set; }
         public float NodeKnobRadius { get; private set; }
         public float NodeKnobMargin { get; private set; }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Update variables with current theme scale
         /// </summary>
@@ -78,6 +83,10 @@ namespace Fu
         }
         #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Theme Manager class.
+        /// </summary>
         public FuThemeManager()
         {
             // we could not bind it using reflection because some element style use others, so we need to set presset within a specific order
@@ -92,7 +101,9 @@ namespace Fu
                 typeof(FuStyle)
             };
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Initialize the theme manager and set default theme
         /// </summary>
@@ -164,7 +175,6 @@ namespace Fu
             }
         }
 
-        #region Public Utils
         /// <summary>
         /// get a them throw it's name
         /// </summary>
@@ -238,13 +248,11 @@ namespace Fu
         {
             return CurrentTheme.Colors[(int)FuColors.COUNT + color];
         }
-        #endregion
 
-        #region Themes managments
         /// <summary>
         /// Load all themes from 
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The result of the operation.</returns>
         public int LoadAllThemes()
         {
             Themes = new Dictionary<string, FuTheme>();
@@ -460,11 +468,5 @@ namespace Fu
             FuTheme.ReduceThemes();
         }
         #endregion
-    }
-
-    [Serializable]
-    public class FuThemeIndex
-    {
-        public string[] Themes;
     }
 }

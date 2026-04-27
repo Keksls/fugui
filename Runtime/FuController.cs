@@ -3,9 +3,12 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Controller type.
+    /// </summary>
     public class FuController : MonoBehaviour
     {
-        #region Variables
+        #region State
         // The settings for the Fugui Manager
         [SerializeField]
         private FuSettings _settings;
@@ -13,16 +16,20 @@ namespace Fu
         [SerializeField]
         private Camera _uiCamera;
         [SerializeField]
+        private bool _enableMainContainer = true;
+        [SerializeField]
         private bool _logErrors = true;
         [SerializeField]
         private FuguiUpdateMode _updateMode = FuguiUpdateMode.Update;
         #endregion
 
-        #region Unity Methods
+        /// <summary>
+        /// Runs the awake workflow.
+        /// </summary>
         void Awake()
         {
             // prepare FuGui before start using it
-            Fugui.Initialize(_settings, this, _uiCamera);
+            Fugui.Initialize(_settings, this, _uiCamera, _enableMainContainer);
 
             // log errors to Unity console
             if (_logErrors)
@@ -37,20 +44,30 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Runs the start workflow.
+        /// </summary>
         private void Start()
         {
             // if no layouts and settings is set so, display Fugui settings to avoid 'softLocked scene'
-            if (Fugui.Layouts.CurrentLayout == null && Fugui.Layouts.Layouts.Count == 0 && Fugui.Settings.DisplaySettingsIfNoLayout)
+            if (Fugui.MainContainerEnabled && Fugui.Layouts.CurrentLayout == null && Fugui.Layouts.Layouts.Count == 0 && Fugui.Settings.DisplaySettingsIfNoLayout)
             {
                 Fugui.CreateWindow(FuSystemWindowsNames.FuguiSettings);
             }
         }
 
+        /// <summary>
+        /// Runs the fu gui on uiexception workflow.
+        /// </summary>
+        /// <param name="error">The error value.</param>
         private void FuGui_OnUIException(Exception error)
         {
             Debug.LogException(error);
         }
 
+        /// <summary>
+        /// Updates the value.
+        /// </summary>
         private void Update()
         {
             if (_updateMode == FuguiUpdateMode.Update)
@@ -59,6 +76,9 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Runs the fu update workflow.
+        /// </summary>
         public void FuUpdate()
         {
             // Update Input Manager
@@ -71,6 +91,9 @@ namespace Fu
             Fugui.Render();
         }
 
+        /// <summary>
+        /// Runs the late update workflow.
+        /// </summary>
         private void LateUpdate()
         {
             if (_updateMode == FuguiUpdateMode.LateUpdate)
@@ -105,18 +128,22 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Handles the Disable event.
+        /// </summary>
         private void OnDisable()
         {
             Dispose();
         }
 
+        /// <summary>
+        /// Handles the Application Quit event.
+        /// </summary>
         private void OnApplicationQuit()
         {
             Dispose();
         }
-        #endregion
 
-        #region public Utils
         /// <summary>
         /// Disposes the external windows and stops the render thread.
         /// </summary>
@@ -124,9 +151,11 @@ namespace Fu
         {
             Fugui.Dispose();
         }
-        #endregion
     }
 
+    /// <summary>
+    /// Lists the available Fugui Update Mode values.
+    /// </summary>
     public enum FuguiUpdateMode
     {
         Update,

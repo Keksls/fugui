@@ -1,10 +1,14 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Draw a drag element.
         /// This is a Label/ID + value name (optional) + Input
@@ -132,5 +136,6 @@ namespace Fu.Framework
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
             return base.Drag(text, vString, ref value, min, max, style, format);
         }
+        #endregion
     }
 }

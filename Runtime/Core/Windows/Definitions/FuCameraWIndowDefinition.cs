@@ -10,6 +10,7 @@ namespace Fu
     /// </summary>
     public class FuCameraWindowDefinition : FuWindowDefinition
     {
+        #region State
         /// <summary>
         /// Gets the camera associated with the UI window.
         /// </summary>
@@ -30,7 +31,9 @@ namespace Fu
         /// Get or set the MSAA samples for the camera window render texture
         /// </summary>
         public MSAASamples MSAASamples { get; private set; } = MSAASamples.None;
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Initializes a new instance of the UICameraWindowDefinition class with the specified parameters.
         /// </summary>
@@ -57,7 +60,9 @@ namespace Fu
             // Assign the specified manipulating
             ManipuatingCameraFPS = manipulatingCameraFPS;
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Sets the camera associated with the UI window.
         /// </summary>
@@ -88,5 +93,6 @@ namespace Fu
             IdleCameraFPS = idleCameraFPS;
             ManipuatingCameraFPS = manipulatingCameraFPS;
         }
+        #endregion
     }
 }

@@ -1,4 +1,4 @@
-﻿#if (UNITY_ANDROID || UNITY_IOS)// && !UNITY_EDITOR && !FUMOBILE
+#if (UNITY_ANDROID || UNITY_IOS)// && !UNITY_EDITOR && !FUMOBILE
 #define FUMOBILE
 #endif
 using System.Collections.Generic;
@@ -7,9 +7,14 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public partial class Fugui
     {
+        #region State
         public static bool IsScrolling => _isScrolling;
+
         private const float ScrollStartThreshold = 8f;
         private const float ScrollDeadZone = 0.05f;
         private const float ScrollSpeedMultiplier = 1.0f;
@@ -39,9 +44,8 @@ namespace Fu
         private static Vector2 _currentChildSize;
         private static uint _currentChildId;
         private static Dictionary<uint, Rect> _childRects = new Dictionary<uint, Rect>();
+        #endregion
 
-
-        #region Imgui Child Helpers
         /// <summary>
         /// Begin a child with mobile touch scroll support.
         /// </summary>
@@ -59,6 +63,12 @@ namespace Fu
 #endif
         }
 
+        /// <summary>
+        /// Returns the begin child result.
+        /// </summary>
+        /// <param name="str_id">The str id value.</param>
+        /// <param name="size">The size value.</param>
+        /// <returns>The result of the operation.</returns>
         public static bool BeginChild(string str_id, Vector2 size)
         {
 #if FUMOBILE
@@ -110,7 +120,6 @@ namespace Fu
             ImGuiNative.igEndChild();
 #endif
         }
-        #endregion
 
         /// <summary>
         /// Call this once per frame before drawing UI.

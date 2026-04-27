@@ -1,19 +1,24 @@
-﻿using Fu;
+using Fu;
 using ImGuiNET;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region State
         private const float COLOR_KEY_SIZE = 10f;
         private static bool isDraggingColorKey = false;
         private static int _selectedColorKeyIndex = 0;
         private static FuGradient _currentGradient;
         private static FuGradient _updatedGradient;
         private static bool _gradientUpdated = false;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Draw a gradient picker
         /// </summary>
@@ -103,6 +108,16 @@ namespace Fu.Framework
             return _gradientUpdated;
         }
 
+        /// <summary>
+        /// Returns the custom gradient picker result.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="addKeyOnGradientClick">The add Key On Gradient Click value.</param>
+        /// <param name="allowAlpha">The allow Alpha value.</param>
+        /// <param name="relativeMin">The relative Min value.</param>
+        /// <param name="relativeMax">The relative Max value.</param>
+        /// <param name="defaultGradientValues">The default Gradient Values value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool _customGradientPicker(string text, bool addKeyOnGradientClick, bool allowAlpha, float relativeMin, float relativeMax, FuGradientColorKey[] defaultGradientValues)
         {
             text = "##" + text;
@@ -138,7 +153,6 @@ namespace Fu.Framework
                         edited = true;
                     }
                 }
-
             }
             layout.SameLine();
 
@@ -380,5 +394,6 @@ namespace Fu.Framework
 
             return edited;
         }
+        #endregion
     }
 }

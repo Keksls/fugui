@@ -1,7 +1,11 @@
-﻿namespace Fu.Framework
+namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Renders a progress bar with the given text. The progress bar will have the default size and style.
         /// </summary>
@@ -20,5 +24,6 @@
             drawElementLabel(text, FuTextStyle.Default);
             base.ProgressBar(text, value, isContinuous, progressbarSize, textPosition, displayText);
         }
+        #endregion
     }
 }

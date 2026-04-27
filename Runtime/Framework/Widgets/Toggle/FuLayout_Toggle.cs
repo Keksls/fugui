@@ -1,10 +1,14 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region Methods
         /// <summary>
         /// Draw a Toggle with the specified parameters
         /// </summary>
@@ -183,5 +187,6 @@ namespace Fu.Framework
             endElement(null);
             return valueChanged;
         }
+        #endregion
     }
 }

@@ -5,6 +5,7 @@ namespace Fu.Framework
     /// </summary>
     public interface IFuElementStyle
     {
+        #region Methods
         /// <summary>
         /// Pushes the style onto the stack, with the given enabled state.
         /// </summary>
@@ -15,5 +16,6 @@ namespace Fu.Framework
         /// Pops the style from the stack.
         /// </summary>
         public void Pop();
+        #endregion
     }
 }

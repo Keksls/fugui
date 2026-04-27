@@ -1,12 +1,16 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region Methods
         /// <summary>
         /// Draw a tabBar
         /// </summary>
@@ -50,5 +54,6 @@ namespace Fu.Framework
                 ImGui.EndTabBar();
             }
         }
+        #endregion
     }
 }

@@ -4,8 +4,12 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Collapsable Style data structure.
+    /// </summary>
     public struct FuCollapsableStyle : IFuElementStyle
     {
+        #region State
         private Color _color;
         private Color _colorHovered;
         private Color _colorActive;
@@ -13,16 +17,25 @@ namespace Fu.Framework
         private FuTextStyle _text;
         private FuStyle _layout;
 
-        #region Pressets
         // default collapsable style
         static FuCollapsableStyle _defaultContainerStyle;
+
         /// <summary>
         /// Default collapsable style, use 'Collapsable' theme colors + default text
         /// </summary>
         public static FuCollapsableStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultContainerStyle; } }
         #endregion
 
-        #region constructor
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Collapsable Style class.
+        /// </summary>
+        /// <param name="color">The color value.</param>
+        /// <param name="colorHovered">The color Hovered value.</param>
+        /// <param name="colorActive">The color Active value.</param>
+        /// <param name="colorDisabled">The color Disabled value.</param>
+        /// <param name="textStyle">The text Style value.</param>
+        /// <param name="layout">The layout value.</param>
         public FuCollapsableStyle(Color color, Color colorHovered, Color colorActive, Color colorDisabled, FuTextStyle textStyle, FuStyle layout)
         {
             _color = color;
@@ -34,6 +47,7 @@ namespace Fu.Framework
         }
         #endregion
 
+        #region Methods
         /// <summary>
         /// Pushes the style for the header element.
         /// </summary>
@@ -86,5 +100,6 @@ namespace Fu.Framework
                 _layout = FuStyle.Content
             };
         }
+        #endregion
     }
 }

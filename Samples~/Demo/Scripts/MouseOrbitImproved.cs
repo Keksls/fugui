@@ -1,8 +1,12 @@
 using UnityEngine;
 using Fu;
 
+/// <summary>
+/// Represents the Mouse Orbit Improved type.
+/// </summary>
 public class MouseOrbitImproved : MonoBehaviour
 {
+    #region State
     public FuCameraWindow Camera;
     public Transform target;
     public float distance = 5.0f;
@@ -18,8 +22,14 @@ public class MouseOrbitImproved : MonoBehaviour
     float rotationXAxis = 0.0f;
     float velocityX = 0.0f;
     float velocityY = 0.0f;
+    #endregion
 
+    #region Methods
     // Use this for initialization
+
+    /// <summary>
+    /// Runs the start workflow.
+    /// </summary>
     void Start()
     {
         Vector3 angles = transform.eulerAngles;
@@ -27,6 +37,9 @@ public class MouseOrbitImproved : MonoBehaviour
         rotationXAxis = angles.x;
     }
 
+    /// <summary>
+    /// Runs the late update workflow.
+    /// </summary>
     void LateUpdate()
     {
         if (target && Camera != null)
@@ -60,6 +73,13 @@ public class MouseOrbitImproved : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Returns the clamp angle result.
+    /// </summary>
+    /// <param name="angle">The angle value.</param>
+    /// <param name="min">The min value.</param>
+    /// <param name="max">The max value.</param>
+    /// <returns>The result of the operation.</returns>
     public static float ClampAngle(float angle, float min, float max)
     {
         if (angle < -360F)
@@ -68,4 +88,5 @@ public class MouseOrbitImproved : MonoBehaviour
             angle -= 360F;
         return Mathf.Clamp(angle, min, max);
     }
+    #endregion
 }

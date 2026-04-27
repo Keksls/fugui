@@ -1,17 +1,24 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Context Menu Builder type.
+    /// </summary>
     public class FuContextMenuBuilder
     {
+        #region State
         public int Count { get => _items.Count; }
         // The list of items in the current context menu
+
         private List<FuContextMenuItem> _items = null;
         // The current level of items in the context menu
         private List<FuContextMenuItem> _currentLevel = null;
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Create a new ContextMenuBuilder that will help you to create 
         /// </summary>
@@ -20,7 +27,9 @@ namespace Fu.Framework
             _items = new List<FuContextMenuItem>();
             _currentLevel = _items;
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Start building a context menu
         /// </summary>
@@ -156,5 +165,6 @@ namespace Fu.Framework
             _currentLevel = _items;
             return builded;
         }
+        #endregion
     }
 }

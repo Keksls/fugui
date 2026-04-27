@@ -11,12 +11,17 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Context type.
+    /// </summary>
     public abstract class FuContext
     {
+        #region State
         public int ID;
         public ImGuiIOPtr IO;
         public ImGuiPlatformIOPtr PlatformIO;
         public IntPtr ImGuiContext;
+
         /// <summary>
         /// Whenever the context render
         /// </summary>
@@ -31,18 +36,25 @@ namespace Fu
         public event Action OnPostRender;
         public event Func<bool> OnPrepareFrame;
         public event Action OnFramePrepared;
+
         public bool AutoUpdateMouse = true;
         public bool AutoUpdateKeyboard = true;
         public TextureManager TextureManager;
+
         public bool Started { get; protected set; }
         public float Scale { get; protected set; }
         public float FontScale { get; protected set; }
+
         protected DrawData _drawData = new DrawData();
+
         public DrawData DrawData => _drawData;
         public bool RenderPrepared { get; protected set; } = false;
         public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
+
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
+
         internal FontSet DefaultFont { get; set; }
+
         private Vector2Int _lastContainerScaleSize = new Vector2Int(-1, -1);
         // var to count how many push are at frame start, so we can pop missing push
         private static int _nbColorPushOnFrameStart = 0;
@@ -56,7 +68,9 @@ namespace Fu
         internal string _draggingPayloadID;
         // Is it the first frame of the current drag drop operation
         internal bool _firstFrameDragging;
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Create new imgui native contexts
         /// </summary>
@@ -69,6 +83,7 @@ namespace Fu
             ID = index;
             TextureManager = new TextureManager();
         }
+        #endregion
 
         /// <summary>
         /// Initialize this context
@@ -249,6 +264,13 @@ namespace Fu
             return applyScaleIfNeeded(targetScale, targetFontScale, force);
         }
 
+        /// <summary>
+        /// Returns the apply scale if needed result.
+        /// </summary>
+        /// <param name="targetScale">The target Scale value.</param>
+        /// <param name="targetFontScale">The target Font Scale value.</param>
+        /// <param name="force">The force value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool applyScaleIfNeeded(float targetScale, float targetFontScale, bool force)
         {
             targetScale = Mathf.Max(0.0001f, targetScale);
@@ -468,7 +490,6 @@ namespace Fu
                                                 subFont.EndGlyph == 0 &&
                                                 subFont.CustomGlyphRanges.Length == 0;
 
-                    #region Prepare Glyph Ranges
                     if (!useDefaultGlyphRange)
                     {
                         subFont.GlyphRangePtr = IntPtr.Zero;
@@ -495,15 +516,12 @@ namespace Fu
                         ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(builder, vecPtr);
                         subFont.GlyphRangePtr = vecPtr->Data;
                     }
-                    #endregion
 
-                    #region Prepare Font Config
                     ImFontConfig* conf = ImGuiNative.ImFontConfig_ImFontConfig();
                     subFont.FontConfigPtr = new ImFontConfigPtr(conf);
                     subFont.FontConfigPtr.MergeMode = subFontIndex > 0;
                     subFont.FontConfigPtr.GlyphOffset = subFont.GlyphOffset;
                     subFont.FontConfigPtr.FontDataOwnedByAtlas = false;
-                    #endregion
 
                     string fontFilePath = Path.Combine(fontPath, subFont.FileName);
                     ImFontPtr tmpFontPtr = default;
@@ -612,9 +630,11 @@ namespace Fu
             }
         }
 
+        #region State
         private readonly List<byte[]> _loadedFontBuffers = new List<byte[]>();
+        #endregion
 
-        #region Drag Drop
+        #region Methods
         /// <summary>
         /// Must be placed just after an UI element so this one can be dragged
         /// </summary>
@@ -697,7 +717,6 @@ namespace Fu
         {
             return _isDraggingPayload && _draggingPayloadID == payloadID;
         }
-        #endregion
 
         /// <summary>
         /// Set the scale of this context
@@ -714,27 +733,20 @@ namespace Fu
         {
             Scale = scale;
         }
+        #endregion
     }
-
-    internal class FontSet
-    {
-        public int Size;
-        public ImFontPtr Regular;
-        public ImFontPtr Bold;
-        public ImFontPtr Italic;
-
-        internal FontSet(int size)
-        {
-            Size = size;
-        }
-    }
-
+    /// <summary>
+    /// Lists the available Fugui Context Type values.
+    /// </summary>
     public enum FuguiContextType
     {
         UnityContext = 0,
         ExternalContext = 1
     }
 
+    /// <summary>
+    /// Lists the available Im Gui Free Type Builder Flags values.
+    /// </summary>
     enum ImGuiFreeTypeBuilderFlags
     {
         NoHinting = 1 << 0,   // Disable hinting. This generally generates 'blurrier' bitmap glyphs when the glyph are rendered in any of the anti-aliased modes.

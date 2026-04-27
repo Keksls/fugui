@@ -13,7 +13,7 @@ namespace Fu
     /// </summary>
     public class FuMainWindowContainer : IFuWindowContainer
     {
-        #region Variables
+        #region State
         /// <summary>
         /// The local mouse position relative to the container.
         /// </summary>
@@ -34,10 +34,12 @@ namespace Fu
         /// The size of the container.
         /// </summary>
         public Vector2Int Size => _size;
+
         /// <summary>
         /// A dictionary of UI windows contained in the container.
         /// </summary>
         public Dictionary<string, FuWindow> Windows;
+
         /// <summary>
         /// The ID of the dockspace.
         /// </summary>
@@ -50,6 +52,7 @@ namespace Fu
         /// Get Keyboard data for this container
         /// </summary>
         public FuKeyboardState Keyboard => _fuKeyboardState;
+
         /// <summary>
         /// Whenever all windows are rendered, but before Modals, ContextMenu, Notify, etc
         /// </summary>
@@ -75,6 +78,7 @@ namespace Fu
         private FuUnityContext _fuguiContext;
         #endregion
 
+        #region Constructors
         /// <summary>
         /// Constructs a new instance of the MainUIContainer class.
         /// </summary>
@@ -102,12 +106,20 @@ namespace Fu
             // Subscribe to the PrepareFrame event of the given FuguiContext to update this container data before rendering
             _fuguiContext.OnFramePrepared += context_OnFramePrepared;
         }
+        #endregion
 
+        /// <summary>
+        /// Runs the fugui context on render workflow.
+        /// </summary>
         private void _fuguiContext_OnRender()
         {
             RenderFuWindows();
         }
 
+        /// <summary>
+        /// Returns the context on prepare frame result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public bool context_OnPrepareFrame()
         {
             _size = new Vector2Int(Screen.width, Screen.height);
@@ -115,6 +127,9 @@ namespace Fu
             return true;
         }
 
+        /// <summary>
+        /// Runs the context on frame prepared workflow.
+        /// </summary>
         public void context_OnFramePrepared()
         {
             // set size and pos for this frame
@@ -168,7 +183,6 @@ namespace Fu
             }
         }
 
-        #region Footer
         /// <summary>
         /// Set the footer UI and Height
         /// </summary>
@@ -179,9 +193,7 @@ namespace Fu
             _footerHeight = height;
             _footerUI = callbackUI;
         }
-        #endregion
 
-        #region Container
         /// <summary>
         /// Configure how this container scales its context.
         /// </summary>
@@ -328,7 +340,6 @@ namespace Fu
             return true;
         }
 
-        #region UIWindow Events
         /// <summary>
         /// Whenever a window is closed
         /// </summary>
@@ -337,7 +348,6 @@ namespace Fu
         {
             TryRemoveWindow(UIWindow.ID);
         }
-        #endregion
 
         /// <summary>
         /// Try to remove a window from this container
@@ -362,9 +372,7 @@ namespace Fu
         {
             return false;
         }
-        #endregion
 
-        #region Docking
         /// <summary>
         /// Draw the Main Container DockSpace
         /// </summary>
@@ -423,7 +431,6 @@ namespace Fu
                 Fugui.PopStyle(4);
             }
         }
-        #endregion
     }
 
 #if UNITY_EDITOR

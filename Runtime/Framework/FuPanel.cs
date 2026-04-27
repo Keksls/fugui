@@ -1,12 +1,16 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Panel type.
+    /// </summary>
     public class FuPanel : IDisposable
     {
+        #region State
         /// <summary>
         /// A static flag indicating whether the current thread is inside a panel or not.
         /// </summary>
@@ -31,7 +35,9 @@ namespace Fu.Framework
         private static int _nbFontPushOnFrameStart = 0;
         internal static FuPanelClipper Clipper = null;
         private static Dictionary<string, FuPanelClipper> _clippingDict = new Dictionary<string, FuPanelClipper>();
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Creates a new panel with the provided ID, height, width, scrollable flag,
         /// and border flag.
@@ -64,7 +70,9 @@ namespace Fu.Framework
             _currentStyle = style;
             beginPanel(height, width, !flags.HasFlag(FuPanelFlags.NoScroll), flags.HasFlag(FuPanelFlags.DrawBorders));
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Initializes a new panel with the provided ID, height, width, scrollable flag, and border flag.
         /// </summary>
@@ -197,5 +205,6 @@ namespace Fu.Framework
             else
                 ImGuiNative.igEndChild();
         }
+        #endregion
     }
 }

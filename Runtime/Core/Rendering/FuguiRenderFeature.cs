@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,13 +8,21 @@ using UnityEngine.Rendering.Universal;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui Render Feature type.
+    /// </summary>
     public class FuguiRenderFeature : ScriptableRendererFeature
     {
+        #region State
         internal const string _sampleName = "Fugui.ExecuteDrawCommands";
+        #endregion
 
+        /// <summary>
+        /// Represents the Fugui Render Graph Pass type.
+        /// </summary>
         private class FuguiRenderGraphPass : ScriptableRenderPass
         {
-            #region Variables
+            #region State
             private Dictionary<int, Mesh> _meshs;
             private Dictionary<int, Material> _materials;
             private Dictionary<int, RTHandle> _targetHandles;
@@ -37,6 +45,7 @@ namespace Fu
             };
             #endregion
 
+            #region Constructors
             /// <summary>
             /// Creates a new Fugui Render Graph Pass.
             /// </summary>
@@ -58,8 +67,8 @@ namespace Fu
                 _meshs = new Dictionary<int, Mesh>();
                 _materials = new Dictionary<int, Material>();
             }
+            #endregion
 
-            #region Rendergraph Pass
             /// <summary>
             /// Records the render graph pass for rendering Fugui.
             /// </summary>
@@ -72,7 +81,7 @@ namespace Fu
                 TextureHandle depth = urpRes.activeDepthTexture;
 
                 // Default context rendered on current camera color target
-                if (Fugui.DefaultContext is FuUnityContext defaultContext && defaultContext.Started)
+                if (Fugui.MainContainerEnabled && Fugui.DefaultContext is FuUnityContext defaultContext && defaultContext.Started)
                 {
                     using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_MainPass", out var passData);
                     builder.AllowGlobalStateModification(true);
@@ -104,7 +113,6 @@ namespace Fu
                     {
                         continue;
                     }
-
 
 #if FU_EXTERNALIZATION
                     // SDL / external windows are rendered outside Unity
@@ -173,7 +181,7 @@ namespace Fu
                     }
                 }
             }
-            
+
             /// <summary>
             /// Renders the draw lists using the provided command buffer and draw data.
             /// </summary>
@@ -214,6 +222,11 @@ namespace Fu
                 commandBuffer.EndSample(_sampleName);
             }
 
+            /// <summary>
+            /// Runs the debug dump draw data workflow.
+            /// </summary>
+            /// <param name="label">The label value.</param>
+            /// <param name="drawData">The draw Data value.</param>
             private void DebugDumpDrawData(string label, DrawData drawData)
             {
                 try
@@ -276,7 +289,7 @@ namespace Fu
                 commandBuffer.SetViewProjectionMatrices(
                     Matrix4x4.Translate(new Vector3(0.5f / fbSize.x, 0.5f / fbSize.y, 0f)), // Small adjustment to improve text.
                     Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
-                
+
                 int subOf = 0;
                 for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
                 {
@@ -323,10 +336,9 @@ namespace Fu
                 }
                 commandBuffer.DisableScissorRect();
             }
-#endregion
 
 #if !UNITY_6000_4_OR_NEWER
-            #region Old Render Pass
+
             /// <summary>
             /// Executes the rendering logic for Fugui.
             /// This Render Pass should be used only for compatibility purposes if renderGraph is disabled.
@@ -339,8 +351,11 @@ namespace Fu
                 var commandBuffer = CommandBufferPool.Get("FuguiRenderPass");
 
                 // Render the default context
-                _textureManager = Fugui.DefaultContext.TextureManager;
-                RenderDrawLists(Fugui.DefaultContext.ID, commandBuffer, Fugui.DefaultContext.DrawData);
+                if (Fugui.MainContainerEnabled && Fugui.DefaultContext != null)
+                {
+                    _textureManager = Fugui.DefaultContext.TextureManager;
+                    RenderDrawLists(Fugui.DefaultContext.ID, commandBuffer, Fugui.DefaultContext.DrawData);
+                }
 
                 // Render other contexts if available.
                 foreach (var contextPair in Fugui.Contexts)
@@ -414,7 +429,7 @@ namespace Fu
                 commandBuffer.SetViewProjectionMatrices(
                     Matrix4x4.Translate(new Vector3(0.5f / fbSize.x, 0.5f / fbSize.y, 0f)), // Small adjustment to improve text.
                     Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
-               
+
                 int subOf = 0;
                 for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
                 {
@@ -461,7 +476,6 @@ namespace Fu
                 }
                 commandBuffer.DisableScissorRect();
             }
-            #endregion
 #endif
             /// <summary>
             /// Updates the mesh with the provided draw data.
@@ -555,19 +569,24 @@ namespace Fu
                 return handle;
             }
 
+            #region Nested Types
             /// <summary>
             /// Data structure to hold the render pass data for the Fugui Render Graph Pass.
             /// </summary>
             private class PassData
             {
             }
+            #endregion
         }
 
+        #region State
         public RenderPassEvent PassEvent = RenderPassEvent.AfterRendering;
         public Shader _shader;
         public int _cameraLayer = 5; // 5 is default unity UI layer
         private Dictionary<Camera, FuguiRenderGraphPass> _passPerCamera = new();
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Creates the Fugui Render Graph Pass with the specified shader.
         /// </summary>
@@ -593,5 +612,6 @@ namespace Fu
 
             renderer.EnqueuePass(pass);
         }
+        #endregion
     }
 }

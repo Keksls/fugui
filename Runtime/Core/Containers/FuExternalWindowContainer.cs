@@ -1,4 +1,4 @@
-﻿#if FU_EXTERNALIZATION
+#if FU_EXTERNALIZATION
 using ImGuiNET;
 using System;
 using UnityEngine;
@@ -58,7 +58,6 @@ namespace Fu
             _context.Window.Create(_window.IsDragging);
         }
 
-        #region Update & Render
         /// <summary>
         /// Update the input states for mouse, keyboard, and window.
         /// </summary>
@@ -145,9 +144,7 @@ namespace Fu
             }
             _context.Window.Render();
         }
-        #endregion
 
-        #region Container Management
         public void OnEachWindow(Action<FuWindow> callback)
         {
             callback?.Invoke(_window);
@@ -197,7 +194,6 @@ namespace Fu
         {
             _context.SetContainerScaleConfig(config, _size);
         }
-        #endregion
 
         /// <summary>
         /// Close the external window container and its associated window.

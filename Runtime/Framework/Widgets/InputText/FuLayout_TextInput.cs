@@ -1,10 +1,14 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region Methods
         /// <summary>
         /// Displays a single-line text input field
         /// </summary>
@@ -112,6 +116,17 @@ namespace Fu.Framework
             return edited;
         }
 
+        /// <summary>
+        /// Returns the internal text input result.
+        /// </summary>
+        /// <param name="id">The id value.</param>
+        /// <param name="hint">The hint value.</param>
+        /// <param name="text">The text value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="height">The height value.</param>
+        /// <param name="width">The width value.</param>
+        /// <param name="flags">The flags value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool _internalTextInput(string id, string hint, ref string text, uint size, float height, float width, FuInputTextFlags flags)
         {
             bool edited;
@@ -147,5 +162,6 @@ namespace Fu.Framework
 
             return edited;
         }
+        #endregion
     }
 }

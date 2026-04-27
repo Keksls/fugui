@@ -1,4 +1,4 @@
-﻿using Fu;
+using Fu;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -6,11 +6,17 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region State
         private static Dictionary<string, bool> _collapsablesOpenStates = new Dictionary<string, bool>();
         private static Dictionary<string, string> _collapsablesGroupOpenStates = new Dictionary<string, string>();
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Open a collapsable (by its id)
         /// </summary>
@@ -49,7 +55,6 @@ namespace Fu.Framework
             }
             _collapsablesOpenStates[id] = false;
         }
-
 
         /// <summary>
         /// Check if a collapsable is open or not
@@ -343,5 +348,6 @@ namespace Fu.Framework
             // return whatever the button is clicked
             return _lastItemUpdate;
         }
+        #endregion
     }
 }

@@ -9,6 +9,7 @@ namespace Fu
     [Serializable]
     public struct FuContainerScaleConfig
     {
+        #region State
         public bool Enabled;
         public Vector2Int ReferenceResolution;
         [Range(0f, 1f)]
@@ -18,7 +19,15 @@ namespace Fu
         public float BaseScale;
         public float BaseFontScale;
         public bool ScaleFont;
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Returns the disabled result.
+        /// </summary>
+        /// <param name="baseScale">The base Scale value.</param>
+        /// <param name="baseFontScale">The base Font Scale value.</param>
+        /// <returns>The result of the operation.</returns>
         public static FuContainerScaleConfig Disabled(float baseScale, float baseFontScale)
         {
             return new FuContainerScaleConfig
@@ -34,14 +43,18 @@ namespace Fu
             };
         }
 
-        public static FuContainerScaleConfig Reference(
-            Vector2Int referenceResolution,
-            float matchWidthOrHeight,
-            float minScale,
-            float maxScale,
-            float baseScale,
-            float baseFontScale,
-            bool scaleFont = true)
+        /// <summary>
+        /// Returns the reference result.
+        /// </summary>
+        /// <param name="referenceResolution">The reference Resolution value.</param>
+        /// <param name="matchWidthOrHeight">The match Width Or Height value.</param>
+        /// <param name="minScale">The min Scale value.</param>
+        /// <param name="maxScale">The max Scale value.</param>
+        /// <param name="baseScale">The base Scale value.</param>
+        /// <param name="baseFontScale">The base Font Scale value.</param>
+        /// <param name="scaleFont">The scale Font value.</param>
+        /// <returns>The result of the operation.</returns>
+        public static FuContainerScaleConfig Reference(Vector2Int referenceResolution, float matchWidthOrHeight, float minScale, float maxScale, float baseScale, float baseFontScale, bool scaleFont = true)
         {
             FuContainerScaleConfig config = Disabled(baseScale, baseFontScale);
             config.Enabled = true;
@@ -54,6 +67,9 @@ namespace Fu
             return config;
         }
 
+        /// <summary>
+        /// Runs the sanitize workflow.
+        /// </summary>
         public void Sanitize()
         {
             ReferenceResolution = new Vector2Int(
@@ -67,6 +83,11 @@ namespace Fu
             BaseFontScale = Mathf.Max(0.0001f, BaseFontScale);
         }
 
+        /// <summary>
+        /// Returns the compute scale result.
+        /// </summary>
+        /// <param name="containerSize">The container Size value.</param>
+        /// <returns>The result of the operation.</returns>
         public float ComputeScale(Vector2Int containerSize)
         {
             Sanitize();
@@ -78,6 +99,7 @@ namespace Fu
             float scale = Mathf.Pow(2f, Mathf.Lerp(logWidthScale, logHeightScale, MatchWidthOrHeight));
             return Mathf.Max(0.0001f, scale);
         }
+        #endregion
     }
 
     /// <summary>
@@ -88,6 +110,7 @@ namespace Fu
     /// </summary>
     public interface IFuWindowContainer
     {
+        #region State
         public Vector2Int LocalMousePos { get; }
         public FuContext Context { get; }
         public Vector2Int Position { get; }
@@ -95,7 +118,9 @@ namespace Fu
         public FuKeyboardState Keyboard { get; }
         public FuMouseState Mouse { get; }
         public FuContainerScaleConfig ContainerScaleConfig { get; }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Configure how this container scales its context.
         /// </summary>
@@ -148,5 +173,6 @@ namespace Fu
         /// </summary>
         /// <returns>true or false according to the container</returns>
         public bool ForcePos();
+        #endregion
     }
 }

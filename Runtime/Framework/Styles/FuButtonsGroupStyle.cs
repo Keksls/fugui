@@ -2,13 +2,17 @@ using System.Runtime.CompilerServices;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Buttons Group Style data structure.
+    /// </summary>
     public struct FuButtonsGroupStyle : IFuElementStyle
     {
+        #region State
         public FuButtonStyle ButtonStyle { get; private set; }
         public FuButtonStyle SelectedButtonStyle { get; private set; }
 
-        #region Pressets
         static FuButtonsGroupStyle defaultButtonsGroupStyle;
+
         /// <summary>
         /// Default style of buttonGroups widgets
         /// unselected buttons are 'Default' button style
@@ -17,7 +21,12 @@ namespace Fu.Framework
         public static FuButtonsGroupStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return defaultButtonsGroupStyle; } }
         #endregion
 
-        #region constructor
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Buttons Group Style class.
+        /// </summary>
+        /// <param name="buttonStyle">The button Style value.</param>
+        /// <param name="selectedButtonStyle">The selected Button Style value.</param>
         public FuButtonsGroupStyle(FuButtonStyle buttonStyle, FuButtonStyle selectedButtonStyle)
         {
             ButtonStyle = buttonStyle;
@@ -25,6 +34,7 @@ namespace Fu.Framework
         }
         #endregion
 
+        #region Methods
         /// <summary>
         /// Pushes the UIButtonStyle onto the ImGui style stack. If enabled is true, the enabled style will be used. If enabled is false, the disabled style will be used.
         /// </summary>
@@ -53,5 +63,6 @@ namespace Fu.Framework
                 SelectedButtonStyle = FuButtonStyle.Selected
             };
         }
+        #endregion
     }
 }

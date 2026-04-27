@@ -1,5 +1,8 @@
-﻿namespace Fu
+namespace Fu
 {
+    /// <summary>
+    /// Lists the available Fu Colors values.
+    /// </summary>
     public enum FuColors
     {
         // Imgui colors

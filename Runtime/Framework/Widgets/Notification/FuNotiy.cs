@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Fu;
 using Fu.Framework;
@@ -7,8 +7,12 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
+        #region State
         private static bool _notifyPanelOpen = true;
         private static readonly List<FuguiNotification> _notifications = new List<FuguiNotification>();
         private static Vector2 _notificationPadding = new Vector2(8f, 8f);
@@ -17,9 +21,9 @@ namespace Fu
 
         private const int MaxVisibleNotifications = 4;
         private const float CardSpacing = 8f;
+        #endregion
 
-        #region Public API
-
+        #region Methods
         /// <summary>Notify the user with a notification PopUp.</summary>
         public static void Notify(string title, string message = null, StateType type = StateType.Info, float duration = -1f, Action onClick = null, bool? startCollapsed = null)
         {
@@ -105,10 +109,6 @@ namespace Fu
             if (removeIndex > -1) _notifications.RemoveAt(removeIndex);
         }
 
-        #endregion
-
-        #region Internals
-
         /// <summary>Get the position of the notifyPanel according to its Anchor.</summary>
         private static Vector2 getContainerPosition(IFuWindowContainer container)
         {
@@ -127,7 +127,6 @@ namespace Fu
             }
             return localPosition;
         }
-
         #endregion
     }
 }

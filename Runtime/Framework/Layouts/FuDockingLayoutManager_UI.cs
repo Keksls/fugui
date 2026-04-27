@@ -1,4 +1,4 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using ImGuiNET;
 using System.Collections.Generic;
 using System.IO;
@@ -7,8 +7,12 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
+        #region State
         private static FuDockingLayoutDefinition _hoveredNode = null;
         private static FuDockingLayoutDefinition _lastFrameHoveredNode = null;
         private static Rect _currentWindowRect = new Rect();
@@ -16,7 +20,9 @@ namespace Fu
         private static FuDockingLayoutDefinition _draggingNode = null;
         private static Vector2 _draggingNodeMousePosition = Vector2.zero;
         private static bool _windowNamesMustSaveLayouts = false;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Draw the UI of the Dock Space Layout Creator
         /// </summary>
@@ -540,5 +546,6 @@ namespace Fu
                 }
             }
         }
+        #endregion
     }
 }

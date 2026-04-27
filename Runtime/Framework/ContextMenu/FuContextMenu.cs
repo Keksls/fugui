@@ -1,4 +1,4 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -6,21 +6,27 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
+        #region State
         /// <summary>
         /// Whatever the context menu is currently disabled (will disable each menu items)
         /// </summary>
         public static bool IsContextMenuDisabled { get; private set; }
         public static bool IsContextMenuOpen { get; private set; } = false;
+
         private const string CONTEXT_MENU_NAME = "ContextMenuPopup";
         private static List<FuContextMenuItem>[] _contextMenuItemsStack = new List<FuContextMenuItem>[10];
         private static int _currentContextMenuStackIndex = 0;
         private static List<FuContextMenuItem> _currentContextMenuItems = null;
         private static int _openThisFrameLevel = -1;
         private static int _currentOpenContextID = -1;
+        #endregion
 
-        #region Push / Pop
+        #region Methods
         /// <summary>
         /// Push some item to the context menu items stack
         /// If the context menu will be open betwin this call and the next 'Pop' call, these items will be added to the context menu
@@ -113,9 +119,7 @@ namespace Fu
                 }
             }
         }
-        #endregion
 
-        #region Try Open
         /// <summary>
         /// Open the context menu if the last item drawed has just been right clicked
         /// </summary>
@@ -159,9 +163,7 @@ namespace Fu
             }
             return false;
         }
-        #endregion
 
-        #region Open / Close
         /// <summary>
         /// Open the context menu now.
         /// If the context menu if not already open to a higher level, open it. owether, do nothing
@@ -198,9 +200,7 @@ namespace Fu
                 ImGui.CloseCurrentPopup();
             }
         }
-        #endregion
 
-        #region Rendering
         /// <summary>
         /// Render the Desktop context menu.
         /// Call this into a Container render loop.
@@ -380,9 +380,7 @@ namespace Fu
                 }
             }
         }
-        #endregion
 
-        #region Items
         /// <summary>
         /// Get the current displaying items
         /// </summary>
@@ -430,9 +428,7 @@ namespace Fu
             // Return the merged list
             return mergedItems;
         }
-        #endregion
 
-        #region Public utils
         /// <summary>
         /// Force disabling all items in cotext menu
         /// </summary>

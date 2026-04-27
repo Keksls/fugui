@@ -4,40 +4,57 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Combobox Style data structure.
+    /// </summary>
     public struct FuComboboxStyle : IFuElementStyle
     {
+        #region State
         public FuButtonStyle ButtonStyle { get; private set; }
         // enabled
+
         private Color _frame;
         private Color _frameHovered;
         private Color _frameActive;
         // disabled
         private Color _frameDisabled;
 
-        #region Pressets
         // Default combobox style
         static FuComboboxStyle _defaultStyle;
+
         /// <summary>
         /// Default combox colors, use 'Button' theme colors
         /// </summary>
         public static FuComboboxStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultStyle; } }
 
         // Highlight combobox style
+
         static FuComboboxStyle _highlightStyle;
+
         /// <summary>
         /// Highlight combox colors, use 'Highlight' theme colors
         /// </summary>
         public static FuComboboxStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightStyle; } }
 
         // Selected combobox style
+
         static FuComboboxStyle _selectedStyle;
+
         /// <summary>
         /// Selected combox colors, use 'Selected' theme colors
         /// </summary>
         public static FuComboboxStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedStyle; } }
         #endregion
 
-        #region constructor
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Combobox Style class.
+        /// </summary>
+        /// <param name="color">The color value.</param>
+        /// <param name="colorHovered">The color Hovered value.</param>
+        /// <param name="colorActive">The color Active value.</param>
+        /// <param name="colorDisabled">The color Disabled value.</param>
+        /// <param name="buttonStyle">The button Style value.</param>
         public FuComboboxStyle(Color color, Color colorHovered, Color colorActive, Color colorDisabled, FuButtonStyle buttonStyle)
         {
             _frame = color;
@@ -48,6 +65,7 @@ namespace Fu.Framework
         }
         #endregion
 
+        #region Methods
         /// <summary>
         /// Pushes the style for the combobox element.
         /// </summary>
@@ -112,5 +130,6 @@ namespace Fu.Framework
                 _frameDisabled = Fugui.Themes.GetColor(FuColors.Selected) * 0.5f
             };
         }
+        #endregion
     }
 }

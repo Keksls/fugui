@@ -1,13 +1,16 @@
-﻿using ImGuiNET;
-using System;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu
 {
 	// TODO: Implement animated cursor.
+	/// <summary>
+	/// Represents the Cursor Shapes Asset type.
+	/// </summary>
 	[CreateAssetMenu(menuName = "Dear ImGui/Cursor Shapes")]
 	public sealed class CursorShapesAsset : ScriptableObject
 	{
+		#region State
 		[Tooltip("Default.")]
 		public CursorShape Arrow;
 
@@ -54,12 +57,6 @@ namespace Fu
 				}
 			}
 		}
-	}
-
-	[Serializable]
-	public struct CursorShape
-	{
-		public Texture2D Texture;
-		public Vector2 Hotspot;
+		#endregion
 	}
 }

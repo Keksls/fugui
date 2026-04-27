@@ -1,12 +1,16 @@
-﻿using Fu;
+using Fu;
 using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region Methods
         /// <summary>
         /// Renders a Idle progress bar with the given text. The progress bar will have the default size and style.
         /// </summary>
@@ -150,5 +154,6 @@ namespace Fu.Framework
             // for draw current window to ensure animation fluidity
             FuWindow.CurrentDrawingWindow?.ForceDraw();
         }
+        #endregion
     }
 }

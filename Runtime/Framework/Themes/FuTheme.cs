@@ -1,12 +1,16 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Theme type.
+    /// </summary>
     public class FuTheme
     {
+        #region State
         [FuDisabled]
         public string ThemeName = "Fugui Theme";
         [FuDisabled]
@@ -88,7 +92,9 @@ namespace Fu
 
         public static Enum ThemeExtension { get; private set; } = null;
         public static int ThemeExtensionCount { get; private set; } = 0;
+        #endregion
 
+        #region Constructors
         /// <summary>
         /// Instantiate a new FuguiTheme instance. Default values are Dark theme
         /// </summary>
@@ -99,7 +105,9 @@ namespace Fu
             // set default colors
             SetAsDefaultDarkTheme();
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// try to register this theme to ThemManager
         /// </summary>
@@ -530,9 +538,14 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Returns the to string result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public override string ToString()
         {
             return ThemeName;
         }
+        #endregion
     }
 }

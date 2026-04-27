@@ -1,4 +1,4 @@
-﻿#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
 #define FUMOBILE
 #endif
 
@@ -13,6 +13,7 @@ namespace Fu
     /// </summary>
     internal sealed class InputManagerPlatform : PlatformBase
     {
+        #region State
         private readonly Event _textInputEvent = new Event();
         private static int _lastTextInputFrame = -1;
         private static readonly List<uint> _frameTextInput = new List<uint>();
@@ -26,9 +27,15 @@ namespace Fu
         private static float _lastPressTime = 0f;
         private static bool _rightClicked = false;
         private static int _nbFramesSinceMouseLeftUp = 0;
+        #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Input Manager Platform class.
+        /// </summary>
         public InputManagerPlatform() : base()
         { }
+        #endregion
 
         /// <summary>
         /// Initialize the platform bindings for ImGui.

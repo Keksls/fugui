@@ -4,8 +4,12 @@ using UnityEngine;
 
 namespace Fu.Framework.Demo
 {
+    /// <summary>
+    /// Represents the Nodal Editor Demo type.
+    /// </summary>
     public class NodalEditorDemo : FuWindowBehaviour
     {
+        #region State
         [SerializeField] Color _floatColor;
         [SerializeField] Color _intColor;
         [SerializeField] Color _vector2Color;
@@ -18,7 +22,12 @@ namespace Fu.Framework.Demo
         [SerializeField] float _maxZoom = 2f;
         private FuNodalGraph _nodalgraph;
         private FuNodalEditor _nodalEditor;
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Runs the awake workflow.
+        /// </summary>
         private void Awake()
         {
             _nodalgraph = new FuNodalGraph { Name = "Demo Graph" };
@@ -66,6 +75,10 @@ namespace Fu.Framework.Demo
             });
         }
 
+        /// <summary>
+        /// Handles the Window Definition Created event.
+        /// </summary>
+        /// <param name="windowDefinition">The window Definition value.</param>
         public override void OnWindowDefinitionCreated(FuWindowDefinition windowDefinition)
         {
             base.OnWindowDefinitionCreated(windowDefinition);
@@ -77,10 +90,16 @@ namespace Fu.Framework.Demo
             overlay.AnchorWindowDefinition(windowDefinition, FuOverlayAnchorLocation.BottomLeft);
         }
 
+        /// <summary>
+        /// Handles the UI event.
+        /// </summary>
+        /// <param name="window">The window value.</param>
+        /// <param name="layout">The layout value.</param>
         public override void OnUI(FuWindow window, FuLayout layout)
         {
             base.OnUI(window, layout);
             _nodalEditor.Draw(window);
         }
+        #endregion
     }
 }

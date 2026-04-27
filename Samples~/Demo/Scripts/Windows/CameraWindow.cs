@@ -2,10 +2,16 @@ using Fu;
 using Fu.Framework;
 using UnityEngine;
 
+/// <summary>
+/// Represents the Camera Window type.
+/// </summary>
 public class CameraWindow : FuCameraWindowBehaviour
 {
+    #region State
     public float HitForce = 50f;
+    #endregion
 
+    #region Methods
     /// <summary>
     /// Whenever the window is created, set the camera to the MouseOrbitImproved component
     /// </summary>
@@ -68,7 +74,6 @@ public class CameraWindow : FuCameraWindowBehaviour
         Fugui.PopFont();
     }
 
-    #region overlays
     /// <summary>
     /// Draw camera FPS on an overlay
     /// </summary>
@@ -110,8 +115,10 @@ public class CameraWindow : FuCameraWindowBehaviour
             cam.SuperSampling = 2f;
         }
     }
-    #endregion
 
+    /// <summary>
+    /// Updates the value.
+    /// </summary>
     private void Update()
     {
         if (CameraWindow == null || !CameraWindow.IsInitialized)
@@ -133,4 +140,5 @@ public class CameraWindow : FuCameraWindowBehaviour
             }
         }
     }
+    #endregion
 }

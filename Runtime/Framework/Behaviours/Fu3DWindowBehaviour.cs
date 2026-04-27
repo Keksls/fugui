@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 using System.Collections.Generic;
@@ -7,9 +7,13 @@ using System.Linq;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu3 DWindow Behaviour type.
+    /// </summary>
     [ExecuteAlways]
     public class Fu3DWindowBehaviour : MonoBehaviour
     {
+        #region State
         [Tooltip("Depth of the generated 3D panel extrusion.")]
         public float Depth = 0.01f;
 
@@ -84,6 +88,7 @@ namespace Fu.Framework
         {
             get { return _windowDefinition; }
         }
+        #endregion
 
         /// <summary>
         /// Register the window definition and create the window instance if needed.
@@ -101,6 +106,10 @@ namespace Fu.Framework
             }
         }
 
+        /// <summary>
+        /// Returns the ensure window definition registered result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public FuWindowDefinition EnsureWindowDefinitionRegistered()
         {
             if (_windowDefinition != null)
@@ -132,6 +141,10 @@ namespace Fu.Framework
             return _windowDefinition;
         }
 
+        /// <summary>
+        /// Creates the 3 dwindow.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public Fu3DWindowContainer Create3DWindow()
         {
             if (_container != null && !_container.IsClosed)
@@ -160,6 +173,11 @@ namespace Fu.Framework
             return _container;
         }
 
+        /// <summary>
+        /// Returns the attach window result.
+        /// </summary>
+        /// <param name="window">The window value.</param>
+        /// <returns>The result of the operation.</returns>
         public Fu3DWindowContainer AttachWindow(FuWindow window)
         {
             if (window == null)
@@ -171,6 +189,9 @@ namespace Fu.Framework
             return _container;
         }
 
+        /// <summary>
+        /// Runs the close3 dwindow workflow.
+        /// </summary>
         public void Close3DWindow()
         {
             _fuWindow?.Close();
@@ -254,17 +275,29 @@ namespace Fu.Framework
             _windowName = value;
         }
 
+        /// <summary>
+        /// Returns the is runtime resizable result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public bool IsRuntimeResizable()
         {
             return _runtimeResizable;
         }
 
+        /// <summary>
+        /// Sets the runtime resizable.
+        /// </summary>
+        /// <param name="value">The value value.</param>
         public void SetRuntimeResizable(bool value)
         {
             _runtimeResizable = value;
             _container?.SetRuntimeResizable(value);
         }
 
+        /// <summary>
+        /// Gets the container scale config.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public FuContainerScaleConfig GetContainerScaleConfig()
         {
             float baseScale = _baseContextScale > 0f
@@ -290,6 +323,10 @@ namespace Fu.Framework
             );
         }
 
+        /// <summary>
+        /// Sets the container scale config.
+        /// </summary>
+        /// <param name="config">The config value.</param>
         public void SetContainerScaleConfig(FuContainerScaleConfig config)
         {
             config.Sanitize();
@@ -304,6 +341,10 @@ namespace Fu.Framework
             _container?.SetContainerScaleConfig(config);
         }
 
+        /// <summary>
+        /// Gets the 3 dwindow settings.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public Fu3DWindowSettings Get3DWindowSettings()
         {
             float contextScale = _baseContextScale > 0f ? _baseContextScale : 1f;
@@ -323,6 +364,10 @@ namespace Fu.Framework
             return settings;
         }
 
+        /// <summary>
+        /// Gets the resolution reference panel size.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         private Vector2 GetResolutionReferencePanelSize()
         {
             if (_referencePanelSize.x > 0f && _referencePanelSize.y > 0f)
@@ -338,12 +383,18 @@ namespace Fu.Framework
             return _autoReferencePanelSize;
         }
 
+        /// <summary>
+        /// Runs the late update workflow.
+        /// </summary>
         private void LateUpdate()
         {
             EnforceDepth();
             ApplyPlaceholderToContainer();
         }
 
+        /// <summary>
+        /// Runs the apply placeholder to container workflow.
+        /// </summary>
         private void ApplyPlaceholderToContainer()
         {
             if (_container == null || _container.IsClosed || _container.Window == null)
@@ -361,6 +412,10 @@ namespace Fu.Framework
             _container.SetRuntimeResizable(_runtimeResizable);
         }
 
+        /// <summary>
+        /// Runs the window on closed workflow.
+        /// </summary>
+        /// <param name="window">The window value.</param>
         private void Window_OnClosed(FuWindow window)
         {
             if (_fuWindow != window)
@@ -376,6 +431,11 @@ namespace Fu.Framework
             _autoReferencePanelSize = Vector2.zero;
         }
 
+        /// <summary>
+        /// Runs the container on runtime resized workflow.
+        /// </summary>
+        /// <param name="position">The position value.</param>
+        /// <param name="localSize">The local Size value.</param>
         private void Container_OnRuntimeResized(Vector3 position, Vector2 localSize)
         {
             transform.position = position;
@@ -389,6 +449,13 @@ namespace Fu.Framework
             transform.localScale = localScale;
         }
 
+        /// <summary>
+        /// Returns the get signed scale result.
+        /// </summary>
+        /// <param name="currentLocalScale">The current Local Scale value.</param>
+        /// <param name="targetWorldSize">The target World Size value.</param>
+        /// <param name="parentWorldScale">The parent World Scale value.</param>
+        /// <returns>The result of the operation.</returns>
         private float getSignedScale(float currentLocalScale, float targetWorldSize, float parentWorldScale)
         {
             float sign = currentLocalScale < 0f ? -1f : 1f;
@@ -401,6 +468,9 @@ namespace Fu.Framework
             return sign * Mathf.Max(0.0001f, targetWorldSize / parentScale);
         }
 
+        /// <summary>
+        /// Handles the Destroy event.
+        /// </summary>
         private void OnDestroy()
         {
             if (_windowDefinition != null)
@@ -419,6 +489,10 @@ namespace Fu.Framework
             }
         }
 
+        /// <summary>
+        /// Gets the placeholder size.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         private Vector2 GetPlaceholderSize()
         {
             Vector3 worldScale = transform.lossyScale;
@@ -429,6 +503,10 @@ namespace Fu.Framework
             );
         }
 
+        /// <summary>
+        /// Gets the window size from placeholder.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         private Vector2Int GetWindowSizeFromPlaceholder()
         {
             return new Vector2Int(
@@ -437,6 +515,9 @@ namespace Fu.Framework
             );
         }
 
+        /// <summary>
+        /// Runs the enforce depth workflow.
+        /// </summary>
         private void EnforceDepth()
         {
             Vector3 scale = transform.localScale;

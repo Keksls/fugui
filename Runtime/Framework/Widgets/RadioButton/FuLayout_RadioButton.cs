@@ -1,10 +1,14 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region Methods
         /// <summary>
         /// Renders a Radio Button with the given text and returns true if the checkbox was clicked. The value of the checkbox is stored in the provided boolean variable.
         /// </summary>
@@ -112,5 +116,6 @@ namespace Fu.Framework
             endElement(style); // Pop the style for the checkbox element
             return clicked; // Return a boolean indicating whether the checkbox was clicked by the user
         }
+        #endregion
     }
 }

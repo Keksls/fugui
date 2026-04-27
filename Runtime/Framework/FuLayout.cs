@@ -11,7 +11,6 @@ namespace Fu.Framework
     /// </summary>
     public unsafe partial class FuLayout : IDisposable
     {
-        #region Variables
         /// <summary>
         /// The current Layout or grid that is drawing at time.
         /// </summary>
@@ -20,48 +19,65 @@ namespace Fu.Framework
         /// A flag indicating last drawed item is hovered by current pointer.
         /// </summary>
         public bool LastItemHovered { get => _lastItemHovered; }
+
         private static bool _lastItemHovered = false;
+
         /// <summary>
         /// A rectangle representing the last drawed item position and size.
         /// </summary>
         public Rect LastItemRect { get => _lastItemRect; }
+
         private static Rect _lastItemRect = default;
+
         /// <summary>
         /// A flag indicating last drawed item is currently used by current pointer.
         /// </summary>
         public bool LastItemActive { get => _lastItemActive; }
+
         private static bool _lastItemActive = false;
+
         /// <summary>
         /// A flag indicating last drawed item was active last frame and is no more this frame.
         /// </summary>
         public bool LastItemJustDeactivated { get => _lastItemJustDeactivated; }
+
         private static bool _lastItemJustDeactivated = false;
+
         /// <summary>
         /// A flag indicating last drawed item was NOT active last frame and is this frame.
         /// </summary>
         public bool LastItemJustActivated { get => _lastItemJustActivated; }
+
         private static bool _lastItemJustActivated = false;
+
         /// <summary>
         /// A flag indicating last drawed item has just done an update operation this frame.
         /// </summary>
         public bool LastItemUpdate { get => _lastItemUpdate; }
+
         private static bool _lastItemUpdate = false;
+
         /// <summary>
         /// The ID of the item that just been draw.
         /// </summary>
         public string LastItemID { get => _lastItemID; }
+
         private static string _lastItemID = string.Empty;
+
         /// <summary>
         /// the button just clicked on the last draw item.
         /// </summary>
         public FuMouseButton LastItemClickedButton { get => _lastItemClickedButton; }
+
         private static FuMouseButton _lastItemClickedButton = FuMouseButton.None;
+
         /// <summary>
         /// A flag indicating whether the Last element has been disabled.
         /// </summary>
         public bool LastItemDisabled { get; protected set; } = false;
 
         // A flag indicating whether the element is hover framed.
+
         private bool _elementHoverFramedEnabled = false;
         // An array of strings representing the current tool tips.
         protected string[] _currentToolTips = null;
@@ -86,9 +102,7 @@ namespace Fu.Framework
 #if PUSH_POP_DEBUG
         Dictionary<string, Stack<IFuElementStyle>> pushedStyles = new Dictionary<string, Stack<IFuElementStyle>>();
 #endif
-        #endregion
 
-        #region Elements Data
         // A set of strings representing the dragging sliders.
         private static HashSet<string> _draggingSliders = new HashSet<string>();
         // A dictionary that store displaying toggle data.
@@ -100,14 +114,19 @@ namespace Fu.Framework
         // A dictionary to store enum values as string according to the type of the enum
         private static Dictionary<Type, List<string>> _enumValuesString = new Dictionary<Type, List<string>>();
         protected bool _drawElement = true;
-        public static bool IsThereAnyDraggingSlider => _draggingSliders.Count > 0;
-        #endregion
 
+        public static bool IsThereAnyDraggingSlider => _draggingSliders.Count > 0;
+
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Layout class.
+        /// </summary>
         public FuLayout()
         {
             CurrentDrawerPath.Push(this);
             _tooltipAppearDuration = 0.7f;
         }
+        #endregion
 
         /// <summary>
         /// Disposes this Layout
@@ -127,7 +146,6 @@ namespace Fu.Framework
 #endif
         }
 
-        #region elements utils
         /// <summary>
         /// Begins an element in this layout with the specified style.
         /// </summary>
@@ -251,9 +269,7 @@ namespace Fu.Framework
         {
             ImGui.GetWindowDrawList().AddRect(rect.min, rect.max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), rounded ? ImGui.GetStyle().FrameRounding : 0f);
         }
-        #endregion
 
-        #region ToopTips
         /// <summary>
         /// Set tooltips for the x next element(s)
         /// </summary>
@@ -284,9 +300,7 @@ namespace Fu.Framework
         {
             _currentToolTipsStyles = styles;
         }
-        #endregion
 
-        #region Public Utils
         /// <summary>
         /// Set the time user have to keep hover an elemenet before showing its tooltip
         /// </summary>
@@ -543,9 +557,7 @@ namespace Fu.Framework
 
             return hovered;
         }
-        #endregion
 
-        #region Center Item
         /// <summary>
         /// Prepare centering for the next item (next item should be a text)
         /// </summary>
@@ -653,16 +665,13 @@ namespace Fu.Framework
             CenterNextItemH(itemWidth, availWidth, scale);
             CenterNextItemV(itemHeight, availHeight, scale);
         }
-        #endregion
 
-        #region private utils
-        #region string formats
         /// <summary>
         /// Gets the string format for the given id and value
         /// </summary>
         /// <param name="id">ID of the UIElement</param>
         /// <param name="value">float Value</param>
-        /// <returns></returns>
+        /// <returns>The result of the operation.</returns>
         private static unsafe string getStringFormat(float value)
         {
             // Fast path: if focused
@@ -693,13 +702,14 @@ namespace Fu.Framework
             return formats[nbDec];
         }
 
+        #region State
         private static readonly string[] formats = new[]
         {
             "%.0f", "%.1f", "%.2f", "%.3f", "%.4f", "%.5f", "%.6f", "%.7f", "%.8f"
         };
         #endregion
 
-        #region tooltip utils
+        #region Methods
         /// <summary>
         /// Displays a tooltip if the current element is hovered over, or if force is set to true.
         /// </summary>
@@ -807,9 +817,13 @@ namespace Fu.Framework
             }
         }
 
-        #endregion
-
-        #region enum utils
+        /// <summary>
+        /// Returns the try get enum values result.
+        /// </summary>
+        /// <param name="type">The type value.</param>
+        /// <param name="values">The values value.</param>
+        /// <param name="strValues">The str Values value.</param>
+        /// <returns>The result of the operation.</returns>
         protected bool tryGetEnumValues<TEnum>(Type type, out List<IConvertible> values, out List<string> strValues)
         {
             values = null;
@@ -846,9 +860,13 @@ namespace Fu.Framework
         }
         #endregion
 
-        #region element state
+        #region State
         private static string _activeItem = null;
+
         public static bool IsAnyItemActive => !string.IsNullOrEmpty(_activeItem);
+        #endregion
+
+        #region Methods
         /// <summary>
         /// Set the states of an items for this frame (until another item is draw)
         ///     LastItemHovered
@@ -917,7 +935,6 @@ namespace Fu.Framework
             _lastItemActive = _activeItem == uniqueID;
             _lastItemUpdate = updated;
         }
+        #endregion
     }
-    #endregion
-    #endregion
 }

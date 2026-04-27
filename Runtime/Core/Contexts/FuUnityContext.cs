@@ -5,14 +5,30 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Unity Context type.
+    /// </summary>
     public class FuUnityContext : FuContext
     {
+        #region State
         public Camera Camera;
         public Rect PixelRect;
+
         public RenderTexture TargetTexture {  get; private set; }
         public bool IsOffscreen => TargetTexture != null;
-        private PlatformBase _platform;
 
+        private PlatformBase _platform;
+        #endregion
+
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Unity Context class.
+        /// </summary>
+        /// <param name="index">The index value.</param>
+        /// <param name="scale">The scale value.</param>
+        /// <param name="fontScale">The font Scale value.</param>
+        /// <param name="onInitialize">The on Initialize value.</param>
+        /// <param name="camera">The camera value.</param>
         public FuUnityContext(int index, float scale, float fontScale, Action onInitialize, Camera camera) : base(index, scale, fontScale, onInitialize)
         {
             Camera = camera;
@@ -20,13 +36,23 @@ namespace Fu
             initialize(onInitialize);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the Fu Unity Context class.
+        /// </summary>
+        /// <param name="index">The index value.</param>
+        /// <param name="scale">The scale value.</param>
+        /// <param name="fontScale">The font Scale value.</param>
+        /// <param name="onInitialize">The on Initialize value.</param>
+        /// <param name="pixelRect">The pixel Rect value.</param>
         public FuUnityContext(int index, float scale, float fontScale, Action onInitialize, Rect pixelRect) : base(index, scale, fontScale, onInitialize)
         {
             Camera = null;
             PixelRect = pixelRect;
             initialize(onInitialize);
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Set the target texture of this context. If it's null, this context will be rendered on screen, otherwise it will be rendered on the target texture. Don't call it, Fugui layout handle it for you
         /// </summary>
@@ -50,6 +76,10 @@ namespace Fu
             RestorePreviousContext(previousContext);
         }
 
+        /// <summary>
+        /// Runs the restore previous context workflow.
+        /// </summary>
+        /// <param name="previousContext">The previous Context value.</param>
         private void RestorePreviousContext(FuContext previousContext)
         {
             if (previousContext != null && previousContext != this && Fugui.ContextExists(previousContext.ID))
@@ -227,5 +257,6 @@ namespace Fu
                     win.Value.Size = new Vector2Int((int)(win.Value.Size.x * (scale / oldScale)), (int)(win.Value.Size.y * (scale / oldScale)));
                 });
         }
+        #endregion
     }
 }

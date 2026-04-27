@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 
 namespace Fu
@@ -10,20 +10,44 @@ namespace Fu
     /// </summary>
     public static class GLMini
     {
+        #region Nested Types
+        /// <summary>
+        /// Defines the gl Get Error t callback signature.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate uint glGetError_t();
-        private static glGetError_t _glGetError;
+        #endregion
 
+        #region State
+        private static glGetError_t _glGetError;
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Returns the gl get error result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public static uint glGetError()
         {
             return _glGetError();
         }
 
+        /// <summary>
+        /// Runs the load workflow.
+        /// </summary>
+        /// <param name="loader">The loader value.</param>
         public static void Load(Func<string, IntPtr> loader)
         {
             _glGetError = LoadFunction<glGetError_t>(loader, "glGetError");
         }
 
+        /// <summary>
+        /// Returns the load function result.
+        /// </summary>
+        /// <param name="loader">The loader value.</param>
+        /// <param name="name">The name value.</param>
+        /// <returns>The result of the operation.</returns>
         private static T LoadFunction<T>(Func<string, IntPtr> loader, string name)
         {
             IntPtr ptr = loader(name);
@@ -31,13 +55,16 @@ namespace Fu
                 throw new Exception($"OpenGL function {name} not found!");
             return Marshal.GetDelegateForFunctionPointer<T>(ptr);
         }
+        #endregion
 
-        #region Delegates loader
+        #region State
         /// <summary>
         /// Function used to resolve GL procedure addresses. Must be assigned to SDL.SDL_GL_GetProcAddress.
         /// </summary>
         public static Func<string, IntPtr> GetProc;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Load an OpenGL function pointer into a C# delegate.
         /// Throws if missing.
@@ -51,7 +78,7 @@ namespace Fu
         }
         #endregion
 
-        #region Constants (subset for ImGui-style pipeline)
+        #region State
         public const uint GL_COLOR_BUFFER_BIT = 0x00004000;
         public const uint GL_TRIANGLES = 0x0004;
         public const uint GL_BLEND = 0x0BE2;
@@ -112,64 +139,325 @@ namespace Fu
         public const uint GL_READ_WRITE = 0x88BA; // (optionnel)
         public const uint GL_MAP_WRITE_BIT = 0x0002;
         public const uint GL_MAP_INVALIDATE_BUFFER_BIT = 0x0008;
-
         #endregion
 
-        #region Basic function delegates (increment as needed)
+        #region Nested Types
+        /// <summary>
+        /// Defines the gl Get String t callback signature.
+        /// </summary>
+        /// <param name="name">The name value.</param>
+        /// <returns>The result of the operation.</returns>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate IntPtr glGetString_t(uint name);
+        /// <summary>
+        /// Defines the gl Viewport t callback signature.
+        /// </summary>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
+        /// <param name="w">The w value.</param>
+        /// <param name="h">The h value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glViewport_t(int x, int y, int w, int h);
+        /// <summary>
+        /// Defines the gl Clear Color t callback signature.
+        /// </summary>
+        /// <param name="r">The r value.</param>
+        /// <param name="g">The g value.</param>
+        /// <param name="b">The b value.</param>
+        /// <param name="a">The a value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glClearColor_t(float r, float g, float b, float a);
+        /// <summary>
+        /// Defines the gl Clear t callback signature.
+        /// </summary>
+        /// <param name="mask">The mask value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glClear_t(uint mask);
+        /// <summary>
+        /// Defines the gl Enable t callback signature.
+        /// </summary>
+        /// <param name="cap">The cap value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glEnable_t(uint cap);
+        /// <summary>
+        /// Defines the gl Disable t callback signature.
+        /// </summary>
+        /// <param name="cap">The cap value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glDisable_t(uint cap);
+        /// <summary>
+        /// Defines the gl Blend Func t callback signature.
+        /// </summary>
+        /// <param name="sfactor">The sfactor value.</param>
+        /// <param name="dfactor">The dfactor value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBlendFunc_t(uint sfactor, uint dfactor);
+        /// <summary>
+        /// Defines the gl Scissor t callback signature.
+        /// </summary>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
+        /// <param name="w">The w value.</param>
+        /// <param name="h">The h value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glScissor_t(int x, int y, int w, int h);
+        /// <summary>
+        /// Defines the gl Active Texture t callback signature.
+        /// </summary>
+        /// <param name="tex">The tex value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glActiveTexture_t(uint tex);
 
+        /// <summary>
+        /// Defines the gl Gen Vertex Arrays t callback signature.
+        /// </summary>
+        /// <param name="n">The n value.</param>
+        /// <param name="id">The id value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glGenVertexArrays_t(int n, out uint id);
+        /// <summary>
+        /// Defines the gl Bind Vertex Array t callback signature.
+        /// </summary>
+        /// <param name="id">The id value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBindVertexArray_t(uint id);
+        /// <summary>
+        /// Defines the gl Gen Buffers t callback signature.
+        /// </summary>
+        /// <param name="n">The n value.</param>
+        /// <param name="id">The id value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glGenBuffers_t(int n, out uint id);
+        /// <summary>
+        /// Defines the gl Bind Buffer t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <param name="buffer">The buffer value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBindBuffer_t(uint target, uint buffer);
+        /// <summary>
+        /// Defines the gl Buffer Data t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="data">The data value.</param>
+        /// <param name="usage">The usage value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBufferData_t(uint target, IntPtr size, IntPtr data, uint usage);
+        /// <summary>
+        /// Defines the gl Buffer Sub Data t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <param name="offset">The offset value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="data">The data value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBufferSubData_t(uint target, IntPtr offset, IntPtr size, IntPtr data);
+        /// <summary>
+        /// Defines the gl Enable Vertex Attrib Array t callback signature.
+        /// </summary>
+        /// <param name="index">The index value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glEnableVertexAttribArray_t(uint index);
+        /// <summary>
+        /// Defines the gl Vertex Attrib Pointer t callback signature.
+        /// </summary>
+        /// <param name="index">The index value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="type">The type value.</param>
+        /// <param name="normalized">The normalized value.</param>
+        /// <param name="stride">The stride value.</param>
+        /// <param name="pointer">The pointer value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glVertexAttribPointer_t(uint index, int size, uint type, bool normalized, int stride, IntPtr pointer);
 
+        /// <summary>
+        /// Defines the gl Create Shader t callback signature.
+        /// </summary>
+        /// <param name="type">The type value.</param>
+        /// <returns>The result of the operation.</returns>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate uint glCreateShader_t(uint type);
+        /// <summary>
+        /// Defines the gl Shader Source t callback signature.
+        /// </summary>
+        /// <param name="shader">The shader value.</param>
+        /// <param name="count">The count value.</param>
+        /// <param name="strings">The strings value.</param>
+        /// <param name="lengths">The lengths value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glShaderSource_t(uint shader, int count, IntPtr strings, IntPtr lengths);
+        /// <summary>
+        /// Defines the gl Compile Shader t callback signature.
+        /// </summary>
+        /// <param name="shader">The shader value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glCompileShader_t(uint shader);
+        /// <summary>
+        /// Defines the gl Get Shaderiv t callback signature.
+        /// </summary>
+        /// <param name="shader">The shader value.</param>
+        /// <param name="pname">The pname value.</param>
+        /// <param name="param">The param value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glGetShaderiv_t(uint shader, uint pname, out int param);
+        /// <summary>
+        /// Defines the gl Get Shader Info Log t callback signature.
+        /// </summary>
+        /// <param name="shader">The shader value.</param>
+        /// <param name="maxLen">The max Len value.</param>
+        /// <param name="len">The len value.</param>
+        /// <param name="infoLog">The info Log value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glGetShaderInfoLog_t(uint shader, int maxLen, out int len, IntPtr infoLog);
+        /// <summary>
+        /// Defines the gl Delete Shader t callback signature.
+        /// </summary>
+        /// <param name="shader">The shader value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glDeleteShader_t(uint shader);
 
+        /// <summary>
+        /// Defines the gl Create Program t callback signature.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate uint glCreateProgram_t();
+        /// <summary>
+        /// Defines the gl Attach Shader t callback signature.
+        /// </summary>
+        /// <param name="program">The program value.</param>
+        /// <param name="shader">The shader value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glAttachShader_t(uint program, uint shader);
+        /// <summary>
+        /// Defines the gl Link Program t callback signature.
+        /// </summary>
+        /// <param name="program">The program value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glLinkProgram_t(uint program);
+        /// <summary>
+        /// Defines the gl Get Programiv t callback signature.
+        /// </summary>
+        /// <param name="program">The program value.</param>
+        /// <param name="pname">The pname value.</param>
+        /// <param name="param">The param value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glGetProgramiv_t(uint program, uint pname, out int param);
+        /// <summary>
+        /// Defines the gl Get Program Info Log t callback signature.
+        /// </summary>
+        /// <param name="program">The program value.</param>
+        /// <param name="maxLen">The max Len value.</param>
+        /// <param name="len">The len value.</param>
+        /// <param name="infoLog">The info Log value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glGetProgramInfoLog_t(uint program, int maxLen, out int len, IntPtr infoLog);
+        /// <summary>
+        /// Defines the gl Use Program t callback signature.
+        /// </summary>
+        /// <param name="program">The program value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glUseProgram_t(uint program);
+        /// <summary>
+        /// Defines the gl Get Uniform Location t callback signature.
+        /// </summary>
+        /// <param name="program">The program value.</param>
+        /// <param name="name">The name value.</param>
+        /// <returns>The result of the operation.</returns>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate int glGetUniformLocation_t(uint program, string name);
+        /// <summary>
+        /// Defines the gl Uniform1i t callback signature.
+        /// </summary>
+        /// <param name="loc">The loc value.</param>
+        /// <param name="v">The v value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glUniform1i_t(int loc, int v);
+        /// <summary>
+        /// Defines the gl Uniform Matrix4fv t callback signature.
+        /// </summary>
+        /// <param name="loc">The loc value.</param>
+        /// <param name="count">The count value.</param>
+        /// <param name="transpose">The transpose value.</param>
+        /// <param name="value">The value value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glUniformMatrix4fv_t(int loc, int count, bool transpose, IntPtr value);
 
+        /// <summary>
+        /// Defines the gl Gen Textures t callback signature.
+        /// </summary>
+        /// <param name="n">The n value.</param>
+        /// <param name="id">The id value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glGenTextures_t(int n, out uint id);
+        /// <summary>
+        /// Defines the gl Bind Texture t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <param name="tex">The tex value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBindTexture_t(uint target, uint tex);
+        /// <summary>
+        /// Defines the gl Tex Parameteri t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <param name="pname">The pname value.</param>
+        /// <param name="param">The param value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glTexParameteri_t(uint target, uint pname, int param);
+        /// <summary>
+        /// Defines the gl Tex Image2 D t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <param name="level">The level value.</param>
+        /// <param name="internalFormat">The internal Format value.</param>
+        /// <param name="width">The width value.</param>
+        /// <param name="height">The height value.</param>
+        /// <param name="border">The border value.</param>
+        /// <param name="format">The format value.</param>
+        /// <param name="type">The type value.</param>
+        /// <param name="data">The data value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glTexImage2D_t(uint target, int level, int internalFormat, int width, int height, int border, uint format, uint type, IntPtr data);
+        /// <summary>
+        /// Defines the gl Tex Sub Image2 D t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <param name="level">The level value.</param>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
+        /// <param name="width">The width value.</param>
+        /// <param name="height">The height value.</param>
+        /// <param name="format">The format value.</param>
+        /// <param name="type">The type value.</param>
+        /// <param name="data">The data value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glTexSubImage2D_t(uint target, int level, int x, int y, int width, int height, uint format, uint type, IntPtr data);
 
+        /// <summary>
+        /// Defines the gl Draw Elements t callback signature.
+        /// </summary>
+        /// <param name="mode">The mode value.</param>
+        /// <param name="count">The count value.</param>
+        /// <param name="type">The type value.</param>
+        /// <param name="indices">The indices value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glDrawElements_t(uint mode, int count, uint type, IntPtr indices);
+        /// <summary>
+        /// Defines the gl Pixel Storei t callback signature.
+        /// </summary>
+        /// <param name="pname">The pname value.</param>
+        /// <param name="param">The param value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glPixelStorei_t(uint pname, int param);
+        /// <summary>
+        /// Defines the gl Blend Equation t callback signature.
+        /// </summary>
+        /// <param name="mode">The mode value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBlendEquation_t(uint mode);
+        /// <summary>
+        /// Defines the gl Blend Func Separate t callback signature.
+        /// </summary>
+        /// <param name="srcRGB">The src RGB value.</param>
+        /// <param name="dstRGB">The dst RGB value.</param>
+        /// <param name="srcAlpha">The src Alpha value.</param>
+        /// <param name="dstAlpha">The dst Alpha value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glBlendFuncSeparate_t(uint srcRGB, uint dstRGB, uint srcAlpha, uint dstAlpha);
+        /// <summary>
+        /// Defines the gl Draw Arrays t callback signature.
+        /// </summary>
+        /// <param name="mode">The mode value.</param>
+        /// <param name="first">The first value.</param>
+        /// <param name="count">The count value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glDrawArrays_t(uint mode, int first, int count);
 
+        /// <summary>
+        /// Defines the gl Map Buffer t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <param name="access">The access value.</param>
+        /// <returns>The result of the operation.</returns>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate IntPtr glMapBuffer_t(uint target, uint access);
+        /// <summary>
+        /// Defines the gl Unmap Buffer t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <returns>The result of the operation.</returns>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate bool glUnmapBuffer_t(uint target);
+        /// <summary>
+        /// Defines the gl Map Buffer Range t callback signature.
+        /// </summary>
+        /// <param name="target">The target value.</param>
+        /// <param name="offset">The offset value.</param>
+        /// <param name="length">The length value.</param>
+        /// <param name="access">The access value.</param>
+        /// <returns>The result of the operation.</returns>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate IntPtr glMapBufferRange_t(uint target, IntPtr offset, IntPtr length, uint access);
         #endregion
 
-        #region Fields (loaded function pointers)
+        #region State
         public static glGetString_t glGetString;
         public static glViewport_t glViewport;
         public static glClearColor_t glClearColor;
@@ -223,7 +511,7 @@ namespace Fu
         public static glMapBufferRange_t glMapBufferRange;
         #endregion
 
-        #region Public loaders
+        #region Methods
         /// <summary>
         /// Load a minimal set (clear/viewport) to smoke-test context.
         /// </summary>
@@ -282,9 +570,7 @@ namespace Fu
             glUnmapBuffer = Load<glUnmapBuffer_t>("glUnmapBuffer");
             glMapBufferRange = Load<glMapBufferRange_t>("glMapBufferRange");
         }
-        #endregion
 
-        #region Helpers
         /// <summary>
         /// Marshal a string[] to the (char**) expected by glShaderSource.
         /// </summary>
@@ -302,8 +588,20 @@ namespace Fu
                 Marshal.FreeHGlobal(strPtr);
             }
         }
+        #endregion
 
+        #region Nested Types
+        /// <summary>
+        /// Defines the Get Info Log Fn callback signature.
+        /// </summary>
+        /// <param name="handle">The handle value.</param>
+        /// <param name="maxLength">The max Length value.</param>
+        /// <param name="length">The length value.</param>
+        /// <param name="infoLog">The info Log value.</param>
         public delegate void GetInfoLogFn(uint handle, int maxLength, out int length, IntPtr infoLog);
+        #endregion
+
+        #region Methods
         /// <summary>
         /// Read a GL info log (shader/program).
         /// </summary>

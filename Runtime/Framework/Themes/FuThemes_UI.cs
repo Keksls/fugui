@@ -1,14 +1,24 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using System;
 using System.Linq;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
+        #region State
         private static string _newThemeName = string.Empty;
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Draws the themes.
+        /// </summary>
+        /// <param name="layout">The layout value.</param>
         public static void DrawThemes(FuLayout layout)
         {
             layout.Collapsable("Theme Managment", () =>
@@ -114,5 +124,6 @@ namespace Fu
                 }
             });
         }
+        #endregion
     }
 }

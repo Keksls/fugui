@@ -1,4 +1,4 @@
-﻿#if FU_EXTERNALIZATION
+#if FU_EXTERNALIZATION
 using ImGuiNET;
 using System;
 using UnityEngine;
@@ -25,7 +25,6 @@ namespace Fu
             initialize(onInitialize);
         }
 
-        #region Initialization
         protected override void sub_initialize()
         {
             Fugui.SetCurrentContext(this);
@@ -48,9 +47,7 @@ namespace Fu
 
             SetDefaultImGuiIniFilePath(null);
         }
-        #endregion
 
-        #region Rendering
         internal override bool PrepareRender()
         {
             if (RenderPrepared)
@@ -67,7 +64,7 @@ namespace Fu
 
             ImGui.NewFrame();
             RenderPrepared = true;
-            
+
             // execute OnFramePrepared event if needed
             TryExecuteOnFramePreparedEvent();
 
@@ -139,7 +136,6 @@ namespace Fu
             TextureManager.InitializeFontAtlas(IO);
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
         }
-        #endregion
     }
 }
 #endif

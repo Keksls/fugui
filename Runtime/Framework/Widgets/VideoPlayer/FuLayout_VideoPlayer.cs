@@ -1,11 +1,17 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region State
         private static Dictionary<string, FuVideoPlayer> _videoPlayers = new Dictionary<string, FuVideoPlayer>();
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Get a FuVideoPlayer instance for the given ID
         /// </summary>
@@ -32,5 +38,6 @@ namespace Fu.Framework
                 _videoPlayers.Remove(ID);
             }
         }
+        #endregion
     }
 }

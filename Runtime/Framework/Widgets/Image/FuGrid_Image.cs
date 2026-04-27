@@ -1,9 +1,13 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Display and immage
         /// </summary>
@@ -79,5 +83,6 @@ namespace Fu.Framework
             drawElementLabel(text, FuTextStyle.Default);
             return base.ImageButton(text, texture, size, color, imagePadding, border);
         }
+        #endregion
     }
 }

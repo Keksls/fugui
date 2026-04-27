@@ -1,5 +1,8 @@
-﻿namespace Fu
+namespace Fu
 {
+    /// <summary>
+    /// Lists the available Fu Render Pipeline Type values.
+    /// </summary>
     public enum FuRenderPipelineType
     {
         /// <summary>

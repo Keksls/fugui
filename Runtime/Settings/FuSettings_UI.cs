@@ -1,11 +1,15 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using ImGuiNET;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
+        #region Methods
         /// <summary>
         /// Draw the Fugui settings panel
         /// </summary>
@@ -49,5 +53,6 @@ namespace Fu
                 DrawThemes(layout);
             }
         }
+        #endregion
     }
 }

@@ -1,17 +1,23 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fugui type.
+    /// </summary>
     public static partial class Fugui
     {
+        #region State
         private static bool _showPopup = false;
         private static string _popupMessage = string.Empty;
         private static Vector2 _popupSize = Vector2.one;
         private static IFuWindowContainer _popupContainer = null;
         private static Action _popupUI = null;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Show a Popup Message
         /// </summary>
@@ -83,5 +89,6 @@ namespace Fu
             }
             PopStyle();
         }
+        #endregion
     }
 }

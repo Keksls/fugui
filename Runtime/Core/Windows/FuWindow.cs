@@ -12,9 +12,10 @@ namespace Fu
     /// </summary>
     public class FuWindow
     {
-        #region Variables
+        #region State
         // Container
         private IFuWindowContainer _container;
+
         public IFuWindowContainer Container
         {
             get { return _container; }
@@ -71,13 +72,17 @@ namespace Fu
         public FuMouseState Mouse { get; private set; }
         public FuKeyboardState Keyboard { get; private set; }
         public Dictionary<string, FuOverlay> Overlays { get; private set; }
+
         private static FuWindow _inputFocusedWindow;
+
         public static FuWindow InputFocusedWindow
         {
             get { return _inputFocusedWindow; }
             internal set { _inputFocusedWindow = value; }
         }
+
         private static int _nbInputFocusedWindow;
+
         public static int NbInputFocusedWindow
         {
             get { return _nbInputFocusedWindow; }
@@ -125,6 +130,7 @@ namespace Fu
         public bool Is3DWindow { get; internal set; }
 
         // events
+
         public event Action<FuWindow> OnResize;
         public event Action<FuWindow> OnResized;
         public event Action<FuWindow> OnDrag;
@@ -141,6 +147,7 @@ namespace Fu
         public event Action<FuWindow> OnHoverOut;
 
         // private fields
+
         internal ImGuiWindowFlags _windowFlags;
         private bool _forceLocationNextFrame = false;
         private bool _forceSizeNextFrame = false;
@@ -163,12 +170,13 @@ namespace Fu
         internal bool _releaseFocusNextFrame = false;
 
         // static fields
-        public static FuWindow CurrentDrawingWindow { get; private set; }
-        #endregion
 
-        #region Window Location
+        public static FuWindow CurrentDrawingWindow { get; private set; }
+
         // unscaled private The height of the window topBar (optional)   
+
         private float _headerHeight;
+
         public float HeaderHeight
         {
             get
@@ -182,7 +190,9 @@ namespace Fu
         }
 
         // unscaled private The height of the window bottomBar (optional)        
+
         private float _footerHeight;
+
         public float FooterHeight
         {
             get
@@ -194,7 +204,9 @@ namespace Fu
                 _footerHeight = value;
             }
         }
+
         internal Vector2Int _size;
+
         public Vector2Int Size
         {
             get { return _size; }
@@ -205,12 +217,16 @@ namespace Fu
                 _forceSizeNextFrame = true;
             }
         }
+
         private Vector2Int _workingAreaSize;
+
         public Vector2Int WorkingAreaSize
         {
             get { return _workingAreaSize; }
         }
+
         private Vector2Int _workingAreaPosition;
+
         public Vector2Int WorkingAreaPosition
         {
             get { return _workingAreaPosition; }
@@ -231,8 +247,10 @@ namespace Fu
         }
 
         // local
+
         private Rect _localRect;
         private Vector2Int _localPosition;
+
         public Rect LocalRect { get { return _localRect; } }
         public Vector2Int LocalPosition
         {
@@ -246,6 +264,7 @@ namespace Fu
         }
         #endregion
 
+        #region Constructors
         /// <summary>
         /// Instantiate a new UIWindow object
         /// </summary>
@@ -300,6 +319,7 @@ namespace Fu
                 overlay.AnchorWindow(this);
             }
         }
+        #endregion
 
         /// <summary>
         /// Initialize the window inide a container.
@@ -340,7 +360,6 @@ namespace Fu
             ForceDraw();
         }
 
-        #region Drawing
         /// <summary>
         /// Draw the UI of this window
         /// </summary>
@@ -957,6 +976,7 @@ namespace Fu
                 _open = false;
         }
 #endif
+
         /// <summary>
         /// Draw the windows Debug Panel
         /// </summary>
@@ -1050,9 +1070,7 @@ namespace Fu
 
             return mustBeDraw;
         }
-        #endregion
 
-        #region Externalization Handling
         /// <summary>
         /// Externalize this window
         /// </summary>
@@ -1112,9 +1130,7 @@ namespace Fu
             }
 #endif
         }
-        #endregion
 
-        #region Events
         /// <summary>
         /// Fire event that we are resizing (every frames)
         /// </summary>
@@ -1169,9 +1185,7 @@ namespace Fu
             OnDrag?.Invoke(this);
             Fugui.Fire_OnWindowUnDocked(this);
         }
-        #endregion
 
-        #region Container
         /// <summary>
         /// Try to add this window to a container
         /// </summary>
@@ -1194,9 +1208,7 @@ namespace Fu
             ForceDraw(10);
             return Container?.TryRemoveWindow(ID) ?? false;
         }
-        #endregion
 
-        #region Overlays
         /// <summary>
         /// Adds the specified UI overlay to the list of overlays.
         /// </summary>
@@ -1240,9 +1252,7 @@ namespace Fu
                 overlay.Draw();
             }
         }
-        #endregion
 
-        #region Public Utils
         /// <summary>
         /// Try to dock the window in the right DockSpace in the current DockingLayout
         /// </summary>
@@ -1367,6 +1377,5 @@ namespace Fu
                     break;
             }
         }
-        #endregion
     }
 }

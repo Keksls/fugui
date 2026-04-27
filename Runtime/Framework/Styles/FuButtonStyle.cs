@@ -4,8 +4,12 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Button Style data structure.
+    /// </summary>
     public struct FuButtonStyle : IFuElementStyle
     {
+        #region State
         // enabled
         public Color Button { get; private set; }
         public Color ButtonHovered { get; private set; }
@@ -16,63 +20,80 @@ namespace Fu.Framework
         public FuTextStyle TextStyle { get; private set; }
         public Vector2 FramePadding { get; private set; }
 
-        #region Pressets
         static FuButtonStyle _defaultButtonStyle;
+
         /// <summary>
         /// Default button style, use 'Button' theme colors
         /// </summary>
         public static FuButtonStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultButtonStyle; } }
 
         static FuButtonStyle _transparent;
+
         /// <summary>
         /// Transparent button style, button have no background
         /// </summary>
         public static FuButtonStyle Transparent { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _transparent; } }
 
         static FuButtonStyle _selectedButtonStyle;
+
         /// <summary>
         /// Selected button style, use 'Selected' theme colors
         /// </summary>
         public static FuButtonStyle Selected { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _selectedButtonStyle; } }
 
         static FuButtonStyle _highlightButtonStyle;
+
         /// <summary>
         /// Highlight button style, use 'Highlight' theme colors
         /// </summary>
         public static FuButtonStyle Highlight { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _highlightButtonStyle; } }
 
         static FuButtonStyle _infoButtonStyle;
+
         /// <summary>
         /// Info button style, use 'InfoBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Info { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _infoButtonStyle; } }
 
         static FuButtonStyle _successButtonStyle;
+
         /// <summary>
         /// Success button style, use 'SuccessBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Success { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _successButtonStyle; } }
 
         static FuButtonStyle _warningButtonStyle;
+
         /// <summary>
         /// Warning button style, use 'WarningBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Warning { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _warningButtonStyle; } }
 
         static FuButtonStyle _dangerButtonStyle;
+
         /// <summary>
         /// Danger button style, use 'DangerBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Danger { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _dangerButtonStyle; } }
 
         static FuButtonStyle _collapsableButtonStyle;
+
         /// <summary>
         /// Danger button style, use 'DangerBackground' theme colors and default Thext color
         /// </summary>
         public static FuButtonStyle Collapsable { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _collapsableButtonStyle; } }
         #endregion
 
-        #region constructor
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Button Style class.
+        /// </summary>
+        /// <param name="button">The button value.</param>
+        /// <param name="buttonHovered">The button Hovered value.</param>
+        /// <param name="buttonActive">The button Active value.</param>
+        /// <param name="buttonDisabled">The button Disabled value.</param>
+        /// <param name="textStyle">The text Style value.</param>
+        /// <param name="framePadding">The frame Padding value.</param>
         public FuButtonStyle(Color button, Color buttonHovered, Color buttonActive, Color buttonDisabled, FuTextStyle textStyle, Vector2 framePadding)
         {
             Button = button;
@@ -84,6 +105,7 @@ namespace Fu.Framework
         }
         #endregion
 
+        #region Methods
         /// <summary>
         /// Get the instance of UIButtonStyle that match with the StateType enum value givent in parameter
         /// </summary>
@@ -236,5 +258,6 @@ namespace Fu.Framework
                 TextStyle = FuTextStyle.Default
             };
         }
+        #endregion
     }
 }

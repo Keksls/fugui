@@ -4,8 +4,12 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Frame Style data structure.
+    /// </summary>
     public struct FuFrameStyle : IFuElementStyle
     {
+        #region State
         // enabled
         public Color Frame;
         public Color HoveredFrame;
@@ -21,15 +25,16 @@ namespace Fu.Framework
         // text
         public FuTextStyle TextStyle;
 
-        #region Pressets
         // default button style
         static FuFrameStyle _defaultFrameStyle;
+
         /// <summary>
         /// Default frame style, use 'Frame', 'Border' and 'CheckMark' theme colors
         /// </summary>
         public static FuFrameStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultFrameStyle; } }
         #endregion
 
+        #region Methods
         /// <summary>
         /// Pushes the style for the Frame elements.
         /// </summary>
@@ -89,5 +94,6 @@ namespace Fu.Framework
                 TextStyle = FuTextStyle.Default
             };
         }
+        #endregion
     }
 }

@@ -1,18 +1,25 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region State
         private static Dictionary<string, Vector4> _pickersColors = new Dictionary<string, Vector4>();
         private static Dictionary<string, bool> _pickersEditedStates = new Dictionary<string, bool>();
+        #endregion
+
+        #region Methods
         //private static bool _colorPickerEdited = false;
 
-        ///<summary>
+        /// <summary>
         /// Displays a color picker widget that allows the user to select a color in the RGB color space.
-        ///</summary>
+        /// </summary>
         ///<param name="text">A unique identifier for the color picker widget.</param>
         ///<param name="color">A reference to the vector3 containing the current color value. This value will be updated if the user changes the color.</param>
         public bool ColorPicker(string text, ref Vector4 color)
@@ -21,9 +28,9 @@ namespace Fu.Framework
             return _customColorPicker(text, true, ref color, FuFrameStyle.Default);
         }
 
-        ///<summary>
+        /// <summary>
         /// Displays a color picker widget that allows the user to select a color in the RGBA color space.
-        ///</summary>
+        /// </summary>
         ///<param name="text">A unique identifier for the color picker widget.</param>
         ///<param name="color">A reference to the vector4 containing the current color value. This value will be updated if the user changes the color.</param>
         public bool ColorPicker(string text, ref Vector3 color)
@@ -41,9 +48,9 @@ namespace Fu.Framework
             return false;
         }
 
-        ///<summary>
+        /// <summary>
         /// Displays a color picker widget that allows the user to select a color in the RGBA color space.
-        ///</summary>
+        /// </summary>
         ///<param name="text">A unique identifier for the color picker widget.</param>
         ///<param name="color">A reference to the vector4 containing the current color value. This value will be updated if the user changes the color.</param>
         ///<param name="style">The style to apply to the color picker widget.</param>
@@ -53,9 +60,9 @@ namespace Fu.Framework
             return _customColorPicker(text, true, ref color, style);
         }
 
-        ///<summary>
+        /// <summary>
         /// Displays a color picker widget that allows the user to select a color in the RGB color space.
-        ///</summary>
+        /// </summary>
         ///<param name="text">A unique identifier for the color picker widget.</param>
         ///<param name="color">A reference to the vector3 containing the current color value. This value will be updated if the user changes the color.</param>
         ///<param name="style">The style to apply to the color picker widget.</param>
@@ -192,5 +199,6 @@ namespace Fu.Framework
             bool edited = _pickersEditedStates[text];
             return edited;
         }
+        #endregion
     }
 }

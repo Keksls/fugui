@@ -1,4 +1,4 @@
-﻿#if FU_EXTERNALIZATION
+#if FU_EXTERNALIZATION
 using SDL2;
 using System.Collections.Generic;
 
@@ -22,7 +22,6 @@ namespace Fu
         private readonly HashSet<uint> _knownWindows =
             new HashSet<uint>();
 
-        #region Window Registration
         /// <summary>
         /// Register a new SDL window so its event queue is prepared.
         /// </summary>
@@ -42,9 +41,7 @@ namespace Fu
             _knownWindows.Remove(id);
             _eventsByWindow.Remove(id);
         }
-        #endregion
 
-        #region Update Polling
         /// <summary>
         /// Polls ALL SDL events and sorts them per window.
         /// Must be called once per frame.
@@ -75,9 +72,7 @@ namespace Fu
                 _eventsByWindow[winId].Enqueue(ev);
             }
         }
-        #endregion
 
-        #region Event Extraction Logic
         /// <summary>
         /// Extracts windowID depending on event type.
         /// SDL2-CS exposes windowID on all window-related events.
@@ -114,9 +109,7 @@ namespace Fu
                     return 0;
             }
         }
-        #endregion
 
-        #region Per-window Event Poll
         /// <summary>
         /// Works like SDL_PollEvent, but scoped to a specific window.
         /// Returns true if an event was available.
@@ -154,7 +147,6 @@ namespace Fu
                 _eventsByWindow[windowId].Enqueue(e);
             }
         }
-        #endregion
     }
 }
 #endif

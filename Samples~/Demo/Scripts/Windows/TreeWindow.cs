@@ -5,12 +5,21 @@ using UnityEngine;
 
 namespace FuguiDemo
 {
+    /// <summary>
+    /// Represents the Tree Window type.
+    /// </summary>
     public class TreeWindow : FuWindowBehaviour
     {
+        #region State
         private List<treeTestItem> _treeItems;
         private FuTree<treeTestItem> _tree = null;
         float _treeItemHeight = 16f;
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Runs the awake workflow.
+        /// </summary>
         public void Awake()
         {
             // generate and save tree items
@@ -155,84 +164,6 @@ namespace FuguiDemo
                 Fugui.PopStyle();
             }
         }
-    }
-
-    internal class treeTestItem
-    {
-        public string DisplayName;
-        public byte IsOpen = 0;
-        public byte IsSelected = 0;
-        public int Level = 0;
-        public treeTestItem Parent;
-        public List<treeTestItem> Children;
-
-        public treeTestItem(string text, int level, List<treeTestItem> children = null)
-        {
-            Level = level;
-            DisplayName = text;
-            Children = children;
-        }
-
-        public void AddChild(treeTestItem child)
-        {
-            child.Parent = this;
-            Children.Add(child);
-        }
-
-        public static List<treeTestItem> GetRandomHierarchie(int numberOfItemsPerLevel, int numberOfLevels)
-        {
-            List<treeTestItem> items = new List<treeTestItem>();
-
-            for (int i = 0; i < numberOfItemsPerLevel; i++)
-            {
-                treeTestItem parent = new treeTestItem("Parent " + i, 0, new List<treeTestItem>());
-                parent.Children = GetChildren(parent, numberOfItemsPerLevel, numberOfLevels, 1);
-                items.Add(parent);
-            }
-            return items;
-        }
-
-        private static List<treeTestItem> GetChildren(treeTestItem parent, int numberOfItemsPerLevel, int numberOfLevels, int level)
-        {
-            if (numberOfLevels == level)
-            {
-                return null;
-            }
-
-            List<treeTestItem> children = new List<treeTestItem>();
-            for (int i = 0; i < numberOfItemsPerLevel; i++)
-            {
-                treeTestItem child = new treeTestItem("Child_" + level + "_" + i, level, new List<treeTestItem>());
-                child.Parent = parent;
-                child.Children = GetChildren(child, numberOfItemsPerLevel, numberOfLevels, level + 1);
-                children.Add(child);
-            }
-            return children;
-        }
-
-        public static List<treeTestItem> getAll(List<treeTestItem> items)
-        {
-            List<treeTestItem> all = new List<treeTestItem>();
-            if (items != null)
-            {
-                foreach (var item in items)
-                {
-                    getAll(item, all);
-                }
-            }
-            return all;
-        }
-
-        private static void getAll(treeTestItem item, List<treeTestItem> items)
-        {
-            items.Add(item);
-            if (item.Children != null)
-            {
-                foreach (var it in item.Children)
-                {
-                    getAll(it, items);
-                }
-            }
-        }
+        #endregion
     }
 }

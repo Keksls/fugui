@@ -4,9 +4,12 @@ using System.Collections.Generic;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
-        #region Enum Types List
+        #region Methods
         /// <summary>
         /// Displays a ListBox with all the enum values of type TEnum. The selected item can be changed by the user, and the change will be reported through the itemChange action.
         /// </summary>
@@ -36,9 +39,7 @@ namespace Fu.Framework
                 itemChange?.Invoke(enumValues[index]);
             }, () => { return itemGetter?.Invoke().ToString(); }, size);
         }
-        #endregion
 
-        #region Generic Types List
         /// <summary>
         /// Displays a dropdown box with a list of items of type T and calls the specified action with the selected item when changed.
         /// </summary>
@@ -73,12 +74,10 @@ namespace Fu.Framework
                 itemChange?.Invoke(items[index]);
             }, () => { return itemGetter?.Invoke()?.ToString(); }, size);
         }
-        #endregion
 
-        #region IListBoxItems
-        ///<summary>
+        /// <summary>
         /// Renders a ListBox with a list of custom items.
-        ///</summary>
+        /// </summary>
         ///<param name="text">The label for the ListBox.</param>
         ///<param name="items">The list of custom items to be displayed in the ListBox.</param>
         ///<param name="itemChange">The action to be performed when an item is selected.</param>
@@ -107,9 +106,7 @@ namespace Fu.Framework
                 }
             }, size);
         }
-        #endregion
 
-        #region Fully custom ListBox content
         /// <summary>
         /// Displays a ListBox that allows the user to choose from a list of predefined items. 
         /// When an item is selected, the specified callback function is called.

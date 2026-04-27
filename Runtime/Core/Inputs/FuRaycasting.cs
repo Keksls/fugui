@@ -1,14 +1,25 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Raycasting type.
+    /// </summary>
     public static class FuRaycasting
     {
+        #region State
         static Dictionary<string, FuRaycaster> latestRaycasters = new Dictionary<string, FuRaycaster>();
         private static Dictionary<string, FuRaycaster> _raycasters = new Dictionary<string, FuRaycaster>();
+        #endregion
 
+        #region Methods
+        /// <summary>
+        /// Gets the input state.
+        /// </summary>
+        /// <param name="containerID">The container ID value.</param>
+        /// <param name="raycastableGameObject">The raycastable Game Object value.</param>
+        /// <returns>The result of the operation.</returns>
         public static InputState GetInputState(string containerID, GameObject raycastableGameObject)
         {
             foreach (FuRaycaster raycaster in _raycasters.Values)
@@ -39,6 +50,9 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Updates the value.
+        /// </summary>
         public static void Update()
         {
             foreach (FuRaycaster raycaster in _raycasters.Values)
@@ -47,6 +61,11 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Returns the register raycaster result.
+        /// </summary>
+        /// <param name="raycaster">The raycaster value.</param>
+        /// <returns>The result of the operation.</returns>
         public static bool RegisterRaycaster(FuRaycaster raycaster)
         {
             if (_raycasters.ContainsKey(raycaster.ID))
@@ -58,79 +77,35 @@ namespace Fu
             return true;
         }
 
+        /// <summary>
+        /// Returns the un register raycaster result.
+        /// </summary>
+        /// <param name="raycasterName">The raycaster Name value.</param>
+        /// <returns>The result of the operation.</returns>
         public static bool UnRegisterRaycaster(string raycasterName)
         {
             return _raycasters.Remove(raycasterName);
         }
 
+        /// <summary>
+        /// Attempts to get raycaster.
+        /// </summary>
+        /// <param name="raycasterName">The raycaster Name value.</param>
+        /// <param name="raycaster">The raycaster value.</param>
+        /// <returns>The result of the operation.</returns>
         public static bool TryGetRaycaster(string raycasterName, out FuRaycaster raycaster)
         {
             return _raycasters.TryGetValue(raycasterName, out raycaster);
         }
 
+        /// <summary>
+        /// Gets the all raycasters.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         public static IEnumerable<FuRaycaster> GetAllRaycasters()
         {
             return _raycasters.Values;
         }
-    }
-
-    public struct InputState
-    {
-        private string _raycasterID;
-        private bool _hovered;
-        private float _mouseWheel;
-        private bool[] _mouseDown;
-        private Vector2 _mousePosition;
-        public string RaycasterID { get { return _raycasterID; } }
-        public float MouseWheel { get { return _mouseWheel; } }
-        public bool Hovered { get { return _hovered; } }
-        public Vector2 MousePosition { get { return _mousePosition; } }
-        public bool[] MouseDown { get { return _mouseDown; } }
-
-        public InputState(string raycasterID, bool hovered, bool mouseDown0, bool mouseDown1, bool mouseDown2, float mouseWheel, Vector2 mousePosition)
-        {
-            _mouseWheel = mouseWheel;
-            _raycasterID = raycasterID;
-            _hovered = hovered;
-            _mouseDown = new bool[] { mouseDown0, mouseDown1, mouseDown2 };
-            _mousePosition = mousePosition;
-        }
-    }
-
-    public class FuRaycaster
-    {
-        public Func<bool> IsActif { get; private set; }
-        public Func<bool> MouseButton0 { get; private set; }
-        public Func<bool> MouseButton1 { get; private set; }
-        public Func<bool> MouseButton2 { get; private set; }
-        public Func<float> MouseWheel { get; private set; }
-        public Func<Ray> GetRay { get; private set; }
-        public string ID { get; private set; }
-        public bool RaycastThisFrame { get; private set; }
-        public RaycastHit Hit { get; private set; }
-
-        public FuRaycaster(string name, Func<Ray> rayGetter, Func<bool> mouseButton0, Func<bool> mouseButton1, Func<bool> mouseButton2, Func<float> mouseWheel, Func<bool> actifGetter)
-        {
-            ID = name;
-            IsActif = actifGetter;
-            MouseButton0 = mouseButton0;
-            MouseButton1 = mouseButton1;
-            MouseButton2 = mouseButton2;
-            MouseWheel = mouseWheel;
-            GetRay = rayGetter;
-        }
-
-        internal void Raycast()
-        {
-            RaycastThisFrame = false;
-            if (IsActif())
-            {
-                if (Physics.Raycast(GetRay(), out RaycastHit hit, Fugui.Settings.UIRaycastDistance, Fugui.Settings.UILayer.value))
-                {
-                    Hit = hit;
-                    RaycastThisFrame = true;
-                }
-            }
-        }
+        #endregion
     }
 }

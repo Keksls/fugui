@@ -1,6 +1,6 @@
-﻿using System;
-using System.Runtime.InteropServices;
 using AOT;
+using System;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace ImGuiNET
@@ -10,6 +10,7 @@ namespace ImGuiNET
     /// </summary>
     public static class ImGuiAssertHandler
     {
+        #region Nested Types
         /// <summary>
         /// Delegate signature matching the native assertion callback.
         /// </summary>
@@ -18,12 +19,16 @@ namespace ImGuiNET
         /// <param name="line">Line number where the assertion occurred.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void ImGuiAssertCallback(IntPtr expression, IntPtr file, int line);
+        #endregion
 
+        #region State
         /// <summary>
         /// Keeps a reference alive to prevent GC from collecting the delegate.
         /// </summary>
         private static readonly ImGuiAssertCallback _callbackDelegate = HandleAssert;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Sets up the managed assertion handler and installs it into native ImGui.
         /// </summary>
@@ -50,15 +55,6 @@ namespace ImGuiNET
         /// </summary>
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         private static extern void SetImGuiAssertCallback(ImGuiAssertCallback callback);
-    }
-
-    /// <summary>
-    /// Exception thrown when an ImGui assertion fails.
-    /// </summary>
-    public class ImGuiAssertionException : Exception
-    {
-        public ImGuiAssertionException(string message) : base(message)
-        {
-        }
+        #endregion
     }
 }

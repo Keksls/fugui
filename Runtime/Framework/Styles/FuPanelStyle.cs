@@ -4,35 +4,48 @@ using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Panel Style data structure.
+    /// </summary>
     public struct FuPanelStyle : IFuElementStyle
     {
+        #region State
         private Color _bgColor;
         private Color _borderColor;
 
-        #region Pressets
         // default container style
         static FuPanelStyle _defaultContainerStyle;
+
         /// <summary>
         /// Default panel (container) style, use 'WindowBg' and 'Border' theme colors
         /// </summary>
         public static FuPanelStyle Default { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultContainerStyle; } }
 
         // popup container style
+
         static FuPanelStyle _popupContainerStyle;
+
         /// <summary>
         /// PopUp panel (container) style, use 'PopupBg' and 'Border' theme colors
         /// </summary>
         public static FuPanelStyle PopUp { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _popupContainerStyle; } }
 
         // transparent container style
+
         static FuPanelStyle _transparentContainerStyle;
+
         /// <summary>
         /// Transparent panel (container) style, set transparent BG and borders
         /// </summary>
         public static FuPanelStyle Transparent { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _transparentContainerStyle; } }
         #endregion
 
-        #region constructor
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Panel Style class.
+        /// </summary>
+        /// <param name="bgColor">The bg Color value.</param>
+        /// <param name="borderColor">The border Color value.</param>
         public FuPanelStyle(Color bgColor, Color borderColor)
         {
             _bgColor = bgColor;
@@ -40,6 +53,7 @@ namespace Fu.Framework
         }
         #endregion
 
+        #region Methods
         /// <summary>
         /// Pushes the style for the container element.
         /// </summary>
@@ -82,5 +96,6 @@ namespace Fu.Framework
                 _borderColor = Vector4.zero
             };
         }
+        #endregion
     }
 }

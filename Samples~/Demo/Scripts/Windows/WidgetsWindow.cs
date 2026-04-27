@@ -4,8 +4,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Represents the Widgets Window type.
+/// </summary>
 public class WidgetsWindow : FuWindowBehaviour
 {
+    #region State
     private bool _enableWidgets = true;
     // texts
     private string richText = "a <color=red>red</color> <b>Bold TEXT</b>";
@@ -25,7 +29,14 @@ public class WidgetsWindow : FuWindowBehaviour
     private Vector2 v2Val = Vector2.zero;
     private Vector3 v3Val = Vector3.zero;
     private Vector4 v4Val = Vector4.zero;
+    #endregion
+
+    #region Nested Types
     // combobox
+
+    /// <summary>
+    /// Lists the available my Test Enum values.
+    /// </summary>
     private enum myTestEnum
     {
         EnumValueA = 0,
@@ -34,6 +45,9 @@ public class WidgetsWindow : FuWindowBehaviour
         EnumValueD = 3,
         EnumValueE = 4,
     }
+    #endregion
+
+    #region State
     private myTestEnum _selectedEnumValue = myTestEnum.EnumValueC;
     private List<string> cbTexts = new List<string>() { "cb1", "cb2", "cb3" };
     // radio buttons
@@ -51,7 +65,14 @@ public class WidgetsWindow : FuWindowBehaviour
     private bool spinnerDoubleColor = false;
     private Vector2 spinnerV2Size = new Vector2(64f, 20f);
     private float spinnerFrequency = 6f;
+    #endregion
 
+    #region Methods
+    /// <summary>
+    /// Handles the UI event.
+    /// </summary>
+    /// <param name="window">The window value.</param>
+    /// <param name="layout">The layout value.</param>
     public override void OnUI(FuWindow window, FuLayout layout)
     {
         layout.CenterNextItemH("Check Fugui's git page.");
@@ -77,6 +98,9 @@ public class WidgetsWindow : FuWindowBehaviour
         }
     }
 
+    /// <summary>
+    /// Runs the draw knobs workflow.
+    /// </summary>
     private void drawKnobs()
     {
         using (var grid = new FuGrid("gridKnobs"))
@@ -94,6 +118,10 @@ public class WidgetsWindow : FuWindowBehaviour
         }
     }
 
+    /// <summary>
+    /// Runs the draw buttons workflow.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
     private void drawButtons(FuLayout layout)
     {
         using (var grid = new FuGrid("buttonsGrid"))
@@ -135,6 +163,10 @@ public class WidgetsWindow : FuWindowBehaviour
         }
     }
 
+    /// <summary>
+    /// Runs the draw basics workflow.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
     private void drawBasics(FuLayout layout)
     {
         layout.Tabs("basicWidgetsTabs", new string[] { "Checkbox and Toggles", "Images", "ColorPicker", "RadioButtons", "DatePicker" }, (index) =>
@@ -227,6 +259,10 @@ public class WidgetsWindow : FuWindowBehaviour
         });
     }
 
+    /// <summary>
+    /// Runs the draw boxes workflow.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
     private void drawBoxes(FuLayout layout)
     {
         using (var grid = new FuGrid("listsGrid"))
@@ -274,6 +310,9 @@ public class WidgetsWindow : FuWindowBehaviour
         }
     }
 
+    /// <summary>
+    /// Runs the draw drags workflow.
+    /// </summary>
     private void drawDrags()
     {
         using (var grid = new FuGrid("dragsGrid"))
@@ -281,7 +320,7 @@ public class WidgetsWindow : FuWindowBehaviour
             if (!_enableWidgets)
                 grid.DisableNextElements();
             grid.Drag("drag int##dint", ref intVal, "%d rad");
-            grid.Drag("drag float##1", ref floatVal, "value", 0f, 360f, 0.1f, "%.1f°");
+            grid.Drag("drag float##1", ref floatVal, "value", 0f, 360f, 0.1f, "%.1fï¿½");
             grid.Drag("drag float##2", ref floatVal, "%", 0f, 360f, 1f, "%.0f%%");
             grid.Drag("drag v2", ref v2Val, "x", "y");
             grid.Drag("drag v3", ref v3Val, "x", "y", "z");
@@ -291,6 +330,10 @@ public class WidgetsWindow : FuWindowBehaviour
         }
     }
 
+    /// <summary>
+    /// Runs the draw texts workflow.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
     private void drawTexts(FuLayout layout)
     {
         if (!_enableWidgets)
@@ -341,6 +384,10 @@ public class WidgetsWindow : FuWindowBehaviour
             layout.EnableNextElements();
     }
 
+    /// <summary>
+    /// Runs the draw spinners workflow.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
     private void drawSpinners(FuLayout layout)
     {
         using (var grid = new FuGrid("gSPN", FuGridFlag.LinesBackground))
@@ -403,6 +450,9 @@ public class WidgetsWindow : FuWindowBehaviour
         }
     }
 
+    /// <summary>
+    /// Runs the draw progressbar workflow.
+    /// </summary>
     private void drawProgressbar()
     {
         using (var grid = new FuGrid("progressBarGrid"))
@@ -421,6 +471,9 @@ public class WidgetsWindow : FuWindowBehaviour
         }
     }
 
+    /// <summary>
+    /// Runs the draw sliders workflow.
+    /// </summary>
     private void drawSliders()
     {
         using (var grid = new FuGrid("slidersGrid"))
@@ -442,4 +495,5 @@ public class WidgetsWindow : FuWindowBehaviour
                 grid.EnableNextElements();
         }
     }
+    #endregion
 }

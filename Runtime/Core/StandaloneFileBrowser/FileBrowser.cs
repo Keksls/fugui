@@ -1,19 +1,17 @@
 using System;
 
 namespace Fu {
-    public struct ExtensionFilter {
-        public string Name;
-        public string[] Extensions;
-
-        public ExtensionFilter(string filterName, params string[] filterExtensions) {
-            Name = filterName;
-            Extensions = filterExtensions;
-        }
-    }
-
+    /// <summary>
+    /// Represents the File Browser type.
+    /// </summary>
     public class FileBrowser {
+        #region State
         private static IStandaloneFileBrowser _platformWrapper = null;
+        #endregion
 
+        /// <summary>
+        /// Initializes a new instance of the File Browser class.
+        /// </summary>
         static FileBrowser() {
 #if UNITY_STANDALONE_OSX
             _platformWrapper = new StandaloneFileBrowserMac();
@@ -24,6 +22,7 @@ namespace Fu {
 #endif
         }
 
+        #region Methods
         /// <summary>
         /// Native open file dialog
         /// </summary>
@@ -147,5 +146,6 @@ namespace Fu {
         public static void SaveFilePanelAsync(string title, string directory, string defaultName, ExtensionFilter[] extensions, Action<string> cb) {
             _platformWrapper.SaveFilePanelAsync(title, directory, defaultName, extensions, cb);
         }
+        #endregion
     }
 }

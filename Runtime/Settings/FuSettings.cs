@@ -1,16 +1,20 @@
-﻿using Fu.Framework;
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Settings type.
+    /// </summary>
     [Serializable]
     /// <summary>
     /// This class contains settings for the Fugui Manager.
     /// </summary>
     public class FuSettings
     {
+        #region State
         [Tooltip("Path of the class that will store the FuWindow Names.")]
         [FuTooltip("Path of the class that will store the FuWindow Names.")]
         public string FUGUI_WINDOWS_DEF_ENUM_PATH = "Assets\\Runtime\\Settings\\FuWindowsNames.cs";
@@ -369,7 +373,9 @@ namespace Fu
         // cursors pack to use
         [FuHidden]
         public CursorShapesAsset CursorShapes = null;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Apply Imgui IO config variables to the given Imgui IO
         /// </summary>
@@ -413,5 +419,6 @@ namespace Fu
 
             io.UserData = UserData;
         }
+        #endregion
     }
 }

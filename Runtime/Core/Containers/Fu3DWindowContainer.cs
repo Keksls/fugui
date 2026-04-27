@@ -1,200 +1,15 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using UnityEngine;
 
 namespace Fu
 {
     /// <summary>
-    /// Creation settings for a 3D Fugui window.
-    /// PanelSize is the world/local size of the 3D panel, Resolution is the render texture and ImGui context size.
-    /// </summary>
-    [Serializable]
-    public struct Fu3DWindowSettings
-    {
-        public Vector2 PanelSize;
-        public Vector2Int Resolution;
-        public bool ScaleResolutionWithPanel;
-        public bool MatchResolutionToPanelAspect;
-        public Vector2 ReferencePanelSize;
-        public Vector2Int ReferenceResolution;
-        public Vector2Int MinResolution;
-        public Vector2Int MaxResolution;
-        public float ContextScale;
-        public float FontScale;
-        public float PanelDepth;
-        public FuContainerScaleConfig ContainerScaleConfig;
-
-        public static Fu3DWindowSettings FixedResolution(
-            Vector2 panelSize,
-            Vector2Int resolution,
-            float contextScale = 1f,
-            float fontScale = 1f,
-            float panelDepth = 0.01f)
-        {
-            Fu3DWindowSettings settings = new Fu3DWindowSettings
-            {
-                PanelSize = panelSize,
-                Resolution = resolution,
-                ScaleResolutionWithPanel = false,
-                MatchResolutionToPanelAspect = false,
-                ReferencePanelSize = panelSize,
-                ReferenceResolution = resolution,
-                MinResolution = Vector2Int.one,
-                MaxResolution = Vector2Int.zero,
-                ContextScale = contextScale,
-                FontScale = fontScale,
-                PanelDepth = panelDepth,
-                ContainerScaleConfig = FuContainerScaleConfig.Disabled(contextScale, fontScale)
-            };
-            settings.Sanitize();
-            return settings;
-        }
-
-        public static Fu3DWindowSettings ScaledResolutionWithPanel(
-            Vector2 panelSize,
-            Vector2Int referenceResolution,
-            Vector2 referencePanelSize,
-            float contextScale = 1f,
-            float fontScale = 1f,
-            Vector2Int? minResolution = null,
-            Vector2Int? maxResolution = null,
-            float panelDepth = 0.01f)
-        {
-            Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth);
-            settings.ScaleResolutionWithPanel = true;
-            settings.MatchResolutionToPanelAspect = false;
-            settings.ReferencePanelSize = referencePanelSize;
-            settings.ReferenceResolution = referenceResolution;
-            settings.MinResolution = minResolution ?? Vector2Int.one;
-            settings.MaxResolution = maxResolution ?? Vector2Int.zero;
-            settings.Sanitize();
-            return settings;
-        }
-
-        public static Fu3DWindowSettings FixedResolutionMatchingPanelAspect(
-            Vector2 panelSize,
-            Vector2Int referenceResolution,
-            Vector2 referencePanelSize,
-            float contextScale = 1f,
-            float fontScale = 1f,
-            Vector2Int? minResolution = null,
-            Vector2Int? maxResolution = null,
-            float panelDepth = 0.01f)
-        {
-            Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth);
-            settings.MatchResolutionToPanelAspect = true;
-            settings.ReferencePanelSize = referencePanelSize;
-            settings.ReferenceResolution = referenceResolution;
-            settings.MinResolution = minResolution ?? Vector2Int.one;
-            settings.MaxResolution = maxResolution ?? Vector2Int.zero;
-            settings.Sanitize();
-            return settings;
-        }
-
-        public void Sanitize()
-        {
-            PanelSize = new Vector2(
-                Mathf.Max(0.0001f, Mathf.Abs(PanelSize.x)),
-                Mathf.Max(0.0001f, Mathf.Abs(PanelSize.y)));
-            ReferencePanelSize = new Vector2(
-                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.x > 0f ? ReferencePanelSize.x : PanelSize.x)),
-                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.y > 0f ? ReferencePanelSize.y : PanelSize.y)));
-            Resolution = new Vector2Int(
-                Mathf.Max(1, Resolution.x),
-                Mathf.Max(1, Resolution.y));
-            ReferenceResolution = new Vector2Int(
-                Mathf.Max(1, ReferenceResolution.x > 0 ? ReferenceResolution.x : Resolution.x),
-                Mathf.Max(1, ReferenceResolution.y > 0 ? ReferenceResolution.y : Resolution.y));
-            MinResolution = new Vector2Int(
-                Mathf.Max(1, MinResolution.x),
-                Mathf.Max(1, MinResolution.y));
-
-            int maxTextureSize = Mathf.Max(1, SystemInfo.maxTextureSize);
-            MaxResolution = new Vector2Int(
-                MaxResolution.x > 0 ? MaxResolution.x : maxTextureSize,
-                MaxResolution.y > 0 ? MaxResolution.y : maxTextureSize);
-            MaxResolution = new Vector2Int(
-                Mathf.Max(MinResolution.x, MaxResolution.x),
-                Mathf.Max(MinResolution.y, MaxResolution.y));
-
-            ContextScale = Mathf.Max(0.0001f, ContextScale);
-            FontScale = Mathf.Max(0.0001f, FontScale);
-            PanelDepth = Mathf.Max(0.0001f, PanelDepth);
-            if (ScaleResolutionWithPanel)
-            {
-                Resolution = ComputeResolution(PanelSize);
-            }
-            else if (MatchResolutionToPanelAspect)
-            {
-                Resolution = ComputeAspectMatchedResolution(PanelSize);
-            }
-            if (ContainerScaleConfig.BaseScale <= 0f || ContainerScaleConfig.BaseFontScale <= 0f)
-            {
-                ContainerScaleConfig = FuContainerScaleConfig.Disabled(ContextScale, FontScale);
-            }
-            else
-            {
-                ContainerScaleConfig.Sanitize();
-            }
-        }
-
-        public Vector2Int ComputeResolution(Vector2 panelSize)
-        {
-            panelSize = new Vector2(
-                Mathf.Max(0.0001f, Mathf.Abs(panelSize.x)),
-                Mathf.Max(0.0001f, Mathf.Abs(panelSize.y)));
-
-            Vector2 referencePanelSize = new Vector2(
-                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.x)),
-                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.y)));
-
-            Vector2 scale = new Vector2(
-                panelSize.x / referencePanelSize.x,
-                panelSize.y / referencePanelSize.y);
-
-            Vector2Int resolution = new Vector2Int(
-                Mathf.RoundToInt(ReferenceResolution.x * scale.x),
-                Mathf.RoundToInt(ReferenceResolution.y * scale.y));
-
-            return new Vector2Int(
-                Mathf.Clamp(resolution.x, MinResolution.x, MaxResolution.x),
-                Mathf.Clamp(resolution.y, MinResolution.y, MaxResolution.y));
-        }
-
-        public Vector2Int ComputeAspectMatchedResolution(Vector2 panelSize)
-        {
-            panelSize = new Vector2(
-                Mathf.Max(0.0001f, Mathf.Abs(panelSize.x)),
-                Mathf.Max(0.0001f, Mathf.Abs(panelSize.y)));
-
-            Vector2 referencePanelSize = new Vector2(
-                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.x)),
-                Mathf.Max(0.0001f, Mathf.Abs(ReferencePanelSize.y)));
-
-            float panelAspect = panelSize.x / panelSize.y;
-            float referencePanelAspect = referencePanelSize.x / referencePanelSize.y;
-            float referenceResolutionAspect = ReferenceResolution.x / (float)ReferenceResolution.y;
-            float targetAspect = referenceResolutionAspect * (panelAspect / referencePanelAspect);
-            float referenceArea = Mathf.Max(1f, ReferenceResolution.x * ReferenceResolution.y);
-            int width = Mathf.RoundToInt(Mathf.Sqrt(referenceArea * targetAspect));
-            int height = Mathf.RoundToInt(width / targetAspect);
-
-            Vector2Int resolution = new Vector2Int(
-                Mathf.Max(1, width),
-                Mathf.Max(1, height));
-
-            return new Vector2Int(
-                Mathf.Clamp(resolution.x, MinResolution.x, MaxResolution.x),
-                Mathf.Clamp(resolution.y, MinResolution.y, MaxResolution.y));
-        }
-    }
-
-    /// <summary>
     /// A class that represent a 3D UI Container
     /// </summary>
     public class Fu3DWindowContainer : IFuWindowContainer
     {
-        #region Variables
+        #region State
         public string ID { get; private set; }
         public FuWindow Window { get; private set; }
         public FuContext Context => _fuguiContext;
@@ -252,6 +67,7 @@ namespace Fu
         private const float RuntimeResizeMinSize = 0.0001f;
         #endregion
 
+        #region Constructors
         /// <summary>
         /// Instantiate a new 3D Container
         /// </summary>
@@ -328,6 +144,14 @@ namespace Fu
             window.InitializeOnContainer();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the Fu3 DWindow Container class.
+        /// </summary>
+        /// <param name="window">The window value.</param>
+        /// <param name="position">The position value.</param>
+        /// <param name="rotation">The rotation value.</param>
+        /// <param name="scaleConfig">The scale Config value.</param>
+        /// <param name="scale3D">The scale3 D value.</param>
         [Obsolete("Use Fu3DWindowContainer(FuWindow, Fu3DWindowSettings, ...) to provide panel size and render resolution explicitly.")]
         public Fu3DWindowContainer(FuWindow window, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float? scale3D = null)
             : this(window, getLegacySettings(scaleConfig, scale3D), position, rotation)
@@ -335,7 +159,9 @@ namespace Fu
             _useExplicitResolution = false;
             _explicitResolution = Vector2Int.zero;
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Whenever a theme is set
         /// </summary>
@@ -507,6 +333,10 @@ namespace Fu
             );
         }
 
+        /// <summary>
+        /// Returns the get default3 dscale config result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         private static FuContainerScaleConfig getDefault3DScaleConfig()
         {
             float baseScale = Fugui.Settings != null ? Fugui.Settings.Windows3DSuperSampling : 1f;
@@ -514,11 +344,21 @@ namespace Fu
             return FuContainerScaleConfig.Disabled(baseScale, baseFontScale);
         }
 
+        /// <summary>
+        /// Returns the get default3 dscale result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         private static float getDefault3DScale()
         {
             return Fugui.Settings != null ? Mathf.Max(0.0001f, Fugui.Settings.Windows3DScale) : 10f;
         }
 
+        /// <summary>
+        /// Returns the get legacy settings result.
+        /// </summary>
+        /// <param name="scaleConfig">The scale Config value.</param>
+        /// <param name="scale3D">The scale3 D value.</param>
+        /// <returns>The result of the operation.</returns>
         private static Fu3DWindowSettings getLegacySettings(FuContainerScaleConfig? scaleConfig, float? scale3D)
         {
             float contextScale = Fugui.Settings != null ? Fugui.Settings.Windows3DSuperSampling : 1f;
@@ -538,6 +378,11 @@ namespace Fu
             return settings;
         }
 
+        /// <summary>
+        /// Runs the apply resolution settings workflow.
+        /// </summary>
+        /// <param name="settings">The settings value.</param>
+        /// <param name="applyPanelSize">The apply Panel Size value.</param>
         private void applyResolutionSettings(Fu3DWindowSettings settings, bool applyPanelSize)
         {
             settings.Sanitize();
@@ -555,6 +400,11 @@ namespace Fu
             _explicitResolution = getExplicitResolutionForLocalSize(settings.PanelSize);
         }
 
+        /// <summary>
+        /// Returns the get legacy scale from settings result.
+        /// </summary>
+        /// <param name="settings">The settings value.</param>
+        /// <returns>The result of the operation.</returns>
         private static float getLegacyScaleFromSettings(Fu3DWindowSettings settings)
         {
             if (settings.Resolution.x <= 0)
@@ -673,6 +523,11 @@ namespace Fu
             _panelGameObject.transform.rotation = rotation;
         }
 
+        /// <summary>
+        /// Returns the update runtime resize result.
+        /// </summary>
+        /// <param name="panelInputState">The panel Input State value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool updateRuntimeResize(InputState panelInputState)
         {
             if (!_runtimeResizable || _panelGameObject == null || Window == null)
@@ -709,6 +564,11 @@ namespace Fu
             return handleHovered || nearResizeCorner || _activeResizeHandleIndex != -1;
         }
 
+        /// <summary>
+        /// Returns the is near resize corner result.
+        /// </summary>
+        /// <param name="localPosition">The local Position value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool isNearResizeCorner(Vector2 localPosition)
         {
             Vector2 localSize = getCurrentLocalSize();
@@ -730,6 +590,12 @@ namespace Fu
             return (nearLeft || nearRight) && (nearBottom || nearTop);
         }
 
+        /// <summary>
+        /// Returns the try get hovered resize handle result.
+        /// </summary>
+        /// <param name="handleIndex">The handle Index value.</param>
+        /// <param name="inputState">The input State value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool tryGetHoveredResizeHandle(out int handleIndex, out InputState inputState)
         {
             handleIndex = -1;
@@ -762,6 +628,11 @@ namespace Fu
             return false;
         }
 
+        /// <summary>
+        /// Runs the start runtime resize workflow.
+        /// </summary>
+        /// <param name="handleIndex">The handle Index value.</param>
+        /// <param name="raycasterID">The raycaster ID value.</param>
         private void startRuntimeResize(int handleIndex, string raycasterID)
         {
             if (string.IsNullOrEmpty(raycasterID) ||
@@ -781,6 +652,9 @@ namespace Fu
             Window?.ForceDraw(10);
         }
 
+        /// <summary>
+        /// Runs the continue runtime resize workflow.
+        /// </summary>
         private void continueRuntimeResize()
         {
             if (_activeResizeHandleIndex == -1)
@@ -803,6 +677,10 @@ namespace Fu
             applyRuntimeResize(currentHitLocal);
         }
 
+        /// <summary>
+        /// Runs the apply runtime resize workflow.
+        /// </summary>
+        /// <param name="currentHitLocal">The current Hit Local value.</param>
         private void applyRuntimeResize(Vector2 currentHitLocal)
         {
             Vector2 delta = currentHitLocal - _resizeStartHitLocal;
@@ -868,6 +746,9 @@ namespace Fu
             Window?.ForceDraw(2);
         }
 
+        /// <summary>
+        /// Runs the finish runtime resize workflow.
+        /// </summary>
         private void finishRuntimeResize()
         {
             bool wasResizing = _activeResizeHandleIndex != -1;
@@ -881,12 +762,23 @@ namespace Fu
             Window?.ForceDraw(2);
         }
 
+        /// <summary>
+        /// Runs the cancel runtime resize workflow.
+        /// </summary>
         private void cancelRuntimeResize()
         {
             _activeResizeHandleIndex = -1;
             _activeResizeRaycasterID = null;
         }
 
+        /// <summary>
+        /// Returns the try get ray local point result.
+        /// </summary>
+        /// <param name="raycaster">The raycaster value.</param>
+        /// <param name="planePosition">The plane Position value.</param>
+        /// <param name="planeRotation">The plane Rotation value.</param>
+        /// <param name="localPoint">The local Point value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool tryGetRayLocalPoint(FuRaycaster raycaster, Vector3 planePosition, Quaternion planeRotation, out Vector2 localPoint)
         {
             localPoint = Vector2.zero;
@@ -917,16 +809,29 @@ namespace Fu
             return true;
         }
 
+        /// <summary>
+        /// Returns the is left handle result.
+        /// </summary>
+        /// <param name="handleIndex">The handle Index value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool isLeftHandle(int handleIndex)
         {
             return handleIndex == 0 || handleIndex == 2;
         }
 
+        /// <summary>
+        /// Returns the is bottom handle result.
+        /// </summary>
+        /// <param name="handleIndex">The handle Index value.</param>
+        /// <returns>The result of the operation.</returns>
         private bool isBottomHandle(int handleIndex)
         {
             return handleIndex == 0 || handleIndex == 1;
         }
 
+        /// <summary>
+        /// Runs the ensure resize handles workflow.
+        /// </summary>
         private void ensureResizeHandles()
         {
             if (!_runtimeResizable || _panelGameObject == null)
@@ -962,6 +867,9 @@ namespace Fu
             updateResizeHandleTransforms();
         }
 
+        /// <summary>
+        /// Runs the update resize handle transforms workflow.
+        /// </summary>
         private void updateResizeHandleTransforms()
         {
             if (!_runtimeResizable || _resizeHandles == null)
@@ -990,6 +898,10 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Returns the get current local size result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         private Vector2 getCurrentLocalSize()
         {
             if (_useExplicitResolution)
@@ -1002,6 +914,10 @@ namespace Fu
             return new Vector2(_size.x / contextScale * panelScale, _size.y / contextScale * panelScale);
         }
 
+        /// <summary>
+        /// Returns the get mesh scale result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         private float getMeshScale()
         {
             if (!_useExplicitResolution)
@@ -1017,6 +933,11 @@ namespace Fu
             return Mathf.Max(0.0001f, Mathf.Min(xScale, yScale));
         }
 
+        /// <summary>
+        /// Returns the get mesh size result.
+        /// </summary>
+        /// <param name="meshScale">The mesh Scale value.</param>
+        /// <returns>The result of the operation.</returns>
         private Vector2 getMeshSize(float meshScale)
         {
             if (_useExplicitResolution)
@@ -1028,6 +949,12 @@ namespace Fu
             return new Vector2(_size.x / contextScale, _size.y / contextScale);
         }
 
+        /// <summary>
+        /// Returns the get scale source size result.
+        /// </summary>
+        /// <param name="localSize">The local Size value.</param>
+        /// <param name="config">The config value.</param>
+        /// <returns>The result of the operation.</returns>
         private Vector2Int getScaleSourceSize(Vector2 localSize, FuContainerScaleConfig config)
         {
             if (_useExplicitResolution)
@@ -1038,6 +965,12 @@ namespace Fu
             return getRenderSizeForLocalSize(localSize, config.BaseScale);
         }
 
+        /// <summary>
+        /// Returns the get render size for local size result.
+        /// </summary>
+        /// <param name="localSize">The local Size value.</param>
+        /// <param name="contextScale">The context Scale value.</param>
+        /// <returns>The result of the operation.</returns>
         private Vector2Int getRenderSizeForLocalSize(Vector2 localSize, float contextScale)
         {
             if (_useExplicitResolution)
@@ -1053,6 +986,11 @@ namespace Fu
             );
         }
 
+        /// <summary>
+        /// Returns the get explicit resolution for local size result.
+        /// </summary>
+        /// <param name="localSize">The local Size value.</param>
+        /// <returns>The result of the operation.</returns>
         private Vector2Int getExplicitResolutionForLocalSize(Vector2 localSize)
         {
             if (!_scaleResolutionWithPanel)
@@ -1087,6 +1025,11 @@ namespace Fu
                 Mathf.Clamp(resolution.y, minResolution.y, Mathf.Max(minResolution.y, maxResolution.y)));
         }
 
+        /// <summary>
+        /// Returns the get aspect matched resolution for local size result.
+        /// </summary>
+        /// <param name="localSize">The local Size value.</param>
+        /// <returns>The result of the operation.</returns>
         private Vector2Int getAspectMatchedResolutionForLocalSize(Vector2 localSize)
         {
             Vector2 panelSize = new Vector2(
@@ -1116,6 +1059,12 @@ namespace Fu
                 Mathf.Clamp(resolution.y, minResolution.y, Mathf.Max(minResolution.y, maxResolution.y)));
         }
 
+        /// <summary>
+        /// Returns the get resize handle local position result.
+        /// </summary>
+        /// <param name="handleIndex">The handle Index value.</param>
+        /// <param name="localSize">The local Size value.</param>
+        /// <returns>The result of the operation.</returns>
         private Vector3 getResizeHandleLocalPosition(int handleIndex, Vector2 localSize)
         {
             float x = isLeftHandle(handleIndex) ? -localSize.x * 0.5f : localSize.x * 0.5f;
@@ -1123,6 +1072,10 @@ namespace Fu
             return new Vector3(x, y, ResizeHandleFrontOffset);
         }
 
+        /// <summary>
+        /// Runs the set resize handles visible workflow.
+        /// </summary>
+        /// <param name="visible">The visible value.</param>
         private void setResizeHandlesVisible(bool visible)
         {
             if (visible)
@@ -1148,11 +1101,20 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Returns the get resize handle id result.
+        /// </summary>
+        /// <param name="handleIndex">The handle Index value.</param>
+        /// <returns>The result of the operation.</returns>
         private string getResizeHandleID(int handleIndex)
         {
             return ID + "_ResizeHandle_" + handleIndex;
         }
 
+        /// <summary>
+        /// Returns the get resize handle material result.
+        /// </summary>
+        /// <returns>The result of the operation.</returns>
         private Material getResizeHandleMaterial()
         {
             if (_resizeHandleMaterial != null)
@@ -1175,6 +1137,11 @@ namespace Fu
             return _resizeHandleMaterial;
         }
 
+        /// <summary>
+        /// Runs the set material color workflow.
+        /// </summary>
+        /// <param name="material">The material value.</param>
+        /// <param name="color">The color value.</param>
         private void setMaterialColor(Material material, Color color)
         {
             if (material == null)
@@ -1244,6 +1211,9 @@ namespace Fu
             return true;
         }
 
+        /// <summary>
+        /// Runs the fugui context on frame prepared workflow.
+        /// </summary>
         private void _fuguiContext_OnFramePrepared()
         {
             // update mouse states
@@ -1254,7 +1224,7 @@ namespace Fu
         /// <summary>
         /// Whatever this container must force the local position of it's windows
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The result of the operation.</returns>
         public bool ForcePos()
         {
             return true;
@@ -1264,7 +1234,7 @@ namespace Fu
         /// Whatever this container own a window
         /// </summary>
         /// <param name="id">name of the window to check</param>
-        /// <returns></returns>
+        /// <returns>The result of the operation.</returns>
         public bool HasWindow(string id)
         {
             return Window != null && Window.ID == id;
@@ -1288,6 +1258,11 @@ namespace Fu
             SetLocalSize(localSize, true);
         }
 
+        /// <summary>
+        /// Sets the local size.
+        /// </summary>
+        /// <param name="localSize">The local Size value.</param>
+        /// <param name="refreshRender">The refresh Render value.</param>
         private void SetLocalSize(Vector2 localSize, bool refreshRender)
         {
             if (IsClosed || Window == null || Context == null)
@@ -1345,6 +1320,10 @@ namespace Fu
             updateResizeHandleTransforms();
         }
 
+        /// <summary>
+        /// Runs the refresh explicit render size workflow.
+        /// </summary>
+        /// <param name="rebuildPanelWhenOnlyLocalSizeChanged">The rebuild Panel When Only Local Size Changed value.</param>
         private void refreshExplicitRenderSize(bool rebuildPanelWhenOnlyLocalSizeChanged)
         {
             Vector2Int targetResolution = getExplicitResolutionForLocalSize(_localSize);
@@ -1376,17 +1355,31 @@ namespace Fu
             updateResizeHandleTransforms();
         }
 
-        #region Image & ImageButton
+        /// <summary>
+        /// Gets the texture id.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <returns>The result of the operation.</returns>
         public IntPtr GetTextureID(Texture2D texture)
         {
             return _fuguiContext.TextureManager.GetTextureId(texture);
         }
 
+        /// <summary>
+        /// Gets the texture id.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <returns>The result of the operation.</returns>
         public IntPtr GetTextureID(RenderTexture texture)
         {
             return _fuguiContext.TextureManager.GetTextureId(texture);
         }
 
+        /// <summary>
+        /// Runs the im gui image workflow.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <param name="size">The size value.</param>
         public void ImGuiImage(RenderTexture texture, Vector2 size)
         {
             if (texture == null)
@@ -1397,6 +1390,11 @@ namespace Fu
             ImGui.Image(GetTextureID(texture), size);
         }
 
+        /// <summary>
+        /// Runs the im gui image workflow.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <param name="size">The size value.</param>
         public void ImGuiImage(Texture2D texture, Vector2 size)
         {
             if (texture == null)
@@ -1407,6 +1405,12 @@ namespace Fu
             ImGui.Image(GetTextureID(texture), size);
         }
 
+        /// <summary>
+        /// Runs the im gui image workflow.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="color">The color value.</param>
         public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color)
         {
             if (texture == null)
@@ -1417,6 +1421,12 @@ namespace Fu
             ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
         }
 
+        /// <summary>
+        /// Runs the im gui image workflow.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="color">The color value.</param>
         public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color)
         {
             if (texture == null)
@@ -1427,6 +1437,12 @@ namespace Fu
             ImGui.Image(GetTextureID(texture), size, Vector2.zero, Vector2.one, color);
         }
 
+        /// <summary>
+        /// Returns the im gui image button result.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <param name="size">The size value.</param>
+        /// <returns>The result of the operation.</returns>
         public bool ImGuiImageButton(Texture2D texture, Vector2 size)
         {
             if (texture == null)
@@ -1438,6 +1454,13 @@ namespace Fu
             return ImGui.ImageButton("", GetTextureID(texture), size);
         }
 
+        /// <summary>
+        /// Returns the im gui image button result.
+        /// </summary>
+        /// <param name="texture">The texture value.</param>
+        /// <param name="size">The size value.</param>
+        /// <param name="color">The color value.</param>
+        /// <returns>The result of the operation.</returns>
         public bool ImGuiImageButton(Texture2D texture, Vector2 size, Vector4 color)
         {
             if (texture == null)
@@ -1448,7 +1471,6 @@ namespace Fu
             // TODO : add ID to image button
             return ImGui.ImageButton("", GetTextureID(texture), size, Vector2.zero, Vector2.one, ImGui.GetStyle().Colors[(int)ImGuiCol.Button], color);
         }
-        #endregion
 
         /// <summary>
         /// Render a window into this container
@@ -1486,7 +1508,7 @@ namespace Fu
         /// Try to add a window into this container
         /// </summary>
         /// <param name="FuWindow">The window to add</param>
-        /// <returns></returns>
+        /// <returns>The result of the operation.</returns>
         public bool TryAddWindow(FuWindow FuWindow)
         {
             if (IsClosed)
@@ -1537,7 +1559,7 @@ namespace Fu
         /// Try to remove a window from this container
         /// </summary>
         /// <param name="id">ID of the window to remove</param>
-        /// <returns></returns>
+        /// <returns>The result of the operation.</returns>
         public bool TryRemoveWindow(string id)
         {
             if (Window != null && Window.ID == id)
@@ -1599,5 +1621,6 @@ namespace Fu
             OnRuntimeResized = null;
             Fugui.Unregister3DWindow(windowID);
         }
+        #endregion
     }
 }

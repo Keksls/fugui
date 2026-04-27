@@ -6,10 +6,14 @@ using UnityEngine.Rendering.Universal;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Camera Window type.
+    /// </summary>
     public class FuCameraWindow : FuWindow
     {
-        #region Variables
+        #region State
         public float _superSampling = 1.0f;
+
         public float SuperSampling
         {
             get { return _superSampling; }
@@ -38,6 +42,7 @@ namespace Fu
         public bool AutoCameraFPS { get; set; }
         public int IdleCameraFPS { get; private set; }
         public int ManipulatingCameraFPS { get; private set; }
+
         private bool _forceCameraRender;
         private float _targetCameraDeltaTimeMs;
         private float _lastCameraRenderTime;
@@ -47,6 +52,10 @@ namespace Fu
         private int _currentTextureDepth = 24;
         #endregion
 
+        /// <summary>
+        /// Initializes a new instance of the Fu Camera Window class.
+        /// </summary>
+        /// <param name="windowDefinition">The window Definition value.</param>
         public FuCameraWindow(FuCameraWindowDefinition windowDefinition) : base(windowDefinition)
         {
             AutoCameraFPS = true;
@@ -125,6 +134,11 @@ namespace Fu
             FuRaycasting.RegisterRaycaster(_raycaster);
         }
 
+        #region Methods
+        /// <summary>
+        /// Runs the uicamera window on closed workflow.
+        /// </summary>
+        /// <param name="window">The window value.</param>
         private void UICameraWindow_OnClosed(FuWindow window)
         {
             FuRaycasting.UnRegisterRaycaster(window.ID);
@@ -273,7 +287,6 @@ namespace Fu
             updateCameraSize();
         }
 
-        #region public Utils
         /// <summary>
         /// force camera to render next frame
         /// </summary>

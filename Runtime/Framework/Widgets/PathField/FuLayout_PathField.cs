@@ -1,32 +1,74 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System;
 using System.IO;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        /// <summary>
+        /// Runs the input folder workflow.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="defaultPath">The default Path value.</param>
+        /// <param name="extentions">The extentions value.</param>
         public void InputFolder(string text, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
         {
             _pathField(text, true, callback, FuFrameStyle.Default, defaultPath, extentions);
         }
 
+        /// <summary>
+        /// Runs the input folder workflow.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="style">The style value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="defaultPath">The default Path value.</param>
+        /// <param name="extentions">The extentions value.</param>
         public void InputFolder(string text, FuFrameStyle style, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
         {
             _pathField(text, true, callback, style, defaultPath, extentions);
         }
 
+        /// <summary>
+        /// Runs the input file workflow.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="defaultPath">The default Path value.</param>
+        /// <param name="extentions">The extentions value.</param>
         public void InputFile(string text, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
         {
             _pathField(text, false, callback, FuFrameStyle.Default, defaultPath, extentions);
         }
 
+        /// <summary>
+        /// Runs the input file workflow.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="style">The style value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="defaultPath">The default Path value.</param>
+        /// <param name="extentions">The extentions value.</param>
         public void InputFile(string text, FuFrameStyle style, Action<string> callback = null, string defaultPath = null, params ExtensionFilter[] extentions)
         {
             _pathField(text, false, callback, style, defaultPath, extentions);
         }
 
+        /// <summary>
+        /// Runs the path field workflow.
+        /// </summary>
+        /// <param name="text">The text value.</param>
+        /// <param name="onlyFolder">The only Folder value.</param>
+        /// <param name="callback">The callback value.</param>
+        /// <param name="style">The style value.</param>
+        /// <param name="defaultPath">The default Path value.</param>
+        /// <param name="extentions">The extentions value.</param>
         protected virtual void _pathField(string text, bool onlyFolder, Action<string> callback, FuFrameStyle style, string defaultPath = "", params ExtensionFilter[] extentions)
         {
             // apply style and set unique ID

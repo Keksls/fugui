@@ -5,9 +5,12 @@ using UnityEngine;
 
 namespace Fu
 {
+    /// <summary>
+    /// Represents the Fu Window Definition type.
+    /// </summary>
     public class FuWindowDefinition
     {
-        #region Variables
+        #region State
         // A unique identifier for the window
         public FuWindowName WindowName { get; private set; }
         // A delegate for updating the window's UI
@@ -48,8 +51,10 @@ namespace Fu
         // A dictionary that store default overlays for this window
         public Dictionary<string, FuOverlay> Overlays { get; private set; }
         // public event invoked when UIWindow is Creating according to this current UIWindowDefinition
+
         public event Action<FuWindow> OnUIWindowCreated;
         // the callback UI of the optional toolbar of this window
+
         public Action<FuWindow, Vector2> HeaderUI { get; set; }
         // the callback UI of the optional footer of this window
         public Action<FuWindow, Vector2> FooterUI { get; set; }
@@ -58,9 +63,11 @@ namespace Fu
         // The height of the window topBar (optional)
         public float BottomBarHeight { get; private set; }
         // the type of the UIWindow that will be instanciated by this window definition, by default it's just a basic UIWindow but you can set it to any subclass of UIWindow
+
         internal Func<FuWindowDefinition, FuWindow> _uiWindowInstantiationFunc;
         #endregion
 
+        #region Constructors
         /// <summary>
         /// Initializes a new instance of the UIWindowDefinition class with the specified parameters.
         /// </summary>
@@ -100,8 +107,9 @@ namespace Fu
                 Fugui.RegisterWindowDefinition(this);
             }
         }
+        #endregion
 
-        #region Overlays
+        #region Methods
         /// <summary>
         /// Adds the specified UI overlay to the list of overlays.
         /// </summary>
@@ -133,9 +141,6 @@ namespace Fu
             return Overlays.Remove(overlayID);
         }
 
-        #endregion
-
-        #region UIWindow Creation
         /// <summary>
         /// Sets the custom window type for this window definition.
         /// </summary>
@@ -195,9 +200,7 @@ namespace Fu
             }
             return false;
         }
-        #endregion
 
-        #region Default definitions fields setters
         /// <summary>
         /// Sets the UI of the topBar of this window
         /// This will be called before main UI callback and set the cursor

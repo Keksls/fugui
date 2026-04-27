@@ -1,5 +1,3 @@
-﻿using ImGuiNET;
-using System;
 using UnityEngine;
 
 namespace Fu
@@ -15,36 +13,11 @@ namespace Fu
     [CreateAssetMenu(fileName = "FontConfig", menuName = "Fugui/FontConfig", order = 1)]
     public class FontConfig : ScriptableObject
     {
+        #region State
         public int DefaultSize = 14;
         public FontSizeConfig[] Fonts;
         [Header("The font folder must be paced into StreamingAssets")]
         public string FontsFolder = "Fugui/fonts/current/";
-    }
-
-    [Serializable]
-    public class FontSizeConfig
-    {
-        public int Size = 14;
-        public ImFontPtr FontPtr;
-        public SubFontConfig[] SubFonts_Regular;
-        public SubFontConfig[] SubFonts_Bold;
-        public SubFontConfig[] SubFonts_Italic;
-    }
-
-    [Serializable]
-    public class SubFontConfig
-    {
-        public string FileName = "icons.ttf";
-        [HideInInspector]
-        public string FilePath;
-        public ushort StartGlyph = '\uE000';
-        public ushort EndGlyph = '\uF8FF';
-        public ushort[] CustomGlyphRanges;
-        [HideInInspector]
-        public IntPtr GlyphRangePtr;
-        [HideInInspector]
-        public ImFontConfigPtr FontConfigPtr;
-        public float SizeOffset = 0f;
-        public Vector2 GlyphOffset = Vector2.zero;
+        #endregion
     }
 }

@@ -1,16 +1,22 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Selectable Builder type.
+    /// </summary>
     public static class FuSelectableBuilder
     {
+        #region State
         private static Dictionary<Type, List<int>> _selectablesValues = new Dictionary<Type, List<int>>();
         private static Dictionary<Type, List<string>> _selectablesObjects = new Dictionary<Type, List<string>>();
          // A dictionary of integers representing the combo selected indices.
         private static Dictionary<string, int> _selectableSelectedIndices = new Dictionary<string, int>();
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Get Selectables Data from a enum
         /// </summary>
@@ -100,5 +106,6 @@ namespace Fu.Framework
         {
             _selectableSelectedIndices[id] = index;
         }
+        #endregion
     }
 }

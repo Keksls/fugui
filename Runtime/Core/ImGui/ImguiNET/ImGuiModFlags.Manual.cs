@@ -1,5 +1,8 @@
-﻿namespace ImGuiNET
+namespace ImGuiNET
 {
+    /// <summary>
+    /// Lists the available Im Gui Mod Flags values.
+    /// </summary>
     [System.Flags]
     public enum ImGuiModFlags
     {

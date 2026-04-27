@@ -1,11 +1,15 @@
-﻿using Fu;
+using Fu;
 using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Layout type.
+    /// </summary>
     public partial class FuLayout
     {
+        #region Methods
         /// <summary>
         /// Draw an image
         /// </summary>
@@ -245,5 +249,6 @@ namespace Fu.Framework
         {
             return ImageButton(text, texture, size, Color.white, imagePadding, true);
         }
+        #endregion
     }
 }

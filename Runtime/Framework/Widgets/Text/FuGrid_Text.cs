@@ -1,10 +1,14 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Grid type.
+    /// </summary>
     public partial class FuGrid
     {
+        #region Methods
         /// <summary>
         /// Displays a text string with the specified style.
         /// </summary>
@@ -80,5 +84,6 @@ namespace Fu.Framework
             }
             endElement(style);
         }
+        #endregion
     }
 }

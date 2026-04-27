@@ -1,14 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Nodal Registry type.
+    /// </summary>
     public class FuNodalRegistry
     {
+        #region State
         private static Dictionary<string, Func<FuNode>> _nodesRegistry = new Dictionary<string, Func<FuNode>>();
         private static Dictionary<string, FuNodalType> _typeRegistry = new Dictionary<string, FuNodalType>();
         private static Dictionary<Type, string> _nodesTypesCache = null;
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Register a node type with its constructor function
         /// </summary>
@@ -158,5 +164,6 @@ namespace Fu.Framework
         {
             return _typeRegistry.Keys;
         }
+        #endregion
     }
 }

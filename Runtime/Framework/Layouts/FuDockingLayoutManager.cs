@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using UnityEngine;
 
 namespace Fu
@@ -15,25 +14,30 @@ namespace Fu
     /// </summary>
     public class FuDockingLayoutManager
     {
-        #region Variables
+        #region State
         public FuDockingLayoutDefinition CurrentLayout { get; internal set; }
+
         internal ExtensionFilter FlgExtensionFilter;
+
         public Dictionary<string, FuDockingLayoutDefinition> Layouts { get; private set; }
         /// <summary>
         /// Whatever we are setting a layout right now
         /// </summary>
         public bool IsSettingLayout { get; private set; }
+
         private bool _hasPendingLayoutRequest;
         private bool _pendingLayoutRetryQueued;
         private FuDockingLayoutDefinition _pendingLayout;
         private bool _pendingGetOnlyAutoInstantiated;
+
         public event Action OnDockLayoutSet;
         public event Action OnBeforeDockLayoutSet;
         public event Action OnDockLayoutReloaded;
+
         public const string FUGUI_DOCKING_LAYOUT_EXTENTION = "fdl";
         #endregion
 
-        #region Initialization
+        #region Constructors
         /// <summary>
         /// ctor of this class
         /// </summary>
@@ -60,7 +64,7 @@ namespace Fu
         }
         #endregion
 
-        #region Loading files
+        #region Methods
         /// <summary>
         /// Load all layouts from files
         /// </summary>
@@ -139,9 +143,7 @@ namespace Fu
 
             return dictionary;
         }
-        #endregion
 
-        #region Auto Docking
         /// <summary>
         /// Try to dock the window to current DockingLayoutDefinition
         /// </summary>
@@ -185,9 +187,7 @@ namespace Fu
                 tryAutoDockWindow(window, child, ref success);
             }
         }
-        #endregion
 
-        #region Applying layouts
         /// <summary>
         /// Sets the layout of the DockingLayout manager.
         /// </summary>
@@ -514,9 +514,7 @@ namespace Fu
                 endSettingLayout();
             });
         }
-        #endregion
 
-        #region Files generation
         /// <summary>
         /// Write some string content into a file
         /// </summary>
@@ -583,9 +581,7 @@ namespace Fu
 
             return sb.ToString();
         }
-        #endregion
 
-        #region Binding helpers
         /// <summary>
         /// Method that binds a window definition to a dock space by its name 
         /// </summary>
@@ -644,9 +640,7 @@ namespace Fu
                 CurrentLayout.RemoveWindowsDefinitionInChildren(windowDefID);
             }
         }
-        #endregion
 
-        #region Create / Save / Delete
         /// <summary>
         /// Create a new layout and select if
         /// </summary>
@@ -794,17 +788,20 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Returns the check layout name result.
+        /// </summary>
+        /// <param name="layoutName">The layout Name value.</param>
+        /// <returns>The result of the operation.</returns>
         internal bool checkLayoutName(string layoutName)
         {
             return layoutName.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
         }
-        #endregion
 
-        #region Generate Current Layout
         /// <summary>
         /// Generate current layout synchronously
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The result of the operation.</returns>
         public FuDockingLayoutDefinition GenerateCurrentLayout()
         {
             HashSet<uint> visitedDockIDs = new HashSet<uint>();
@@ -982,21 +979,22 @@ namespace Fu
                 }
             }
         }
+        #endregion
 
+        #region Nested Types
+        /// <summary>
+        /// Represents the dock Space Data type.
+        /// </summary>
         private class dockSpaceData
         {
+            #region State
             public float SplitSpaceRatio;
             public UIDockSpaceOrientation Dir;
             public List<dockSpaceData> Children;
             public Rect Rect;
             public List<FuWindowName> WindowNames;
+            #endregion
         }
         #endregion
-    }
-
-    [Serializable]
-    public class FuLayoutIndex
-    {
-        public string[] Layouts;
     }
 }

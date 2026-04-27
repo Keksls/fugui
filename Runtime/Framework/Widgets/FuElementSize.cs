@@ -1,32 +1,51 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace Fu.Framework
 {
+    /// <summary>
+    /// Represents the Fu Element Size data structure.
+    /// </summary>
     public struct FuElementSize
     {
+        #region State
         private Vector2 _size;
+
         public Vector2 BrutSize => _size;
         public Vector2 ScaledSize => new Vector2(_size.x > 0f ? _size.x * Fugui.CurrentContext.Scale : _size.x, _size.y > 0f ? _size.y * Fugui.CurrentContext.Scale : _size.y);
 
-        #region Presset
         static FuElementSize _autoSize = new FuElementSize(Vector2.zero);
+
         public static FuElementSize AutoSize { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _autoSize; } }
+
         static FuElementSize _fullSize = new FuElementSize(new Vector2(-1f, 0f));
+
         public static FuElementSize FullSize { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _fullSize; } }
         #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Element Size class.
+        /// </summary>
+        /// <param name="size">The size value.</param>
         public FuElementSize(Vector2 size)
         {
             _size = size;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the Fu Element Size class.
+        /// </summary>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
         public FuElementSize(float x, float y)
         {
             _size = new Vector2(x, y);
         }
+        #endregion
 
+        #region Methods
         /// <summary>
         /// Get calculated size according to given size
         /// </summary>
@@ -53,7 +72,9 @@ namespace Fu.Framework
             }
             return size;
         }
+        #endregion
 
+        #region Members
         /// <summary>
         /// Implcite operator to auto cast UIElementSize to Vector2
         /// </summary>
@@ -62,5 +83,6 @@ namespace Fu.Framework
         /// Implcite operator to auto cast Vector2 to UIElementSize
         /// </summary>
         public static implicit operator FuElementSize(Vector2 size) => new FuElementSize(size);
+        #endregion
     }
 }

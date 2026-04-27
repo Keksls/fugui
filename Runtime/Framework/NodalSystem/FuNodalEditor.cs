@@ -12,9 +12,10 @@ namespace Fu.Framework.Nodal
     /// </summary>
     public class FuNodalEditor
     {
-        #region Variables
+        #region State
         public FuNodalGraph Graph { get; set; }
         // Settings
+
         private bool _useBezierCurves;
         private bool _showCompatiblesNodesOnVoidLink;
         private bool _autoLinkColorFromConvertedType;
@@ -57,6 +58,14 @@ namespace Fu.Framework.Nodal
         private Vector2 contextmenuOpenMousePos;
         #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Nodal Editor class.
+        /// </summary>
+        /// <param name="graph">The graph value.</param>
+        /// <param name="minZoom">The min Zoom value.</param>
+        /// <param name="maxZoom">The max Zoom value.</param>
+        /// <param name="flags">The flags value.</param>
         public FuNodalEditor(FuNodalGraph graph, float minZoom = 0.5f, float maxZoom = 2f, FuNodalEditorFlags flags = FuNodalEditorFlags.Default)
         {
             MinZoom = Mathf.Max(0.1f, minZoom);
@@ -66,8 +75,9 @@ namespace Fu.Framework.Nodal
             _useBezierCurves = flags.HasFlag(FuNodalEditorFlags.UseBezierCurves);
             _showCompatiblesNodesOnVoidLink = flags.HasFlag(FuNodalEditorFlags.ShowCompatiblesNodesOnVoidLink);
         }
+        #endregion
 
-        #region Context menu
+        #region Methods
         /// <summary>
         /// Draw the context menu for adding nodes.
         /// </summary>
@@ -187,19 +197,22 @@ namespace Fu.Framework.Nodal
                 });
             }
         }
+        #endregion
 
+        #region Nested Types
         /// <summary>
         /// Tree node for menu categories.
         /// </summary>
         private sealed class MenuNode
         {
+            #region State
             public Dictionary<string, MenuNode> Children { get; } = new Dictionary<string, MenuNode>(StringComparer.OrdinalIgnoreCase);
             public List<string> LeafTypes { get; } = new List<string>();
+            #endregion
         }
-
         #endregion
 
-        #region Canvas
+        #region Methods
         /// <summary>
         /// Draw the nodal canvas (pan/zoom, grid, nodes, edges, interaction).
         /// </summary>
@@ -503,6 +516,12 @@ namespace Fu.Framework.Nodal
                 dl.AddLine(new Vector2(origin.x, py), new Vector2(endX, py), isMajor ? _colGridMajor : _colGridMinor, 1f);
             }
         }
+        /// <summary>
+        /// Returns the pos mod result.
+        /// </summary>
+        /// <param name="a">The a value.</param>
+        /// <param name="m">The m value.</param>
+        /// <returns>The result of the operation.</returns>
         private static int PosMod(int a, int m) => (a % m + m) % m;
 
         /// <summary>
@@ -525,9 +544,7 @@ namespace Fu.Framework.Nodal
             Vector2 mousePos = ImGui.GetMousePos();
             return mousePos - _canvasOrigin;
         }
-        #endregion
 
-        #region Link Drawing
         /// <summary>
         /// Draw a cubic Bezier curve between two points with control points.
         /// </summary>
@@ -649,9 +666,7 @@ namespace Fu.Framework.Nodal
                 dl.AddLine(bStart, b, colEnd, w);
             }
         }
-        #endregion
 
-        #region Fostrum culling
         /// <summary>
         /// Returns true if the node is at least partially visible in the canvas fostrum.
         /// </summary>
@@ -763,8 +778,11 @@ namespace Fu.Framework.Nodal
         }
         #endregion
 
-        #region Nodes Drawing
+        #region State
         Dictionary<int, float> _nodesHeightCache = new Dictionary<int, float>();
+        #endregion
+
+        #region Methods
         /// <summary>
         /// Draw a single node at its position.
         /// </summary>
@@ -1207,9 +1225,7 @@ namespace Fu.Framework.Nodal
             node.EditorData.rightMaxX = rightMaxX;
             node.EditorData.MustRecalculate = false;
         }
-        #endregion
 
-        #region Link Handling
         /// <summary>
         /// Try to finish the link operation if possible (called on mouse release).
         /// </summary>
@@ -1264,9 +1280,7 @@ namespace Fu.Framework.Nodal
             voidLinkFromPort = fromPort;
             DrawContextMenu(FuWindow.CurrentDrawingWindow.Layout, compatibleTypes, false, true, true);
         }
-        #endregion
 
-        #region Selection helpers
         /// <summary>
         /// Returns true if the node with the given id is currently selected.
         /// </summary>
@@ -1321,9 +1335,7 @@ namespace Fu.Framework.Nodal
                 if (overlap) _selectedNodeIds.Add(n.Id);
             }
         }
-        #endregion
 
-        #region Minimap
         /// <summary>
         /// Sets a new zoom while keeping a given canvas point under the mouse stable (anchored).
         /// </summary>
@@ -1363,9 +1375,7 @@ namespace Fu.Framework.Nodal
             Vector2 gCenter = (gMin + gMax) * 0.5f;
             _pan = (_canvasSize * 0.5f) - gCenter * _zoom;
         }
-        #endregion
 
-        #region Public API
         /// <summary>
         /// Draw the nodal canvas within the given layout.
         /// </summary>

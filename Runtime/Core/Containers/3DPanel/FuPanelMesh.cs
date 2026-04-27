@@ -291,22 +291,23 @@ namespace Fu
         {
             getAbsoluteCornerRadii(out float tl, out float tr, out float bl, out float br);
 
-            int columns = getCurveColumnCount();
-            int vertexCount = (columns + 1) * 2;
-            int triangleCount = columns * 2;
+            float halfWidth = _rect.width * 0.5f;
+            float height = _rect.height;
+            List<float> columnPositions = getCurveColumnPositions(halfWidth, tl, tr, bl, br);
+            int columnCount = columnPositions.Count;
+            int segmentCount = columnCount - 1;
+            int vertexCount = columnCount * 2;
+            int triangleCount = segmentCount * 2;
 
             Vector3[] vertices = new Vector3[vertexCount];
             Vector3[] normals = new Vector3[vertexCount];
             Vector2[] uvs = new Vector2[vertexCount];
             int[] triangles = new int[triangleCount * 3];
 
-            float halfWidth = _rect.width * 0.5f;
-            float height = _rect.height;
-
-            for (int column = 0; column <= columns; column++)
+            for (int column = 0; column < columnCount; column++)
             {
-                float t = (float)column / columns;
-                float x = Mathf.Lerp(-halfWidth, halfWidth, t);
+                float x = columnPositions[column];
+                float t = Mathf.InverseLerp(-halfWidth, halfWidth, x);
                 float bottom = getRoundedBottomY(x, halfWidth, bl, br);
                 float top = getRoundedTopY(x, halfWidth, height, tl, tr);
 
@@ -323,7 +324,7 @@ namespace Fu
             }
 
             int triangle = 0;
-            for (int column = 0; column < columns; column++)
+            for (int column = 0; column < segmentCount; column++)
             {
                 int bottom = getCurveBottomIndex(column);
                 int top = getCurveTopIndex(column);
@@ -339,7 +340,7 @@ namespace Fu
                 triangles[triangle++] = nextBottom;
             }
 
-            perimeterIndices = getCurvePerimeterIndices(columns);
+            perimeterIndices = getCurvePerimeterIndices(segmentCount);
 
             uiMesh.Clear();
             uiMesh.vertices = vertices;
@@ -464,12 +465,81 @@ namespace Fu
         }
 
         /// <summary>
-        /// Returns the curve column count result.
+        /// Returns sorted x columns for the curved mesh, preserving corner arc samples.
         /// </summary>
+        /// <param name="halfWidth">The half Width value.</param>
+        /// <param name="tl">The tl value.</param>
+        /// <param name="tr">The tr value.</param>
+        /// <param name="bl">The bl value.</param>
+        /// <param name="br">The br value.</param>
         /// <returns>The result of the operation.</returns>
-        private int getCurveColumnCount()
+        private List<float> getCurveColumnPositions(float halfWidth, float tl, float tr, float bl, float br)
         {
-            return Mathf.Clamp(Mathf.CeilToInt(Mathf.Max(_cornerVertexCount, _curveAngle / 4f)), 8, 128);
+            List<float> columns = new List<float>();
+            int baseColumnCount = Mathf.Clamp(Mathf.CeilToInt(Mathf.Max(_cornerVertexCount, _curveAngle / 4f)), 8, 128);
+
+            for (int i = 0; i <= baseColumnCount; i++)
+            {
+                addCurveColumn(columns, Mathf.Lerp(-halfWidth, halfWidth, (float)i / baseColumnCount));
+            }
+
+            addCornerColumns(columns, -halfWidth + tl, tl, Mathf.PI, Mathf.PI * 0.5f);
+            addCornerColumns(columns, halfWidth - tr, tr, Mathf.PI * 0.5f, 0f);
+            addCornerColumns(columns, halfWidth - br, br, 0f, -Mathf.PI * 0.5f);
+            addCornerColumns(columns, -halfWidth + bl, bl, -Mathf.PI * 0.5f, -Mathf.PI);
+
+            columns.Sort();
+
+            for (int i = columns.Count - 1; i > 0; i--)
+            {
+                if (Mathf.Abs(columns[i] - columns[i - 1]) < 0.0001f)
+                {
+                    columns.RemoveAt(i);
+                }
+            }
+
+            if (columns.Count < 2)
+            {
+                columns.Clear();
+                columns.Add(-halfWidth);
+                columns.Add(halfWidth);
+            }
+
+            return columns;
+        }
+
+        /// <summary>
+        /// Adds corner arc x columns.
+        /// </summary>
+        /// <param name="columns">The columns value.</param>
+        /// <param name="centerX">The center X value.</param>
+        /// <param name="radius">The radius value.</param>
+        /// <param name="startAngle">The start Angle value.</param>
+        /// <param name="endAngle">The end Angle value.</param>
+        private void addCornerColumns(List<float> columns, float centerX, float radius, float startAngle, float endAngle)
+        {
+            if (radius <= 0f)
+            {
+                return;
+            }
+
+            int samples = Mathf.Max(2, _cornerVertexCount);
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / (samples - 1);
+                float angle = Mathf.Lerp(startAngle, endAngle, t);
+                addCurveColumn(columns, centerX + Mathf.Cos(angle) * radius);
+            }
+        }
+
+        /// <summary>
+        /// Adds a curve column.
+        /// </summary>
+        /// <param name="columns">The columns value.</param>
+        /// <param name="x">The x value.</param>
+        private void addCurveColumn(List<float> columns, float x)
+        {
+            columns.Add(Mathf.Clamp(x, _rect.xMin, _rect.xMax));
         }
 
         /// <summary>

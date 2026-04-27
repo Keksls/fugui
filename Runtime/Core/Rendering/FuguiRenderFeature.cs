@@ -176,6 +176,7 @@ namespace Fu
                         builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
                         {
                             //DebugDumpDrawData("OFFSCREEN", unityContext.DrawData);
+                            ctx.cmd.ClearRenderTarget(false, true, Color.clear);
                             _textureManager = unityContext.TextureManager;
                             RenderDrawLists(unityContext.ID, ctx.cmd, unityContext.DrawData);
                         });

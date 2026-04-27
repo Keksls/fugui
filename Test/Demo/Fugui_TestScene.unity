@@ -218,7 +218,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4607458544066756794, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: Curve
-      value: 10
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 5190680658197817161, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_Name

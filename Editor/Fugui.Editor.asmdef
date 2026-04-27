@@ -1,0 +1,20 @@
+{
+    "name": "Fugui.Editor",
+    "rootNamespace": "Fu.Editor",
+    "references": [
+        "GUID:9e80a81481228754181e73eb2cededc3",
+        "GUID:15fc0a57446b3144c949da3e2b9737a9",
+        "GUID:df380645f10b7bc4b97d4f5eb6303d95"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

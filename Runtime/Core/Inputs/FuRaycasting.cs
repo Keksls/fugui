@@ -46,6 +46,11 @@ namespace Fu
                 FuRaycaster raycaster = latestRaycasters[containerID];
                 Vector3 localHitPoint = raycastableGameObject.transform.InverseTransformPoint(raycaster.Hit.point);
                 Vector2 localPosition = new Vector2(localHitPoint.x, localHitPoint.y);
+                FuPanelMesh panelMesh = raycastableGameObject.GetComponent<FuPanelMesh>();
+                if (panelMesh != null && panelMesh.TryGetLocalPositionFromUV(raycaster.Hit.textureCoord, out Vector2 panelLocalPosition))
+                {
+                    localPosition = panelLocalPosition;
+                }
                 return new InputState(raycaster.ID, true, raycaster.MouseButton0(), raycaster.MouseButton1(), raycaster.MouseButton2(), raycaster.MouseWheel(), localPosition);
             }
         }

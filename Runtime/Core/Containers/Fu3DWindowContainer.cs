@@ -18,6 +18,7 @@ namespace Fu
         public bool RuntimeResizable => _runtimeResizable;
         public bool IsRuntimeResizing => _activeResizeHandleIndex != -1;
         public float Scale3D => _windows3DScale;
+        public float PanelCurve => _panelCurve;
         public Vector2 LocalSize => getCurrentLocalSize();
         public Vector2Int RenderResolution => _useExplicitResolution ? _explicitResolution : _size;
         public Vector2Int LocalMousePos => _localMousePos;
@@ -44,9 +45,11 @@ namespace Fu
         private Vector2Int _minResolution = Vector2Int.one;
         private Vector2Int _maxResolution = Vector2Int.zero;
         private float _panelDepth = 0.01f;
+        private float _panelCurve = 0f;
         private FuUnityContext _fuguiContext;
         private static int _3DContextindex = 0;
         private Material _uiMaterial;
+        private FuPanelMesh _panelMesh;
         private Material _resizeHandleMaterial;
         private GameObject[] _resizeHandles;
         private bool _runtimeResizable;
@@ -244,6 +247,7 @@ namespace Fu
 
             settings.Sanitize();
             bool panelDepthChanged = Mathf.Abs(_panelDepth - settings.PanelDepth) > 0.0001f;
+            bool panelCurveChanged = Mathf.Abs(_panelCurve - settings.PanelCurve) > 0.0001f;
             Vector2 previousLocalSize = _localSize;
             Vector2Int previousResolution = _explicitResolution;
             _useExplicitResolution = true;
@@ -251,7 +255,7 @@ namespace Fu
             _windows3DScale = getLegacyScaleFromSettings(settings);
             _fuguiContext.SetContainerScaleConfig(settings.ContainerScaleConfig, _explicitResolution);
             SetLocalSize(settings.PanelSize);
-            if (panelDepthChanged &&
+            if ((panelDepthChanged || panelCurveChanged) &&
                 previousResolution == _explicitResolution &&
                 (previousLocalSize - settings.PanelSize).sqrMagnitude <= 0.00000001f)
             {
@@ -271,7 +275,8 @@ namespace Fu
                 resolution,
                 _fuguiContext != null ? _fuguiContext.ContainerScaleConfig.BaseScale : 1f,
                 _fuguiContext != null ? _fuguiContext.ContainerScaleConfig.BaseFontScale : 1f,
-                _panelDepth);
+                _panelDepth,
+                _panelCurve);
             if (_fuguiContext != null)
             {
                 settings.ContainerScaleConfig = _fuguiContext.ContainerScaleConfig;
@@ -292,6 +297,26 @@ namespace Fu
             }
 
             _panelDepth = depth;
+            if (!IsClosed)
+            {
+                createPanel();
+                updateResizeHandleTransforms();
+            }
+        }
+
+        /// <summary>
+        /// Change the horizontal curve angle of the generated panel without changing the window content.
+        /// </summary>
+        /// <param name="curve">Horizontal curve angle in degrees.</param>
+        public void SetPanelCurve(float curve)
+        {
+            curve = Mathf.Clamp(curve, 0f, 359.9f);
+            if (Mathf.Abs(_panelCurve - curve) < 0.0001f)
+            {
+                return;
+            }
+
+            _panelCurve = curve;
             if (!IsClosed)
             {
                 createPanel();
@@ -393,6 +418,7 @@ namespace Fu
             _minResolution = settings.MinResolution;
             _maxResolution = settings.MaxResolution;
             _panelDepth = settings.PanelDepth;
+            _panelCurve = settings.PanelCurve;
             if (applyPanelSize)
             {
                 _localSize = settings.PanelSize;
@@ -477,13 +503,15 @@ namespace Fu
 
             _resizeHandles = null;
             _resizeHandlesVisible = false;
+            _panelMesh = null;
             _panelGameObject = new GameObject(ID + "_Panel");
             FuPanelMesh rectangleMesh = _panelGameObject.AddComponent<FuPanelMesh>();
+            _panelMesh = rectangleMesh;
             float meshScale = getMeshScale();
             Vector2 meshSize = getMeshSize(meshScale);
             float round = Fugui.Themes.WindowRounding * Context.Scale;
             MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
-            collider.sharedMesh = rectangleMesh.CreateMesh(meshSize.x, meshSize.y, meshScale, round, round, round, round, _panelDepth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial);
+            collider.sharedMesh = rectangleMesh.CreateMesh(meshSize.x, meshSize.y, meshScale, round, round, round, round, _panelDepth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial, _panelCurve);
             int layer = (int)Mathf.Log(Fugui.Settings.UILayer.value, 2);
             _panelGameObject.layer = layer;
             foreach (Transform child in _panelGameObject.transform)
@@ -1069,6 +1097,11 @@ namespace Fu
         {
             float x = isLeftHandle(handleIndex) ? -localSize.x * 0.5f : localSize.x * 0.5f;
             float y = isBottomHandle(handleIndex) ? 0f : localSize.y;
+            if (_panelMesh != null)
+            {
+                return _panelMesh.GetSurfaceLocalPosition(new Vector2(x, y), ResizeHandleFrontOffset);
+            }
+
             return new Vector3(x, y, ResizeHandleFrontOffset);
         }
 
@@ -1605,6 +1638,7 @@ namespace Fu
                 UnityEngine.Object.Destroy(_panelGameObject);
                 _panelGameObject = null;
             }
+            _panelMesh = null;
             _resizeHandles = null;
             if (_resizeHandleMaterial != null)
             {

@@ -17,6 +17,9 @@ namespace Fu.Framework
         [Tooltip("Depth of the generated 3D panel extrusion.")]
         public float Depth = 0.01f;
 
+        [Tooltip("Horizontal curve angle of the generated 3D panel in degrees. 0 keeps the panel flat.")]
+        public float Curve = 0f;
+
         [SerializeField]
         protected FuWindowName _windowName;
 
@@ -358,7 +361,8 @@ namespace Fu.Framework
                 fontScale,
                 _minRenderResolution,
                 _maxRenderResolution,
-                Depth);
+                Depth,
+                Curve);
             settings.ContainerScaleConfig = GetContainerScaleConfig();
             settings.Sanitize();
             return settings;
@@ -533,6 +537,7 @@ namespace Fu.Framework
         private void OnValidate()
         {
             Depth = Mathf.Max(0.0001f, Depth);
+            Curve = Mathf.Clamp(Curve, 0f, 359.9f);
             EnforceDepth();
             _referenceResolution = new Vector2Int(
                 Mathf.Max(1, _referenceResolution.x),
@@ -575,6 +580,12 @@ namespace Fu.Framework
 
         private void OnDrawGizmos()
         {
+            if (Curve > 0.001f)
+            {
+                DrawCurvedPlaceholderGizmo();
+                return;
+            }
+
             Gizmos.matrix = transform.localToWorldMatrix;
 
             Gizmos.color = new Color(0f, 0.6f, 1f, 0.18f);
@@ -582,6 +593,89 @@ namespace Fu.Framework
 
             Gizmos.color = new Color(0f, 0.6f, 1f, 0.75f);
             Gizmos.DrawWireCube(new Vector3(0f, 0.5f, 0f), Vector3.one);
+        }
+
+        private void DrawCurvedPlaceholderGizmo()
+        {
+            Vector2 size = GetPlaceholderSize();
+            float width = Mathf.Max(0.0001f, size.x);
+            float height = Mathf.Max(0.0001f, size.y);
+            float depth = Mathf.Max(0.0001f, Depth);
+            float curveAngle = Mathf.Clamp(Curve, 0f, 359.9f);
+            int segments = Mathf.Clamp(Mathf.CeilToInt(Mathf.Max(24f, curveAngle / 4f)), 8, 96);
+
+            Matrix4x4 previousMatrix = Handles.matrix;
+            Color previousColor = Handles.color;
+            Handles.matrix = Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one);
+
+            Color fillColor = new Color(0f, 0.6f, 1f, 0.12f);
+            Color wireColor = new Color(0f, 0.6f, 1f, 0.75f);
+
+            for (int i = 0; i < segments; i++)
+            {
+                float t0 = (float)i / segments;
+                float t1 = (float)(i + 1) / segments;
+                Vector3 frontBottom0 = GetCurvedPlaceholderPoint(t0, 0f, width, height, curveAngle);
+                Vector3 frontTop0 = GetCurvedPlaceholderPoint(t0, 1f, width, height, curveAngle);
+                Vector3 frontBottom1 = GetCurvedPlaceholderPoint(t1, 0f, width, height, curveAngle);
+                Vector3 frontTop1 = GetCurvedPlaceholderPoint(t1, 1f, width, height, curveAngle);
+
+                Handles.color = fillColor;
+                Handles.DrawAAConvexPolygon(new Vector3[] { frontBottom0, frontTop0, frontTop1, frontBottom1 });
+
+                Vector3 backBottom0 = frontBottom0 - GetCurvedPlaceholderNormal(t0, width, curveAngle) * depth;
+                Vector3 backTop0 = frontTop0 - GetCurvedPlaceholderNormal(t0, width, curveAngle) * depth;
+                Vector3 backBottom1 = frontBottom1 - GetCurvedPlaceholderNormal(t1, width, curveAngle) * depth;
+                Vector3 backTop1 = frontTop1 - GetCurvedPlaceholderNormal(t1, width, curveAngle) * depth;
+
+                Handles.color = wireColor;
+                Handles.DrawLine(frontBottom0, frontBottom1);
+                Handles.DrawLine(frontTop0, frontTop1);
+                Handles.DrawLine(backBottom0, backBottom1);
+                Handles.DrawLine(backTop0, backTop1);
+
+                if (i == 0)
+                {
+                    Handles.DrawLine(frontBottom0, frontTop0);
+                    Handles.DrawLine(backBottom0, backTop0);
+                    Handles.DrawLine(frontBottom0, backBottom0);
+                    Handles.DrawLine(frontTop0, backTop0);
+                }
+
+                if (i == segments - 1)
+                {
+                    Handles.DrawLine(frontBottom1, frontTop1);
+                    Handles.DrawLine(backBottom1, backTop1);
+                    Handles.DrawLine(frontBottom1, backBottom1);
+                    Handles.DrawLine(frontTop1, backTop1);
+                }
+            }
+
+            Handles.color = previousColor;
+            Handles.matrix = previousMatrix;
+        }
+
+        private Vector3 GetCurvedPlaceholderPoint(float normalizedX, float normalizedY, float width, float height, float curveAngle)
+        {
+            float angleRad = Mathf.Max(0.0001f, curveAngle * Mathf.Deg2Rad);
+            float radius = width / angleRad;
+            float flatX = Mathf.Lerp(-width * 0.5f, width * 0.5f, normalizedX);
+            float theta = flatX / radius;
+
+            return new Vector3(
+                Mathf.Sin(theta) * radius,
+                normalizedY * height,
+                (Mathf.Cos(theta) - 1f) * radius);
+        }
+
+        private Vector3 GetCurvedPlaceholderNormal(float normalizedX, float width, float curveAngle)
+        {
+            float angleRad = Mathf.Max(0.0001f, curveAngle * Mathf.Deg2Rad);
+            float radius = width / angleRad;
+            float flatX = Mathf.Lerp(-width * 0.5f, width * 0.5f, normalizedX);
+            float theta = flatX / radius;
+
+            return new Vector3(-Mathf.Sin(theta), 0f, -Mathf.Cos(theta)).normalized;
         }
 #endif
     }
@@ -601,6 +695,7 @@ namespace Fu.Framework
         private SerializedProperty forceCreateProp;
         private SerializedProperty runtimeResizableProp;
         private SerializedProperty depthProp;
+        private SerializedProperty curveProp;
         private SerializedProperty renderResolutionProp;
         private SerializedProperty useContainerScalerProp;
         private SerializedProperty referenceResolutionProp;
@@ -618,6 +713,7 @@ namespace Fu.Framework
             "_forceCreateAloneOnAwake",
             "_runtimeResizable",
             "Depth",
+            "Curve",
             "_renderResolution",
             "_scaleResolutionWithPanel",
             "_referencePanelSize",
@@ -648,6 +744,7 @@ namespace Fu.Framework
             forceCreateProp = serializedObject.FindProperty("_forceCreateAloneOnAwake");
             runtimeResizableProp = serializedObject.FindProperty("_runtimeResizable");
             depthProp = serializedObject.FindProperty("Depth");
+            curveProp = serializedObject.FindProperty("Curve");
             renderResolutionProp = serializedObject.FindProperty("_renderResolution");
             useContainerScalerProp = serializedObject.FindProperty("_useContainerScaler");
             referenceResolutionProp = serializedObject.FindProperty("_referenceResolution");
@@ -678,6 +775,7 @@ namespace Fu.Framework
             EditorGUILayout.PropertyField(forceCreateProp);
             EditorGUILayout.PropertyField(runtimeResizableProp);
             EditorGUILayout.PropertyField(depthProp);
+            EditorGUILayout.PropertyField(curveProp);
             EditorGUILayout.PropertyField(renderResolutionProp);
             EditorGUILayout.PropertyField(useContainerScalerProp);
 
@@ -695,7 +793,7 @@ namespace Fu.Framework
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "The 3D panel size is driven by the placeholder scale X/Y. Render Resolution drives the texture and ImGui context size. Scale Z is locked to Depth.",
+                "The 3D panel size is driven by the placeholder scale X/Y. Render Resolution drives the texture and ImGui context size. Scale Z is locked to Depth. Curve is a horizontal angle in degrees.",
                 MessageType.Info
             );
 

@@ -603,7 +603,7 @@ namespace Fu.Framework
         /// <param name="nextItemText"> text of the next item</param>
         /// <param name="availHeight"> max height available, if -1 use all available height</param>
         /// <param name="scale">whatever the avail height must be scaled</param>
-        public void CenterNextItemV(string nextItemText, float availHeight = -1, bool scale = false)
+        public void CenterNextItemV(string nextItemText, float availHeight = 0, bool scale = false)
         {
             float txtHeight = ImGui.CalcTextSize(nextItemText).y;
             CenterNextItemV(txtHeight, availHeight, scale);
@@ -615,7 +615,7 @@ namespace Fu.Framework
         /// <param name="itemHeight"> height of the next item</param>
         /// <param name="availHeight"> max height available, if -1 use all available height</param>
         /// <param name="scale">whatever the avail height must be scaled</param>
-        public void CenterNextItemV(float itemHeight, float availHeight = -1, bool scale = false)
+        public void CenterNextItemV(float itemHeight, float availHeight = 0, bool scale = false)
         {
             if (availHeight == 0f)
             {

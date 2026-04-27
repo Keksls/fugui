@@ -22,6 +22,7 @@ namespace Fu
             public float ContextScale;
             public float FontScale;
             public float PanelDepth;
+            public float PanelCurve;
             public FuContainerScaleConfig ContainerScaleConfig;
             #endregion
 
@@ -34,8 +35,9 @@ namespace Fu
             /// <param name="contextScale">The context Scale value.</param>
             /// <param name="fontScale">The font Scale value.</param>
             /// <param name="panelDepth">The panel Depth value.</param>
+            /// <param name="panelCurve">Horizontal panel curve angle in degrees.</param>
             /// <returns>The result of the operation.</returns>
-            public static Fu3DWindowSettings FixedResolution(Vector2 panelSize, Vector2Int resolution, float contextScale = 1f, float fontScale = 1f, float panelDepth = 0.01f)
+            public static Fu3DWindowSettings FixedResolution(Vector2 panelSize, Vector2Int resolution, float contextScale = 1f, float fontScale = 1f, float panelDepth = 0.01f, float panelCurve = 0f)
             {
                 Fu3DWindowSettings settings = new Fu3DWindowSettings
                 {
@@ -50,6 +52,7 @@ namespace Fu
                     ContextScale = contextScale,
                     FontScale = fontScale,
                     PanelDepth = panelDepth,
+                    PanelCurve = panelCurve,
                     ContainerScaleConfig = FuContainerScaleConfig.Disabled(contextScale, fontScale)
                 };
                 settings.Sanitize();
@@ -67,10 +70,11 @@ namespace Fu
             /// <param name="minResolution">The min Resolution value.</param>
             /// <param name="maxResolution">The max Resolution value.</param>
             /// <param name="panelDepth">The panel Depth value.</param>
+            /// <param name="panelCurve">Horizontal panel curve angle in degrees.</param>
             /// <returns>The result of the operation.</returns>
-            public static Fu3DWindowSettings ScaledResolutionWithPanel(Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f)
+            public static Fu3DWindowSettings ScaledResolutionWithPanel(Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f, float panelCurve = 0f)
             {
-                Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth);
+                Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth, panelCurve);
                 settings.ScaleResolutionWithPanel = true;
                 settings.MatchResolutionToPanelAspect = false;
                 settings.ReferencePanelSize = referencePanelSize;
@@ -92,10 +96,11 @@ namespace Fu
             /// <param name="minResolution">The min Resolution value.</param>
             /// <param name="maxResolution">The max Resolution value.</param>
             /// <param name="panelDepth">The panel Depth value.</param>
+            /// <param name="panelCurve">Horizontal panel curve angle in degrees.</param>
             /// <returns>The result of the operation.</returns>
-            public static Fu3DWindowSettings FixedResolutionMatchingPanelAspect(Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f)
+            public static Fu3DWindowSettings FixedResolutionMatchingPanelAspect(Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f, float panelCurve = 0f)
             {
-                Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth);
+                Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth, panelCurve);
                 settings.MatchResolutionToPanelAspect = true;
                 settings.ReferencePanelSize = referencePanelSize;
                 settings.ReferenceResolution = referenceResolution;
@@ -137,6 +142,7 @@ namespace Fu
                 ContextScale = Mathf.Max(0.0001f, ContextScale);
                 FontScale = Mathf.Max(0.0001f, FontScale);
                 PanelDepth = Mathf.Max(0.0001f, PanelDepth);
+                PanelCurve = Mathf.Clamp(PanelCurve, 0f, 359.9f);
                 if (ScaleResolutionWithPanel)
                 {
                     Resolution = ComputeResolution(PanelSize);

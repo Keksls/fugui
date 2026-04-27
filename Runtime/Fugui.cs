@@ -18,6 +18,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace Fu
 {
@@ -162,6 +163,14 @@ namespace Fu
         private static Queue<Action> _executeInMainThreadActionsStack = new Queue<Action>();
 
         private static bool _mainContainerEnabled = true;
+        private static bool _mainContainerCameraStateStored;
+        private static bool _mainContainerCameraHadAdditionalCameraData;
+        private static bool _mainContainerCameraAllowXRRendering;
+        private static int _mainContainerCameraCullingMask;
+        private static CameraClearFlags _mainContainerCameraClearFlags;
+        private static Color _mainContainerCameraBackgroundColor;
+        private static RenderTexture _mainContainerCameraTargetTexture;
+        private static RenderTexture _offscreenDriverTexture;
         private static float _targetScale = -1f;
         private static float _targetFontScale = -1f;
 
@@ -325,10 +334,165 @@ namespace Fu
         /// </summary>
         private static void ApplyMainContainerCameraState()
         {
-            if (DefaultContext != null && DefaultContext.Camera != null)
+            Camera camera = DefaultContext != null ? DefaultContext.Camera : null;
+
+            if (camera == null)
             {
-                DefaultContext.Camera.enabled = _mainContainerEnabled;
+                return;
             }
+
+            if (_mainContainerEnabled)
+            {
+                RestoreMainContainerCameraState(camera);
+                camera.enabled = true;
+                return;
+            }
+
+            ConfigureMainContainerCameraAsOffscreenDriver(camera);
+        }
+
+        /// <summary>
+        /// Returns true when the camera is the hidden non-XR camera used to render offscreen contexts.
+        /// </summary>
+        /// <param name="camera">Camera tested by the render feature.</param>
+        /// <returns>True when the camera should drive offscreen Fugui render textures.</returns>
+        internal static bool IsOffscreenDriverCamera(Camera camera)
+        {
+            return !_mainContainerEnabled &&
+                   camera != null &&
+                   DefaultContext != null &&
+                   ReferenceEquals(camera, DefaultContext.Camera);
+        }
+
+        /// <summary>
+        /// Store user-authored camera state before temporarily using the UI camera as an offscreen driver.
+        /// </summary>
+        /// <param name="camera">Camera to snapshot.</param>
+        private static void StoreMainContainerCameraState(Camera camera)
+        {
+            if (_mainContainerCameraStateStored || camera == null)
+            {
+                return;
+            }
+
+            _mainContainerCameraTargetTexture = camera.targetTexture;
+            _mainContainerCameraCullingMask = camera.cullingMask;
+            _mainContainerCameraClearFlags = camera.clearFlags;
+            _mainContainerCameraBackgroundColor = camera.backgroundColor;
+
+            UniversalAdditionalCameraData additionalCameraData = camera.GetComponent<UniversalAdditionalCameraData>();
+            _mainContainerCameraHadAdditionalCameraData = additionalCameraData != null;
+            _mainContainerCameraAllowXRRendering = additionalCameraData == null || additionalCameraData.allowXRRendering;
+            _mainContainerCameraStateStored = true;
+        }
+
+        /// <summary>
+        /// Restore the UI camera when the fullscreen main container is enabled again.
+        /// </summary>
+        /// <param name="camera">Camera to restore.</param>
+        private static void RestoreMainContainerCameraState(Camera camera)
+        {
+            if (!_mainContainerCameraStateStored || camera == null)
+            {
+                return;
+            }
+
+            camera.targetTexture = _mainContainerCameraTargetTexture;
+            camera.cullingMask = _mainContainerCameraCullingMask;
+            camera.clearFlags = _mainContainerCameraClearFlags;
+            camera.backgroundColor = _mainContainerCameraBackgroundColor;
+            SetCameraXRRendering(camera, _mainContainerCameraAllowXRRendering);
+            RemoveTemporaryCameraData(camera);
+            _mainContainerCameraStateStored = false;
+        }
+
+        /// <summary>
+        /// Use the UI camera as an invisible non-XR render driver for 3D window render textures.
+        /// </summary>
+        /// <param name="camera">Camera to configure.</param>
+        private static void ConfigureMainContainerCameraAsOffscreenDriver(Camera camera)
+        {
+            StoreMainContainerCameraState(camera);
+
+            camera.targetTexture = GetOrCreateOffscreenDriverTexture();
+            camera.cullingMask = 0;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = Color.clear;
+            camera.enabled = true;
+            SetCameraXRRendering(camera, false);
+        }
+
+        /// <summary>
+        /// Enable or disable XR rendering on a URP camera when the component exists.
+        /// </summary>
+        /// <param name="camera">Camera to configure.</param>
+        /// <param name="allowXRRendering">Whether URP may render this camera through XR.</param>
+        private static void SetCameraXRRendering(Camera camera, bool allowXRRendering)
+        {
+            UniversalAdditionalCameraData additionalCameraData = camera != null ? camera.GetComponent<UniversalAdditionalCameraData>() : null;
+            if (additionalCameraData == null && camera != null && !allowXRRendering)
+            {
+                additionalCameraData = camera.gameObject.AddComponent<UniversalAdditionalCameraData>();
+            }
+
+            if (additionalCameraData != null)
+            {
+                additionalCameraData.allowXRRendering = allowXRRendering;
+            }
+        }
+
+        /// <summary>
+        /// Remove runtime-added URP camera data when restoring a camera that did not originally own it.
+        /// </summary>
+        /// <param name="camera">Camera to restore.</param>
+        private static void RemoveTemporaryCameraData(Camera camera)
+        {
+            if (_mainContainerCameraHadAdditionalCameraData || camera == null)
+            {
+                return;
+            }
+
+            UniversalAdditionalCameraData additionalCameraData = camera.GetComponent<UniversalAdditionalCameraData>();
+            if (additionalCameraData != null)
+            {
+                UnityEngine.Object.Destroy(additionalCameraData);
+            }
+        }
+
+        /// <summary>
+        /// Gets the tiny target used to keep the offscreen driver camera away from the GameView.
+        /// </summary>
+        /// <returns>The hidden offscreen driver render texture.</returns>
+        private static RenderTexture GetOrCreateOffscreenDriverTexture()
+        {
+            if (_offscreenDriverTexture != null && _offscreenDriverTexture.IsCreated())
+            {
+                return _offscreenDriverTexture;
+            }
+
+            _offscreenDriverTexture = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32)
+            {
+                name = "Fugui Offscreen Driver",
+                hideFlags = HideFlags.HideAndDontSave,
+                useDynamicScale = false
+            };
+            _offscreenDriverTexture.Create();
+            return _offscreenDriverTexture;
+        }
+
+        /// <summary>
+        /// Release the offscreen driver target.
+        /// </summary>
+        private static void ReleaseOffscreenDriverTexture()
+        {
+            if (_offscreenDriverTexture == null)
+            {
+                return;
+            }
+
+            _offscreenDriverTexture.Release();
+            UnityEngine.Object.Destroy(_offscreenDriverTexture);
+            _offscreenDriverTexture = null;
         }
 
         /// <summary>
@@ -410,6 +574,9 @@ namespace Fu
         /// </summary>
         public static void Dispose()
         {
+            RestoreMainContainerCameraState(DefaultContext != null ? DefaultContext.Camera : null);
+            ReleaseOffscreenDriverTexture();
+
 #if FU_EXTERNALIZATION
             // close all external windows
             var externalWindowIDs = ExternalWindows.Keys.ToList();

@@ -655,15 +655,15 @@ namespace Fu
         }
 
         /// <summary>
-        /// Returns whether a scene camera can drive offscreen Fugui render textures.
+        /// Returns whether the current camera can drive offscreen Fugui render textures.
         /// </summary>
         /// <param name="renderingData">The current camera rendering data.</param>
-        /// <returns>True when the camera is a base game camera.</returns>
+        /// <returns>True when the camera is Fugui's non-XR offscreen driver camera.</returns>
         private static bool IsOffscreenDriverCamera(RenderingData renderingData)
         {
             Camera camera = renderingData.cameraData.camera;
             return camera != null
-                && camera.cameraType == CameraType.Game
+                && Fugui.IsOffscreenDriverCamera(camera)
                 && renderingData.cameraData.renderType == CameraRenderType.Base;
         }
         #endregion

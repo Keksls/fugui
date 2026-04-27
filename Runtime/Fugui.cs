@@ -57,7 +57,15 @@ namespace Fu
         /// <summary>
         /// Whether the fullscreen main UI container is rendered and receives global flat input.
         /// </summary>
-        public static bool MainContainerEnabled { get; set; } = true;
+        public static bool MainContainerEnabled
+        {
+            get => _mainContainerEnabled;
+            set
+            {
+                _mainContainerEnabled = value;
+                ApplyMainContainerCameraState();
+            }
+        }
         /// <summary>
         /// Default Fugui Context (it's the main unity context)
         /// </summary>
@@ -153,6 +161,7 @@ namespace Fu
         // stack of action we will want to execute into unity main thread
         private static Queue<Action> _executeInMainThreadActionsStack = new Queue<Action>();
 
+        private static bool _mainContainerEnabled = true;
         private static float _targetScale = -1f;
         private static float _targetFontScale = -1f;
 
@@ -300,6 +309,7 @@ namespace Fu
             // need to be called into start, because it will use ImGui context and we need to wait to create it from UImGui Awake
             DefaultContainer = new FuMainWindowContainer(DefaultContext);
             DefaultContainer.SetContainerScaleConfig(GetDefaultContainerScaleConfig());
+            ApplyMainContainerCameraState();
 
             // register Fugui Settings Window
             new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, DrawSettings, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
@@ -308,6 +318,17 @@ namespace Fu
             // initialize debug tool if debug is enabled
             initDebugTool();
 #endif
+        }
+
+        /// <summary>
+        /// Applies the main container state to the dedicated fullscreen UI camera.
+        /// </summary>
+        private static void ApplyMainContainerCameraState()
+        {
+            if (DefaultContext != null && DefaultContext.Camera != null)
+            {
+                DefaultContext.Camera.enabled = _mainContainerEnabled;
+            }
         }
 
         /// <summary>

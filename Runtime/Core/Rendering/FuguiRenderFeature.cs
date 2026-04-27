@@ -31,6 +31,8 @@ namespace Fu
             private Dictionary<int, int> _prevSubMeshCounts;
             private TextureManager _textureManager;
             private MaterialPropertyBlock _materialProperties;
+            private bool _renderMainSurfaceContexts;
+            private bool _renderOffscreenContexts;
             // Skip all checks and validation when updating the mesh.
             private const MeshUpdateFlags NoMeshChecks = MeshUpdateFlags.DontNotifyMeshUsers |
                 MeshUpdateFlags.DontRecalculateBounds |
@@ -70,6 +72,17 @@ namespace Fu
             #endregion
 
             /// <summary>
+            /// Configures which Fugui contexts this pass should render for the current camera.
+            /// </summary>
+            /// <param name="renderMainSurfaceContexts">Render contexts that target the camera color buffer.</param>
+            /// <param name="renderOffscreenContexts">Render contexts that target render textures.</param>
+            public void ConfigureFrame(bool renderMainSurfaceContexts, bool renderOffscreenContexts)
+            {
+                _renderMainSurfaceContexts = renderMainSurfaceContexts;
+                _renderOffscreenContexts = renderOffscreenContexts;
+            }
+
+            /// <summary>
             /// Records the render graph pass for rendering Fugui.
             /// </summary>
             /// <param name="renderGraph"> The render graph to record the pass into.</param>
@@ -81,7 +94,7 @@ namespace Fu
                 TextureHandle depth = urpRes.activeDepthTexture;
 
                 // Default context rendered on current camera color target
-                if (Fugui.MainContainerEnabled && Fugui.DefaultContext is FuUnityContext defaultContext && defaultContext.Started)
+                if (_renderMainSurfaceContexts && Fugui.MainContainerEnabled && Fugui.DefaultContext is FuUnityContext defaultContext && defaultContext.Started)
                 {
                     using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_MainPass", out var passData);
                     builder.AllowGlobalStateModification(true);
@@ -141,6 +154,11 @@ namespace Fu
                     // Offscreen target
                     if (unityContext.IsOffscreen)
                     {
+                        if (!_renderOffscreenContexts)
+                        {
+                            continue;
+                        }
+
                         RenderTexture targetTexture = unityContext.TargetTexture;
 
                         if (targetTexture == null || !targetTexture.IsCreated())
@@ -164,6 +182,11 @@ namespace Fu
                     }
                     else
                     {
+                        if (!_renderMainSurfaceContexts)
+                        {
+                            continue;
+                        }
+
                         using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_Context_{unityContext.ID}", out var passData);
                         builder.AllowGlobalStateModification(true);
                         builder.SetRenderAttachment(color, 0, AccessFlags.Write);
@@ -351,7 +374,7 @@ namespace Fu
                 var commandBuffer = CommandBufferPool.Get("FuguiRenderPass");
 
                 // Render the default context
-                if (Fugui.MainContainerEnabled && Fugui.DefaultContext != null)
+                if (_renderMainSurfaceContexts && Fugui.MainContainerEnabled && Fugui.DefaultContext != null)
                 {
                     _textureManager = Fugui.DefaultContext.TextureManager;
                     RenderDrawLists(Fugui.DefaultContext.ID, commandBuffer, Fugui.DefaultContext.DrawData);
@@ -362,6 +385,19 @@ namespace Fu
                 {
                     if (contextPair.Key != 0 && contextPair.Value.Started)
                     {
+                        if (contextPair.Value is FuUnityContext unityContext)
+                        {
+                            if (unityContext.IsOffscreen && !_renderOffscreenContexts)
+                            {
+                                continue;
+                            }
+
+                            if (!unityContext.IsOffscreen && !_renderMainSurfaceContexts)
+                            {
+                                continue;
+                            }
+                        }
+
                         _textureManager = contextPair.Value.TextureManager;
                         RenderDrawLists(contextPair.Key, commandBuffer, contextPair.Value.DrawData);
                     }
@@ -602,7 +638,10 @@ namespace Fu
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
             var camera = renderingData.cameraData.camera;
-            if (camera.gameObject.layer != _cameraLayer) return;
+            bool renderMainSurfaceContexts = camera.gameObject.layer == _cameraLayer && Fugui.MainContainerEnabled;
+            bool renderOffscreenContexts = renderMainSurfaceContexts || (!Fugui.MainContainerEnabled && IsOffscreenDriverCamera(renderingData));
+
+            if (!renderMainSurfaceContexts && !renderOffscreenContexts) return;
 
             if (!_passPerCamera.TryGetValue(camera, out var pass))
             {
@@ -610,7 +649,21 @@ namespace Fu
                 _passPerCamera[camera] = pass;
             }
 
+            pass.ConfigureFrame(renderMainSurfaceContexts, renderOffscreenContexts);
             renderer.EnqueuePass(pass);
+        }
+
+        /// <summary>
+        /// Returns whether a scene camera can drive offscreen Fugui render textures.
+        /// </summary>
+        /// <param name="renderingData">The current camera rendering data.</param>
+        /// <returns>True when the camera is a base game camera.</returns>
+        private static bool IsOffscreenDriverCamera(RenderingData renderingData)
+        {
+            Camera camera = renderingData.cameraData.camera;
+            return camera != null
+                && camera.cameraType == CameraType.Game
+                && renderingData.cameraData.renderType == CameraRenderType.Base;
         }
         #endregion
     }

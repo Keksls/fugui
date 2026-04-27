@@ -9,6 +9,16 @@ namespace Fu
     public class FuPanelMesh : MonoBehaviour
     {
         #region State
+        /// <summary>
+        /// Fu window rendered on this mesh.
+        /// </summary>
+        public FuWindow Window { get; internal set; }
+
+        /// <summary>
+        /// Whether this mesh should receive raycast input for its window.
+        /// </summary>
+        public bool CanReceiveInput { get { return Window == null || Window.IsInterractable; } }
+
         private float _roundEdges = 0.5f;
         private float _roundTopLeft = 0.0f;
         private float _roundTopRight = 0.0f;

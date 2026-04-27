@@ -22,6 +22,19 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         public static InputState GetInputState(string containerID, GameObject raycastableGameObject)
         {
+            if (raycastableGameObject == null)
+            {
+                latestRaycasters.Remove(containerID);
+                return getInactiveInputState();
+            }
+
+            FuPanelMesh panelMesh = raycastableGameObject.GetComponent<FuPanelMesh>();
+            if (panelMesh != null && !panelMesh.CanReceiveInput)
+            {
+                latestRaycasters.Remove(containerID);
+                return getInactiveInputState();
+            }
+
             foreach (FuRaycaster raycaster in _raycasters.Values)
             {
                 if (raycaster.RaycastThisFrame && raycaster.Hit.collider.gameObject == raycastableGameObject)
@@ -39,20 +52,28 @@ namespace Fu
 
             if (!latestRaycasters.ContainsKey(containerID))
             {
-                return new InputState(string.Empty, false, false, false, false, 0f, new Vector2(-1f, -1f));
+                return getInactiveInputState();
             }
             else
             {
                 FuRaycaster raycaster = latestRaycasters[containerID];
                 Vector3 localHitPoint = raycastableGameObject.transform.InverseTransformPoint(raycaster.Hit.point);
                 Vector2 localPosition = new Vector2(localHitPoint.x, localHitPoint.y);
-                FuPanelMesh panelMesh = raycastableGameObject.GetComponent<FuPanelMesh>();
                 if (panelMesh != null && panelMesh.TryGetLocalPositionFromUV(raycaster.Hit.textureCoord, out Vector2 panelLocalPosition))
                 {
                     localPosition = panelLocalPosition;
                 }
                 return new InputState(raycaster.ID, true, raycaster.MouseButton0(), raycaster.MouseButton1(), raycaster.MouseButton2(), raycaster.MouseWheel(), localPosition);
             }
+        }
+
+        /// <summary>
+        /// Returns an input state without active hover or buttons.
+        /// </summary>
+        /// <returns>Inactive input state.</returns>
+        private static InputState getInactiveInputState()
+        {
+            return new InputState(string.Empty, false, false, false, false, 0f, new Vector2(-1f, -1f));
         }
 
         /// <summary>

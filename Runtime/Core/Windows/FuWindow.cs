@@ -124,7 +124,35 @@ namespace Fu
         public bool IsHoveredContent { get { return IsHovered && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup && !Mouse.IsHoverTopBar; } }
         public bool IsDocked { get; internal set; }
         public bool IsBusy { get; internal set; }
-        public bool IsInterractable { get; set; }
+        public bool IsInterractable
+        {
+            get { return _isInterractable; }
+            set
+            {
+                if (_isInterractable == value)
+                {
+                    return;
+                }
+
+                _isInterractable = value;
+                if (!_isInterractable)
+                {
+                    ReleaseInputFocus();
+                }
+
+                if (Is3DWindow && Container?.Context != null)
+                {
+                    Container.Context.AutoUpdateKeyboard = _isInterractable;
+                }
+
+                ForceDraw();
+            }
+        }
+        public bool IsInterractible
+        {
+            get { return IsInterractable; }
+            set { IsInterractable = value; }
+        }
         public bool IsVisible { get; private set; }
         public bool DrawingForced { get { return _forceRedraw > 0; } }
         public bool Is3DWindow { get; internal set; }
@@ -161,6 +189,7 @@ namespace Fu
         internal float _targetDeltaTimeMs = 1;
         internal float _lastRenderTime = 0;
         private bool _open = true;
+        private bool _isInterractable = true;
         private static int _windowIndex = 0;
         private bool _ignoreTransformThisFrame = false;
         // var to count how many push are at frame start, so we can pop missing push
@@ -361,6 +390,24 @@ namespace Fu
         }
 
         /// <summary>
+        /// Release any input state currently owned by this window.
+        /// </summary>
+        private void ReleaseInputFocus()
+        {
+            if (InputFocusedWindow == this)
+            {
+                NbInputFocusedWindow = 0;
+                InputFocusedWindow = null;
+            }
+
+            _releaseFocusNextFrame = false;
+            WantCaptureKeyboard = false;
+            IsHovered = false;
+            IsDragging = false;
+            IsResizing = false;
+        }
+
+        /// <summary>
         /// Draw the UI of this window
         /// </summary>
         public virtual void DrawWindow(bool preventUpdatingMouse = false, bool preventUpdatingKeyboard = false)
@@ -525,18 +572,24 @@ namespace Fu
             // try to start drawing window, according to the closable flag state
             bool nativeWantDrawWindow;
             bool externalBefore = IsExternal;
+            ImGuiWindowFlags effectiveWindowFlags = _windowFlags;
+            if (!IsInterractable)
+            {
+                effectiveWindowFlags |= ImGuiWindowFlags.NoInputs;
+            }
+
             if (externalBefore)
             {
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
-                nativeWantDrawWindow = ImGui.Begin(ID, _windowFlags | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
+                nativeWantDrawWindow = ImGui.Begin(ID, effectiveWindowFlags | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
             }
             else if (IsClosable)
             {
-                nativeWantDrawWindow = ImGui.Begin(ID, ref _open, _windowFlags);
+                nativeWantDrawWindow = ImGui.Begin(ID, ref _open, effectiveWindowFlags);
             }
             else
             {
-                nativeWantDrawWindow = ImGui.Begin(ID, _windowFlags);
+                nativeWantDrawWindow = ImGui.Begin(ID, effectiveWindowFlags);
             }
 
             // whatever window is hovered
@@ -684,6 +737,12 @@ namespace Fu
         /// </summary>
         private void processHoverState()
         {
+            if (!IsInterractable)
+            {
+                IsHovered = false;
+                return;
+            }
+
             if (Is3DWindow)
             {
                 IsHovered = LocalRect.Contains(Container.LocalMousePos);
@@ -805,7 +864,7 @@ namespace Fu
                 }
 
                 // save whatever ImGui want capture Keyboard
-                WantCaptureKeyboard = ImGui.GetIO().WantTextInput;
+                WantCaptureKeyboard = IsInterractable && ImGui.GetIO().WantTextInput;
                 // draw overlays
                 DrawOverlays();
 
@@ -1310,6 +1369,16 @@ namespace Fu
         /// </summary>
         public void UpdateState(bool leftMouseButtonState)
         {
+            if (!IsInterractable)
+            {
+                ReleaseInputFocus();
+                if (State != FuWindowState.Idle)
+                {
+                    SetPerformanceState(FuWindowState.Idle);
+                }
+                return;
+            }
+
             // determine if we are dragging or resizing
             if (IsDragging && !leftMouseButtonState)
             {

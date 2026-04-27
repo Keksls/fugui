@@ -123,6 +123,7 @@ namespace Fu
             _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
             _fuguiContext.OnFramePrepared += _fuguiContext_OnFramePrepared;
             _fuguiContext.AutoUpdateMouse = false;
+            _fuguiContext.AutoUpdateKeyboard = Window.IsInterractable;
             _fuguiContext.SetTargetTexture(RenderTexture);
             _fuguiContext.SetContainerScaleConfig(settings.ContainerScaleConfig, _size);
 
@@ -506,6 +507,7 @@ namespace Fu
             _panelMesh = null;
             _panelGameObject = new GameObject(ID + "_Panel");
             FuPanelMesh rectangleMesh = _panelGameObject.AddComponent<FuPanelMesh>();
+            rectangleMesh.Window = Window;
             _panelMesh = rectangleMesh;
             float meshScale = getMeshScale();
             Vector2 meshSize = getMeshSize(meshScale);
@@ -558,7 +560,7 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         private bool updateRuntimeResize(InputState panelInputState)
         {
-            if (!_runtimeResizable || _panelGameObject == null || Window == null)
+            if (!_runtimeResizable || _panelGameObject == null || Window == null || !Window.IsInterractable)
             {
                 cancelRuntimeResize();
                 setResizeHandlesVisible(false);
@@ -1207,6 +1209,8 @@ namespace Fu
             // get input state for this container
             InputState inputState = FuRaycasting.GetInputState(ID, _panelGameObject);
             bool blockWindowInput = updateRuntimeResize(inputState);
+            blockWindowInput |= !Window.IsInterractable;
+            _fuguiContext.AutoUpdateKeyboard = Window.IsInterractable;
 
             // force to draw if hover in
             if (inputState.Hovered && !blockWindowInput)

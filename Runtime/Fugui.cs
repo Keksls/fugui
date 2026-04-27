@@ -18,6 +18,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace Fu
@@ -348,6 +349,13 @@ namespace Fu
                 return;
             }
 
+            if (!HasOffscreenDriverWork())
+            {
+                RestoreMainContainerCameraState(camera);
+                camera.enabled = false;
+                return;
+            }
+
             ConfigureMainContainerCameraAsOffscreenDriver(camera);
         }
 
@@ -359,9 +367,19 @@ namespace Fu
         internal static bool IsOffscreenDriverCamera(Camera camera)
         {
             return !_mainContainerEnabled &&
+                   HasOffscreenDriverWork() &&
                    camera != null &&
                    DefaultContext != null &&
                    ReferenceEquals(camera, DefaultContext.Camera);
+        }
+
+        /// <summary>
+        /// Returns true when offscreen UI render textures need a camera-driven URP pass.
+        /// </summary>
+        /// <returns>True when a 3D window is currently registered.</returns>
+        private static bool HasOffscreenDriverWork()
+        {
+            return _3DWindows != null && _3DWindows.Count > 0;
         }
 
         /// <summary>
@@ -465,16 +483,29 @@ namespace Fu
         /// <returns>The hidden offscreen driver render texture.</returns>
         private static RenderTexture GetOrCreateOffscreenDriverTexture()
         {
-            if (_offscreenDriverTexture != null && _offscreenDriverTexture.IsCreated())
+            if (_offscreenDriverTexture != null &&
+                _offscreenDriverTexture.IsCreated() &&
+                _offscreenDriverTexture.depthStencilFormat != GraphicsFormat.None)
             {
                 return _offscreenDriverTexture;
             }
 
-            _offscreenDriverTexture = new RenderTexture(1, 1, 0, RenderTextureFormat.ARGB32)
+            ReleaseOffscreenDriverTexture();
+
+            RenderTextureDescriptor descriptor = new RenderTextureDescriptor(1, 1)
+            {
+                graphicsFormat = GraphicsFormat.R8G8B8A8_UNorm,
+                depthStencilFormat = GraphicsFormat.D16_UNorm,
+                msaaSamples = 1,
+                useMipMap = false,
+                autoGenerateMips = false,
+                useDynamicScale = false
+            };
+
+            _offscreenDriverTexture = new RenderTexture(descriptor)
             {
                 name = "Fugui Offscreen Driver",
-                hideFlags = HideFlags.HideAndDontSave,
-                useDynamicScale = false
+                hideFlags = HideFlags.HideAndDontSave
             };
             _offscreenDriverTexture.Create();
             return _offscreenDriverTexture;
@@ -665,6 +696,7 @@ namespace Fu
 
             Fu3DWindowContainer container = new Fu3DWindowContainer(uiWindow, settings, position, rotation);
             _3DWindows.Add(uiWindow.ID, container);
+            ApplyMainContainerCameraState();
             return container;
         }
 
@@ -794,6 +826,7 @@ namespace Fu
             }
 
             _3DWindows.Remove(id);
+            ApplyMainContainerCameraState();
         }
 
         /// <summary>

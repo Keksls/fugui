@@ -54,8 +54,10 @@ namespace Fu
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
 
         internal FontSet DefaultFont { get; set; }
+        internal bool UsesSharedFontAtlas => _sharedFontAtlas != null;
 
         private Vector2Int _lastContainerScaleSize = new Vector2Int(-1, -1);
+        private FuSharedFontAtlasCache.Entry _sharedFontAtlas;
         // var to count how many push are at frame start, so we can pop missing push
         private static int _nbColorPushOnFrameStart = 0;
         private static int _nbStylePushOnFrameStart = 0;
@@ -78,8 +80,8 @@ namespace Fu
         public FuContext(int index, float scale, float fontScale, Action onInitialize)
         {
             Scale = scale;
-            FontScale = fontScale;
-            ContainerScaleConfig = FuContainerScaleConfig.Disabled(scale, fontScale);
+            FontScale = QuantizeFontScale(fontScale);
+            ContainerScaleConfig = FuContainerScaleConfig.Disabled(scale, FontScale);
             ID = index;
             TextureManager = new TextureManager();
         }
@@ -91,7 +93,10 @@ namespace Fu
         /// <param name="index"></param>
         protected void initialize(Action onInitialize)
         {
-            ImGuiContext = ImGui.CreateContext();
+            _sharedFontAtlas = AcquireSharedFontAtlas(FontScale);
+            ImGuiContext = _sharedFontAtlas != null
+                ? ImGui.CreateContext(_sharedFontAtlas.Atlas)
+                : ImGui.CreateContext();
             FuContext lastDFContext = Fugui.CurrentContext;
             IntPtr currentContext = ImGuiNative.igGetCurrentContext();
             Fugui.SetCurrentContext(this);
@@ -293,6 +298,8 @@ namespace Fu
         internal virtual void Destroy()
         {
             TextureManager.Shutdown();
+            FuSharedFontAtlasCache.Release(_sharedFontAtlas);
+            _sharedFontAtlas = null;
         }
 
         /// /// <summary>
@@ -366,270 +373,87 @@ namespace Fu
         /// <summary>
         /// Load fonts for this context according to FontConfig into FuGui.Settings.FontConfig
         /// </summary>
-        protected unsafe void LoadFonts()
+        protected void LoadFonts()
         {
-            // get font config from FuguiManager Settings
-            FontConfig fontConf = Fugui.Settings.FontConfig;
-            // get global font file path
-            string fontPath = Path.Combine(Application.streamingAssetsPath, fontConf.FontsFolder);
-            // clear existing font atlas data
-            IO.Fonts.Clear(); // Previous FontDefault reference no longer valid.
-            // destroy default font pointer
-            IO.NativePtr->FontDefault = default; // NULL uses Fonts[0]
-            // clear fonts
+            FuFontLoader.LoadFonts(
+                IO,
+                Fugui.Settings?.FontConfig,
+                FontScale,
+                Application.streamingAssetsPath,
+                Fonts,
+                out FontSet defaultFont,
+                _loadedFontBuffers);
+
+            DefaultFont = defaultFont;
+        }
+
+        /// <summary>
+        /// Applies a shared font atlas to this context when one is available.
+        /// </summary>
+        /// <returns>True when the context uses a shared atlas.</returns>
+        protected unsafe bool ApplySharedFontAtlas()
+        {
+            if (_sharedFontAtlas == null)
+            {
+                return false;
+            }
+
+            IO.NativePtr->Fonts = _sharedFontAtlas.Atlas.NativePtr;
+            IO.NativePtr->FontDefault = default;
             Fonts.Clear();
-            // clear default font
-            DefaultFont = null;
-            // clear loaded font buffers (used for memory fallback on platforms that not support file loading, like Android)
-            _loadedFontBuffers.Clear();
 
-            // generate each fonts
-            foreach (FontSizeConfig font in fontConf.Fonts)
+            foreach (KeyValuePair<int, FontSet> font in _sharedFontAtlas.Fonts)
             {
-                Fonts[font.Size] = new FontSet(font.Size);
-
-                // REGULAR
-                List<SubFontConfig> regularFonts = new List<SubFontConfig>();
-                foreach (var f in font.SubFonts_Regular)
-                {
-#if FUMOBILE
-        regularFonts.Add(f);
-#else
-                    string fullPath = Path.Combine(fontPath, f.FileName);
-                    bool exists = File.Exists(fullPath);
-
-                    if (exists)
-                    {
-                        regularFonts.Add(f);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[FontLoader] Regular font file not found: {fullPath}");
-                    }
-#endif
-                }
-
-                if (processSubFont(font, regularFonts.ToArray(), out ImFontPtr fontPtrRegular))
-                {
-                    Fonts[font.Size].Regular = fontPtrRegular;
-                }
-
-                // BOLD
-                List<SubFontConfig> boldFonts = new List<SubFontConfig>();
-                foreach (var f in font.SubFonts_Bold)
-                {
-#if FUMOBILE
-        boldFonts.Add(f);
-#else
-                    string fullPath = Path.Combine(fontPath, f.FileName);
-                    bool exists = File.Exists(fullPath);
-
-                    if (exists)
-                    {
-                        boldFonts.Add(f);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[FontLoader] Bold font file not found: {fullPath}");
-                    }
-#endif
-                }
-
-                if (processSubFont(font, boldFonts.ToArray(), out ImFontPtr fontPtrBold))
-                {
-                    Fonts[font.Size].Bold = fontPtrBold;
-                }
-
-                // ITALIC
-                List<SubFontConfig> italicFonts = new List<SubFontConfig>();
-                foreach (var f in font.SubFonts_Italic)
-                {
-#if FUMOBILE
-        italicFonts.Add(f);
-#else
-                    string fullPath = Path.Combine(fontPath, f.FileName);
-                    bool exists = File.Exists(fullPath);
-
-                    if (exists)
-                    {
-                        italicFonts.Add(f);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[FontLoader] Italic font file not found: {fullPath}");
-                    }
-#endif
-                }
-
-                if (processSubFont(font, italicFonts.ToArray(), out ImFontPtr fontPtrItalic))
-                {
-                    Fonts[font.Size].Italic = fontPtrItalic;
-                }
-
-                // DEFAULT
-                if (font.Size == fontConf.DefaultSize)
-                {
-                    DefaultFont = Fonts[font.Size];
-                }
+                Fonts[font.Key] = font.Value;
             }
 
-            bool processSubFont(FontSizeConfig font, SubFontConfig[] subFonts, out ImFontPtr fontPtr)
-            {
-                fontPtr = default;
+            DefaultFont = _sharedFontAtlas.DefaultFont;
+            return true;
+        }
 
-                if (subFonts.Length == 0)
-                {
-                    return false;
-                }
-
-                int subFontIndex = 0;
-
-                foreach (SubFontConfig subFont in subFonts)
-                {
-                    bool useDefaultGlyphRange = subFont.StartGlyph == 0 &&
-                                                subFont.EndGlyph == 0 &&
-                                                subFont.CustomGlyphRanges.Length == 0;
-
-                    if (!useDefaultGlyphRange)
-                    {
-                        subFont.GlyphRangePtr = IntPtr.Zero;
-
-                        ImFontGlyphRangesBuilder* builder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
-
-                        if (subFont.CustomGlyphRanges.Length > 0)
-                        {
-                            for (int i = 0; i < subFont.CustomGlyphRanges.Length; i++)
-                            {
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, subFont.CustomGlyphRanges[i]);
-                            }
-                        }
-                        else
-                        {
-                            for (ushort i = subFont.StartGlyph; i <= subFont.EndGlyph; i++)
-                            {
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(builder, i);
-                            }
-                        }
-
-                        ImVector vec = default;
-                        ImVector* vecPtr = &vec;
-                        ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(builder, vecPtr);
-                        subFont.GlyphRangePtr = vecPtr->Data;
-                    }
-
-                    ImFontConfig* conf = ImGuiNative.ImFontConfig_ImFontConfig();
-                    subFont.FontConfigPtr = new ImFontConfigPtr(conf);
-                    subFont.FontConfigPtr.MergeMode = subFontIndex > 0;
-                    subFont.FontConfigPtr.GlyphOffset = subFont.GlyphOffset;
-                    subFont.FontConfigPtr.FontDataOwnedByAtlas = false;
-
-                    string fontFilePath = Path.Combine(fontPath, subFont.FileName);
-                    ImFontPtr tmpFontPtr = default;
-
-#if FUMOBILE
-        byte[] fontData = Fugui.ReadAllBytes(fontFilePath);
-        if (fontData == null || fontData.Length == 0)
+        /// <summary>
+        /// Switches this context to a shared atlas matching a new font scale.
+        /// </summary>
+        /// <param name="fontScale">Requested font scale.</param>
+        /// <returns>True when a shared atlas was applied.</returns>
+        protected bool SwitchSharedFontAtlas(float fontScale)
         {
-            Debug.LogError($"[FontLoader] Unable to load font bytes for → {fontFilePath}");
-            subFontIndex++;
-            continue;
+            if (_sharedFontAtlas == null)
+            {
+                return false;
+            }
+
+            FuSharedFontAtlasCache.Entry next = AcquireSharedFontAtlas(fontScale);
+            if (next == null)
+            {
+                return false;
+            }
+
+            FuSharedFontAtlasCache.Release(_sharedFontAtlas);
+            _sharedFontAtlas = next;
+            FontScale = next.FontScale;
+            ApplySharedFontAtlas();
+            return true;
         }
 
-        _loadedFontBuffers.Add(fontData);
-
-        fixed (byte* fontPtrRaw = fontData)
+        /// <summary>
+        /// Quantizes a font scale according to the current FontConfig.
+        /// </summary>
+        protected static float QuantizeFontScale(float fontScale)
         {
-            if (useDefaultGlyphRange)
-            {
-                tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF(
-                    (IntPtr)fontPtrRaw,
-                    fontData.Length,
-                    (font.Size + subFont.SizeOffset) * FontScale,
-                    subFont.FontConfigPtr);
-            }
-            else
-            {
-                tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF(
-                    (IntPtr)fontPtrRaw,
-                    fontData.Length,
-                    (font.Size + subFont.SizeOffset) * FontScale,
-                    subFont.FontConfigPtr,
-                    subFont.GlyphRangePtr);
-            }
+            return FuFontAtlasCache.QuantizeFontScale(Fugui.Settings?.FontConfig, fontScale);
         }
 
-        Debug.Log($"[FontLoader] Trying to load font from memory → {fontFilePath} : {((IntPtr)tmpFontPtr.NativePtr != IntPtr.Zero ? "Success" : "Failed")}");
-#else
-                    if (useDefaultGlyphRange)
-                    {
-                        tmpFontPtr = IO.Fonts.AddFontFromFileTTF(
-                            fontFilePath,
-                            (font.Size + subFont.SizeOffset) * FontScale,
-                            subFont.FontConfigPtr);
-                    }
-                    else
-                    {
-                        tmpFontPtr = IO.Fonts.AddFontFromFileTTF(
-                            fontFilePath,
-                            (font.Size + subFont.SizeOffset) * FontScale,
-                            subFont.FontConfigPtr,
-                            subFont.GlyphRangePtr);
-                    }
-
-                    if ((IntPtr)tmpFontPtr.NativePtr == IntPtr.Zero)
-                    {
-                        Debug.LogWarning($"[FontLoader] Failed to load font from file → {fontFilePath}. Trying memory fallback.");
-
-                        byte[] fontData = Fugui.ReadAllBytes(fontFilePath);
-                        if (fontData == null || fontData.Length == 0)
-                        {
-                            Debug.LogError($"[FontLoader] Memory fallback failed to read bytes for → {fontFilePath}");
-                            subFontIndex++;
-                            continue;
-                        }
-
-                        _loadedFontBuffers.Add(fontData);
-
-                        fixed (byte* fontPtrRaw = fontData)
-                        {
-                            if (useDefaultGlyphRange)
-                            {
-                                tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF(
-                                    (IntPtr)fontPtrRaw,
-                                    fontData.Length,
-                                    (font.Size + subFont.SizeOffset) * FontScale,
-                                    subFont.FontConfigPtr);
-                            }
-                            else
-                            {
-                                tmpFontPtr = IO.Fonts.AddFontFromMemoryTTF(
-                                    (IntPtr)fontPtrRaw,
-                                    fontData.Length,
-                                    (font.Size + subFont.SizeOffset) * FontScale,
-                                    subFont.FontConfigPtr,
-                                    subFont.GlyphRangePtr);
-                            }
-                        }
-
-                        if ((IntPtr)tmpFontPtr.NativePtr == IntPtr.Zero)
-                        {
-                            Debug.LogError($"[FontLoader] Memory fallback also failed for → {fontFilePath}");
-                        }
-                    }
-#endif
-
-                    if ((IntPtr)tmpFontPtr.NativePtr != IntPtr.Zero && subFontIndex == 0)
-                    {
-                        fontPtr = tmpFontPtr;
-                    }
-
-                    subFontIndex++;
-                }
-
-                return (IntPtr)fontPtr.NativePtr != IntPtr.Zero;
+        private static FuSharedFontAtlasCache.Entry AcquireSharedFontAtlas(float fontScale)
+        {
+            FontConfig fontConfig = Fugui.Settings?.FontConfig;
+            if (!FuSharedFontAtlasCache.IsEnabled(fontConfig))
+            {
+                return null;
             }
-        }
 
+            return FuSharedFontAtlasCache.GetOrCreate(fontConfig, fontScale, Application.streamingAssetsPath);
+        }
         #region State
         private readonly List<byte[]> _loadedFontBuffers = new List<byte[]>();
         #endregion

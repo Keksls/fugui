@@ -146,35 +146,18 @@ namespace Fu
                 }
 
                 _fontAtlas = io.Fonts;
-                _fontAtlas.GetTexDataAsRGBA32(out byte* pixels, out int width, out int height, out int bytesPerPixel);
-
-                if (width > SystemInfo.maxTextureSize || height > SystemInfo.maxTextureSize)
+                FontConfig fontConfig = Fugui.Settings?.FontConfig;
+                if (!FuFontAtlasCache.TryLoadBakedTexture(fontConfig, fontScale, out atlas))
                 {
-                    Debug.LogError("The font atlas you are trying to created is too big and exced the unity max texture size.\nconsidere reducing the size of the font, the number of different font sizes or the quantity of icons.");
+                    bool useAlpha8 = fontConfig != null && fontConfig.UseAlpha8FontAtlasTexture;
+                    atlas = FuFontAtlasCache.CreateTextureFromAtlas(_fontAtlas, $"Fugui Font Atlas {fontScale:0.###}", useAlpha8);
                 }
-                if (width > SystemInfo.maxTextureSize)
-                    width = SystemInfo.maxTextureSize;
-                if (height > SystemInfo.maxTextureSize)
-                    height = SystemInfo.maxTextureSize;
 
-                atlas = new Texture2D(width, height, TextureFormat.RGBA32, false, false)
+                if (atlas == null)
                 {
-                    filterMode = FilterMode.Point
-                };
-
-                // TODO: Remove collections and make native array manually.
-                NativeArray<byte> srcData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(pixels, width * height * bytesPerPixel, Allocator.None);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref srcData, AtomicSafetyHandle.GetTempMemoryHandle());
-#endif
-                // Invert y while copying the atlas texture.
-                NativeArray<byte> dstData = atlas.GetRawTextureData<byte>();
-                int stride = width * bytesPerPixel;
-                for (int y = 0; y < height; ++y)
-                {
-                    NativeArray<byte>.Copy(srcData, y * stride, dstData, (height - y - 1) * stride, stride);
+                    Debug.LogError("[FontAtlasCache] Unable to create or load the font atlas texture.");
+                    return;
                 }
-                atlas.Apply();
 
                 _atlasTexture[fontScale] = atlas;
             }
@@ -300,7 +283,11 @@ namespace Fu
                     _atlasTexture.Remove(scale);
                 }
             }
-            ImGui.GetIO().Fonts.Clear(); // Previous FontDefault reference no longer valid.
+            if (Fugui.CurrentContext == null || !Fugui.CurrentContext.UsesSharedFontAtlas)
+            {
+                ImGui.GetIO().Fonts.Clear(); // Previous FontDefault reference no longer valid.
+            }
+
             ImGui.GetIO().NativePtr->FontDefault = default; // NULL uses Fonts[0].
         }
 
@@ -311,12 +298,17 @@ namespace Fu
         public void PrepareFrame(ImGuiIOPtr io)
         {
             float fontScale = Fugui.CurrentContext.FontScale;
-            if (!_atlasTexture.ContainsKey(fontScale))
+            if (!_atlasTexture.TryGetValue(fontScale, out Texture2D atlas) || atlas == null)
             {
                 InitializeFontAtlas(io);
             }
 
-            IntPtr id = GetTextureId(_atlasTexture[fontScale]);
+            if (!_atlasTexture.TryGetValue(fontScale, out atlas) || atlas == null)
+            {
+                return;
+            }
+
+            IntPtr id = GetTextureId(atlas);
             io.Fonts.SetTexID(id);
         }
 
@@ -379,6 +371,34 @@ namespace Fu
         public IntPtr GetFontAtlasTextureId()
         {
             return GetTextureId(_atlasTexture[Fugui.CurrentContext.FontScale]);
+        }
+
+        /// <summary>
+        /// Returns whether a texture is one of Fugui's shared font atlas textures.
+        /// </summary>
+        /// <param name="texture">Texture to test.</param>
+        /// <returns>True when the texture is a registered font atlas.</returns>
+        internal bool IsFontAtlasTexture(UTexture texture)
+        {
+            if (ReferenceEquals(texture, null) || texture == null)
+            {
+                return false;
+            }
+
+            if (_atlasTexture == null)
+            {
+                return false;
+            }
+
+            foreach (UTexture atlas in _atlasTexture.Values)
+            {
+                if (ReferenceEquals(atlas, texture))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

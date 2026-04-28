@@ -27,6 +27,7 @@
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _Texture_ST; // if you need ST; keep an empty cbuffer to enable SRP Batcher
+                float _TextureIsAlpha;
             CBUFFER_END
 
             TEXTURE2D(_Texture);
@@ -57,6 +58,10 @@
             {
                 //return half4(1, 1, 1, 1);
                 half4 tex = SAMPLE_TEXTURE2D(_Texture, sampler_Texture, i.uv);
+                if (_TextureIsAlpha > 0.5h)
+                {
+                    tex = half4(1.0h, 1.0h, 1.0h, tex.a);
+                }
                 return i.color * tex;
             }
             ENDHLSL

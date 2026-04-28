@@ -28,6 +28,7 @@ namespace Fu
             private Dictionary<int, RTHandle> _targetHandles;
             private readonly Shader _shader;
             private int _textureID;
+            private int _textureIsAlphaID;
             private Dictionary<int, int> _prevSubMeshCounts;
             private Dictionary<int, int> _prevVertexCounts;
             private Dictionary<int, int> _prevIndexCounts;
@@ -59,6 +60,7 @@ namespace Fu
             {
                 _shader = shader;
                 _textureID = Shader.PropertyToID("_Texture");
+                _textureIsAlphaID = Shader.PropertyToID("_TextureIsAlpha");
                 _materialProperties = new MaterialPropertyBlock();
                 _prevSubMeshCounts = new Dictionary<int, int>();
                 _prevVertexCounts = new Dictionary<int, int>();
@@ -349,14 +351,21 @@ namespace Fu
                                 //Assert.IsTrue(hasTexture, $"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
                                 if (!hasTexture)
                                 {
+                                    _materialProperties.SetFloat(_textureIsAlphaID, 0f);
                                     Debug.LogError($"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
                                 }
                                 else
                                 {
                                     if (texture && texture != null)
+                                    {
                                         _materialProperties.SetTexture(_textureID, texture);
+                                        _materialProperties.SetFloat(_textureIsAlphaID, _textureManager != null && _textureManager.IsFontAtlasTexture(texture) ? 1f : 0f);
+                                    }
                                     else
+                                    {
+                                        _materialProperties.SetFloat(_textureIsAlphaID, 0f);
                                         Debug.LogWarning($"Texture {prevTextureId} is null or not a valid texture.");
+                                    }
                                 }
                             }
                             commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
@@ -502,14 +511,21 @@ namespace Fu
                                 //Assert.IsTrue(hasTexture, $"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
                                 if (!hasTexture)
                                 {
+                                    _materialProperties.SetFloat(_textureIsAlphaID, 0f);
                                     Debug.LogError($"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
                                 }
                                 else
                                 {
                                     if (texture && texture != null)
+                                    {
                                         _materialProperties.SetTexture(_textureID, texture);
+                                        _materialProperties.SetFloat(_textureIsAlphaID, _textureManager != null && _textureManager.IsFontAtlasTexture(texture) ? 1f : 0f);
+                                    }
                                     else
+                                    {
+                                        _materialProperties.SetFloat(_textureIsAlphaID, 0f);
                                         Debug.LogWarning($"Texture {prevTextureId} is null or not a valid texture.");
+                                    }
                                 }
                             }
                             commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.

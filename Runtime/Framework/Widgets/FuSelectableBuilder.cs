@@ -14,6 +14,8 @@ namespace Fu.Framework
         private static Dictionary<Type, List<string>> _selectablesObjects = new Dictionary<Type, List<string>>();
          // A dictionary of integers representing the combo selected indices.
         private static Dictionary<string, int> _selectableSelectedIndices = new Dictionary<string, int>();
+        private static Dictionary<string, List<string>> _selectableDisplayLabels = new Dictionary<string, List<string>>();
+        private static Dictionary<string, int> _selectableDisplayLabelsCounts = new Dictionary<string, int>();
         #endregion
 
         #region Methods
@@ -105,6 +107,46 @@ namespace Fu.Framework
         public static void SetSelectedIndex(string id, int index)
         {
             _selectableSelectedIndices[id] = index;
+        }
+
+        /// <summary>
+        /// Gets the cached display labels for a selectable list.
+        /// </summary>
+        /// <typeparam name="T">The selectable item type.</typeparam>
+        /// <param name="id">ID of the selectable list.</param>
+        /// <param name="items">List of selectable items.</param>
+        /// <param name="listUpdated">Returns true when the list values must be reprocessed.</param>
+        /// <returns>The display labels for the selectable list.</returns>
+        public static List<string> GetDisplayLabels<T>(string id, List<T> items, Func<bool> listUpdated)
+        {
+            bool mustRebuild = listUpdated == null || listUpdated();
+            if (!_selectableDisplayLabels.TryGetValue(id, out List<string> labels))
+            {
+                labels = new List<string>(items.Count);
+                _selectableDisplayLabels.Add(id, labels);
+                mustRebuild = true;
+            }
+
+            if (!_selectableDisplayLabelsCounts.TryGetValue(id, out int cachedCount) || cachedCount != items.Count)
+            {
+                mustRebuild = true;
+            }
+
+            if (mustRebuild)
+            {
+                labels.Clear();
+                if (labels.Capacity < items.Count)
+                {
+                    labels.Capacity = items.Count;
+                }
+                for (int i = 0; i < items.Count; i++)
+                {
+                    labels.Add(items[i] != null ? Fugui.AddSpacesBeforeUppercase(items[i].ToString()) : string.Empty);
+                }
+                _selectableDisplayLabelsCounts[id] = items.Count;
+            }
+
+            return labels;
         }
         #endregion
     }

@@ -12,6 +12,7 @@ namespace Fu.Framework
     {
         #region State
         public const float COMBOBOX_POPUP_MAXIMUM_HEIGHT = 320f;
+        private static HashSet<string> _comboboxPopupCloseOnClickRelease = new HashSet<string>();
         #endregion
 
         #region Methods
@@ -74,7 +75,7 @@ namespace Fu.Framework
         public void Combobox<T>(string text, List<T> items, Action<int> itemChange, Func<T> itemGetter, FuElementSize size, Vector2 popupSize, FuButtonStyle style, FuComboboxPopupPosition popupPosition = FuComboboxPopupPosition.BottomLeftAlign, Func<bool> listUpdated = null)
         {
             // Display the custom combobox and call the specified action when the selected item changes
-            _customCombobox(text, items, itemChange, () => { return itemGetter?.Invoke()?.ToString(); }, size, popupSize, style, popupPosition);
+            _customCombobox(text, items, itemChange, () => { return itemGetter?.Invoke()?.ToString(); }, size, popupSize, style, popupPosition, listUpdated);
         }
 
         /// <summary>
@@ -85,7 +86,7 @@ namespace Fu.Framework
         ///<param name="itemChange">The action to be performed when an item is selected.</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not linked to an object's field</param>
         ///<param name="style">The style for the combobox element.</param>
-        private void _customCombobox<T>(string text, List<T> items, Action<int> itemChange, Func<string> itemGetter, FuElementSize size, Vector2 popupSize, FuButtonStyle style, FuComboboxPopupPosition popupPosition)
+        private void _customCombobox<T>(string text, List<T> items, Action<int> itemChange, Func<string> itemGetter, FuElementSize size, Vector2 popupSize, FuButtonStyle style, FuComboboxPopupPosition popupPosition, Func<bool> listUpdated = null)
         {
             // return if item must no be draw
             if (!_drawElement)
@@ -99,9 +100,10 @@ namespace Fu.Framework
             // draw the combobox
             Combobox(text, items.Count > 0 ? items[selectedIndex].ToString() : "No Items", () =>
             {
+                List<string> displayLabels = FuSelectableBuilder.GetDisplayLabels(text, items, listUpdated);
                 for (int i = 0; i < items.Count; i++)
                 {
-                    if (ImGui.Selectable(Fugui.AddSpacesBeforeUppercase(items[i].ToString()), selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
+                    if (ImGui.Selectable(displayLabels[i], selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
                     {
                         // Update the selected index and invoke the item change action
                         selectedIndex = i;
@@ -147,24 +149,45 @@ namespace Fu.Framework
             // draw combobox button
             string popupID = text + "pu";
             float carretWidth = 16f * Fugui.CurrentContext.Scale;
-            if (_customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth))
+            bool openedBeforeClick = Fugui.IsPopupOpen(popupID);
+            bool closePopupThisFrame = false;
+            bool clicked = _customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth, true);
+            if (openedBeforeClick && LastItemJustActivated)
             {
-                Fugui.OpenPopUp(popupID, () =>
+                Fugui.ClosePopup(popupID);
+                _comboboxPopupCloseOnClickRelease.Add(popupID);
+                closePopupThisFrame = true;
+            }
+            if (clicked)
+            {
+                if (openedBeforeClick || _comboboxPopupCloseOnClickRelease.Remove(popupID))
                 {
-                    Spacing();
-                    Spacing();
-                    SameLine();
-                    BeginGroup();
-                    callback?.Invoke();
-                    EndGroup();
-                    SameLine();
-                    Spacing();
-                    Spacing();
-                },
-                isComboBoxPopup: true);
+                    Fugui.ClosePopup(popupID);
+                    closePopupThisFrame = true;
+                }
+                else
+                {
+                    Fugui.OpenPopUp(popupID, () =>
+                    {
+                        Spacing();
+                        Spacing();
+                        SameLine();
+                        BeginGroup();
+                        callback?.Invoke();
+                        EndGroup();
+                        SameLine();
+                        Spacing();
+                        Spacing();
+                    },
+                    isComboBoxPopup: true);
+                }
+            }
+            else if (_comboboxPopupCloseOnClickRelease.Contains(popupID) && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
+            {
+                _comboboxPopupCloseOnClickRelease.Remove(popupID);
             }
             // get popup open state
-            bool opened = Fugui.IsPopupOpen(popupID);
+            bool opened = !closePopupThisFrame && Fugui.IsPopupOpen(popupID);
 
             // get button rect info
             Vector2 btnMin = ImGui.GetItemRectMin();
@@ -308,24 +331,45 @@ namespace Fu.Framework
             // draw combobox button
             string popupID = text + "pu";
             float carretWidth = 16f * Fugui.CurrentContext.Scale;
-            if (_customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth))
+            bool openedBeforeClick = Fugui.IsPopupOpen(popupID);
+            bool closePopupThisFrame = false;
+            bool clicked = _customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth, true);
+            if (openedBeforeClick && LastItemJustActivated)
             {
-                Fugui.OpenPopUp(popupID, () =>
+                Fugui.ClosePopup(popupID);
+                _comboboxPopupCloseOnClickRelease.Add(popupID);
+                closePopupThisFrame = true;
+            }
+            if (clicked)
+            {
+                if (openedBeforeClick || _comboboxPopupCloseOnClickRelease.Remove(popupID))
                 {
-                    Spacing();
-                    Spacing();
-                    SameLine();
-                    BeginGroup();
-                    callback?.Invoke();
-                    EndGroup();
-                    SameLine();
-                    Spacing();
-                    Spacing();
-                },
-                isComboBoxPopup: true);
+                    Fugui.ClosePopup(popupID);
+                    closePopupThisFrame = true;
+                }
+                else
+                {
+                    Fugui.OpenPopUp(popupID, () =>
+                    {
+                        Spacing();
+                        Spacing();
+                        SameLine();
+                        BeginGroup();
+                        callback?.Invoke();
+                        EndGroup();
+                        SameLine();
+                        Spacing();
+                        Spacing();
+                    },
+                    isComboBoxPopup: true);
+                }
+            }
+            else if (_comboboxPopupCloseOnClickRelease.Contains(popupID) && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
+            {
+                _comboboxPopupCloseOnClickRelease.Remove(popupID);
             }
             // get popup open state
-            bool opened = Fugui.IsPopupOpen(popupID);
+            bool opened = !closePopupThisFrame && Fugui.IsPopupOpen(popupID);
 
             // get button rect info
             Vector2 btnMin = ImGui.GetItemRectMin();

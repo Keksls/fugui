@@ -2025,12 +2025,13 @@ namespace Fu
             {
                 return input;
             }
-            if (!_niceStrings.ContainsKey(input))
+            if (!_niceStrings.TryGetValue(input, out string niceString))
             {
                 // Use a regular expression to add spaces before uppercase letters, but ignore the first letter of the string and avoid adding a space if it is preceded by whitespace
-                _niceStrings.Add(input, AddSpacesBeforeUppercaseDirect(input));
+                niceString = AddSpacesBeforeUppercaseDirect(input);
+                _niceStrings.Add(input, niceString);
             }
-            return _niceStrings[input];
+            return niceString;
         }
 
         /// <summary>
@@ -2060,11 +2061,13 @@ namespace Fu
         /// <returns>untaged text</returns>
         public static string GetUntagedText(string input)
         {
-            if (!_untagedStrings.ContainsKey(input))
+            if (!_untagedStrings.TryGetValue(input, out string untagedString))
             {
-                _untagedStrings.Add(input, input.Split(new char[] { '#', '#' })[0]);
+                int tagIndex = input.IndexOf("##", StringComparison.Ordinal);
+                untagedString = tagIndex >= 0 ? input.Substring(0, tagIndex) : input;
+                _untagedStrings.Add(input, untagedString);
             }
-            return _untagedStrings[input];
+            return untagedString;
         }
 
         /// <summary>

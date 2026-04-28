@@ -507,13 +507,14 @@ namespace Fu.Framework
         /// <param name="pos">screen position of the item to check</param>
         /// <param name="size">size of the item to check</param>
         /// <returns>true ifhovered</returns>
-        public bool IsItemHovered(Vector2 pos, Vector2 size, bool forcePanelClippingInsidePopup = false) // TODO : Remove this freak once clipping rect stack are handled
+        public bool IsItemHovered(Vector2 pos, Vector2 size, bool forcePanelClippingInsidePopup = false, bool allowWhenBlockedByPopup = false) // TODO : Remove this freak once clipping rect stack are handled
         {
             if(Fugui.IsScrolling) // prevent hover state to change during scroll (since mouse pos is changing but we are still on the same item)
             {
                 return false;
             }
 
+            Vector2 mousePos = ImGui.GetMousePos();
             bool isDrawingInsidePopup = Fugui.IsDrawingInsidePopup();
             // a popup is drawing
             if (isDrawingInsidePopup)
@@ -527,11 +528,13 @@ namespace Fu.Framework
             // we are not drawing inside a popup but there is some
             else if (Fugui.IsThereAnyOpenPopup())
             {
-                return false;
+                if (!allowWhenBlockedByPopup || Fugui.IsInsideAnyPopup(mousePos))
+                {
+                    return false;
+                }
             }
 
             bool hovered;
-            Vector2 mousePos = ImGui.GetMousePos();
 
             // we are inside a panel, let's ignore if mouse is outside the panel clipping rect only if ye are NOT inside a popup
             // TODO : Maybe it's a good idea to store a stack of current clipping rect (for panels inside panels or popups drawn by panels => otherwise we MUST draw popups OUTSIDE panels)
@@ -881,13 +884,13 @@ namespace Fu.Framework
         /// <param name="clickable"></param>
         /// <param name="updated"></param>
         /// <param name="updateOnClick"></param>
-        protected void setBaseElementState(string uniqueID, Vector2 pos, Vector2 size, bool clickable, bool updated, bool updateOnClick = false)
+        protected void setBaseElementState(string uniqueID, Vector2 pos, Vector2 size, bool clickable, bool updated, bool updateOnClick = false, bool allowWhenBlockedByPopup = false)
         {
             _lastItemRect = new Rect(pos, size);
 
             if (LastItemDisabled)
             {
-                _lastItemHovered = IsItemHovered(pos, size);
+                _lastItemHovered = IsItemHovered(pos, size, false, allowWhenBlockedByPopup);
                 if (_activeItem == uniqueID)
                 {
                     _activeItem = null;
@@ -895,7 +898,7 @@ namespace Fu.Framework
                 return;
             }
 
-            _lastItemHovered = IsItemHovered(pos, size);
+            _lastItemHovered = IsItemHovered(pos, size, false, allowWhenBlockedByPopup);
 
             if (clickable)
             {

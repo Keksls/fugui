@@ -85,6 +85,7 @@ namespace Fu.Framework
                 Vector2 winPos = ImGui.GetWindowPos();
                 Vector2 winSize = ImGui.GetWindowSize();
                 Vector2 closebtnPos = default;
+                Rect closeButtonRect = default;
 
                 // HEADER
                 ImGuiNative.igSpacing();
@@ -115,6 +116,7 @@ namespace Fu.Framework
                     {
                         Close();
                     }
+                    closeButtonRect = grid.LastItemRect;
                     closebtnPos = grid.LastItemRect.center;
 
                     ImGui.PopStyleColor(4);
@@ -127,7 +129,8 @@ namespace Fu.Framework
                 ImGui.SetCursorScreenPos(headerStart);
                 ImGui.InvisibleButton("notify_header_" + i, headerEnd - headerStart);
                 bool headerHovered = ImGui.IsItemHovered();
-                if (headerHovered && ImGui.IsItemClicked(ImGuiMouseButton.Left) && CanCollapse) IsCollapsed = !IsCollapsed;
+                bool closeButtonHovered = closeButtonRect.Contains(ImGui.GetMousePos());
+                if (headerHovered && !closeButtonHovered && ImGui.IsItemClicked(ImGuiMouseButton.Left) && CanCollapse) IsCollapsed = !IsCollapsed;
 
                 // SEPARATOR + BODY BG
                 if (!string.IsNullOrEmpty(Title) && !string.IsNullOrEmpty(Message) && !IsCollapsed)

@@ -85,8 +85,8 @@ namespace Fu.Framework
         {
             if (itemRects.Count > 0)
             {
-                // TODO : use swap bugffer pattern to avoid copying
-                lastItemRects = new List<Rect>(itemRects);
+                lastItemRects.Clear();
+                lastItemRects.AddRange(itemRects);
             }
         }
 

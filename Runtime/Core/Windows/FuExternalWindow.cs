@@ -647,7 +647,6 @@ namespace Fu
             // Forward event to rooter for ImGui processing
             if (e.type == SDL_EventType.SDL_MOUSEBUTTONDOWN)
             {
-                Debug.Log($"External window mouse button down: button={e.button.button} x={e.button.x} y={e.button.y}");
                 Fugui.SDLEventRooter.Push(SdlWindowId, ref e);
             }
         }

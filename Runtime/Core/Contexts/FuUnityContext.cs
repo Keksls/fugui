@@ -181,8 +181,11 @@ namespace Fu
                 throw new Exception("imgui platform is null");
             }
 
-            LoadFonts();
-            IO.Fonts.Build();
+            if (!ApplySharedFontAtlas())
+            {
+                LoadFonts();
+                IO.Fonts.Build();
+            }
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
@@ -229,6 +232,7 @@ namespace Fu
         /// <param name="fontScale">context font scale (usualy same value as context scale)</param>
         public override void SetScale(float scale, float fontScale)
         {
+            fontScale = QuantizeFontScale(fontScale);
             // store old scale
             float oldScale = Scale;
             float oldFontScale = FontScale;
@@ -244,8 +248,11 @@ namespace Fu
 
             // update font scale
             TextureManager.ClearFontAtlas(oldFontScale);
-            LoadFonts();
-            IO.Fonts.Build();  
+            if (!SwitchSharedFontAtlas(fontScale))
+            {
+                LoadFonts();
+                IO.Fonts.Build();
+            }
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);

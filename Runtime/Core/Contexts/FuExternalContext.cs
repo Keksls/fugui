@@ -39,8 +39,11 @@ namespace Fu
             IO.DisplaySize = new Vector2(Width, Height);
 
             // Load fonts and atlas
-            LoadFonts();
-            IO.Fonts.Build();
+            if (!ApplySharedFontAtlas())
+            {
+                LoadFonts();
+                IO.Fonts.Build();
+            }
             TextureManager.InitializeFontAtlas(IO);
 
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
@@ -120,6 +123,7 @@ namespace Fu
 
         public override void SetScale(float scale, float fontScale)
         {
+            fontScale = QuantizeFontScale(fontScale);
             float oldFontScale = FontScale;
 
             if (Mathf.Abs(Scale - scale) < 0.0001f && Mathf.Abs(FontScale - fontScale) < 0.0001f)
@@ -131,8 +135,11 @@ namespace Fu
             FontScale = fontScale;
 
             TextureManager.ClearFontAtlas(oldFontScale);
-            LoadFonts();
-            IO.Fonts.Build();
+            if (!SwitchSharedFontAtlas(fontScale))
+            {
+                LoadFonts();
+                IO.Fonts.Build();
+            }
             TextureManager.InitializeFontAtlas(IO);
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
         }

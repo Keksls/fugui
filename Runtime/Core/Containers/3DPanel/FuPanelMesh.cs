@@ -38,6 +38,15 @@ namespace Fu
         private float _curveAngle = 0f;
         private const float CurveEpsilon = 0.001f;
         private const float MaxCurveAngle = 359.9f;
+        private MeshFilter _uiMeshFilter;
+        private MeshRenderer _uiMeshRenderer;
+        private Mesh _uiMesh;
+        private GameObject _panelObject;
+        private MeshFilter _panelMeshFilter;
+        private MeshRenderer _panelMeshRenderer;
+        private Mesh _panelMesh;
+        private Material _panelMaterial;
+        private Material _panelSourceMaterial;
         #endregion
 
         #region Methods
@@ -71,25 +80,8 @@ namespace Fu
             _flatHeight = Mathf.Max(0.0001f, height * scale);
             _curveAngle = Mathf.Clamp(curve, 0f, MaxCurveAngle);
 
-            // UI mesh
-            var uiMeshFilter = gameObject.AddComponent<MeshFilter>();
-            var uiMR = gameObject.AddComponent<MeshRenderer>();
-            uiMR.material = UImaterial;
-            var uiMesh = new Mesh();
-            uiMeshFilter.sharedMesh = uiMesh;
-
-            // Panel mesh
-            GameObject panel = new GameObject("panel");
-            panel.transform.SetParent(transform);
-            panel.transform.localPosition = Vector3.forward * 0.001f;
-            panel.transform.localRotation = Quaternion.identity;
-            var panelMeshFilter = panel.AddComponent<MeshFilter>();
-            var panelMR = panel.AddComponent<MeshRenderer>();
-            Material panelMat = Instantiate(PanelMaterial);
-            panelMat.mainTextureScale = new Vector2(width * scale, height * scale);
-            panelMR.material = panelMat;
-            var panelMesh = new Mesh();
-            panelMeshFilter.sharedMesh = panelMesh;
+            Mesh uiMesh = getOrCreateUIMesh(UImaterial);
+            Mesh panelMesh = getOrCreatePanelMesh(width, height, scale, PanelMaterial);
 
             if (_curveAngle > CurveEpsilon)
             {
@@ -109,6 +101,147 @@ namespace Fu
             }
 
             return uiMesh;
+        }
+
+        /// <summary>
+        /// Updates the panel materials without rebuilding mesh geometry.
+        /// </summary>
+        /// <param name="UImaterial">UI material.</param>
+        /// <param name="PanelMaterial">Panel backing material.</param>
+        /// <param name="width">Panel width.</param>
+        /// <param name="height">Panel height.</param>
+        /// <param name="scale">Panel scale.</param>
+        public void UpdateMaterials(Material UImaterial, Material PanelMaterial, float width, float height, float scale)
+        {
+            getOrCreateUIMesh(UImaterial);
+            getOrCreatePanelMesh(width, height, scale, PanelMaterial);
+        }
+
+        /// <summary>
+        /// Ensures the reusable UI mesh components exist.
+        /// </summary>
+        /// <param name="UImaterial">UI material.</param>
+        /// <returns>The reusable UI mesh.</returns>
+        private Mesh getOrCreateUIMesh(Material UImaterial)
+        {
+            if (_uiMeshFilter == null)
+            {
+                _uiMeshFilter = GetComponent<MeshFilter>();
+                if (_uiMeshFilter == null)
+                {
+                    _uiMeshFilter = gameObject.AddComponent<MeshFilter>();
+                }
+            }
+
+            if (_uiMeshRenderer == null)
+            {
+                _uiMeshRenderer = GetComponent<MeshRenderer>();
+                if (_uiMeshRenderer == null)
+                {
+                    _uiMeshRenderer = gameObject.AddComponent<MeshRenderer>();
+                }
+            }
+
+            if (_uiMesh == null)
+            {
+                _uiMesh = new Mesh
+                {
+                    name = "Fugui UI Panel"
+                };
+            }
+
+            _uiMeshFilter.sharedMesh = _uiMesh;
+            _uiMeshRenderer.sharedMaterial = UImaterial;
+            return _uiMesh;
+        }
+
+        /// <summary>
+        /// Ensures the reusable backing panel mesh components exist.
+        /// </summary>
+        /// <param name="width">Panel width.</param>
+        /// <param name="height">Panel height.</param>
+        /// <param name="scale">Panel scale.</param>
+        /// <param name="PanelMaterial">Panel backing material.</param>
+        /// <returns>The reusable backing mesh.</returns>
+        private Mesh getOrCreatePanelMesh(float width, float height, float scale, Material PanelMaterial)
+        {
+            if (_panelObject == null)
+            {
+                Transform existingPanel = transform.Find("panel");
+                _panelObject = existingPanel != null ? existingPanel.gameObject : new GameObject("panel");
+            }
+
+            _panelObject.transform.SetParent(transform);
+            _panelObject.transform.localPosition = Vector3.forward * 0.001f;
+            _panelObject.transform.localRotation = Quaternion.identity;
+            _panelObject.transform.localScale = Vector3.one;
+
+            if (_panelMeshFilter == null)
+            {
+                _panelMeshFilter = _panelObject.GetComponent<MeshFilter>();
+                if (_panelMeshFilter == null)
+                {
+                    _panelMeshFilter = _panelObject.AddComponent<MeshFilter>();
+                }
+            }
+
+            if (_panelMeshRenderer == null)
+            {
+                _panelMeshRenderer = _panelObject.GetComponent<MeshRenderer>();
+                if (_panelMeshRenderer == null)
+                {
+                    _panelMeshRenderer = _panelObject.AddComponent<MeshRenderer>();
+                }
+            }
+
+            if (_panelMesh == null)
+            {
+                _panelMesh = new Mesh
+                {
+                    name = "Fugui Panel Backing"
+                };
+            }
+
+            _panelMeshFilter.sharedMesh = _panelMesh;
+            updatePanelMaterial(PanelMaterial, width, height, scale);
+            return _panelMesh;
+        }
+
+        /// <summary>
+        /// Updates the reusable panel material instance.
+        /// </summary>
+        /// <param name="PanelMaterial">Source panel material.</param>
+        /// <param name="width">Panel width.</param>
+        /// <param name="height">Panel height.</param>
+        /// <param name="scale">Panel scale.</param>
+        private void updatePanelMaterial(Material PanelMaterial, float width, float height, float scale)
+        {
+            if (PanelMaterial == null)
+            {
+                if (_panelMaterial != null)
+                {
+                    Destroy(_panelMaterial);
+                    _panelMaterial = null;
+                    _panelSourceMaterial = null;
+                }
+
+                _panelMeshRenderer.sharedMaterial = null;
+                return;
+            }
+
+            if (_panelMaterial == null || _panelSourceMaterial != PanelMaterial)
+            {
+                if (_panelMaterial != null)
+                {
+                    Destroy(_panelMaterial);
+                }
+
+                _panelSourceMaterial = PanelMaterial;
+                _panelMaterial = Instantiate(PanelMaterial);
+            }
+
+            _panelMaterial.mainTextureScale = new Vector2(width * scale, height * scale);
+            _panelMeshRenderer.sharedMaterial = _panelMaterial;
         }
 
         /// <summary>
@@ -688,6 +821,30 @@ namespace Fu
             float theta = flatX / radius;
 
             return new Vector3(-Mathf.Sin(theta), 0f, -Mathf.Cos(theta)).normalized;
+        }
+
+        /// <summary>
+        /// Releases meshes and material instances owned by this panel.
+        /// </summary>
+        private void OnDestroy()
+        {
+            if (_panelMaterial != null)
+            {
+                Destroy(_panelMaterial);
+                _panelMaterial = null;
+            }
+
+            if (_uiMesh != null)
+            {
+                Destroy(_uiMesh);
+                _uiMesh = null;
+            }
+
+            if (_panelMesh != null)
+            {
+                Destroy(_panelMesh);
+                _panelMesh = null;
+            }
         }
         #endregion
 

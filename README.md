@@ -327,6 +327,8 @@ Les polices sont configurees avec `FontConfig`. Les glyphes d'icones respectent 
 - icons classiques: `0xE000` a `0xEC7E`;
 - icons duotone: `0xEC7F` a `0xF8FF`.
 
+Les atlas de polices peuvent etre bakes depuis `Tools > Fugui > Font Atlas Baker`. Les textures sont stockees dans `Assets/StreamingAssets/Fugui/FontAtlases/<font-hash>/scale_<scale>.png` et le runtime les recharge automatiquement quand `FontConfig.UseBakedFontAtlas` est actif. Si aucun atlas bake ne correspond au `FontScale` courant, Fugui reconstruit l'atlas en memoire comme avant.
+
 Utilisation:
 
 ```csharp

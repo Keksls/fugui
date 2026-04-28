@@ -701,6 +701,57 @@ namespace Fu
         }
 
         /// <summary>
+        /// Prewarms heavy resources used by 3D windows over multiple frames.
+        /// </summary>
+        /// <param name="fontScales">Font scales to prewarm. Null uses baked atlas scales from settings when available.</param>
+        /// <param name="renderTextureSizes">Render texture sizes to prewarm.</param>
+        /// <returns>Coroutine enumerator.</returns>
+        public static IEnumerator Prewarm3DWindowResources(IEnumerable<float> fontScales = null, IEnumerable<Vector2Int> renderTextureSizes = null)
+        {
+            FontConfig fontConfig = Settings?.FontConfig;
+            if (fontScales == null && fontConfig != null && fontConfig.BakedFontAtlasScales != null)
+            {
+                fontScales = fontConfig.BakedFontAtlasScales;
+            }
+
+            if (fontConfig != null && fontScales != null)
+            {
+                foreach (float fontScale in fontScales)
+                {
+                    FuSharedFontAtlasCache.Prewarm(fontConfig, fontScale, Application.streamingAssetsPath);
+                    yield return null;
+                }
+            }
+
+            if (renderTextureSizes != null)
+            {
+                foreach (Vector2Int renderTextureSize in renderTextureSizes)
+                {
+                    Fu3DWindowContainer.PrewarmRenderTexture(renderTextureSize);
+                    yield return null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds a 3D window after prewarming the matching font atlas and render texture over multiple frames.
+        /// </summary>
+        /// <param name="uiWindow">The UI window to be display in 3D.</param>
+        /// <param name="settings">3D window settings.</param>
+        /// <param name="onCreated">Callback invoked with the created container.</param>
+        /// <param name="position">World 3D position of this container.</param>
+        /// <param name="rotation">World 3D rotation of this container.</param>
+        /// <returns>Coroutine enumerator.</returns>
+        public static IEnumerator Add3DWindowAsync(FuWindow uiWindow, Fu3DWindowSettings settings, Action<Fu3DWindowContainer> onCreated, Vector3? position = null, Quaternion? rotation = null)
+        {
+            settings.Sanitize();
+            yield return Prewarm3DWindowResources(new[] { settings.FontScale }, new[] { settings.Resolution });
+            yield return null;
+
+            onCreated?.Invoke(Add3DWindow(uiWindow, settings, position, rotation));
+        }
+
+        /// <summary>
         /// Adds a UI window to a 3D panel with an explicit panel size and fixed render resolution.
         /// </summary>
         /// <param name="uiWindow">The UI window to display in 3D.</param>

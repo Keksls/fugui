@@ -1,5 +1,6 @@
 using ImGuiNET;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu
@@ -50,6 +51,7 @@ namespace Fu
         private static int _3DContextindex = 0;
         private Material _uiMaterial;
         private FuPanelMesh _panelMesh;
+        private MeshCollider _panelCollider;
         private Material _resizeHandleMaterial;
         private GameObject[] _resizeHandles;
         private bool _runtimeResizable;
@@ -68,6 +70,13 @@ namespace Fu
         private const float ResizeHoverMarginMax = 0.18f;
         private const float ResizeHandleFrontOffset = -0.01f;
         private const float RuntimeResizeMinSize = 0.0001f;
+        private const int MaxPooledRenderTexturesPerKey = 4;
+        private static readonly Dictionary<string, Stack<RenderTexture>> _renderTexturePool = new Dictionary<string, Stack<RenderTexture>>();
+        private Vector2 _lastPanelMeshSize = new Vector2(-1f, -1f);
+        private float _lastPanelMeshScale = -1f;
+        private float _lastPanelRound = -1f;
+        private float _lastPanelDepth = -1f;
+        private float _lastPanelCurve = -1f;
         #endregion
 
         #region Constructors
@@ -330,15 +339,35 @@ namespace Fu
         /// </summary>
         /// <param name="size">Pixel size of the render target.</param>
         /// <returns>The created render texture.</returns>
-        private RenderTexture createRenderTexture(Vector2Int size)
+        private static RenderTexture createRenderTexture(Vector2Int size)
         {
             size = sanitizeSize(size);
+            int aaSamples = getRenderTextureAntiAliasing();
+
+            if (Fugui.Settings != null && Fugui.Settings.Pool3DWindowRenderTextures)
+            {
+                string key = getRenderTexturePoolKey(size, aaSamples);
+                if (_renderTexturePool.TryGetValue(key, out Stack<RenderTexture> pooledTextures))
+                {
+                    while (pooledTextures.Count > 0)
+                    {
+                        RenderTexture pooledTexture = pooledTextures.Pop();
+                        if (pooledTexture == null)
+                        {
+                            continue;
+                        }
+
+                        if (!pooledTexture.IsCreated())
+                        {
+                            pooledTexture.Create();
+                        }
+
+                        return pooledTexture;
+                    }
+                }
+            }
 
             RenderTexture renderTexture = new RenderTexture(size.x, size.y, 0, UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_SRGB);
-            int aaSamples = QualitySettings.antiAliasing;
-            if (aaSamples <= 0)
-                aaSamples = 1;
-
             renderTexture.antiAliasing = aaSamples;
             renderTexture.useDynamicScale = false;
             renderTexture.Create();
@@ -347,11 +376,109 @@ namespace Fu
         }
 
         /// <summary>
+        /// Prewarms one pooled 3D window render texture of the requested size.
+        /// </summary>
+        /// <param name="size">Render target size to prewarm.</param>
+        internal static void PrewarmRenderTexture(Vector2Int size)
+        {
+            if (Fugui.Settings == null || !Fugui.Settings.Pool3DWindowRenderTextures)
+            {
+                return;
+            }
+
+            RenderTexture renderTexture = createRenderTexture(size);
+            ReleaseRenderTexture(renderTexture);
+        }
+
+        /// <summary>
+        /// Releases a render texture back to the 3D window pool when enabled.
+        /// </summary>
+        /// <param name="renderTexture">Render texture to release.</param>
+        private static void ReleaseRenderTexture(RenderTexture renderTexture)
+        {
+            if (renderTexture == null)
+            {
+                return;
+            }
+
+            int aaSamples = normalizeAntiAliasing(renderTexture.antiAliasing);
+            Vector2Int size = new Vector2Int(renderTexture.width, renderTexture.height);
+            if (Fugui.Settings != null && Fugui.Settings.Pool3DWindowRenderTextures)
+            {
+                string key = getRenderTexturePoolKey(size, aaSamples);
+                if (!_renderTexturePool.TryGetValue(key, out Stack<RenderTexture> pooledTextures))
+                {
+                    pooledTextures = new Stack<RenderTexture>();
+                    _renderTexturePool[key] = pooledTextures;
+                }
+
+                if (pooledTextures.Count < MaxPooledRenderTexturesPerKey)
+                {
+                    renderTexture.Release();
+                    pooledTextures.Push(renderTexture);
+                    return;
+                }
+            }
+
+            renderTexture.Release();
+            UnityEngine.Object.Destroy(renderTexture);
+        }
+
+        /// <summary>
+        /// Gets the MSAA sample count used for 3D window render textures.
+        /// </summary>
+        /// <returns>Normalized MSAA sample count.</returns>
+        private static int getRenderTextureAntiAliasing()
+        {
+            int aaSamples = Fugui.Settings != null
+                ? Fugui.Settings.Windows3DRenderTextureAntiAliasing
+                : QualitySettings.antiAliasing;
+
+            return normalizeAntiAliasing(aaSamples);
+        }
+
+        /// <summary>
+        /// Normalizes MSAA samples to values Unity accepts.
+        /// </summary>
+        /// <param name="aaSamples">Requested AA sample count.</param>
+        /// <returns>1, 2, 4 or 8.</returns>
+        private static int normalizeAntiAliasing(int aaSamples)
+        {
+            if (aaSamples <= 1)
+            {
+                return 1;
+            }
+
+            if (aaSamples <= 2)
+            {
+                return 2;
+            }
+
+            if (aaSamples <= 4)
+            {
+                return 4;
+            }
+
+            return 8;
+        }
+
+        /// <summary>
+        /// Gets the render texture pool key for a given size and AA sample count.
+        /// </summary>
+        /// <param name="size">Texture size.</param>
+        /// <param name="aaSamples">MSAA sample count.</param>
+        /// <returns>Pool key.</returns>
+        private static string getRenderTexturePoolKey(Vector2Int size, int aaSamples)
+        {
+            return $"{size.x}x{size.y}:aa{aaSamples}:R8G8B8A8_SRGB";
+        }
+
+        /// <summary>
         /// Clamp render target sizes to values Unity and ImGui can use.
         /// </summary>
         /// <param name="size">Requested size.</param>
         /// <returns>Sanitized size.</returns>
-        private Vector2Int sanitizeSize(Vector2Int size)
+        private static Vector2Int sanitizeSize(Vector2Int size)
         {
             return new Vector2Int(
                 Mathf.Max(1, size.x),
@@ -471,8 +598,7 @@ namespace Fu
 
                 if (oldTexture != null)
                 {
-                    oldTexture.Release();
-                    UnityEngine.Object.Destroy(oldTexture);
+                    ReleaseRenderTexture(oldTexture);
                 }
             }
 
@@ -495,26 +621,73 @@ namespace Fu
         {
             Vector3 position = Vector3.zero;
             Quaternion rotation = Quaternion.identity;
+            bool createdPanelObject = false;
             if (_panelGameObject != null)
             {
                 position = _panelGameObject.transform.position;
                 rotation = _panelGameObject.transform.rotation;
-                GameObject.Destroy(_panelGameObject);
+            }
+            else
+            {
+                _resizeHandles = null;
+                _resizeHandlesVisible = false;
+                _panelGameObject = new GameObject(ID + "_Panel");
+                createdPanelObject = true;
             }
 
-            _resizeHandles = null;
-            _resizeHandlesVisible = false;
-            _panelMesh = null;
-            _panelGameObject = new GameObject(ID + "_Panel");
-            FuPanelMesh rectangleMesh = _panelGameObject.AddComponent<FuPanelMesh>();
-            rectangleMesh.Window = Window;
-            _panelMesh = rectangleMesh;
+            if (_panelMesh == null)
+            {
+                _panelMesh = _panelGameObject.GetComponent<FuPanelMesh>();
+                if (_panelMesh == null)
+                {
+                    _panelMesh = _panelGameObject.AddComponent<FuPanelMesh>();
+                }
+            }
+
+            _panelMesh.Window = Window;
             float meshScale = getMeshScale();
             Vector2 meshSize = getMeshSize(meshScale);
             float round = Fugui.Themes.WindowRounding * Context.Scale;
-            MeshCollider collider = _panelGameObject.AddComponent<MeshCollider>();
-            collider.sharedMesh = rectangleMesh.CreateMesh(meshSize.x, meshSize.y, meshScale, round, round, round, round, _panelDepth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial, _panelCurve);
-            int layer = (int)Mathf.Log(Fugui.Settings.UILayer.value, 2);
+
+            if (_panelCollider == null)
+            {
+                _panelCollider = _panelGameObject.GetComponent<MeshCollider>();
+                if (_panelCollider == null)
+                {
+                    _panelCollider = _panelGameObject.AddComponent<MeshCollider>();
+                }
+            }
+
+            bool meshChanged = createdPanelObject ||
+                               _panelCollider.sharedMesh == null ||
+                               (_lastPanelMeshSize - meshSize).sqrMagnitude > 0.00000001f ||
+                               Mathf.Abs(_lastPanelMeshScale - meshScale) > 0.0001f ||
+                               Mathf.Abs(_lastPanelRound - round) > 0.0001f ||
+                               Mathf.Abs(_lastPanelDepth - _panelDepth) > 0.0001f ||
+                               Mathf.Abs(_lastPanelCurve - _panelCurve) > 0.0001f;
+
+            if (meshChanged)
+            {
+                Mesh mesh = _panelMesh.CreateMesh(meshSize.x, meshSize.y, meshScale, round, round, round, round, _panelDepth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial, _panelCurve);
+                _panelCollider.sharedMesh = null;
+                _panelCollider.sharedMesh = mesh;
+                _lastPanelMeshSize = meshSize;
+                _lastPanelMeshScale = meshScale;
+                _lastPanelRound = round;
+                _lastPanelDepth = _panelDepth;
+                _lastPanelCurve = _panelCurve;
+            }
+            else
+            {
+                _panelMesh.UpdateMaterials(_uiMaterial, Fugui.Settings.UIPanelMaterial, meshSize.x, meshSize.y, meshScale);
+            }
+
+            int layer = 0;
+            if (Fugui.Settings != null && Fugui.Settings.UILayer.value > 0)
+            {
+                layer = Mathf.RoundToInt(Mathf.Log(Fugui.Settings.UILayer.value, 2));
+            }
+
             _panelGameObject.layer = layer;
             foreach (Transform child in _panelGameObject.transform)
             {
@@ -1643,6 +1816,7 @@ namespace Fu
                 _panelGameObject = null;
             }
             _panelMesh = null;
+            _panelCollider = null;
             _resizeHandles = null;
             if (_resizeHandleMaterial != null)
             {
@@ -1651,8 +1825,7 @@ namespace Fu
             }
             if (RenderTexture != null)
             {
-                RenderTexture.Release();
-                UnityEngine.Object.Destroy(RenderTexture);
+                ReleaseRenderTexture(RenderTexture);
                 RenderTexture = null;
             }
 

@@ -57,6 +57,17 @@ namespace Fu
         [FuSlider(1f, 10f)]
         public float Windows3DFontScale = 2f;
 
+        [Tooltip("MSAA samples used by 3D window render textures. 1 is fastest for Quest/mobile.")]
+        [FuTooltip("MSAA samples used by 3D window render textures. 1 is fastest for Quest/mobile.")]
+        [Range(1, 8)]
+        [FuSlider(1, 8)]
+        public int Windows3DRenderTextureAntiAliasing = 1;
+
+        [Tooltip("Reuse released 3D window render textures by size to reduce creation stalls.")]
+        [FuTooltip("Reuse released 3D window render textures by size to reduce creation stalls.")]
+        [FuToggle]
+        public bool Pool3DWindowRenderTextures = true;
+
         [Tooltip("Width of the UI 3D Panel.")]
         [FuTooltip("Width of the UI 3D Panel.")]
         [Range(0.0001f, 0.25f)]

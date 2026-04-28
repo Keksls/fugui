@@ -238,6 +238,7 @@ namespace Fu
             if (_registeredPopups.TryGetValue(id, out FuPopupData data))
             {
                 data.CloseThisFrame = true;
+                _closePopup(id);
             }
         }
 
@@ -254,23 +255,26 @@ namespace Fu
                     var data = _registeredPopups[id];
 
                     // pop popup from stack
-                    PopUpWindowsIDs.RemoveAt(data.PopupIndex);
-                    PopUpIDs.RemoveAt(data.PopupIndex);
-                    IsPopupDrawing.RemoveAt(data.PopupIndex);
-                    PopUpRects.RemoveAt(data.PopupIndex);
-                    IsPopupFocused.RemoveAt(data.PopupIndex);
-
-                    // update PopupIndex of each deeper popups
-                    foreach (var popupData in _registeredPopups.Values)
+                    if (data.PopupIndex >= 0)
                     {
-                        if (popupData.PopupIndex > data.PopupIndex)
-                        {
-                            popupData.PopupIndex--;
-                        }
-                    }
+                        PopUpWindowsIDs.RemoveAt(data.PopupIndex);
+                        PopUpIDs.RemoveAt(data.PopupIndex);
+                        IsPopupDrawing.RemoveAt(data.PopupIndex);
+                        PopUpRects.RemoveAt(data.PopupIndex);
+                        IsPopupFocused.RemoveAt(data.PopupIndex);
 
-                    // downsample static popup stack index
-                    _currentPopupIndex--;
+                        // update PopupIndex of each deeper popups
+                        foreach (var popupData in _registeredPopups.Values)
+                        {
+                            if (popupData.PopupIndex > data.PopupIndex)
+                            {
+                                popupData.PopupIndex--;
+                            }
+                        }
+
+                        // downsample static popup stack index
+                        _currentPopupIndex--;
+                    }
 
                     // invoke popup's onClose event if there is one
                     _registeredPopups[id].OnClose?.Invoke();

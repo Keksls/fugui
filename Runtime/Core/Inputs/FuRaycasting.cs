@@ -35,28 +35,33 @@ namespace Fu
                 return getInactiveInputState();
             }
 
+            bool hasLatestRaycaster = latestRaycasters.TryGetValue(containerID, out FuRaycaster latestRaycaster);
             foreach (FuRaycaster raycaster in _raycasters.Values)
             {
                 if (raycaster.RaycastThisFrame && raycaster.Hit.collider.gameObject == raycastableGameObject)
                 {
-                    if (!latestRaycasters.ContainsKey(containerID) || latestRaycasters[containerID] != raycaster)
+                    if (!hasLatestRaycaster || latestRaycaster != raycaster)
                     {
                         latestRaycasters[containerID] = raycaster;
+                        latestRaycaster = raycaster;
+                        hasLatestRaycaster = true;
                     }
                 }
-                else if (latestRaycasters.ContainsKey(containerID) && latestRaycasters[containerID] == raycaster)
+                else if (hasLatestRaycaster && latestRaycaster == raycaster)
                 {
                     latestRaycasters.Remove(containerID);
+                    latestRaycaster = null;
+                    hasLatestRaycaster = false;
                 }
             }
 
-            if (!latestRaycasters.ContainsKey(containerID))
+            if (!hasLatestRaycaster)
             {
                 return getInactiveInputState();
             }
             else
             {
-                FuRaycaster raycaster = latestRaycasters[containerID];
+                FuRaycaster raycaster = latestRaycaster;
                 Vector3 localHitPoint = raycastableGameObject.transform.InverseTransformPoint(raycaster.Hit.point);
                 Vector2 localPosition = new Vector2(localHitPoint.x, localHitPoint.y);
                 if (panelMesh != null && panelMesh.TryGetLocalPositionFromUV(raycaster.Hit.textureCoord, out Vector2 panelLocalPosition))

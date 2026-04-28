@@ -17,6 +17,7 @@ public class FuGradient
     // The maximum number of colors that can be in a Unity gradient.
 
     private const int MAX_COLORS_IN_UNITY_GRADIENT = 8;
+    private const int GRADIENT_TEXTURE_SIZE = 512;
     // The list of color keys for the gradient.
     [SerializeField]
     private List<FuGradientColorKey> _keys;
@@ -24,6 +25,8 @@ public class FuGradient
     private Texture2D _horizontalTexture;
     // The vertical texture for the gradient.
     private Texture2D _verticalTexture;
+    // Reused color buffer for gradient texture updates.
+    private Color[] _textureColors;
     #endregion
 
     #region Constructors
@@ -209,30 +212,7 @@ public class FuGradient
     {
         // Create a new color key with the given time and color
         FuGradientColorKey tempKey = new FuGradientColorKey(time, color);
-
-        // Assume that the new key hasn't been added to the list yet
-        bool added = false;
-
-        int keyIndex = 0;
-        // Loop through the existing color keys to find the position to add the new key
-        for (int i = 0; i < _keys.Count; i++)
-        {
-            // If the new key comes before the current key in the loop
-            if (tempKey.Time < _keys[i].Time)
-            {
-                // Insert the new key before the current key
-                _keys.Insert(i, tempKey);
-                keyIndex = i;
-                added = true;
-                break;
-            }
-        }
-
-        // If the new key wasn't added yet, add it to the end of the list
-        if (!added)
-        {
-            _keys.Add(tempKey);
-        }
+        int keyIndex = insertColorKey(tempKey);
 
         // Regenerate the gradient textures with the new color key added
         UpdateGradientTextures();
@@ -271,8 +251,8 @@ public class FuGradient
             Color tempColor = tempKey.Color;
 
             // Remove the key from its current position and add it back with the new time and the same color.
-            RemoveColorKey(index);
-            AddColorKey(time, tempColor);
+            _keys.RemoveAt(index);
+            insertColorKey(new FuGradientColorKey(time, tempColor));
 
             // Regenerate the gradient textures.
             UpdateGradientTextures();
@@ -372,25 +352,28 @@ public class FuGradient
         if (_horizontalTexture == null || _verticalTexture == null)
         {
             // Create two new texture objects with the specified sizes
-            _horizontalTexture = new Texture2D(512, 1);
-            _verticalTexture = new Texture2D(1, 512);
+            _horizontalTexture = new Texture2D(GRADIENT_TEXTURE_SIZE, 1);
+            _verticalTexture = new Texture2D(1, GRADIENT_TEXTURE_SIZE);
 
             // Set the wrap mode of the texture objects to clamp
             _horizontalTexture.wrapMode = TextureWrapMode.Clamp;
             _verticalTexture.wrapMode = TextureWrapMode.Clamp;
         }
         // Create an array of colors with the specified size
-        Color[] colors = new Color[512];
+        if (_textureColors == null || _textureColors.Length != GRADIENT_TEXTURE_SIZE)
+        {
+            _textureColors = new Color[GRADIENT_TEXTURE_SIZE];
+        }
 
         // Loop through each pixel of the texture and set the corresponding color
-        for (int i = 0; i < colors.Length; i++)
+        for (int i = 0; i < _textureColors.Length; i++)
         {
-            colors[i] = Evaluate((float)i / (colors.Length - 1));
+            _textureColors[i] = Evaluate((float)i / (_textureColors.Length - 1));
         }
 
         // Set the pixels of the texture objects to the array of colors
-        _horizontalTexture.SetPixels(colors);
-        _verticalTexture.SetPixels(colors);
+        _horizontalTexture.SetPixels(_textureColors);
+        _verticalTexture.SetPixels(_textureColors);
 
         // Apply the texture changes
         _horizontalTexture.Apply();
@@ -412,6 +395,26 @@ public class FuGradient
         _keys = new List<FuGradientColorKey>();
         _keys.AddRange(newKeys);
         UpdateGradientTextures();
+    }
+
+    /// <summary>
+    /// Inserts a color key while preserving the time order.
+    /// </summary>
+    /// <param name="key">The color key to insert.</param>
+    /// <returns>The inserted key index.</returns>
+    private int insertColorKey(FuGradientColorKey key)
+    {
+        for (int i = 0; i < _keys.Count; i++)
+        {
+            if (key.Time < _keys[i].Time)
+            {
+                _keys.Insert(i, key);
+                return i;
+            }
+        }
+
+        _keys.Add(key);
+        return _keys.Count - 1;
     }
     #endregion
 }

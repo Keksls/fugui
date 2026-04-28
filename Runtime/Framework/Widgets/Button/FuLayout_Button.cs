@@ -137,7 +137,7 @@ namespace Fu.Framework
         /// <param name="style">style of the button</param>
         /// <param name="bordered">draw borders arround button</param>
         /// <returns>true if clicked</returns>
-        private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght, bool bordered = true, float alignment = -1f, float textWidthOffset = 0f)
+        private unsafe bool _customButton(string text, Vector2 size, Vector2 padding, Vector2 textOffset, FuButtonStyle style, float gradientStrenght, bool bordered = true, float alignment = -1f, float textWidthOffset = 0f, bool allowWhenBlockedByPopup = false)
         {
             // clamp gradient strenght
             gradientStrenght = 1f - Mathf.Clamp(gradientStrenght, 0.1f, 1f);
@@ -172,7 +172,7 @@ namespace Fu.Framework
 
             // draw a dummy button to update cursor and get states
             ImGui.Dummy(size);
-            setBaseElementState(text, pos, size, true, false, true);
+            setBaseElementState(text, pos, size, true, false, true, allowWhenBlockedByPopup);
 
             // get current draw list
             ImDrawListPtr drawList = ImGuiNative.igGetWindowDrawList();

@@ -52,7 +52,7 @@ namespace Fu.Framework
         /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
         public void ListBox<T>(string text, List<T> items, Action<T> itemChange = null, Func<T> itemGetter = null, Func<bool> listUpdated = null)
         {
-            ListBox<T>(text, items, itemChange, itemGetter, FuElementSize.FullSize);
+            ListBox<T>(text, items, itemChange, itemGetter, FuElementSize.FullSize, listUpdated);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace Fu.Framework
             _customListBox(text, items, (index) =>
             {
                 itemChange?.Invoke(items[index]);
-            }, () => { return itemGetter?.Invoke()?.ToString(); }, size);
+            }, () => { return itemGetter?.Invoke()?.ToString(); }, size, listUpdated);
         }
 
         /// <summary>
@@ -83,10 +83,11 @@ namespace Fu.Framework
         ///<param name="itemChange">The action to be performed when an item is selected.</param>
         /// <param name="itemGetter">A func that return a way to get current stored value for the ListBox. can be null if ListBox il not lined to an object's field</param>
         ///<param name="size">The size for the ListBox element.</param>
-        private void _customListBox<T>(string text, List<T> items, Action<int> itemChange, Func<string> itemGetter, FuElementSize size)
+        private void _customListBox<T>(string text, List<T> items, Action<int> itemChange, Func<string> itemGetter, FuElementSize size, Func<bool> listUpdated = null)
         {
             // get the current selected index
             int selectedIndex = FuSelectableBuilder.GetSelectedIndex(text, items, itemGetter);
+            List<string> displayLabels = FuSelectableBuilder.GetDisplayLabels(text, items, listUpdated);
 
             // draw the ListBox
             ListBox(text, () =>
@@ -95,7 +96,7 @@ namespace Fu.Framework
                 {
                     if (items[i] != null)
                     {
-                        if (ImGui.Selectable(Fugui.AddSpacesBeforeUppercase(items[i].ToString()), selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
+                        if (ImGui.Selectable(displayLabels[i], selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
                         {
                             // Update the selected index and invoke the item change action
                             selectedIndex = i;

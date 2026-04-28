@@ -576,7 +576,7 @@ namespace Fu
             }
 
             bool handleHovered = tryGetHoveredResizeHandle(out int hoveredHandleIndex, out InputState handleInputState);
-            if (handleHovered && handleInputState.MouseDown[0])
+            if (handleHovered && handleInputState.MouseButtons[0])
             {
                 startRuntimeResize(hoveredHandleIndex, handleInputState.RaycasterID);
             }
@@ -1241,9 +1241,9 @@ namespace Fu
             _fuguiContext.UpdateMouse(
                 _localMousePos,
                 blockWindowInput ? Vector2.zero : new Vector2(0f, inputState.MouseWheel),
-                !blockWindowInput && inputState.MouseDown[0],
-                !blockWindowInput && inputState.MouseDown[1],
-                !blockWindowInput && inputState.MouseDown[2]);
+                !blockWindowInput && inputState.MouseButtons[0],
+                !blockWindowInput && inputState.MouseButtons[1],
+                !blockWindowInput && inputState.MouseButtons[2]);
 
             return true;
         }

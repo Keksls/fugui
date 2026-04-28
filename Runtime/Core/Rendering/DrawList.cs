@@ -29,11 +29,11 @@ namespace Fu
 
             public string WindowName { get { return _windowName; } }
             public ImDrawCmd[] CmdBuffer { get { return _cmdBuffer; } }
-            public IntPtr CmdPtr { get { return _cmdPtr; } }
+            public IntPtr CmdPtr { get { return getCmdPtr(); } }
             public ushort[] IdxBuffer { get { return _idxBuffer; } }
-            public IntPtr IdxPtr { get { return _idxPtr; } }
+            public IntPtr IdxPtr { get { return getIdxPtr(); } }
             public ImDrawVert[] VtxBuffer { get { return _vtxBuffer; } }
-            public IntPtr VtxPtr { get { return _vtxPtr; } }
+            public IntPtr VtxPtr { get { return getVtxPtr(); } }
             public ImDrawListFlags Flags { get { return _flags; } }
             public uint VtxCurrentIdx { get { return _vtxCurrentIdx; } }
             #endregion
@@ -68,23 +68,49 @@ namespace Fu
             public unsafe void Bind(ImDrawListPtr drawList)
             {
                 // save cmd buffer
-                _cmdBuffer = new ImDrawCmd[drawList.CmdBuffer.Size]; // allocate manager memory
-                _cmdHandle = GCHandle.Alloc(_cmdBuffer, GCHandleType.Pinned); // allocate unmanager memory
-                _cmdPtr = _cmdHandle.AddrOfPinnedObject(); // get unmanager memory ptr
-                // copy to unmanager memory and keep it (Pinned mem)
-                Buffer.MemoryCopy((void*)drawList.CmdBuffer.Data, (void*)_cmdPtr, ImGuiDrawListUtils.ImDrawCmdSize * _cmdBuffer.Length, ImGuiDrawListUtils.ImDrawCmdSize * _cmdBuffer.Length);
+                if (_cmdBuffer == null || _cmdBuffer.Length != drawList.CmdBuffer.Size)
+                {
+                    releaseCmdHandle();
+                    _cmdBuffer = new ImDrawCmd[drawList.CmdBuffer.Size];
+                }
+                long cmdBufferSize = ImGuiDrawListUtils.ImDrawCmdSize * _cmdBuffer.Length;
+                if (cmdBufferSize > 0)
+                {
+                    fixed (ImDrawCmd* cmdPtr = _cmdBuffer)
+                    {
+                        Buffer.MemoryCopy((void*)drawList.CmdBuffer.Data, cmdPtr, cmdBufferSize, cmdBufferSize);
+                    }
+                }
 
                 // save idx buffer
-                _idxBuffer = new ushort[drawList.IdxBuffer.Size];
-                _idxHandle = GCHandle.Alloc(_idxBuffer, GCHandleType.Pinned);
-                _idxPtr = _idxHandle.AddrOfPinnedObject();
-                Buffer.MemoryCopy((void*)drawList.IdxBuffer.Data, (void*)_idxPtr, 2 * _idxBuffer.Length, 2 * _idxBuffer.Length);
+                if (_idxBuffer == null || _idxBuffer.Length != drawList.IdxBuffer.Size)
+                {
+                    releaseIdxHandle();
+                    _idxBuffer = new ushort[drawList.IdxBuffer.Size];
+                }
+                long idxBufferSize = 2 * _idxBuffer.Length;
+                if (idxBufferSize > 0)
+                {
+                    fixed (ushort* idxPtr = _idxBuffer)
+                    {
+                        Buffer.MemoryCopy((void*)drawList.IdxBuffer.Data, idxPtr, idxBufferSize, idxBufferSize);
+                    }
+                }
 
                 // save vtx buffer
-                _vtxBuffer = new ImDrawVert[drawList.VtxBuffer.Size];
-                _vtxHandle = GCHandle.Alloc(_vtxBuffer, GCHandleType.Pinned);
-                _vtxPtr = _vtxHandle.AddrOfPinnedObject();
-                Buffer.MemoryCopy((void*)drawList.VtxBuffer.Data, (void*)_vtxPtr, ImGuiDrawListUtils.ImDrawVertSize * _vtxBuffer.Length, ImGuiDrawListUtils.ImDrawVertSize * _vtxBuffer.Length);
+                if (_vtxBuffer == null || _vtxBuffer.Length != drawList.VtxBuffer.Size)
+                {
+                    releaseVtxHandle();
+                    _vtxBuffer = new ImDrawVert[drawList.VtxBuffer.Size];
+                }
+                long vtxBufferSize = ImGuiDrawListUtils.ImDrawVertSize * _vtxBuffer.Length;
+                if (vtxBufferSize > 0)
+                {
+                    fixed (ImDrawVert* vtxPtr = _vtxBuffer)
+                    {
+                        Buffer.MemoryCopy((void*)drawList.VtxBuffer.Data, vtxPtr, vtxBufferSize, vtxBufferSize);
+                    }
+                }
 
                 // save flags and vtx/idx
                 _flags = drawList.Flags;
@@ -97,13 +123,102 @@ namespace Fu
             /// </summary>
             public void Dispose()
             {
+                releaseCmdHandle();
+                releaseIdxHandle();
+                releaseVtxHandle();
+            }
+
+            /// <summary>
+            /// Gets the pinned command buffer pointer.
+            /// </summary>
+            /// <returns>The command buffer pointer.</returns>
+            private IntPtr getCmdPtr()
+            {
+                if (_cmdBuffer == null || _cmdBuffer.Length == 0)
+                {
+                    return IntPtr.Zero;
+                }
+
                 if (!_cmdHandle.IsAllocated)
                 {
-                    return;
+                    _cmdHandle = GCHandle.Alloc(_cmdBuffer, GCHandleType.Pinned);
+                    _cmdPtr = _cmdHandle.AddrOfPinnedObject();
                 }
-                _cmdHandle.Free();
-                _idxHandle.Free();
-                _vtxHandle.Free();
+                return _cmdPtr;
+            }
+
+            /// <summary>
+            /// Gets the pinned index buffer pointer.
+            /// </summary>
+            /// <returns>The index buffer pointer.</returns>
+            private IntPtr getIdxPtr()
+            {
+                if (_idxBuffer == null || _idxBuffer.Length == 0)
+                {
+                    return IntPtr.Zero;
+                }
+
+                if (!_idxHandle.IsAllocated)
+                {
+                    _idxHandle = GCHandle.Alloc(_idxBuffer, GCHandleType.Pinned);
+                    _idxPtr = _idxHandle.AddrOfPinnedObject();
+                }
+                return _idxPtr;
+            }
+
+            /// <summary>
+            /// Gets the pinned vertex buffer pointer.
+            /// </summary>
+            /// <returns>The vertex buffer pointer.</returns>
+            private IntPtr getVtxPtr()
+            {
+                if (_vtxBuffer == null || _vtxBuffer.Length == 0)
+                {
+                    return IntPtr.Zero;
+                }
+
+                if (!_vtxHandle.IsAllocated)
+                {
+                    _vtxHandle = GCHandle.Alloc(_vtxBuffer, GCHandleType.Pinned);
+                    _vtxPtr = _vtxHandle.AddrOfPinnedObject();
+                }
+                return _vtxPtr;
+            }
+
+            /// <summary>
+            /// Releases the pinned command buffer pointer.
+            /// </summary>
+            private void releaseCmdHandle()
+            {
+                if (_cmdHandle.IsAllocated)
+                {
+                    _cmdHandle.Free();
+                }
+                _cmdPtr = IntPtr.Zero;
+            }
+
+            /// <summary>
+            /// Releases the pinned index buffer pointer.
+            /// </summary>
+            private void releaseIdxHandle()
+            {
+                if (_idxHandle.IsAllocated)
+                {
+                    _idxHandle.Free();
+                }
+                _idxPtr = IntPtr.Zero;
+            }
+
+            /// <summary>
+            /// Releases the pinned vertex buffer pointer.
+            /// </summary>
+            private void releaseVtxHandle()
+            {
+                if (_vtxHandle.IsAllocated)
+                {
+                    _vtxHandle.Free();
+                }
+                _vtxPtr = IntPtr.Zero;
             }
             #endregion
         }

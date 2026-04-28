@@ -41,95 +41,71 @@ namespace Fu
             // bind current draw lists
             for (int i = 0; i < imDrawDataPtr.CmdListsCount; i++)
             {
-                string name = imDrawDataPtr.CmdLists[i]._OwnerName;
-
-                // prevent icons name to switch render (for some reason, ImGui copy the name like 'name/name##pathID' when name contain Icon)
-                if (name.StartsWith("???"))
-                {
-                    if (!_unIconnizedTitleMapping.ContainsKey(name))
-                    {
-                        string escapedTitle = name.Remove(0, 3).Split('/')[0]; // get icon escaped title
-                        // search csharp formated window title
-                        string csharpeEquivalentTitle = string.Empty;
-                        foreach (string windowTitle in windows.Keys)
-                        {
-                            // icon escaped csharp formated title match excaped native formated title
-                            if (windowTitle.Remove(0, 1) == escapedTitle)
-                            {
-                                csharpeEquivalentTitle = name.Replace("???", windowTitle.Substring(0, 1));
-                            }
-                        }
-
-                        // save mapping unescaped values (native => csharp formated)
-                        if (!string.IsNullOrEmpty(csharpeEquivalentTitle))
-                        {
-                            _unIconnizedTitleMapping.Add(name, csharpeEquivalentTitle);
-                        }
-                    }
-
-                    // replace native formated icon values by csharp formated versions
-                    if (_unIconnizedTitleMapping.ContainsKey(name))
-                    {
-                        name = _unIconnizedTitleMapping[name];
-                    }
-                }
+                string name = getWindowName(windows, imDrawDataPtr.CmdLists[i]._OwnerName);
 
                 bool isChild = false;
-                if (!windows.ContainsKey(name) && name.Contains("/")) // it may be a window's child
+                if (!windows.ContainsKey(name)) // it may be a window's child
                 {
-                    if (windows.ContainsKey(name.Split('/')[0])) // it's a window's child
+                    int firstSlashIndex = name.IndexOf('/');
+                    if (firstSlashIndex >= 0)
                     {
-                        if (windows[name.Split('/')[0]].IsDocked) // the window is docked
+                        string rootWindowName = name.Substring(0, firstSlashIndex);
+                        if (windows.TryGetValue(rootWindowName, out FuWindow rootWindow)) // it's a window's child
                         {
-                            if (name.Split('/').Length <= 2) // it's a direct window's child (so it may be the forced child used to store vtx)
+                            if (rootWindow.IsDocked) // the window is docked
                             {
-                                isChild = name.Split('/')[1].StartsWith(name.Split('/')[0] + "ctnr"); // is it the forced child ?
-                                name = isChild ? name.Split('/')[0] : "";
+                                int secondSlashIndex = name.IndexOf('/', firstSlashIndex + 1);
+                                if (secondSlashIndex < 0) // it's a direct window's child (so it may be the forced child used to store vtx)
+                                {
+                                    string childWindowName = name.Substring(firstSlashIndex + 1);
+                                    isChild = childWindowName.StartsWith(rootWindowName + "ctnr"); // is it the forced child ?
+                                    name = isChild ? rootWindowName : "";
+                                }
+                                else // it's a child lvl 2+, so child of child, we need to store it too
+                                {
+                                    // it's a child of a windows, we must store it.
+                                    rootWindow.ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdLists[i]);
+                                    continue;
+                                }
                             }
-                            else // it's a child lvl 2+, so child of child, we need to store it too
+                            else // the window is not docked
                             {
                                 // it's a child of a windows, we must store it.
-                                windows[name.Split('/')[0]].ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdLists[i]);
-                                continue;
+                                rootWindow.ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdLists[i]);
                             }
-                        }
-                        else // the window is not docked
-                        {
-                            // it's a child of a windows, we must store it.
-                            windows[name.Split('/')[0]].ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdLists[i]);
                         }
                     }
                 }
 
                 // save window draw cmd if window has just been draw and it's an UIWindow
-                if (windows.ContainsKey(name) && (windows[name].IsDocked && isChild || !windows[name].IsDocked))
+                if (windows.TryGetValue(name, out FuWindow window) && (window.IsDocked && isChild || !window.IsDocked))
                 {
                     // frame has just been redraw, we must store drawList
-                    if (windows[name].HasJustBeenDraw)
+                    if (window.HasJustBeenDraw)
                     {
                         // dispose window draw list GH handles (free memory)
-                        windows[name].DrawList.Dispose();
+                        window.DrawList.Dispose();
                         // copy cmd, idx and vtx buffers
-                        windows[name].DrawList.Bind(imDrawDataPtr.CmdLists[i]);
+                        window.DrawList.Bind(imDrawDataPtr.CmdLists[i]);
                         // window is stored, it's not just draw anymore
-                        windows[name].HasJustBeenDraw = false;
+                        window.HasJustBeenDraw = false;
                         // add window draw list to current drawData
-                        cmd.AddDrawList(windows[name].DrawList);
+                        cmd.AddDrawList(window.DrawList);
                         // add window children lists to current drawData
-                        cmd.AddDrawLists(windows[name].ChildrenDrawLists.Values);
+                        cmd.AddDrawLists(window.ChildrenDrawLists.Values);
                         // dispose children draw list before clearing it => will not be done by garbage collectore because GChandle are pinned
-                        foreach (var pair in windows[name].ChildrenDrawLists)
+                        foreach (var pair in window.ChildrenDrawLists)
                         {
                             pair.Value.Dispose();
                         }
                         // clear children draw lists (because we just redraw the window, so children will follow, see above)
-                        windows[name].ChildrenDrawLists.Clear();
+                        window.ChildrenDrawLists.Clear();
                     }
                     else
                     {
                         // add stored draw lists related to this window
-                        cmd.AddDrawList(windows[name].DrawList);
-                        cmd.AddDrawLists(windows[name].ChildrenDrawLists.Values);
+                        cmd.AddDrawList(window.DrawList);
+                        cmd.AddDrawLists(window.ChildrenDrawLists.Values);
                     }
                 }
                 else
@@ -142,6 +118,46 @@ namespace Fu
             cmd.FramebufferScale = imDrawDataPtr.FramebufferScale;
             cmd.DisplayPos = imDrawDataPtr.DisplayPos;
             cmd.DisplaySize = imDrawDataPtr.DisplaySize;
+        }
+
+        /// <summary>
+        /// Gets the draw list window name used by Fugui.
+        /// </summary>
+        /// <param name="windows">The windows value.</param>
+        /// <param name="name">The native draw list owner name.</param>
+        /// <returns>The Fugui window name.</returns>
+        private static string getWindowName(Dictionary<string, FuWindow> windows, string name)
+        {
+            // prevent icons name to switch render (for some reason, ImGui copy the name like 'name/name##pathID' when name contain Icon)
+            if (!name.StartsWith("???"))
+            {
+                return name;
+            }
+
+            if (_unIconnizedTitleMapping.TryGetValue(name, out string mappedName))
+            {
+                return mappedName;
+            }
+
+            string escapedTitleSource = name.Substring(3);
+            int slashIndex = escapedTitleSource.IndexOf('/');
+            string escapedTitle = slashIndex >= 0 ? escapedTitleSource.Substring(0, slashIndex) : escapedTitleSource;
+            string csharpeEquivalentTitle = string.Empty;
+            foreach (string windowTitle in windows.Keys)
+            {
+                if (windowTitle.Length > 0 && windowTitle.Substring(1) == escapedTitle)
+                {
+                    csharpeEquivalentTitle = windowTitle.Substring(0, 1) + name.Substring(3);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(csharpeEquivalentTitle))
+            {
+                _unIconnizedTitleMapping.Add(name, csharpeEquivalentTitle);
+                return csharpeEquivalentTitle;
+            }
+
+            return name;
         }
         #endregion
     }

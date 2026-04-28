@@ -29,6 +29,9 @@ namespace Fu
             private readonly Shader _shader;
             private int _textureID;
             private Dictionary<int, int> _prevSubMeshCounts;
+            private Dictionary<int, int> _prevVertexCounts;
+            private Dictionary<int, int> _prevIndexCounts;
+            private Dictionary<int, List<SubMeshDescriptor>> _subMeshDescriptors;
             private TextureManager _textureManager;
             private MaterialPropertyBlock _materialProperties;
             private bool _renderMainSurfaceContexts;
@@ -58,6 +61,9 @@ namespace Fu
                 _textureID = Shader.PropertyToID("_Texture");
                 _materialProperties = new MaterialPropertyBlock();
                 _prevSubMeshCounts = new Dictionary<int, int>();
+                _prevVertexCounts = new Dictionary<int, int>();
+                _prevIndexCounts = new Dictionary<int, int>();
+                _subMeshDescriptors = new Dictionary<int, List<SubMeshDescriptor>>();
                 _targetHandles = new Dictionary<int, RTHandle>();
 
                 renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
@@ -530,19 +536,38 @@ namespace Fu
                     prevSubMeshCount = -1;
                 }
 
-                if (prevSubMeshCount != subMeshCount)
+                bool meshLayoutChanged = prevSubMeshCount != subMeshCount;
+                if (meshLayoutChanged)
                 {
                     _mesh.Clear(true);
                     _mesh.subMeshCount = subMeshCount;
                     _prevSubMeshCounts[ctxId] = subMeshCount;
                 }
 
-                _mesh.SetVertexBufferParams(drawData.TotalVtxCount, _vertexAttributes);
-                _mesh.SetIndexBufferParams(drawData.TotalIdxCount, IndexFormat.UInt16);
+                if (!_prevVertexCounts.TryGetValue(ctxId, out int prevVertexCount) || prevVertexCount != drawData.TotalVtxCount || meshLayoutChanged)
+                {
+                    _mesh.SetVertexBufferParams(drawData.TotalVtxCount, _vertexAttributes);
+                    _prevVertexCounts[ctxId] = drawData.TotalVtxCount;
+                }
+
+                if (!_prevIndexCounts.TryGetValue(ctxId, out int prevIndexCount) || prevIndexCount != drawData.TotalIdxCount || meshLayoutChanged)
+                {
+                    _mesh.SetIndexBufferParams(drawData.TotalIdxCount, IndexFormat.UInt16);
+                    _prevIndexCounts[ctxId] = drawData.TotalIdxCount;
+                }
 
                 int vtxOf = 0;
                 int idxOf = 0;
-                var descriptors = new List<SubMeshDescriptor>(subMeshCount);
+                if (!_subMeshDescriptors.TryGetValue(ctxId, out List<SubMeshDescriptor> descriptors))
+                {
+                    descriptors = new List<SubMeshDescriptor>(subMeshCount);
+                    _subMeshDescriptors.Add(ctxId, descriptors);
+                }
+                descriptors.Clear();
+                if (descriptors.Capacity < subMeshCount)
+                {
+                    descriptors.Capacity = subMeshCount;
+                }
 
                 for (int n = 0; n < drawData.CmdListsCount; ++n)
                 {

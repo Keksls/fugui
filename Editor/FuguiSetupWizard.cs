@@ -13,37 +13,43 @@ using UnityEngine.SceneManagement;
 
 namespace Fu.Editor
 {
-    public sealed class FuguiSetupWizard : EditorWindow
+    /// <summary>
+    /// Draws the Fugui project setup panel inside the central Fugui editor window.
+    /// </summary>
+    internal sealed class FuguiSetupWizardPanel
     {
-        private const string MenuPath = "Tools/Fugui/Setup Wizard";
+        #region Constants
         private const string StreamingAssetsFolder = "Assets/StreamingAssets/Fugui";
         private const string FontsFolder = "Fugui/Fonts/current/";
         private const string ThemesFolder = "Fugui/Themes";
         private const string LayoutsFolder = "Fugui/Layouts";
         private const int DefaultUiLayer = 5;
+        #endregion
 
+        #region State
         private readonly List<SetupCheck> _checks = new List<SetupCheck>();
         private Vector2 _scroll;
         private string _packageRoot;
         private Texture2D _logo;
         private PipelineKind _pipelineKind;
         private RenderPipelineAsset _pipelineAsset;
+        #endregion
 
-        [MenuItem(MenuPath, priority = 2000)]
-        public static void ShowWindow()
-        {
-            var window = GetWindow<FuguiSetupWizard>("Fugui Setup");
-            window.minSize = new Vector2(520f, 520f);
-            window.Refresh();
-            window.Show();
-        }
-
-        private void OnEnable()
+        #region Lifecycle
+        /// <summary>
+        /// Initializes the panel checks from the current project state.
+        /// </summary>
+        internal void Initialize()
         {
             Refresh();
         }
+        #endregion
 
-        private void OnGUI()
+        #region Drawing
+        /// <summary>
+        /// Draws the Fugui setup panel.
+        /// </summary>
+        internal void Draw()
         {
             DrawHeader();
 
@@ -128,7 +134,9 @@ namespace Fu.Editor
                 EditorGUILayout.LabelField(check.Details, EditorStyles.wordWrappedLabel);
             }
         }
+        #endregion
 
+        #region Checks
         private void Refresh()
         {
             _checks.Clear();
@@ -144,8 +152,6 @@ namespace Fu.Editor
             AddInputCheck();
             AddControllerCheck();
             AddSceneCameraCheck();
-
-            Repaint();
         }
 
         private void ApplySelected()
@@ -367,7 +373,9 @@ namespace Fu.Editor
                 !allOk,
                 ConfigureControllers));
         }
+        #endregion
 
+        #region Fix Actions
         private void ConfigureUrpRenderFeature()
         {
             ScriptableRendererData rendererData = GetDefaultRendererData();
@@ -389,7 +397,7 @@ namespace Fu.Editor
 
             if (created)
             {
-                feature = CreateInstance<FuguiRenderFeature>();
+                feature = ScriptableObject.CreateInstance<FuguiRenderFeature>();
                 feature.name = nameof(FuguiRenderFeature);
                 Undo.RegisterCreatedObjectUndo(feature, "Add Fugui Render Feature");
 
@@ -521,7 +529,9 @@ namespace Fu.Editor
             EditorUtility.SetDirty(controller);
             EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
         }
+        #endregion
 
+        #region Helpers
         private Camera CreateUiCamera(Transform parent)
         {
             GameObject cameraObject = new GameObject("UI Camera");
@@ -859,7 +869,9 @@ namespace Fu.Editor
                     return $"Unknown ({value})";
             }
         }
+        #endregion
 
+        #region Types
         private enum PipelineKind
         {
             BuiltIn,
@@ -884,6 +896,9 @@ namespace Fu.Editor
             public readonly Action Fix;
             public bool Selected;
 
+            /// <summary>
+            /// Creates one Fugui setup check row.
+            /// </summary>
             public SetupCheck(string title, string details, CheckState state, bool canFix = false, Action fix = null)
             {
                 Title = title;
@@ -894,5 +909,6 @@ namespace Fu.Editor
                 Selected = CanFix && state != CheckState.Ok;
             }
         }
+        #endregion
     }
 }

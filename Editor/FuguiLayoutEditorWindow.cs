@@ -11,15 +11,16 @@ using UnityEngine;
 namespace Fu.Editor
 {
     /// <summary>
-    /// Unity Editor window used to author Fugui docking layouts and generated window name definitions.
+    /// Central Unity Editor window used to configure Fugui tools.
     /// </summary>
-    public sealed class FuguiLayoutEditorWindow : EditorWindow
+    public sealed class FuguiEditorWindow : EditorWindow
     {
         #region Constants
-        private const string MenuPath = "Tools/Fugui/Layout Editor";
+        private const string MenuPath = "Tools/Fugui/Editor";
         private const string DefaultLayoutsFolder = "Assets/StreamingAssets/Fugui/Layouts";
         private const string DefaultWindowNamesScript = "Assets/Fugui/Generated/FuWindowsNames.cs";
 
+        private static readonly string[] ToolTabs = { "Setup", "Layouts", "Window Names", "Font Atlas" };
         private static readonly Color CanvasColor = new Color(0.13f, 0.14f, 0.16f, 1f);
         private static readonly Color NodeColor = new Color(0.21f, 0.23f, 0.27f, 1f);
         private static readonly Color NodeHoverColor = new Color(0.28f, 0.31f, 0.36f, 1f);
@@ -28,13 +29,15 @@ namespace Fu.Editor
         #endregion
 
         #region State
+        private readonly FuguiSetupWizardPanel _setupPanel = new FuguiSetupWizardPanel();
+        private readonly FuguiFontAtlasBakerPanel _fontAtlasPanel = new FuguiFontAtlasBakerPanel();
         private readonly Dictionary<string, FuDockingLayoutDefinition> _layouts = new Dictionary<string, FuDockingLayoutDefinition>();
         private readonly List<FuWindowName> _editableWindowNames = new List<FuWindowName>();
 
         private Vector2 _nodePanelScroll;
         private Vector2 _windowListScroll;
         private Vector2 _windowDetailsScroll;
-        private int _tab;
+        private int _toolTab;
         private string _layoutsFolder = DefaultLayoutsFolder;
         private string _windowNamesScriptPath;
         private string _selectedLayoutKey;
@@ -51,19 +54,27 @@ namespace Fu.Editor
 
         #region Unity Lifecycle
         /// <summary>
-        /// Opens the Fugui layout editor window.
+        /// Opens the central Fugui editor window.
         /// </summary>
-        [MenuItem(MenuPath, priority = 2020)]
+        [MenuItem(MenuPath, priority = 2000)]
         public static void ShowWindow()
         {
-            FuguiLayoutEditorWindow window = GetWindow<FuguiLayoutEditorWindow>("Fugui Layouts");
-            window.minSize = new Vector2(760f, 520f);
+            Open(FuguiEditorTab.Setup);
+        }
+
+        private static void Open(FuguiEditorTab tab)
+        {
+            FuguiEditorWindow window = GetWindow<FuguiEditorWindow>("Fugui Editor");
+            window.minSize = new Vector2(860f, 560f);
+            window._toolTab = (int)tab;
             window.Show();
         }
 
         private void OnEnable()
         {
-            titleContent = new GUIContent("Fugui Layouts");
+            titleContent = new GUIContent("Fugui Editor");
+            _setupPanel.Initialize();
+            _fontAtlasPanel.Initialize();
             _windowNamesScriptPath = FindWindowNamesScriptPath();
             RefreshAll();
         }
@@ -73,21 +84,28 @@ namespace Fu.Editor
             DrawHeader();
 
             EditorGUILayout.Space(6f);
-            int nextTab = GUILayout.Toolbar(_tab, new[] { "Layouts", "Window Names" }, EditorStyles.toolbarButton, GUILayout.Height(26f));
-            if (nextTab != _tab)
+            int nextTab = GUILayout.Toolbar(_toolTab, ToolTabs, EditorStyles.toolbarButton, GUILayout.Height(26f));
+            if (nextTab != _toolTab)
             {
-                _tab = nextTab;
+                _toolTab = nextTab;
                 GUI.FocusControl(null);
             }
 
             EditorGUILayout.Space(6f);
-            if (_tab == 0)
+            switch ((FuguiEditorTab)_toolTab)
             {
-                DrawLayoutsTab();
-            }
-            else
-            {
-                DrawWindowNamesTab();
+                case FuguiEditorTab.Setup:
+                    _setupPanel.Draw();
+                    break;
+                case FuguiEditorTab.Layouts:
+                    DrawLayoutsTab();
+                    break;
+                case FuguiEditorTab.WindowNames:
+                    DrawWindowNamesTab();
+                    break;
+                case FuguiEditorTab.FontAtlas:
+                    _fontAtlasPanel.Draw();
+                    break;
             }
 
             DrawStatusBar();
@@ -101,14 +119,16 @@ namespace Fu.Editor
             {
                 using (new EditorGUILayout.VerticalScope())
                 {
-                    EditorGUILayout.LabelField("Fugui Layout Editor", EditorStyles.boldLabel);
-                    EditorGUILayout.LabelField("Create dock layouts and window names as Unity Editor assets.", EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField("Fugui Editor", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField("Setup, layouts, window names and font atlases in one place.", EditorStyles.miniLabel);
                 }
 
                 GUILayout.FlexibleSpace();
 
                 if (GUILayout.Button("Refresh", GUILayout.Width(90f), GUILayout.Height(24f)))
                 {
+                    _setupPanel.Initialize();
+                    _fontAtlasPanel.Initialize();
                     RefreshAll();
                 }
             }
@@ -1481,6 +1501,16 @@ namespace Fu.Editor
             }
 
             return absolutePath;
+        }
+        #endregion
+
+        #region Types
+        private enum FuguiEditorTab
+        {
+            Setup,
+            Layouts,
+            WindowNames,
+            FontAtlas
         }
         #endregion
     }

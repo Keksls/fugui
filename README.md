@@ -29,7 +29,7 @@ Le package fournit un runtime complet: contexte ImGui Unity, renderer URP, gesti
 - UI immediate-mode basee sur Dear ImGui, exposee via `Fu.Fugui`, `Fu.Framework.FuLayout` et `Fu.Framework.FuGrid`.
 - Fenetres dockables, closables, multi-instances, externalisables et configurables par `FuWindowDefinition`.
 - Gestion de performance par etat de fenetre: idle FPS configurable, redraw force, manipulation a FPS eleve.
-- Docking layouts persistants en `.fdl`, indexes JSON et outil Unity Editor de creation/edition (`Tools/Fugui/Layout Editor`).
+- Docking layouts persistants en `.fdl`, indexes JSON et outil Unity Editor de creation/edition (`Tools > Fugui > Editor`, onglets `Layouts` et `Window Names`).
 - Themes Fugui en `.fskin`, chargement depuis `StreamingAssets`, theme manager et couleurs extensibles.
 - Widgets haut niveau: texte enrichi, boutons, groupes de boutons, checkbox, toggles, sliders, ranges, drags, knobs, combobox, listbox, color picker, gradient, image, tree, tabs, date/time, progress bar, loaders, video player, path fields.
 - Layouts ergonomiques: `FuLayout` pour les widgets libres, `FuGrid` pour formulaires et inspectors responsives, `FuPanel` pour zones scrollables.
@@ -103,7 +103,7 @@ Le rendu principal est prevu pour URP avec `FuguiRenderFeature`.
 
 ### Setup automatique
 
-Ouvre `Tools > Fugui > Setup Wizard` pour diagnostiquer le projet et appliquer les correctifs courants: ajout du prefab `FuguiController`, installation/reparation de `FuguiRenderFeature` sur le renderer URP actif, copie de `StreamingAssets/Fugui`, verification des fonts et conseil sur l'input handling.
+Ouvre `Tools > Fugui > Editor`, puis l'onglet `Setup`, pour diagnostiquer le projet et appliquer les correctifs courants: ajout du prefab `FuguiController`, installation/reparation de `FuguiRenderFeature` sur le renderer URP actif, copie de `StreamingAssets/Fugui`, verification des fonts et conseil sur l'input handling.
 
 ### 1. Ajouter le controller
 
@@ -326,7 +326,7 @@ Les polices sont configurees avec `FontConfig`. Les glyphes d'icones respectent 
 - icons classiques: `0xE000` a `0xEC7E`;
 - icons duotone: `0xEC7F` a `0xF8FF`.
 
-Les atlas de polices peuvent etre bakes depuis `Tools > Fugui > Font Atlas Baker`. Les textures sont stockees dans `Assets/StreamingAssets/Fugui/FontAtlases/<font-hash>/scale_<scale>.png` et le runtime les recharge automatiquement quand `FontConfig.UseBakedFontAtlas` est actif. Si aucun atlas bake ne correspond au `FontScale` courant, Fugui reconstruit l'atlas en memoire comme avant.
+Les atlas de polices peuvent etre bakes depuis `Tools > Fugui > Editor`, onglet `Font Atlas`. Les textures sont stockees dans `Assets/StreamingAssets/Fugui/FontAtlases/<font-hash>/scale_<scale>.png` et le runtime les recharge automatiquement quand `FontConfig.UseBakedFontAtlas` est actif. Si aucun atlas bake ne correspond au `FontScale` courant, Fugui reconstruit l'atlas en memoire comme avant.
 
 Utilisation:
 

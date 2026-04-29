@@ -8,26 +8,25 @@ using UnityEngine;
 
 namespace Fu.Editor
 {
-    public sealed class FuguiFontAtlasBakerWindow : EditorWindow
+    /// <summary>
+    /// Draws the Fugui font atlas baking panel inside the central Fugui editor window.
+    /// </summary>
+    internal sealed class FuguiFontAtlasBakerPanel
     {
-        private const string MenuPath = "Tools/Fugui/Font Atlas Baker";
-
+        #region State
         private FontConfig _fontConfig;
         private SerializedObject _serializedConfig;
         private SerializedProperty _useBakedAtlasProperty;
         private SerializedProperty _bakedAtlasFolderProperty;
         private SerializedProperty _bakedAtlasScalesProperty;
         private Vector2 _scroll;
+        #endregion
 
-        [MenuItem(MenuPath, priority = 2010)]
-        public static void ShowWindow()
-        {
-            FuguiFontAtlasBakerWindow window = GetWindow<FuguiFontAtlasBakerWindow>("Font Atlas Baker");
-            window.minSize = new Vector2(460f, 300f);
-            window.Show();
-        }
-
-        private void OnEnable()
+        #region Lifecycle
+        /// <summary>
+        /// Initializes the panel state from project assets.
+        /// </summary>
+        internal void Initialize()
         {
             if (_fontConfig == null)
             {
@@ -36,8 +35,13 @@ namespace Fu.Editor
 
             BindSerializedConfig();
         }
+        #endregion
 
-        private void OnGUI()
+        #region Drawing
+        /// <summary>
+        /// Draws the font atlas baking panel.
+        /// </summary>
+        internal void Draw()
         {
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
@@ -82,13 +86,14 @@ namespace Fu.Editor
                 if (GUILayout.Button("Refresh Hash", GUILayout.Height(28f), GUILayout.Width(110f)))
                 {
                     FuFontAtlasCache.ClearHashCache();
-                    Repaint();
                 }
             }
 
             EditorGUILayout.EndScrollView();
         }
+        #endregion
 
+        #region Binding
         private void BindSerializedConfig()
         {
             _serializedConfig = _fontConfig != null ? new SerializedObject(_fontConfig) : null;
@@ -96,7 +101,9 @@ namespace Fu.Editor
             _bakedAtlasFolderProperty = _serializedConfig?.FindProperty(nameof(FontConfig.BakedFontAtlasFolder));
             _bakedAtlasScalesProperty = _serializedConfig?.FindProperty(nameof(FontConfig.BakedFontAtlasScales));
         }
+        #endregion
 
+        #region Baking
         private bool CanBake()
         {
             return _fontConfig != null &&
@@ -152,7 +159,7 @@ namespace Fu.Editor
                     }
 
                     File.WriteAllBytes(absolutePath, texture.EncodeToPNG());
-                    DestroyImmediate(texture);
+                    UnityEngine.Object.DestroyImmediate(texture);
                     bakedCount++;
                     Debug.Log($"[FontAtlasBaker] Baked font atlas scale {scale:0.###}: {absolutePath}");
                 }
@@ -178,7 +185,9 @@ namespace Fu.Editor
 
             EditorUtility.DisplayDialog("Fugui Font Atlas Baker", message, "OK");
         }
+        #endregion
 
+        #region Helpers
         private static FontConfig FindDefaultFontConfig()
         {
             string[] guids = AssetDatabase.FindAssets("FontConfig t:FontConfig");
@@ -195,5 +204,6 @@ namespace Fu.Editor
 
             return null;
         }
+        #endregion
     }
 }

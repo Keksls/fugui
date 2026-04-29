@@ -30,6 +30,14 @@ namespace Fu
         }
 
         /// <summary>
+        /// Clears the cached window names so the next lookup scans loaded assemblies again.
+        /// </summary>
+        public static void ClearCache()
+        {
+            _cached = null;
+        }
+
+        /// <summary>
         /// Get all window names defined in the project.
         /// </summary>
         /// <returns> List of FuWindowName objects.</returns>
@@ -37,13 +45,29 @@ namespace Fu
         {
             if (_cached != null) return _cached;
 
+            _cached = new Dictionary<ushort, FuWindowName>();
+
+            AddWindowName(FuSystemWindowsNames.None);
+            AddWindowName(FuSystemWindowsNames.FuguiSettings);
+
             // Scan all assemblies
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
             foreach (var assembly in assemblies)
             {
+                Type[] assemblyTypes;
+
+                try
+                {
+                    assemblyTypes = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    assemblyTypes = ex.Types.Where(type => type != null).ToArray();
+                }
+
                 // Find types that inherit from FuSystemWindowsNames (excluding it)
-                var types = assembly.GetTypes()
+                var types = assemblyTypes
                     .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(FuSystemWindowsNames)));
 
                 foreach (var type in types)
@@ -56,23 +80,15 @@ namespace Fu
                         if (listy == null)
                             continue;
                         // Add each FuWindowName to the cache
-                        _cached = new Dictionary<ushort, FuWindowName>();
                         foreach (var windowName in listy)
                         {
-                            if (!AddWindowName(windowName))
-                            {
-                                // Log a warning if the window name already exists
-                                Console.WriteLine($"Warning: Window name {windowName.Name} with ID {windowName.ID} already exists.");
-                            }
+                            AddWindowName(windowName);
                         }
-                        if (_cached != null)
-                            return _cached;
                     }
                 }
             }
 
-            // Fallback
-            return new Dictionary<ushort, FuWindowName>();
+            return _cached;
         }
         #endregion
     }

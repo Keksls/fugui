@@ -242,7 +242,7 @@ public class ManualDriver : MonoBehaviour
 
 Groupes principaux:
 
-- chemins: `FUGUI_WINDOWS_DEF_ENUM_PATH`, `FUGUI_DOCKSPACE_FOLDER_PATH`, `ThemesFolder`, `LayoutsFolder`;
+- chemins: `ThemesFolder`, `LayoutsFolder`;
 - fenetres: `EnableExternalizations`, `IdleFPS`, `ExternalWindowFlags`;
 - 3D: `Windows3DScale`, `Windows3DSuperSampling`, `Windows3DFontScale`, `UIPanelWidth`;
 - UI: `GlobalScale`, `FontGlobalScale`, animations, icons, materials, cursors;
@@ -813,9 +813,7 @@ Operations:
 ```csharp
 Fugui.Layouts.LoadLayouts(folder);
 Fugui.Layouts.SetLayout("Default");
-Fugui.Layouts.SetConfigurationLayout();
 Fugui.Layouts.AutoDockWindow(window);
-string name = Fugui.Layouts.GetAvailableLayoutName("MyLayout");
 Fugui.Layouts.SaveLayoutFile(folder, layout);
 Fugui.Layouts.DeleteLayout(folder, "MyLayout");
 FuDockingLayoutDefinition current = Fugui.Layouts.GenerateCurrentLayout();
@@ -1298,7 +1296,7 @@ FuDockingLayoutDefinition layout = Fugui.Layouts.GenerateCurrentLayout();
 
 if (layout != null)
 {
-    layout.Name = Fugui.Layouts.GetAvailableLayoutName("RuntimeLayout");
+    layout.Name = "RuntimeLayout";
     Fugui.Layouts.SaveLayoutFile(folder, layout);
 }
 ```

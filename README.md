@@ -29,7 +29,7 @@ Le package fournit un runtime complet: contexte ImGui Unity, renderer URP, gesti
 - UI immediate-mode basee sur Dear ImGui, exposee via `Fu.Fugui`, `Fu.Framework.FuLayout` et `Fu.Framework.FuGrid`.
 - Fenetres dockables, closables, multi-instances, externalisables et configurables par `FuWindowDefinition`.
 - Gestion de performance par etat de fenetre: idle FPS configurable, redraw force, manipulation a FPS eleve.
-- Docking layouts persistants en `.fdl`, indexes JSON et interface de creation/edition.
+- Docking layouts persistants en `.fdl`, indexes JSON et outil Unity Editor de creation/edition (`Tools/Fugui/Layout Editor`).
 - Themes Fugui en `.fskin`, chargement depuis `StreamingAssets`, theme manager et couleurs extensibles.
 - Widgets haut niveau: texte enrichi, boutons, groupes de boutons, checkbox, toggles, sliders, ranges, drags, knobs, combobox, listbox, color picker, gradient, image, tree, tabs, date/time, progress bar, loaders, video player, path fields.
 - Layouts ergonomiques: `FuLayout` pour les widgets libres, `FuGrid` pour formulaires et inspectors responsives, `FuPanel` pour zones scrollables.
@@ -296,7 +296,6 @@ Operations courantes:
 
 ```csharp
 Fugui.Layouts.SetLayout("FuguiDemoScene");
-Fugui.Layouts.SetConfigurationLayout();
 
 FuDockingLayoutDefinition generated = Fugui.Layouts.GenerateCurrentLayout();
 Fugui.Layouts.SaveLayoutFile(

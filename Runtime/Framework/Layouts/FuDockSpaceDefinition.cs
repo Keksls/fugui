@@ -89,22 +89,6 @@ namespace Fu
 
         #region Methods
         /// <summary>
-        /// Method that returns the total number of children, including all children of children
-        /// </summary>
-        /// <returns> The total number of children in the dock space, including all nested children</returns>
-        public uint GetTotalChildren()
-        {
-            uint count = (uint)Children.Count;
-
-            foreach (var child in Children)
-            {
-                count += child.GetTotalChildren();
-            }
-
-            return count;
-        }
-
-        /// <summary>
         /// Method that serializes the dock space definition to a JSON string
         /// </summary>
         /// <param name="dockspaceDefinition"> The dock space definition to serialize</param>
@@ -143,72 +127,6 @@ namespace Fu
         }
 
         /// <summary>
-        /// Method that search for a child dock space with the specified name in the current dock space and its children recursively
-        /// </summary>
-        /// <param name="dockspaceName">The name of the dock space to search for</param>
-        /// <returns>The dock space with the specified name, or null if not found</returns>
-        internal FuDockingLayoutDefinition SearchInChildren(string dockspaceName)
-        {
-            if (Name == dockspaceName)
-            {
-                return this;
-            }
-            else
-            {
-                foreach (var child in Children)
-                {
-                    var found = child.SearchInChildren(dockspaceName);
-
-                    if (found != null)
-                    {
-                        return found;
-                    }
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Method that search for a child dock space with the specified window def ID in the current dock space and its children recursively
-        /// </summary>
-        /// <param name="windowDefID">The ID of the window definition</param>
-        /// <returns>The dock space with the specified name, or null if not found</returns>
-        internal FuDockingLayoutDefinition SearchInChildren(ushort windowDefID)
-        {
-            if (WindowsDefinition.Contains(windowDefID))
-            {
-                return this;
-            }
-            else
-            {
-                foreach (var child in Children)
-                {
-                    var found = child.SearchInChildren(windowDefID);
-
-                    if (found != null)
-                    {
-                        return found;
-                    }
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Method that removes all entries from the WindowsDefinition dictionary that have the specified window definition ID in the current dock space and its children recursively
-        /// </summary>
-        /// <param name="windowDefID">The ID of the window definition to remove</param>
-        internal void RemoveWindowsDefinitionInChildren(ushort windowDefID)
-        {
-            WindowsDefinition.Remove(windowDefID);
-
-            foreach (var child in Children)
-            {
-                child.RemoveWindowsDefinitionInChildren(windowDefID);
-            }
-        }
-
-        /// <summary>
         /// Get all window definitions of this dock space
         /// </summary>
         /// <param name="getOnlyAutoInstantiated">Whatever you only want windows in this layout that will auto instantiated by layout</param>
@@ -219,9 +137,14 @@ namespace Fu
 
             foreach (ushort windowID in WindowsDefinition)
             {
-                if (getOnlyAutoInstantiated && FuWindowNameProvider.GetAllWindowNames()[windowID].AutoInstantiateWindowOnlayoutSet || !getOnlyAutoInstantiated)
+                if (!FuWindowNameProvider.GetAllWindowNames().TryGetValue(windowID, out FuWindowName windowName))
                 {
-                    windows.Add(FuWindowNameProvider.GetAllWindowNames()[windowID]);
+                    continue;
+                }
+
+                if (getOnlyAutoInstantiated && windowName.AutoInstantiateWindowOnlayoutSet || !getOnlyAutoInstantiated)
+                {
+                    windows.Add(windowName);
                 }
             }
 
@@ -233,21 +156,6 @@ namespace Fu
             return windows;
         }
 
-        /// <summary>
-        /// Gets the copy.
-        /// </summary>
-        /// <returns>The result of the operation.</returns>
-        internal FuDockingLayoutDefinition GetCopy()
-        {
-            FuDockingLayoutDefinition clone = new FuDockingLayoutDefinition(Name, ID, Proportion, Orientation);
-            clone.WindowsDefinition = new List<ushort>(WindowsDefinition);
-            clone.Children = new List<FuDockingLayoutDefinition>();
-            foreach (var child in Children)
-            {
-                clone.Children.Add(child.GetCopy());
-            }
-            return clone;
-        }
         #endregion
     }
 
@@ -269,4 +177,5 @@ namespace Fu
         /// </summary>
         Vertical
     }
+
 }

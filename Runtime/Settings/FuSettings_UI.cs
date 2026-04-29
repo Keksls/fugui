@@ -26,17 +26,6 @@ namespace Fu
             HorizontalAlignNextElement(64f, FuElementAlignement.Center);
             layout.Image("fLogo", Settings.FuguiLogo, new Vector2(64f, 64f));
 
-            // buttons
-            FuStyle.Unpadded.Push(true);
-            using (FuGrid grid = new FuGrid("fsAG", new FuGridDefinition(1, new float[] { 1f / 1f })))
-            {
-                if (grid.Button("Docking Layout", FuButtonStyle.Highlight))
-                {
-                    Fugui.Layouts.SetConfigurationLayout();
-                }
-            }
-            FuStyle.Unpadded.Pop();
-
             // Settings Panel
             using (FuPanel panel = new FuPanel("fsP", FuStyle.Unpadded))
             {

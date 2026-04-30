@@ -20,6 +20,7 @@ namespace Fu
         public bool IsRuntimeResizing => _activeResizeHandleIndex != -1;
         public float Scale3D => _windows3DScale;
         public float PanelCurve => _panelCurve;
+        public float PanelRounding => _panelRounding;
         public Vector2 LocalSize => getCurrentLocalSize();
         public Vector2Int RenderResolution => _useExplicitResolution ? _explicitResolution : _size;
         public Vector2Int LocalMousePos => _localMousePos;
@@ -28,6 +29,8 @@ namespace Fu
         public RenderTexture RenderTexture { get; private set; }
         public event Action<Vector3, Vector2> OnRuntimeResized;
         private GameObject _panelGameObject;
+        public GameObject PanelGameObject => _panelGameObject;
+        public Transform PanelTransform => _panelGameObject != null ? _panelGameObject.transform : null;
         public int FuguiContextID { get { return _fuguiContext != null ? _fuguiContext.ID : -1; } }
         public FuMouseState Mouse => _mouseState;
         public FuKeyboardState Keyboard => _keyboardState;
@@ -47,28 +50,34 @@ namespace Fu
         private Vector2Int _maxResolution = Vector2Int.zero;
         private float _panelDepth = 0.01f;
         private float _panelCurve = 0f;
+        private float _panelRounding = Fu3DWindowSettings.DefaultPanelRounding;
         private FuUnityContext _fuguiContext;
         private static int _3DContextindex = 0;
         private Material _uiMaterial;
         private FuPanelMesh _panelMesh;
         private MeshCollider _panelCollider;
         private Material _resizeHandleMaterial;
+        private MaterialPropertyBlock _resizeHandlePropertyBlock;
         private GameObject[] _resizeHandles;
+        private Mesh[] _resizeHandleMeshes;
         private bool _runtimeResizable;
+        private bool _runtimeResizeBlocked;
         private bool _resizeHandlesVisible;
         private int _activeResizeHandleIndex = -1;
+        private int _hoveredResizeHandleIndex = -1;
         private string _activeResizeRaycasterID;
         private Vector3 _resizeStartPanelPosition;
         private Quaternion _resizeStartPanelRotation;
         private Vector2 _resizeStartLocalSize;
         private Vector2 _resizeStartHitLocal;
-        private const float ResizeHandleSizeRatio = 0.08f;
-        private const float ResizeHandleMinSize = 0.035f;
-        private const float ResizeHandleMaxSize = 0.16f;
-        private const float ResizeHoverMarginRatio = 0.08f;
-        private const float ResizeHoverMarginMin = 0.045f;
-        private const float ResizeHoverMarginMax = 0.18f;
-        private const float ResizeHandleFrontOffset = -0.01f;
+        private const float ResizeHandleOuterRadiusRatio = 0.14f;
+        private const float ResizeHandleOuterRadiusMin = 0.075f;
+        private const float ResizeHandleOuterRadiusMax = 0.24f;
+        private const float ResizeHandleThicknessRatio = 0.26f;
+        private const float ResizeHandleThicknessMin = 0.018f;
+        private const float ResizeHandleThicknessMax = 0.055f;
+        private const float ResizeHandleFrontOffset = -0.018f;
+        private const int ResizeHandleArcSegments = 14;
         private const float RuntimeResizeMinSize = 0.0001f;
         private const int MaxPooledRenderTexturesPerKey = 4;
         private static readonly Dictionary<string, Stack<RenderTexture>> _renderTexturePool = new Dictionary<string, Stack<RenderTexture>>();
@@ -182,6 +191,7 @@ namespace Fu
         private void ThemeManager_OnThemeSet(FuTheme theme)
         {
             createPanel();
+            updateResizeHandleVisualStates();
         }
 
         /// <summary>
@@ -204,6 +214,27 @@ namespace Fu
 
             ensureResizeHandles();
             updateResizeHandleTransforms();
+            updateResizeHandleVisualStates();
+        }
+
+        /// <summary>
+        /// Blocks runtime resize input while another external handle owns the pointer.
+        /// </summary>
+        /// <param name="blocked">Whether runtime resize input should be blocked.</param>
+        public void SetRuntimeResizeBlocked(bool blocked)
+        {
+            if (_runtimeResizeBlocked == blocked)
+            {
+                return;
+            }
+
+            _runtimeResizeBlocked = blocked;
+            if (_runtimeResizeBlocked)
+            {
+                cancelRuntimeResize();
+                _hoveredResizeHandleIndex = -1;
+                setResizeHandlesVisible(false);
+            }
         }
 
         /// <summary>
@@ -258,6 +289,7 @@ namespace Fu
             settings.Sanitize();
             bool panelDepthChanged = Mathf.Abs(_panelDepth - settings.PanelDepth) > 0.0001f;
             bool panelCurveChanged = Mathf.Abs(_panelCurve - settings.PanelCurve) > 0.0001f;
+            bool panelRoundingChanged = Mathf.Abs(_panelRounding - settings.PanelRounding) > 0.0001f;
             Vector2 previousLocalSize = _localSize;
             Vector2Int previousResolution = _explicitResolution;
             _useExplicitResolution = true;
@@ -265,7 +297,7 @@ namespace Fu
             _windows3DScale = getLegacyScaleFromSettings(settings);
             _fuguiContext.SetContainerScaleConfig(settings.ContainerScaleConfig, _explicitResolution);
             SetLocalSize(settings.PanelSize);
-            if ((panelDepthChanged || panelCurveChanged) &&
+            if ((panelDepthChanged || panelCurveChanged || panelRoundingChanged) &&
                 previousResolution == _explicitResolution &&
                 (previousLocalSize - settings.PanelSize).sqrMagnitude <= 0.00000001f)
             {
@@ -286,7 +318,8 @@ namespace Fu
                 _fuguiContext != null ? _fuguiContext.ContainerScaleConfig.BaseScale : 1f,
                 _fuguiContext != null ? _fuguiContext.ContainerScaleConfig.BaseFontScale : 1f,
                 _panelDepth,
-                _panelCurve);
+                _panelCurve,
+                _panelRounding);
             if (_fuguiContext != null)
             {
                 settings.ContainerScaleConfig = _fuguiContext.ContainerScaleConfig;
@@ -327,6 +360,26 @@ namespace Fu
             }
 
             _panelCurve = curve;
+            if (!IsClosed)
+            {
+                createPanel();
+                updateResizeHandleTransforms();
+            }
+        }
+
+        /// <summary>
+        /// Change the generated panel corner radius without changing the window content.
+        /// </summary>
+        /// <param name="rounding">Panel corner radius in world units.</param>
+        public void SetPanelRounding(float rounding)
+        {
+            rounding = Mathf.Max(0f, rounding);
+            if (Mathf.Abs(_panelRounding - rounding) < 0.0001f)
+            {
+                return;
+            }
+
+            _panelRounding = rounding;
             if (!IsClosed)
             {
                 createPanel();
@@ -547,6 +600,7 @@ namespace Fu
             _maxResolution = settings.MaxResolution;
             _panelDepth = settings.PanelDepth;
             _panelCurve = settings.PanelCurve;
+            _panelRounding = settings.PanelRounding;
             if (applyPanelSize)
             {
                 _localSize = settings.PanelSize;
@@ -647,7 +701,7 @@ namespace Fu
             _panelMesh.Window = Window;
             float meshScale = getMeshScale();
             Vector2 meshSize = getMeshSize(meshScale);
-            float round = Fugui.Themes.WindowRounding * Context.Scale;
+            float round = getPanelMeshRounding(meshScale);
 
             if (_panelCollider == null)
             {
@@ -733,9 +787,10 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         private bool updateRuntimeResize(InputState panelInputState)
         {
-            if (!_runtimeResizable || _panelGameObject == null || Window == null || !Window.IsInterractable)
+            if (_runtimeResizeBlocked || !_runtimeResizable || _panelGameObject == null || Window == null || !Window.IsInterractable)
             {
                 cancelRuntimeResize();
+                _hoveredResizeHandleIndex = -1;
                 setResizeHandlesVisible(false);
                 return false;
             }
@@ -749,13 +804,13 @@ namespace Fu
             }
 
             bool handleHovered = tryGetHoveredResizeHandle(out int hoveredHandleIndex, out InputState handleInputState);
+            _hoveredResizeHandleIndex = handleHovered ? hoveredHandleIndex : -1;
             if (handleHovered && handleInputState.MouseButtons[0])
             {
                 startRuntimeResize(hoveredHandleIndex, handleInputState.RaycasterID);
             }
 
-            bool nearResizeCorner = panelInputState.Hovered && isNearResizeCorner(panelInputState.MousePosition);
-            bool handlesShouldBeVisible = handleHovered || nearResizeCorner || _activeResizeHandleIndex != -1;
+            bool handlesShouldBeVisible = panelInputState.Hovered || handleHovered || _activeResizeHandleIndex != -1;
 
             setResizeHandlesVisible(handlesShouldBeVisible);
 
@@ -764,33 +819,7 @@ namespace Fu
                 Window.ForceDraw(2);
             }
 
-            return handleHovered || nearResizeCorner || _activeResizeHandleIndex != -1;
-        }
-
-        /// <summary>
-        /// Returns the is near resize corner result.
-        /// </summary>
-        /// <param name="localPosition">The local Position value.</param>
-        /// <returns>The result of the operation.</returns>
-        private bool isNearResizeCorner(Vector2 localPosition)
-        {
-            Vector2 localSize = getCurrentLocalSize();
-            float margin = Mathf.Clamp(
-                Mathf.Min(localSize.x, localSize.y) * ResizeHoverMarginRatio,
-                ResizeHoverMarginMin,
-                ResizeHoverMarginMax);
-
-            float left = -localSize.x * 0.5f;
-            float right = localSize.x * 0.5f;
-            float bottom = 0f;
-            float top = localSize.y;
-
-            bool nearLeft = Mathf.Abs(localPosition.x - left) <= margin;
-            bool nearRight = Mathf.Abs(localPosition.x - right) <= margin;
-            bool nearBottom = Mathf.Abs(localPosition.y - bottom) <= margin;
-            bool nearTop = Mathf.Abs(localPosition.y - top) <= margin;
-
-            return (nearLeft || nearRight) && (nearBottom || nearTop);
+            return handleHovered || _activeResizeHandleIndex != -1;
         }
 
         /// <summary>
@@ -804,7 +833,7 @@ namespace Fu
             handleIndex = -1;
             inputState = default;
 
-            if (!_resizeHandlesVisible || _resizeHandles == null)
+            if (_resizeHandles == null)
             {
                 return false;
             }
@@ -846,12 +875,14 @@ namespace Fu
             }
 
             _activeResizeHandleIndex = handleIndex;
+            _hoveredResizeHandleIndex = handleIndex;
             _activeResizeRaycasterID = raycasterID;
             _resizeStartPanelPosition = _panelGameObject.transform.position;
             _resizeStartPanelRotation = _panelGameObject.transform.rotation;
             _resizeStartLocalSize = getCurrentLocalSize();
             _resizeStartHitLocal = hitLocal;
             setResizeHandlesVisible(true);
+            updateResizeHandleVisualStates();
             Window?.ForceDraw(10);
         }
 
@@ -956,6 +987,7 @@ namespace Fu
         {
             bool wasResizing = _activeResizeHandleIndex != -1;
             _activeResizeHandleIndex = -1;
+            _hoveredResizeHandleIndex = -1;
             _activeResizeRaycasterID = null;
             if (wasResizing)
             {
@@ -971,7 +1003,9 @@ namespace Fu
         private void cancelRuntimeResize()
         {
             _activeResizeHandleIndex = -1;
+            _hoveredResizeHandleIndex = -1;
             _activeResizeRaycasterID = null;
+            updateResizeHandleVisualStates();
         }
 
         /// <summary>
@@ -1042,29 +1076,26 @@ namespace Fu
                 return;
             }
 
-            if (_resizeHandles != null && _resizeHandles.Length == 4 && _resizeHandles[0] != null)
+            if (_resizeHandles == null || _resizeHandles.Length != 4)
             {
-                return;
+                _resizeHandles = new GameObject[4];
             }
 
-            _resizeHandles = new GameObject[4];
+            if (_resizeHandleMeshes == null || _resizeHandleMeshes.Length != 4)
+            {
+                _resizeHandleMeshes = new Mesh[4];
+            }
 
             for (int i = 0; i < _resizeHandles.Length; i++)
             {
-                GameObject handle = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                handle.name = getResizeHandleID(i);
-                handle.layer = _panelGameObject.layer;
-                handle.transform.SetParent(_panelGameObject.transform, false);
-                handle.transform.localRotation = Quaternion.identity;
-
-                MeshRenderer renderer = handle.GetComponent<MeshRenderer>();
-                if (renderer != null)
+                if (_resizeHandles[i] == null)
                 {
-                    renderer.sharedMaterial = getResizeHandleMaterial();
+                    GameObject handle = new GameObject(getResizeHandleID(i));
+                    handle.transform.SetParent(_panelGameObject.transform, false);
+                    _resizeHandles[i] = handle;
                 }
 
-                _resizeHandles[i] = handle;
-                handle.SetActive(false);
+                configureResizeHandle(_resizeHandles[i], i);
             }
 
             updateResizeHandleTransforms();
@@ -1081,10 +1112,8 @@ namespace Fu
             }
 
             Vector2 localSize = getCurrentLocalSize();
-            float handleSize = Mathf.Clamp(
-                Mathf.Min(localSize.x, localSize.y) * ResizeHandleSizeRatio,
-                ResizeHandleMinSize,
-                ResizeHandleMaxSize);
+            float outerRadius = getResizeHandleOuterRadius(localSize);
+            float thickness = getResizeHandleThickness(outerRadius);
 
             for (int i = 0; i < _resizeHandles.Length; i++)
             {
@@ -1095,10 +1124,260 @@ namespace Fu
                 }
 
                 handle.transform.localPosition = getResizeHandleLocalPosition(i, localSize);
-                handle.transform.localScale = Vector3.one * handleSize;
+                handle.transform.localScale = Vector3.one;
                 handle.transform.localRotation = Quaternion.identity;
                 handle.layer = _panelGameObject != null ? _panelGameObject.layer : handle.layer;
+                updateResizeHandleMesh(i, outerRadius, thickness);
+                updateResizeHandleCollider(handle, i, outerRadius);
             }
+
+            updateResizeHandleVisualStates();
+        }
+
+        /// <summary>
+        /// Updates renderer colors and collider states for resize handles.
+        /// </summary>
+        private void updateResizeHandleVisualStates()
+        {
+            if (_resizeHandles == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _resizeHandles.Length; i++)
+            {
+                GameObject handle = _resizeHandles[i];
+                if (handle == null)
+                {
+                    continue;
+                }
+
+                MeshRenderer renderer = handle.GetComponent<MeshRenderer>();
+                if (renderer != null)
+                {
+                    renderer.enabled = _resizeHandlesVisible;
+                    setRendererColor(renderer, getResizeHandleColor(i));
+                }
+
+                Collider collider = handle.GetComponent<Collider>();
+                if (collider != null)
+                {
+                    collider.enabled = canResizeHandleInteract(i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns whether one resize handle can receive raycast input.
+        /// </summary>
+        /// <param name="handleIndex">The handle index.</param>
+        /// <returns>True when the handle can interact.</returns>
+        private bool canResizeHandleInteract(int handleIndex)
+        {
+            if (!_runtimeResizable || _runtimeResizeBlocked)
+            {
+                return false;
+            }
+
+            return _activeResizeHandleIndex == -1 || _activeResizeHandleIndex == handleIndex;
+        }
+
+        /// <summary>
+        /// Ensures one runtime resize handle has the expected components.
+        /// </summary>
+        /// <param name="handle">The handle object.</param>
+        /// <param name="handleIndex">The handle index.</param>
+        private void configureResizeHandle(GameObject handle, int handleIndex)
+        {
+            handle.name = getResizeHandleID(handleIndex);
+            handle.layer = _panelGameObject != null ? _panelGameObject.layer : handle.layer;
+            handle.transform.SetParent(_panelGameObject.transform, false);
+            handle.transform.localRotation = Quaternion.identity;
+            handle.transform.localScale = Vector3.one;
+            handle.SetActive(_runtimeResizable);
+
+            MeshFilter meshFilter = handle.GetComponent<MeshFilter>();
+            if (meshFilter == null)
+            {
+                meshFilter = handle.AddComponent<MeshFilter>();
+            }
+
+            if (_resizeHandleMeshes[handleIndex] == null)
+            {
+                _resizeHandleMeshes[handleIndex] = new Mesh
+                {
+                    name = getResizeHandleID(handleIndex) + "_Mesh"
+                };
+            }
+
+            meshFilter.sharedMesh = _resizeHandleMeshes[handleIndex];
+
+            MeshRenderer renderer = handle.GetComponent<MeshRenderer>();
+            if (renderer == null)
+            {
+                renderer = handle.AddComponent<MeshRenderer>();
+            }
+            renderer.sharedMaterial = getResizeHandleMaterial();
+            renderer.enabled = _resizeHandlesVisible;
+            setRendererColor(renderer, getResizeHandleColor(handleIndex));
+
+            BoxCollider collider = handle.GetComponent<BoxCollider>();
+            if (collider == null)
+            {
+                collider = handle.AddComponent<BoxCollider>();
+            }
+            collider.enabled = canResizeHandleInteract(handleIndex);
+        }
+
+        /// <summary>
+        /// Updates one resize handle as an external rounded corner arc.
+        /// </summary>
+        /// <param name="handleIndex">The handle index.</param>
+        /// <param name="outerRadius">Outer arc radius in local panel units.</param>
+        /// <param name="thickness">Arc thickness in local panel units.</param>
+        private void updateResizeHandleMesh(int handleIndex, float outerRadius, float thickness)
+        {
+            if (_resizeHandleMeshes == null || handleIndex < 0 || handleIndex >= _resizeHandleMeshes.Length)
+            {
+                return;
+            }
+
+            Mesh mesh = _resizeHandleMeshes[handleIndex];
+            if (mesh == null)
+            {
+                return;
+            }
+
+            int segments = Mathf.Max(3, ResizeHandleArcSegments);
+            Vector3[] vertices = new Vector3[(segments + 1) * 2];
+            Vector3[] normals = new Vector3[vertices.Length];
+            Vector2[] uvs = new Vector2[vertices.Length];
+            int[] triangles = new int[segments * 6];
+            float innerRadius = Mathf.Max(0.0001f, outerRadius - thickness);
+            float startAngle = getResizeHandleStartAngle(handleIndex);
+            float endAngle = startAngle + Mathf.PI * 0.5f;
+
+            for (int i = 0; i <= segments; i++)
+            {
+                float t = (float)i / segments;
+                float angle = Mathf.Lerp(startAngle, endAngle, t);
+                Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                int innerIndex = i * 2;
+                int outerIndex = innerIndex + 1;
+
+                vertices[innerIndex] = new Vector3(direction.x * innerRadius, direction.y * innerRadius, 0f);
+                vertices[outerIndex] = new Vector3(direction.x * outerRadius, direction.y * outerRadius, 0f);
+                normals[innerIndex] = -Vector3.forward;
+                normals[outerIndex] = -Vector3.forward;
+                uvs[innerIndex] = new Vector2(t, 0f);
+                uvs[outerIndex] = new Vector2(t, 1f);
+            }
+
+            int triangle = 0;
+            for (int i = 0; i < segments; i++)
+            {
+                int inner0 = i * 2;
+                int outer0 = inner0 + 1;
+                int inner1 = inner0 + 2;
+                int outer1 = inner0 + 3;
+
+                triangles[triangle++] = inner0;
+                triangles[triangle++] = inner1;
+                triangles[triangle++] = outer0;
+                triangles[triangle++] = outer0;
+                triangles[triangle++] = inner1;
+                triangles[triangle++] = outer1;
+            }
+
+            mesh.Clear();
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.uv = uvs;
+            mesh.triangles = triangles;
+            mesh.RecalculateBounds();
+        }
+
+        /// <summary>
+        /// Updates the broad raycast area for one external resize handle.
+        /// </summary>
+        /// <param name="handle">The handle object.</param>
+        /// <param name="handleIndex">The handle index.</param>
+        /// <param name="outerRadius">Outer arc radius in local panel units.</param>
+        private void updateResizeHandleCollider(GameObject handle, int handleIndex, float outerRadius)
+        {
+            BoxCollider collider = handle.GetComponent<BoxCollider>();
+            if (collider == null)
+            {
+                return;
+            }
+
+            Vector2 direction = getResizeHandleOutsideDirection(handleIndex);
+            float size = outerRadius;
+            collider.center = new Vector3(direction.x * size * 0.5f, direction.y * size * 0.5f, 0f);
+            collider.size = new Vector3(size, size, Mathf.Max(0.01f, _panelDepth + 0.04f));
+        }
+
+        /// <summary>
+        /// Returns the outer radius of the runtime resize corner arcs.
+        /// </summary>
+        /// <param name="localSize">Current panel local size.</param>
+        /// <returns>Outer arc radius in local panel units.</returns>
+        private float getResizeHandleOuterRadius(Vector2 localSize)
+        {
+            return Mathf.Clamp(
+                Mathf.Min(localSize.x, localSize.y) * ResizeHandleOuterRadiusRatio,
+                ResizeHandleOuterRadiusMin,
+                ResizeHandleOuterRadiusMax);
+        }
+
+        /// <summary>
+        /// Returns the visual thickness of a runtime resize handle.
+        /// </summary>
+        /// <param name="outerRadius">Outer arc radius in local panel units.</param>
+        /// <returns>Arc thickness in local panel units.</returns>
+        private float getResizeHandleThickness(float outerRadius)
+        {
+            return Mathf.Clamp(
+                outerRadius * ResizeHandleThicknessRatio,
+                ResizeHandleThicknessMin,
+                ResizeHandleThicknessMax);
+        }
+
+        /// <summary>
+        /// Returns the first angle for a resize corner arc.
+        /// </summary>
+        /// <param name="handleIndex">The handle index.</param>
+        /// <returns>Angle in radians.</returns>
+        private float getResizeHandleStartAngle(int handleIndex)
+        {
+            if (handleIndex == 1)
+            {
+                return -Mathf.PI * 0.5f;
+            }
+
+            if (handleIndex == 2)
+            {
+                return Mathf.PI * 0.5f;
+            }
+
+            if (handleIndex == 3)
+            {
+                return 0f;
+            }
+
+            return Mathf.PI;
+        }
+
+        /// <summary>
+        /// Returns the outside quadrant direction for one handle.
+        /// </summary>
+        /// <param name="handleIndex">The handle index.</param>
+        /// <returns>Outside quadrant direction.</returns>
+        private Vector2 getResizeHandleOutsideDirection(int handleIndex)
+        {
+            return new Vector2(
+                isLeftHandle(handleIndex) ? -1f : 1f,
+                isBottomHandle(handleIndex) ? -1f : 1f);
         }
 
         /// <summary>
@@ -1134,6 +1413,21 @@ namespace Fu
             float xScale = _localSize.x / logicalWidth;
             float yScale = _localSize.y / logicalHeight;
             return Mathf.Max(0.0001f, Mathf.Min(xScale, yScale));
+        }
+
+        /// <summary>
+        /// Convert the configured world-space rounding radius to the mesh generator unit space.
+        /// </summary>
+        /// <param name="meshScale">World units represented by one mesh unit.</param>
+        /// <returns>Panel corner radius in mesh generator units.</returns>
+        private float getPanelMeshRounding(float meshScale)
+        {
+            if (_panelRounding <= 0f)
+            {
+                return 0f;
+            }
+
+            return _panelRounding / Mathf.Max(0.0001f, meshScale);
         }
 
         /// <summary>
@@ -1302,9 +1596,23 @@ namespace Fu
 
             for (int i = 0; i < _resizeHandles.Length; i++)
             {
-                if (_resizeHandles[i] != null)
+                GameObject handle = _resizeHandles[i];
+                if (handle != null)
                 {
-                    _resizeHandles[i].SetActive(_resizeHandlesVisible);
+                    handle.SetActive(_runtimeResizable);
+
+                    MeshRenderer renderer = handle.GetComponent<MeshRenderer>();
+                    if (renderer != null)
+                    {
+                        renderer.enabled = _resizeHandlesVisible;
+                        setRendererColor(renderer, getResizeHandleColor(i));
+                    }
+
+                    Collider collider = handle.GetComponent<Collider>();
+                    if (collider != null)
+                    {
+                        collider.enabled = canResizeHandleInteract(i);
+                    }
                 }
             }
         }
@@ -1340,9 +1648,76 @@ namespace Fu
                 shader = Shader.Find("Standard");
             }
 
-            _resizeHandleMaterial = shader != null ? new Material(shader) : GameObject.Instantiate(Fugui.Settings.UIPanelMaterial);
-            setMaterialColor(_resizeHandleMaterial, new Color(0f, 0.72f, 1f, 0.9f));
+            if (shader != null)
+            {
+                _resizeHandleMaterial = new Material(shader);
+            }
+            else if (Fugui.Settings != null && Fugui.Settings.UIPanelMaterial != null)
+            {
+                _resizeHandleMaterial = GameObject.Instantiate(Fugui.Settings.UIPanelMaterial);
+            }
+
+            setMaterialColor(_resizeHandleMaterial, getThemeColor(FuColors.Highlight, new Color(0f, 0.72f, 1f, 1f)));
             return _resizeHandleMaterial;
+        }
+
+        /// <summary>
+        /// Returns the themed color for a resize handle state.
+        /// </summary>
+        /// <param name="handleIndex">The handle index.</param>
+        /// <returns>Theme color.</returns>
+        private Color getResizeHandleColor(int handleIndex)
+        {
+            if (_activeResizeHandleIndex == handleIndex)
+            {
+                return getThemeColor(FuColors.HighlightActive, new Color(0f, 0.58f, 0.8f, 1f));
+            }
+
+            if (_hoveredResizeHandleIndex == handleIndex)
+            {
+                return getThemeColor(FuColors.HighlightHovered, new Color(0f, 0.65f, 0.9f, 1f));
+            }
+
+            return getThemeColor(FuColors.Highlight, new Color(0f, 0.72f, 1f, 1f));
+        }
+
+        /// <summary>
+        /// Returns a Fugui theme color with a safe fallback.
+        /// </summary>
+        /// <param name="color">Theme color key.</param>
+        /// <param name="fallback">Fallback color.</param>
+        /// <returns>Theme color.</returns>
+        private Color getThemeColor(FuColors color, Color fallback)
+        {
+            if (Fugui.Themes == null || Fugui.Themes.CurrentTheme == null)
+            {
+                return fallback;
+            }
+
+            return Fugui.Themes.GetColor(color);
+        }
+
+        /// <summary>
+        /// Applies a per-renderer color without duplicating the material.
+        /// </summary>
+        /// <param name="renderer">Renderer to update.</param>
+        /// <param name="color">Color to apply.</param>
+        private void setRendererColor(Renderer renderer, Color color)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            if (_resizeHandlePropertyBlock == null)
+            {
+                _resizeHandlePropertyBlock = new MaterialPropertyBlock();
+            }
+
+            renderer.GetPropertyBlock(_resizeHandlePropertyBlock);
+            _resizeHandlePropertyBlock.SetColor("_BaseColor", color);
+            _resizeHandlePropertyBlock.SetColor("_Color", color);
+            renderer.SetPropertyBlock(_resizeHandlePropertyBlock);
         }
 
         /// <summary>
@@ -1818,6 +2193,18 @@ namespace Fu
             _panelMesh = null;
             _panelCollider = null;
             _resizeHandles = null;
+            if (_resizeHandleMeshes != null)
+            {
+                for (int i = 0; i < _resizeHandleMeshes.Length; i++)
+                {
+                    if (_resizeHandleMeshes[i] != null)
+                    {
+                        UnityEngine.Object.Destroy(_resizeHandleMeshes[i]);
+                        _resizeHandleMeshes[i] = null;
+                    }
+                }
+                _resizeHandleMeshes = null;
+            }
             if (_resizeHandleMaterial != null)
             {
                 UnityEngine.Object.Destroy(_resizeHandleMaterial);

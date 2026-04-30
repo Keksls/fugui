@@ -20,6 +20,9 @@ namespace Fu.Framework
         [Tooltip("Horizontal curve angle of the generated 3D panel in degrees. 0 keeps the panel flat.")]
         public float Curve = 0f;
 
+        [Tooltip("Corner radius of the generated 3D panel in world units.")]
+        public float Rounding = Fu3DWindowSettings.DefaultPanelRounding;
+
         [SerializeField]
         protected FuWindowName _windowName;
 
@@ -201,6 +204,20 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Gets or adds the optional runtime manipulator component for this 3D window.
+        /// </summary>
+        /// <returns>The manipulator component.</returns>
+        public Fu3DWindowManipulator EnsureManipulator()
+        {
+            Fu3DWindowManipulator manipulator = GetComponent<Fu3DWindowManipulator>();
+            if (manipulator == null)
+            {
+                manipulator = gameObject.AddComponent<Fu3DWindowManipulator>();
+            }
+            return manipulator;
+        }
+
+        /// <summary>
         /// Override this method to customize the window definition after creation.
         /// </summary>
         /// <param name="windowDefinition">The created window definition.</param>
@@ -362,7 +379,8 @@ namespace Fu.Framework
                 _minRenderResolution,
                 _maxRenderResolution,
                 Depth,
-                Curve);
+                Curve,
+                Rounding);
             settings.ContainerScaleConfig = GetContainerScaleConfig();
             settings.Sanitize();
             return settings;
@@ -538,6 +556,7 @@ namespace Fu.Framework
         {
             Depth = Mathf.Max(0.0001f, Depth);
             Curve = Mathf.Clamp(Curve, 0f, 359.9f);
+            Rounding = Mathf.Max(0f, Rounding);
             EnforceDepth();
             _referenceResolution = new Vector2Int(
                 Mathf.Max(1, _referenceResolution.x),
@@ -580,21 +599,56 @@ namespace Fu.Framework
 
         private void OnDrawGizmos()
         {
+            DrawPlaceholderGizmo();
+        }
+
+        /// <summary>
+        /// Draws the editor preview for the 3D window placeholder.
+        /// </summary>
+        private void DrawPlaceholderGizmo()
+        {
             if (Curve > 0.001f)
             {
                 DrawCurvedPlaceholderGizmo();
                 return;
             }
 
-            Gizmos.matrix = transform.localToWorldMatrix;
-
-            Gizmos.color = new Color(0f, 0.6f, 1f, 0.18f);
-            Gizmos.DrawCube(new Vector3(0f, 0.5f, 0f), Vector3.one);
-
-            Gizmos.color = new Color(0f, 0.6f, 1f, 0.75f);
-            Gizmos.DrawWireCube(new Vector3(0f, 0.5f, 0f), Vector3.one);
+            DrawFlatPlaceholderGizmo();
         }
 
+        /// <summary>
+        /// Draws the flat 3D window preview with the configured world-space rounding.
+        /// </summary>
+        private void DrawFlatPlaceholderGizmo()
+        {
+            Vector2 size = GetPlaceholderSize();
+            float width = Mathf.Max(0.0001f, size.x);
+            float height = Mathf.Max(0.0001f, size.y);
+            float depth = Mathf.Max(0.0001f, Depth);
+            float rounding = GetClampedWorldRounding(width, height);
+
+            Matrix4x4 previousMatrix = Handles.matrix;
+            Color previousColor = Handles.color;
+            Handles.matrix = Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one);
+
+            Vector3[] frontPoints = GetRoundedPlaceholderPoints(width, height, rounding, 8);
+            Vector3[] backPoints = OffsetPlaceholderPoints(frontPoints, Vector3.forward * depth);
+
+            Handles.color = new Color(0f, 0.6f, 1f, 0.18f);
+            Handles.DrawAAConvexPolygon(frontPoints);
+
+            Handles.color = new Color(0f, 0.6f, 1f, 0.75f);
+            DrawPlaceholderPolyline(frontPoints, true);
+            DrawPlaceholderPolyline(backPoints, true);
+            DrawPlaceholderDepthLines(frontPoints, backPoints, 8);
+
+            Handles.color = previousColor;
+            Handles.matrix = previousMatrix;
+        }
+
+        /// <summary>
+        /// Draws the curved 3D window preview, including depth and rounded-corner outline.
+        /// </summary>
         private void DrawCurvedPlaceholderGizmo()
         {
             Vector2 size = GetPlaceholderSize();
@@ -602,6 +656,7 @@ namespace Fu.Framework
             float height = Mathf.Max(0.0001f, size.y);
             float depth = Mathf.Max(0.0001f, Depth);
             float curveAngle = Mathf.Clamp(Curve, 0f, 359.9f);
+            float rounding = GetClampedWorldRounding(width, height);
             int segments = Mathf.Clamp(Mathf.CeilToInt(Mathf.Max(24f, curveAngle / 4f)), 8, 96);
 
             Matrix4x4 previousMatrix = Handles.matrix;
@@ -651,10 +706,192 @@ namespace Fu.Framework
                 }
             }
 
+            DrawCurvedRoundedPlaceholderOutline(width, height, depth, curveAngle, rounding);
+
             Handles.color = previousColor;
             Handles.matrix = previousMatrix;
         }
 
+        /// <summary>
+        /// Draws the rounded outline on a curved preview panel.
+        /// </summary>
+        /// <param name="width">Panel width in world units.</param>
+        /// <param name="height">Panel height in world units.</param>
+        /// <param name="depth">Panel depth in world units.</param>
+        /// <param name="curveAngle">Horizontal curve angle in degrees.</param>
+        /// <param name="rounding">Corner radius in world units.</param>
+        private void DrawCurvedRoundedPlaceholderOutline(float width, float height, float depth, float curveAngle, float rounding)
+        {
+            Vector3[] flatPoints = GetRoundedPlaceholderPoints(width, height, rounding, 8);
+            Vector3[] frontPoints = new Vector3[flatPoints.Length];
+            Vector3[] backPoints = new Vector3[flatPoints.Length];
+
+            for (int i = 0; i < flatPoints.Length; i++)
+            {
+                frontPoints[i] = BendPlaceholderPoint(flatPoints[i], width, curveAngle);
+                float normalizedX = (flatPoints[i].x + width * 0.5f) / Mathf.Max(0.0001f, width);
+                backPoints[i] = frontPoints[i] - GetCurvedPlaceholderNormal(normalizedX, width, curveAngle) * depth;
+            }
+
+            // The curved fill remains segmented; this outline makes the configured corner radius readable in Scene view.
+            Handles.color = new Color(0f, 0.9f, 1f, 0.95f);
+            DrawPlaceholderPolyline(frontPoints, true);
+            DrawPlaceholderPolyline(backPoints, true);
+            DrawPlaceholderDepthLines(frontPoints, backPoints, 8);
+        }
+
+        /// <summary>
+        /// Gets the configured rounding radius clamped to the current panel size.
+        /// </summary>
+        /// <param name="width">Panel width in world units.</param>
+        /// <param name="height">Panel height in world units.</param>
+        /// <returns>Clamped corner radius in world units.</returns>
+        private float GetClampedWorldRounding(float width, float height)
+        {
+            return Mathf.Clamp(Rounding, 0f, Mathf.Min(width, height) * 0.5f);
+        }
+
+        /// <summary>
+        /// Builds a clockwise rounded-rectangle perimeter in local world units.
+        /// </summary>
+        /// <param name="width">Panel width in world units.</param>
+        /// <param name="height">Panel height in world units.</param>
+        /// <param name="rounding">Corner radius in world units.</param>
+        /// <param name="cornerSegments">Number of points per rounded corner.</param>
+        /// <returns>Perimeter points for the rounded placeholder.</returns>
+        private Vector3[] GetRoundedPlaceholderPoints(float width, float height, float rounding, int cornerSegments)
+        {
+            float halfWidth = width * 0.5f;
+            float radius = Mathf.Clamp(rounding, 0f, Mathf.Min(width, height) * 0.5f);
+            if (radius <= 0.0001f)
+            {
+                return new Vector3[]
+                {
+                    new Vector3(-halfWidth, height, 0f),
+                    new Vector3(halfWidth, height, 0f),
+                    new Vector3(halfWidth, 0f, 0f),
+                    new Vector3(-halfWidth, 0f, 0f),
+                };
+            }
+
+            List<Vector3> points = new List<Vector3>(cornerSegments * 4);
+            int segments = Mathf.Max(2, cornerSegments);
+            AddRoundedPlaceholderCorner(points, new Vector2(-halfWidth + radius, height - radius), radius, Mathf.PI, Mathf.PI * 0.5f, segments);
+            AddRoundedPlaceholderCorner(points, new Vector2(halfWidth - radius, height - radius), radius, Mathf.PI * 0.5f, 0f, segments);
+            AddRoundedPlaceholderCorner(points, new Vector2(halfWidth - radius, radius), radius, 0f, -Mathf.PI * 0.5f, segments);
+            AddRoundedPlaceholderCorner(points, new Vector2(-halfWidth + radius, radius), radius, -Mathf.PI * 0.5f, -Mathf.PI, segments);
+            return points.ToArray();
+        }
+
+        /// <summary>
+        /// Adds one rounded corner arc to a placeholder perimeter.
+        /// </summary>
+        /// <param name="points">Point list to append to.</param>
+        /// <param name="center">Corner arc center.</param>
+        /// <param name="radius">Corner radius.</param>
+        /// <param name="startAngle">Start angle in radians.</param>
+        /// <param name="endAngle">End angle in radians.</param>
+        /// <param name="segments">Number of points to add.</param>
+        private void AddRoundedPlaceholderCorner(List<Vector3> points, Vector2 center, float radius, float startAngle, float endAngle, int segments)
+        {
+            for (int i = 0; i < segments; i++)
+            {
+                float t = (float)i / (float)(segments - 1);
+                float angle = Mathf.Lerp(startAngle, endAngle, t);
+                points.Add(new Vector3(
+                    center.x + Mathf.Cos(angle) * radius,
+                    center.y + Mathf.Sin(angle) * radius,
+                    0f));
+            }
+        }
+
+        /// <summary>
+        /// Offsets a point array by a local vector.
+        /// </summary>
+        /// <param name="points">Source points.</param>
+        /// <param name="offset">Offset to apply.</param>
+        /// <returns>Offset point array.</returns>
+        private Vector3[] OffsetPlaceholderPoints(Vector3[] points, Vector3 offset)
+        {
+            Vector3[] result = new Vector3[points.Length];
+            for (int i = 0; i < points.Length; i++)
+            {
+                result[i] = points[i] + offset;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Draws a polyline for a placeholder perimeter.
+        /// </summary>
+        /// <param name="points">Points to draw.</param>
+        /// <param name="closed">Whether to close the polyline.</param>
+        private void DrawPlaceholderPolyline(Vector3[] points, bool closed)
+        {
+            if (points == null || points.Length < 2)
+            {
+                return;
+            }
+
+            for (int i = 0; i < points.Length - 1; i++)
+            {
+                Handles.DrawLine(points[i], points[i + 1]);
+            }
+
+            if (closed)
+            {
+                Handles.DrawLine(points[points.Length - 1], points[0]);
+            }
+        }
+
+        /// <summary>
+        /// Draws depth connectors between front and back placeholder perimeters.
+        /// </summary>
+        /// <param name="frontPoints">Front perimeter points.</param>
+        /// <param name="backPoints">Back perimeter points.</param>
+        /// <param name="step">Connector sampling step.</param>
+        private void DrawPlaceholderDepthLines(Vector3[] frontPoints, Vector3[] backPoints, int step)
+        {
+            if (frontPoints == null || backPoints == null || frontPoints.Length != backPoints.Length)
+            {
+                return;
+            }
+
+            int sampleStep = Mathf.Max(1, step);
+            for (int i = 0; i < frontPoints.Length; i += sampleStep)
+            {
+                Handles.DrawLine(frontPoints[i], backPoints[i]);
+            }
+        }
+
+        /// <summary>
+        /// Bends one flat preview point around the same horizontal curve used by the runtime mesh.
+        /// </summary>
+        /// <param name="flatPoint">Flat local point in world units.</param>
+        /// <param name="width">Panel width in world units.</param>
+        /// <param name="curveAngle">Horizontal curve angle in degrees.</param>
+        /// <returns>Curved local point.</returns>
+        private Vector3 BendPlaceholderPoint(Vector3 flatPoint, float width, float curveAngle)
+        {
+            float angleRad = Mathf.Max(0.0001f, curveAngle * Mathf.Deg2Rad);
+            float radius = width / angleRad;
+            float theta = flatPoint.x / radius;
+
+            return new Vector3(
+                Mathf.Sin(theta) * radius,
+                flatPoint.y,
+                (Mathf.Cos(theta) - 1f) * radius);
+        }
+
+        /// <summary>
+        /// Gets a point on the curved panel preview surface.
+        /// </summary>
+        /// <param name="normalizedX">Horizontal position from 0 to 1.</param>
+        /// <param name="normalizedY">Vertical position from 0 to 1.</param>
+        /// <param name="width">Panel width in world units.</param>
+        /// <param name="height">Panel height in world units.</param>
+        /// <param name="curveAngle">Horizontal curve angle in degrees.</param>
+        /// <returns>Curved local point.</returns>
         private Vector3 GetCurvedPlaceholderPoint(float normalizedX, float normalizedY, float width, float height, float curveAngle)
         {
             float angleRad = Mathf.Max(0.0001f, curveAngle * Mathf.Deg2Rad);
@@ -668,6 +905,13 @@ namespace Fu.Framework
                 (Mathf.Cos(theta) - 1f) * radius);
         }
 
+        /// <summary>
+        /// Gets the front normal on the curved panel preview surface.
+        /// </summary>
+        /// <param name="normalizedX">Horizontal position from 0 to 1.</param>
+        /// <param name="width">Panel width in world units.</param>
+        /// <param name="curveAngle">Horizontal curve angle in degrees.</param>
+        /// <returns>Curved front normal.</returns>
         private Vector3 GetCurvedPlaceholderNormal(float normalizedX, float width, float curveAngle)
         {
             float angleRad = Mathf.Max(0.0001f, curveAngle * Mathf.Deg2Rad);
@@ -696,6 +940,7 @@ namespace Fu.Framework
         private SerializedProperty runtimeResizableProp;
         private SerializedProperty depthProp;
         private SerializedProperty curveProp;
+        private SerializedProperty roundingProp;
         private SerializedProperty renderResolutionProp;
         private SerializedProperty useContainerScalerProp;
         private SerializedProperty referenceResolutionProp;
@@ -714,6 +959,7 @@ namespace Fu.Framework
             "_runtimeResizable",
             "Depth",
             "Curve",
+            "Rounding",
             "_renderResolution",
             "_scaleResolutionWithPanel",
             "_referencePanelSize",
@@ -745,6 +991,7 @@ namespace Fu.Framework
             runtimeResizableProp = serializedObject.FindProperty("_runtimeResizable");
             depthProp = serializedObject.FindProperty("Depth");
             curveProp = serializedObject.FindProperty("Curve");
+            roundingProp = serializedObject.FindProperty("Rounding");
             renderResolutionProp = serializedObject.FindProperty("_renderResolution");
             useContainerScalerProp = serializedObject.FindProperty("_useContainerScaler");
             referenceResolutionProp = serializedObject.FindProperty("_referenceResolution");
@@ -776,6 +1023,7 @@ namespace Fu.Framework
             EditorGUILayout.PropertyField(runtimeResizableProp);
             EditorGUILayout.PropertyField(depthProp);
             EditorGUILayout.PropertyField(curveProp);
+            EditorGUILayout.PropertyField(roundingProp);
             EditorGUILayout.PropertyField(renderResolutionProp);
             EditorGUILayout.PropertyField(useContainerScalerProp);
 
@@ -793,9 +1041,17 @@ namespace Fu.Framework
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "The 3D panel size is driven by the placeholder scale X/Y. Render Resolution drives the texture and ImGui context size. Scale Z is locked to Depth. Curve is a horizontal angle in degrees.",
+                "The 3D panel size is driven by the placeholder scale X/Y. Render Resolution drives the texture and ImGui context size. Scale Z is locked to Depth. Curve is a horizontal angle in degrees. Rounding is a world-space corner radius.",
                 MessageType.Info
             );
+
+            if (behaviour.GetComponent<Fu3DWindowManipulator>() == null)
+            {
+                if (GUILayout.Button("Add Runtime Manipulator"))
+                {
+                    Undo.AddComponent<Fu3DWindowManipulator>(behaviour.gameObject);
+                }
+            }
 
             DrawRemainingProperties();
 

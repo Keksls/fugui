@@ -1,5 +1,7 @@
 ﻿using ImGuiNET;
 
+using System;
+
 namespace Fu.Framework
 {
     /// <summary>
@@ -278,6 +280,62 @@ namespace Fu.Framework
         /// Default table view behaviour.
         /// </summary>
         Default = RowBackground | Borders | ResizableColumns | ReorderableColumns | Sortable | SelectableRows
+    }
+
+    /// <summary>
+    /// Flags for configuring chart rendering.
+    /// </summary>
+    [Flags]
+    public enum FuChartFlags
+    {
+        /// <summary>
+        /// No chart option.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Draw the outer chart frame.
+        /// </summary>
+        Frame = 1 << 0,
+        /// <summary>
+        /// Draw the plot area background.
+        /// </summary>
+        PlotBackground = 1 << 1,
+        /// <summary>
+        /// Draw vertical and horizontal grid lines.
+        /// </summary>
+        Grid = 1 << 2,
+        /// <summary>
+        /// Draw X and Y axes.
+        /// </summary>
+        Axes = 1 << 3,
+        /// <summary>
+        /// Draw tick labels and axis labels.
+        /// </summary>
+        AxisLabels = 1 << 4,
+        /// <summary>
+        /// Draw the series legend.
+        /// </summary>
+        Legend = 1 << 5,
+        /// <summary>
+        /// Draw a tooltip when the mouse is over the chart.
+        /// </summary>
+        Tooltip = 1 << 6,
+        /// <summary>
+        /// Draw mouse crosshair guides over the plot.
+        /// </summary>
+        Crosshair = 1 << 7,
+        /// <summary>
+        /// Clip series rendering to the plot rectangle.
+        /// </summary>
+        ClipPlot = 1 << 8,
+        /// <summary>
+        /// Draw a stronger horizontal line at Y zero when it is visible.
+        /// </summary>
+        ZeroLine = 1 << 9,
+        /// <summary>
+        /// Default chart behaviour.
+        /// </summary>
+        Default = Frame | PlotBackground | Grid | Axes | AxisLabels | Legend | Tooltip | Crosshair | ClipPlot | ZeroLine
     }
 
     /// <summary>

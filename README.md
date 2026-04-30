@@ -350,7 +350,7 @@ Principales familles:
 - Boutons: `Button`, `ImageButton`, `ButtonsGroup`.
 - Booleens: `CheckBox`, `Toggle`, `RadioButton`.
 - Valeurs numeriques: `Slider`, `Range`, `Drag`, `Knob`.
-- Recherche et donnees: `SearchBox`, `FuSearchFilter`, `TableView`, `FuTableViewColumn<T>`.
+- Recherche, donnees et charts: `SearchBox`, `FuSearchFilter`, `TableView`, `FuTableViewColumn<T>`, `Chart`, `FuChartSeries`, `FuChartOptions`.
 - Selection: `Combobox`, `ComboboxEnum`, `ListBox`, `Tabs`.
 - Couleurs et textures: `ColorPicker`, `Gradient`, `Image`.
 - Fichiers: `InputFile`, `InputFolder`.
@@ -393,6 +393,43 @@ layout.TableView(
     search,
     height: 240f,
     flags: FuTableViewFlags.Default | FuTableViewFlags.ScrollY);
+```
+
+Exemple de chart drawlist:
+
+```csharp
+var series = new List<FuChartSeries>()
+{
+    new FuChartSeries("Signal", signalPoints, FuChartSeriesType.Line)
+    {
+        LineThickness = 2.25f,
+        ShowPoints = false
+    },
+    new FuChartSeries("Volume", volumePoints, FuChartSeriesType.Bar)
+    {
+        FillAlpha = 0.70f,
+        Baseline = 0f
+    },
+    FuChartSeries.Custom("Band", (ctx, s) =>
+    {
+        Vector2 a = ctx.ToScreen(new Vector2(10f, ctx.Min.y));
+        Vector2 b = ctx.ToScreen(new Vector2(20f, ctx.Max.y));
+        ctx.DrawList.AddRectFilled(new Vector2(a.x, b.y), new Vector2(b.x, a.y),
+            Fugui.Themes.GetColorU32(FuColors.TextInfo, 0.12f));
+    })
+};
+
+var options = new FuChartOptions()
+{
+    Size = new FuElementSize(-1f, 260f),
+    Flags = FuChartFlags.Default,
+    MaxRenderedPointsPerSeries = 2048
+};
+options.XAxis.SetRange(0f, 120f);
+options.YAxis.SetAutoRange(includeZero: true);
+
+FuChartHoverState hover;
+layout.Chart("runtime-chart", series, options, out hover);
 ```
 
 ## Popups, modales, notifications et menus

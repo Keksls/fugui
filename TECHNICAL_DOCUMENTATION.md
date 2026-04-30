@@ -624,6 +624,43 @@ layout.TableView(
 
 `TableView` conserve la selection comme index de la liste source, meme apres filtre ou tri. Les colonnes textuelles sont triables par defaut; les colonnes custom peuvent fournir `sortComparison` et `searchGetter`.
 
+### Charts
+
+Les charts sont rendus en drawlist ImGui via `Chart`, `FuChartSeries` et `FuChartOptions`. Les types integres sont `Line`, `Area`, `Bar`, `Scatter` et `Custom`.
+
+```csharp
+var series = new List<FuChartSeries>()
+{
+    new FuChartSeries("Signal", signalPoints, FuChartSeriesType.Line),
+    new FuChartSeries("Fill", envelopePoints, FuChartSeriesType.Area)
+    {
+        Baseline = 0f,
+        FillAlpha = 0.20f
+    },
+    FuChartSeries.Custom("Overlay", (ctx, s) =>
+    {
+        Vector2 left = ctx.ToScreen(new Vector2(ctx.Min.x, 0.5f));
+        Vector2 right = ctx.ToScreen(new Vector2(ctx.Max.x, 0.5f));
+        ctx.DrawList.AddLine(left, right, Fugui.Themes.GetColorU32(FuColors.TextWarning), 1.5f);
+    })
+};
+
+var options = new FuChartOptions()
+{
+    Size = new FuElementSize(-1f, 260f),
+    Flags = FuChartFlags.Default | FuChartFlags.ZeroLine,
+    MaxRenderedPointsPerSeries = 2048
+};
+options.XAxis.Label = "Time";
+options.YAxis.Label = "Value";
+options.YAxis.SetAutoRange(includeZero: true);
+
+FuChartHoverState hover;
+layout.Chart("chart", series, options, out hover);
+```
+
+`FuChartOptions.BeforePlotDraw`, `AfterPlotDraw` et `FuChartSeries.Custom` exposent `FuChartDrawContext`, qui donne acces au `DrawList`, au `PlotRect`, aux bornes `Min/Max`, au hover courant et aux conversions `ToScreen` / `ToValue`. Pour les gros datasets, `MaxRenderedPointsPerSeries` limite le nombre de segments/points dessines et utilises par le hit-test; fixez les ranges des axes pour eviter le scan automatique si les donnees sont deja bornees.
+
 ### Images, couleurs, gradients
 
 ```csharp

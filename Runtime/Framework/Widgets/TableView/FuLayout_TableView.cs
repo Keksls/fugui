@@ -361,7 +361,14 @@ namespace Fu.Framework
             {
                 ImGui.TableSetColumnIndex(0);
                 Vector2 rowStart = ImGui.GetCursorScreenPos();
-                if (ImGui.Selectable("##" + tableID + "_row_" + row.SourceIndex, selected, ImGuiSelectableFlags.SpanAllColumns | ImGuiSelectableFlags.AllowDoubleClick, new Vector2(0f, rowHeight)))
+                ImGuiSelectableFlags selectableFlags = ImGuiSelectableFlags.SpanAllColumns | ImGuiSelectableFlags.AllowDoubleClick;
+                if (LastItemDisabled)
+                {
+                    // Table rows use raw ImGui selectables, so the shared Fugui disabled state must be forwarded explicitly.
+                    selectableFlags |= ImGuiSelectableFlags.Disabled;
+                }
+
+                if (ImGui.Selectable("##" + tableID + "_row_" + row.SourceIndex, selected, selectableFlags, new Vector2(0f, rowHeight)))
                 {
                     if (selectedIndex != row.SourceIndex)
                     {

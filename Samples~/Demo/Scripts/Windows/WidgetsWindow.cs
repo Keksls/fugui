@@ -45,6 +45,39 @@ public class WidgetsWindow : FuWindowBehaviour
         EnumValueD = 3,
         EnumValueE = 4,
     }
+
+    /// <summary>
+    /// Represents one row displayed by the SearchBox and TableView demo.
+    /// </summary>
+    private class WidgetTableDemoItem
+    {
+        #region State
+        public string Name { get; }
+        public string Category { get; }
+        public int Count { get; }
+        public float Weight { get; }
+        public bool Enabled { get; }
+        #endregion
+
+        #region Constructors
+        /// <summary>
+        /// Creates a demo item row for the table view section.
+        /// </summary>
+        /// <param name="name">The widget display name.</param>
+        /// <param name="category">The widget category.</param>
+        /// <param name="count">The sample count value.</param>
+        /// <param name="weight">The sample weight value.</param>
+        /// <param name="enabled">Whether the row is shown as enabled.</param>
+        public WidgetTableDemoItem(string name, string category, int count, float weight, bool enabled)
+        {
+            Name = name;
+            Category = category;
+            Count = count;
+            Weight = weight;
+            Enabled = enabled;
+        }
+        #endregion
+    }
     #endregion
 
     #region State
@@ -65,6 +98,31 @@ public class WidgetsWindow : FuWindowBehaviour
     private bool spinnerDoubleColor = false;
     private Vector2 spinnerV2Size = new Vector2(64f, 20f);
     private float spinnerFrequency = 6f;
+    // search and table view
+    private FuSearchFilter tableDemoFilter = new FuSearchFilter();
+    private int selectedTableDemoIndex = -1;
+    private List<WidgetTableDemoItem> tableDemoItems = new List<WidgetTableDemoItem>()
+    {
+        new WidgetTableDemoItem("SearchBox", "Input", 1, 0.15f, true),
+        new WidgetTableDemoItem("TableView", "Data", 5, 1.20f, true),
+        new WidgetTableDemoItem("Buttons", "Action", 12, 0.40f, true),
+        new WidgetTableDemoItem("Sliders", "Numeric", 8, 0.50f, true),
+        new WidgetTableDemoItem("Lists", "Selection", 4, 0.75f, true),
+        new WidgetTableDemoItem("Spinners", "Feedback", 10, 0.25f, false),
+        new WidgetTableDemoItem("Path Fields", "Files", 2, 0.90f, true),
+        new WidgetTableDemoItem("Date Picker", "Input", 1, 0.65f, false),
+    };
+    private List<FuTableViewColumn<WidgetTableDemoItem>> tableDemoColumns;
+    // charts
+    private List<FuChartSeries> chartDemoSeries;
+    private FuChartOptions chartDemoOptions;
+    private bool chartDemoShowLegend = true;
+    private bool chartDemoShowGrid = true;
+    private bool chartDemoShowTooltip = true;
+    private bool chartDemoShowCrosshair = true;
+    private float chartDemoHeight = 280f;
+    private float chartDemoThreshold = 0.65f;
+    private int chartDemoMaxPoints = 512;
     #endregion
 
     #region Methods
@@ -95,6 +153,8 @@ public class WidgetsWindow : FuWindowBehaviour
                 drawSpinners(layout);
             });
             layout.Collapsable("Lists", () => { drawBoxes(layout); });
+            layout.Collapsable("Search and Table View", () => { drawSearchAndTableView(layout); });
+            layout.Collapsable("Charts", () => { drawCharts(layout); });
         }
     }
 
@@ -307,6 +367,321 @@ public class WidgetsWindow : FuWindowBehaviour
                 grid.EnableNextElements();
                 layout.EnableNextElements();
             }
+        }
+    }
+
+    /// <summary>
+    /// Runs the draw search and table view workflow.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
+    private void drawSearchAndTableView(FuLayout layout)
+    {
+        if (!_enableWidgets)
+        {
+            layout.DisableNextElements();
+        }
+
+        layout.SearchBox("tableDemoSearch", tableDemoFilter, "Search widget, category or state...");
+        layout.Spacing();
+
+        bool selectionChanged = layout.TableView(
+            "widgetTableDemo",
+            tableDemoItems,
+            getTableDemoColumns(),
+            ref selectedTableDemoIndex,
+            tableDemoFilter.Query,
+            getTableDemoSearchText,
+            220f,
+            FuTableViewFlags.Default | FuTableViewFlags.ScrollY | FuTableViewFlags.UseClipper | FuTableViewFlags.NoSavedSettings);
+
+        if (selectionChanged && selectedTableDemoIndex >= 0 && selectedTableDemoIndex < tableDemoItems.Count)
+        {
+            Debug.Log("Selected table demo item: " + tableDemoItems[selectedTableDemoIndex].Name);
+        }
+
+        layout.Spacing();
+        drawSelectedTableDemoItem(layout);
+
+        if (!_enableWidgets)
+        {
+            layout.EnableNextElements();
+        }
+    }
+
+    /// <summary>
+    /// Gets the cached columns used by the table view demo.
+    /// </summary>
+    /// <returns>The table view demo columns.</returns>
+    private List<FuTableViewColumn<WidgetTableDemoItem>> getTableDemoColumns()
+    {
+        if (tableDemoColumns == null)
+        {
+            tableDemoColumns = new List<FuTableViewColumn<WidgetTableDemoItem>>()
+            {
+                new FuTableViewColumn<WidgetTableDemoItem>("Widget", item => item.Name, 0f, sortComparison: (left, right) => string.Compare(left.Name, right.Name, StringComparison.OrdinalIgnoreCase)),
+                new FuTableViewColumn<WidgetTableDemoItem>("Category", item => item.Category, 96f, sortComparison: (left, right) => string.Compare(left.Category, right.Category, StringComparison.OrdinalIgnoreCase)),
+                new FuTableViewColumn<WidgetTableDemoItem>("Count", item => item.Count.ToString(), 64f, sortComparison: (left, right) => left.Count.CompareTo(right.Count)),
+                new FuTableViewColumn<WidgetTableDemoItem>("Weight", item => item.Weight.ToString("0.00"), 72f, sortComparison: (left, right) => left.Weight.CompareTo(right.Weight)),
+                FuTableViewColumn<WidgetTableDemoItem>.Custom("State", drawTableDemoStateCell, 86f, sortComparison: (left, right) => left.Enabled.CompareTo(right.Enabled), searchGetter: getTableDemoStateSearchText),
+            };
+        }
+
+        return tableDemoColumns;
+    }
+
+    /// <summary>
+    /// Gets the full searchable text for one demo table item.
+    /// </summary>
+    /// <param name="item">The table item value.</param>
+    /// <returns>All searchable terms for the row.</returns>
+    private string getTableDemoSearchText(WidgetTableDemoItem item)
+    {
+        return item.Name + " " + item.Category + " " + item.Count + " " + item.Weight.ToString("0.00") + " " + getTableDemoStateSearchText(item);
+    }
+
+    /// <summary>
+    /// Gets the searchable state text for one demo table item.
+    /// </summary>
+    /// <param name="item">The table item value.</param>
+    /// <returns>The searchable state terms.</returns>
+    private string getTableDemoStateSearchText(WidgetTableDemoItem item)
+    {
+        return item.Enabled ? "enabled active on" : "disabled inactive off";
+    }
+
+    /// <summary>
+    /// Draws the custom state cell for the table view demo.
+    /// </summary>
+    /// <param name="item">The table item value.</param>
+    /// <param name="layout">The layout value.</param>
+    private void drawTableDemoStateCell(WidgetTableDemoItem item, FuLayout layout)
+    {
+        layout.Text(item.Enabled ? "Enabled" : "Disabled", item.Enabled ? FuTextStyle.Success : FuTextStyle.Deactivated);
+    }
+
+    /// <summary>
+    /// Draws the currently selected table item summary.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
+    private void drawSelectedTableDemoItem(FuLayout layout)
+    {
+        if (selectedTableDemoIndex < 0 || selectedTableDemoIndex >= tableDemoItems.Count)
+        {
+            layout.Text("No table row selected.", FuTextStyle.Deactivated);
+            return;
+        }
+
+        WidgetTableDemoItem selectedItem = tableDemoItems[selectedTableDemoIndex];
+        using (var grid = new FuGrid("selectedTableDemoGrid", FuGridDefinition.DefaultFixed, FuGridFlag.LinesBackground))
+        {
+            // TableView selection stores the original source index, even after filtering and sorting.
+            grid.Text("Selected index");
+            grid.Text(selectedTableDemoIndex.ToString());
+            grid.Text("Widget");
+            grid.Text(selectedItem.Name);
+            grid.Text("Category");
+            grid.Text(selectedItem.Category);
+            grid.Text("State");
+            grid.Text(selectedItem.Enabled ? "Enabled" : "Disabled", selectedItem.Enabled ? FuTextStyle.Success : FuTextStyle.Deactivated);
+        }
+    }
+
+    /// <summary>
+    /// Runs the draw charts workflow.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
+    private void drawCharts(FuLayout layout)
+    {
+        ensureChartDemoData();
+
+        if (!_enableWidgets)
+        {
+            layout.DisableNextElements();
+        }
+
+        using (var grid = new FuGrid("chartsControlGrid", FuGridDefinition.DefaultFixed, FuGridFlag.LinesBackground))
+        {
+            if (!_enableWidgets)
+            {
+                grid.DisableNextElements();
+            }
+
+            grid.Toggle("Legend", ref chartDemoShowLegend);
+            grid.Toggle("Grid", ref chartDemoShowGrid);
+            grid.Toggle("Tooltip", ref chartDemoShowTooltip);
+            grid.Toggle("Crosshair", ref chartDemoShowCrosshair);
+            grid.Slider("Height", ref chartDemoHeight, 180f, 420f);
+            grid.Slider("Max points", ref chartDemoMaxPoints, 64, 4096);
+            grid.Slider("Threshold", ref chartDemoThreshold, -1f, 1f);
+
+            if (!_enableWidgets)
+            {
+                grid.EnableNextElements();
+            }
+        }
+
+        applyChartDemoOptions();
+
+        FuChartHoverState hover;
+        layout.Chart("chartDemo", chartDemoSeries, chartDemoOptions, out hover);
+        layout.Spacing();
+        drawChartDemoHover(layout, hover);
+
+        if (!_enableWidgets)
+        {
+            layout.EnableNextElements();
+        }
+    }
+
+    /// <summary>
+    /// Creates the reusable data and options for the chart demo.
+    /// </summary>
+    private void ensureChartDemoData()
+    {
+        if (chartDemoSeries != null)
+        {
+            return;
+        }
+
+        List<Vector2> linePoints = new List<Vector2>(180);
+        List<Vector2> areaPoints = new List<Vector2>(180);
+        List<Vector2> barPoints = new List<Vector2>(24);
+        List<Vector2> scatterPoints = new List<Vector2>(36);
+
+        for (int i = 0; i < 180; i++)
+        {
+            float x = i;
+            float wave = Mathf.Sin(i * 0.08f) * 0.65f + Mathf.Cos(i * 0.025f) * 0.35f;
+            linePoints.Add(new Vector2(x, wave));
+            areaPoints.Add(new Vector2(x, Mathf.Sin(i * 0.045f) * 0.42f + 0.35f));
+        }
+
+        for (int i = 0; i < 24; i++)
+        {
+            barPoints.Add(new Vector2(i * 7.5f, Mathf.Abs(Mathf.Sin(i * 0.55f)) * 0.9f + 0.12f));
+        }
+
+        for (int i = 0; i < 36; i++)
+        {
+            float x = 4f + i * 4.8f;
+            scatterPoints.Add(new Vector2(x, Mathf.Sin(i * 0.73f) * 0.9f));
+        }
+
+        chartDemoSeries = new List<FuChartSeries>()
+        {
+            FuChartSeries.Custom("Custom band", drawChartDemoCustomBand),
+            new FuChartSeries("Signal", linePoints, FuChartSeriesType.Line)
+            {
+                LineThickness = 2.25f,
+                ShowPoints = false,
+            },
+            new FuChartSeries("Envelope", areaPoints, FuChartSeriesType.Area)
+            {
+                LineThickness = 1.5f,
+                FillAlpha = 0.20f,
+                Baseline = 0f,
+            },
+            new FuChartSeries("Volume", barPoints, FuChartSeriesType.Bar)
+            {
+                FillAlpha = 0.72f,
+                Baseline = 0f,
+                BarRounding = 3f,
+            },
+            new FuChartSeries("Events", scatterPoints, FuChartSeriesType.Scatter)
+            {
+                PointRadius = 3.25f,
+            },
+        };
+
+        chartDemoOptions = new FuChartOptions()
+        {
+            Size = new FuElementSize(-1f, chartDemoHeight),
+            MaxRenderedPointsPerSeries = chartDemoMaxPoints,
+            AfterPlotDraw = drawChartDemoThresholdLine,
+        };
+        chartDemoOptions.XAxis.Label = "Frame";
+        chartDemoOptions.XAxis.SetRange(0f, 179f);
+        chartDemoOptions.YAxis.Label = "Value";
+        chartDemoOptions.YAxis.SetAutoRange(true, 0.08f);
+        chartDemoOptions.YAxis.ValueFormat = "0.00";
+    }
+
+    /// <summary>
+    /// Applies the live demo controls to the chart options.
+    /// </summary>
+    private void applyChartDemoOptions()
+    {
+        FuChartFlags flags = FuChartFlags.Default;
+        if (!chartDemoShowLegend)
+        {
+            flags &= ~FuChartFlags.Legend;
+        }
+        if (!chartDemoShowGrid)
+        {
+            flags &= ~FuChartFlags.Grid;
+        }
+        if (!chartDemoShowTooltip)
+        {
+            flags &= ~FuChartFlags.Tooltip;
+        }
+        if (!chartDemoShowCrosshair)
+        {
+            flags &= ~FuChartFlags.Crosshair;
+        }
+
+        chartDemoOptions.Flags = flags;
+        chartDemoOptions.Size = new FuElementSize(-1f, chartDemoHeight);
+        chartDemoOptions.MaxRenderedPointsPerSeries = chartDemoMaxPoints;
+    }
+
+    /// <summary>
+    /// Draws the custom shaded band series used by the chart demo.
+    /// </summary>
+    /// <param name="context">The chart draw context.</param>
+    /// <param name="series">The custom chart series.</param>
+    private void drawChartDemoCustomBand(FuChartDrawContext context, FuChartSeries series)
+    {
+        Vector2 min = context.ToScreen(new Vector2(62f, context.Min.y));
+        Vector2 max = context.ToScreen(new Vector2(92f, context.Max.y));
+        // Custom series draw directly in the plot drawlist and still benefits from chart clipping.
+        context.DrawList.AddRectFilled(new Vector2(min.x, max.y), new Vector2(max.x, min.y), Fugui.Themes.GetColorU32(FuColors.TextInfo, 0.10f));
+        context.DrawList.AddRect(new Vector2(min.x, max.y), new Vector2(max.x, min.y), Fugui.Themes.GetColorU32(FuColors.TextInfo, 0.35f));
+    }
+
+    /// <summary>
+    /// Draws a custom threshold overlay after all chart series have rendered.
+    /// </summary>
+    /// <param name="context">The chart draw context.</param>
+    private void drawChartDemoThresholdLine(FuChartDrawContext context)
+    {
+        Vector2 left = context.ToScreen(new Vector2(context.Min.x, chartDemoThreshold));
+        Vector2 right = context.ToScreen(new Vector2(context.Max.x, chartDemoThreshold));
+        uint color = Fugui.Themes.GetColorU32(FuColors.TextWarning, 0.85f);
+        context.DrawList.AddLine(left, right, color, 1.5f * context.Scale);
+        context.DrawList.AddText(right + new Vector2(-72f * context.Scale, -18f * context.Scale), color, "Threshold");
+    }
+
+    /// <summary>
+    /// Draws the hover readout returned by the chart widget.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
+    /// <param name="hover">The current chart hover state.</param>
+    private void drawChartDemoHover(FuLayout layout, FuChartHoverState hover)
+    {
+        if (!hover.HasPoint)
+        {
+            layout.Text("No chart point hovered.", FuTextStyle.Deactivated);
+            return;
+        }
+
+        using (var grid = new FuGrid("chartHoverGrid", FuGridDefinition.DefaultFixed, FuGridFlag.LinesBackground))
+        {
+            grid.Text("Series");
+            grid.Text(hover.SeriesLabel);
+            grid.Text("Point");
+            grid.Text(hover.PointIndex.ToString());
+            grid.Text("Value");
+            grid.Text(hover.Value.x.ToString("0.##") + " / " + hover.Value.y.ToString("0.00"));
         }
     }
 

@@ -765,7 +765,8 @@ namespace Fu
         /// <param name="matchPanelAspect">When true, resize changes keep the base render area but adapt the render ratio to the panel ratio.</param>
         /// <param name="panelDepth">Depth of the generated panel extrusion.</param>
         /// <param name="panelCurve">Horizontal panel curve angle in degrees.</param>
-        public static Fu3DWindowContainer Add3DWindow(FuWindow uiWindow, Vector2 panelSize, Vector2Int renderResolution, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float contextScale = 1f, float fontScale = 1f, bool matchPanelAspect = true, float panelDepth = 0.01f, float panelCurve = 0f)
+        /// <param name="panelRounding">Panel corner radius in world units.</param>
+        public static Fu3DWindowContainer Add3DWindow(FuWindow uiWindow, Vector2 panelSize, Vector2Int renderResolution, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float contextScale = 1f, float fontScale = 1f, bool matchPanelAspect = true, float panelDepth = 0.01f, float panelCurve = 0f, float panelRounding = Fu3DWindowSettings.DefaultPanelRounding)
         {
             Fu3DWindowSettings settings = matchPanelAspect
                 ? Fu3DWindowSettings.FixedResolutionMatchingPanelAspect(
@@ -775,14 +776,16 @@ namespace Fu
                     contextScale,
                     fontScale,
                     panelDepth: panelDepth,
-                    panelCurve: panelCurve)
+                    panelCurve: panelCurve,
+                    panelRounding: panelRounding)
                 : Fu3DWindowSettings.FixedResolution(
                     panelSize,
                     renderResolution,
                     contextScale,
                     fontScale,
                     panelDepth,
-                    panelCurve);
+                    panelCurve,
+                    panelRounding);
 
             if (scaleConfig.HasValue)
             {
@@ -795,7 +798,7 @@ namespace Fu
         /// <summary>
         /// Adds a UI window to a 3D panel whose render resolution follows panel size from a reference size.
         /// </summary>
-        public static Fu3DWindowContainer Add3DWindowScaledWithPanel(FuWindow uiWindow, Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f, float panelCurve = 0f)
+        public static Fu3DWindowContainer Add3DWindowScaledWithPanel(FuWindow uiWindow, Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, Vector3? position = null, Quaternion? rotation = null, FuContainerScaleConfig? scaleConfig = null, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f, float panelCurve = 0f, float panelRounding = Fu3DWindowSettings.DefaultPanelRounding)
         {
             Fu3DWindowSettings settings = Fu3DWindowSettings.ScaledResolutionWithPanel(
                 panelSize,
@@ -806,7 +809,8 @@ namespace Fu
                 minResolution,
                 maxResolution,
                 panelDepth,
-                panelCurve);
+                panelCurve,
+                panelRounding);
 
             if (scaleConfig.HasValue)
             {

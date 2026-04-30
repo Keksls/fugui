@@ -56,7 +56,7 @@ namespace Fu
             /// Creates a new Fugui Render Graph Pass.
             /// </summary>
             /// <param name="shader"> Shader to use for rendering Fugui.</param>
-            public FuguiRenderGraphPass(Shader shader)
+            public FuguiRenderGraphPass(Shader shader, RenderPassEvent passEvent)
             {
                 _shader = shader;
                 _textureID = Shader.PropertyToID("_Texture");
@@ -68,7 +68,7 @@ namespace Fu
                 _subMeshDescriptors = new Dictionary<int, List<SubMeshDescriptor>>();
                 _targetHandles = new Dictionary<int, RTHandle>();
 
-                renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
+                renderPassEvent = passEvent;
 
                 // IMPORTANT : aucune dépendance implicite (depth/normals, etc.)
                 ConfigureInput(ScriptableRenderPassInput.None);
@@ -687,7 +687,7 @@ namespace Fu
 
             if (!_passPerCamera.TryGetValue(camera, out var pass))
             {
-                pass = new FuguiRenderGraphPass(_shader);
+                pass = new FuguiRenderGraphPass(_shader, PassEvent);
                 _passPerCamera[camera] = pass;
             }
 

@@ -350,6 +350,7 @@ Principales familles:
 - Boutons: `Button`, `ImageButton`, `ButtonsGroup`.
 - Booleens: `CheckBox`, `Toggle`, `RadioButton`.
 - Valeurs numeriques: `Slider`, `Range`, `Drag`, `Knob`.
+- Recherche et donnees: `SearchBox`, `FuSearchFilter`, `TableView`, `FuTableViewColumn<T>`.
 - Selection: `Combobox`, `ComboboxEnum`, `ListBox`, `Tabs`.
 - Couleurs et textures: `ColorPicker`, `Gradient`, `Image`.
 - Fichiers: `InputFile`, `InputFolder`.
@@ -371,6 +372,27 @@ using (var grid = new FuGrid("settings", FuGridDefinition.DefaultFixed, FuGridFl
 
     grid.ColorPicker("Tint", ref tint);
 }
+```
+
+Exemple de table filtrable:
+
+```csharp
+layout.SearchBox("assets-search", ref search, "Search assets...");
+
+layout.TableView(
+    "assets-table",
+    assets,
+    new[]
+    {
+        new FuTableViewColumn<AssetInfo>("Name", item => item.Name),
+        new FuTableViewColumn<AssetInfo>("Type", item => item.Type),
+        new FuTableViewColumn<AssetInfo>("Size", item => item.SizeKb.ToString("0") + " KB", 80f,
+            sortComparison: (a, b) => a.SizeKb.CompareTo(b.SizeKb))
+    },
+    ref selectedAssetIndex,
+    search,
+    height: 240f,
+    flags: FuTableViewFlags.Default | FuTableViewFlags.ScrollY);
 ```
 
 ## Popups, modales, notifications et menus

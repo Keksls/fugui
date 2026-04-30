@@ -601,6 +601,29 @@ layout.ListBox("List", items, item => selected = item);
 layout.Tabs("tabs", new[] { "A", "B" }, index => currentTab = index);
 ```
 
+### Recherche et tables
+
+```csharp
+layout.SearchBox("objects-search", ref search, "Search...");
+
+layout.TableView(
+    "objects-table",
+    objects,
+    new[]
+    {
+        new FuTableViewColumn<MyObject>("Name", x => x.Name),
+        new FuTableViewColumn<MyObject>("Category", x => x.Category),
+        new FuTableViewColumn<MyObject>("Count", x => x.Count.ToString(),
+            sortComparison: (a, b) => a.Count.CompareTo(b.Count))
+    },
+    ref selectedSourceIndex,
+    search,
+    height: 260f,
+    flags: FuTableViewFlags.Default | FuTableViewFlags.ScrollY);
+```
+
+`TableView` conserve la selection comme index de la liste source, meme apres filtre ou tri. Les colonnes textuelles sont triables par defaut; les colonnes custom peuvent fournir `sortComparison` et `searchGetter`.
+
 ### Images, couleurs, gradients
 
 ```csharp

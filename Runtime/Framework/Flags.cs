@@ -217,6 +217,70 @@ namespace Fu.Framework
     }
 
     /// <summary>
+    /// Flags for configuring a table view.
+    /// </summary>
+    [System.Flags]
+    public enum FuTableViewFlags
+    {
+        /// <summary>
+        /// No table view option.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Draw alternating row backgrounds.
+        /// </summary>
+        RowBackground = 1 << 0,
+        /// <summary>
+        /// Draw table borders.
+        /// </summary>
+        Borders = 1 << 1,
+        /// <summary>
+        /// Allow the user to resize columns.
+        /// </summary>
+        ResizableColumns = 1 << 2,
+        /// <summary>
+        /// Allow the user to reorder columns.
+        /// </summary>
+        ReorderableColumns = 1 << 3,
+        /// <summary>
+        /// Allow the user to hide columns from the table context menu.
+        /// </summary>
+        HideableColumns = 1 << 4,
+        /// <summary>
+        /// Allow sorting on sortable columns.
+        /// </summary>
+        Sortable = 1 << 5,
+        /// <summary>
+        /// Enable horizontal scrolling.
+        /// </summary>
+        ScrollX = 1 << 6,
+        /// <summary>
+        /// Enable vertical scrolling.
+        /// </summary>
+        ScrollY = 1 << 7,
+        /// <summary>
+        /// Do not render the header row.
+        /// </summary>
+        NoHeader = 1 << 8,
+        /// <summary>
+        /// Allow selecting one row by source index.
+        /// </summary>
+        SelectableRows = 1 << 9,
+        /// <summary>
+        /// Use ImGui's list clipper. Rows should have a stable height.
+        /// </summary>
+        UseClipper = 1 << 10,
+        /// <summary>
+        /// Do not persist table column settings in ImGui.
+        /// </summary>
+        NoSavedSettings = 1 << 11,
+        /// <summary>
+        /// Default table view behaviour.
+        /// </summary>
+        Default = RowBackground | Borders | ResizableColumns | ReorderableColumns | Sortable | SelectableRows
+    }
+
+    /// <summary>
     /// The type of state to display
     /// </summary>
     public enum StateType

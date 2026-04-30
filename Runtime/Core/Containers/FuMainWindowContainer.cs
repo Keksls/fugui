@@ -300,7 +300,7 @@ namespace Fu
         /// </summary>
         public void RenderFuWindows()
         {
-            DrawMainDockSpace();
+            DrawMainLayout();
 
             // render every windows into this container
             foreach (FuWindow window in Windows.Values)
@@ -374,61 +374,82 @@ namespace Fu
         }
 
         /// <summary>
-        /// Draw the Main Container DockSpace
+        /// Draw the Main Layout of the container, including main menu, dockspace and footer.
         /// </summary>
-        private void DrawMainDockSpace()
+        /// <summary>
+        /// Draws the main layout of the container, including the main menu, dockspace and footer.
+        /// </summary>
+        private void DrawMainLayout()
         {
-            // draw main menu
+            bool dockingEnabled = Fugui.Settings.ImGuiConfig.HasFlag(ImGuiConfigFlags.DockingEnable);
+
+            uint viewPortID = 0;
+
+            ImGuiWindowFlags window_flags =
+                ImGuiWindowFlags.NoDocking |
+                ImGuiWindowFlags.NoTitleBar |
+                ImGuiWindowFlags.NoCollapse |
+                ImGuiWindowFlags.NoResize |
+                ImGuiWindowFlags.NoMove |
+                ImGuiWindowFlags.NoBringToFrontOnFocus |
+                ImGuiWindowFlags.NoNavFocus;
+
             float mainMenuHeight = 0f;
+
             if (Fugui.RenderMainMenu())
             {
                 mainMenuHeight = 24f * Context.Scale;
-                // draw main menu separator
-                ImGui.GetBackgroundDrawList().AddLine(new Vector2(0f, mainMenuHeight - Context.Scale), new Vector2(_size.x, mainMenuHeight - Context.Scale), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered)));
+
+                ImGui.GetBackgroundDrawList().AddLine(
+                    new Vector2(0f, mainMenuHeight - Context.Scale),
+                    new Vector2(_size.x, mainMenuHeight - Context.Scale),
+                    ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered)));
             }
 
-            // draw main dockspace
-            uint viewPortID = 0;
-            ImGuiDockNodeFlags dockspace_flags = Fugui.Settings.DockingFlags;
-            if (Fugui.Layouts.CurrentLayout != null && Fugui.Layouts.CurrentLayout.AutoHideTopBar)
+            if (dockingEnabled)
             {
-                dockspace_flags |= ImGuiDockNodeFlags.AutoHideTabBar;
-            }
-            ImGui.SetNextWindowPos(new Vector2(0f, mainMenuHeight));
-            ImGui.SetNextWindowSize(new Vector2(_size.x, _size.y - mainMenuHeight - Mathf.Max(0f, _footerHeight * Context.Scale)));
-            ImGui.SetNextWindowViewport(viewPortID);
-            // We are using the UIWindowFlags_NoDocking flag to make the parent window not dockable into,
-            // because it would be confusing to have two docking targets within each others.
-            ImGuiWindowFlags window_flags = ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove |
-                ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus;
+                ImGuiDockNodeFlags dockspace_flags = Fugui.Settings.DockingFlags;
 
-            // draw DockSpace main container
-            if (ImGui.Begin("MainDockSpace", window_flags | ImGuiWindowFlags.NoBackground))
-            {
-                Dockspace_id = ImGui.GetID("DockSpace");
-                ImGui.DockSpace(Dockspace_id, Vector2.zero, dockspace_flags);
+                if (Fugui.Layouts.CurrentLayout != null && Fugui.Layouts.CurrentLayout.AutoHideTopBar)
+                {
+                    dockspace_flags |= ImGuiDockNodeFlags.AutoHideTabBar;
+                }
+
+                ImGui.SetNextWindowPos(new Vector2(0f, mainMenuHeight));
+                ImGui.SetNextWindowSize(new Vector2(_size.x, _size.y - mainMenuHeight - Mathf.Max(0f, _footerHeight * Context.Scale)));
+                ImGui.SetNextWindowViewport(viewPortID);
+
+                if (ImGui.Begin("MainDockSpace", window_flags | ImGuiWindowFlags.NoBackground))
+                {
+                    Dockspace_id = ImGui.GetID("DockSpace");
+                    ImGui.DockSpace(Dockspace_id, Vector2.zero, dockspace_flags);
+                }
+
                 ImGui.End();
             }
 
-            // draw footer
             if (_footerHeight > 0f)
             {
                 Fugui.Push(ImGuiStyleVar.WindowRounding, 0.0f);
                 Fugui.Push(ImGuiStyleVar.WindowBorderSize, 0.0f);
-                Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
-                Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(0f, 0f));
+                Fugui.Push(ImGuiStyleVar.ItemSpacing, Vector2.zero);
+                Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, Vector2.zero);
                 Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
                 Fugui.Push(ImGuiCol.WindowBg, Fugui.Themes.GetColor(FuColors.MenuBarBg));
+
                 ImGui.SetNextWindowPos(new Vector2(0f, _size.y - (_footerHeight * Context.Scale)));
-                ImGui.SetNextWindowSize(new Vector2(_size.x, (_footerHeight * Context.Scale)));
+                ImGui.SetNextWindowSize(new Vector2(_size.x, _footerHeight * Context.Scale));
                 ImGui.SetNextWindowViewport(viewPortID);
+
                 if (ImGui.Begin("FuguiFooter", window_flags))
                 {
                     _footerUI?.Invoke();
-                    ImGui.End();
                 }
+
+                ImGui.End();
+
                 Fugui.PopColor();
-                Fugui.PopStyle(4);
+                Fugui.PopStyle(5);
             }
         }
     }

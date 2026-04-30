@@ -214,9 +214,7 @@ MonoBehaviour:
   - 2
   - 3
   - 4
-  - 5
-  - 6
-  - 7
-  - 8
-  - 9
-  - 10
+  UseSharedFontAtlas: 1
+  QuantizeFontScale: 1
+  FontScaleQuantizationStep: 0.25
+  UseAlpha8FontAtlasTexture: 1

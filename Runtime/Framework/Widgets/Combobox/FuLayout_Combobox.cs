@@ -103,12 +103,23 @@ namespace Fu.Framework
                 List<string> displayLabels = FuSelectableBuilder.GetDisplayLabels(text, items, listUpdated);
                 for (int i = 0; i < items.Count; i++)
                 {
+                    bool selected = selectedIndex == i;
+                    if (selected)
+                    {
+                        Fugui.Push(ImGuiCol.Header, Fugui.Themes.GetColor(FuColors.Selected));
+                        Fugui.Push(ImGuiCol.HeaderHovered, Fugui.Themes.GetColor(FuColors.SelectedHovered));
+                        Fugui.Push(ImGuiCol.HeaderActive, Fugui.Themes.GetColor(FuColors.SelectedActive));
+                    }
                     if (ImGui.Selectable(displayLabels[i], selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
                     {
                         // Update the selected index and invoke the item change action
                         selectedIndex = i;
                         FuSelectableBuilder.SetSelectedIndex(text, selectedIndex);
                         itemChange?.Invoke(i);
+                    }
+                    if (selected)
+                    {
+                        Fugui.PopColor(3);
                     }
                 }
             }, size, popupSize, style, popupPosition);
@@ -169,15 +180,12 @@ namespace Fu.Framework
                 {
                     Fugui.OpenPopUp(popupID, () =>
                     {
-                        Spacing();
-                        Spacing();
-                        SameLine();
+                        Fugui.MoveY(4f);
+                        Fugui.MoveX(6f);
                         BeginGroup();
                         callback?.Invoke();
                         EndGroup();
-                        SameLine();
-                        Spacing();
-                        Spacing();
+                        ImGui.Dummy(new Vector2(0f, 4f * Fugui.CurrentContext.Scale));
                     },
                     isComboBoxPopup: true);
                 }
@@ -195,13 +203,16 @@ namespace Fu.Framework
             Vector2 btnSize = btnMax - btnMin;
 
             // draw carret
+            float caretSize = carretWidth / 3f;
+            Vector2 caretPos = new Vector2(btnMax.x - (carretWidth + caretSize) * 0.5f, btnMin.y);
+            DrawComboboxChrome(ImGui.GetWindowDrawList(), new Rect(btnMin, btnSize), carretWidth, opened, LastItemDisabled);
             if (opened)
             {
-                Fugui.DrawCarret_Top(ImGui.GetWindowDrawList(), btnMax - new Vector2(carretWidth, btnSize.y), carretWidth / 3f, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+                Fugui.DrawCarret_Top(ImGui.GetWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
             }
             else
             {
-                Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), btnMax - new Vector2(carretWidth, btnSize.y), carretWidth / 3f, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+                Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
             }
             // End the element with the current combobox style
             endElement(style);
@@ -351,15 +362,12 @@ namespace Fu.Framework
                 {
                     Fugui.OpenPopUp(popupID, () =>
                     {
-                        Spacing();
-                        Spacing();
-                        SameLine();
+                        Fugui.MoveY(4f);
+                        Fugui.MoveX(6f);
                         BeginGroup();
                         callback?.Invoke();
                         EndGroup();
-                        SameLine();
-                        Spacing();
-                        Spacing();
+                        ImGui.Dummy(new Vector2(0f, 4f * Fugui.CurrentContext.Scale));
                     },
                     isComboBoxPopup: true);
                 }
@@ -377,13 +385,16 @@ namespace Fu.Framework
             Vector2 btnSize = btnMax - btnMin;
 
             // draw carret
+            float caretSize = carretWidth / 3f;
+            Vector2 caretPos = new Vector2(btnMax.x - (carretWidth + caretSize) * 0.5f, btnMin.y);
+            DrawComboboxChrome(ImGui.GetWindowDrawList(), new Rect(btnMin, btnSize), carretWidth, opened, LastItemDisabled);
             if (opened)
             {
-                Fugui.DrawCarret_Top(ImGui.GetWindowDrawList(), btnMax - new Vector2(carretWidth, btnSize.y), carretWidth / 3f, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+                Fugui.DrawCarret_Top(ImGui.GetWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
             }
             else
             {
-                Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), btnMax - new Vector2(carretWidth, btnSize.y), carretWidth / 3f, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+                Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
             }
 
             // draw the popup

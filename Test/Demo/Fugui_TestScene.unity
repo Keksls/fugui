@@ -216,22 +216,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4370844230297835809, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 0.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 4370844230297835809, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 0.4
-      objectReference: {fileID: 0}
-    - target: {fileID: 4607458544066756794, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: Curve
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 4607458544066756794, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      propertyPath: Rounding
-      value: 0.06
-      objectReference: {fileID: 0}
     - target: {fileID: 5190680658197817161, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
       propertyPath: m_Name
       value: DemoScene
@@ -239,10 +223,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8176205452265744201, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1824543134}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
 --- !u!1001 &1203538079
 PrefabInstance:
@@ -252,22 +233,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 2932005272966750016, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: _enableMainContainer
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2932005272966750016, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: _settings.GlobalScale
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2932005272966750016, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: _settings.FontGlobalScale
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2932005272966750016, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
-      propertyPath: _settings.EnableContainerScaler
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 2932005272966750018, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
       propertyPath: m_Name
       value: FuguiController
@@ -317,45 +282,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 837c34ad42a4d4a49ae0e986de9779db, type: 3}
---- !u!4 &1429990091 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 5027617570534833875, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-  m_PrefabInstance: {fileID: 265814709}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1824543131 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8176205452265744201, guid: 270a69cc4b615254baffcbafc6cc5376, type: 3}
-  m_PrefabInstance: {fileID: 265814709}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1824543134
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1824543131}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 006130c5e3de774468d7356f94978e6a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Fugui::Fu.Framework.Fu3DWindowManipulator
-  RuntimeMovable: 1
-  CreateGrabHandle: 1
-  FacingTarget: {fileID: 1429990091}
-  FacingConstraint: 1
-  FaceTargetWhileDragging: 1
-  FaceTargetWhenUnanchored: 0
-  AnchorOnRelease: 1
-  StartAnchored: 1
-  WorldUpAxis: {x: 0, y: 1, z: 0}
-  GrabHandleWidthRatio: 0.38
-  GrabHandleMinWidth: 0.18
-  GrabHandleMaxWidth: 0.55
-  GrabHandleHeight: 0.045
-  GrabHandleTopOffset: 0.035
-  GrabHandleFrontOffset: -0.024
-  GrabHandleColor: {r: 0, g: 0.72, b: 1, a: 0.9}
-  _grabHandleID: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

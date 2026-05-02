@@ -75,10 +75,17 @@ namespace Fu.Framework
         [SerializeField]
         protected bool _scaleFontWithContainer = true;
 
+        [SerializeField]
+        protected bool _useDpiScale = true;
+
+        [SerializeField]
+        protected float _referenceDpi = FuContainerScaleConfig.DefaultReferenceDpi;
+
         protected FuWindow _fuWindow;
         protected Fu3DWindowContainer _container;
         protected FuWindowDefinition _windowDefinition;
         private Vector2 _autoReferencePanelSize = Vector2.zero;
+        private bool _isCreatingOwnedWindow = false;
 
         public FuWindow Window
         {
@@ -159,23 +166,22 @@ namespace Fu.Framework
             }
 
             EnsureWindowDefinitionRegistered();
-            FuWindow window = Fugui.CreateWindow(_windowName, false);
+            FuWindow window;
+            _isCreatingOwnedWindow = true;
+            try
+            {
+                window = Fugui.CreateWindow(_windowName, false);
+            }
+            finally
+            {
+                _isCreatingOwnedWindow = false;
+            }
+
             if (window != null && (_container == null || _container.IsClosed))
             {
                 AttachWindow(window);
             }
 
-            if ((_container == null || _container.IsClosed) && Fugui.UIWindows != null)
-            {
-                foreach (FuWindow existingWindow in Fugui.UIWindows.Values)
-                {
-                    if (existingWindow != null && existingWindow.WindowName.Equals(_windowName))
-                    {
-                        AttachWindow(existingWindow);
-                        break;
-                    }
-                }
-            }
             return _container;
         }
 
@@ -191,7 +197,7 @@ namespace Fu.Framework
                 return null;
             }
 
-            WindowDefinition_OnUIWindowCreated(window);
+            AttachWindowInternal(window);
             return _container;
         }
 
@@ -230,6 +236,20 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="window">The created Fugui window.</param>
         protected void WindowDefinition_OnUIWindowCreated(FuWindow window)
+        {
+            if (!_isCreatingOwnedWindow)
+            {
+                return;
+            }
+
+            AttachWindowInternal(window);
+        }
+
+        /// <summary>
+        /// Attaches a Fugui window to this 3D behaviour.
+        /// </summary>
+        /// <param name="window">The window to attach.</param>
+        private void AttachWindowInternal(FuWindow window)
         {
             if (_fuWindow != null)
             {
@@ -339,7 +359,9 @@ namespace Fu.Framework
                 _maxContainerScale,
                 baseScale,
                 baseFontScale,
-                _scaleFontWithContainer
+                _scaleFontWithContainer,
+                _useDpiScale,
+                _referenceDpi
             );
         }
 
@@ -358,6 +380,8 @@ namespace Fu.Framework
             _baseContextScale = config.BaseScale;
             _baseFontScale = config.BaseFontScale;
             _scaleFontWithContainer = config.ScaleFont;
+            _useDpiScale = config.UseDpiScale;
+            _referenceDpi = config.ReferenceDpi;
             _container?.SetContainerScaleConfig(config);
         }
 

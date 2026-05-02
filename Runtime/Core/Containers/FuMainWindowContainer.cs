@@ -122,7 +122,7 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         public bool context_OnPrepareFrame()
         {
-            _size = new Vector2Int(Screen.width, Screen.height);
+            _size = getContextSize();
             _fuguiContext.UpdateContainerScale(_size);
             return true;
         }
@@ -133,7 +133,7 @@ namespace Fu
         public void context_OnFramePrepared()
         {
             // set size and pos for this frame
-            _size = new Vector2Int(Screen.width, Screen.height);
+            _size = getContextSize();
 
             // get unity local mouse position
             Vector2Int newMousePos = new Vector2Int((int)Context.IO.MousePos.x, (int)Context.IO.MousePos.y);
@@ -202,8 +202,41 @@ namespace Fu
         {
             Vector2Int size = _size.x > 0 && _size.y > 0
                 ? _size
-                : new Vector2Int(Screen.width, Screen.height);
+                : getContextSize();
             _fuguiContext.SetContainerScaleConfig(config, size);
+        }
+
+        /// <summary>
+        /// Returns this container's current drawable context size.
+        /// </summary>
+        /// <returns>The context size in pixels.</returns>
+        private Vector2Int getContextSize()
+        {
+            if (_fuguiContext != null)
+            {
+                RenderTexture targetTexture = _fuguiContext.TargetTexture;
+                if (targetTexture != null)
+                {
+                    return new Vector2Int(
+                        Mathf.Max(1, targetTexture.width),
+                        Mathf.Max(1, targetTexture.height));
+                }
+
+                Rect rect = _fuguiContext.Camera != null
+                    ? _fuguiContext.Camera.pixelRect
+                    : _fuguiContext.PixelRect;
+
+                if (rect.width > 0f && rect.height > 0f)
+                {
+                    return new Vector2Int(
+                        Mathf.Max(1, Mathf.RoundToInt(rect.width)),
+                        Mathf.Max(1, Mathf.RoundToInt(rect.height)));
+                }
+            }
+
+            return new Vector2Int(
+                Mathf.Max(1, Screen.width),
+                Mathf.Max(1, Screen.height));
         }
 
         /// <summary>

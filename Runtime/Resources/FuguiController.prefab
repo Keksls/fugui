@@ -43,7 +43,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.17610055, g: 0.17610055, b: 0.17610055, a: 1}
+  m_BackGroundColor: {r: 0.176, g: 0.176, b: 0.176, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -174,14 +174,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _settings:
-    FUGUI_WINDOWS_DEF_ENUM_PATH: Assets\Scripts\UI\FuWindowsNames.cs
-    FUGUI_DOCKSPACE_FOLDER_PATH: Assets\StreamingAssets\Fugui\Layout\
     EnableExternalizations: 1
     DisplaySettingsIfNoLayout: 1
     IdleFPS: 0
     Windows3DScale: 10
     Windows3DSuperSampling: 2
     Windows3DFontScale: 3
+    Windows3DRenderTextureAntiAliasing: 1
+    Pool3DWindowRenderTextures: 1
     UIPanelWidth: 0.066
     ExternalManipulatingTicks: 10000
     ClipperSafeRangePx: 8
@@ -194,7 +194,7 @@ MonoBehaviour:
     WarningIcon: {fileID: 2800000, guid: 4d5c887232331e04b87d503925340957, type: 3}
     DangerIcon: {fileID: 2800000, guid: 11f3a4d594ed7b244948b9cc632faffc, type: 3}
     SuccessIcon: {fileID: 2800000, guid: 19544edab923d204cab424b77180b8a4, type: 3}
-    FuguiLogo: {fileID: 2800000, guid: d7f0d3be02ca8a54086ef7e5b10c95b9, type: 3}
+    FuguiLogo: {fileID: 2800000, guid: 9b18b4f8a1670e248a360c651646640b, type: 3}
     UIPanelMaterial: {fileID: 2100000, guid: c9742257e2f193c43abd76d7b08f8c40, type: 2}
     UIMaterial: {fileID: 2100000, guid: 3eefacff76999bf4aa6a614660f998e2, type: 2}
     NotificationAnchorPosition: 6
@@ -223,8 +223,16 @@ MonoBehaviour:
     ClickMaxDistMobile: 64
     KeyRepeatDelay: 0.25
     KeyRepeatRate: 0.05
-    GlobalScale: 3
-    FontGlobalScale: 3
+    GlobalScale: 1
+    FontGlobalScale: 1
+    EnableContainerScaler: 1
+    ContainerReferenceResolution: {x: 1920, y: 1080}
+    ContainerMatchWidthOrHeight: 0.5
+    ContainerMinScale: 0.5
+    ContainerMaxScale: 4
+    ContainerScaleFonts: 1
+    ContainerUseDpiScale: 1
+    ContainerReferenceDpi: 96
     FontAllowUserScaling: 0
     DisplayFramebufferScale: {x: 1, y: 1}
     MouseDrawCursor: 0
@@ -235,6 +243,8 @@ MonoBehaviour:
     ConfigDockingNoSplit: 0
     ConfigDockingTransparentPayload: 0
     TargetCursorSize: 32
-    CursorShapes: {fileID: 11400000, guid: ce7ff60857038f249956282ba6f82d62, type: 2}
+    CursorShapes: {fileID: 11400000, guid: 544ebd31157cfd842871f087e10eb417, type: 2}
   _uiCamera: {fileID: 963194227}
+  EnableMainContainer: 1
   _logErrors: 1
+  _updateMode: 0

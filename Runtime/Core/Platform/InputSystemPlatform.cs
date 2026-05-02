@@ -107,103 +107,97 @@ namespace Fu
         /// </summary>
         /// <param name="io"> ImGui IO pointer.</param>
         /// <param name="mouse"> The current mouse instance.</param>
-        private static void UpdateMouse(ImGuiIOPtr io, Mouse mouse)
+        private void UpdateMouse(ImGuiIOPtr io, Mouse mouse)
         {
             if (mouse == null) return;
 
 #if FUGUI_SIMULATE_MOBILE_INPUTS
             // Position
-            Vector2 position = new Vector2(
-                    mouse.position.x.ReadValue(),
-                    io.DisplaySize.y - mouse.position.y.ReadValue()
-                );
+            Vector2 position = ScreenToImGuiPosition(mouse.position.ReadValue());
 
-                // Handle right-click emulation: if the primary touch is held for more than 2 seconds, trigger a right-click event.
-                bool leftPressed = mouse.leftButton.isPressed;
-                if (leftPressed && !_lastFrameMouseState[0])
-                {
-                    _lastPressTime = 0f;
-                    _rightClicked = false;
-                }
-                if (!leftPressed && _lastFrameMouseState[0])
-                {
-                    _lastPressTime = 0f;
-                    _rightClicked = false;
-                }
-                if (_lastFrameMouseState[0] && leftPressed)
-                {
-                    _lastPressTime += Time.deltaTime;
-                }
-                bool rightPressed = false;
-                if (!_rightClicked && leftPressed && _lastPressTime >= 1.0f)
-                {
-                    _rightClicked = true;
-                    rightPressed = true;
-                }
+            // Handle right-click emulation: if the primary touch is held for more than 2 seconds, trigger a right-click event.
+            bool leftPressed = mouse.leftButton.isPressed;
+            if (leftPressed && !_lastFrameMouseState[0])
+            {
+                _lastPressTime = 0f;
+                _rightClicked = false;
+            }
+            if (!leftPressed && _lastFrameMouseState[0])
+            {
+                _lastPressTime = 0f;
+                _rightClicked = false;
+            }
+            if (_lastFrameMouseState[0] && leftPressed)
+            {
+                _lastPressTime += Time.deltaTime;
+            }
+            bool rightPressed = false;
+            if (!_rightClicked && leftPressed && _lastPressTime >= 1.0f)
+            {
+                _rightClicked = true;
+                rightPressed = true;
+            }
 
-                if (!leftPressed)
-                {
-                    if (_nbFramesSinceMouseLeftUp > 5) // wait a few frames before resetting position to avoid hover draw when user just release click and move mouse a bit
-                        position = new Vector2(-1000f, -1000f); // offscrett to avoir window hover draw
-                    else
-                        position = _lastTouchPosition;
-                    _nbFramesSinceMouseLeftUp++;
-                }
+            if (!leftPressed)
+            {
+                if (_nbFramesSinceMouseLeftUp > 5) // wait a few frames before resetting position to avoid hover draw when user just release click and move mouse a bit
+                    position = new Vector2(-1000f, -1000f); // offscrett to avoir window hover draw
                 else
-                {
-                    _lastTouchPosition = position;
-                    _nbFramesSinceMouseLeftUp = 0;
-                }
+                    position = _lastTouchPosition;
+                _nbFramesSinceMouseLeftUp++;
+            }
+            else
+            {
+                _lastTouchPosition = position;
+                _nbFramesSinceMouseLeftUp = 0;
+            }
 
-                // Cursor position
-                io.AddMousePosEvent(position.x, position.y);
+            // Cursor position
+            io.AddMousePosEvent(position.x, position.y);
 
-                // Scroll (120 = 1 "tick" Windows)
-                Vector2 mouseScroll = mouse.scroll.ReadValue() * Fugui.Settings.ScrollPower;
-                io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
+            // Scroll (120 = 1 "tick" Windows)
+            Vector2 mouseScroll = mouse.scroll.ReadValue() * Fugui.Settings.ScrollPower;
+            io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
 
-                // Buttons (0 = left, 1 = right, 2 = middle)
-                io.AddMouseButtonEvent(0, _lastFrameMouseState[0]);
-                io.AddMouseButtonEvent(1, _lastFrameMouseState[1]);
-                io.AddMouseButtonEvent(2, _lastFrameMouseState[2]);
+            // Buttons (0 = left, 1 = right, 2 = middle)
+            io.AddMouseButtonEvent(0, _lastFrameMouseState[0]);
+            io.AddMouseButtonEvent(1, _lastFrameMouseState[1]);
+            io.AddMouseButtonEvent(2, _lastFrameMouseState[2]);
 
-                // Optional : support for additional mouse buttons (X1, X2)
-                io.AddMouseButtonEvent(3, _lastFrameMouseState[3]); // X1
-                io.AddMouseButtonEvent(4, _lastFrameMouseState[4]); // X2
+            // Optional : support for additional mouse buttons (X1, X2)
+            io.AddMouseButtonEvent(3, _lastFrameMouseState[3]); // X1
+            io.AddMouseButtonEvent(4, _lastFrameMouseState[4]); // X2
 
-                _lastFrameMouseState[0] = leftPressed;
-                _lastFrameMouseState[1] = rightPressed;
-                _lastFrameMouseState[2] = false;
-                _lastFrameMouseState[3] = false;
-                _lastFrameMouseState[4] = false;
+            _lastFrameMouseState[0] = leftPressed;
+            _lastFrameMouseState[1] = rightPressed;
+            _lastFrameMouseState[2] = false;
+            _lastFrameMouseState[3] = false;
+            _lastFrameMouseState[4] = false;
 #else
             // Update position and visibility
             if (io.WantSetMousePos)
-                {
-                    mouse.WarpCursorPosition(new Vector2(io.MousePos.x, ImGui.GetIO().DisplaySize.y - io.MousePos.y));
-                }
+            {
+                mouse.WarpCursorPosition(ImGuiToScreenPosition(io.MousePos));
+            }
 
-                // Position
-                Vector2 position = new Vector2(
-                    mouse.position.x.ReadValue(),
-                    io.DisplaySize.y - mouse.position.y.ReadValue()
-                );
+            // Position
+            Vector2 position = ScreenToImGuiPosition(mouse.position.ReadValue());
 
-                // Cursor position
-                io.AddMousePosEvent(position.x, position.y);
+            // Cursor position
+            io.AddMousePosEvent(position.x, position.y);
 
-                // Scroll (120 = 1 "tick" Windows)
-                Vector2 mouseScroll = mouse.scroll.ReadValue() * Fugui.Settings.ScrollPower;
-                io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
+            // Scroll (120 = 1 "tick" Windows)
+            Vector2 mouseScroll = mouse.scroll.ReadValue() * Fugui.Settings.ScrollPower;
+            io.AddMouseWheelEvent(mouseScroll.x, mouseScroll.y);
 
-                // Buttons (0 = left, 1 = right, 2 = middle)
-                io.AddMouseButtonEvent(0, mouse.leftButton.isPressed);
-                io.AddMouseButtonEvent(1, mouse.rightButton.isPressed);
-                io.AddMouseButtonEvent(2, mouse.middleButton.isPressed);
+            // Buttons (0 = left, 1 = right, 2 = middle)
+            io.AddMouseButtonEvent(0, mouse.leftButton.isPressed);
+            io.AddMouseButtonEvent(1, mouse.rightButton.isPressed);
+            io.AddMouseButtonEvent(2, mouse.middleButton.isPressed);
 
-                // Optional : support for additional mouse buttons (X1, X2)
-                io.AddMouseButtonEvent(3, mouse.backButton?.isPressed ?? false);  // X1
-                io.AddMouseButtonEvent(4, mouse.forwardButton?.isPressed ?? false); // X2
+            // Optional : support for additional mouse buttons (X1, X2)
+            io.AddMouseButtonEvent(3, mouse.backButton?.isPressed ?? false);  // X1
+            io.AddMouseButtonEvent(4, mouse.forwardButton?.isPressed ?? false); // X2
 #endif
         }
 
@@ -212,7 +206,7 @@ namespace Fu
         /// Mouse is used on desktop, primary touch is mapped to left mouse on mobile.
         /// </summary>
         /// <param name="io">The ImGui IO pointer.</param>
-        private static void UpdatePointer(ImGuiIOPtr io)
+        private void UpdatePointer(ImGuiIOPtr io)
         {
             Touchscreen touch = Touchscreen.current;
             if (touch == null)
@@ -264,7 +258,8 @@ namespace Fu
                 _nbFramesSinceMouseLeftUp = 0;
             }
 
-            io.AddMousePosEvent(position.x, io.DisplaySize.y - position.y);
+            Vector2 imguiPosition = ScreenToImGuiPosition(position);
+            io.AddMousePosEvent(imguiPosition.x, imguiPosition.y);
 
             // Buttons (0 = left, 1 = right, 2 = middle)
             io.AddMouseButtonEvent(0, _lastFrameMouseState[0]);

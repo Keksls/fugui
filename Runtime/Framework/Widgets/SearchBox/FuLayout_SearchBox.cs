@@ -84,39 +84,86 @@ namespace Fu.Framework
 
             float totalWidth = ResolveSearchBoxWidth(width);
             float height = ImGui.GetFrameHeight();
-            float spacing = ImGui.GetStyle().ItemInnerSpacing.x;
+            float scale = Fugui.CurrentContext.Scale;
+            float rounding = Mathf.Min(Mathf.Max(Fugui.Themes.FrameRounding, 6f * scale), height * 0.5f);
+            float iconWidth = height;
             float clearWidth = height;
-            float inputWidth = Mathf.Max(24f * Fugui.CurrentContext.Scale, totalWidth - clearWidth - spacing);
+            float inputWidth = Mathf.Max(24f * scale, totalWidth - iconWidth - clearWidth - 6f * scale);
             bool disabled = LastItemDisabled;
-            bool edited;
+            bool edited = false;
+            Vector2 framePos = ImGui.GetCursorScreenPos();
+            Vector2 frameSize = new Vector2(totalWidth, height);
+            Rect frameRect = new Rect(framePos, frameSize);
+            bool hovered = IsItemHovered(framePos, frameSize);
+            bool canClear = !disabled && !string.IsNullOrEmpty(search);
+            Rect clearRect = new Rect(framePos + new Vector2(totalWidth - clearWidth, 0f), new Vector2(clearWidth, height));
+            bool clearHovered = canClear && IsItemHovered(clearRect.position, clearRect.size);
 
+            ImGui.Dummy(frameSize);
+            Vector2 afterFramePos = ImGui.GetCursorScreenPos();
+
+            Vector4 frameColor = disabled
+                ? style.DisabledFrame
+                : hovered
+                    ? style.HoveredFrame
+                    : style.Frame;
+            Vector4 borderColor = disabled ? style.DisabledBorder : style.Border;
+            frameColor.w = Mathf.Max(frameColor.w, disabled ? 0.35f : 0.92f);
+            borderColor.w = Mathf.Max(borderColor.w, hovered ? 0.75f : 0.48f);
+
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            drawList.AddRectFilled(frameRect.min, frameRect.max, ImGui.GetColorU32(frameColor), rounding, ImDrawFlags.RoundCornersAll);
+            drawList.AddRect(frameRect.min, frameRect.max, ImGui.GetColorU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
+
+            Vector4 iconColor = disabled
+                ? style.TextStyle.DisabledText
+                : string.IsNullOrEmpty(search)
+                    ? Fugui.Themes.GetColor(FuColors.TextDisabled)
+                    : style.TextStyle.Text;
+            iconColor.w *= string.IsNullOrEmpty(search) ? 0.78f : 0.9f;
+            DrawSearchGlyph(drawList, framePos + new Vector2(iconWidth * 0.5f, height * 0.5f), Mathf.Max(4f, height * 0.18f), iconColor);
+
+            if (hovered && !clearHovered && ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !disabled)
+            {
+                ImGui.SetKeyboardFocusHere();
+            }
+
+            Vector2 inputPos = framePos + new Vector2(iconWidth, 0f);
+            ImGui.SetCursorScreenPos(inputPos);
             ImGui.SetNextItemWidth(inputWidth);
             ImGuiInputTextFlags inputFlags = disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None;
+            Vector4 placeholder = Fugui.Themes.GetColor(FuColors.TextDisabled);
+            placeholder.w *= disabled ? 0.45f : 0.72f;
+            Fugui.Push(ImGuiCol.FrameBg, Vector4.zero);
+            Fugui.Push(ImGuiCol.FrameBgHovered, Vector4.zero);
+            Fugui.Push(ImGuiCol.FrameBgActive, Vector4.zero);
+            Fugui.Push(ImGuiCol.TextDisabled, placeholder);
+            Fugui.Push(ImGuiStyleVar.FrameBorderSize, 0f);
+            Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(0f, ImGui.GetStyle().FramePadding.y));
             edited = ImGui.InputTextWithHint("##" + elementID + "_input", hint, ref search, SEARCH_BOX_BUFFER_SIZE, inputFlags);
+            bool focused = ImGui.IsItemActive() || ImGui.IsItemFocused();
+            Fugui.PopStyle(2);
+            Fugui.PopColor(4);
 
-            ImGui.SameLine(0f, spacing);
-            bool canClear = !disabled && !string.IsNullOrEmpty(search);
-            if (!canClear)
+            if (canClear)
             {
-                ImGui.BeginDisabled();
+                ImGui.SetCursorScreenPos(clearRect.position);
+                ImGui.InvisibleButton("##" + elementID + "_clear", clearRect.size);
+                clearHovered = IsItemHovered(clearRect.position, clearRect.size);
+                DrawClearGlyph(drawList, clearRect.position + clearRect.size * 0.5f, height * 0.28f, iconColor, clearHovered);
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+                {
+                    search = string.Empty;
+                    edited = true;
+                }
             }
 
-            bool clearClicked = ImGui.Button("x##" + elementID + "_clear", new Vector2(clearWidth, height));
+            DrawWidgetFeedback(drawList, frameRect, focused, hovered, disabled, rounding);
+            ImGui.SetCursorScreenPos(afterFramePos);
 
-            if (!canClear)
-            {
-                ImGui.EndDisabled();
-            }
-
-            if (clearClicked)
-            {
-                search = string.Empty;
-                edited = true;
-            }
-
-            setBaseElementState(elementID, _currentItemStartPos, new Vector2(totalWidth, height), true, edited);
+            setBaseElementState(elementID, _currentItemStartPos, frameSize, true, edited);
             displayToolTip();
-            _elementHoverFramedEnabled = true;
+            _elementHoverFramedEnabled = false;
             endElement(style);
             return edited;
         }

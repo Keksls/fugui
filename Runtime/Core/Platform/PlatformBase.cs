@@ -16,6 +16,7 @@ namespace Fu
         #region State
         public readonly PlatformCallbacks _callbacks = new PlatformCallbacks();
         public ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
+        protected Rect DisplayRect { get; private set; }
         private readonly HashSet<IntPtr> _managedAllocations = new HashSet<IntPtr>();
         #endregion
 
@@ -72,8 +73,33 @@ namespace Fu
         public virtual void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
         {
             //Assert.IsTrue(io.Fonts.IsBuilt(), "Font atlas not built! Generally built by the renderer. Missing call to renderer NewFrame() function?");
+            DisplayRect = displayRect;
             io.DisplaySize = displayRect.size;
             io.DeltaTime = Time.unscaledDeltaTime;
+        }
+
+        /// <summary>
+        /// Converts a Unity screen-space pointer position to ImGui local display coordinates.
+        /// </summary>
+        /// <param name="screenPosition">Unity screen-space position, with origin at the bottom left.</param>
+        /// <returns>ImGui position relative to the current display rect, with origin at the top left.</returns>
+        protected Vector2 ScreenToImGuiPosition(Vector2 screenPosition)
+        {
+            return new Vector2(
+                screenPosition.x - DisplayRect.x,
+                DisplayRect.height - (screenPosition.y - DisplayRect.y));
+        }
+
+        /// <summary>
+        /// Converts an ImGui local display position back to Unity screen-space coordinates.
+        /// </summary>
+        /// <param name="imguiPosition">ImGui position relative to the current display rect.</param>
+        /// <returns>Unity screen-space position, with origin at the bottom left.</returns>
+        protected Vector2 ImGuiToScreenPosition(Vector2 imguiPosition)
+        {
+            return new Vector2(
+                imguiPosition.x + DisplayRect.x,
+                DisplayRect.y + DisplayRect.height - imguiPosition.y);
         }
 
         /// <summary>

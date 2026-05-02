@@ -212,7 +212,7 @@ namespace Fu.Framework
             // function that draw the slider
             bool drawSlider(string text, ref float value, float min, float max, bool isInt, float knobRadius, float hoverPaddingY, float lineHeight, float width, float x, float y, FuSliderFlags flags)
             {
-                ImGui.InvisibleButton(text, new Vector2(width + (4f * Fugui.Scale), height), ImGuiButtonFlags.None);
+                ImGui.InvisibleButton(text, new Vector2(width, height), ImGuiButtonFlags.None);
 
                 if (width < 24f * Fugui.Scale)
                 {
@@ -234,17 +234,20 @@ namespace Fu.Framework
                 float knobHitRadius = knobRadius;
                 float lineHoverPaddingY = hoverPaddingY;
 
-                bool isLineHovered = IsItemHovered(
+                bool rawLineHovered = IsItemHovered(
                     new Vector2(x, y - lineHoverPaddingY - lineHeight),
                     new Vector2(width, lineHoverPaddingY * 2f + lineHeight * 2f)
                 );
 
-                bool isKnobHovered = !noKnobs && IsItemHovered(
+                bool rawKnobHovered = !noKnobs && IsItemHovered(
                     new Vector2(knobPos - knobHitRadius, y - knobHitRadius),
                     new Vector2(knobHitRadius * 2f, knobHitRadius * 2f)
                 );
 
                 bool isDragging = _draggingSliders.Contains(text);
+                bool suppressHoverFeedback = ImGui.IsAnyItemActive() || IsAnyItemActive || IsThereAnyDraggingSlider;
+                bool isLineHovered = rawLineHovered && !suppressHoverFeedback;
+                bool isKnobHovered = rawKnobHovered && !suppressHoverFeedback;
 
                 Vector4 leftLineColor = Fugui.Themes.GetColor(FuColors.CheckMark);
                 Vector4 rightLineColor = Fugui.Themes.GetColor(FuColors.FrameBg);
@@ -259,14 +262,27 @@ namespace Fu.Framework
                 else if (isDragging)
                 {
                     knobColor = Fugui.Themes.GetColor(FuColors.KnobActive);
+                    leftLineColor = Fugui.Themes.GetColor(FuColors.HighlightActive);
                 }
                 else if (isKnobHovered)
                 {
                     knobColor = Fugui.Themes.GetColor(FuColors.KnobHovered);
+                    leftLineColor = Fugui.Themes.GetColor(FuColors.HighlightHovered);
                 }
 
-                ImGui.GetWindowDrawList().AddLine(new Vector2(x, y), new Vector2(knobPos, y), ImGui.GetColorU32(leftLineColor), lineHeight);
-                ImGui.GetWindowDrawList().AddLine(new Vector2(knobPos, y), new Vector2(x + width, y), ImGui.GetColorU32(rightLineColor), lineHeight);
+                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                ImDrawListPtr foregroundDrawList = ImGui.GetForegroundDrawList();
+                float trackRounding = Fugui.Themes.FrameRounding;
+                Vector2 trackMin = new Vector2(x, y - lineHeight * 0.5f);
+                Vector2 trackMax = new Vector2(x + width, y + lineHeight * 0.5f);
+                DrawRoundedSegment(drawList, trackMin, trackMax, rightLineColor, trackRounding);
+                DrawRoundedSegment(drawList, trackMin, new Vector2(knobPos, trackMax.y), leftLineColor, trackRounding);
+                if (isLineHovered && !LastItemDisabled)
+                {
+                    Vector4 hoverLine = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback);
+                    hoverLine.w = Mathf.Max(hoverLine.w, 0.35f);
+                    drawList.AddRect(trackMin, trackMax, ImGui.GetColorU32(hoverLine), trackRounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.CurrentContext.Scale));
+                }
 
                 if ((isKnobHovered || isLineHovered) && !LastItemDisabled)
                 {
@@ -289,33 +305,32 @@ namespace Fu.Framework
                         knobColor.w = 1f;
                     }
 
-                    float visualKnobRadius = (isKnobHovered || isDragging) && !LastItemDisabled ? knobRadius : knobRadius * 0.8f;
+                    float visualKnobRadius = (isKnobHovered || isDragging) && !LastItemDisabled ? knobRadius : knobRadius * 0.82f;
+                    if (isDragging)
+                    {
+                        DrawValueKnob(foregroundDrawList, new Vector2(knobPos, y), visualKnobRadius, knobColor, isKnobHovered, true, LastItemDisabled);
+                    }
+                    else
+                    {
+                        DrawValueKnobWithWindowClip(drawList, new Vector2(knobPos, y), visualKnobRadius, knobColor, isKnobHovered, false, LastItemDisabled);
+                    }
+                }
 
-                    ImGui.GetWindowDrawList().AddCircleFilled(
-                        new Vector2(knobPos, y),
-                        visualKnobRadius + 1f,
-                        ImGui.GetColorU32(ImGuiCol.Border),
-                        32
-                    );
-
-                    ImGui.GetWindowDrawList().AddCircleFilled(
-                        new Vector2(knobPos, y),
-                        visualKnobRadius,
-                        ImGui.GetColorU32(knobColor),
-                        32
-                    );
+                if (isDragging && !LastItemDisabled)
+                {
+                    DrawValueBubble(foregroundDrawList, FormatValueBubble(value, isInt, format), new Vector2(knobPos, y - knobRadius));
                 }
 
                 if (!LastItemDisabled)
                 {
                     bool shouldStartDrag = false;
 
-                    if (!noKnobs && isKnobHovered && ImGui.IsMouseClicked(0))
+                    if (!noKnobs && rawKnobHovered && ImGui.IsMouseClicked(0))
                     {
                         shouldStartDrag = true;
                     }
 
-                    if (updateOnBarClick && isLineHovered && ImGui.IsMouseClicked(0))
+                    if (updateOnBarClick && rawLineHovered && ImGui.IsMouseClicked(0))
                     {
                         shouldStartDrag = true;
                     }

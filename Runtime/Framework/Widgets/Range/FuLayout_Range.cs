@@ -166,14 +166,28 @@ namespace Fu.Framework
                 string knobMinID = id + "KnobMin";
                 string knobMaxID = id + "KnobMax";
                 // Calculate the position of the knob
-                float knobPosMin = (x + knobRadius) + (width - knobRadius * 2f) * (valueMin - min) / (max - min);
-                float knobPosMax = (x + knobRadius) + (width - knobRadius * 2f) * (valueMax - min) / (max - min);
+                float range = max - min;
+                if (Mathf.Abs(range) <= float.Epsilon)
+                {
+                    return false;
+                }
+
+                float valueStartX = x + knobRadius;
+                float valueWidth = Mathf.Max(1f, width - knobRadius * 2f);
+                float knobPosMin = valueStartX + valueWidth * Mathf.Clamp01((valueMin - min) / range);
+                float knobPosMax = valueStartX + valueWidth * Mathf.Clamp01((valueMax - min) / range);
                 // Check if the mouse is hovering over the knob
-                bool isKnobMinHovered = IsItemHovered(new Vector2(knobPosMin - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
-                bool isKnobMaxHovered = IsItemHovered(new Vector2(knobPosMax - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
+                bool rawKnobMinHovered = IsItemHovered(new Vector2(knobPosMin - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
+                bool rawKnobMaxHovered = IsItemHovered(new Vector2(knobPosMax - knobRadius, y - knobRadius), new Vector2(knobRadius * 2f, knobRadius * 2f));
+                bool rawLineHovered = IsItemHovered(new Vector2(x, y - hoverPaddingY - lineHeight), new Vector2(width, hoverPaddingY * 2f + lineHeight * 2f));
                 // Check if slider is dragging
                 bool isDraggingMin = _draggingSliders.Contains(knobMinID);
                 bool isDraggingMax = _draggingSliders.Contains(knobMaxID);
+                bool isDragging = isDraggingMin || isDraggingMax;
+                bool suppressHoverFeedback = ImGui.IsAnyItemActive() || IsAnyItemActive || IsThereAnyDraggingSlider;
+                bool isKnobMinHovered = rawKnobMinHovered && !suppressHoverFeedback;
+                bool isKnobMaxHovered = rawKnobMaxHovered && !suppressHoverFeedback;
+                bool isLineHovered = rawLineHovered && !suppressHoverFeedback;
 
                 // Calculate colors
                 Vector4 insideLineColor = Fugui.Themes.GetColor(FuColors.CheckMark);
@@ -193,28 +207,40 @@ namespace Fu.Framework
                     if (isDraggingMin)
                     {
                         knobColorMin = Fugui.Themes.GetColor(FuColors.KnobActive);
+                        insideLineColor = Fugui.Themes.GetColor(FuColors.HighlightActive);
                     }
                     else if (isKnobMinHovered)
                     {
                         knobColorMin = Fugui.Themes.GetColor(FuColors.KnobHovered);
+                        insideLineColor = Fugui.Themes.GetColor(FuColors.HighlightHovered);
                     }
                     // max knob
                     if (isDraggingMax)
                     {
                         knobColorMax = Fugui.Themes.GetColor(FuColors.KnobActive);
+                        insideLineColor = Fugui.Themes.GetColor(FuColors.HighlightActive);
                     }
                     else if (isKnobMaxHovered)
                     {
                         knobColorMax = Fugui.Themes.GetColor(FuColors.KnobHovered);
+                        insideLineColor = Fugui.Themes.GetColor(FuColors.HighlightHovered);
                     }
                 }
 
-                // Draw the left slider line
-                ImGui.GetWindowDrawList().AddLine(new Vector2(x, y), new Vector2(knobPosMin, y), ImGui.GetColorU32(outsideLineColor), lineHeight);
-                // Draw the center slider line
-                ImGui.GetWindowDrawList().AddLine(new Vector2(knobPosMin, y), new Vector2(knobPosMax, y), ImGui.GetColorU32(insideLineColor), lineHeight);
-                // Draw the right slider line
-                ImGui.GetWindowDrawList().AddLine(new Vector2(knobPosMax, y), new Vector2(x + width, y), ImGui.GetColorU32(outsideLineColor), lineHeight);
+                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                ImDrawListPtr foregroundDrawList = ImGui.GetForegroundDrawList();
+                float trackRounding = Fugui.Themes.FrameRounding;
+                Vector2 trackMin = new Vector2(valueStartX, y - lineHeight * 0.5f);
+                Vector2 trackMax = new Vector2(valueStartX + valueWidth, y + lineHeight * 0.5f);
+                DrawRoundedSegment(drawList, trackMin, trackMax, outsideLineColor, trackRounding);
+                DrawRoundedSegment(drawList, new Vector2(knobPosMin, trackMin.y), new Vector2(knobPosMax, trackMax.y), insideLineColor, trackRounding);
+                if (isLineHovered && !LastItemDisabled)
+                {
+                    Vector4 hoverLine = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback);
+                    hoverLine.w = Mathf.Max(hoverLine.w, 0.35f);
+                    drawList.AddRect(trackMin, trackMax, ImGui.GetColorU32(hoverLine), trackRounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.CurrentContext.Scale));
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                }
 
                 // Draw the knobs
                 if (!LastItemDisabled)
@@ -242,27 +268,46 @@ namespace Fu.Framework
                 }
 
                 // Min Knob ============
-                // draw knob border
-                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPosMin, y), ((isKnobMinHovered || isDraggingMin) && !LastItemDisabled ? knobRadius : knobRadius * 0.8f) + 1f, ImGui.GetColorU32(ImGuiCol.Border), 32);
-                // draw knob
-                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPosMin, y), (isKnobMinHovered || isDraggingMin) && !LastItemDisabled ? knobRadius : knobRadius * 0.8f, ImGui.GetColorU32(knobColorMin), 32);
+                float visualKnobRadiusMin = (isKnobMinHovered || isDraggingMin) && !LastItemDisabled ? knobRadius : knobRadius * 0.82f;
+                if (isDraggingMin)
+                {
+                    DrawValueKnob(foregroundDrawList, new Vector2(knobPosMin, y), visualKnobRadiusMin, knobColorMin, isKnobMinHovered, true, LastItemDisabled);
+                }
+                else
+                {
+                    DrawValueKnobWithWindowClip(drawList, new Vector2(knobPosMin, y), visualKnobRadiusMin, knobColorMin, isKnobMinHovered, false, LastItemDisabled);
+                }
 
                 // Max Knob ============
-                // draw knob border
-                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPosMax, y), ((isKnobMaxHovered || isDraggingMax) && !LastItemDisabled ? knobRadius : knobRadius * 0.8f) + 1f, ImGui.GetColorU32(ImGuiCol.Border), 32);
-                // draw knob
-                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(knobPosMax, y), (isKnobMaxHovered || isDraggingMax) && !LastItemDisabled ? knobRadius : knobRadius * 0.8f, ImGui.GetColorU32(knobColorMax), 32);
+                float visualKnobRadiusMax = (isKnobMaxHovered || isDraggingMax) && !LastItemDisabled ? knobRadius : knobRadius * 0.82f;
+                if (isDraggingMax)
+                {
+                    DrawValueKnob(foregroundDrawList, new Vector2(knobPosMax, y), visualKnobRadiusMax, knobColorMax, isKnobMaxHovered, true, LastItemDisabled);
+                }
+                else
+                {
+                    DrawValueKnobWithWindowClip(drawList, new Vector2(knobPosMax, y), visualKnobRadiusMax, knobColorMax, isKnobMaxHovered, false, LastItemDisabled);
+                }
+
+                if (isDraggingMin && !LastItemDisabled)
+                {
+                    DrawValueBubble(foregroundDrawList, FormatValueBubble(valueMin, isInt, format), new Vector2(knobPosMin, y - knobRadius));
+                }
+                if (isDraggingMax && !LastItemDisabled)
+                {
+                    DrawValueBubble(foregroundDrawList, FormatValueBubble(valueMax, isInt, format), new Vector2(knobPosMax, y - knobRadius));
+                }
 
                 // dummy box the range
                 ImGui.Dummy(new Vector2(width, height));
 
                 // start dragging min knob
-                if (isKnobMinHovered && !_draggingSliders.Contains(knobMinID) && ImGui.IsMouseClicked(0))
+                if (rawKnobMinHovered && !_draggingSliders.Contains(knobMinID) && ImGui.IsMouseClicked(0))
                 {
                     _draggingSliders.Add(knobMinID);
                 }
                 // start dragging max knob
-                if (isKnobMaxHovered && !_draggingSliders.Contains(knobMaxID) && ImGui.IsMouseClicked(0))
+                if (rawKnobMaxHovered && !_draggingSliders.Contains(knobMaxID) && ImGui.IsMouseClicked(0))
                 {
                     _draggingSliders.Add(knobMaxID);
                 }
@@ -287,12 +332,9 @@ namespace Fu.Framework
                 // If the mouse is hovering over the min knob, change the value when the mouse is clicked
                 if (_draggingSliders.Contains(knobMinID) && ImGui.IsMouseDown(0) && !LastItemDisabled)
                 {
-                    Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
-                    ImGui.SetTooltip(valueMin.ToString());
-                    Fugui.PopStyle();
                     // Calculate the new value based on the mouse position
                     float mouseX = ImGui.GetMousePos().x;
-                    valueMin = min + (mouseX - x - knobRadius) / (width - knobRadius * 2f) * (max - min);
+                    valueMin = min + (mouseX - valueStartX) / valueWidth * range;
 
                     // clamp step
                     float tmp = valueMin / step;
@@ -311,13 +353,9 @@ namespace Fu.Framework
                 // If the mouse is hovering over the max knob, change the value when the mouse is clicked
                 if (_draggingSliders.Contains(knobMaxID) && ImGui.IsMouseDown(0) && !LastItemDisabled)
                 {
-                    Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
-                    ImGui.SetTooltip(valueMax.ToString());
-                    Fugui.PopStyle();
-
                     // Calculate the new value based on the mouse position
                     float mouseX = ImGui.GetMousePos().x;
-                    valueMax = min + (mouseX - x - knobRadius) / (width - knobRadius * 2f) * (max - min);
+                    valueMax = min + (mouseX - valueStartX) / valueWidth * range;
 
                     // clamp step
                     float tmp = valueMax / step;

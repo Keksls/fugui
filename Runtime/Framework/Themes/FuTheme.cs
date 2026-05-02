@@ -69,6 +69,14 @@ namespace Fu
         public float TabBorderSize = 1.0f;
         [FuSlider(0f, 64f)]
         public float TabMinWidthForCloseButton = 16f;
+        [FuDrag(0f, 20f, "x", "y")]
+        public Vector2 TabPadding = new Vector2(8f, 2f);
+        [FuSlider(0f, 20f)]
+        public float TabSpacing = 1f;
+        [FuSlider(8f, 160f)]
+        public float TabMinWidth = 32f;
+        [FuSlider(16f, 400f)]
+        public float TabMaxWidth = 180f;
         public ImGuiDir ColorButtonPosition = ImGuiDir.Right;
         [FuDrag(0f, 1f)]
         public Vector2 ButtonTextAlign = new Vector2(0.5f, 0.5f);
@@ -152,6 +160,34 @@ namespace Fu
                 }
                 Colors = colors;
             }
+            NormalizeTabThemeVariables();
+        }
+
+        /// <summary>
+        /// Ensures custom Fugui tab variables exist on themes saved before those fields were introduced.
+        /// </summary>
+        private void NormalizeTabThemeVariables()
+        {
+            if (TabPadding == Vector2.zero)
+            {
+                TabPadding = new Vector2(8f, 2f);
+            }
+            if (TabSpacing < 0f)
+            {
+                TabSpacing = 0f;
+            }
+            if (TabMinWidth <= 0f)
+            {
+                TabMinWidth = 32f;
+            }
+            if (TabMaxWidth <= 0f)
+            {
+                TabMaxWidth = 180f;
+            }
+            if (TabMaxWidth < TabMinWidth)
+            {
+                TabMaxWidth = TabMinWidth;
+            }
         }
 
         /// <summary>
@@ -193,6 +229,10 @@ namespace Fu
             TabRounding = 2.0f;
             TabBorderSize = 1.0f;
             TabMinWidthForCloseButton = 0.0f;
+            TabPadding = new Vector2(8f, 2f);
+            TabSpacing = 1f;
+            TabMinWidth = 32f;
+            TabMaxWidth = 180f;
             ColorButtonPosition = ImGuiDir.Right;
             ButtonTextAlign = new Vector2(0.5f, 0.5f);
             SelectableTextAlign = new Vector2(0.0f, 0.0f);
@@ -360,6 +400,10 @@ namespace Fu
             TabRounding = 2.0f;
             TabBorderSize = 1.0f;
             TabMinWidthForCloseButton = 0.0f;
+            TabPadding = new Vector2(8f, 2f);
+            TabSpacing = 1f;
+            TabMinWidth = 32f;
+            TabMaxWidth = 180f;
             ColorButtonPosition = ImGuiDir.Right;
             ButtonTextAlign = new Vector2(0.5f, 0.5f);
             SelectableTextAlign = new Vector2(0.0f, 0.0f);
@@ -496,6 +540,7 @@ namespace Fu
         /// </summary>
         internal void Apply(float scale)
         {
+            NormalizeTabThemeVariables();
             var style = ImGui.GetStyle();
             // set style var
             style.Alpha = Alpha;

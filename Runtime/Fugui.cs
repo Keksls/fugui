@@ -549,7 +549,9 @@ namespace Fu
                 Settings.ContainerMaxScale,
                 Settings.GlobalScale,
                 Settings.FontGlobalScale,
-                Settings.ContainerScaleFonts
+                Settings.ContainerScaleFonts,
+                Settings.ContainerUseDpiScale,
+                Settings.ContainerReferenceDpi
             );
         }
 

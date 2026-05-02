@@ -104,7 +104,7 @@ namespace Fu
 
         // Private constant for the color of the snap grid
 
-        private Vector4 _gridColor = new Vector4(.1f, .1f, .1f, .25f);
+        private Vector4 _gridColor = new Vector4(.1f, .1f, .1f, .18f);
         // Private constant for the width of the snap grid lines
         private float _gridWidth = 1f;
         // the default location of the overlay anchor
@@ -212,7 +212,7 @@ namespace Fu
             }
             _defaultAnchorLocation = anchor;
             _defaultAnchorOffset = anchorOffset;
-            return window.AddOverlay(this);
+            return true;
         }
 
         /// <summary>
@@ -235,7 +235,7 @@ namespace Fu
         public bool AnchorWindow(FuWindow window, FuOverlayAnchorLocation anchor, Vector2 anchorOffset)
         {
             // try add container to the UIWIndow
-            if (!window.AddOverlay(this))
+            if (Window != window && !window.AddOverlay(this))
             {
                 return false;
             }
@@ -282,7 +282,7 @@ namespace Fu
             // set anchor location
             _anchorLocation = anchor;
             // snap anchored offset
-            AnchorOffset = new Vector2Int((int)(Mathf.FloorToInt(anchorOffset.x / dragStep) * dragStep), (int)(Mathf.FloorToInt(anchorOffset.y / dragStep) * dragStep));
+            _anchorOffset = snapUnscaledOffset(anchorOffset);
             return true;
         }
 
@@ -346,59 +346,10 @@ namespace Fu
             Vector2 screenPos = getAnchoredPosition(ref unsnappedDragPosition);
 
             // set overlay local rect
-            switch (_dragButtonPosition)
-            {
-                case FuOverlayDragPosition.Top:
-                    if (_collapsed)
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x, retractButtonWidth));
-                    }
-                    else
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x, Size.y + retractButtonWidth));
-                    }
-                    break;
-                case FuOverlayDragPosition.Right:
-                    if (_collapsed)
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition + new Vector2(Size.x, 0f), new Vector2(retractButtonWidth, Size.y));
-                    }
-                    else
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x + retractButtonWidth, Size.y));
-                    }
-                    break;
-                case FuOverlayDragPosition.Bottom:
-                    if (_collapsed)
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition + new Vector2(0f, Size.y), new Vector2(Size.x, retractButtonWidth));
-                    }
-                    else
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x, Size.y + retractButtonWidth));
-                    }
-                    break;
-                case FuOverlayDragPosition.Left:
-                    if (_collapsed)
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(retractButtonWidth, Size.y));
-                    }
-                    else
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x + retractButtonWidth, Size.y));
-                    }
-                    break;
-                default:
-                    if (_collapsed)
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(retractButtonWidth, retractButtonWidth));
-                    }
-                    else
-                    {
-                        LocalRect = new Rect(screenPos - Window.LocalPosition, new Vector2(Size.x, Size.y));
-                    }
-                    break;
-            }
+            Rect overlayScreenRect = getOverlayScreenRect(screenPos);
+            LocalRect = new Rect(
+                overlayScreenRect.position - Window.LocalPosition,
+                overlayScreenRect.size);
 
             // if we are dragging, draw unsnapped drag ghost and snap grid
             if (IsDraging)
@@ -408,75 +359,46 @@ namespace Fu
                 if (_drawSnapGrid)
                 {
                     // draw drag snapping grid
-                    DrawGrid(ImGui.GetWindowDrawList());
+                    DrawGrid(ImGui.GetForegroundDrawList(), overlayScreenRect);
                 }
-                // set unsnapped position
-                ImGui.SetCursorScreenPos(unsnappedDragPosition);
-                Fugui.Push(ImGuiCol.ChildBg, new Vector4(0.1f, 0.1f, 0.1f, 0.25f));
-                ImGui.BeginChild(ID + "draginGhost", _collapsed ? new Vector2(12f, Size.y) : new Vector2(12f + Size.x, Size.y));
-                ImGuiNative.igEndChild();
-                Fugui.PopColor();
+                DrawDragPreview(ImGui.GetForegroundDrawList(), unsnappedDragPosition, overlayScreenRect);
 
-                // force render window next frame in case we are dragging but �ouse is out of window
+                // force render window next frame in case we are dragging but mouse is out of window
                 Window.ForceDraw();
             }
 
-            // force child to have no rounding
-            Fugui.Push(ImGuiStyleVar.ChildRounding, 0f);
-            // draw drag button
-            if (_collapsable || _draggable)
-            {
-                FuButtonStyle.Default.Push(true);
-                drawDragButton(screenPos);
-                FuButtonStyle.Default.Pop();
-            }
-
+            Fugui.Push(ImGuiStyleVar.ChildRounding, 6f * Fugui.Scale);
+            Fugui.Push(ImGuiStyleVar.ChildBorderSize, 1f * Fugui.Scale);
             // draw overlay UI
             if (!_collapsed)
             {
-                switch (_dragButtonPosition)
-                {
-                    case FuOverlayDragPosition.Top:
-                        ImGuiNative.igSetCursorScreenPos(new Vector2(screenPos.x, screenPos.y + retractButtonWidth));
-                        break;
-
-                    case FuOverlayDragPosition.Right:
-                        ImGuiNative.igSetCursorScreenPos(screenPos);
-                        break;
-
-                    case FuOverlayDragPosition.Bottom:
-                        ImGuiNative.igSetCursorScreenPos(new Vector2(screenPos.x, screenPos.y - retractButtonWidth));
-                        break;
-
-                    default:
-                    case FuOverlayDragPosition.Left:
-                        ImGuiNative.igSetCursorScreenPos(new Vector2(screenPos.x + retractButtonWidth, screenPos.y));
-                        break;
-                }
+                Vector2 contentScreenPos = getContentScreenPos(screenPos);
+                ImGuiNative.igSetCursorScreenPos(contentScreenPos);
 
                 _overlayStyle.Push(true);
-                if (_noBackground)
-                {
-                    Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
-                    Fugui.Push(ImGuiCol.Border, Vector4.zero);
-                    Fugui.Push(ImGuiCol.BorderShadow, Vector4.zero);
-                }
+                DrawOverlayBody(ImGui.GetWindowDrawList(), new Rect(contentScreenPos, Size));
+                Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
+                Fugui.Push(ImGuiCol.Border, Vector4.zero);
+                Fugui.Push(ImGuiCol.BorderShadow, Vector4.zero);
                 Layout = new FuLayout();
                 OnPreRender?.Invoke();
-                if (ImGui.BeginChild(ID, Size, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+                bool childVisible = ImGui.BeginChild(ID, Size, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+                if (childVisible)
                 {
                     UI?.Invoke(this, Layout);
                     OnPostRender?.Invoke();
-                    if (_noBackground)
-                    {
-                        Fugui.PopColor(3);
-                    }
-                    _overlayStyle.Pop();
                 }
                 ImGuiNative.igEndChild();
                 Layout.Dispose();
+                Fugui.PopColor(3);
+                _overlayStyle.Pop();
             }
-            Fugui.PopStyle();
+            // draw handle after the overlay body so it can cover the inner rounded seam.
+            if (_collapsable || _draggable)
+            {
+                drawDragButton(screenPos);
+            }
+            Fugui.PopStyle(2);
 
             // pop missing push
             int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
@@ -502,105 +424,344 @@ namespace Fu
         /// <param name="screenPos">screen relative position of the drag button</param>
         private void drawDragButton(Vector2 screenPos)
         {
-            // set draggingColor
-            if (IsDraging)
-            {
-                Fugui.Push(ImGuiCol.ChildBg, Fugui.Themes.GetColor(FuColors.ButtonActive));
-            }
-            // set hovered color
-            else if (_dragButtonHovered)
-            {
-                Fugui.Push(ImGuiCol.ChildBg, Fugui.Themes.GetColor(FuColors.ButtonHovered));
-            }
-            // set default color
-            else
-            {
-                Fugui.Push(ImGuiCol.ChildBg, Fugui.Themes.GetColor(FuColors.Button));
-            }
+            Rect handleRect = getHandleScreenRect(screenPos);
+            Vector2 retractPos = handleRect.position;
+            Vector2 retractButtonSize = handleRect.size;
 
-            // get retract button position
-            Vector2 retractPos = screenPos;
-            Vector2 retractButtonSize = default;
-
-            switch (_dragButtonPosition)
-            {
-                case FuOverlayDragPosition.Top:
-                    retractPos = screenPos;
-                    retractButtonSize = new Vector2(Size.x, retractButtonWidth);
-                    break;
-
-                case FuOverlayDragPosition.Right:
-                    retractPos = new Vector2(screenPos.x + Size.x, screenPos.y);
-                    retractButtonSize = new Vector2(retractButtonWidth, Size.y);
-                    break;
-
-                case FuOverlayDragPosition.Bottom:
-                    retractPos = new Vector2(screenPos.x, screenPos.y + Size.y - retractButtonWidth);
-                    retractButtonSize = new Vector2(Size.x, retractButtonWidth);
-                    break;
-
-                default:
-                case FuOverlayDragPosition.Left:
-                    retractPos = screenPos;
-                    retractButtonSize = new Vector2(retractButtonWidth, Size.y);
-                    break;
-            }
-
-            // draw retract button
             ImGui.SetCursorScreenPos(retractPos);
-            ImGui.BeginChild(ID + "collapsable", retractButtonSize);
-            ImGuiNative.igEndChild();
-            Fugui.PopColor();
-            // whatever the retract button is retracted
-            if (ImGui.IsItemHovered())
+            ImGui.InvisibleButton(ID + "overlayHandle", retractButtonSize);
+
+            bool hovered = ImGui.IsItemHovered();
+            bool hoverChanged = hovered != _dragButtonHovered;
+            _dragButtonHovered = hovered;
+
+            Vector4 bg = IsDraging
+                ? Fugui.Themes.GetColor(FuColors.ButtonActive)
+                : hovered
+                    ? Fugui.Themes.GetColor(FuColors.ButtonHovered)
+                    : Fugui.Themes.GetColor(FuColors.Button);
+            bg.w = Mathf.Max(bg.w, hovered || IsDraging ? 0.95f : 0.82f);
+
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            Rect visualRect = getHandleVisualRect(handleRect, out ImDrawFlags cornerFlags);
+            float rounding = Mathf.Min(6f * Fugui.Scale, Mathf.Min(visualRect.width, visualRect.height) * 0.45f);
+            drawList.AddRectFilled(visualRect.min, visualRect.max, ImGui.GetColorU32(bg), rounding, cornerFlags);
+            DrawGripLine(drawList, retractPos, retractButtonSize, hovered);
+
+            if (hoverChanged)
             {
-                _dragButtonHovered = true;
+                Window.ForceDraw();
+            }
+
+            if (hovered)
+            {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && _draggable)
+                string tooltip = string.Empty;
+                if (_draggable)
+                {
+                    tooltip = "Drag overlay";
+                }
+                if (_collapsable)
+                {
+                    tooltip = string.IsNullOrEmpty(tooltip) ? "Double-click to collapse" : $"{tooltip}. Double-click to collapse";
+                }
+                if (!_noEditAnchor)
+                {
+                    tooltip = string.IsNullOrEmpty(tooltip) ? "Right-click for position" : $"{tooltip}. Right-click for position";
+                }
+                if (!string.IsNullOrEmpty(tooltip))
+                {
+                    ImGui.SetItemTooltip($"{tooltip}.");
+                }
+
+                bool doubleClicked = ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left);
+                if (doubleClicked && _collapsable)
+                {
+                    _collapsed = !_collapsed;
+                    Window.ForceDraw();
+                }
+                else if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && _draggable)
                 {
                     IsDraging = true;
                     _dragMousePosition = Window.Mouse.Position - _dragOffset;
                 }
-                // will show / hide overlay on double click
-                if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
-                {
-                    _collapsed = !_collapsed;
-                }
+
                 // open context menu if right clicked
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Right) && !_noEditAnchor)
                 {
-                    // build context menu items
-                    var builder = FuContextMenuBuilder.Start()
-                        .BeginChild("Overlay Anchor");
-                    foreach (FuOverlayAnchorLocation location in Enum.GetValues(typeof(FuOverlayAnchorLocation)))
-                    {
-                        builder.AddItem(Fugui.AddSpacesBeforeUppercaseDirect(location.ToString()), () =>
-                        {
-                            _anchorLocation = location;
-                        });
-                    }
-                    builder.EndChild().BeginChild("Overlay Drag");
-                    foreach (FuOverlayDragPosition pos in Enum.GetValues(typeof(FuOverlayDragPosition)))
-                    {
-                        builder.AddItem(Fugui.AddSpacesBeforeUppercaseDirect(pos.ToString()), () =>
-                        {
-                            _dragButtonPosition = pos;
-                        });
-                    }
-                    builder.EndChild();
-
-                    // push items to context menu
-                    Fugui.PushContextMenuItems(builder.Build());
-                    // open context menu
-                    Fugui.TryOpenContextMenu();
-                    // pop items to context menu
-                    Fugui.PopContextMenuItems();
+                    OpenOverlayContextMenu();
                 }
             }
-            else
+        }
+
+        /// <summary>
+        /// Returns the screen-space rectangle occupied by the overlay.
+        /// </summary>
+        /// <param name="screenPos">Overlay content origin in screen coordinates.</param>
+        /// <returns>Overlay screen rectangle.</returns>
+        private Rect getOverlayScreenRect(Vector2 screenPos)
+        {
+            if (_collapsed)
             {
-                _dragButtonHovered = false;
+                return getHandleScreenRect(screenPos);
             }
+
+            return new Rect(screenPos, getOverlayBoundsSize());
+        }
+
+        /// <summary>
+        /// Returns the screen-space rectangle occupied by the overlay handle.
+        /// </summary>
+        /// <param name="screenPos">Overlay content origin in screen coordinates.</param>
+        /// <returns>Handle screen rectangle.</returns>
+        private Rect getHandleScreenRect(Vector2 screenPos)
+        {
+            switch (_dragButtonPosition)
+            {
+                case FuOverlayDragPosition.Top:
+                    return new Rect(screenPos, new Vector2(Size.x, retractButtonWidth));
+
+                case FuOverlayDragPosition.Right:
+                    return new Rect(new Vector2(screenPos.x + Size.x, screenPos.y), new Vector2(retractButtonWidth, Size.y));
+
+                case FuOverlayDragPosition.Bottom:
+                    return new Rect(new Vector2(screenPos.x, screenPos.y + Size.y), new Vector2(Size.x, retractButtonWidth));
+
+                default:
+                case FuOverlayDragPosition.Left:
+                    return new Rect(screenPos, new Vector2(retractButtonWidth, Size.y));
+            }
+        }
+
+        /// <summary>
+        /// Returns the screen-space content origin for the overlay body.
+        /// </summary>
+        /// <param name="screenPos">Overlay content origin in screen coordinates.</param>
+        /// <returns>Content screen position.</returns>
+        private Vector2 getContentScreenPos(Vector2 screenPos)
+        {
+            switch (_dragButtonPosition)
+            {
+                case FuOverlayDragPosition.Top:
+                    return new Vector2(screenPos.x, screenPos.y + retractButtonWidth);
+
+                case FuOverlayDragPosition.Left:
+                    return new Vector2(screenPos.x + retractButtonWidth, screenPos.y);
+
+                default:
+                    return screenPos;
+            }
+        }
+
+        /// <summary>
+        /// Returns the whole overlay bounds size, including the handle.
+        /// </summary>
+        /// <returns>Overlay bounds size.</returns>
+        private Vector2 getOverlayBoundsSize()
+        {
+            switch (_dragButtonPosition)
+            {
+                case FuOverlayDragPosition.Top:
+                case FuOverlayDragPosition.Bottom:
+                    return new Vector2(Size.x, Size.y + retractButtonWidth);
+
+                case FuOverlayDragPosition.Right:
+                case FuOverlayDragPosition.Left:
+                    return new Vector2(Size.x + retractButtonWidth, Size.y);
+
+                default:
+                    return Size;
+            }
+        }
+
+        /// <summary>
+        /// Draws the overlay body without rounding the side connected to the handle.
+        /// </summary>
+        /// <param name="drawList">ImGui draw list.</param>
+        /// <param name="bodyRect">Overlay body rectangle.</param>
+        private void DrawOverlayBody(ImDrawListPtr drawList, Rect bodyRect)
+        {
+            if (_noBackground)
+            {
+                return;
+            }
+
+            Vector4 bg = Fugui.Themes.GetColor(FuColors.WindowBg);
+            float rounding = 6f * Fugui.Scale;
+            ImDrawFlags cornerFlags;
+            switch (_dragButtonPosition)
+            {
+                case FuOverlayDragPosition.Top:
+                    cornerFlags = ImDrawFlags.RoundCornersBottom;
+                    break;
+
+                case FuOverlayDragPosition.Right:
+                    cornerFlags = ImDrawFlags.RoundCornersLeft;
+                    break;
+
+                case FuOverlayDragPosition.Bottom:
+                    cornerFlags = ImDrawFlags.RoundCornersTop;
+                    break;
+
+                default:
+                case FuOverlayDragPosition.Left:
+                    cornerFlags = ImDrawFlags.RoundCornersRight;
+                    break;
+            }
+
+            drawList.AddRectFilled(bodyRect.min, bodyRect.max, ImGui.GetColorU32(bg), rounding, cornerFlags);
+        }
+
+        /// <summary>
+        /// Returns the handle visual rectangle with a small body overlap to hide inner rounded seams.
+        /// </summary>
+        /// <param name="handleRect">Handle interaction rectangle.</param>
+        /// <param name="cornerFlags">Rounded corners to draw.</param>
+        /// <returns>Handle visual rectangle.</returns>
+        private Rect getHandleVisualRect(Rect handleRect, out ImDrawFlags cornerFlags)
+        {
+            if (_collapsed)
+            {
+                cornerFlags = ImDrawFlags.RoundCornersAll;
+                return handleRect;
+            }
+
+            float overlap = Mathf.Min(3f * Fugui.Scale, retractButtonWidth * 0.25f);
+            switch (_dragButtonPosition)
+            {
+                case FuOverlayDragPosition.Top:
+                    cornerFlags = ImDrawFlags.RoundCornersTop;
+                    return new Rect(handleRect.position, new Vector2(handleRect.width, handleRect.height + overlap));
+
+                case FuOverlayDragPosition.Right:
+                    cornerFlags = ImDrawFlags.RoundCornersRight;
+                    return new Rect(new Vector2(handleRect.x - overlap, handleRect.y), new Vector2(handleRect.width + overlap, handleRect.height));
+
+                case FuOverlayDragPosition.Bottom:
+                    cornerFlags = ImDrawFlags.RoundCornersBottom;
+                    return new Rect(new Vector2(handleRect.x, handleRect.y - overlap), new Vector2(handleRect.width, handleRect.height + overlap));
+
+                default:
+                case FuOverlayDragPosition.Left:
+                    cornerFlags = ImDrawFlags.RoundCornersLeft;
+                    return new Rect(handleRect.position, new Vector2(handleRect.width + overlap, handleRect.height));
+            }
+        }
+
+        /// <summary>
+        /// Draws the overlay handle highlight line.
+        /// </summary>
+        /// <param name="drawList">ImGui draw list.</param>
+        /// <param name="position">Handle position.</param>
+        /// <param name="size">Handle size.</param>
+        /// <param name="hovered">Whether the handle is hovered.</param>
+        private void DrawGripLine(ImDrawListPtr drawList, Vector2 position, Vector2 size, bool hovered)
+        {
+            bool horizontal = _dragButtonPosition == FuOverlayDragPosition.Top || _dragButtonPosition == FuOverlayDragPosition.Bottom;
+            float scale = Fugui.Scale;
+            float thickness = Mathf.Max(2f, 3f * scale);
+            float length = horizontal
+                ? Mathf.Clamp(size.x * 0.34f, 18f * scale, 54f * scale)
+                : Mathf.Clamp(size.y * 0.44f, 18f * scale, 54f * scale);
+            Vector2 center = position + size * 0.5f;
+            Vector4 highlight = IsDraging
+                ? Fugui.Themes.GetColor(FuColors.HighlightActive)
+                : hovered
+                    ? Fugui.Themes.GetColor(FuColors.HighlightHovered)
+                    : Fugui.Themes.GetColor(FuColors.Highlight);
+            highlight.w = hovered || IsDraging ? 1f : 0.82f;
+
+            Vector2 min = horizontal
+                ? new Vector2(center.x - length * 0.5f, center.y - thickness * 0.5f)
+                : new Vector2(center.x - thickness * 0.5f, center.y - length * 0.5f);
+            Vector2 max = horizontal
+                ? new Vector2(center.x + length * 0.5f, center.y + thickness * 0.5f)
+                : new Vector2(center.x + thickness * 0.5f, center.y + length * 0.5f);
+            drawList.AddRectFilled(min, max, ImGui.GetColorU32(highlight), thickness * 0.5f, ImDrawFlags.RoundCornersAll);
+        }
+
+        /// <summary>
+        /// Draws drag feedback for the unsnapped and snapped overlay positions.
+        /// </summary>
+        /// <param name="drawList">ImGui draw list.</param>
+        /// <param name="unsnappedScreenPos">Unsnapped screen position.</param>
+        /// <param name="snappedRect">Snapped overlay rectangle.</param>
+        private void DrawDragPreview(ImDrawListPtr drawList, Vector2 unsnappedScreenPos, Rect snappedRect)
+        {
+            Rect unsnappedRect = getOverlayScreenRect(unsnappedScreenPos);
+            Vector4 snappedFill = Fugui.Themes.GetColor(FuColors.ButtonActive);
+            Vector4 snappedBorder = Fugui.Themes.GetColor(FuColors.TextInfo);
+            Vector4 rawBorder = Fugui.Themes.GetColor(FuColors.TextDisabled);
+            snappedFill.w = 0.14f;
+            snappedBorder.w = 0.85f;
+            rawBorder.w = 0.55f;
+
+            float rounding = 6f * Fugui.Scale;
+            float thickness = Mathf.Max(1f, Fugui.Scale);
+            drawList.AddRectFilled(snappedRect.min, snappedRect.max, ImGui.GetColorU32(snappedFill), rounding);
+            drawList.AddRect(snappedRect.min, snappedRect.max, ImGui.GetColorU32(snappedBorder), rounding, ImDrawFlags.None, thickness);
+
+            if ((unsnappedRect.position - snappedRect.position).sqrMagnitude > 1f)
+            {
+                drawList.AddRect(unsnappedRect.min, unsnappedRect.max, ImGui.GetColorU32(rawBorder), rounding, ImDrawFlags.None, thickness);
+            }
+        }
+
+        /// <summary>
+        /// Opens the overlay positioning context menu.
+        /// </summary>
+        private void OpenOverlayContextMenu()
+        {
+            var builder = FuContextMenuBuilder.Start();
+            if (_collapsable)
+            {
+                builder.AddItem(_collapsed ? "Expand" : "Collapse", () =>
+                {
+                    _collapsed = !_collapsed;
+                    Window.ForceDraw();
+                });
+            }
+
+            builder.AddItem("Reset position", () =>
+            {
+                _dragOffset = Vector2.zero;
+                _drawSnapGrid = false;
+                Window.ForceDraw();
+            })
+            .BeginChild("Anchor");
+
+            foreach (FuOverlayAnchorLocation location in Enum.GetValues(typeof(FuOverlayAnchorLocation)))
+            {
+                FuOverlayAnchorLocation capturedLocation = location;
+                builder.AddItem(Fugui.AddSpacesBeforeUppercaseDirect(location.ToString()), () =>
+                {
+                    _anchorLocation = capturedLocation;
+                    _dragOffset = Vector2.zero;
+                    Window.ForceDraw();
+                });
+            }
+
+            builder.EndChild().BeginChild("Handle");
+            foreach (FuOverlayDragPosition pos in Enum.GetValues(typeof(FuOverlayDragPosition)))
+            {
+                if (pos == FuOverlayDragPosition.Auto)
+                {
+                    continue;
+                }
+
+                FuOverlayDragPosition capturedPosition = pos;
+                builder.AddItem(Fugui.AddSpacesBeforeUppercaseDirect(pos.ToString()), () =>
+                {
+                    _dragButtonPosition = capturedPosition;
+                    _dragOffset = Vector2.zero;
+                    Window.ForceDraw();
+                });
+            }
+            builder.EndChild();
+
+            Fugui.PushContextMenuItems(builder.Build());
+            Fugui.TryOpenContextMenu();
+            Fugui.PopContextMenuItems();
         }
 
         /// <summary>
@@ -609,56 +770,27 @@ namespace Fu
         /// <returns>container relative position</returns>
         public Vector2 getAnchoredPosition(ref Vector2 unsnappedDragPosition)
         {
-            Vector2 localPosition = default;
-
-            // Calculate the position of the widget based on the anchor point
-            switch (_anchorLocation)
-            {
-                case FuOverlayAnchorLocation.TopLeft:
-                    localPosition = AnchorOffset; // position at top left corner
-                    break;
-                case FuOverlayAnchorLocation.TopCenter:
-                    localPosition = new Vector2((Window.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, AnchorOffset.y); // position at top center
-                    break;
-                case FuOverlayAnchorLocation.TopRight:
-                    localPosition = new Vector2(Window.WorkingAreaSize.x - Size.x - AnchorOffset.x, AnchorOffset.y); // position at top right corner
-                    break;
-                case FuOverlayAnchorLocation.MiddleLeft:
-                    localPosition = new Vector2(AnchorOffset.x, (Window.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle left side
-                    break;
-                case FuOverlayAnchorLocation.MiddleCenter:
-                    localPosition = new Vector2((Window.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, (Window.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle center
-                    break;
-                case FuOverlayAnchorLocation.MiddleRight:
-                    localPosition = new Vector2(Window.WorkingAreaSize.x - Size.x - AnchorOffset.x, (Window.WorkingAreaSize.y - Size.y - AnchorOffset.y) * 0.5f); // position at middle right side
-                    break;
-                case FuOverlayAnchorLocation.BottomLeft:
-                    localPosition = new Vector2(AnchorOffset.x, Window.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom left corner
-                    break;
-                case FuOverlayAnchorLocation.BottomCenter:
-                    localPosition = new Vector2((Window.WorkingAreaSize.x - Size.x - AnchorOffset.x) * 0.5f, Window.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom center
-                    break;
-                case FuOverlayAnchorLocation.BottomRight:
-                    localPosition = new Vector2(Window.WorkingAreaSize.x - Size.x - AnchorOffset.x, Window.WorkingAreaSize.y - Size.y - AnchorOffset.y); // position at bottom right corner
-                    break;
-            }
+            Vector2 localPosition = getBaseAnchoredPosition();
 
             // handle drag offset
             if (IsDraging)
             {
-                _dragOffset = Window.Mouse.Position - _dragMousePosition;
+                Vector2 rawDragOffset = Window.Mouse.Position - _dragMousePosition;
+                Vector2 rawPosition = clampPosition(localPosition + rawDragOffset);
                 // draw snap grid only if we start to drag (avoid draw grid on double click)
-                if (!_drawSnapGrid && Math.Abs(_dragOffset.x) + Math.Abs(_dragOffset.y) > 4)
+                if (!_drawSnapGrid && Math.Abs(rawDragOffset.x - _dragOffset.x) + Math.Abs(rawDragOffset.y - _dragOffset.y) > 4f * Fugui.Scale)
                 {
                     _drawSnapGrid = true;
                 }
+
                 // store not snapped drag offset
-                unsnappedDragPosition = localPosition + _dragOffset;
-                // clamp unsnapped drag position
-                unsnappedDragPosition = clampPosition(unsnappedDragPosition) + Window.LocalPosition + Window.WorkingAreaPosition;
-                // snap drag offset to grid
-                _dragOffset.x = (float)Math.Floor(_dragOffset.x / dragStep) * dragStep;
-                _dragOffset.y = (float)Math.Floor(_dragOffset.y / dragStep) * dragStep;
+                unsnappedDragPosition = rawPosition + Window.LocalPosition + Window.WorkingAreaPosition;
+
+                Vector2 snappedPosition = _drawSnapGrid
+                    ? clampPosition(snapPosition(rawPosition))
+                    : rawPosition;
+
+                _dragOffset = snappedPosition - localPosition;
             }
             // add dragOffset to local position
             localPosition += _dragOffset;
@@ -671,17 +803,109 @@ namespace Fu
         }
 
         /// <summary>
+        /// Computes the anchored overlay position before the user drag offset is applied.
+        /// </summary>
+        /// <returns>Position relative to the window working area.</returns>
+        private Vector2 getBaseAnchoredPosition()
+        {
+            Vector2 anchorOffset = AnchorOffset;
+            Vector2 boundsSize = getOverlayBoundsSize();
+
+            switch (_anchorLocation)
+            {
+                case FuOverlayAnchorLocation.TopLeft:
+                    return anchorOffset;
+
+                case FuOverlayAnchorLocation.TopCenter:
+                    return new Vector2((Window.WorkingAreaSize.x - boundsSize.x) * 0.5f + anchorOffset.x, anchorOffset.y);
+
+                case FuOverlayAnchorLocation.TopRight:
+                    return new Vector2(Window.WorkingAreaSize.x - boundsSize.x - anchorOffset.x, anchorOffset.y);
+
+                case FuOverlayAnchorLocation.MiddleLeft:
+                    return new Vector2(anchorOffset.x, (Window.WorkingAreaSize.y - boundsSize.y) * 0.5f + anchorOffset.y);
+
+                case FuOverlayAnchorLocation.MiddleCenter:
+                    return new Vector2((Window.WorkingAreaSize.x - boundsSize.x) * 0.5f + anchorOffset.x, (Window.WorkingAreaSize.y - boundsSize.y) * 0.5f + anchorOffset.y);
+
+                case FuOverlayAnchorLocation.MiddleRight:
+                    return new Vector2(Window.WorkingAreaSize.x - boundsSize.x - anchorOffset.x, (Window.WorkingAreaSize.y - boundsSize.y) * 0.5f + anchorOffset.y);
+
+                case FuOverlayAnchorLocation.BottomLeft:
+                    return new Vector2(anchorOffset.x, Window.WorkingAreaSize.y - boundsSize.y - anchorOffset.y);
+
+                case FuOverlayAnchorLocation.BottomCenter:
+                    return new Vector2((Window.WorkingAreaSize.x - boundsSize.x) * 0.5f + anchorOffset.x, Window.WorkingAreaSize.y - boundsSize.y - anchorOffset.y);
+
+                case FuOverlayAnchorLocation.BottomRight:
+                    return new Vector2(Window.WorkingAreaSize.x - boundsSize.x - anchorOffset.x, Window.WorkingAreaSize.y - boundsSize.y - anchorOffset.y);
+
+                default:
+                    return anchorOffset;
+            }
+        }
+
+        /// <summary>
+        /// Snaps an unscaled offset to the overlay grid.
+        /// </summary>
+        /// <param name="offset">Unscaled offset.</param>
+        /// <returns>Snapped unscaled offset.</returns>
+        private Vector2Int snapUnscaledOffset(Vector2 offset)
+        {
+            float step = Mathf.Max(1f, _dragStep);
+            return new Vector2Int(
+                Mathf.RoundToInt(offset.x / step) * Mathf.RoundToInt(step),
+                Mathf.RoundToInt(offset.y / step) * Mathf.RoundToInt(step));
+        }
+
+        /// <summary>
+        /// Snaps a working-area position to the overlay grid.
+        /// </summary>
+        /// <param name="position">Working-area position in scaled pixels.</param>
+        /// <returns>Snapped position.</returns>
+        private Vector2 snapPosition(Vector2 position)
+        {
+            float step = Mathf.Max(1f, dragStep);
+            Vector2 referenceOffset = getSnapReferenceOffset();
+            Vector2 referencePosition = position + referenceOffset;
+            return new Vector2(
+                Mathf.Round(referencePosition.x / step) * step,
+                Mathf.Round(referencePosition.y / step) * step) - referenceOffset;
+        }
+
+        /// <summary>
+        /// Returns the local point that should stick to the grid for the current handle side.
+        /// </summary>
+        /// <returns>Snap reference offset from the overlay content origin.</returns>
+        private Vector2 getSnapReferenceOffset()
+        {
+            Vector2 boundsSize = getOverlayBoundsSize();
+            switch (_dragButtonPosition)
+            {
+                case FuOverlayDragPosition.Right:
+                    return new Vector2(boundsSize.x, 0f);
+
+                case FuOverlayDragPosition.Bottom:
+                    return new Vector2(0f, boundsSize.y);
+
+                default:
+                    return Vector2.zero;
+            }
+        }
+
+        /// <summary>
         /// clamp position to stay on window working area
         /// </summary>
         /// <param name="localPosition">position to clamp</param>
         /// <returns>clamped position</returns>
         private Vector2 clampPosition(Vector2 localPosition)
         {
-            float windowPadding = 4f;
-            if (localPosition.x + Size.x + windowPadding + retractButtonWidth > Window.WorkingAreaSize.x)
-                localPosition.x = Window.WorkingAreaSize.x - Size.x - windowPadding - retractButtonWidth;
-            if (localPosition.y + Size.y + windowPadding > Window.WorkingAreaSize.y)
-                localPosition.y = Window.WorkingAreaSize.y - Size.y - windowPadding;
+            float windowPadding = 6f * Fugui.Scale;
+            Vector2 boundsSize = getOverlayBoundsSize();
+            if (localPosition.x + boundsSize.x + windowPadding > Window.WorkingAreaSize.x)
+                localPosition.x = Window.WorkingAreaSize.x - boundsSize.x - windowPadding;
+            if (localPosition.y + boundsSize.y + windowPadding > Window.WorkingAreaSize.y)
+                localPosition.y = Window.WorkingAreaSize.y - boundsSize.y - windowPadding;
             if (localPosition.x < windowPadding)
                 localPosition.x = windowPadding;
             if (localPosition.y < windowPadding)
@@ -693,37 +917,38 @@ namespace Fu
         /// Draw snap grid
         /// </summary>
         /// <param name="drawList">ImGui draw list to draw snap grid on</param>
-        private void DrawGrid(ImDrawListPtr drawList)
+        private void DrawGrid(ImDrawListPtr drawList, Rect snappedRect)
         {
-            // Convert the grid color to a 32-bit integer color
-            uint color = ImGui.GetColorU32(_gridColor);
-
-            // Calculate the number of columns and rows in the snap grid
-            int cols = (int)(Window.WorkingAreaSize.x / dragStep) + 1;
-            int rows = (int)(Window.WorkingAreaSize.y / dragStep) + 1;
-
-            // Calculate the starting position of the snap grid
             Vector2 startPos = Window.LocalPosition + Window.WorkingAreaPosition;
+            Vector2 endPos = startPos + Window.WorkingAreaSize;
+            float step = Mathf.Max(4f, dragStep);
+            uint minorColor = ImGui.GetColorU32(_gridColor);
+            Vector4 majorGridColor = _gridColor;
+            majorGridColor.w = Mathf.Min(1f, _gridColor.w * 1.8f);
+            uint majorColor = ImGui.GetColorU32(majorGridColor);
+            Vector4 fill = Fugui.Themes.GetColor(FuColors.WindowBg);
+            fill.w = 0.10f;
+            Vector4 snapCell = Fugui.Themes.GetColor(FuColors.TextInfo);
+            snapCell.w = 0.09f;
 
-            // Draw the vertical lines of the snap grid
-            for (int x = 0; x < cols; x++)
+            drawList.AddRectFilled(startPos, endPos, ImGui.GetColorU32(fill));
+
+            int index = 0;
+            for (float x = startPos.x; x <= endPos.x + 0.5f; x += step, index++)
             {
-                // Calculate the start and end points of the line
-                Vector2 p1 = new Vector2(x * dragStep, -dragStep);
-                Vector2 p2 = new Vector2(x * dragStep, Window.WorkingAreaSize.y + dragStep);
-                // Add the line to the draw list
-                drawList.AddLine(p1 + startPos, p2 + startPos, color, _gridWidth);
+                uint color = index % 4 == 0 ? majorColor : minorColor;
+                drawList.AddLine(new Vector2(x, startPos.y), new Vector2(x, endPos.y), color, _gridWidth * Fugui.Scale);
             }
 
-            // Draw the horizontal lines of the snap grid
-            for (int y = 0; y < rows; y++)
+            index = 0;
+            for (float y = startPos.y; y <= endPos.y + 0.5f; y += step, index++)
             {
-                // Calculate the start and end points of the line
-                Vector2 p1 = new Vector2(-dragStep, y * dragStep);
-                Vector2 p2 = new Vector2(Window.WorkingAreaSize.x + dragStep, y * dragStep);
-                // Add the line to the draw list
-                drawList.AddLine(p1 + startPos, p2 + startPos, color, _gridWidth);
+                uint color = index % 4 == 0 ? majorColor : minorColor;
+                drawList.AddLine(new Vector2(startPos.x, y), new Vector2(endPos.x, y), color, _gridWidth * Fugui.Scale);
             }
+
+            drawList.AddRectFilled(snappedRect.min, snappedRect.max, ImGui.GetColorU32(snapCell), 6f * Fugui.Scale);
+            drawList.AddRect(startPos, endPos, majorColor, 0f, ImDrawFlags.None, Mathf.Max(1f, Fugui.Scale));
         }
         #endregion
     }

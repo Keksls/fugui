@@ -96,7 +96,6 @@ namespace Fu.Framework
                 ImGui.SameLine();
             }
             Vector2 pos = ImGui.GetCursorScreenPos();
-            Vector2 localPos = ImGui.GetCursorPos();
             Vector2 center = pos + new Vector2(size.x / 2, size.y / 2);
             float radius = size.y / 2f - 3f * Fugui.CurrentContext.Scale;
 
@@ -152,34 +151,29 @@ namespace Fu.Framework
             }
 
             // draw background
-            drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(BGColor), 99);
+            float rounding = size.y * 0.5f;
+            DrawRoundedSegment(drawList, pos, pos + size, BGColor, rounding);
             // draw border
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(BorderColor), 99);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(BorderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
             // draw knob
-            drawList.AddCircleFilled(knobPos + new Vector2(radius, radius), radius, ImGui.GetColorU32(KnobColor), 32);
+            DrawValueKnob(drawList, knobPos + new Vector2(radius, radius), radius, KnobColor, _lastItemHovered, _lastItemActive, LastItemDisabled || noEditable);
+            DrawWidgetFeedback(drawList, new Rect(pos, size), _lastItemActive, _lastItemHovered, LastItemDisabled || noEditable, rounding);
 
             // draw text
             if (!string.IsNullOrEmpty(currentText))
             {
-                if (!value)
+                Vector4 textColor = colValue
+                    ? Fugui.Themes.GetColor(FuColors.SelectedText)
+                    : Fugui.Themes.GetColor(FuColors.Text);
+                if (LastItemDisabled)
                 {
-                    ImGui.SetCursorPosX(localPos.x + radius * 2f + 12f * Fugui.CurrentContext.Scale);
+                    textColor.w *= 0.5f;
                 }
-                else
-                {
-                    ImGui.SetCursorPosX(localPos.x + 8f * Fugui.CurrentContext.Scale);
-                }
-                ImGui.SetCursorPosY(localPos.y + 2f * Fugui.CurrentContext.Scale);
-                if (colValue)
-                {
-                    FuTextStyle.Selected.Push(!LastItemDisabled);
-                }
-                else
-                {
-                    FuTextStyle.Default.Push(!LastItemDisabled);
-                }
-                ImGui.Text(currentText);
-                FuTextStyle.Default.Pop();
+                float textX = value
+                    ? pos.x + 8f * Fugui.CurrentContext.Scale
+                    : pos.x + radius * 2f + 12f * Fugui.CurrentContext.Scale;
+                Vector2 textPos = new Vector2(textX, pos.y + (size.y - textSize.y) * 0.5f);
+                drawList.AddText(textPos, ImGui.GetColorU32(textColor), currentText);
             }
 
             data.Update(value, _animationEnabled);

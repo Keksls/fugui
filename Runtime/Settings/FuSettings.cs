@@ -309,6 +309,17 @@ namespace Fu
         [FuToggle]
         public bool ContainerScaleFonts = true;
 
+        [Tooltip("Use display DPI as a lower bound for automatic container scaling.")]
+        [FuTooltip("Use display DPI as a lower bound for automatic container scaling.")]
+        [FuToggle]
+        public bool ContainerUseDpiScale = true;
+
+        [Tooltip("DPI that maps to automatic container scale 1.")]
+        [FuTooltip("DPI that maps to automatic container scale 1.")]
+        [Range(1f, 400f)]
+        [FuSlider(1f, 400f)]
+        public float ContainerReferenceDpi = FuContainerScaleConfig.DefaultReferenceDpi;
+
         [Tooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
         [FuTooltip("Allow user scaling text of individual window with CTRL+Wheel. (default=false)")]
         [FuToggle]

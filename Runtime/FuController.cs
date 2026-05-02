@@ -37,10 +37,17 @@ namespace Fu
             }
 
             // awake all FuWindowBehaviour instances
+#if UNITY_6000_4_OR_NEWER
             foreach (var mono in GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include))
             {
                 mono.SendMessage("FuguiAwake", SendMessageOptions.DontRequireReceiver);
             }
+#else
+            foreach (var mono in GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                mono.SendMessage("FuguiAwake", SendMessageOptions.DontRequireReceiver);
+            }
+#endif
         }
 
         /// <summary>

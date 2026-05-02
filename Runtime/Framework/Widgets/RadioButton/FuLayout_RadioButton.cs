@@ -48,46 +48,48 @@ namespace Fu.Framework
             // layout states
             float height = 18f * Fugui.CurrentContext.Scale;
             Vector2 pos = ImGui.GetCursorScreenPos();
-            Vector2 CircleCenter = new Vector2(pos.x + height / 2f + 2f * Fugui.CurrentContext.Scale, pos.y + height / 2f + 2f * Fugui.CurrentContext.Scale);
+            Vector2 CircleCenter = new Vector2(pos.x + height / 2f, pos.y + height / 2f);
+            float radius = height * 0.42f;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             // input stats
             bool hovered = ImGui.IsMouseHoveringRect(pos, pos + new Vector2(height, height));
             bool active = hovered && ImGui.IsMouseDown(0);
             bool clicked = hovered && ImGui.IsMouseReleased(0);
+            animationData.Update(isChecked, _animationEnabled);
             // frame colors
             Vector4 BGColor;
             Vector4 knobColor;
+            Vector4 borderColor;
             if (LastItemDisabled)
             {
                 BGColor = style.DisabledFrame;
-                knobColor = Fugui.Themes.GetColor(FuColors.Knob) * 0.3f;
+                knobColor = style.TextStyle.DisabledText;
+                borderColor = style.DisabledBorder;
             }
             else
             {
-                BGColor = style.CheckMark;
-                knobColor = Fugui.Themes.GetColor(FuColors.Knob);
+                BGColor = isChecked ? style.CheckMark : style.Frame;
+                knobColor = style.TextStyle.Text;
+                borderColor = style.Border;
                 if (active)
                 {
-                    BGColor = style.CheckMark * 0.8f;
-                    knobColor = Fugui.Themes.GetColor(FuColors.KnobActive);
+                    BGColor = isChecked ? style.CheckMark * 0.82f : style.ActiveFrame;
                 }
                 else if (hovered)
                 {
-                    BGColor = style.CheckMark * 0.9f;
-                    knobColor = Fugui.Themes.GetColor(FuColors.KnobHovered);
+                    BGColor = isChecked ? style.CheckMark * 0.92f : style.HoveredFrame;
                 }
             }
 
             // draw radio button
-            drawList.AddCircleFilled(CircleCenter, height / 2f, ImGui.GetColorU32(!isChecked ? Fugui.Themes.GetColor(FuColors.FrameBg) : BGColor), 64);
+            drawList.AddCircleFilled(CircleCenter, radius, ImGui.GetColorU32(BGColor), 40);
+            drawList.AddCircle(CircleCenter, radius, ImGui.GetColorU32(borderColor), 40, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
             if (animationData.CurrentValue > 0f)
             {
-                float knobSize = Mathf.Lerp(0f, height / 5f, animationData.CurrentValue);
-                drawList.AddCircleFilled(CircleCenter, knobSize, ImGui.GetColorU32(knobColor), 64);
-            }
-            else
-            {
-                drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(style.Border), 64);
+                float knobSize = Mathf.Lerp(0f, radius * 0.48f, animationData.CurrentValue);
+                Vector4 dotColor = knobColor;
+                dotColor.w *= animationData.CurrentValue;
+                drawList.AddCircleFilled(CircleCenter, knobSize, ImGui.GetColorU32(dotColor), 32);
             }
 
             //draw hover frame
@@ -95,11 +97,10 @@ namespace Fu.Framework
             {
                 // set mouse cursor
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-                drawList.AddCircle(CircleCenter, height / 2f, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), 64, 1f);
+                Vector4 hoverColor = Fugui.Themes.GetColor(active ? FuColors.FrameSelectedFeedback : FuColors.FrameHoverFeedback);
+                hoverColor.w = Mathf.Max(hoverColor.w, active ? 0.7f : 0.42f);
+                drawList.AddCircle(CircleCenter, radius + 2f * Fugui.CurrentContext.Scale, ImGui.GetColorU32(hoverColor), 40, Mathf.Max(1f, Fugui.CurrentContext.Scale));
             }
-
-            // update animation data
-            animationData.Update(isChecked, _animationEnabled);
 
             // dummy display button
             ImGuiNative.igDummy(new Vector2(height, height));

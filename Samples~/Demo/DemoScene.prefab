@@ -41,7 +41,7 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1757547531}
   m_Enabled: 1
-  serializedVersion: 13
+  serializedVersion: 12
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 1
@@ -93,7 +93,7 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0
-  m_ShapeRadius: 0
+  m_ShadowRadius: 0
   m_ShadowAngle: 0
   m_LightUnit: 1
   m_LuxAtDistance: 1
@@ -818,7 +818,7 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5027617568554309044}
   m_Enabled: 1
-  serializedVersion: 13
+  serializedVersion: 12
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 0.33
@@ -870,7 +870,7 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0
-  m_ShapeRadius: 0
+  m_ShadowRadius: 0
   m_ShadowAngle: 0
   m_LightUnit: 1
   m_LuxAtDistance: 1
@@ -13364,6 +13364,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4370844230297835809}
   - component: {fileID: 4607458544066756794}
+  - component: {fileID: 6832466825382218476}
   m_Layer: 0
   m_Name: 3DWindow
   m_TagString: Untagged
@@ -13381,7 +13382,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.7978857, y: 4.459264, z: -5.3637}
-  m_LocalScale: {x: 0.2, y: 0.4, z: 0.01}
+  m_LocalScale: {x: 0.8, y: 1.6, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 131582004965259276}
@@ -13399,6 +13400,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Fugui::Fu.Framework.Fu3DWindowBehaviour
   Depth: 0.01
+  Curve: 45
+  Rounding: 0.06
   _windowName:
     _id: 65532
     _name: Fugui Settings
@@ -13420,3 +13423,34 @@ MonoBehaviour:
   _baseContextScale: 0
   _baseFontScale: 0
   _scaleFontWithContainer: 1
+  _useDpiScale: 1
+  _referenceDpi: 96
+--- !u!114 &6832466825382218476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8176205452265744201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fe9f9b1e7fa47fda11be1f7d4b72760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fugui::Fu.Framework.Fu3DWindowManipulator
+  RuntimeMovable: 1
+  CreateGrabHandle: 1
+  FacingTarget: {fileID: 5027617570534833875}
+  FacingConstraint: 1
+  FaceTargetWhileDragging: 1
+  FaceTargetWhenUnanchored: 0
+  AnchorOnRelease: 1
+  StartAnchored: 1
+  GrabHandlePosition: 0
+  WorldUpAxis: {x: 0, y: 1, z: 0}
+  GrabHandleWidthRatio: 0.38
+  GrabHandleMinWidth: 0.18
+  GrabHandleMaxWidth: 0.55
+  GrabHandleHeight: 0.045
+  GrabHandleEdgeOffset: 0.035
+  GrabHandleFrontOffset: -0.05
+  _grabHandleID: 

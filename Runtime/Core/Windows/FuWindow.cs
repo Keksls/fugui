@@ -1349,9 +1349,32 @@ namespace Fu
         /// </summary>
         private void FinalizeClose()
         {
+            ClearDrawDataCache();
             Fugui.TryRemoveUIWindow(this);
+            Fugui.ForceDrawAllWindows(2);
             OnClosed?.Invoke(this);
             Fugui.Fire_OnWindowClosed(this);
+        }
+
+        /// <summary>
+        /// Clears cached draw lists owned by this window.
+        /// </summary>
+        internal void ClearDrawDataCache()
+        {
+            DrawList?.Dispose();
+            DrawList = new DrawList();
+
+            if (ChildrenDrawLists == null)
+            {
+                ChildrenDrawLists = new Dictionary<string, DrawList>();
+                return;
+            }
+
+            foreach (DrawList child in ChildrenDrawLists.Values)
+            {
+                child.Dispose();
+            }
+            ChildrenDrawLists.Clear();
         }
 
         /// <summary>

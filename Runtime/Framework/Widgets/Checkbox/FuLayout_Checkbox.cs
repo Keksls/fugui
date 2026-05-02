@@ -77,6 +77,17 @@ namespace Fu.Framework
             ImGui.Dummy(size);
             setBaseElementState(text, pos, size, true, false, true);
 
+            if (_lastItemUpdate)
+            {
+                isChecked = !isChecked;
+            }
+            if (!_uiElementAnimationDatas.ContainsKey(text))
+            {
+                _uiElementAnimationDatas.Add(text, new FuElementAnimationData(!isChecked));
+            }
+            FuElementAnimationData animationData = _uiElementAnimationDatas[text];
+            animationData.Update(isChecked, _animationEnabled);
+
             // get current draw list
             ImDrawListPtr drawList = ImGuiNative.igGetWindowDrawList();
 
@@ -137,15 +148,24 @@ namespace Fu.Framework
                 }
             }
 
+            float rounding = Mathf.Min(Mathf.Max(Fugui.Themes.FrameRounding, 4f * Fugui.Scale), lenght * 0.32f);
             // draw background
-            drawList.AddRectFilled(pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), Fugui.Themes.FrameRounding, ImDrawFlags.None);
+            drawList.AddRectFilled(pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, ImDrawFlags.RoundCornersAll);
             // draw border
-            drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(borderColor), Fugui.Themes.FrameRounding, ImDrawFlags.None, Fugui.Themes.FrameBorderSize);
-            // draw check
-            if (isChecked)
+            drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
+            if (_lastItemHovered && !LastItemDisabled)
             {
-                float padding = 2f * Fugui.Scale;
-                Fugui.DrawCheckMark(drawList, pos + (Vector2.one * padding), checkColor, size.y - (padding * 2f));
+                DrawWidgetFeedback(drawList, new Rect(pos, size), false, true, false, rounding);
+            }
+            // draw check
+            float checkT = animationData.CurrentValue;
+            if (checkT > 0.02f)
+            {
+                float padding = 3f * Fugui.Scale;
+                checkColor.w *= checkT;
+                float checkSize = (size.y - padding * 2f) * Mathf.Lerp(0.72f, 1f, checkT);
+                Vector2 checkPos = pos + (size - Vector2.one * checkSize) * 0.5f;
+                Fugui.DrawCheckMark(drawList, checkPos, checkColor, checkSize);
             }
 
             // set mouse cursor
@@ -156,12 +176,6 @@ namespace Fu.Framework
 
             // display the tooltip if necessary
             displayToolTip();
-
-            // toggle value if clicked
-            if (_lastItemUpdate)
-            {
-                isChecked = !isChecked;
-            }
 
             return _lastItemUpdate;
         }

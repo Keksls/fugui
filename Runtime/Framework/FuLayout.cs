@@ -271,6 +271,251 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Draws a subtle hover/focus ring around a custom widget frame.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <param name="rect">Frame rectangle.</param>
+        /// <param name="focused">Whether the widget has focus.</param>
+        /// <param name="hovered">Whether the widget is hovered.</param>
+        /// <param name="disabled">Whether the widget is disabled.</param>
+        /// <param name="rounding">Frame rounding.</param>
+        private void DrawWidgetFeedback(ImDrawListPtr drawList, Rect rect, bool focused, bool hovered, bool disabled, float rounding)
+        {
+            if (disabled)
+            {
+                return;
+            }
+
+            Vector4 color;
+            float thickness;
+            if (focused)
+            {
+                color = Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback);
+                color.w = Mathf.Max(color.w, 0.9f);
+                thickness = Mathf.Max(1.5f, 1.5f * Fugui.CurrentContext.Scale);
+            }
+            else if (hovered)
+            {
+                color = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback);
+                color.w = Mathf.Max(color.w, 0.55f);
+                thickness = Mathf.Max(1f, Fugui.CurrentContext.Scale);
+            }
+            else
+            {
+                return;
+            }
+
+            drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(color), rounding, ImDrawFlags.RoundCornersAll, thickness);
+        }
+
+        /// <summary>
+        /// Draws a rounded filled bar segment.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <param name="min">Minimum point.</param>
+        /// <param name="max">Maximum point.</param>
+        /// <param name="color">Fill color.</param>
+        /// <param name="rounding">Requested rounding.</param>
+        private void DrawRoundedSegment(ImDrawListPtr drawList, Vector2 min, Vector2 max, Vector4 color, float rounding)
+        {
+            if (max.x <= min.x || max.y <= min.y)
+            {
+                return;
+            }
+
+            rounding = Mathf.Min(rounding, (max.y - min.y) * 0.5f, (max.x - min.x) * 0.5f);
+            drawList.AddRectFilled(min, max, ImGui.GetColorU32(color), rounding, ImDrawFlags.RoundCornersAll);
+        }
+
+        /// <summary>
+        /// Draws a compact magnifying glass icon.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <param name="center">Icon center.</param>
+        /// <param name="radius">Lens radius.</param>
+        /// <param name="color">Icon color.</param>
+        private void DrawSearchGlyph(ImDrawListPtr drawList, Vector2 center, float radius, Vector4 color)
+        {
+            float thickness = Mathf.Max(1.2f, 1.4f * Fugui.CurrentContext.Scale);
+            uint packed = ImGui.GetColorU32(color);
+            drawList.AddCircle(center - new Vector2(radius * 0.12f, radius * 0.12f), radius, packed, 20, thickness);
+            drawList.AddLine(center + new Vector2(radius * 0.58f, radius * 0.58f), center + new Vector2(radius * 1.12f, radius * 1.12f), packed, thickness);
+        }
+
+        /// <summary>
+        /// Draws the visual state for a custom combobox button.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <param name="rect">Button rectangle.</param>
+        /// <param name="caretWidth">Caret zone width.</param>
+        /// <param name="opened">Whether popup is open.</param>
+        /// <param name="disabled">Whether disabled.</param>
+        private void DrawComboboxChrome(ImDrawListPtr drawList, Rect rect, float caretWidth, bool opened, bool disabled)
+        {
+            float scale = Fugui.CurrentContext.Scale;
+            float rounding = ImGui.GetStyle().FrameRounding;
+            Rect caretRect = new Rect(new Vector2(rect.xMax - caretWidth, rect.y), new Vector2(caretWidth, rect.height));
+
+            Vector4 separator = Fugui.Themes.GetColor(FuColors.Border);
+            separator.w = disabled ? 0.16f : opened ? 0.42f : 0.26f;
+            float inset = Mathf.Max(5f, 6f * scale);
+            drawList.AddLine(new Vector2(caretRect.xMin, caretRect.yMin + inset), new Vector2(caretRect.xMin, caretRect.yMax - inset), ImGui.GetColorU32(separator), Mathf.Max(1f, scale));
+
+            DrawWidgetFeedback(drawList, rect, opened, _lastItemHovered, disabled, rounding);
+        }
+
+        /// <summary>
+        /// Draws a compact clear icon with a hover affordance.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <param name="center">Icon center.</param>
+        /// <param name="radius">Icon radius.</param>
+        /// <param name="color">Icon color.</param>
+        /// <param name="hovered">Whether the icon is hovered.</param>
+        private void DrawClearGlyph(ImDrawListPtr drawList, Vector2 center, float radius, Vector4 color, bool hovered)
+        {
+            if (hovered)
+            {
+                Vector4 bg = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback);
+                bg.w = Mathf.Max(bg.w, 0.22f);
+                drawList.AddCircleFilled(center, radius * 1.15f, ImGui.GetColorU32(bg), 24);
+            }
+
+            float cross = radius * 0.48f;
+            float thickness = Mathf.Max(1.2f, 1.4f * Fugui.CurrentContext.Scale);
+            uint packed = ImGui.GetColorU32(color);
+            drawList.AddLine(center - new Vector2(cross, cross), center + new Vector2(cross, cross), packed, thickness);
+            drawList.AddLine(center + new Vector2(cross, -cross), center + new Vector2(-cross, cross), packed, thickness);
+        }
+
+        /// <summary>
+        /// Draws a slider knob with a subtle shadow and hover ring.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <param name="center">Knob center.</param>
+        /// <param name="radius">Knob radius.</param>
+        /// <param name="color">Knob fill color.</param>
+        /// <param name="hovered">Whether hovered.</param>
+        /// <param name="active">Whether active.</param>
+        /// <param name="disabled">Whether disabled.</param>
+        private void DrawValueKnob(ImDrawListPtr drawList, Vector2 center, float radius, Vector4 color, bool hovered, bool active, bool disabled)
+        {
+            float scale = Fugui.CurrentContext.Scale;
+            Vector4 shadow = new Vector4(0f, 0f, 0f, disabled ? 0.10f : 0.28f);
+            drawList.AddCircleFilled(center + new Vector2(0f, Mathf.Max(1f, scale)), radius + 1.5f * scale, ImGui.GetColorU32(shadow), 32);
+
+            if ((hovered || active) && !disabled)
+            {
+                Vector4 ring = active ? Fugui.Themes.GetColor(FuColors.HighlightActive) : Fugui.Themes.GetColor(FuColors.HighlightHovered);
+                ring.w = active ? 0.55f : 0.35f;
+                drawList.AddCircle(center, radius + 3f * scale, ImGui.GetColorU32(ring), 32, Mathf.Max(1f, 1.5f * scale));
+            }
+
+            Vector4 border = Fugui.Themes.GetColor(FuColors.Border);
+            border.w = disabled ? 0.35f : 0.75f;
+            drawList.AddCircleFilled(center, radius + Mathf.Max(1f, scale), ImGui.GetColorU32(border), 32);
+            drawList.AddCircleFilled(center, radius, ImGui.GetColorU32(color), 32);
+
+            Vector4 shine = Color.white;
+            shine.w = disabled ? 0.06f : 0.12f;
+            drawList.AddCircleFilled(center - new Vector2(radius * 0.25f, radius * 0.28f), radius * 0.36f, ImGui.GetColorU32(shine), 16);
+        }
+
+        /// <summary>
+        /// Draws a slider knob with the window clip instead of the tighter content clip.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <param name="center">Knob center.</param>
+        /// <param name="radius">Knob radius.</param>
+        /// <param name="color">Knob fill color.</param>
+        /// <param name="hovered">Whether hovered.</param>
+        /// <param name="active">Whether active.</param>
+        /// <param name="disabled">Whether disabled.</param>
+        private void DrawValueKnobWithWindowClip(ImDrawListPtr drawList, Vector2 center, float radius, Vector4 color, bool hovered, bool active, bool disabled)
+        {
+            Vector2 clipMin = ImGui.GetWindowPos();
+            Vector2 clipMax = clipMin + ImGui.GetWindowSize();
+            drawList.PushClipRect(clipMin, clipMax, false);
+            DrawValueKnob(drawList, center, radius, color, hovered, active, disabled);
+            drawList.PopClipRect();
+        }
+
+        /// <summary>
+        /// Draws a compact value bubble above a dragged slider knob.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <param name="text">Value text.</param>
+        /// <param name="anchor">Anchor position.</param>
+        private void DrawValueBubble(ImDrawListPtr drawList, string text, Vector2 anchor)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            float scale = Fugui.CurrentContext.Scale;
+            Vector2 padding = new Vector2(7f, 3f) * scale;
+            Vector2 textSize = ImGui.CalcTextSize(text);
+            Vector2 size = textSize + padding * 2f;
+            Vector2 pos = new Vector2(anchor.x - size.x * 0.5f, anchor.y - size.y - 10f * scale);
+            float rounding = Mathf.Min(5f * scale, size.y * 0.45f);
+
+            Vector4 bg = Fugui.Themes.GetColor(FuColors.PopupBg);
+            bg.w = Mathf.Max(bg.w, 0.96f);
+            Vector4 border = Fugui.Themes.GetColor(FuColors.Highlight);
+            border.w = 0.65f;
+            drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(bg), rounding, ImDrawFlags.RoundCornersAll);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
+            drawList.AddText(pos + padding, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text)), text);
+        }
+
+        /// <summary>
+        /// Formats a slider value for transient visual feedback.
+        /// </summary>
+        /// <param name="value">Value.</param>
+        /// <param name="isInt">Whether it is an integer slider.</param>
+        /// <param name="format">Optional printf-like format.</param>
+        /// <returns>Display text.</returns>
+        private string FormatValueBubble(float value, bool isInt, string format)
+        {
+            if (isInt)
+            {
+                return Mathf.RoundToInt(value).ToString();
+            }
+
+            int decimals = 2;
+            string fmt = string.IsNullOrEmpty(format) ? getStringFormat(value) : format;
+            int dotIndex = fmt.IndexOf('.');
+            int fIndex = fmt.IndexOf('f');
+            if (dotIndex >= 0 && fIndex > dotIndex)
+            {
+                string precision = fmt.Substring(dotIndex + 1, fIndex - dotIndex - 1);
+                if (int.TryParse(precision, out int parsed))
+                {
+                    decimals = Mathf.Clamp(parsed, 0, 6);
+                }
+            }
+            return value.ToString("F" + decimals);
+        }
+
+        /// <summary>
+        /// Picks a readable text color for text over a filled surface.
+        /// </summary>
+        /// <param name="background">Background color.</param>
+        /// <param name="disabled">Whether disabled.</param>
+        /// <returns>Readable text color.</returns>
+        private Vector4 GetReadableTextColor(Vector4 background, bool disabled)
+        {
+            float luminance = background.x * 0.299f + background.y * 0.587f + background.z * 0.114f;
+            Vector4 text = luminance > 0.58f ? new Vector4(0.05f, 0.05f, 0.05f, 1f) : Fugui.Themes.GetColor(FuColors.Text);
+            if (disabled)
+            {
+                text.w *= 0.5f;
+            }
+            return text;
+        }
+
+        /// <summary>
         /// Set tooltips for the x next element(s)
         /// </summary>
         /// <param name="tooltips">array of tooltips to set</param>

@@ -756,7 +756,11 @@ namespace Fu.Editor
 
         private FuController[] FindControllers()
         {
+#if UNITY_6000_4_OR_NEWER
             return UnityEngine.Object.FindObjectsByType<FuController>(FindObjectsInactive.Include);
+#else
+            return UnityEngine.Object.FindObjectsByType<FuController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#endif
         }
 
         private static void SetRelativeObject(SerializedProperty root, string propertyName, UnityEngine.Object value)
@@ -869,7 +873,7 @@ namespace Fu.Editor
                     return $"Unknown ({value})";
             }
         }
-        #endregion
+#endregion
 
         #region Types
         private enum PipelineKind

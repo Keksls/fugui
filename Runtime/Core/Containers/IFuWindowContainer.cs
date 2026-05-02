@@ -1,5 +1,8 @@
 using System;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Fu
 {
@@ -10,6 +13,8 @@ namespace Fu
     public struct FuContainerScaleConfig
     {
         #region State
+        public const float DefaultReferenceDpi = 96f;
+
         public bool Enabled;
         public Vector2Int ReferenceResolution;
         [Range(0f, 1f)]
@@ -19,6 +24,8 @@ namespace Fu
         public float BaseScale;
         public float BaseFontScale;
         public bool ScaleFont;
+        public bool UseDpiScale;
+        public float ReferenceDpi;
         #endregion
 
         #region Methods
@@ -39,7 +46,9 @@ namespace Fu
                 MaxScale = 4f,
                 BaseScale = Mathf.Max(0.0001f, baseScale),
                 BaseFontScale = Mathf.Max(0.0001f, baseFontScale),
-                ScaleFont = true
+                ScaleFont = true,
+                UseDpiScale = false,
+                ReferenceDpi = DefaultReferenceDpi
             };
         }
 
@@ -53,8 +62,10 @@ namespace Fu
         /// <param name="baseScale">The base Scale value.</param>
         /// <param name="baseFontScale">The base Font Scale value.</param>
         /// <param name="scaleFont">The scale Font value.</param>
+        /// <param name="useDpiScale">Use display DPI as a lower bound for the automatic scale.</param>
+        /// <param name="referenceDpi">DPI that maps to scale 1.</param>
         /// <returns>The result of the operation.</returns>
-        public static FuContainerScaleConfig Reference(Vector2Int referenceResolution, float matchWidthOrHeight, float minScale, float maxScale, float baseScale, float baseFontScale, bool scaleFont = true)
+        public static FuContainerScaleConfig Reference(Vector2Int referenceResolution, float matchWidthOrHeight, float minScale, float maxScale, float baseScale, float baseFontScale, bool scaleFont = true, bool useDpiScale = true, float referenceDpi = DefaultReferenceDpi)
         {
             FuContainerScaleConfig config = Disabled(baseScale, baseFontScale);
             config.Enabled = true;
@@ -63,6 +74,8 @@ namespace Fu
             config.MinScale = minScale;
             config.MaxScale = maxScale;
             config.ScaleFont = scaleFont;
+            config.UseDpiScale = useDpiScale;
+            config.ReferenceDpi = referenceDpi;
             config.Sanitize();
             return config;
         }
@@ -81,6 +94,7 @@ namespace Fu
             MaxScale = Mathf.Max(MinScale, MaxScale);
             BaseScale = Mathf.Max(0.0001f, BaseScale);
             BaseFontScale = Mathf.Max(0.0001f, BaseFontScale);
+            ReferenceDpi = Mathf.Max(1f, ReferenceDpi > 0f ? ReferenceDpi : DefaultReferenceDpi);
         }
 
         /// <summary>
@@ -97,7 +111,33 @@ namespace Fu
             float logWidthScale = Mathf.Log(widthScale, 2f);
             float logHeightScale = Mathf.Log(heightScale, 2f);
             float scale = Mathf.Pow(2f, Mathf.Lerp(logWidthScale, logHeightScale, MatchWidthOrHeight));
+            if (UseDpiScale)
+            {
+                scale = Mathf.Max(scale, ComputeDpiScale(ReferenceDpi));
+            }
             return Mathf.Max(0.0001f, scale);
+        }
+
+        /// <summary>
+        /// Computes the display-density scale used as a readability floor.
+        /// </summary>
+        /// <param name="referenceDpi">DPI that maps to scale 1.</param>
+        /// <returns>Display DPI scale, never below 1.</returns>
+        public static float ComputeDpiScale(float referenceDpi = DefaultReferenceDpi)
+        {
+            referenceDpi = Mathf.Max(1f, referenceDpi);
+            float dpi = Screen.dpi;
+
+#if UNITY_EDITOR
+            dpi = Mathf.Max(dpi, DefaultReferenceDpi * EditorGUIUtility.pixelsPerPoint);
+#endif
+
+            if (dpi <= 0f)
+            {
+                return 1f;
+            }
+
+            return Mathf.Max(1f, dpi / referenceDpi);
         }
         #endregion
     }

@@ -98,36 +98,53 @@ namespace Fu.Framework
         /// <param name="displayText">Text to display as value</param>
         private void continuousProgressBar(float value, ProgressBarTextPosition textPosition, Vector2 size, string displayText)
         {
-            float rounding = ImGui.GetStyle().FrameRounding;
+            float scale = Fugui.CurrentContext.Scale;
+            float rounding = Mathf.Min(Mathf.Max(Fugui.Themes.FrameRounding, 5f * scale), size.y * 0.5f);
             value = Mathf.Clamp01(value);
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            Vector4 frameColor = Fugui.Themes.GetColor(FuColors.FrameBg);
+            Vector4 fillColor = Fugui.Themes.GetColor(FuColors.CheckMark);
+            Vector4 borderColor = Fugui.Themes.GetColor(FuColors.Border);
+            if (LastItemDisabled)
+            {
+                frameColor *= 0.5f;
+                fillColor *= 0.5f;
+                borderColor *= 0.5f;
+            }
+
             // Draw the container
-            ImGui.GetWindowDrawList().AddRectFilled(cursorPos, cursorPos + size, ImGui.GetColorU32(ImGuiCol.FrameBg, LastItemDisabled ? 0.5f : 1f), rounding);
+            DrawRoundedSegment(drawList, cursorPos, cursorPos + size, frameColor, rounding);
             // Calculate the size of the filled part
             var filledPartSize = new Vector2(size.x * value, size.y);
             // Draw the filled part
             if (filledPartSize.x > 0)
             {
-                ImGui.GetWindowDrawList().AddRectFilled(cursorPos, cursorPos + filledPartSize, ImGui.GetColorU32(ImGuiCol.CheckMark, LastItemDisabled ? 0.5f : 1f), rounding);
+                DrawRoundedSegment(drawList, cursorPos, cursorPos + filledPartSize, fillColor, rounding);
             }
+            drawList.AddRect(cursorPos, cursorPos + size, ImGui.GetColorU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
 
             // Display the text
             Vector2 textPos;
             string text = displayText == null ? string.Format("{0}%", (int)(value * 100)) : displayText;
             Vector2 textSize = ImGui.CalcTextSize(text);
+            Vector4 textColor;
             switch (textPosition)
             {
                 case ProgressBarTextPosition.Left:
-                    textPos = cursorPos + new Vector2(4f, (filledPartSize.y - textSize.y) / 2);
-                    ImGui.GetWindowDrawList().AddText(textPos, ImGui.GetColorU32(ImGuiCol.Text, LastItemDisabled ? 0.5f : 1f), text);
+                    textPos = cursorPos + new Vector2(6f * scale, (filledPartSize.y - textSize.y) / 2);
+                    textColor = GetReadableTextColor(textPos.x + textSize.x * 0.5f <= cursorPos.x + filledPartSize.x ? fillColor : frameColor, LastItemDisabled);
+                    drawList.AddText(textPos, ImGui.GetColorU32(textColor), text);
                     break;
                 case ProgressBarTextPosition.Right:
-                    textPos = cursorPos + new Vector2(size.x - (textSize.x + 4f), (filledPartSize.y - textSize.y) / 2);
-                    ImGui.GetWindowDrawList().AddText(textPos, ImGui.GetColorU32(ImGuiCol.Text, LastItemDisabled ? 0.5f : 1f), text);
+                    textPos = cursorPos + new Vector2(size.x - (textSize.x + 6f * scale), (filledPartSize.y - textSize.y) / 2);
+                    textColor = GetReadableTextColor(textPos.x + textSize.x * 0.5f <= cursorPos.x + filledPartSize.x ? fillColor : frameColor, LastItemDisabled);
+                    drawList.AddText(textPos, ImGui.GetColorU32(textColor), text);
                     break;
                 case ProgressBarTextPosition.Inside:
-                    textPos = cursorPos + new Vector2(Mathf.Max(0f, (filledPartSize.x - textSize.x) / 2) + 4f, (filledPartSize.y - textSize.y) / 2);
-                    ImGui.GetWindowDrawList().AddText(textPos, ImGui.GetColorU32(ImGuiCol.Text), text);
+                    textPos = cursorPos + new Vector2((size.x - textSize.x) * 0.5f, (filledPartSize.y - textSize.y) / 2);
+                    textColor = GetReadableTextColor(textPos.x + textSize.x * 0.5f <= cursorPos.x + filledPartSize.x ? fillColor : frameColor, LastItemDisabled);
+                    drawList.AddText(textPos, ImGui.GetColorU32(textColor), text);
                     break;
             }
             ImGui.Dummy(size);
@@ -139,7 +156,8 @@ namespace Fu.Framework
         /// <param name="size">size of the progressbar</param>
         private void idleProgressBar(Vector2 size)
         {
-            float rounding = ImGui.GetStyle().FrameRounding;
+            float scale = Fugui.CurrentContext.Scale;
+            float rounding = Mathf.Min(Mathf.Max(Fugui.Themes.FrameRounding, 5f * scale), size.y * 0.5f);
             var drawList = ImGui.GetWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = .5f;
@@ -147,8 +165,21 @@ namespace Fu.Framework
             float barFillerWidth = size.x * 0.25f;
             Vector2 barSize = new Vector2(barFillerWidth * (1.0f - 0.05f * Math.Abs(2.0f * animationPosition - 1.0f)), size.y);
             Vector2 barPos = ImGui.GetCursorScreenPos() + new Vector2(size.x * 0.5f - barFillerWidth * 0.5f + (animationPosition - 0.5f) * (size.x - barFillerWidth), 0.0f);
-            drawList.AddRectFilled(ImGui.GetCursorScreenPos(), ImGui.GetCursorScreenPos() + size, ImGui.GetColorU32(ImGuiCol.FrameBg, LastItemDisabled ? 0.5f : 1f), rounding);
-            drawList.AddRectFilled(barPos, barPos + barSize, ImGui.GetColorU32(ImGuiCol.CheckMark, LastItemDisabled ? 0.5f : 1f), rounding);
+            Vector2 cursorPos = ImGui.GetCursorScreenPos();
+            Vector4 frameColor = Fugui.Themes.GetColor(FuColors.FrameBg);
+            Vector4 fillColor = Fugui.Themes.GetColor(FuColors.CheckMark);
+            Vector4 shineColor = Color.white;
+            if (LastItemDisabled)
+            {
+                frameColor *= 0.5f;
+                fillColor *= 0.5f;
+            }
+            fillColor.w *= 0.9f;
+            shineColor.w = LastItemDisabled ? 0.04f : 0.13f;
+
+            DrawRoundedSegment(drawList, cursorPos, cursorPos + size, frameColor, rounding);
+            DrawRoundedSegment(drawList, barPos, barPos + barSize, fillColor, rounding);
+            DrawRoundedSegment(drawList, barPos + new Vector2(2f * scale, 2f * scale), barPos + new Vector2(Mathf.Max(2f * scale, barSize.x * 0.45f), size.y - 2f * scale), shineColor, rounding);
             ImGui.Dummy(size);
 
             // for draw current window to ensure animation fluidity

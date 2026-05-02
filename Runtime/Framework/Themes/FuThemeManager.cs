@@ -44,6 +44,10 @@ namespace Fu
         public float TabRounding { get; private set; }
         public float TabBorderSize { get; private set; }
         public float TabMinWidthForCloseButton { get; private set; }
+        public Vector2 TabPadding { get; private set; }
+        public float TabSpacing { get; private set; }
+        public float TabMinWidth { get; private set; }
+        public float TabMaxWidth { get; private set; }
         public float NodeKnobRadius { get; private set; }
         public float NodeKnobMargin { get; private set; }
         #endregion
@@ -78,6 +82,10 @@ namespace Fu
             TabRounding = CurrentTheme.TabRounding * scale;
             TabBorderSize = CurrentTheme.TabBorderSize * scale;
             TabMinWidthForCloseButton = CurrentTheme.TabMinWidthForCloseButton * scale;
+            TabPadding = CurrentTheme.TabPadding * scale;
+            TabSpacing = CurrentTheme.TabSpacing * scale;
+            TabMinWidth = CurrentTheme.TabMinWidth * scale;
+            TabMaxWidth = CurrentTheme.TabMaxWidth * scale;
             NodeKnobRadius = CurrentTheme.NodeKnobRadius * scale;
             NodeKnobMargin = CurrentTheme.NodeKnobMargin * scale;
         }

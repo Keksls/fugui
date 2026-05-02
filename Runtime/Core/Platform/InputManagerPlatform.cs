@@ -236,7 +236,7 @@ namespace Fu
         /// Primary touch is mapped to left mouse and long press is mapped to right click.
         /// </summary>
         /// <param name="io">The ImGui IO pointer.</param>
-        private static void UpdatePointer(ImGuiIOPtr io)
+        private void UpdatePointer(ImGuiIOPtr io)
         {
             bool hasTouch = Input.touchCount > 0;
             bool leftPressed = false;
@@ -294,7 +294,8 @@ namespace Fu
                 _nbFramesSinceMouseLeftUp = 0;
             }
 
-            io.AddMousePosEvent(position.x, io.DisplaySize.y - position.y);
+            Vector2 imguiPosition = ScreenToImGuiPosition(position);
+            io.AddMousePosEvent(imguiPosition.x, imguiPosition.y);
 
             io.AddMouseButtonEvent(0, _lastFrameMouseState[0]);
             io.AddMouseButtonEvent(1, _lastFrameMouseState[1]);
@@ -316,7 +317,8 @@ namespace Fu
         private void UpdateMouse(ImGuiIOPtr io)
         {
             Vector2 pos = Input.mousePosition;
-            io.AddMousePosEvent(pos.x, io.DisplaySize.y - pos.y);
+            Vector2 imguiPosition = ScreenToImGuiPosition(pos);
+            io.AddMousePosEvent(imguiPosition.x, imguiPosition.y);
 
             Vector2 scroll = Input.mouseScrollDelta * Fugui.Settings.ScrollPower;
             io.AddMouseWheelEvent(scroll.x, scroll.y);

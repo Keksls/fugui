@@ -168,8 +168,15 @@ namespace Fu
         /// </summary>
         private static void HandleCurrentChildScroll()
         {
-            if (!_childRects.ContainsKey(_currentChildId) || Fugui.IsDraggingAnything())
+            if (!_childRects.ContainsKey(_currentChildId))
+            {
                 return;
+            }
+            if (Fugui.IsDraggingAnything() || (Fugui.Layouts?.IsCustomDockManipulating ?? false))
+            {
+                CancelTouchScroll();
+                return;
+            }
 
             if (!_isPressed && !(_inertiaActive && _activeChildId == _currentChildId))
                 return;
@@ -305,6 +312,19 @@ namespace Fu
                 //    childRect.position + childRect.size,
                 //    ImGui.GetColorU32(new Vector4(1f, 0f, 0f, 0.5f)));
             }
+        }
+
+        /// <summary>
+        /// Cancel touch scrolling immediately when Fugui starts another drag operation.
+        /// </summary>
+        private static void CancelTouchScroll()
+        {
+            _isScrolling = false;
+            _wasScrollingLastFrame = false;
+            _activeChildId = 0;
+            _smoothedScrollDelta = Vector2.zero;
+            _scrollVelocityY = 0f;
+            _inertiaActive = false;
         }
 
         /// <summary>

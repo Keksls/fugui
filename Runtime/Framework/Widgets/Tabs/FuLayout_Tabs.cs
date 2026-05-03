@@ -30,7 +30,11 @@ namespace Fu.Framework
         /// <summary>
         /// Hide scroll buttons when tabs overflow. Mouse wheel scrolling still works.
         /// </summary>
-        NoScrollButtons = 1 << 3
+        NoScrollButtons = 1 << 3,
+        /// <summary>
+        /// Reserve a trailing empty area on the tab bar for owner-drawn controls or dragging.
+        /// </summary>
+        ReserveTrailingSpace = 1 << 4
     }
 
     /// <summary>
@@ -48,6 +52,7 @@ namespace Fu.Framework
         private static readonly Dictionary<string, float> _tabScrollOffsets = new Dictionary<string, float>();
         private static readonly Dictionary<string, FuElementAnimationData> _tabSelectionAnimations = new Dictionary<string, FuElementAnimationData>();
         private static readonly Dictionary<string, Rect[]> _tabHitRects = new Dictionary<string, Rect[]>();
+        private static readonly Dictionary<string, Rect> _tabTrailingRects = new Dictionary<string, Rect>();
 
         private struct FuTabLayoutData
         {
@@ -145,17 +150,21 @@ namespace Fu.Framework
             selectedIndex = ResolveSelectedTabIndex(elementID, selectedIndex, forceSelectTabIndex, count);
             selectionChanged = previousSelectedIndex != selectedIndex;
 
-            FuTabLayoutData[] layout = BuildTabsLayout(items, flags, availableWidth);
-            Rect[] hitRects = new Rect[count];
-            float totalTabsWidth = GetTotalTabsWidth(layout);
             float scale = Fugui.CurrentContext.Scale;
             float borderSize = Mathf.Max(0f, Fugui.Themes.TabBorderSize);
             float inset = Mathf.Max(1f * scale, borderSize);
             float scrollButtonWidth = flags.HasFlag(FuTabsFlags.NoScrollButtons) ? 0f : Mathf.Max(18f * scale, barHeight - inset * 2f);
-            bool overflow = totalTabsWidth > availableWidth;
+            float trailingReserveWidth = flags.HasFlag(FuTabsFlags.ReserveTrailingSpace)
+                ? Mathf.Max(44f * scale, barHeight * 1.8f)
+                : 0f;
+            float tabsAreaWidth = Mathf.Max(1f, availableWidth - trailingReserveWidth);
+            FuTabLayoutData[] layout = BuildTabsLayout(items, flags, tabsAreaWidth);
+            Rect[] hitRects = new Rect[count];
+            float totalTabsWidth = GetTotalTabsWidth(layout);
+            bool overflow = totalTabsWidth > tabsAreaWidth;
             float leftControlsWidth = overflow && scrollButtonWidth > 0f ? scrollButtonWidth + Fugui.Themes.TabSpacing : 0f;
             float rightControlsWidth = leftControlsWidth;
-            float tabsViewportWidth = Mathf.Max(1f, availableWidth - leftControlsWidth - rightControlsWidth);
+            float tabsViewportWidth = Mathf.Max(1f, tabsAreaWidth - leftControlsWidth - rightControlsWidth);
             Vector2 tabsClipMin = barPos + new Vector2(leftControlsWidth + inset, inset);
             Vector2 tabsClipMax = barPos + new Vector2(leftControlsWidth + tabsViewportWidth - inset, barHeight);
 
@@ -177,7 +186,7 @@ namespace Fu.Framework
             if (overflow && scrollButtonWidth > 0f)
             {
                 Rect leftRect = new Rect(barPos + new Vector2(inset, inset), new Vector2(scrollButtonWidth, barHeight - inset * 2f));
-                Rect rightRect = new Rect(barPos + new Vector2(availableWidth - scrollButtonWidth - inset, inset), new Vector2(scrollButtonWidth, barHeight - inset * 2f));
+                Rect rightRect = new Rect(barPos + new Vector2(tabsAreaWidth - scrollButtonWidth - inset, inset), new Vector2(scrollButtonWidth, barHeight - inset * 2f));
 
                 scrollOffset += DrawTabScrollButton(elementID + "##left-scroll", drawList, leftRect, true, scrollOffset > 0.5f, flags);
                 scrollOffset += DrawTabScrollButton(elementID + "##right-scroll", drawList, rightRect, false, scrollOffset < totalTabsWidth - tabsViewportWidth - 0.5f, flags);
@@ -224,6 +233,7 @@ namespace Fu.Framework
             _tabSelectedIndices[elementID] = selectedIndex;
             _tabScrollOffsets[elementID] = ClampTabScroll(scrollOffset, totalTabsWidth, tabsViewportWidth);
             _tabHitRects[elementID] = hitRects;
+            _tabTrailingRects[elementID] = GetTrailingTabBarRect(barPos, availableWidth, tabsAreaWidth, barHeight, inset, tabsClipMin.x, tabsViewportWidth, totalTabsWidth, scrollOffset);
 
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, barPos.y + barHeight));
             endElement();
@@ -261,6 +271,36 @@ namespace Fu.Framework
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Try to get the trailing free area of a tab bar from its last draw.
+        /// </summary>
+        /// <param name="ID">Unique tab bar ID.</param>
+        /// <param name="rect">Screen-space trailing free rect.</param>
+        /// <returns>True if a usable trailing rect exists.</returns>
+        internal static bool TryGetLastTabTrailingRect(string ID, out Rect rect)
+        {
+            rect = default;
+            if (string.IsNullOrEmpty(ID) || !_tabTrailingRects.TryGetValue(ID, out rect))
+            {
+                return false;
+            }
+
+            return rect.width > 1f && rect.height > 1f;
+        }
+
+        /// <summary>
+        /// Compute the free trailing area left after visible tabs and scroll controls.
+        /// </summary>
+        private static Rect GetTrailingTabBarRect(Vector2 barPos, float availableWidth, float tabsAreaWidth, float barHeight, float inset, float tabsClipMinX, float tabsViewportWidth, float totalTabsWidth, float scrollOffset)
+        {
+            float visibleTabsWidth = Mathf.Clamp(totalTabsWidth - scrollOffset, 0f, tabsViewportWidth);
+            float naturalStart = tabsClipMinX + visibleTabsWidth + Mathf.Max(4f, 4f * Fugui.CurrentContext.Scale);
+            float reservedStart = barPos.x + tabsAreaWidth;
+            float start = Mathf.Min(Mathf.Max(naturalStart, barPos.x + inset), reservedStart);
+            float end = barPos.x + availableWidth - inset;
+            return new Rect(start, barPos.y + inset, Mathf.Max(0f, end - start), Mathf.Max(1f, barHeight - inset * 2f));
         }
 
         /// <summary>

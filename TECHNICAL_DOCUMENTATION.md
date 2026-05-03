@@ -415,6 +415,7 @@ APIs:
 - `Set3DWindowSettings`;
 - `SetRenderResolution`;
 - `SetPanelDepth`;
+- `SetCreateExtrudedPanelMesh`;
 - `SetPosition`;
 - `SetRotation`;
 - `SetLocalSize`;
@@ -438,6 +439,8 @@ Methodes:
 - `Sanitize`;
 - `ComputeResolution`;
 - `ComputeAspectMatchedResolution`.
+
+`CreateExtrudedPanelMesh` permet de garder uniquement le mesh render texture quand le backing mesh extrude n'est pas souhaite.
 
 ### `FuExternalWindowContainer`
 

@@ -256,6 +256,7 @@ Fonctionnement:
 - le transform sert de placeholder;
 - `scale.x` et `scale.y` pilotent la taille du panneau;
 - `Depth` pilote l'epaisseur;
+- `CreateExtrudedPanelMesh` active/desactive le mesh de backing extrude; false garde seulement le mesh render texture;
 - `Render Resolution` pilote la resolution texture/contexte;
 - le container peut etre resizable runtime;
 - le context scale et font scale peuvent etre fixes ou derives d'un scaler.
@@ -270,7 +271,8 @@ Fu3DWindowSettings settings = Fu3DWindowSettings.FixedResolutionMatchingPanelAsp
     referenceResolution: new Vector2Int(1024, 768),
     referencePanelSize: new Vector2(1.2f, 0.8f),
     contextScale: 1f,
-    fontScale: 1f
+    fontScale: 1f,
+    createExtrudedPanelMesh: false
 );
 
 Fu3DWindowContainer container = Fugui.Add3DWindow(

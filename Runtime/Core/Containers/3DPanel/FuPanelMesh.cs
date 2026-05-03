@@ -65,8 +65,9 @@ namespace Fu
         /// <param name="UImaterial">The UImaterial value.</param>
         /// <param name="PanelMaterial">The Panel Material value.</param>
         /// <param name="curve">Horizontal curve angle in degrees.</param>
+        /// <param name="createExtrudedPanelMesh">Whether to create the optional extruded backing mesh.</param>
         /// <returns>The result of the operation.</returns>
-        public Mesh CreateMesh(float width, float height, float scale, float TLRounding, float TRRounding, float BLRounding, float BRRounding, float extrusionDistance, int roundTriangles, Material UImaterial, Material PanelMaterial, float curve = 0f)
+        public Mesh CreateMesh(float width, float height, float scale, float TLRounding, float TRRounding, float BLRounding, float BRRounding, float extrusionDistance, int roundTriangles, Material UImaterial, Material PanelMaterial, float curve = 0f, bool createExtrudedPanelMesh = true)
         {
             _roundEdges = 0f;
             _roundTopLeft = TLRounding;
@@ -81,7 +82,15 @@ namespace Fu
             _curveAngle = Mathf.Clamp(curve, 0f, MaxCurveAngle);
 
             Mesh uiMesh = getOrCreateUIMesh(UImaterial);
-            Mesh panelMesh = getOrCreatePanelMesh(width, height, scale, PanelMaterial);
+            Mesh panelMesh = null;
+            if (createExtrudedPanelMesh)
+            {
+                panelMesh = getOrCreatePanelMesh(width, height, scale, PanelMaterial);
+            }
+            else
+            {
+                releasePanelMesh();
+            }
 
             if (_curveAngle > CurveEpsilon)
             {
@@ -89,7 +98,10 @@ namespace Fu
                 createCurvedRoundedRectangleMesh(uiMesh, out int[] perimeterIndices);
 
                 // generate curved extrusion
-                createExtrudedCurvedMesh(uiMesh, panelMesh, perimeterIndices, extrusionDistance);
+                if (createExtrudedPanelMesh)
+                {
+                    createExtrudedCurvedMesh(uiMesh, panelMesh, perimeterIndices, extrusionDistance);
+                }
             }
             else
             {
@@ -97,7 +109,10 @@ namespace Fu
                 createRoundedRectangleMesh(uiMesh);
 
                 // generate extrusion
-                extrudeMesh(uiMesh, panelMesh, new Matrix4x4[] { Matrix4x4.identity, Matrix4x4.Translate(Vector3.forward * extrusionDistance) }, false);
+                if (createExtrudedPanelMesh)
+                {
+                    extrudeMesh(uiMesh, panelMesh, new Matrix4x4[] { Matrix4x4.identity, Matrix4x4.Translate(Vector3.forward * extrusionDistance) }, false);
+                }
             }
 
             return uiMesh;
@@ -111,10 +126,18 @@ namespace Fu
         /// <param name="width">Panel width.</param>
         /// <param name="height">Panel height.</param>
         /// <param name="scale">Panel scale.</param>
-        public void UpdateMaterials(Material UImaterial, Material PanelMaterial, float width, float height, float scale)
+        /// <param name="createExtrudedPanelMesh">Whether the optional extruded backing mesh should be active.</param>
+        public void UpdateMaterials(Material UImaterial, Material PanelMaterial, float width, float height, float scale, bool createExtrudedPanelMesh = true)
         {
             getOrCreateUIMesh(UImaterial);
-            getOrCreatePanelMesh(width, height, scale, PanelMaterial);
+            if (createExtrudedPanelMesh)
+            {
+                getOrCreatePanelMesh(width, height, scale, PanelMaterial);
+            }
+            else
+            {
+                releasePanelMesh();
+            }
         }
 
         /// <summary>
@@ -171,6 +194,7 @@ namespace Fu
                 _panelObject = existingPanel != null ? existingPanel.gameObject : new GameObject("panel");
             }
 
+            _panelObject.SetActive(true);
             _panelObject.transform.SetParent(transform);
             _panelObject.transform.localPosition = Vector3.forward * 0.001f;
             _panelObject.transform.localRotation = Quaternion.identity;
@@ -205,6 +229,61 @@ namespace Fu
             _panelMeshFilter.sharedMesh = _panelMesh;
             updatePanelMaterial(PanelMaterial, width, height, scale);
             return _panelMesh;
+        }
+
+        /// <summary>
+        /// Releases the optional backing panel mesh while keeping the render texture mesh active.
+        /// </summary>
+        private void releasePanelMesh()
+        {
+            if (_panelMeshFilter != null)
+            {
+                _panelMeshFilter.sharedMesh = null;
+            }
+
+            if (_panelMeshRenderer != null)
+            {
+                _panelMeshRenderer.sharedMaterial = null;
+            }
+
+            if (_panelMaterial != null)
+            {
+                destroyOwnedObject(_panelMaterial);
+                _panelMaterial = null;
+                _panelSourceMaterial = null;
+            }
+
+            if (_panelMesh != null)
+            {
+                destroyOwnedObject(_panelMesh);
+                _panelMesh = null;
+            }
+
+            if (_panelObject != null)
+            {
+                _panelObject.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// Destroys a runtime-owned mesh or material in both play mode and edit mode.
+        /// </summary>
+        /// <param name="target">Object to destroy.</param>
+        private static void destroyOwnedObject(Object target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(target);
+            }
+            else
+            {
+                DestroyImmediate(target);
+            }
         }
 
         /// <summary>
@@ -830,19 +909,19 @@ namespace Fu
         {
             if (_panelMaterial != null)
             {
-                Destroy(_panelMaterial);
+                destroyOwnedObject(_panelMaterial);
                 _panelMaterial = null;
             }
 
             if (_uiMesh != null)
             {
-                Destroy(_uiMesh);
+                destroyOwnedObject(_uiMesh);
                 _uiMesh = null;
             }
 
             if (_panelMesh != null)
             {
-                Destroy(_panelMesh);
+                destroyOwnedObject(_panelMesh);
                 _panelMesh = null;
             }
         }

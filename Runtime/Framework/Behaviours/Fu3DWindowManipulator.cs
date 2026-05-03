@@ -100,6 +100,10 @@ namespace Fu.Framework
         private string _grabHandleID;
         private float _grabDistance;
         private Vector3 _grabOffset;
+        private bool _dragUsesRaycasterTransform;
+        private Transform _activeRaycasterTransform;
+        private Vector3 _grabLocalPositionToRaycaster;
+        private Quaternion _grabLocalRotationToRaycaster;
         private const int GrabHandleSegments = 8;
         #endregion
 
@@ -236,12 +240,23 @@ namespace Fu.Framework
                 return;
             }
 
-            Ray ray = raycaster.GetRay();
-            Vector3 hitPoint = raycaster.RaycastThisFrame ? raycaster.Hit.point : transform.position;
-            float directionSqrMagnitude = Mathf.Max(0.0001f, ray.direction.sqrMagnitude);
-            _grabDistance = Mathf.Max(0.0001f, Vector3.Dot(hitPoint - ray.origin, ray.direction) / directionSqrMagnitude);
-            _grabOffset = transform.position - hitPoint;
             _activeRaycasterID = raycasterID;
+            _dragUsesRaycasterTransform = raycaster.TryGetTransform(out _activeRaycasterTransform);
+
+            if (_dragUsesRaycasterTransform)
+            {
+                _grabLocalPositionToRaycaster = _activeRaycasterTransform.InverseTransformPoint(transform.position);
+                _grabLocalRotationToRaycaster = Quaternion.Inverse(_activeRaycasterTransform.rotation) * transform.rotation;
+            }
+            else
+            {
+                Ray ray = raycaster.GetRay();
+                Vector3 hitPoint = raycaster.RaycastThisFrame ? raycaster.Hit.point : transform.position;
+                float directionSqrMagnitude = Mathf.Max(0.0001f, ray.direction.sqrMagnitude);
+                _grabDistance = Mathf.Max(0.0001f, Vector3.Dot(hitPoint - ray.origin, ray.direction) / directionSqrMagnitude);
+                _grabOffset = transform.position - hitPoint;
+            }
+
             _dragging = true;
             _grabHandleHovered = true;
             _anchored = false;
@@ -259,6 +274,20 @@ namespace Fu.Framework
                 !raycaster.MouseButton0())
             {
                 finishDrag(true);
+                return;
+            }
+
+            if (_dragUsesRaycasterTransform)
+            {
+                if (_activeRaycasterTransform == null)
+                {
+                    finishDrag(true);
+                    return;
+                }
+
+                transform.position = _activeRaycasterTransform.TransformPoint(_grabLocalPositionToRaycaster);
+                transform.rotation = _activeRaycasterTransform.rotation * _grabLocalRotationToRaycaster;
+                applyTransformToContainer();
                 return;
             }
 
@@ -289,6 +318,8 @@ namespace Fu.Framework
 
             _dragging = false;
             _activeRaycasterID = null;
+            _dragUsesRaycasterTransform = false;
+            _activeRaycasterTransform = null;
             _grabHandleHovered = false;
             if (AnchorOnRelease)
             {

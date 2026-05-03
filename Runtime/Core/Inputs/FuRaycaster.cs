@@ -15,6 +15,7 @@ namespace Fu
             public Func<bool> MouseButton2 { get; private set; }
             public Func<float> MouseWheel { get; private set; }
             public Func<Ray> GetRay { get; private set; }
+            public Func<Transform> GetTransform { get; private set; }
             public string ID { get; private set; }
             public bool RaycastThisFrame { get; private set; }
             public RaycastHit Hit { get; private set; }
@@ -32,6 +33,22 @@ namespace Fu
             /// <param name="mouseWheel">The mouse Wheel value.</param>
             /// <param name="actifGetter">The actif Getter value.</param>
             public FuRaycaster(string name, Func<Ray> rayGetter, Func<bool> mouseButton0, Func<bool> mouseButton1, Func<bool> mouseButton2, Func<float> mouseWheel, Func<bool> actifGetter)
+                : this(name, rayGetter, mouseButton0, mouseButton1, mouseButton2, mouseWheel, actifGetter, null)
+            {
+            }
+
+            /// <summary>
+            /// Initializes a new instance of the Fu Raycaster class.
+            /// </summary>
+            /// <param name="name">The name value.</param>
+            /// <param name="rayGetter">The ray Getter value.</param>
+            /// <param name="mouseButton0">The mouse Button0 value.</param>
+            /// <param name="mouseButton1">The mouse Button1 value.</param>
+            /// <param name="mouseButton2">The mouse Button2 value.</param>
+            /// <param name="mouseWheel">The mouse Wheel value.</param>
+            /// <param name="actifGetter">The actif Getter value.</param>
+            /// <param name="transformGetter">Optional transform Getter used by interactions that need a raycaster pose.</param>
+            public FuRaycaster(string name, Func<Ray> rayGetter, Func<bool> mouseButton0, Func<bool> mouseButton1, Func<bool> mouseButton2, Func<float> mouseWheel, Func<bool> actifGetter, Func<Transform> transformGetter)
             {
                 ID = name;
                 IsActif = actifGetter;
@@ -40,10 +57,22 @@ namespace Fu
                 MouseButton2 = mouseButton2;
                 MouseWheel = mouseWheel;
                 GetRay = rayGetter;
+                GetTransform = transformGetter;
             }
             #endregion
 
             #region Methods
+            /// <summary>
+            /// Tries to get the optional transform associated with this raycaster.
+            /// </summary>
+            /// <param name="raycasterTransform">Raycaster transform when one is available.</param>
+            /// <returns>True if a transform is available.</returns>
+            public bool TryGetTransform(out Transform raycasterTransform)
+            {
+                raycasterTransform = GetTransform != null ? GetTransform() : null;
+                return raycasterTransform != null;
+            }
+
             /// <summary>
             /// Runs the raycast workflow.
             /// </summary>

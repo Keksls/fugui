@@ -150,9 +150,16 @@ namespace Fu.Framework
 
             float rounding = Mathf.Min(Mathf.Max(Fugui.Themes.FrameRounding, 4f * Fugui.Scale), lenght * 0.32f);
             // draw background
-            AddRectFilledAntiAliased(drawList, pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, ImDrawFlags.RoundCornersAll);
-            // draw border
-            drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
+            drawList.AddRectFilled(pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, ImDrawFlags.RoundCornersAll);
+            if (isChecked)
+            {
+                drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.CurrentContext.Scale));
+            }
+            else
+            {
+                // draw border
+                drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
+            }
             if (_lastItemHovered && !LastItemDisabled)
             {
                 DrawWidgetFeedback(drawList, new Rect(pos, size), false, true, false, rounding);

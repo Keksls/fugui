@@ -21,6 +21,7 @@ namespace Fu
         public float Scale3D => _windows3DScale;
         public float PanelCurve => _panelCurve;
         public float PanelRounding => _panelRounding;
+        public bool CreateExtrudedPanelMesh => _createExtrudedPanelMesh;
         public Vector2 LocalSize => getCurrentLocalSize();
         public Vector2Int RenderResolution => _useExplicitResolution ? _explicitResolution : _size;
         public Vector2Int LocalMousePos => _localMousePos;
@@ -51,6 +52,7 @@ namespace Fu
         private float _panelDepth = 0.01f;
         private float _panelCurve = 0f;
         private float _panelRounding = Fu3DWindowSettings.DefaultPanelRounding;
+        private bool _createExtrudedPanelMesh = true;
         private FuUnityContext _fuguiContext;
         private static int _3DContextindex = 0;
         private Material _uiMaterial;
@@ -86,6 +88,7 @@ namespace Fu
         private float _lastPanelRound = -1f;
         private float _lastPanelDepth = -1f;
         private float _lastPanelCurve = -1f;
+        private bool _lastCreateExtrudedPanelMesh;
         #endregion
 
         #region Constructors
@@ -287,7 +290,8 @@ namespace Fu
                 return;
 
             settings.Sanitize();
-            bool panelDepthChanged = Mathf.Abs(_panelDepth - settings.PanelDepth) > 0.0001f;
+            bool createExtrudedPanelMeshChanged = _createExtrudedPanelMesh != settings.CreateExtrudedPanelMesh;
+            bool panelDepthChanged = settings.CreateExtrudedPanelMesh && Mathf.Abs(_panelDepth - settings.PanelDepth) > 0.0001f;
             bool panelCurveChanged = Mathf.Abs(_panelCurve - settings.PanelCurve) > 0.0001f;
             bool panelRoundingChanged = Mathf.Abs(_panelRounding - settings.PanelRounding) > 0.0001f;
             Vector2 previousLocalSize = _localSize;
@@ -297,7 +301,7 @@ namespace Fu
             _windows3DScale = getLegacyScaleFromSettings(settings);
             _fuguiContext.SetContainerScaleConfig(settings.ContainerScaleConfig, _explicitResolution);
             SetLocalSize(settings.PanelSize);
-            if ((panelDepthChanged || panelCurveChanged || panelRoundingChanged) &&
+            if ((createExtrudedPanelMeshChanged || panelDepthChanged || panelCurveChanged || panelRoundingChanged) &&
                 previousResolution == _explicitResolution &&
                 (previousLocalSize - settings.PanelSize).sqrMagnitude <= 0.00000001f)
             {
@@ -319,7 +323,8 @@ namespace Fu
                 _fuguiContext != null ? _fuguiContext.ContainerScaleConfig.BaseFontScale : 1f,
                 _panelDepth,
                 _panelCurve,
-                _panelRounding);
+                _panelRounding,
+                _createExtrudedPanelMesh);
             if (_fuguiContext != null)
             {
                 settings.ContainerScaleConfig = _fuguiContext.ContainerScaleConfig;
@@ -340,6 +345,25 @@ namespace Fu
             }
 
             _panelDepth = depth;
+            if (!IsClosed && _createExtrudedPanelMesh)
+            {
+                createPanel();
+                updateResizeHandleTransforms();
+            }
+        }
+
+        /// <summary>
+        /// Enables or disables the optional extruded backing mesh behind the render texture mesh.
+        /// </summary>
+        /// <param name="createExtrudedPanelMesh">True to create the backing mesh; false to keep only the render texture mesh.</param>
+        public void SetCreateExtrudedPanelMesh(bool createExtrudedPanelMesh)
+        {
+            if (_createExtrudedPanelMesh == createExtrudedPanelMesh)
+            {
+                return;
+            }
+
+            _createExtrudedPanelMesh = createExtrudedPanelMesh;
             if (!IsClosed)
             {
                 createPanel();
@@ -601,6 +625,7 @@ namespace Fu
             _panelDepth = settings.PanelDepth;
             _panelCurve = settings.PanelCurve;
             _panelRounding = settings.PanelRounding;
+            _createExtrudedPanelMesh = settings.CreateExtrudedPanelMesh;
             if (applyPanelSize)
             {
                 _localSize = settings.PanelSize;
@@ -717,12 +742,13 @@ namespace Fu
                                (_lastPanelMeshSize - meshSize).sqrMagnitude > 0.00000001f ||
                                Mathf.Abs(_lastPanelMeshScale - meshScale) > 0.0001f ||
                                Mathf.Abs(_lastPanelRound - round) > 0.0001f ||
-                               Mathf.Abs(_lastPanelDepth - _panelDepth) > 0.0001f ||
-                               Mathf.Abs(_lastPanelCurve - _panelCurve) > 0.0001f;
+                               (_createExtrudedPanelMesh && Mathf.Abs(_lastPanelDepth - _panelDepth) > 0.0001f) ||
+                               Mathf.Abs(_lastPanelCurve - _panelCurve) > 0.0001f ||
+                               _lastCreateExtrudedPanelMesh != _createExtrudedPanelMesh;
 
             if (meshChanged)
             {
-                Mesh mesh = _panelMesh.CreateMesh(meshSize.x, meshSize.y, meshScale, round, round, round, round, _panelDepth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial, _panelCurve);
+                Mesh mesh = _panelMesh.CreateMesh(meshSize.x, meshSize.y, meshScale, round, round, round, round, _panelDepth, 32, _uiMaterial, Fugui.Settings.UIPanelMaterial, _panelCurve, _createExtrudedPanelMesh);
                 _panelCollider.sharedMesh = null;
                 _panelCollider.sharedMesh = mesh;
                 _lastPanelMeshSize = meshSize;
@@ -730,10 +756,11 @@ namespace Fu
                 _lastPanelRound = round;
                 _lastPanelDepth = _panelDepth;
                 _lastPanelCurve = _panelCurve;
+                _lastCreateExtrudedPanelMesh = _createExtrudedPanelMesh;
             }
             else
             {
-                _panelMesh.UpdateMaterials(_uiMaterial, Fugui.Settings.UIPanelMaterial, meshSize.x, meshSize.y, meshScale);
+                _panelMesh.UpdateMaterials(_uiMaterial, Fugui.Settings.UIPanelMaterial, meshSize.x, meshSize.y, meshScale, _createExtrudedPanelMesh);
             }
 
             int layer = 0;

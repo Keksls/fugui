@@ -26,7 +26,18 @@ namespace Fu
             public float PanelDepth;
             public float PanelCurve;
             public float PanelRounding;
+            [SerializeField]
+            private bool _flatPanelOnly;
             public FuContainerScaleConfig ContainerScaleConfig;
+
+            /// <summary>
+            /// Whether to create the optional extruded panel backing mesh behind the render texture mesh.
+            /// </summary>
+            public bool CreateExtrudedPanelMesh
+            {
+                get { return !_flatPanelOnly; }
+                set { _flatPanelOnly = !value; }
+            }
             #endregion
 
             #region Methods
@@ -40,8 +51,9 @@ namespace Fu
             /// <param name="panelDepth">The panel Depth value.</param>
             /// <param name="panelCurve">Horizontal panel curve angle in degrees.</param>
             /// <param name="panelRounding">Panel corner radius in world units.</param>
+            /// <param name="createExtrudedPanelMesh">Whether to create the optional extruded backing mesh.</param>
             /// <returns>The result of the operation.</returns>
-            public static Fu3DWindowSettings FixedResolution(Vector2 panelSize, Vector2Int resolution, float contextScale = 1f, float fontScale = 1f, float panelDepth = 0.01f, float panelCurve = 0f, float panelRounding = DefaultPanelRounding)
+            public static Fu3DWindowSettings FixedResolution(Vector2 panelSize, Vector2Int resolution, float contextScale = 1f, float fontScale = 1f, float panelDepth = 0.01f, float panelCurve = 0f, float panelRounding = DefaultPanelRounding, bool createExtrudedPanelMesh = true)
             {
                 Fu3DWindowSettings settings = new Fu3DWindowSettings
                 {
@@ -58,6 +70,7 @@ namespace Fu
                     PanelDepth = panelDepth,
                     PanelCurve = panelCurve,
                     PanelRounding = panelRounding,
+                    CreateExtrudedPanelMesh = createExtrudedPanelMesh,
                     ContainerScaleConfig = FuContainerScaleConfig.Disabled(contextScale, fontScale)
                 };
                 settings.Sanitize();
@@ -77,10 +90,11 @@ namespace Fu
             /// <param name="panelDepth">The panel Depth value.</param>
             /// <param name="panelCurve">Horizontal panel curve angle in degrees.</param>
             /// <param name="panelRounding">Panel corner radius in world units.</param>
+            /// <param name="createExtrudedPanelMesh">Whether to create the optional extruded backing mesh.</param>
             /// <returns>The result of the operation.</returns>
-            public static Fu3DWindowSettings ScaledResolutionWithPanel(Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f, float panelCurve = 0f, float panelRounding = DefaultPanelRounding)
+            public static Fu3DWindowSettings ScaledResolutionWithPanel(Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f, float panelCurve = 0f, float panelRounding = DefaultPanelRounding, bool createExtrudedPanelMesh = true)
             {
-                Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth, panelCurve, panelRounding);
+                Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth, panelCurve, panelRounding, createExtrudedPanelMesh);
                 settings.ScaleResolutionWithPanel = true;
                 settings.MatchResolutionToPanelAspect = false;
                 settings.ReferencePanelSize = referencePanelSize;
@@ -104,10 +118,11 @@ namespace Fu
             /// <param name="panelDepth">The panel Depth value.</param>
             /// <param name="panelCurve">Horizontal panel curve angle in degrees.</param>
             /// <param name="panelRounding">Panel corner radius in world units.</param>
+            /// <param name="createExtrudedPanelMesh">Whether to create the optional extruded backing mesh.</param>
             /// <returns>The result of the operation.</returns>
-            public static Fu3DWindowSettings FixedResolutionMatchingPanelAspect(Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f, float panelCurve = 0f, float panelRounding = DefaultPanelRounding)
+            public static Fu3DWindowSettings FixedResolutionMatchingPanelAspect(Vector2 panelSize, Vector2Int referenceResolution, Vector2 referencePanelSize, float contextScale = 1f, float fontScale = 1f, Vector2Int? minResolution = null, Vector2Int? maxResolution = null, float panelDepth = 0.01f, float panelCurve = 0f, float panelRounding = DefaultPanelRounding, bool createExtrudedPanelMesh = true)
             {
-                Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth, panelCurve, panelRounding);
+                Fu3DWindowSettings settings = FixedResolution(panelSize, referenceResolution, contextScale, fontScale, panelDepth, panelCurve, panelRounding, createExtrudedPanelMesh);
                 settings.MatchResolutionToPanelAspect = true;
                 settings.ReferencePanelSize = referencePanelSize;
                 settings.ReferenceResolution = referenceResolution;

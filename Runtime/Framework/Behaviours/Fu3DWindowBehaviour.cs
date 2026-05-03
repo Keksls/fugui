@@ -23,6 +23,9 @@ namespace Fu.Framework
         [Tooltip("Corner radius of the generated 3D panel in world units.")]
         public float Rounding = Fu3DWindowSettings.DefaultPanelRounding;
 
+        [Tooltip("Create the optional extruded backing mesh behind the render texture mesh.")]
+        public bool CreateExtrudedPanelMesh = true;
+
         [SerializeField]
         protected FuWindowName _windowName;
 
@@ -404,7 +407,8 @@ namespace Fu.Framework
                 _maxRenderResolution,
                 Depth,
                 Curve,
-                Rounding);
+                Rounding,
+                CreateExtrudedPanelMesh);
             settings.ContainerScaleConfig = GetContainerScaleConfig();
             settings.Sanitize();
             return settings;
@@ -656,15 +660,18 @@ namespace Fu.Framework
             Handles.matrix = Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one);
 
             Vector3[] frontPoints = GetRoundedPlaceholderPoints(width, height, rounding, 8);
-            Vector3[] backPoints = OffsetPlaceholderPoints(frontPoints, Vector3.forward * depth);
 
             Handles.color = new Color(0f, 0.6f, 1f, 0.18f);
             Handles.DrawAAConvexPolygon(frontPoints);
 
             Handles.color = new Color(0f, 0.6f, 1f, 0.75f);
             DrawPlaceholderPolyline(frontPoints, true);
-            DrawPlaceholderPolyline(backPoints, true);
-            DrawPlaceholderDepthLines(frontPoints, backPoints, 8);
+            if (CreateExtrudedPanelMesh)
+            {
+                Vector3[] backPoints = OffsetPlaceholderPoints(frontPoints, Vector3.forward * depth);
+                DrawPlaceholderPolyline(backPoints, true);
+                DrawPlaceholderDepthLines(frontPoints, backPoints, 8);
+            }
 
             Handles.color = previousColor;
             Handles.matrix = previousMatrix;
@@ -710,23 +717,32 @@ namespace Fu.Framework
                 Handles.color = wireColor;
                 Handles.DrawLine(frontBottom0, frontBottom1);
                 Handles.DrawLine(frontTop0, frontTop1);
-                Handles.DrawLine(backBottom0, backBottom1);
-                Handles.DrawLine(backTop0, backTop1);
+                if (CreateExtrudedPanelMesh)
+                {
+                    Handles.DrawLine(backBottom0, backBottom1);
+                    Handles.DrawLine(backTop0, backTop1);
+                }
 
                 if (i == 0)
                 {
                     Handles.DrawLine(frontBottom0, frontTop0);
-                    Handles.DrawLine(backBottom0, backTop0);
-                    Handles.DrawLine(frontBottom0, backBottom0);
-                    Handles.DrawLine(frontTop0, backTop0);
+                    if (CreateExtrudedPanelMesh)
+                    {
+                        Handles.DrawLine(backBottom0, backTop0);
+                        Handles.DrawLine(frontBottom0, backBottom0);
+                        Handles.DrawLine(frontTop0, backTop0);
+                    }
                 }
 
                 if (i == segments - 1)
                 {
                     Handles.DrawLine(frontBottom1, frontTop1);
-                    Handles.DrawLine(backBottom1, backTop1);
-                    Handles.DrawLine(frontBottom1, backBottom1);
-                    Handles.DrawLine(frontTop1, backTop1);
+                    if (CreateExtrudedPanelMesh)
+                    {
+                        Handles.DrawLine(backBottom1, backTop1);
+                        Handles.DrawLine(frontBottom1, backBottom1);
+                        Handles.DrawLine(frontTop1, backTop1);
+                    }
                 }
             }
 
@@ -748,20 +764,26 @@ namespace Fu.Framework
         {
             Vector3[] flatPoints = GetRoundedPlaceholderPoints(width, height, rounding, 8);
             Vector3[] frontPoints = new Vector3[flatPoints.Length];
-            Vector3[] backPoints = new Vector3[flatPoints.Length];
+            Vector3[] backPoints = CreateExtrudedPanelMesh ? new Vector3[flatPoints.Length] : null;
 
             for (int i = 0; i < flatPoints.Length; i++)
             {
                 frontPoints[i] = BendPlaceholderPoint(flatPoints[i], width, curveAngle);
-                float normalizedX = (flatPoints[i].x + width * 0.5f) / Mathf.Max(0.0001f, width);
-                backPoints[i] = frontPoints[i] - GetCurvedPlaceholderNormal(normalizedX, width, curveAngle) * depth;
+                if (CreateExtrudedPanelMesh)
+                {
+                    float normalizedX = (flatPoints[i].x + width * 0.5f) / Mathf.Max(0.0001f, width);
+                    backPoints[i] = frontPoints[i] - GetCurvedPlaceholderNormal(normalizedX, width, curveAngle) * depth;
+                }
             }
 
             // The curved fill remains segmented; this outline makes the configured corner radius readable in Scene view.
             Handles.color = new Color(0f, 0.9f, 1f, 0.95f);
             DrawPlaceholderPolyline(frontPoints, true);
-            DrawPlaceholderPolyline(backPoints, true);
-            DrawPlaceholderDepthLines(frontPoints, backPoints, 8);
+            if (CreateExtrudedPanelMesh)
+            {
+                DrawPlaceholderPolyline(backPoints, true);
+                DrawPlaceholderDepthLines(frontPoints, backPoints, 8);
+            }
         }
 
         /// <summary>

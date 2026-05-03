@@ -47,6 +47,7 @@ namespace Fu.Framework
         private static readonly Dictionary<string, int> _tabSelectedIndices = new Dictionary<string, int>();
         private static readonly Dictionary<string, float> _tabScrollOffsets = new Dictionary<string, float>();
         private static readonly Dictionary<string, FuElementAnimationData> _tabSelectionAnimations = new Dictionary<string, FuElementAnimationData>();
+        private static readonly Dictionary<string, Rect[]> _tabHitRects = new Dictionary<string, Rect[]>();
 
         private struct FuTabLayoutData
         {
@@ -145,6 +146,7 @@ namespace Fu.Framework
             selectionChanged = previousSelectedIndex != selectedIndex;
 
             FuTabLayoutData[] layout = BuildTabsLayout(items, flags, availableWidth);
+            Rect[] hitRects = new Rect[count];
             float totalTabsWidth = GetTotalTabsWidth(layout);
             float scale = Fugui.CurrentContext.Scale;
             float borderSize = Mathf.Max(0f, Fugui.Themes.TabBorderSize);
@@ -194,6 +196,7 @@ namespace Fu.Framework
                 }
 
                 Rect hitRect = ClipTabHitRect(tabMin, tabMax, tabsClipMin, tabsClipMax);
+                hitRects[i] = hitRect;
                 string tabID = elementID + "##tab-" + i + "-" + (items[i] ?? string.Empty);
                 setBaseElementState(tabID, hitRect.position, hitRect.size, !LastItemDisabled, false, true);
 
@@ -220,10 +223,44 @@ namespace Fu.Framework
 
             _tabSelectedIndices[elementID] = selectedIndex;
             _tabScrollOffsets[elementID] = ClampTabScroll(scrollOffset, totalTabsWidth, tabsViewportWidth);
+            _tabHitRects[elementID] = hitRects;
 
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, barPos.y + barHeight));
             endElement();
             return selectionChanged;
+        }
+
+        /// <summary>
+        /// Try to resolve which tab was under a screen-space point during the last draw of a tab bar.
+        /// </summary>
+        /// <param name="ID">Unique tab bar ID.</param>
+        /// <param name="screenPosition">Screen-space point to test.</param>
+        /// <param name="tabIndex">Index of the hovered tab.</param>
+        /// <returns>True if a visible tab contains the point.</returns>
+        internal static bool TryGetLastTabHitIndex(string ID, Vector2 screenPosition, out int tabIndex)
+        {
+            tabIndex = -1;
+            if (string.IsNullOrEmpty(ID) || !_tabHitRects.TryGetValue(ID, out Rect[] hitRects) || hitRects == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < hitRects.Length; i++)
+            {
+                Rect hitRect = hitRects[i];
+                if (hitRect.width <= 0f || hitRect.height <= 0f)
+                {
+                    continue;
+                }
+
+                if (hitRect.Contains(screenPosition))
+                {
+                    tabIndex = i;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

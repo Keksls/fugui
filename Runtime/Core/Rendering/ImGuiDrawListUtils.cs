@@ -43,7 +43,6 @@ namespace Fu
             {
                 string name = getWindowName(windows, imDrawDataPtr.CmdLists[i]._OwnerName);
 
-                bool isChild = false;
                 if (!windows.ContainsKey(name)) // it may be a window's child
                 {
                     int firstSlashIndex = name.IndexOf('/');
@@ -52,33 +51,14 @@ namespace Fu
                         string rootWindowName = name.Substring(0, firstSlashIndex);
                         if (windows.TryGetValue(rootWindowName, out FuWindow rootWindow)) // it's a window's child
                         {
-                            if (rootWindow.IsDocked) // the window is docked
-                            {
-                                int secondSlashIndex = name.IndexOf('/', firstSlashIndex + 1);
-                                if (secondSlashIndex < 0) // it's a direct window's child (so it may be the forced child used to store vtx)
-                                {
-                                    string childWindowName = name.Substring(firstSlashIndex + 1);
-                                    isChild = childWindowName.StartsWith(rootWindowName + "ctnr"); // is it the forced child ?
-                                    name = isChild ? rootWindowName : "";
-                                }
-                                else // it's a child lvl 2+, so child of child, we need to store it too
-                                {
-                                    // it's a child of a windows, we must store it.
-                                    rootWindow.ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdLists[i]);
-                                    continue;
-                                }
-                            }
-                            else // the window is not docked
-                            {
-                                // it's a child of a windows, we must store it.
-                                rootWindow.ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdLists[i]);
-                            }
+                            rootWindow.ChildrenDrawLists[name] = new DrawList(imDrawDataPtr.CmdLists[i]);
+                            continue;
                         }
                     }
                 }
 
                 // save window draw cmd if window has just been draw and it's an UIWindow
-                if (windows.TryGetValue(name, out FuWindow window) && (window.IsDocked && isChild || !window.IsDocked))
+                if (windows.TryGetValue(name, out FuWindow window))
                 {
                     // frame has just been redraw, we must store drawList
                     if (window.HasJustBeenDraw)

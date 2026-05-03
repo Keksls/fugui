@@ -34,6 +34,10 @@ namespace Fu
         /// The size of the container.
         /// </summary>
         public Vector2Int Size => _size;
+        /// <summary>
+        /// The drawable content area left after the main menu and footer.
+        /// </summary>
+        public Rect ContentRect { get; private set; }
 
         /// <summary>
         /// A dictionary of UI windows contained in the container.
@@ -70,6 +74,8 @@ namespace Fu
         private Queue<FuWindow> _toRemoveWindows;
         // A queue of windows to be added.
         private Queue<FuWindow> _toAddWindows;
+        private string _pendingBringToFrontWindowId;
+        private bool _isRenderingWindows;
         // The mouse position relative to the container.
         private Vector2Int _mousePos;
         // The size of the container.
@@ -333,14 +339,43 @@ namespace Fu
         /// </summary>
         public void RenderFuWindows()
         {
+            ApplyPendingWindowOrder();
             DrawMainLayout();
+            Fugui.Layouts?.UpdateCustomLayout(this, ContentRect);
 
-            // render every windows into this container
+            _isRenderingWindows = true;
+            // Main-layout docked windows are the background layout surface.
             foreach (FuWindow window in Windows.Values)
             {
-                // check whatever window must be draw
-                RenderFuWindow(window);
+                if (window.IsDocked && !IsFloatingDockGroupWindow(window))
+                {
+                    RenderFuWindow(window);
+                }
             }
+            _isRenderingWindows = false;
+            ApplyPendingWindowOrder();
+
+            _isRenderingWindows = true;
+            foreach (FuWindow window in Windows.Values)
+            {
+                if ((!window.IsDocked && !window.IsDragging) || IsFloatingDockGroupWindow(window))
+                {
+                    RenderFuWindow(window);
+                }
+            }
+            _isRenderingWindows = false;
+            ApplyPendingWindowOrder();
+
+            _isRenderingWindows = true;
+            foreach (FuWindow window in Windows.Values)
+            {
+                if (!window.IsDocked && window.IsDragging)
+                {
+                    RenderFuWindow(window);
+                }
+            }
+            _isRenderingWindows = false;
+            ApplyPendingWindowOrder();
 
             // invoke OnPostRenderWindows event
             OnPostRenderWindows?.Invoke();
@@ -356,6 +391,86 @@ namespace Fu
 
             // render notifications
             Fugui.RenderNotifications(this);
+        }
+
+        /// <summary>
+        /// Return whether a window belongs to a floating dock group and should be rendered in the floating pass.
+        /// </summary>
+        private bool IsFloatingDockGroupWindow(FuWindow window)
+        {
+            return window != null &&
+                   window.IsDocked &&
+                   Fugui.Layouts != null &&
+                   Fugui.Layouts.IsWindowInFloatingDockRoot(window);
+        }
+
+        /// <summary>
+        /// Queue a floating window to be rendered above the other floating windows.
+        /// </summary>
+        internal void BringWindowToFront(FuWindow window)
+        {
+            if (window == null || window.IsDocked || !Windows.ContainsKey(window.ID))
+            {
+                return;
+            }
+
+            if (_isRenderingWindows)
+            {
+                _pendingBringToFrontWindowId = window.ID;
+                return;
+            }
+
+            MoveWindowToEnd(window.ID);
+        }
+
+        /// <summary>
+        /// Move a set of windows to the top of the render order while preserving their relative order.
+        /// </summary>
+        internal void BringWindowsToFront(IEnumerable<string> windowIds)
+        {
+            if (windowIds == null)
+            {
+                return;
+            }
+
+            foreach (string windowId in windowIds)
+            {
+                MoveWindowToEnd(windowId);
+            }
+        }
+
+        /// <summary>
+        /// Move the queued window to the end of the dictionary insertion order.
+        /// </summary>
+        private void ApplyPendingWindowOrder()
+        {
+            if (string.IsNullOrEmpty(_pendingBringToFrontWindowId))
+            {
+                return;
+            }
+
+            string windowId = _pendingBringToFrontWindowId;
+            _pendingBringToFrontWindowId = null;
+            if (!Windows.TryGetValue(windowId, out FuWindow window))
+            {
+                return;
+            }
+
+            MoveWindowToEnd(windowId);
+        }
+
+        /// <summary>
+        /// Move a window to the end of the dictionary insertion order.
+        /// </summary>
+        private void MoveWindowToEnd(string windowId)
+        {
+            if (!Windows.TryGetValue(windowId, out FuWindow window))
+            {
+                return;
+            }
+
+            Windows.Remove(windowId);
+            Windows.Add(windowId, window);
         }
 
         /// <summary>
@@ -407,15 +522,13 @@ namespace Fu
         }
 
         /// <summary>
-        /// Draw the Main Layout of the container, including main menu, dockspace and footer.
+        /// Draw the Main Layout of the container, including main menu and footer.
         /// </summary>
         /// <summary>
-        /// Draws the main layout of the container, including the main menu, dockspace and footer.
+        /// Draws the main layout of the container, including the main menu and footer.
         /// </summary>
         private void DrawMainLayout()
         {
-            bool dockingEnabled = Fugui.Settings.ImGuiConfig.HasFlag(ImGuiConfigFlags.DockingEnable);
-
             uint viewPortID = 0;
 
             ImGuiWindowFlags window_flags =
@@ -439,27 +552,8 @@ namespace Fu
                     ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered)));
             }
 
-            if (dockingEnabled)
-            {
-                ImGuiDockNodeFlags dockspace_flags = Fugui.Settings.DockingFlags;
-
-                if (Fugui.Layouts.CurrentLayout != null && Fugui.Layouts.CurrentLayout.AutoHideTopBar)
-                {
-                    dockspace_flags |= ImGuiDockNodeFlags.AutoHideTabBar;
-                }
-
-                ImGui.SetNextWindowPos(new Vector2(0f, mainMenuHeight));
-                ImGui.SetNextWindowSize(new Vector2(_size.x, _size.y - mainMenuHeight - Mathf.Max(0f, _footerHeight * Context.Scale)));
-                ImGui.SetNextWindowViewport(viewPortID);
-
-                if (ImGui.Begin("MainDockSpace", window_flags | ImGuiWindowFlags.NoBackground))
-                {
-                    Dockspace_id = ImGui.GetID("DockSpace");
-                    ImGui.DockSpace(Dockspace_id, Vector2.zero, dockspace_flags);
-                }
-
-                ImGui.End();
-            }
+            float footerHeight = Mathf.Max(0f, _footerHeight * Context.Scale);
+            ContentRect = new Rect(0f, mainMenuHeight, _size.x, Mathf.Max(1f, _size.y - mainMenuHeight - footerHeight));
 
             if (_footerHeight > 0f)
             {

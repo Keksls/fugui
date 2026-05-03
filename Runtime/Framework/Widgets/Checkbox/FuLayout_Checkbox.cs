@@ -150,7 +150,7 @@ namespace Fu.Framework
 
             float rounding = Mathf.Min(Mathf.Max(Fugui.Themes.FrameRounding, 4f * Fugui.Scale), lenght * 0.32f);
             // draw background
-            drawList.AddRectFilled(pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, ImDrawFlags.RoundCornersAll);
+            AddRectFilledAntiAliased(drawList, pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, ImDrawFlags.RoundCornersAll);
             // draw border
             drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
             if (_lastItemHovered && !LastItemDisabled)

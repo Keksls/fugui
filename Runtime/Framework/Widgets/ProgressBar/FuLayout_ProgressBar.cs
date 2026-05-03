@@ -114,13 +114,13 @@ namespace Fu.Framework
             }
 
             // Draw the container
-            DrawRoundedSegment(drawList, cursorPos, cursorPos + size, frameColor, rounding);
+            DrawRoundedSegment(drawList, cursorPos, cursorPos + size, frameColor, rounding, true);
             // Calculate the size of the filled part
             var filledPartSize = new Vector2(size.x * value, size.y);
             // Draw the filled part
             if (filledPartSize.x > 0)
             {
-                DrawRoundedSegment(drawList, cursorPos, cursorPos + filledPartSize, fillColor, rounding);
+                DrawRoundedSegment(drawList, cursorPos, cursorPos + filledPartSize, fillColor, rounding, true);
             }
             drawList.AddRect(cursorPos, cursorPos + size, ImGui.GetColorU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
 
@@ -177,9 +177,9 @@ namespace Fu.Framework
             fillColor.w *= 0.9f;
             shineColor.w = LastItemDisabled ? 0.04f : 0.13f;
 
-            DrawRoundedSegment(drawList, cursorPos, cursorPos + size, frameColor, rounding);
-            DrawRoundedSegment(drawList, barPos, barPos + barSize, fillColor, rounding);
-            DrawRoundedSegment(drawList, barPos + new Vector2(2f * scale, 2f * scale), barPos + new Vector2(Mathf.Max(2f * scale, barSize.x * 0.45f), size.y - 2f * scale), shineColor, rounding);
+            DrawRoundedSegment(drawList, cursorPos, cursorPos + size, frameColor, rounding, true);
+            DrawRoundedSegment(drawList, barPos, barPos + barSize, fillColor, rounding, true);
+            DrawRoundedSegment(drawList, barPos + new Vector2(2f * scale, 2f * scale), barPos + new Vector2(Mathf.Max(2f * scale, barSize.x * 0.45f), size.y - 2f * scale), shineColor, rounding, true);
             ImGui.Dummy(size);
 
             // for draw current window to ensure animation fluidity

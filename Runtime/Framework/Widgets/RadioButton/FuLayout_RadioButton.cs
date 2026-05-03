@@ -82,14 +82,14 @@ namespace Fu.Framework
             }
 
             // draw radio button
-            drawList.AddCircleFilled(CircleCenter, radius, ImGui.GetColorU32(BGColor), 40);
+            AddCircleFilledAntiAliased(drawList, CircleCenter, radius, ImGui.GetColorU32(BGColor), 40);
             drawList.AddCircle(CircleCenter, radius, ImGui.GetColorU32(borderColor), 40, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
             if (animationData.CurrentValue > 0f)
             {
                 float knobSize = Mathf.Lerp(0f, radius * 0.48f, animationData.CurrentValue);
                 Vector4 dotColor = knobColor;
                 dotColor.w *= animationData.CurrentValue;
-                drawList.AddCircleFilled(CircleCenter, knobSize, ImGui.GetColorU32(dotColor), 32);
+                AddCircleFilledAntiAliased(drawList, CircleCenter, knobSize, ImGui.GetColorU32(dotColor), 32);
             }
 
             //draw hover frame

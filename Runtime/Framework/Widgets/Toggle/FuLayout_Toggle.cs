@@ -152,7 +152,7 @@ namespace Fu.Framework
 
             // draw background
             float rounding = size.y * 0.5f;
-            DrawRoundedSegment(drawList, pos, pos + size, BGColor, rounding);
+            DrawRoundedSegment(drawList, pos, pos + size, BGColor, rounding, true);
             // draw border
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(BorderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
             // draw knob

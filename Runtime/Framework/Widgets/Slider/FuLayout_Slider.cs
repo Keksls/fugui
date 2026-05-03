@@ -316,11 +316,6 @@ namespace Fu.Framework
                     }
                 }
 
-                if (isDragging && !LastItemDisabled)
-                {
-                    DrawValueBubble(foregroundDrawList, FormatValueBubble(value, isInt, format), new Vector2(knobPos, y - knobRadius));
-                }
-
                 if (!LastItemDisabled)
                 {
                     bool shouldStartDrag = false;

@@ -309,6 +309,42 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Enables anti-aliased fills for the next custom filled primitive.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <returns>Previous draw list flags.</returns>
+        private static ImDrawListFlags PushAntiAliasedFill(ImDrawListPtr drawList)
+        {
+            ImDrawListFlags previousFlags = drawList.Flags;
+            drawList.Flags = previousFlags | ImDrawListFlags.AntiAliasedFill;
+            return previousFlags;
+        }
+
+        /// <summary>
+        /// Restores draw list flags after a local anti-aliased fill draw.
+        /// </summary>
+        /// <param name="drawList">Draw list.</param>
+        /// <param name="previousFlags">Previous draw list flags.</param>
+        private static void PopAntiAliasedFill(ImDrawListPtr drawList, ImDrawListFlags previousFlags)
+        {
+            drawList.Flags = previousFlags;
+        }
+
+        private static void AddRectFilledAntiAliased(ImDrawListPtr drawList, Vector2 min, Vector2 max, uint color, float rounding, ImDrawFlags flags = ImDrawFlags.None)
+        {
+            ImDrawListFlags previousFlags = PushAntiAliasedFill(drawList);
+            drawList.AddRectFilled(min, max, color, rounding, flags);
+            PopAntiAliasedFill(drawList, previousFlags);
+        }
+
+        private static void AddCircleFilledAntiAliased(ImDrawListPtr drawList, Vector2 center, float radius, uint color, int segments = 0)
+        {
+            ImDrawListFlags previousFlags = PushAntiAliasedFill(drawList);
+            drawList.AddCircleFilled(center, radius, color, segments);
+            PopAntiAliasedFill(drawList, previousFlags);
+        }
+
+        /// <summary>
         /// Draws a rounded filled bar segment.
         /// </summary>
         /// <param name="drawList">Draw list.</param>
@@ -316,7 +352,8 @@ namespace Fu.Framework
         /// <param name="max">Maximum point.</param>
         /// <param name="color">Fill color.</param>
         /// <param name="rounding">Requested rounding.</param>
-        private void DrawRoundedSegment(ImDrawListPtr drawList, Vector2 min, Vector2 max, Vector4 color, float rounding)
+        /// <param name="antiAliasFill">Whether to enable anti-aliased fill locally.</param>
+        private void DrawRoundedSegment(ImDrawListPtr drawList, Vector2 min, Vector2 max, Vector4 color, float rounding, bool antiAliasFill = false)
         {
             if (max.x <= min.x || max.y <= min.y)
             {
@@ -324,7 +361,15 @@ namespace Fu.Framework
             }
 
             rounding = Mathf.Min(rounding, (max.y - min.y) * 0.5f, (max.x - min.x) * 0.5f);
-            drawList.AddRectFilled(min, max, ImGui.GetColorU32(color), rounding, ImDrawFlags.RoundCornersAll);
+            uint packedColor = ImGui.GetColorU32(color);
+            if (antiAliasFill)
+            {
+                AddRectFilledAntiAliased(drawList, min, max, packedColor, rounding, ImDrawFlags.RoundCornersAll);
+            }
+            else
+            {
+                drawList.AddRectFilled(min, max, packedColor, rounding, ImDrawFlags.RoundCornersAll);
+            }
         }
 
         /// <summary>
@@ -389,7 +434,7 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// Draws a slider knob with a subtle shadow and hover ring.
+        /// Draws a flat slider knob with a hover ring.
         /// </summary>
         /// <param name="drawList">Draw list.</param>
         /// <param name="center">Knob center.</param>
@@ -401,8 +446,6 @@ namespace Fu.Framework
         private void DrawValueKnob(ImDrawListPtr drawList, Vector2 center, float radius, Vector4 color, bool hovered, bool active, bool disabled)
         {
             float scale = Fugui.CurrentContext.Scale;
-            Vector4 shadow = new Vector4(0f, 0f, 0f, disabled ? 0.10f : 0.28f);
-            drawList.AddCircleFilled(center + new Vector2(0f, Mathf.Max(1f, scale)), radius + 1.5f * scale, ImGui.GetColorU32(shadow), 32);
 
             if ((hovered || active) && !disabled)
             {
@@ -413,12 +456,8 @@ namespace Fu.Framework
 
             Vector4 border = Fugui.Themes.GetColor(FuColors.Border);
             border.w = disabled ? 0.35f : 0.75f;
-            drawList.AddCircleFilled(center, radius + Mathf.Max(1f, scale), ImGui.GetColorU32(border), 32);
-            drawList.AddCircleFilled(center, radius, ImGui.GetColorU32(color), 32);
-
-            Vector4 shine = Color.white;
-            shine.w = disabled ? 0.06f : 0.12f;
-            drawList.AddCircleFilled(center - new Vector2(radius * 0.25f, radius * 0.28f), radius * 0.36f, ImGui.GetColorU32(shine), 16);
+            AddCircleFilledAntiAliased(drawList, center, radius + Mathf.Max(1f, scale), ImGui.GetColorU32(border), 32);
+            AddCircleFilledAntiAliased(drawList, center, radius, ImGui.GetColorU32(color), 32);
         }
 
         /// <summary>
@@ -926,6 +965,9 @@ namespace Fu.Framework
             if (ImGuiNative.igIsItemFocused() != 0)
                 return "%.4f";
 
+            if (isDisplayZero(value))
+                return "%.0f";
+
             // Fast no alloc path: get exponent
             int bits = *(int*)&value;
             int exponent = ((bits >> 23) & 0xFF) - 127;
@@ -951,10 +993,19 @@ namespace Fu.Framework
         }
 
         #region State
+        private const float ZeroDisplayEpsilon = 1e-6f;
+
         private static readonly string[] formats = new[]
         {
             "%.0f", "%.1f", "%.2f", "%.3f", "%.4f", "%.5f", "%.6f", "%.7f", "%.8f"
         };
+        #endregion
+
+        #region Methods
+        private static bool isDisplayZero(float value)
+        {
+            return value > -ZeroDisplayEpsilon && value < ZeroDisplayEpsilon;
+        }
         #endregion
 
         #region Methods

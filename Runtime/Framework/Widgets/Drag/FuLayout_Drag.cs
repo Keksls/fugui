@@ -101,18 +101,20 @@ namespace Fu.Framework
             string id = ImGuiPushID(text);
 
             // Inline GetStringFormat replacement (zero alloc)
-            string fmt = string.IsNullOrEmpty(format) ? GetCachedFormat(value) : format;
+            bool autoFormat = string.IsNullOrEmpty(format);
+            string fmt = autoFormat ? GetCachedFormat(value) : format;
+            float displayedValue = autoFormat && isDisplayZero(value) ? 0f : value;
 
-            ImGui.DragFloat(id, ref value, speed, min, max, fmt,
+            bool edited = ImGui.DragFloat(id, ref displayedValue, speed, min, max, fmt,
                 disabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
 
             if (disabled)
                 ImGui.EndDisabled();
 
-            bool valueChanged = !disabled && value != oldVal;
+            bool valueChanged = !disabled && edited && displayedValue != oldVal;
 
-            if (disabled)
-                value = oldVal;
+            if (valueChanged)
+                value = displayedValue;
 
             // Record element state
             setBaseElementState(text, ImGui.GetItemRectMin(), ImGui.GetItemRectSize(), true, valueChanged);
@@ -549,6 +551,9 @@ namespace Fu.Framework
         {
             if (ImGuiNative.igIsItemFocused() != 0)
                 return "%.4f";
+
+            if (isDisplayZero(value))
+                return "%.0f";
 
             float abs = value < 0 ? -value : value;
             int idx =

@@ -2528,7 +2528,7 @@ namespace Fu
         /// <returns>true if the position is inside some currently open popup</returns>
         public static bool IsInsideAnyPopup(Vector2 worldPosition)
         {
-            return PopUpRects.Any(popupRect => popupRect.Contains(worldPosition));
+            return PopUpRects.Any(popupRect => popupRect.Contains(worldPosition)) || isInsideNotifyPanel(worldPosition);
         }
 
         /// <summary>

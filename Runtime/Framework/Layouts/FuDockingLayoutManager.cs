@@ -1195,6 +1195,11 @@ namespace Fu
                 return false;
             }
 
+            if (Fugui.IsInsideAnyPopup(mousePos))
+            {
+                return true;
+            }
+
             List<FuWindow> windows = container.Windows.Values.ToList();
             for (int i = windows.Count - 1; i >= 0; i--)
             {

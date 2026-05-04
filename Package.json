@@ -26,6 +26,11 @@
       "displayName": "Fugui Demo Scene",
       "description": "Demo scene showing Fugui usage in Unity.",
       "path": "Samples~/Demo"
+    },
+    {
+      "displayName": "Fugui Mobile Demo",
+      "description": "Touch-first mobile demo window showing Fugui controls, mobile scrolling and notifications.",
+      "path": "Samples~/MobileDemo"
     }
   ]
 }

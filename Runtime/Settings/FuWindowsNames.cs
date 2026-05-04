@@ -21,7 +21,7 @@ namespace Fu
         /// <summary>
         /// Backing field for the Fugui settings window name.
         /// </summary>
-        protected static FuWindowName _FuguiSettings = new FuWindowName(ushort.MaxValue - 3, "Fugui Settings", false, -1);
+        protected static FuWindowName _FuguiSettings = new FuWindowName(ushort.MaxValue - 3, "Fugui Settings", true, -1);
 
         /// <summary>
         /// Gets the Fugui settings window name.

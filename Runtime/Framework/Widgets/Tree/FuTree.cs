@@ -128,13 +128,14 @@ namespace Fu.Framework
         ///<param name="recursively">Flag to indicate whether to close all children recursively or not.</param>
         public void TryClose(T element, bool recursively)
         {
-            int index = getIndex(element) + 1;
-            if (index == -1)
+            int elementIndex = getIndex(element);
+            if (elementIndex == -1)
             {
                 Debug.LogError("Tree fail to get element " + element.ToString());
                 return;
             }
 
+            int index = elementIndex + 1;
             int level = _getLevel(element);
             int maxIndex = index;
             for (int i = index; i < _elements.Count; i++)
@@ -158,7 +159,7 @@ namespace Fu.Framework
             // recursively close
             if (recursively)
             {
-                for (int i = index; i <= count; i++)
+                for (int i = index; i < index + count; i++)
                 {
                     _onClose(_elements[i]);
                 }
@@ -394,7 +395,7 @@ namespace Fu.Framework
                 // Select the current element and its children if recursive is true
                 if (recursive)
                 {
-                    selection = new List<T> { element };
+                    selection = new List<T>();
                     getOpenChildren(element, selection, true, false);
                 }
                 // Select only the current element if recursive is false
@@ -422,10 +423,9 @@ namespace Fu.Framework
         {
             // Get the scale and height.
             float height = Fugui.CurrentContext.Scale * _itemHeight;
-            float indent = 16f * Fugui.CurrentContext.Scale;
+            float indent = 18f * Fugui.CurrentContext.Scale;
             // Get the draw list and color.
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-            uint col = ImGui.GetColorU32(new Vector4(_carretStyle.Text.r, _carretStyle.Text.g, _carretStyle.Text.b, 0.1f));
             // Using a layout object and a list clipper, loop through the elements and draw them.
             using (FuLayout layout = new FuLayout())
             {
@@ -440,17 +440,12 @@ namespace Fu.Framework
                         int level = _getLevel(_elements[i]);
                         Vector2 startPos = ImGui.GetCursorScreenPos();
                         // Get the item rect.
-                        Rect itemRect = new Rect(ImGui.GetCursorScreenPos(), new Vector2(ImGui.GetContentRegionAvail().x, (_itemHeight * Fugui.CurrentContext.Scale)));
+                        Rect itemRect = new Rect(startPos, new Vector2(ImGui.GetContentRegionAvail().x, height));
                         if (level > 0)
                         {
+                            drawTreeGuides(drawList, startPos, itemRect, indent, level);
                             // Indent the cursor.
                             ImGui.Indent(indent * level);
-                            // Draw the V lines.
-                            for (int j = 0; j < level; j++)
-                            {
-                                drawList.AddLine(new Vector2(startPos.x + (indent * j), startPos.y - 2f * Fugui.CurrentContext.Scale),
-                                    new Vector2(startPos.x + (indent * j), startPos.y + height), col, 1f);
-                            }
                             // Draw the element.
                             drawElement(_elements[i], layout, drawList, itemRect);
                             // Cancel the indent.
@@ -469,6 +464,35 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Draws subtle branch guides for nested tree rows.
+        /// </summary>
+        ///<param name="drawList">The draw list.</param>
+        ///<param name="startPos">The screen position of the row.</param>
+        ///<param name="itemRect">The row rect.</param>
+        ///<param name="indent">The indentation size.</param>
+        ///<param name="level">The tree level.</param>
+        private void drawTreeGuides(ImDrawListPtr drawList, Vector2 startPos, Rect itemRect, float indent, int level)
+        {
+            Vector4 guideColor = Fugui.Themes.GetColor(FuColors.Border);
+            guideColor.w *= 0.26f;
+            uint guideCol = ImGui.GetColorU32(guideColor);
+            float scale = Fugui.CurrentContext.Scale;
+            float thickness = Mathf.Max(1f, scale);
+            float yMid = itemRect.yMin + itemRect.height * 0.5f;
+
+            for (int j = 0; j < level; j++)
+            {
+                float x = startPos.x + indent * j + indent * 0.5f;
+                drawList.AddLine(new Vector2(x, itemRect.yMin + 4f * scale), new Vector2(x, itemRect.yMax - 4f * scale), guideCol, thickness);
+            }
+
+            guideColor.w *= 1.35f;
+            guideCol = ImGui.GetColorU32(guideColor);
+            float branchX = startPos.x + indent * (level - 1) + indent * 0.5f;
+            drawList.AddLine(new Vector2(branchX, yMid), new Vector2(branchX + indent * 0.62f, yMid), guideCol, thickness);
+        }
+
+        /// <summary>
         ///Draws an element of the tree.
         /// </summary>
         ///<param name="element">The element to draw.</param>
@@ -477,43 +501,73 @@ namespace Fu.Framework
         ///<param name="itemRect">The rect of the item.</param>
         private void drawElement(T element, FuLayout layout, ImDrawListPtr drawList, Rect itemRect)
         {
+            float scale = Fugui.CurrentContext.Scale;
             float height = Fugui.CurrentContext.Scale * _itemHeight;
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
             Vector4 color = _carretStyle.Text;
             uint col = ImGui.GetColorU32(color);
-            float carretSize = 6f * Fugui.CurrentContext.Scale;
-            Vector2 selectableSize = _getSelectableSize(element, ImGui.GetContentRegionAvail().x - (carretSize + 4f * Fugui.CurrentContext.Scale));
+            float carretSize = 7f * scale;
+            float carretHitWidth = 20f * scale;
+            Vector2 selectableSize = _getSelectableSize(element, ImGui.GetContentRegionAvail().x - carretHitWidth);
+            selectableSize.x = Mathf.Clamp(selectableSize.x, 0f, Mathf.Max(0f, itemRect.xMax - cursorPos.x - carretHitWidth));
+            selectableSize.y = Mathf.Max(height, selectableSize.y);
+            Rect selectableRect = new Rect(cursorPos + new Vector2(carretHitWidth, 0f), selectableSize);
+            Rect rowRect = new Rect(
+                itemRect.position + new Vector2(1f * scale, 1f * scale),
+                new Vector2(Mathf.Max(1f, itemRect.width - 2f * scale), Mathf.Max(1f, itemRect.height - 2f * scale)));
+            bool rowHovered = ImGui.IsMouseHoveringRect(selectableRect.min, selectableRect.max);
+            bool selected = _isSelected(element);
+            float rounding = Mathf.Min(6f * scale, rowRect.height * 0.35f);
 
-            // draw hover rect
-            Vector2 rectMin = cursorPos + new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, 0f);
-            if (ImGui.IsMouseHoveringRect(rectMin, rectMin + selectableSize))
+            // draw hover / selected rect
+            if (rowHovered || selected)
             {
-                drawList.AddRectFilled(itemRect.min, itemRect.max, FuWindow.CurrentDrawingWindow.Mouse.IsDown(0) ? ImGui.GetColorU32(ImGuiCol.HeaderActive) : ImGui.GetColorU32(ImGuiCol.HeaderHovered));
-                // click on element
-                if (FuWindow.CurrentDrawingWindow.Mouse.IsUp(0))
+                Vector4 rowColor;
+                if (selected)
                 {
-                    setSelected(element, true, !FuWindow.CurrentDrawingWindow.Keyboard.KeyAlt, FuWindow.CurrentDrawingWindow.Keyboard.KeyShift, FuWindow.CurrentDrawingWindow.Keyboard.KeyCtrl);
+                    rowColor = Fugui.Themes.GetColor(
+                        FuWindow.CurrentDrawingWindow.Mouse.IsDown(0) && rowHovered ? FuColors.HighlightActive : FuColors.Highlight,
+                        rowHovered ? 0.28f : 0.20f);
                 }
-            }
-            // draw selected rect
-            else if (_isSelected(element))
-            {
-                drawList.AddRectFilled(itemRect.min, itemRect.max, ImGui.GetColorU32(ImGuiCol.Header));
+                else
+                {
+                    rowColor = Fugui.Themes.GetColor(FuColors.HeaderHovered, FuWindow.CurrentDrawingWindow.Mouse.IsDown(0) ? 0.40f : 0.26f);
+                }
+                drawList.AddRectFilled(rowRect.min, rowRect.max, ImGui.GetColorU32(rowColor), rounding, ImDrawFlags.RoundCornersAll);
+
+                if (selected)
+                {
+                    Vector4 accent = Fugui.Themes.GetColor(FuColors.Highlight);
+                    accent.w = Mathf.Max(accent.w, 0.9f);
+                    drawList.AddRectFilled(rowRect.min, new Vector2(rowRect.xMin + 3f * scale, rowRect.yMax), ImGui.GetColorU32(accent), rounding, ImDrawFlags.RoundCornersLeft);
+
+                    Vector4 border = accent;
+                    border.w *= rowHovered ? 0.52f : 0.34f;
+                    drawList.AddRect(rowRect.min, rowRect.max, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
+                }
+
+                // click on element
+                if (rowHovered && FuWindow.CurrentDrawingWindow.Mouse.IsClicked(FuMouseButton.Left))
+                {
+                    setSelected(element, true, FuWindow.CurrentDrawingWindow.Keyboard.KeyAlt, FuWindow.CurrentDrawingWindow.Keyboard.KeyShift, FuWindow.CurrentDrawingWindow.Keyboard.KeyCtrl);
+                }
             }
 
             // draw a leaf
             var child = _getDirectChildren(element);
-            if (child == null || child.Count() == 0)
+            if (child == null || !child.Any())
             {
-                carretSize = 4f * Fugui.CurrentContext.Scale;
-                drawList.AddCircleFilled(cursorPos + new Vector2(2f * Fugui.CurrentContext.Scale, height / 2f - carretSize / 2f), carretSize / 2f, col);
-                ImGui.Dummy(new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, carretSize));
+                Vector2 dotCenter = cursorPos + new Vector2(carretHitWidth * 0.5f, height * 0.5f);
+                color.w *= 0.64f;
+                drawList.AddCircleFilled(dotCenter, Mathf.Max(2f * scale, carretSize * 0.28f), ImGui.GetColorU32(color), 16);
+                ImGui.Dummy(new Vector2(carretHitWidth, height));
             }
             // draw a carret
             else
             {
-                ImGui.Dummy(new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, carretSize));
-                bool hover = ImGui.IsMouseHoveringRect(cursorPos, cursorPos + new Vector2(carretSize + 4f * Fugui.CurrentContext.Scale, height));
+                ImGui.Dummy(new Vector2(carretHitWidth, height));
+                Rect carretRect = new Rect(cursorPos, new Vector2(carretHitWidth, height));
+                bool hover = ImGui.IsMouseHoveringRect(carretRect.min, carretRect.max);
 
                 // set mouse cursor
                 if (hover)
@@ -533,20 +587,27 @@ namespace Fu.Framework
                     col = ImGui.GetColorU32(color);
                 }
                 bool open = _isOpen(element);
+                if (hover)
+                {
+                    Vector4 toggleBg = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback, 0.22f);
+                    drawList.AddCircleFilled(carretRect.center, height * 0.32f, ImGui.GetColorU32(toggleBg), 20);
+                }
+
+                Vector2 carretPos = new Vector2(cursorPos.x + (carretHitWidth - carretSize) * 0.5f, cursorPos.y);
                 if (open)
                 {
                     drawList.AddTriangleFilled(
-                        new Vector2(cursorPos.x, cursorPos.y + (height / 2f) - (carretSize / 2f)),
-                        new Vector2(cursorPos.x + carretSize, cursorPos.y + (height / 2f) - (carretSize / 2f)),
-                        new Vector2(cursorPos.x + carretSize / 2f, cursorPos.y + (height / 2f) + (carretSize / 2f)),
+                        new Vector2(carretPos.x, cursorPos.y + (height / 2f) - (carretSize / 2f)),
+                        new Vector2(carretPos.x + carretSize, cursorPos.y + (height / 2f) - (carretSize / 2f)),
+                        new Vector2(carretPos.x + carretSize / 2f, cursorPos.y + (height / 2f) + (carretSize / 2f)),
                         col);
                 }
                 else
                 {
                     drawList.AddTriangleFilled(
-                        new Vector2(cursorPos.x, cursorPos.y + (height / 2f) - (carretSize / 2f)),
-                        new Vector2(cursorPos.x + carretSize, cursorPos.y + (height / 2f)),
-                        new Vector2(cursorPos.x, cursorPos.y + (height / 2f) + (carretSize / 2f)),
+                        new Vector2(carretPos.x, cursorPos.y + (height / 2f) - (carretSize / 2f)),
+                        new Vector2(carretPos.x + carretSize, cursorPos.y + (height / 2f)),
+                        new Vector2(carretPos.x, cursorPos.y + (height / 2f) + (carretSize / 2f)),
                         col);
                 }
 
@@ -564,10 +625,13 @@ namespace Fu.Framework
                 }
             }
 
-            ImGui.SameLine();
+            ImGui.SameLine(0f, 0f);
 
             // draw custom element
             _display(element, layout);
+
+            // Keep the row height stable for the internal list clipper.
+            ImGui.SetCursorScreenPos(new Vector2(itemRect.xMin, itemRect.yMin + height));
         }
         #endregion
     }

@@ -132,8 +132,13 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         public bool context_OnPrepareFrame()
         {
+            Vector2Int previousSize = _size;
             _size = getContextSize();
             _fuguiContext.UpdateContainerScale(_size);
+            if (previousSize.x > 0 && previousSize.y > 0 && previousSize != _size)
+            {
+                Fugui.ForceDrawAllWindows(2);
+            }
             return true;
         }
 

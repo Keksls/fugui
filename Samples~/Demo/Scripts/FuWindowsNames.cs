@@ -50,6 +50,13 @@ namespace Fu
         /// Gets the Nodal Editor Fugui window name.
         /// </summary>
         public static FuWindowName NodalEditor { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _NodalEditor; }
+
+        private static FuWindowName _FuguiDocumentation = new FuWindowName(13, "Fugui Documentation", true, -1);
+
+        /// <summary>
+        /// Gets the Fugui Documentation Fugui window name.
+        /// </summary>
+        public static FuWindowName FuguiDocumentation { [MethodImpl(MethodImplOptions.AggressiveInlining)] get => _FuguiDocumentation; }
         #endregion
 
         #region Methods
@@ -68,7 +75,8 @@ namespace Fu
                 _Widgets,
                 _MainCameraView,
                 _Popups,
-                _NodalEditor
+                _NodalEditor,
+                _FuguiDocumentation
             };
         }
         #endregion

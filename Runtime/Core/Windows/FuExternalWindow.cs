@@ -895,9 +895,9 @@ namespace Fu
             Vector2 windowSize = new Vector2(Window.Size.x, Window.Size.y);
 
             // colors
-            uint normalColor = Fugui.Themes.GetColorU32(FuColors.ResizeGrip);
-            uint hoverColor = Fugui.Themes.GetColorU32(FuColors.ResizeGripHovered);
-            uint activeColor = Fugui.Themes.GetColorU32(FuColors.ResizeGripActive);
+            uint normalColor = Fugui.Themes.GetColorU32(FuColors.Highlight, 0.45f);
+            uint hoverColor = Fugui.Themes.GetColorU32(FuColors.HighlightHovered);
+            uint activeColor = Fugui.Themes.GetColorU32(FuColors.HighlightActive);
 
             // thickness
             float normalThickness = 1f * Fugui.Scale;

@@ -9,6 +9,11 @@ namespace Fu.Framework
         /// </summary>
         public class FuComboboxField : FuField
         {
+            #region State
+            private readonly List<string> _displayValues;
+            private readonly List<string> _enumValues;
+            #endregion
+
             #region Constructors
             /// <summary>
             /// Initializes a new instance of the Fu Combobox Field class.
@@ -16,6 +21,15 @@ namespace Fu.Framework
             /// <param name="fieldInfo">The field Info value.</param>
             public FuComboboxField(FieldInfo fieldInfo) : base(fieldInfo)
             {
+                Array values = Enum.GetValues(fieldInfo.FieldType);
+                _displayValues = new List<string>(values.Length);
+                _enumValues = new List<string>(values.Length);
+                foreach (object value in values)
+                {
+                    string enumValue = value.ToString();
+                    _enumValues.Add(enumValue);
+                    _displayValues.Add(Fugui.AddSpacesBeforeUppercase(enumValue));
+                }
             }
             #endregion
 
@@ -37,19 +51,12 @@ namespace Fu.Framework
                 {
                     grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
                 }
-                int value = (int)_fieldInfo.GetValue(objectInstance);
-                List<string> Values = new List<string>();
-                foreach (var Value in Enum.GetValues(_fieldInfo.FieldType))
-                {
-                    Values.Add(Fugui.AddSpacesBeforeUppercase(Value.ToString()));
-                }
                 bool updated = false;
-                grid.Combobox(FieldName + "##" + objectID, Values, (index) =>
+                grid.Combobox(FieldName + "##" + objectID, _displayValues, (index) =>
                 {
-                    string newValue = Values[index].Replace(" ", "");
-                    _fieldInfo.SetValue(objectInstance, Enum.Parse(_fieldInfo.FieldType, newValue));
+                    _fieldInfo.SetValue(objectInstance, Enum.Parse(_fieldInfo.FieldType, _enumValues[index]));
                     updated = true;
-                }, () => { return _fieldInfo.GetValue(objectInstance).ToString(); });
+                }, () => { return Fugui.AddSpacesBeforeUppercase(_fieldInfo.GetValue(objectInstance).ToString()); }, () => false);
                 return updated;
             }
             #endregion

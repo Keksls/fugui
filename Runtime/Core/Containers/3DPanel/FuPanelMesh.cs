@@ -17,7 +17,7 @@ namespace Fu
         /// <summary>
         /// Whether this mesh should receive raycast input for its window.
         /// </summary>
-        public bool CanReceiveInput { get { return Window == null || Window.IsInterractable; } }
+        public bool CanReceiveInput { get { return Window == null || (Window.IsInterractable && !Window.InputsLocked); } }
 
         private float _roundEdges = 0.5f;
         private float _roundTopLeft = 0.0f;

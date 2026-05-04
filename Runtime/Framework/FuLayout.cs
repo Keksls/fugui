@@ -461,25 +461,6 @@ namespace Fu.Framework
         }
 
         /// <summary>
-        /// Draws a slider knob with the window clip instead of the tighter content clip.
-        /// </summary>
-        /// <param name="drawList">Draw list.</param>
-        /// <param name="center">Knob center.</param>
-        /// <param name="radius">Knob radius.</param>
-        /// <param name="color">Knob fill color.</param>
-        /// <param name="hovered">Whether hovered.</param>
-        /// <param name="active">Whether active.</param>
-        /// <param name="disabled">Whether disabled.</param>
-        private void DrawValueKnobWithWindowClip(ImDrawListPtr drawList, Vector2 center, float radius, Vector4 color, bool hovered, bool active, bool disabled)
-        {
-            Vector2 clipMin = ImGui.GetWindowPos();
-            Vector2 clipMax = clipMin + ImGui.GetWindowSize();
-            drawList.PushClipRect(clipMin, clipMax, false);
-            DrawValueKnob(drawList, center, radius, color, hovered, active, disabled);
-            drawList.PopClipRect();
-        }
-
-        /// <summary>
         /// Draws a compact value bubble above a dragged slider knob.
         /// </summary>
         /// <param name="drawList">Draw list.</param>
@@ -833,6 +814,11 @@ namespace Fu.Framework
             // the element is drawed inside a window
             if (FuWindow.CurrentDrawingWindow != null)
             {
+                if (FuWindow.CurrentDrawingWindow.BlocksWindowInputs)
+                {
+                    return false;
+                }
+
                 // get hover state on window
                 hovered = FuWindow.CurrentDrawingWindow.IsHovered && mousePos.x > pos.x && mousePos.x < pos.x + size.x && mousePos.y > pos.y && mousePos.y < pos.y + size.y;
             }

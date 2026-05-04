@@ -324,7 +324,7 @@ namespace Fu
             ApplyMainContainerCameraState();
 
             // register Fugui Settings Window
-            new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, DrawSettings, size: new Vector2Int(256, 256), flags: FuWindowFlags.AllowMultipleWindow);
+            new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, DrawSettings, size: new Vector2Int(256, 256), flags: FuWindowFlags.Default | FuWindowFlags.AllowMultipleWindow);
 
 #if FUDEBUG
             // initialize debug tool if debug is enabled
@@ -1925,6 +1925,22 @@ namespace Fu
             foreach (var window in UIWindows)
             {
                 if (window.Value.IsDragging)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Check if any window is currently being resized.
+        /// </summary>
+        /// <returns> true if any window is being resized, false otherwise</returns>
+        public static bool IsAnyWindowResizing()
+        {
+            foreach (var window in UIWindows)
+            {
+                if (window.Value.IsResizing)
                 {
                     return true;
                 }

@@ -324,6 +324,7 @@ Expose les etats et operations de fenetre:
 - `TryAddToContainer(container)`;
 - `TryRemoveFromContainer()`;
 - `AutoDock()`;
+- `Focus()`;
 - `Close()`;
 - `ForceFocusOnNextFrame()`;
 - `UpdateState(leftMouseButtonState)`;
@@ -701,6 +702,12 @@ Methodes:
 
 - `Loader_CircleSpinner`;
 - `Loader_Spinner`;
+- `Loader_Arc`;
+- `Loader_DualRing`;
+- `Loader_Orbit`;
+- `Loader_BreathingDots`;
+- `Loader_Bars`;
+- `Loader_Shimmer`;
 - `Loader_Clocker`;
 - `Loader_Pulsar`;
 - `Loader_PulsingLines`;
@@ -709,6 +716,7 @@ Methodes:
 - `Loader_Squares`;
 - `Loader_SpikedWheel`;
 - `Loader_Wheel`;
+- `Loader_EllipseSpinner`;
 - `Loader_ElipseSpinner`.
 
 ### Video

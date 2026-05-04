@@ -135,7 +135,8 @@ namespace Fu.Framework
             // Set the font for the header to be bold and size 14
             Fugui.PushFont(FontType.Bold);
             // Display the collapsable header with the given identifier
-            if (_customCollapsableButton(text, style, leftPartCustomUIWidth, rightPartCustomUIWidth, open, drawCarret, paddingY * Fugui.CurrentContext.Scale))
+            float frameInset = getCollapsableFrameInset();
+            if (_customCollapsableButton(text, style, leftPartCustomUIWidth, rightPartCustomUIWidth, open, drawCarret, paddingY * Fugui.CurrentContext.Scale, frameInset))
             {
                 open = !open;
                 if (open && !string.IsNullOrEmpty(groupID))
@@ -157,8 +158,10 @@ namespace Fu.Framework
             endElement();
 
             // Draw up and down lines
+            Vector2 afterHeaderCursorPos = ImGui.GetCursorScreenPos();
             Vector2 btnMin = ImGui.GetItemRectMin();
             Vector2 btnMax = ImGui.GetItemRectMax();
+            applyCollapsableFrameInset(ref btnMin, ref btnMax, frameInset);
             float height = btnMax.y - btnMin.y;
             ImGui.GetWindowDrawList().AddLine(new Vector2(btnMin.x, btnMax.y), btnMax, ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.4f)));
             ImGui.GetWindowDrawList().AddLine(btnMin, new Vector2(btnMax.x, btnMin.y), ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.6f)));
@@ -180,6 +183,10 @@ namespace Fu.Framework
                 }
                 ImGui.SetCursorScreenPos(new Vector2(btnMax.x - rightPartCustomUIWidth, btnMin.y));
                 rightPartCustomUI?.Invoke(height);
+            }
+            if (leftPartCustomUI != null || rightPartCustomUI != null)
+            {
+                ImGui.SetCursorScreenPos(afterHeaderCursorPos);
             }
 
             // if collapsable is open, indent content, draw it and unindent
@@ -205,7 +212,7 @@ namespace Fu.Framework
         /// <param name="rightPartUIWidth">width of the right part UI</param>
         /// <param name="opened">whatever the collapsable is opened right now</param>
         /// <returns>true if clicked</returns>
-        private unsafe bool _customCollapsableButton(string text, FuButtonStyle style, float leftPartUIWidth, float rightPartUIWidth, bool opened, bool drawCarret, float paddingY)
+        private unsafe bool _customCollapsableButton(string text, FuButtonStyle style, float leftPartUIWidth, float rightPartUIWidth, bool opened, bool drawCarret, float paddingY, float frameInset)
         {
             // clamp gradient strenght
             float gradientStrenght = 1f - Mathf.Clamp(Fugui.Themes.CurrentTheme.CollapsableGradientStrenght, 0.1f, 1f);
@@ -217,15 +224,18 @@ namespace Fu.Framework
 
             // get the current cursor pos so we draw at the right place
             Vector2 pos = ImGui.GetCursorScreenPos();
+            frameInset = Mathf.Max(0f, frameInset);
 
             // calc item size
             Vector2 padding = new Vector2(Fugui.Themes.FramePadding.x, paddingY);
             Vector2 region_max = ImGui.GetContentRegionAvail() + ImGui.GetCursorScreenPos() - ImGui.GetWindowPos();
-            Vector2 size = new Vector2(
+            Vector2 itemSize = new Vector2(
                 Mathf.Max(4.0f, region_max.x - ImGuiNative.igGetCursorPosX()),
                 label_size.y + padding.y * 2f);
+            Vector2 framePos = pos + new Vector2(frameInset, 0f);
+            Vector2 frameSize = new Vector2(Mathf.Max(1.0f, itemSize.x - frameInset * 2f), itemSize.y);
 
-            bool hovered = IsItemHovered(pos, size);
+            bool hovered = IsItemHovered(framePos, frameSize);
 
             // custom process is mouse is hover full button rect
             bool hoverCustomUI = false;
@@ -234,11 +244,11 @@ namespace Fu.Framework
                 // prevent btn behaviour if hovering left custom UI part
                 if (leftPartUIWidth > 0f)
                 {
-                    Vector2 leftPartMin = pos;
+                    Vector2 leftPartMin = framePos;
                     leftPartMin.x += carretWidth;
                     Vector2 leftPartMax = leftPartMin;
                     leftPartMax.x += leftPartUIWidth;
-                    leftPartMax.y = pos.y + size.y;
+                    leftPartMax.y = framePos.y + frameSize.y;
                     // cancel btn click if hover custom UI
                     if (IsItemHovered(leftPartMin, leftPartMax - leftPartMin))
                     {
@@ -249,9 +259,9 @@ namespace Fu.Framework
                 // prevent btn behaviour if hovering right custom UI part
                 if (rightPartUIWidth > 0f)
                 {
-                    Vector2 rightPartMin = pos;
-                    rightPartMin.x += size.x - rightPartUIWidth;
-                    Vector2 rightPartMax = new Vector2(pos.x + size.x, pos.y + size.y);
+                    Vector2 rightPartMin = framePos;
+                    rightPartMin.x += frameSize.x - rightPartUIWidth;
+                    Vector2 rightPartMax = new Vector2(framePos.x + frameSize.x, framePos.y + frameSize.y);
                     // cancel btn click if hover custom UI
                     if (IsItemHovered(rightPartMin, rightPartMax - rightPartMin))
                     {
@@ -264,12 +274,12 @@ namespace Fu.Framework
             if (!hoverCustomUI)
             {
                 // draw a dummy button to update cursor and get states
-                ImGui.Dummy(size);
-                setBaseElementState(text, pos, size, true, false, !LastItemDisabled);
+                ImGui.Dummy(itemSize);
+                setBaseElementState(text, framePos, frameSize, true, false, !LastItemDisabled);
             }
             else
             {
-                ImGui.Dummy(size);
+                ImGui.Dummy(itemSize);
             }
 
             // get current draw list
@@ -277,7 +287,7 @@ namespace Fu.Framework
             ImGuiStylePtr imStyle = ImGui.GetStyle();
 
             // get colors
-            ImRect bb = new ImRect() { Min = ImGui.GetItemRectMin(), Max = ImGui.GetItemRectMax() };
+            ImRect bb = new ImRect() { Min = framePos, Max = framePos + frameSize };
             Vector4 bg1f = style.Button;
             if (LastItemDisabled)
             {
@@ -298,14 +308,14 @@ namespace Fu.Framework
                 Vector4 bg2f = new Vector4(bg1f.x * gradientStrenght, bg1f.y * gradientStrenght, bg1f.z * gradientStrenght, bg1f.w);
                 // draw button frame
                 int vert_start_idx = drawList.VtxBuffer.Size;
-                drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), imStyle.FrameRounding);
+                drawList.AddRectFilled(framePos, framePos + frameSize, ImGuiNative.igGetColorU32_Vec4(bg1f), imStyle.FrameRounding);
                 int vert_end_idx = drawList.VtxBuffer.Size;
-                ImGuiInternal.igShadeVertsLinearColorGradientKeepAlpha(drawList.NativePtr, vert_start_idx, vert_end_idx, pos, bb.GetBL(), ImGuiNative.igGetColorU32_Vec4(bg1f), ImGuiNative.igGetColorU32_Vec4(bg2f));
+                ImGuiInternal.igShadeVertsLinearColorGradientKeepAlpha(drawList.NativePtr, vert_start_idx, vert_end_idx, framePos, bb.GetBL(), ImGuiNative.igGetColorU32_Vec4(bg1f), ImGuiNative.igGetColorU32_Vec4(bg2f));
             }
             // draw frame button
             else
             {
-                drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Vec4(bg1f), imStyle.FrameRounding);
+                drawList.AddRectFilled(framePos, framePos + frameSize, ImGuiNative.igGetColorU32_Vec4(bg1f), imStyle.FrameRounding);
             }
 
             Vector2 align = new Vector2(0f, 0.5f);
@@ -316,13 +326,14 @@ namespace Fu.Framework
             }
 
             // draw text
-            size.x -= leftPartUIWidth;
-            size.x -= rightPartUIWidth;
-            size.x -= carretWidth;
-            Vector3 txtPos = pos;
+            Vector2 textSize = frameSize;
+            textSize.x -= leftPartUIWidth;
+            textSize.x -= rightPartUIWidth;
+            textSize.x -= carretWidth;
+            Vector3 txtPos = framePos;
             txtPos.x += leftPartUIWidth + carretWidth;
 
-            EnboxedText(text, txtPos, size, Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
+            EnboxedText(text, txtPos, textSize, Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
 
             // draw carret
             if (drawCarret)
@@ -334,11 +345,11 @@ namespace Fu.Framework
                 }
                 if (opened)
                 {
-                    Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), new Vector2(pos.x + carretWidth / 3f, pos.y + 1f), carretWidth / 3f, size.y, caretColor);
+                    Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), new Vector2(framePos.x + carretWidth / 3f, framePos.y + 1f), carretWidth / 3f, frameSize.y, caretColor);
                 }
                 else
                 {
-                    Fugui.DrawCarret_Right(ImGui.GetWindowDrawList(), new Vector2(pos.x + carretWidth / 3f, pos.y + 1f), carretWidth / 3f, size.y, caretColor);
+                    Fugui.DrawCarret_Right(ImGui.GetWindowDrawList(), new Vector2(framePos.x + carretWidth / 3f, framePos.y + 1f), carretWidth / 3f, frameSize.y, caretColor);
                 }
             }
 
@@ -347,6 +358,36 @@ namespace Fu.Framework
 
             // return whatever the button is clicked
             return _lastItemUpdate;
+        }
+
+        private static float getCollapsableFrameInset()
+        {
+            if (FuPanel.IsInsidePanel)
+            {
+                return Mathf.Ceil(Mathf.Max(0f, Fugui.Themes.ChildBorderSize));
+            }
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                return Mathf.Ceil(Mathf.Max(0f, Fugui.Themes.WindowBorderSize));
+            }
+            return 0f;
+        }
+
+        private static void applyCollapsableFrameInset(ref Vector2 min, ref Vector2 max, float frameInset)
+        {
+            if (frameInset <= 0f)
+            {
+                return;
+            }
+
+            min.x += frameInset;
+            max.x -= frameInset;
+            if (max.x < min.x)
+            {
+                float center = (min.x + max.x) * 0.5f;
+                min.x = center;
+                max.x = center;
+            }
         }
         #endregion
     }

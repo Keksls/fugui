@@ -88,6 +88,36 @@ namespace ImGuiNET
         /// </summary>
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern void igClearActiveID();
+
+        /// <summary>
+        /// Returns the internal ImGui window for a native UTF8 window name.
+        /// </summary>
+        /// <param name="name">The null-terminated native window name.</param>
+        /// <returns>The internal ImGui window pointer, or null.</returns>
+        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ImGuiWindow* igFindWindowByName(byte* name);
+
+        /// <summary>
+        /// Requests focus for an internal ImGui window.
+        /// </summary>
+        /// <param name="window">The internal ImGui window pointer.</param>
+        /// <param name="flags">The ImGuiFocusRequestFlags value.</param>
+        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void igFocusWindow(ImGuiWindow* window, int flags);
+
+        /// <summary>
+        /// Moves an internal ImGui window to the front of the focus order.
+        /// </summary>
+        /// <param name="window">The internal ImGui window pointer.</param>
+        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void igBringWindowToFocusFront(ImGuiWindow* window);
+
+        /// <summary>
+        /// Moves an internal ImGui window to the front of the display order.
+        /// </summary>
+        /// <param name="window">The internal ImGui window pointer.</param>
+        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void igBringWindowToDisplayFront(ImGuiWindow* window);
         #endregion
     }
 }

@@ -25,6 +25,11 @@ namespace Fu
         [FuToggle]
         public bool DisplaySettingsIfNoLayout = true;
 
+        [Tooltip("Display the list of currently open main-container windows in the main menu bar.")]
+        [FuTooltip("Display the list of currently open main-container windows in the main menu bar.")]
+        [FuToggle]
+        public bool DisplayOpenWindowsInMainMenu = false;
+
         [Tooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
         [Range(0, 120)]

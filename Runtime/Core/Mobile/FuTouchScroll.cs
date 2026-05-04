@@ -44,6 +44,8 @@ namespace Fu
         private static Vector2 _currentChildSize;
         private static uint _currentChildId;
         private static Dictionary<uint, Rect> _childRects = new Dictionary<uint, Rect>();
+        private static Dictionary<uint, FuWindow> _childOwners = new Dictionary<uint, FuWindow>();
+        private static FuWindow _currentChildOwner;
         #endregion
 
         /// <summary>
@@ -53,6 +55,7 @@ namespace Fu
         {
 #if FUMOBILE
             _currentChildId = ImGui.GetID(id);
+            _currentChildOwner = FuWindow.CurrentDrawingWindow;
             _currentChildPos = ImGui.GetCursorScreenPos();
             bool opened = ImGui.BeginChild(id, size, childFlags, windowFlags);
             if (!windowFlags.HasFlag(ImGuiWindowFlags.NoScrollbar))
@@ -73,6 +76,7 @@ namespace Fu
         {
 #if FUMOBILE
             _currentChildId = ImGui.GetID(str_id);
+            _currentChildOwner = FuWindow.CurrentDrawingWindow;
             _currentChildPos = ImGui.GetCursorScreenPos();
             bool opened = ImGui.BeginChild(str_id, size);
             HandleCurrentChildScroll();
@@ -89,6 +93,7 @@ namespace Fu
         {
 #if FUMOBILE
             _currentChildId = id;
+            _currentChildOwner = FuWindow.CurrentDrawingWindow;
             _currentChildPos = ImGui.GetCursorScreenPos();
             bool opened = ImGui.BeginChild(id, size, childFlags, windowFlags);
             if (!windowFlags.HasFlag(ImGuiWindowFlags.NoScrollbar))
@@ -111,11 +116,14 @@ namespace Fu
             if (_childRects.ContainsKey(_currentChildId))
             {
                 _childRects[_currentChildId] = new Rect(_currentChildPos, _currentChildSize);
+                _childOwners[_currentChildId] = _currentChildOwner;
             }
             else
             {
                 _childRects.Add(_currentChildId, new Rect(_currentChildPos, _currentChildSize));
+                _childOwners.Add(_currentChildId, _currentChildOwner);
             }
+            _currentChildOwner = null;
 #else
             ImGuiNative.igEndChild();
 #endif
@@ -172,7 +180,12 @@ namespace Fu
             {
                 return;
             }
-            if (Fugui.IsDraggingAnything() || (Fugui.Layouts?.IsCustomDockManipulating ?? false))
+            if (_currentChildOwner?.BlocksWindowInputs == true)
+            {
+                CancelTouchScroll();
+                return;
+            }
+            if (Fugui.IsDraggingAnything() || Fugui.IsAnyWindowResizing() || (Fugui.Layouts?.IsCustomDockManipulating ?? false))
             {
                 CancelTouchScroll();
                 return;
@@ -197,6 +210,10 @@ namespace Fu
             if (!_isScrolling)
             {
                 if (!isInside)
+                {
+                    return;
+                }
+                if (!IsCurrentChildFrontMostTouchTarget(mousePosition))
                 {
                     return;
                 }
@@ -270,11 +287,6 @@ namespace Fu
                 _scrollVelocityY = Mathf.Clamp(_scrollVelocityY, -MaxInertiaSpeed, MaxInertiaSpeed);
 
                 _inertiaActive = false;
-
-                ImGui.GetForegroundDrawList().AddRect(
-                    childRect.position,
-                    childRect.position + childRect.size,
-                    ImGui.GetColorU32(new Vector4(1f, 0f, 0f, 0.5f)));
             }
             else if (!_isPressed && _inertiaActive && _activeChildId == _currentChildId)
             {
@@ -315,6 +327,40 @@ namespace Fu
         }
 
         /// <summary>
+        /// Return whether the current child belongs to the front-most window under the touch.
+        /// </summary>
+        private static bool IsCurrentChildFrontMostTouchTarget(Vector2 mousePosition)
+        {
+            if (!_childOwners.TryGetValue(_currentChildId, out FuWindow owner) || owner == null)
+            {
+                return true;
+            }
+            if (DefaultContainer == null || DefaultContainer.Windows == null)
+            {
+                return true;
+            }
+
+            FuWindow frontMost = null;
+            foreach (FuWindow window in DefaultContainer.Windows.Values)
+            {
+                if (window == null ||
+                    window.Container != DefaultContainer ||
+                    !window.IsOpened ||
+                    !window.IsInitialized ||
+                    !window.IsInterractable ||
+                    !(Fugui.Layouts?.ShouldDrawWindow(window) ?? true) ||
+                    !window.LocalRect.Contains(mousePosition))
+                {
+                    continue;
+                }
+
+                frontMost = window;
+            }
+
+            return frontMost == null || frontMost == owner;
+        }
+
+        /// <summary>
         /// Cancel touch scrolling immediately when Fugui starts another drag operation.
         /// </summary>
         private static void CancelTouchScroll()
@@ -342,6 +388,9 @@ namespace Fu
             _smoothedScrollDelta = Vector2.zero;
             _scrollVelocityY = 0f;
             _inertiaActive = false;
+            _childRects.Clear();
+            _childOwners.Clear();
+            _currentChildOwner = null;
         }
     }
 }

@@ -160,6 +160,8 @@ namespace Fu
         private static Queue<Action> _beforeDefaultRenderStack = new Queue<Action>();
         // queue of callback to execute AFTER default render
         private static Queue<Action> _afterDefaultRenderStack = new Queue<Action>();
+        // queue of callback to execute after the currently rendered context
+        private static Queue<Action> _afterCurrentRenderContextStack = new Queue<Action>();
         // stack of action we will want to execute into unity main thread
         private static Queue<Action> _executeInMainThreadActionsStack = new Queue<Action>();
 
@@ -1257,6 +1259,7 @@ namespace Fu
 #endif
 
                         context.Value.Render();
+                        ExecuteAfterCurrentRenderContextCallbacks();
                         context.Value.EndRender();
                         if (_targetScale != -1f)
                         {
@@ -1283,6 +1286,7 @@ namespace Fu
 
                 // Render default context
                 DefaultContext.Render();
+                ExecuteAfterCurrentRenderContextCallbacks();
                 // execute after default renderer render actions
                 if (DefaultContext.RenderPrepared)
                 {
@@ -2050,6 +2054,29 @@ namespace Fu
             if (callback != null)
             {
                 _afterDefaultRenderStack.Enqueue(callback);
+            }
+        }
+
+        /// <summary>
+        /// Execute a callback after the currently rendered Fugui context has finished drawing its windows.
+        /// </summary>
+        /// <param name="callback">Callback to execute.</param>
+        private static void ExecuteAfterCurrentRenderContext(Action callback)
+        {
+            if (callback != null)
+            {
+                _afterCurrentRenderContextStack.Enqueue(callback);
+            }
+        }
+
+        /// <summary>
+        /// Executes callbacks waiting for the end of the currently rendered Fugui context.
+        /// </summary>
+        private static void ExecuteAfterCurrentRenderContextCallbacks()
+        {
+            while (_afterCurrentRenderContextStack.Count > 0)
+            {
+                _afterCurrentRenderContextStack.Dequeue()?.Invoke();
             }
         }
 

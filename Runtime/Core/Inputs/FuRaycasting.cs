@@ -9,7 +9,7 @@ namespace Fu
     public static class FuRaycasting
     {
         #region State
-        static Dictionary<string, FuRaycaster> latestRaycasters = new Dictionary<string, FuRaycaster>();
+        private static Dictionary<string, FuRaycaster> latestRaycasters = new Dictionary<string, FuRaycaster>();
         private static Dictionary<string, FuRaycaster> _raycasters = new Dictionary<string, FuRaycaster>();
         #endregion
 
@@ -35,41 +35,106 @@ namespace Fu
                 return getInactiveInputState();
             }
 
-            bool hasLatestRaycaster = latestRaycasters.TryGetValue(containerID, out FuRaycaster latestRaycaster);
+            FuRaycaster selectedRaycaster = getRaycasterForInput(containerID, raycastableGameObject);
+            if (selectedRaycaster == null)
+            {
+                latestRaycasters.Remove(containerID);
+                return getInactiveInputState();
+            }
+
+            latestRaycasters[containerID] = selectedRaycaster;
+            Vector3 localHitPoint = raycastableGameObject.transform.InverseTransformPoint(selectedRaycaster.Hit.point);
+            Vector2 localPosition = new Vector2(localHitPoint.x, localHitPoint.y);
+            if (panelMesh != null && panelMesh.TryGetLocalPositionFromUV(selectedRaycaster.Hit.textureCoord, out Vector2 panelLocalPosition))
+            {
+                localPosition = panelLocalPosition;
+            }
+            return new InputState(selectedRaycaster.ID, true, selectedRaycaster.MouseButton0(), selectedRaycaster.MouseButton1(), selectedRaycaster.MouseButton2(), selectedRaycaster.MouseWheel(), localPosition);
+        }
+
+        /// <summary>
+        /// Returns the raycaster that should drive input for a target this frame.
+        /// </summary>
+        /// <param name="containerID">Container or target input ID.</param>
+        /// <param name="raycastableGameObject">Raycastable target.</param>
+        /// <returns>The selected raycaster, or null.</returns>
+        private static FuRaycaster getRaycasterForInput(string containerID, GameObject raycastableGameObject)
+        {
+            bool hasLatestRaycaster = latestRaycasters.TryGetValue(containerID, out FuRaycaster latestRaycaster) && latestRaycaster != null;
+            bool latestRaycasterStillHits = false;
+            FuRaycaster inputCandidate = null;
+            FuRaycaster closestCandidate = null;
+            float closestDistance = float.MaxValue;
+
             foreach (FuRaycaster raycaster in _raycasters.Values)
             {
-                if (raycaster.RaycastThisFrame && raycaster.Hit.collider.gameObject == raycastableGameObject)
+                if (!raycasterHits(raycaster, raycastableGameObject))
                 {
-                    if (!hasLatestRaycaster || latestRaycaster != raycaster)
-                    {
-                        latestRaycasters[containerID] = raycaster;
-                        latestRaycaster = raycaster;
-                        hasLatestRaycaster = true;
-                    }
+                    continue;
                 }
-                else if (hasLatestRaycaster && latestRaycaster == raycaster)
+
+                if (hasLatestRaycaster && latestRaycaster == raycaster)
                 {
-                    latestRaycasters.Remove(containerID);
-                    latestRaycaster = null;
-                    hasLatestRaycaster = false;
+                    latestRaycasterStillHits = true;
+                }
+
+                if (inputCandidate == null && raycasterHasInput(raycaster))
+                {
+                    inputCandidate = raycaster;
+                }
+
+                float distance = raycaster.Hit.distance;
+                if (closestCandidate == null || distance < closestDistance)
+                {
+                    closestCandidate = raycaster;
+                    closestDistance = distance;
                 }
             }
 
-            if (!hasLatestRaycaster)
+            if (hasLatestRaycaster && latestRaycasterStillHits && raycasterHasInput(latestRaycaster))
             {
-                return getInactiveInputState();
+                return latestRaycaster;
             }
-            else
+
+            if (inputCandidate != null)
             {
-                FuRaycaster raycaster = latestRaycaster;
-                Vector3 localHitPoint = raycastableGameObject.transform.InverseTransformPoint(raycaster.Hit.point);
-                Vector2 localPosition = new Vector2(localHitPoint.x, localHitPoint.y);
-                if (panelMesh != null && panelMesh.TryGetLocalPositionFromUV(raycaster.Hit.textureCoord, out Vector2 panelLocalPosition))
-                {
-                    localPosition = panelLocalPosition;
-                }
-                return new InputState(raycaster.ID, true, raycaster.MouseButton0(), raycaster.MouseButton1(), raycaster.MouseButton2(), raycaster.MouseWheel(), localPosition);
+                return inputCandidate;
             }
+
+            if (hasLatestRaycaster && latestRaycasterStillHits)
+            {
+                return latestRaycaster;
+            }
+
+            return closestCandidate;
+        }
+
+        /// <summary>
+        /// Returns whether the raycaster hit the requested target this frame.
+        /// </summary>
+        /// <param name="raycaster">Raycaster to inspect.</param>
+        /// <param name="raycastableGameObject">Target object.</param>
+        /// <returns>True if the raycaster hit the target.</returns>
+        private static bool raycasterHits(FuRaycaster raycaster, GameObject raycastableGameObject)
+        {
+            return raycaster != null &&
+                   raycaster.RaycastThisFrame &&
+                   raycaster.Hit.collider != null &&
+                   raycaster.Hit.collider.gameObject == raycastableGameObject;
+        }
+
+        /// <summary>
+        /// Returns whether the raycaster currently carries input that should own the target.
+        /// </summary>
+        /// <param name="raycaster">Raycaster to inspect.</param>
+        /// <returns>True if a button or wheel input is active.</returns>
+        private static bool raycasterHasInput(FuRaycaster raycaster)
+        {
+            return raycaster != null &&
+                   (raycaster.MouseButton0() ||
+                    raycaster.MouseButton1() ||
+                    raycaster.MouseButton2() ||
+                    Mathf.Abs(raycaster.MouseWheel()) > Mathf.Epsilon);
         }
 
         /// <summary>
@@ -115,7 +180,18 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         public static bool UnRegisterRaycaster(string raycasterName)
         {
-            return _raycasters.Remove(raycasterName);
+            if (!_raycasters.TryGetValue(raycasterName, out FuRaycaster raycaster))
+            {
+                return false;
+            }
+
+            bool removed = _raycasters.Remove(raycasterName);
+            if (removed)
+            {
+                removeLatestRaycasterReferences(raycaster);
+            }
+
+            return removed;
         }
 
         /// <summary>
@@ -136,6 +212,27 @@ namespace Fu
         public static IEnumerable<FuRaycaster> GetAllRaycasters()
         {
             return _raycasters.Values;
+        }
+
+        /// <summary>
+        /// Removes every cached latest-raycaster reference matching the given raycaster.
+        /// </summary>
+        /// <param name="raycaster">Raycaster to remove from caches.</param>
+        private static void removeLatestRaycasterReferences(FuRaycaster raycaster)
+        {
+            List<string> containersToClear = new List<string>();
+            foreach (KeyValuePair<string, FuRaycaster> cachedRaycaster in latestRaycasters)
+            {
+                if (cachedRaycaster.Value == raycaster)
+                {
+                    containersToClear.Add(cachedRaycaster.Key);
+                }
+            }
+
+            foreach (string containerID in containersToClear)
+            {
+                latestRaycasters.Remove(containerID);
+            }
         }
         #endregion
     }

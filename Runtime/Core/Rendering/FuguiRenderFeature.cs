@@ -2,6 +2,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.Universal;
@@ -29,14 +30,25 @@ namespace Fu
             private readonly Shader _shader;
             private int _textureID;
             private int _textureIsAlphaID;
+            private int _blitTextureID;
+            private int _backdropBlurDirectionID;
+            private int _backdropBlurRadiusID;
+            private int _backdropScreenSizeID;
+            private int _backdropRenderOffsetID;
+            private Material _backdropMaterial;
             private Dictionary<int, int> _prevSubMeshCounts;
             private Dictionary<int, int> _prevVertexCounts;
             private Dictionary<int, int> _prevIndexCounts;
             private Dictionary<int, List<SubMeshDescriptor>> _subMeshDescriptors;
             private TextureManager _textureManager;
             private MaterialPropertyBlock _materialProperties;
+            private MaterialPropertyBlock _backdropProperties;
             private bool _renderMainSurfaceContexts;
             private bool _renderOffscreenContexts;
+            private static readonly Vector4 FullBlitScaleBias = new Vector4(1f, 1f, 0f, 0f);
+            private const int BackdropCopyPass = 0;
+            private const int BackdropBlurPass = 1;
+            private const int BackdropCompositePass = 2;
             private const MeshUpdateFlags NoMeshChecks = MeshUpdateFlags.DontNotifyMeshUsers |
                 MeshUpdateFlags.DontRecalculateBounds |
                 MeshUpdateFlags.DontResetBoneBounds |
@@ -61,7 +73,13 @@ namespace Fu
                 _shader = shader;
                 _textureID = Shader.PropertyToID("_Texture");
                 _textureIsAlphaID = Shader.PropertyToID("_TextureIsAlpha");
+                _blitTextureID = Shader.PropertyToID("_BlitTexture");
+                _backdropBlurDirectionID = Shader.PropertyToID("_FuguiBackdropBlurDirection");
+                _backdropBlurRadiusID = Shader.PropertyToID("_FuguiBackdropBlurRadius");
+                _backdropScreenSizeID = Shader.PropertyToID("_FuguiBackdropScreenSize");
+                _backdropRenderOffsetID = Shader.PropertyToID("_FuguiBackdropRenderOffset");
                 _materialProperties = new MaterialPropertyBlock();
+                _backdropProperties = new MaterialPropertyBlock();
                 _prevSubMeshCounts = new Dictionary<int, int>();
                 _prevVertexCounts = new Dictionary<int, int>();
                 _prevIndexCounts = new Dictionary<int, int>();
@@ -91,6 +109,73 @@ namespace Fu
             }
 
             /// <summary>
+            /// Returns whether a context needs the backdrop blur render path this frame.
+            /// </summary>
+            /// <param name="drawData">Draw data to inspect.</param>
+            /// <returns>True when at least one generic backdrop blur command is present.</returns>
+            private bool CanUseBackdropBlur(DrawData drawData)
+            {
+                return ContainsBackdropCommand(drawData) && GetBackdropMaterial() != null;
+            }
+
+            /// <summary>
+            /// Adds an unsafe render graph pass capable of sampling the current target while drawing Fugui.
+            /// </summary>
+            /// <param name="renderGraph">Render graph to record into.</param>
+            /// <param name="passName">Pass name.</param>
+            /// <param name="target">Color target.</param>
+            /// <param name="context">Fugui context to render.</param>
+            /// <param name="clearTarget">Whether the target must be cleared before drawing.</param>
+            private void AddUnsafeFuguiPass(RenderGraph renderGraph, string passName, TextureHandle target, FuUnityContext context, bool clearTarget)
+            {
+                Vector2 fbSize = context.DrawData.DisplaySize * context.DrawData.FramebufferScale;
+                int downsample = GetBackdropDownsample();
+                int blurWidth = Mathf.Max(1, Mathf.CeilToInt(fbSize.x / downsample));
+                int blurHeight = Mathf.Max(1, Mathf.CeilToInt(fbSize.y / downsample));
+
+                TextureDesc blurDesc = new TextureDesc(blurWidth, blurHeight)
+                {
+                    colorFormat = GraphicsFormat.R8G8B8A8_UNorm,
+                    filterMode = FilterMode.Bilinear,
+                    wrapMode = TextureWrapMode.Clamp,
+                    msaaSamples = MSAASamples.None,
+                    depthBufferBits = DepthBits.None,
+                    name = passName + "_BackdropA"
+                };
+
+                using var builder = renderGraph.AddUnsafePass<PassData>(passName, out var passData);
+                builder.AllowGlobalStateModification(true);
+                builder.UseTexture(target, AccessFlags.ReadWrite);
+
+                passData.Context = context;
+                passData.Target = target;
+                passData.ClearTarget = clearTarget;
+                passData.Downsample = downsample;
+                passData.BlurWidth = blurWidth;
+                passData.BlurHeight = blurHeight;
+                passData.BackdropA = builder.CreateTransientTexture(blurDesc);
+                blurDesc.name = passName + "_BackdropB";
+                passData.BackdropB = builder.CreateTransientTexture(blurDesc);
+
+                builder.SetRenderFunc((PassData data, UnsafeGraphContext ctx) =>
+                {
+                    if (data.Context == null || data.Context.DrawData.CmdListsCount <= 0 || data.Context.DrawData.TotalVtxCount <= 0)
+                    {
+                        return;
+                    }
+
+                    ctx.cmd.SetRenderTarget(data.Target);
+                    if (data.ClearTarget)
+                    {
+                        ctx.cmd.ClearRenderTarget(false, true, Color.clear);
+                    }
+
+                    _textureManager = data.Context.TextureManager;
+                    RenderDrawLists(data.Context.ID, ctx.cmd, data.Context.DrawData, data.Target, data.BackdropA, data.BackdropB, data.Downsample, data.BlurWidth, data.BlurHeight);
+                });
+            }
+
+            /// <summary>
             /// Records the render graph pass for rendering Fugui.
             /// </summary>
             /// <param name="renderGraph"> The render graph to record the pass into.</param>
@@ -104,25 +189,32 @@ namespace Fu
                 // Default context rendered on current camera color target
                 if (_renderMainSurfaceContexts && Fugui.MainContainerEnabled && Fugui.DefaultContext is FuUnityContext defaultContext && defaultContext.Started)
                 {
-                    using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_MainPass", out var passData);
-                    builder.AllowGlobalStateModification(true);
-                    builder.SetRenderAttachment(color, 0, AccessFlags.ReadWrite);
-
-                    if (depth.IsValid())
+                    if (CanUseBackdropBlur(defaultContext.DrawData))
                     {
-                        builder.SetRenderAttachmentDepth(depth, AccessFlags.Read);
+                        AddUnsafeFuguiPass(renderGraph, "Fugui_MainPass", color, defaultContext, false);
                     }
-
-                    builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                    else
                     {
-                        if (defaultContext.DrawData.CmdListsCount <= 0 || defaultContext.DrawData.TotalVtxCount <= 0)
+                        using var builder = renderGraph.AddRasterRenderPass<PassData>("Fugui_MainPass", out var passData);
+                        builder.AllowGlobalStateModification(true);
+                        builder.SetRenderAttachment(color, 0, AccessFlags.ReadWrite);
+
+                        if (depth.IsValid())
                         {
-                            return;
+                            builder.SetRenderAttachmentDepth(depth, AccessFlags.Read);
                         }
 
-                        _textureManager = defaultContext.TextureManager;
-                        RenderDrawLists(defaultContext.ID, ctx.cmd, defaultContext.DrawData);
-                    });
+                        builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                        {
+                            if (defaultContext.DrawData.CmdListsCount <= 0 || defaultContext.DrawData.TotalVtxCount <= 0)
+                            {
+                                return;
+                            }
+
+                            _textureManager = defaultContext.TextureManager;
+                            RenderDrawLists(defaultContext.ID, ctx.cmd, defaultContext.DrawData);
+                        });
+                    }
                 }
 
                 // Other contexts
@@ -177,17 +269,24 @@ namespace Fu
                         RTHandle rtHandle = GetOrCreateTargetHandle(unityContext.ID, targetTexture);
                         TextureHandle importedTarget = renderGraph.ImportTexture(rtHandle);
 
-                        using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_Offscreen_{unityContext.ID}", out var passData);
-                        builder.AllowGlobalStateModification(true);
-                        builder.SetRenderAttachment(importedTarget, 0, AccessFlags.Write);
-
-                        builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                        if (CanUseBackdropBlur(unityContext.DrawData))
                         {
-                            //DebugDumpDrawData("OFFSCREEN", unityContext.DrawData);
-                            ctx.cmd.ClearRenderTarget(false, true, Color.clear);
-                            _textureManager = unityContext.TextureManager;
-                            RenderDrawLists(unityContext.ID, ctx.cmd, unityContext.DrawData);
-                        });
+                            AddUnsafeFuguiPass(renderGraph, $"Fugui_Offscreen_{unityContext.ID}", importedTarget, unityContext, true);
+                        }
+                        else
+                        {
+                            using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_Offscreen_{unityContext.ID}", out var passData);
+                            builder.AllowGlobalStateModification(true);
+                            builder.SetRenderAttachment(importedTarget, 0, AccessFlags.Write);
+
+                            builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                            {
+                                //DebugDumpDrawData("OFFSCREEN", unityContext.DrawData);
+                                ctx.cmd.ClearRenderTarget(false, true, Color.clear);
+                                _textureManager = unityContext.TextureManager;
+                                RenderDrawLists(unityContext.ID, ctx.cmd, unityContext.DrawData);
+                            });
+                        }
                     }
                     else
                     {
@@ -196,22 +295,129 @@ namespace Fu
                             continue;
                         }
 
-                        using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_Context_{unityContext.ID}", out var passData);
-                        builder.AllowGlobalStateModification(true);
-                        builder.SetRenderAttachment(color, 0, AccessFlags.Write);
-
-                        if (depth.IsValid())
+                        if (CanUseBackdropBlur(unityContext.DrawData))
                         {
-                            builder.SetRenderAttachmentDepth(depth, AccessFlags.Read);
+                            AddUnsafeFuguiPass(renderGraph, $"Fugui_Context_{unityContext.ID}", color, unityContext, false);
                         }
-
-                        builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                        else
                         {
-                            _textureManager = unityContext.TextureManager;
-                            RenderDrawLists(unityContext.ID, ctx.cmd, unityContext.DrawData);
-                        });
+                            using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_Context_{unityContext.ID}", out var passData);
+                            builder.AllowGlobalStateModification(true);
+                            builder.SetRenderAttachment(color, 0, AccessFlags.Write);
+
+                            if (depth.IsValid())
+                            {
+                                builder.SetRenderAttachmentDepth(depth, AccessFlags.Read);
+                            }
+
+                            builder.SetRenderFunc((PassData data, RasterGraphContext ctx) =>
+                            {
+                                _textureManager = unityContext.TextureManager;
+                                RenderDrawLists(unityContext.ID, ctx.cmd, unityContext.DrawData);
+                            });
+                        }
                     }
                 }
+            }
+
+            /// <summary>
+            /// Returns whether the draw data contains at least one Fugui backdrop draw command.
+            /// </summary>
+            /// <param name="drawData">Draw data to inspect.</param>
+            /// <returns>True when a backdrop command is present.</returns>
+            private bool ContainsBackdropCommand(DrawData drawData)
+            {
+                if (drawData == null)
+                {
+                    return false;
+                }
+
+                if (drawData.RenderItems != null && drawData.RenderItems.Count > 0)
+                {
+                    for (int i = 0; i < drawData.RenderItems.Count; i++)
+                    {
+                        if (ContainsBackdropCommand(drawData.RenderItems[i].DrawLists))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                return ContainsBackdropCommand(drawData.DrawLists);
+            }
+
+            /// <summary>
+            /// Returns whether any draw list contains a Fugui backdrop draw command.
+            /// </summary>
+            /// <param name="drawLists">Draw lists to inspect.</param>
+            /// <returns>True when a backdrop command is present.</returns>
+            private bool ContainsBackdropCommand(IReadOnlyList<DrawList> drawLists)
+            {
+                if (drawLists == null)
+                {
+                    return false;
+                }
+
+                for (int n = 0; n < drawLists.Count; n++)
+                {
+                    DrawList drawList = drawLists[n];
+                    if (drawList == null || drawList.CmdBuffer == null)
+                    {
+                        continue;
+                    }
+
+                    ImDrawCmd[] commands = drawList.CmdBuffer;
+                    for (int i = 0; i < commands.Length; i++)
+                    {
+                        if (Fugui.IsBackdropTextureID(commands[i].TextureId))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// Returns the runtime backdrop blur material.
+            /// </summary>
+            /// <returns>Backdrop material, or null when the shader is unavailable.</returns>
+            private Material GetBackdropMaterial()
+            {
+                if (_backdropMaterial != null)
+                {
+                    return _backdropMaterial;
+                }
+
+                Shader shader = Shader.Find("Fugui/BackdropBlur");
+                if (shader == null)
+                {
+                    shader = Resources.Load<Shader>("Shaders/Fugui_BackdropBlur");
+                }
+
+                if (shader == null)
+                {
+                    return null;
+                }
+
+                _backdropMaterial = new Material(shader)
+                {
+                    hideFlags = HideFlags.HideAndDontSave & ~HideFlags.DontUnloadUnusedAsset
+                };
+                return _backdropMaterial;
+            }
+
+            /// <summary>
+            /// Returns the configured backdrop blur downsample value.
+            /// </summary>
+            /// <returns>Clamped downsample value.</returns>
+            private int GetBackdropDownsample()
+            {
+                return Fugui.Settings != null
+                    ? Mathf.Clamp(Fugui.Settings.BackdropBlurDownsample, 1, 8)
+                    : 4;
             }
 
             /// <summary>
@@ -239,6 +445,40 @@ namespace Fu
 
                 commandBuffer.BeginSample(_sampleName);
                 RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize);
+                commandBuffer.EndSample(_sampleName);
+            }
+
+            /// <summary>
+            /// Renders the draw lists through an unsafe command buffer so backdrop commands can sample the current target.
+            /// </summary>
+            /// <param name="ctxId">Context id.</param>
+            /// <param name="commandBuffer">Unsafe command buffer to use for rendering.</param>
+            /// <param name="drawData">Draw data to render.</param>
+            /// <param name="target">Color target currently being rendered.</param>
+            /// <param name="backdropA">First temporary blur texture.</param>
+            /// <param name="backdropB">Second temporary blur texture.</param>
+            /// <param name="downsample">Backdrop texture downsample value.</param>
+            /// <param name="blurWidth">Backdrop texture width.</param>
+            /// <param name="blurHeight">Backdrop texture height.</param>
+            public void RenderDrawLists(int ctxId, UnsafeCommandBuffer commandBuffer, DrawData drawData, TextureHandle target, TextureHandle backdropA, TextureHandle backdropB, int downsample, int blurWidth, int blurHeight)
+            {
+                if (_materials == null) _materials = new Dictionary<int, Material>();
+                if (!_materials.ContainsKey(ctxId))
+                {
+                    _materials[ctxId] = new Material(_shader)
+                    {
+                        hideFlags = HideFlags.HideAndDontSave & ~HideFlags.DontUnloadUnusedAsset
+                    };
+                }
+                Material _material = _materials[ctxId];
+
+                Vector2 fbOSize = drawData.DisplaySize * drawData.FramebufferScale;
+
+                // Avoid rendering when minimized.
+                if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
+
+                commandBuffer.BeginSample(_sampleName);
+                RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
                 commandBuffer.EndSample(_sampleName);
             }
 
@@ -291,6 +531,64 @@ namespace Fu
                     }
 
                     CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset);
+                }
+            }
+
+            /// <summary>
+            /// Renders cached window meshes and transient non-window draw lists in draw order through an unsafe pass.
+            /// </summary>
+            /// <param name="ctxId">Context id.</param>
+            /// <param name="commandBuffer">Unsafe command buffer to use for rendering.</param>
+            /// <param name="material">Material used to render Fugui meshes.</param>
+            /// <param name="drawData">Draw data for the context.</param>
+            /// <param name="fbSize">Framebuffer size.</param>
+            /// <param name="target">Color target currently being rendered.</param>
+            /// <param name="backdropA">First temporary blur texture.</param>
+            /// <param name="backdropB">Second temporary blur texture.</param>
+            /// <param name="downsample">Backdrop texture downsample value.</param>
+            /// <param name="blurWidth">Backdrop texture width.</param>
+            /// <param name="blurHeight">Backdrop texture height.</param>
+            private void RenderDrawItems(int ctxId, UnsafeCommandBuffer commandBuffer, Material material, DrawData drawData, Vector2 fbSize, TextureHandle target, TextureHandle backdropA, TextureHandle backdropB, int downsample, int blurWidth, int blurHeight)
+            {
+                int transientMeshIndex = 0;
+
+                if (drawData.RenderItems == null || drawData.RenderItems.Count == 0)
+                {
+                    DrawListMesh fallbackMesh = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
+                    fallbackMesh.Update(drawData.DrawLists, drawData.DisplaySize, drawData.FramebufferScale);
+                    CreateDrawCommands(fallbackMesh.Mesh, material, commandBuffer, drawData.DrawLists, drawData, fbSize, Vector2.zero, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
+                    return;
+                }
+
+                for (int i = 0; i < drawData.RenderItems.Count; i++)
+                {
+                    DrawDataRenderItem item = drawData.RenderItems[i];
+                    IReadOnlyList<DrawList> drawLists = item.DrawLists;
+                    if (drawLists == null || drawLists.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    DrawListMesh meshData;
+                    Vector2 renderOffset = Vector2.zero;
+                    if (item.IsWindow)
+                    {
+                        meshData = item.Window.RenderMeshData;
+                        renderOffset = item.Window.RenderMeshOffset;
+                    }
+                    else
+                    {
+                        meshData = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
+                        transientMeshIndex++;
+                        meshData.Update(drawLists, drawData.DisplaySize, drawData.FramebufferScale);
+                    }
+
+                    if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
+                    {
+                        continue;
+                    }
+
+                    CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
                 }
             }
 
@@ -416,26 +714,34 @@ namespace Fu
                             {
                                 prevTextureId = drawCmd.TextureId;
 
-                                // TODO: Implement ImDrawCmdPtr.GetTexID().
-                                bool hasTexture = _textureManager.TryGetTexture(prevTextureId, out UnityEngine.Texture texture);
-
-                                //Assert.IsTrue(hasTexture, $"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
-                                if (!hasTexture)
+                                if (Fugui.IsBackdropTextureID(prevTextureId))
                                 {
+                                    _materialProperties.SetTexture(_textureID, Texture2D.whiteTexture);
                                     _materialProperties.SetFloat(_textureIsAlphaID, 0f);
-                                    Debug.LogError($"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
                                 }
                                 else
                                 {
-                                    if (texture && texture != null)
+                                    // TODO: Implement ImDrawCmdPtr.GetTexID().
+                                    bool hasTexture = _textureManager.TryGetTexture(prevTextureId, out UnityEngine.Texture texture);
+
+                                    //Assert.IsTrue(hasTexture, $"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
+                                    if (!hasTexture)
                                     {
-                                        _materialProperties.SetTexture(_textureID, texture);
-                                        _materialProperties.SetFloat(_textureIsAlphaID, _textureManager != null && _textureManager.IsFontAtlasTexture(texture) ? 1f : 0f);
+                                        _materialProperties.SetFloat(_textureIsAlphaID, 0f);
+                                        Debug.LogError($"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
                                     }
                                     else
                                     {
-                                        _materialProperties.SetFloat(_textureIsAlphaID, 0f);
-                                        Debug.LogWarning($"Texture {prevTextureId} is null or not a valid texture.");
+                                        if (texture && texture != null)
+                                        {
+                                            _materialProperties.SetTexture(_textureID, texture);
+                                            _materialProperties.SetFloat(_textureIsAlphaID, _textureManager != null && _textureManager.IsFontAtlasTexture(texture) ? 1f : 0f);
+                                        }
+                                        else
+                                        {
+                                            _materialProperties.SetFloat(_textureIsAlphaID, 0f);
+                                            Debug.LogWarning($"Texture {prevTextureId} is null or not a valid texture.");
+                                        }
                                     }
                                 }
                             }
@@ -445,6 +751,179 @@ namespace Fu
                     }
                 }
                 commandBuffer.DisableScissorRect();
+            }
+
+            /// <summary>
+            /// Creates the draw commands for rendering Fugui through an unsafe pass.
+            /// </summary>
+            /// <param name="_mesh">Mesh to render.</param>
+            /// <param name="_material">Material to render regular Fugui commands.</param>
+            /// <param name="commandBuffer">Unsafe command buffer to use for rendering.</param>
+            /// <param name="drawLists">Draw lists to render.</param>
+            /// <param name="drawData">Draw data containing framebuffer information.</param>
+            /// <param name="fbSize">Framebuffer size.</param>
+            /// <param name="renderOffset">Additional mesh render offset.</param>
+            /// <param name="target">Color target currently being rendered.</param>
+            /// <param name="backdropA">First temporary blur texture.</param>
+            /// <param name="backdropB">Second temporary blur texture.</param>
+            /// <param name="downsample">Backdrop texture downsample value.</param>
+            /// <param name="blurWidth">Backdrop texture width.</param>
+            /// <param name="blurHeight">Backdrop texture height.</param>
+            private void CreateDrawCommands(Mesh _mesh, Material _material, UnsafeCommandBuffer commandBuffer, IReadOnlyList<DrawList> drawLists, DrawData drawData, Vector2 fbSize, Vector2 renderOffset, TextureHandle target, TextureHandle backdropA, TextureHandle backdropB, int downsample, int blurWidth, int blurHeight)
+            {
+                IntPtr prevTextureId = IntPtr.Zero;
+                Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
+                    drawData.DisplayPos.x, drawData.DisplayPos.y);
+                Vector4 clipScale = new Vector4(drawData.FramebufferScale.x, drawData.FramebufferScale.y,
+                    drawData.FramebufferScale.x, drawData.FramebufferScale.y);
+                Vector4 clipRenderOffset = new Vector4(renderOffset.x, renderOffset.y, renderOffset.x, renderOffset.y);
+                Matrix4x4 meshMatrix = renderOffset == Vector2.zero
+                    ? Matrix4x4.identity
+                    : Matrix4x4.Translate(new Vector3(renderOffset.x, renderOffset.y, 0f));
+
+                SetUiRenderState(commandBuffer, target, fbSize);
+
+                int subOf = 0;
+                for (int n = 0, nMax = drawLists.Count; n < nMax; ++n)
+                {
+                    DrawList drawList = drawLists[n];
+                    for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i, ++subOf)
+                    {
+                        ImDrawCmd drawCmd = drawList.CmdBuffer[i];
+                        if (drawCmd.UserCallback != IntPtr.Zero)
+                        {
+                            Debug.Log("unhandled user callback");
+                        }
+                        else
+                        {
+                            // Project scissor rectangle into framebuffer space and skip if fully outside.
+                            Vector4 clipSize = drawCmd.ClipRect + clipRenderOffset - clipOffset;
+                            Vector4 clip = Vector4.Scale(clipSize, clipScale);
+
+                            if (clip.x >= fbSize.x || clip.y >= fbSize.y || clip.z < 0f || clip.w < 0f) continue;
+
+                            bool isBackdrop = Fugui.IsBackdropTextureID(drawCmd.TextureId);
+                            if (isBackdrop && _backdropMaterial != null && backdropA.IsValid() && backdropB.IsValid())
+                            {
+                                DrawBackdropCommand(commandBuffer, _mesh, meshMatrix, subOf, drawList, drawCmd, drawData, fbSize, renderOffset, clip, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
+                                prevTextureId = IntPtr.Zero;
+                                continue;
+                            }
+
+                            if (prevTextureId != drawCmd.TextureId)
+                            {
+                                prevTextureId = drawCmd.TextureId;
+
+                                if (isBackdrop)
+                                {
+                                    _materialProperties.SetTexture(_textureID, Texture2D.whiteTexture);
+                                    _materialProperties.SetFloat(_textureIsAlphaID, 0f);
+                                }
+                                else
+                                {
+                                    bool hasTexture = _textureManager.TryGetTexture(prevTextureId, out UnityEngine.Texture texture);
+
+                                    if (!hasTexture)
+                                    {
+                                        _materialProperties.SetFloat(_textureIsAlphaID, 0f);
+                                        Debug.LogError($"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
+                                    }
+                                    else
+                                    {
+                                        if (texture && texture != null)
+                                        {
+                                            _materialProperties.SetTexture(_textureID, texture);
+                                            _materialProperties.SetFloat(_textureIsAlphaID, _textureManager != null && _textureManager.IsFontAtlasTexture(texture) ? 1f : 0f);
+                                        }
+                                        else
+                                        {
+                                            _materialProperties.SetFloat(_textureIsAlphaID, 0f);
+                                            Debug.LogWarning($"Texture {prevTextureId} is null or not a valid texture.");
+                                        }
+                                    }
+                                }
+                            }
+                            commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
+                            commandBuffer.DrawMesh(_mesh, meshMatrix, _material, subOf, 0, _materialProperties);
+                        }
+                    }
+                }
+                commandBuffer.DisableScissorRect();
+            }
+
+            /// <summary>
+            /// Draws a single backdrop blur command.
+            /// </summary>
+            private void DrawBackdropCommand(UnsafeCommandBuffer commandBuffer, Mesh mesh, Matrix4x4 meshMatrix, int subMesh, DrawList drawList, ImDrawCmd drawCmd, DrawData drawData, Vector2 fbSize, Vector2 renderOffset, Vector4 clip, TextureHandle target, TextureHandle backdropA, TextureHandle backdropB, int downsample, int blurWidth, int blurHeight)
+            {
+                float blurRadius = GetBackdropBlurRadius(drawList, drawCmd);
+                float maxBlurRadius = Fugui.Settings != null ? Mathf.Max(0f, Fugui.Settings.BackdropMaxBlurRadius) : blurRadius;
+                float framebufferScale = Mathf.Max(drawData.FramebufferScale.x, drawData.FramebufferScale.y);
+                float scaledBlurRadius = Mathf.Min(blurRadius, maxBlurRadius) * framebufferScale / Mathf.Max(1, downsample);
+
+                commandBuffer.DisableScissorRect();
+
+                commandBuffer.SetRenderTarget(backdropA);
+                commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
+                Blitter.BlitTexture(commandBuffer, target, FullBlitScaleBias, _backdropMaterial, BackdropCopyPass);
+
+                if (scaledBlurRadius > 0f)
+                {
+                    commandBuffer.SetGlobalVector(_backdropBlurDirectionID, new Vector4(1f, 0f, 0f, 0f));
+                    commandBuffer.SetGlobalFloat(_backdropBlurRadiusID, scaledBlurRadius);
+                    commandBuffer.SetRenderTarget(backdropB);
+                    commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
+                    Blitter.BlitTexture(commandBuffer, backdropA, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
+
+                    commandBuffer.SetGlobalVector(_backdropBlurDirectionID, new Vector4(0f, 1f, 0f, 0f));
+                    commandBuffer.SetRenderTarget(backdropA);
+                    commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
+                    Blitter.BlitTexture(commandBuffer, backdropB, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
+                }
+
+                SetUiRenderState(commandBuffer, target, fbSize);
+                commandBuffer.SetGlobalTexture(_blitTextureID, backdropA);
+                commandBuffer.SetGlobalVector(_backdropScreenSizeID, new Vector4(fbSize.x, fbSize.y, 0f, 0f));
+                commandBuffer.SetGlobalVector(_backdropRenderOffsetID, new Vector4(renderOffset.x, renderOffset.y, 0f, 0f));
+                commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
+                commandBuffer.DrawMesh(mesh, meshMatrix, _backdropMaterial, subMesh, BackdropCompositePass, _backdropProperties);
+            }
+
+            /// <summary>
+            /// Returns the blur radius encoded in a backdrop draw command.
+            /// </summary>
+            private float GetBackdropBlurRadius(DrawList drawList, ImDrawCmd drawCmd)
+            {
+                if (drawList == null || drawList.IdxBuffer == null || drawList.VtxBuffer == null || drawCmd.ElemCount == 0)
+                {
+                    return 0f;
+                }
+
+                int idx = (int)drawCmd.IdxOffset;
+                if (idx < 0 || idx >= drawList.IdxBuffer.Length)
+                {
+                    return 0f;
+                }
+
+                int vtx = drawList.IdxBuffer[idx] + (int)drawCmd.VtxOffset;
+                if (vtx < 0 || vtx >= drawList.VtxBuffer.Length)
+                {
+                    return 0f;
+                }
+
+                return Mathf.Max(0f, drawList.VtxBuffer[vtx].uv.x);
+            }
+
+            /// <summary>
+            /// Restores the Fugui draw target, viewport, and projection after backdrop blits.
+            /// </summary>
+            private void SetUiRenderState(UnsafeCommandBuffer commandBuffer, TextureHandle target, Vector2 fbSize)
+            {
+                commandBuffer.SetRenderTarget(target);
+                commandBuffer.SetViewport(new Rect(0f, 0f, fbSize.x, fbSize.y));
+                commandBuffer.SetViewProjectionMatrices(
+                    Matrix4x4.Translate(new Vector3(0.5f / fbSize.x, 0.5f / fbSize.y, 0f)), // Small adjustment to improve text.
+                    Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
             }
 
 #if !UNITY_6000_4_OR_NEWER
@@ -620,26 +1099,34 @@ namespace Fu
                             {
                                 prevTextureId = drawCmd.TextureId;
 
-                                // TODO: Implement ImDrawCmdPtr.GetTexID().
-                                bool hasTexture = _textureManager.TryGetTexture(prevTextureId, out UnityEngine.Texture texture);
-
-                                //Assert.IsTrue(hasTexture, $"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
-                                if (!hasTexture)
+                                if (Fugui.IsBackdropTextureID(prevTextureId))
                                 {
+                                    _materialProperties.SetTexture(_textureID, Texture2D.whiteTexture);
                                     _materialProperties.SetFloat(_textureIsAlphaID, 0f);
-                                    Debug.LogError($"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
                                 }
                                 else
                                 {
-                                    if (texture && texture != null)
+                                    // TODO: Implement ImDrawCmdPtr.GetTexID().
+                                    bool hasTexture = _textureManager.TryGetTexture(prevTextureId, out UnityEngine.Texture texture);
+
+                                    //Assert.IsTrue(hasTexture, $"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
+                                    if (!hasTexture)
                                     {
-                                        _materialProperties.SetTexture(_textureID, texture);
-                                        _materialProperties.SetFloat(_textureIsAlphaID, _textureManager != null && _textureManager.IsFontAtlasTexture(texture) ? 1f : 0f);
+                                        _materialProperties.SetFloat(_textureIsAlphaID, 0f);
+                                        Debug.LogError($"Texture {prevTextureId} does not exist. Try to use UImGuiUtility.GetTextureID().");
                                     }
                                     else
                                     {
-                                        _materialProperties.SetFloat(_textureIsAlphaID, 0f);
-                                        Debug.LogWarning($"Texture {prevTextureId} is null or not a valid texture.");
+                                        if (texture && texture != null)
+                                        {
+                                            _materialProperties.SetTexture(_textureID, texture);
+                                            _materialProperties.SetFloat(_textureIsAlphaID, _textureManager != null && _textureManager.IsFontAtlasTexture(texture) ? 1f : 0f);
+                                        }
+                                        else
+                                        {
+                                            _materialProperties.SetFloat(_textureIsAlphaID, 0f);
+                                            Debug.LogWarning($"Texture {prevTextureId} is null or not a valid texture.");
+                                        }
                                     }
                                 }
                             }
@@ -768,6 +1255,14 @@ namespace Fu
             /// </summary>
             private class PassData
             {
+                public FuUnityContext Context;
+                public TextureHandle Target;
+                public TextureHandle BackdropA;
+                public TextureHandle BackdropB;
+                public bool ClearTarget;
+                public int Downsample;
+                public int BlurWidth;
+                public int BlurHeight;
             }
             #endregion
         }

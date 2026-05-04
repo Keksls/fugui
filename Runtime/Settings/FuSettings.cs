@@ -110,6 +110,40 @@ namespace Fu
         [FuSlider(0f, 0.5f)]
         public float NotifyAnimlationDuration = 0.15f;
 
+        [Header("Backdrop Blur")]
+        [Tooltip("A boolean value indicating whether generic Fugui backdrop blur is enabled.")]
+        [FuTooltip("A boolean value indicating whether generic Fugui backdrop blur is enabled.")]
+        [FuToggle]
+        public bool EnableBackdropBlur = true;
+
+        [Tooltip("Downsample factor used by generic Fugui backdrop blur. Higher values are faster and softer.")]
+        [FuTooltip("Downsample factor used by generic Fugui backdrop blur. Higher values are faster and softer.")]
+        [Range(1, 8)]
+        [FuSlider(1, 8)]
+        public int BackdropBlurDownsample = 4;
+
+        [Tooltip("Maximum generic Fugui backdrop blur radius in UI pixels.")]
+        [FuTooltip("Maximum generic Fugui backdrop blur radius in UI pixels.")]
+        [Range(0f, 64f)]
+        [FuSlider(0f, 64f)]
+        public float BackdropMaxBlurRadius = 4f;
+
+        [Tooltip("A boolean value indicating whether context menus should use the generic Fugui backdrop.")]
+        [FuTooltip("A boolean value indicating whether context menus should use the generic Fugui backdrop.")]
+        [FuToggle]
+        public bool EnableContextMenuBackdrop = true;
+
+        [Tooltip("Tint color used by context menu backdrops.")]
+        [FuTooltip("Tint color used by context menu backdrops.")]
+        [FuColorPicker]
+        public Color ContextMenuBackdropColor = new Color(0.188f, 0.188f, 0.188f, 0.78f);
+
+        [Tooltip("Context menu backdrop blur radius in UI pixels.")]
+        [FuTooltip("Context menu backdrop blur radius in UI pixels.")]
+        [Range(0f, 32f)]
+        [FuSlider(0f, 32f)]
+        public float ContextMenuBackdropBlurRadius = 12f;
+
         [Tooltip("The texture to be used as icon into an Info.")]
         [FuTooltip("The texture to be used as icon into an Info.")]
         [FuImage]

@@ -224,7 +224,7 @@ namespace Fu.Framework
             Vector2 popupPos = ImGui.GetCursorScreenPos();
             Vector2 popupSize = new Vector2(popupWidth, popupHeight);
 
-            AddRectFilledAntiAliased(drawList, popupPos, popupPos + popupSize, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.PopupBg, 0.98f)), Fugui.Themes.PopupRounding * scale);
+            Fugui.DrawThemeBackdrop(drawList, new Rect(popupPos, popupSize), FuColors.PopupBg, 0.98f, Fugui.Themes.PopupRounding * scale);
 
             Vector2 contentPos = popupPos + new Vector2(padding, padding);
             Vector2 headerPreviewSize = new Vector2(44f * scale, 30f * scale);

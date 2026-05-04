@@ -31,10 +31,12 @@ namespace Fu
             private int _textureID;
             private int _textureIsAlphaID;
             private int _blitTextureID;
+            private int _backdropPrefilterTexelSizeID;
             private int _backdropBlurDirectionID;
             private int _backdropBlurRadiusID;
             private int _backdropScreenSizeID;
             private int _backdropRenderOffsetID;
+            private int _backdropCompositeTexelSizeID;
             private Material _backdropMaterial;
             private Dictionary<int, int> _prevSubMeshCounts;
             private Dictionary<int, int> _prevVertexCounts;
@@ -74,10 +76,12 @@ namespace Fu
                 _textureID = Shader.PropertyToID("_Texture");
                 _textureIsAlphaID = Shader.PropertyToID("_TextureIsAlpha");
                 _blitTextureID = Shader.PropertyToID("_BlitTexture");
+                _backdropPrefilterTexelSizeID = Shader.PropertyToID("_FuguiBackdropPrefilterTexelSize");
                 _backdropBlurDirectionID = Shader.PropertyToID("_FuguiBackdropBlurDirection");
                 _backdropBlurRadiusID = Shader.PropertyToID("_FuguiBackdropBlurRadius");
                 _backdropScreenSizeID = Shader.PropertyToID("_FuguiBackdropScreenSize");
                 _backdropRenderOffsetID = Shader.PropertyToID("_FuguiBackdropRenderOffset");
+                _backdropCompositeTexelSizeID = Shader.PropertyToID("_FuguiBackdropCompositeTexelSize");
                 _materialProperties = new MaterialPropertyBlock();
                 _backdropProperties = new MaterialPropertyBlock();
                 _prevSubMeshCounts = new Dictionary<int, int>();
@@ -115,7 +119,11 @@ namespace Fu
             /// <returns>True when at least one generic backdrop blur command is present.</returns>
             private bool CanUseBackdropBlur(DrawData drawData)
             {
+#if FU_BACKDROP_ENABLED
                 return ContainsBackdropCommand(drawData) && GetBackdropMaterial() != null;
+#else
+                return false;
+#endif
             }
 
             /// <summary>
@@ -129,7 +137,7 @@ namespace Fu
             private void AddUnsafeFuguiPass(RenderGraph renderGraph, string passName, TextureHandle target, FuUnityContext context, bool clearTarget)
             {
                 Vector2 fbSize = context.DrawData.DisplaySize * context.DrawData.FramebufferScale;
-                int downsample = GetBackdropDownsample();
+                int downsample = GetBackdropDownsample(context.DrawData);
                 int blurWidth = Mathf.Max(1, Mathf.CeilToInt(fbSize.x / downsample));
                 int blurHeight = Mathf.Max(1, Mathf.CeilToInt(fbSize.y / downsample));
 
@@ -410,14 +418,85 @@ namespace Fu
             }
 
             /// <summary>
-            /// Returns the configured backdrop blur downsample value.
+            /// Returns the adaptive backdrop blur downsample value.
             /// </summary>
             /// <returns>Clamped downsample value.</returns>
-            private int GetBackdropDownsample()
+            private int GetBackdropDownsample(DrawData drawData)
             {
-                return Fugui.Settings != null
-                    ? Mathf.Clamp(Fugui.Settings.BackdropBlurDownsample, 1, 8)
-                    : 4;
+                float maxBlurRadius = GetMaxBackdropBlurRadius(drawData);
+                int maxDownsample = GetBackdropMaxDownsample();
+                if (maxBlurRadius <= GetBackdropFullResolutionMaxRadius() || maxDownsample <= 1)
+                {
+                    return 1;
+                }
+
+                if (maxBlurRadius <= GetBackdropHalfResolutionMaxRadius() || maxDownsample <= 2)
+                {
+                    return Mathf.Min(2, maxDownsample);
+                }
+
+                if (maxBlurRadius <= GetBackdropThirdResolutionMaxRadius() || maxDownsample <= 3)
+                {
+                    return Mathf.Min(3, maxDownsample);
+                }
+
+                return Mathf.Min(4, maxDownsample);
+            }
+
+            /// <summary>
+            /// Returns the largest blur radius encoded in the draw data.
+            /// </summary>
+            private float GetMaxBackdropBlurRadius(DrawData drawData)
+            {
+                if (drawData == null)
+                {
+                    return 0f;
+                }
+
+                if (drawData.RenderItems != null && drawData.RenderItems.Count > 0)
+                {
+                    float maxRadius = 0f;
+                    for (int i = 0; i < drawData.RenderItems.Count; i++)
+                    {
+                        maxRadius = Mathf.Max(maxRadius, GetMaxBackdropBlurRadius(drawData.RenderItems[i].DrawLists));
+                    }
+                    return maxRadius;
+                }
+
+                return GetMaxBackdropBlurRadius(drawData.DrawLists);
+            }
+
+            /// <summary>
+            /// Returns the largest blur radius encoded in the draw lists.
+            /// </summary>
+            private float GetMaxBackdropBlurRadius(IReadOnlyList<DrawList> drawLists)
+            {
+                if (drawLists == null)
+                {
+                    return 0f;
+                }
+
+                float maxRadius = 0f;
+                for (int n = 0; n < drawLists.Count; n++)
+                {
+                    DrawList drawList = drawLists[n];
+                    if (drawList == null || drawList.CmdBuffer == null)
+                    {
+                        continue;
+                    }
+
+                    ImDrawCmd[] commands = drawList.CmdBuffer;
+                    for (int i = 0; i < commands.Length; i++)
+                    {
+                        ImDrawCmd command = commands[i];
+                        if (Fugui.IsBackdropTextureID(command.TextureId))
+                        {
+                            maxRadius = Mathf.Max(maxRadius, GetBackdropBlurRadius(drawList, command));
+                        }
+                    }
+                }
+
+                return maxRadius;
             }
 
             /// <summary>
@@ -857,36 +936,125 @@ namespace Fu
             private void DrawBackdropCommand(UnsafeCommandBuffer commandBuffer, Mesh mesh, Matrix4x4 meshMatrix, int subMesh, DrawList drawList, ImDrawCmd drawCmd, DrawData drawData, Vector2 fbSize, Vector2 renderOffset, Vector4 clip, TextureHandle target, TextureHandle backdropA, TextureHandle backdropB, int downsample, int blurWidth, int blurHeight)
             {
                 float blurRadius = GetBackdropBlurRadius(drawList, drawCmd);
-                float maxBlurRadius = Fugui.Settings != null ? Mathf.Max(0f, Fugui.Settings.BackdropMaxBlurRadius) : blurRadius;
                 float framebufferScale = Mathf.Max(drawData.FramebufferScale.x, drawData.FramebufferScale.y);
-                float scaledBlurRadius = Mathf.Min(blurRadius, maxBlurRadius) * framebufferScale / Mathf.Max(1, downsample);
+                float scaledBlurRadius = blurRadius * framebufferScale / Mathf.Max(1, downsample);
 
                 commandBuffer.DisableScissorRect();
 
                 commandBuffer.SetRenderTarget(backdropA);
                 commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
+                float prefilterRadius = GetBackdropPrefilterRadius();
+                commandBuffer.SetGlobalVector(_backdropPrefilterTexelSizeID, new Vector4(
+                    1f / Mathf.Max(1, fbSize.x) * Mathf.Max(1, downsample) * prefilterRadius,
+                    1f / Mathf.Max(1, fbSize.y) * Mathf.Max(1, downsample) * prefilterRadius,
+                    0f,
+                    0f));
                 Blitter.BlitTexture(commandBuffer, target, FullBlitScaleBias, _backdropMaterial, BackdropCopyPass);
 
                 if (scaledBlurRadius > 0f)
                 {
-                    commandBuffer.SetGlobalVector(_backdropBlurDirectionID, new Vector4(1f, 0f, 0f, 0f));
-                    commandBuffer.SetGlobalFloat(_backdropBlurRadiusID, scaledBlurRadius);
-                    commandBuffer.SetRenderTarget(backdropB);
-                    commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
-                    Blitter.BlitTexture(commandBuffer, backdropA, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
+                    int iterationCount = GetBackdropBlurIterationCount(scaledBlurRadius);
+                    float iterationRadius = scaledBlurRadius / Mathf.Sqrt(iterationCount);
+                    for (int iteration = 0; iteration < iterationCount; iteration++)
+                    {
+                        commandBuffer.SetGlobalVector(_backdropBlurDirectionID, new Vector4(1f, 0f, 0f, 0f));
+                        commandBuffer.SetGlobalFloat(_backdropBlurRadiusID, iterationRadius);
+                        commandBuffer.SetRenderTarget(backdropB);
+                        commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
+                        Blitter.BlitTexture(commandBuffer, backdropA, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
 
-                    commandBuffer.SetGlobalVector(_backdropBlurDirectionID, new Vector4(0f, 1f, 0f, 0f));
-                    commandBuffer.SetRenderTarget(backdropA);
-                    commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
-                    Blitter.BlitTexture(commandBuffer, backdropB, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
+                        commandBuffer.SetGlobalVector(_backdropBlurDirectionID, new Vector4(0f, 1f, 0f, 0f));
+                        commandBuffer.SetGlobalFloat(_backdropBlurRadiusID, iterationRadius);
+                        commandBuffer.SetRenderTarget(backdropA);
+                        commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
+                        Blitter.BlitTexture(commandBuffer, backdropB, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
+                    }
                 }
 
                 SetUiRenderState(commandBuffer, target, fbSize);
                 commandBuffer.SetGlobalTexture(_blitTextureID, backdropA);
                 commandBuffer.SetGlobalVector(_backdropScreenSizeID, new Vector4(fbSize.x, fbSize.y, 0f, 0f));
                 commandBuffer.SetGlobalVector(_backdropRenderOffsetID, new Vector4(renderOffset.x, renderOffset.y, 0f, 0f));
+                float compositeFilterRadius = GetBackdropCompositeFilterRadius();
+                commandBuffer.SetGlobalVector(_backdropCompositeTexelSizeID, new Vector4(
+                    compositeFilterRadius / Mathf.Max(1, blurWidth),
+                    compositeFilterRadius / Mathf.Max(1, blurHeight),
+                    0f,
+                    0f));
                 commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
                 commandBuffer.DrawMesh(mesh, meshMatrix, _backdropMaterial, subMesh, BackdropCompositePass, _backdropProperties);
+            }
+
+            /// <summary>
+            /// Returns how many moderate passes should approximate the requested blur radius.
+            /// </summary>
+            private int GetBackdropBlurIterationCount(float scaledBlurRadius)
+            {
+                return Mathf.Clamp(Mathf.CeilToInt(scaledBlurRadius / GetBackdropTargetPassRadius()), 1, GetBackdropMaxIterations());
+            }
+
+            /// <summary>
+            /// Returns the current backdrop renderer max downsample.
+            /// </summary>
+            private int GetBackdropMaxDownsample()
+            {
+                return Fugui.Themes != null ? Mathf.Clamp(Fugui.Themes.BackdropBlurMaxDownsample, 1, 8) : 4;
+            }
+
+            /// <summary>
+            /// Returns the blur radius under which the backdrop texture stays full resolution.
+            /// </summary>
+            private float GetBackdropFullResolutionMaxRadius()
+            {
+                return Fugui.Themes != null ? Mathf.Max(1f, Fugui.Themes.BackdropBlurFullResolutionMaxRadius) : 24f;
+            }
+
+            /// <summary>
+            /// Returns the blur radius under which the backdrop texture uses half resolution.
+            /// </summary>
+            private float GetBackdropHalfResolutionMaxRadius()
+            {
+                return Fugui.Themes != null ? Mathf.Max(GetBackdropFullResolutionMaxRadius(), Fugui.Themes.BackdropBlurHalfResolutionMaxRadius) : 64f;
+            }
+
+            /// <summary>
+            /// Returns the blur radius under which the backdrop texture uses third resolution.
+            /// </summary>
+            private float GetBackdropThirdResolutionMaxRadius()
+            {
+                return Fugui.Themes != null ? Mathf.Max(GetBackdropHalfResolutionMaxRadius(), Fugui.Themes.BackdropBlurThirdResolutionMaxRadius) : 96f;
+            }
+
+            /// <summary>
+            /// Returns the current backdrop blur max iteration count.
+            /// </summary>
+            private int GetBackdropMaxIterations()
+            {
+                return Fugui.Themes != null ? Mathf.Clamp(Fugui.Themes.BackdropBlurMaxIterations, 1, 12) : 6;
+            }
+
+            /// <summary>
+            /// Returns the target radius for each iterative blur pass.
+            /// </summary>
+            private float GetBackdropTargetPassRadius()
+            {
+                return Fugui.Themes != null ? Mathf.Max(0.5f, Fugui.Themes.BackdropBlurTargetPassRadius) : 4f;
+            }
+
+            /// <summary>
+            /// Returns the prefilter radius used while copying into the backdrop texture.
+            /// </summary>
+            private float GetBackdropPrefilterRadius()
+            {
+                return Fugui.Themes != null ? Mathf.Max(0.01f, Fugui.Themes.BackdropBlurPrefilterRadius) : 0.5f;
+            }
+
+            /// <summary>
+            /// Returns the final composite filter radius.
+            /// </summary>
+            private float GetBackdropCompositeFilterRadius()
+            {
+                return Fugui.Themes != null ? Mathf.Max(0.01f, Fugui.Themes.BackdropBlurCompositeFilterRadius) : 1.0f;
             }
 
             /// <summary>

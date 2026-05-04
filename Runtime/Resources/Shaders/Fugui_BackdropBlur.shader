@@ -15,10 +15,30 @@ Shader "Fugui/BackdropBlur"
 
             HLSLPROGRAM
             #pragma vertex Vert
-            #pragma fragment FragBilinear
+            #pragma fragment FragCopy
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
+
+            float2 _FuguiBackdropPrefilterTexelSize;
+
+            half4 FragCopy(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                float2 uv = input.texcoord.xy;
+                float2 offset = _FuguiBackdropPrefilterTexelSize;
+
+                half4 color = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv, _BlitMipLevel) * 0.25h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + float2(offset.x, 0.0f), _BlitMipLevel) * 0.125h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - float2(offset.x, 0.0f), _BlitMipLevel) * 0.125h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + float2(0.0f, offset.y), _BlitMipLevel) * 0.125h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - float2(0.0f, offset.y), _BlitMipLevel) * 0.125h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + offset, _BlitMipLevel) * 0.0625h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - offset, _BlitMipLevel) * 0.0625h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + float2(offset.x, -offset.y), _BlitMipLevel) * 0.0625h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + float2(-offset.x, offset.y), _BlitMipLevel) * 0.0625h;
+                return color;
+            }
             ENDHLSL
         }
 
@@ -43,11 +63,13 @@ Shader "Fugui/BackdropBlur"
                 float2 stepUV = _FuguiBackdropBlurDirection * _FuguiBackdropBlurRadius * _BlitTexture_TexelSize.xy;
                 float2 uv = input.texcoord.xy;
 
-                half4 color = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv, _BlitMipLevel) * 0.227027h;
-                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + stepUV * 1.384615f, _BlitMipLevel) * 0.316216h;
-                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - stepUV * 1.384615f, _BlitMipLevel) * 0.316216h;
-                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + stepUV * 3.230769f, _BlitMipLevel) * 0.070270h;
-                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - stepUV * 3.230769f, _BlitMipLevel) * 0.070270h;
+                half4 color = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv, _BlitMipLevel) * 0.196483h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + stepUV * 1.411765f, _BlitMipLevel) * 0.296907h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - stepUV * 1.411765f, _BlitMipLevel) * 0.296907h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + stepUV * 3.294118f, _BlitMipLevel) * 0.094470h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - stepUV * 3.294118f, _BlitMipLevel) * 0.094470h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + stepUV * 5.176471f, _BlitMipLevel) * 0.010381h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - stepUV * 5.176471f, _BlitMipLevel) * 0.010381h;
                 return color;
             }
             ENDHLSL
@@ -72,6 +94,7 @@ Shader "Fugui/BackdropBlur"
             TEXTURE2D_X(_BlitTexture);
             float2 _FuguiBackdropScreenSize;
             float2 _FuguiBackdropRenderOffset;
+            float2 _FuguiBackdropCompositeTexelSize;
 
             struct BackdropVaryings
             {
@@ -87,6 +110,21 @@ Shader "Fugui/BackdropBlur"
                 #ifndef UNITY_COLORSPACE_GAMMA
                     color.rgb = FastSRGBToLinear(color.rgb);
                 #endif
+                return color;
+            }
+
+            half4 SampleBackdrop(float2 uv)
+            {
+                float2 offset = _FuguiBackdropCompositeTexelSize;
+                half4 color = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv, 0) * 0.25h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + float2(offset.x, 0.0f), 0) * 0.125h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - float2(offset.x, 0.0f), 0) * 0.125h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + float2(0.0f, offset.y), 0) * 0.125h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - float2(0.0f, offset.y), 0) * 0.125h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + offset, 0) * 0.0625h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv - offset, 0) * 0.0625h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + float2(offset.x, -offset.y), 0) * 0.0625h;
+                color += SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, uv + float2(-offset.x, offset.y), 0) * 0.0625h;
                 return color;
             }
 
@@ -108,7 +146,7 @@ Shader "Fugui/BackdropBlur"
             half4 BackdropFragment(BackdropVaryings i) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
-                half4 blurred = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, i.uv, 0);
+                half4 blurred = SampleBackdrop(i.uv);
                 half4 overlay = i.color;
                 half3 rgb = lerp(blurred.rgb, overlay.rgb, overlay.a);
                 return half4(rgb, 1.0h);

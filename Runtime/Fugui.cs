@@ -2640,12 +2640,9 @@ namespace Fu
             uint colorU32 = ImGui.GetColorU32(color);
             float scaledRounding = Mathf.Max(0f, rounding);
             float scaledBlurRadius = Mathf.Max(0f, blurRadius);
-            if (Settings != null)
-            {
-                scaledBlurRadius = Settings.EnableBackdropBlur
-                    ? Mathf.Min(scaledBlurRadius, Mathf.Max(0f, Settings.BackdropMaxBlurRadius))
-                    : 0f;
-            }
+#if !FU_BACKDROP_ENABLED
+            scaledBlurRadius = 0f;
+#endif
 
             if (scaledBlurRadius <= 0f)
             {
@@ -2670,6 +2667,36 @@ namespace Fu
         }
 
         /// <summary>
+        /// Draws a theme-backed backdrop in the current window draw list.
+        /// </summary>
+        /// <param name="rect">Screen-space rect to cover.</param>
+        /// <param name="color">Theme color used as overlay tint.</param>
+        /// <param name="alphaMult">Alpha multiplier applied to the theme color.</param>
+        /// <param name="rounding">Optional corner rounding.</param>
+        /// <param name="flags">Rounded corner flags.</param>
+        public static void DrawThemeBackdrop(Rect rect, FuColors color, float alphaMult = 1f, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
+        {
+            DrawThemeBackdrop(ImGui.GetWindowDrawList(), rect, color, alphaMult, rounding, flags);
+        }
+
+        /// <summary>
+        /// Draws a theme-backed backdrop in any ImGui draw list.
+        /// </summary>
+        /// <param name="drawList">Target draw list.</param>
+        /// <param name="rect">Screen-space rect to cover.</param>
+        /// <param name="color">Theme color used as overlay tint.</param>
+        /// <param name="alphaMult">Alpha multiplier applied to the theme color.</param>
+        /// <param name="rounding">Optional corner rounding.</param>
+        /// <param name="flags">Rounded corner flags.</param>
+        public static void DrawThemeBackdrop(ImDrawListPtr drawList, Rect rect, FuColors color, float alphaMult = 1f, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
+        {
+            Vector4 themeColor = Themes != null
+                ? Themes.GetColor(color, alphaMult)
+                : Vector4.zero;
+            DrawBackdrop(drawList, rect, themeColor, GetThemeBackdropBlur(color), rounding, flags);
+        }
+
+        /// <summary>
         /// Draws a backdrop over the current ImGui window rectangle.
         /// </summary>
         /// <param name="rounding">Optional corner rounding. Negative values use the current Fugui window rounding.</param>
@@ -2680,13 +2707,135 @@ namespace Fu
         }
 
         /// <summary>
+        /// Draws a theme-backed backdrop over the current ImGui window rectangle.
+        /// </summary>
+        /// <param name="color">Theme color used as overlay tint.</param>
+        /// <param name="alphaMult">Alpha multiplier applied to the theme color.</param>
+        /// <param name="rounding">Optional corner rounding. Negative values resolve from the theme color family.</param>
+        /// <param name="flags">Rounded corner flags.</param>
+        public static void DrawCurrentWindowThemeBackdrop(FuColors color, float alphaMult = 1f, float rounding = -1f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
+        {
+            float resolvedRounding = rounding >= 0f ? rounding : GetThemeBackdropRounding(color);
+            DrawThemeBackdrop(new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize()), color, alphaMult, resolvedRounding, flags);
+        }
+
+        /// <summary>
+        /// Returns the PopupBg color to push before opening a popup that draws its own backdrop.
+        /// </summary>
+        internal static Vector4 GetPopupBackdropStyleColor(float alphaMult = 0.98f)
+        {
+            return Themes.GetColor(FuColors.PopupBg, ShouldUseThemeBackdrop(FuColors.PopupBg, alphaMult) ? 0f : alphaMult);
+        }
+
+        /// <summary>
+        /// Draws the standard popup backdrop over the current ImGui popup window.
+        /// </summary>
+        internal static void DrawCurrentPopupThemeBackdrop(float alphaMult = 0.98f, float rounding = -1f, float borderSize = -1f)
+        {
+            if (!ShouldUseThemeBackdrop(FuColors.PopupBg, alphaMult))
+            {
+                return;
+            }
+
+            ImGuiStylePtr style = ImGui.GetStyle();
+            float resolvedRounding = rounding >= 0f ? rounding : style.PopupRounding;
+            float resolvedBorderSize = borderSize >= 0f ? borderSize : style.PopupBorderSize;
+            Rect backdropRect = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+            float inset = Mathf.Max(0f, resolvedBorderSize);
+            if (inset > 0f)
+            {
+                Vector2 insetVector = new Vector2(inset, inset);
+                backdropRect.position += insetVector;
+                backdropRect.size -= insetVector * 2f;
+            }
+
+            DrawThemeBackdrop(backdropRect, FuColors.PopupBg, alphaMult, Mathf.Max(0f, resolvedRounding - inset));
+        }
+
+        /// <summary>
+        /// Returns whether a theme color should use a backdrop draw command instead of a native opaque background.
+        /// </summary>
+        /// <param name="color">Theme color to inspect.</param>
+        /// <param name="alphaMult">Alpha multiplier applied by the caller.</param>
+        /// <returns>True when blur is compiled in and visible for this theme color.</returns>
+        internal static bool ShouldUseThemeBackdrop(FuColors color, float alphaMult = 1f)
+        {
+            Vector4 themeColor = Themes != null
+                ? Themes.GetColor(color, alphaMult)
+                : Vector4.zero;
+            return ShouldUseBackdrop(themeColor, GetThemeBackdropBlur(color));
+        }
+
+        /// <summary>
+        /// Returns whether a resolved color and blur radius should use a backdrop draw command.
+        /// </summary>
+        internal static bool ShouldUseBackdrop(Vector4 color, float blurRadius)
+        {
+#if FU_BACKDROP_ENABLED
+            return blurRadius > 0f && color.w < 0.999f;
+#else
+            return false;
+#endif
+        }
+
+        /// <summary>
         /// Returns whether the texture id represents a Fugui backdrop command.
         /// </summary>
         /// <param name="textureId">ImGui texture id.</param>
         /// <returns>True when this command should be handled by the backdrop renderer.</returns>
         internal static bool IsBackdropTextureID(IntPtr textureId)
         {
+#if FU_BACKDROP_ENABLED
             return textureId == BackdropTextureID;
+#else
+            return false;
+#endif
+        }
+
+        /// <summary>
+        /// Returns the theme blur radius for the supported backdrop color families.
+        /// </summary>
+        internal static float GetThemeBackdropBlur(FuColors color)
+        {
+            if (Themes == null)
+            {
+                return 0f;
+            }
+
+            switch (color)
+            {
+                case FuColors.WindowBg:
+                    return Mathf.Max(0f, Themes.WindowBlur);
+                case FuColors.ChildBg:
+                    return Mathf.Max(0f, Themes.ChildBlur);
+                case FuColors.PopupBg:
+                    return Mathf.Max(0f, Themes.PopupBlur);
+                default:
+                    return 0f;
+            }
+        }
+
+        /// <summary>
+        /// Returns the theme rounding for the supported backdrop color families.
+        /// </summary>
+        private static float GetThemeBackdropRounding(FuColors color)
+        {
+            if (Themes == null)
+            {
+                return 0f;
+            }
+
+            switch (color)
+            {
+                case FuColors.WindowBg:
+                    return Themes.WindowRounding;
+                case FuColors.ChildBg:
+                    return Themes.ChildRounding;
+                case FuColors.PopupBg:
+                    return Themes.PopupRounding;
+                default:
+                    return 0f;
+            }
         }
 
         private struct FuBackdropStyle

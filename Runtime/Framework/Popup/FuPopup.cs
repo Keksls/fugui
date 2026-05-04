@@ -81,12 +81,25 @@ namespace Fu
             Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f) * Fugui.CurrentContext.Scale);
             ImGui.SetNextWindowPos(new Vector2(_popupContainer.Size.x / 2f - _popupSize.x / 2f, _popupContainer.Size.y / 2f - _popupSize.y / 2f), ImGuiCond.Always);
             ImGui.SetNextWindowSize(_popupSize, ImGuiCond.Always);
-            if (ImGui.BeginPopupModal("FuguiPopupMessage", ref open, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMouseInputs | ImGuiWindowFlags.NoResize))
+            bool usePopupBackdrop = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
+            Fugui.Push(ImGuiCol.PopupBg, Fugui.Themes.GetColor(FuColors.PopupBg, usePopupBackdrop ? 0f : 1f));
+            ImGuiWindowFlags popupFlags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMouseInputs | ImGuiWindowFlags.NoResize;
+            if (usePopupBackdrop)
+            {
+                popupFlags |= ImGuiWindowFlags.NoBackground;
+            }
+
+            if (ImGui.BeginPopupModal("FuguiPopupMessage", ref open, popupFlags))
             {
                 ImGui.SetWindowFocus();
+                if (usePopupBackdrop)
+                {
+                    Fugui.DrawCurrentWindowThemeBackdrop(FuColors.PopupBg, 0.98f);
+                }
                 _popupUI?.Invoke();
                 ImGui.EndPopup();
             }
+            Fugui.PopColor();
             PopStyle();
         }
         #endregion

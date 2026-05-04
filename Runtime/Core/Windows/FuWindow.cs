@@ -726,6 +726,13 @@ namespace Fu
             {
                 effectiveWindowFlags |= ImGuiWindowFlags.NoBringToFrontOnFocus;
             }
+            bool useWindowBackdrop = !externalBefore &&
+                (effectiveWindowFlags & ImGuiWindowFlags.NoBackground) == 0 &&
+                Fugui.ShouldUseThemeBackdrop(FuColors.WindowBg);
+            if (useWindowBackdrop)
+            {
+                effectiveWindowFlags |= ImGuiWindowFlags.NoBackground;
+            }
 
             if (externalBefore)
             {
@@ -756,6 +763,12 @@ namespace Fu
             // draw the window body
             if (nativeWantDrawWindow)
             {
+                if (useWindowBackdrop)
+                {
+                    float backdropRounding = IsDocked || IsExternal ? 0f : Fugui.Themes.WindowRounding;
+                    Fugui.DrawCurrentWindowThemeBackdrop(FuColors.WindowBg, 1f, backdropRounding);
+                }
+
                 TryDrawUI();
 
                 if (Is3DWindow)

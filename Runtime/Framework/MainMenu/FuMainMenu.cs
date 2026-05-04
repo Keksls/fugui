@@ -230,7 +230,8 @@ namespace Fu
             Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 4f));
             Push(ImGuiCol.Header, Fugui.Themes.GetColor(FuColors.HeaderHovered));
             Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.MainMenuText));
-            Push(ImGuiCol.PopupBg, Fugui.Themes.GetColor(FuColors.MenuBarBg));
+            bool popupBackdropEnabled = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
+            Push(ImGuiCol.PopupBg, popupBackdropEnabled ? Fugui.GetPopupBackdropStyleColor() : Fugui.Themes.GetColor(FuColors.MenuBarBg));
             Push(ImGuiCol.Separator, Fugui.Themes.GetColor(FuColors.MainMenuText) * 0.33f);
             // Begin the main menu bar
             if (ImGui.BeginMainMenuBar())
@@ -280,7 +281,7 @@ namespace Fu
         {
             List<FuWindow> windows = GetMainMenuOpenWindows();
             bool enabled = !IsMainMenuDisabled && windows.Count > 0;
-            if (!ImGui.BeginMenu("  Open Windows   ", enabled))
+            if (!beginMainMenuPopup("  Open Windows   ", enabled))
             {
                 return;
             }
@@ -351,7 +352,7 @@ namespace Fu
                 DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), IsMainMenuDisabled || !item.Enabled);
 
                 // Begin a submenu if the menu item has children
-                if (ImGui.BeginMenu(item.Parent == null ? "  " + itemText + "   " : itemText, item.Enabled && !IsMainMenuDisabled))
+                if (beginMainMenuPopup(item.Parent == null ? "  " + itemText + "   " : itemText, item.Enabled && !IsMainMenuDisabled))
                 {
                     // Draw all children of the menu item
                     foreach (var child in item.Children)
@@ -391,6 +392,19 @@ namespace Fu
                 PopStyle();
             }
             PopStyle();
+        }
+
+        /// <summary>
+        /// Begins a main-menu popup and draws the shared popup backdrop when it is visible.
+        /// </summary>
+        private static bool beginMainMenuPopup(string label, bool enabled)
+        {
+            bool open = ImGui.BeginMenu(label, enabled);
+            if (open)
+            {
+                Fugui.DrawCurrentPopupThemeBackdrop();
+            }
+            return open;
         }
         #endregion
     }

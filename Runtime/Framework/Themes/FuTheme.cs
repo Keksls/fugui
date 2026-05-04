@@ -22,6 +22,8 @@ namespace Fu
         public float WindowRounding = 2.0f;
         [FuSlider(0f, 4f)]
         public float WindowBorderSize = 1.0f;
+        [FuSlider(0f, 64f)]
+        public float WindowBlur = 0.0f;
         [FuDrag(1f, 100f, "width", "height")]
         public Vector2 WindowMinSize = new Vector2(16.0f, 16.0f);
         [FuDrag(0f, 1f)]
@@ -31,10 +33,30 @@ namespace Fu
         public float ChildRounding = 2.0f;
         [FuSlider(0f, 10f)]
         public float ChildBorderSize = 1.0f;
+        [FuSlider(0f, 64f)]
+        public float ChildBlur = 0.0f;
         [FuSlider(0f, 10f)]
         public float PopupRounding = 2.0f;
         [FuSlider(0f, 10f)]
         public float PopupBorderSize = 1.0f;
+        [FuSlider(0f, 64f)]
+        public float PopupBlur = 12.0f;
+        [FuSlider(1, 8)]
+        public int BackdropBlurMaxDownsample = 4;
+        [FuSlider(1f, 256f)]
+        public float BackdropBlurFullResolutionMaxRadius = 1.0f;
+        [FuSlider(1f, 256f)]
+        public float BackdropBlurHalfResolutionMaxRadius = 1.0f;
+        [FuSlider(1f, 256f)]
+        public float BackdropBlurThirdResolutionMaxRadius = 1.0f;
+        [FuSlider(1, 12)]
+        public int BackdropBlurMaxIterations = 12;
+        [FuSlider(0.5f, 16f)]
+        public float BackdropBlurTargetPassRadius = 0.5f;
+        [FuSlider(0.01f, 2f)]
+        public float BackdropBlurPrefilterRadius = 0.01f;
+        [FuSlider(0.01f, 2f)]
+        public float BackdropBlurCompositeFilterRadius = 2.0f;
         [FuSlider(0f, 1f)]
         public float ButtonsGradientStrenght = 0.0f;
         [FuSlider(0f, 1f)]
@@ -188,6 +210,17 @@ namespace Fu
             {
                 TabMaxWidth = TabMinWidth;
             }
+            WindowBlur = Mathf.Max(0f, WindowBlur);
+            ChildBlur = Mathf.Max(0f, ChildBlur);
+            PopupBlur = Mathf.Max(0f, PopupBlur);
+            BackdropBlurMaxDownsample = Mathf.Clamp(BackdropBlurMaxDownsample <= 0 ? 4 : BackdropBlurMaxDownsample, 1, 8);
+            BackdropBlurFullResolutionMaxRadius = BackdropBlurFullResolutionMaxRadius <= 0f ? 1f : BackdropBlurFullResolutionMaxRadius;
+            BackdropBlurHalfResolutionMaxRadius = BackdropBlurHalfResolutionMaxRadius <= 0f ? 1f : Mathf.Max(BackdropBlurFullResolutionMaxRadius, BackdropBlurHalfResolutionMaxRadius);
+            BackdropBlurThirdResolutionMaxRadius = BackdropBlurThirdResolutionMaxRadius <= 0f ? 1f : Mathf.Max(BackdropBlurHalfResolutionMaxRadius, BackdropBlurThirdResolutionMaxRadius);
+            BackdropBlurMaxIterations = Mathf.Clamp(BackdropBlurMaxIterations <= 0 ? 12 : BackdropBlurMaxIterations, 1, 12);
+            BackdropBlurTargetPassRadius = BackdropBlurTargetPassRadius <= 0f ? 0.5f : Mathf.Max(0.5f, BackdropBlurTargetPassRadius);
+            BackdropBlurPrefilterRadius = BackdropBlurPrefilterRadius <= 0f ? 0.01f : Mathf.Max(0.01f, BackdropBlurPrefilterRadius);
+            BackdropBlurCompositeFilterRadius = BackdropBlurCompositeFilterRadius <= 0f ? 2.0f : Mathf.Max(0.01f, BackdropBlurCompositeFilterRadius);
         }
 
         /// <summary>
@@ -207,13 +240,24 @@ namespace Fu
             WindowPadding = new Vector2(1.0f, 0.0f);
             WindowRounding = 2.0f;
             WindowBorderSize = 1.0f;
+            WindowBlur = 0.0f;
             WindowMinSize = new Vector2(64.0f, 64.0f);
             WindowTitleAlign = new Vector2(0.0f, 0.5f);
             WindowMenuButtonPosition = ImGuiDir.Right;
             ChildRounding = 2.0f;
             ChildBorderSize = 1.0f;
+            ChildBlur = 0.0f;
             PopupRounding = 2.0f;
             PopupBorderSize = 1.0f;
+            PopupBlur = 12.0f;
+            BackdropBlurMaxDownsample = 4;
+            BackdropBlurFullResolutionMaxRadius = 1.0f;
+            BackdropBlurHalfResolutionMaxRadius = 1.0f;
+            BackdropBlurThirdResolutionMaxRadius = 1.0f;
+            BackdropBlurMaxIterations = 12;
+            BackdropBlurTargetPassRadius = 0.5f;
+            BackdropBlurPrefilterRadius = 0.01f;
+            BackdropBlurCompositeFilterRadius = 2.0f;
             FramePadding = new Vector2(8f, 4f);
             FrameRounding = 2.0f;
             FrameBorderSize = 1.1f;
@@ -378,13 +422,24 @@ namespace Fu
             WindowPadding = new Vector2(1.0f, 0.0f);
             WindowRounding = 2.0f;
             WindowBorderSize = 1.0f;
+            WindowBlur = 0.0f;
             WindowMinSize = new Vector2(64.0f, 64.0f);
             WindowTitleAlign = new Vector2(0.0f, 0.5f);
             WindowMenuButtonPosition = ImGuiDir.Right;
             ChildRounding = 2.0f;
             ChildBorderSize = 1.0f;
+            ChildBlur = 0.0f;
             PopupRounding = 2.0f;
             PopupBorderSize = 1.0f;
+            PopupBlur = 12.0f;
+            BackdropBlurMaxDownsample = 4;
+            BackdropBlurFullResolutionMaxRadius = 1.0f;
+            BackdropBlurHalfResolutionMaxRadius = 1.0f;
+            BackdropBlurThirdResolutionMaxRadius = 1.0f;
+            BackdropBlurMaxIterations = 12;
+            BackdropBlurTargetPassRadius = 0.5f;
+            BackdropBlurPrefilterRadius = 0.01f;
+            BackdropBlurCompositeFilterRadius = 2.0f;
             FramePadding = new Vector2(8f, 4f);
             FrameRounding = 2.0f;
             FrameBorderSize = 1.1f;

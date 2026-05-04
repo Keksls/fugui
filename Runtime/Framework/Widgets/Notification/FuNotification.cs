@@ -76,9 +76,15 @@ namespace Fu.Framework
         {
             width = Mathf.Max(1f, width);
             Vector2 childTopLeft = ImGui.GetCursorScreenPos();
+            bool usePopupBackdrop = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
+            ImGuiWindowFlags childFlags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+            if (usePopupBackdrop)
+            {
+                childFlags |= ImGuiWindowFlags.NoBackground;
+            }
 
             // child with AutoResizeY (pas AlwaysAutoResize)
-            bool opened = ImGui.BeginChild("notificationPanel" + i, new Vector2(width, 0f), ImGuiChildFlags.AutoResizeY, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+            bool opened = ImGui.BeginChild("notificationPanel" + i, new Vector2(width, 0f), ImGuiChildFlags.AutoResizeY, childFlags);
             if (opened)
             {
                 var dl = ImGui.GetWindowDrawList();
@@ -86,6 +92,10 @@ namespace Fu.Framework
                 Vector2 winSize = ImGui.GetWindowSize();
                 Vector2 closebtnPos = default;
                 Rect closeButtonRect = default;
+                if (usePopupBackdrop)
+                {
+                    Fugui.DrawThemeBackdrop(new Rect(winPos, winSize), FuColors.PopupBg, 0.98f, Fugui.Themes.PopupRounding);
+                }
 
                 // HEADER
                 ImGuiNative.igSpacing();
@@ -158,8 +168,11 @@ namespace Fu.Framework
 
                     Vector2 bodyTL = new Vector2(winPos.x, beforeY);
                     Vector2 bodyBR = new Vector2(winPos.x + winSize.x, afterY);
-                    uint bodyBG = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.WindowBg));
-                    dl.AddRectFilled(bodyTL + new Vector2(Fugui.Scale, 0f), bodyBR + new Vector2(-Fugui.Scale, -Fugui.Scale), bodyBG, Fugui.Themes.ChildRounding, ImDrawFlags.RoundCornersBottom);
+                    if (!usePopupBackdrop)
+                    {
+                        uint bodyBG = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.PopupBg));
+                        dl.AddRectFilled(bodyTL + new Vector2(Fugui.Scale, 0f), bodyBR + new Vector2(-Fugui.Scale, -Fugui.Scale), bodyBG, Fugui.Themes.ChildRounding, ImDrawFlags.RoundCornersBottom);
+                    }
 
                     ImGui.SetCursorScreenPos(textTL);
                     ImGuiNative.igSpacing();

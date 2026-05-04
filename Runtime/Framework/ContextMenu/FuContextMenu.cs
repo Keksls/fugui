@@ -236,8 +236,8 @@ namespace Fu
             Push(ImGuiStyleVar.FramePadding, new Vector2(10f, 6f));
             Push(ImGuiStyleVar.PopupRounding, popupRounding);
             Push(ImGuiStyleVar.PopupBorderSize, popupBorderSize);
-            bool contextMenuBackdropEnabled = Settings != null && Settings.EnableContextMenuBackdrop;
-            Push(ImGuiCol.PopupBg, Fugui.Themes.GetColor(FuColors.PopupBg, contextMenuBackdropEnabled ? 0f : 0.98f));
+            bool popupBackdropEnabled = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
+            Push(ImGuiCol.PopupBg, Fugui.GetPopupBackdropStyleColor());
             Push(ImGuiCol.Border, Fugui.Themes.GetColor(FuColors.Border, 0.70f));
             Push(ImGuiCol.BorderShadow, new Vector4(0f, 0f, 0f, 0.22f));
             Push(ImGuiCol.Header, Fugui.Themes.GetColor(FuColors.Selected, 0.32f));
@@ -247,7 +247,7 @@ namespace Fu
             float scale = CurrentContext != null ? CurrentContext.Scale : 1f;
             ImGui.SetNextWindowSizeConstraints(new Vector2(180f * scale, 0f), new Vector2(420f * scale, float.MaxValue));
             ImGuiWindowFlags popupFlags = ImGuiWindowFlags.NoMove;
-            if (contextMenuBackdropEnabled)
+            if (popupBackdropEnabled)
             {
                 popupFlags |= ImGuiWindowFlags.NoBackground;
             }
@@ -256,7 +256,7 @@ namespace Fu
             if (ImGui.BeginPopup(CONTEXT_MENU_NAME, popupFlags))
             {
                 IsContextMenuOpen = true;
-                drawContextMenuBackdrop(popupRounding, popupBorderSize);
+                Fugui.DrawCurrentPopupThemeBackdrop(0.98f, popupRounding, popupBorderSize);
                 // draw the items
                 FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout ?? new FuLayout();
                 try
@@ -282,32 +282,6 @@ namespace Fu
             }
             PopColor(7);
             PopStyle(6);
-        }
-
-        /// <summary>
-        /// Draws the optional generic backdrop behind context menu items.
-        /// </summary>
-        /// <param name="rounding">Popup rounding.</param>
-        /// <param name="borderSize">Popup border size.</param>
-        private static void drawContextMenuBackdrop(float rounding, float borderSize)
-        {
-            if (Settings == null || !Settings.EnableContextMenuBackdrop)
-            {
-                return;
-            }
-
-            Rect backdropRect = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
-            float inset = Mathf.Max(0f, borderSize);
-            if (inset > 0f)
-            {
-                Vector2 insetVector = new Vector2(inset, inset);
-                backdropRect.position += insetVector;
-                backdropRect.size -= insetVector * 2f;
-            }
-
-            float scale = CurrentContext != null ? CurrentContext.Scale : 1f;
-            float blurRadius = Mathf.Max(0f, Settings.ContextMenuBackdropBlurRadius) * scale;
-            Fugui.DrawBackdrop(backdropRect, Settings.ContextMenuBackdropColor, blurRadius, Mathf.Max(0f, rounding - inset));
         }
 
         /// <summary>
@@ -348,7 +322,7 @@ namespace Fu
                             {
                                 layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, false);
                                 ImGui.SameLine();
-                                bool open = ImGui.BeginMenu(label, enabled);
+                                bool open = beginContextSubmenu(label, enabled);
                                 if (open)
                                 {
                                     drawContextMenuItems(menuItem.Children, layout, id + 1);
@@ -358,7 +332,7 @@ namespace Fu
                             else if (!hasLabel && hasImage)
                             {
                                 ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().x - imageSize.x) * 0.5f);
-                                bool open = ImGui.BeginMenu("##imgmenu" + id, enabled);
+                                bool open = beginContextSubmenu("##imgmenu" + id, enabled);
                                 layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, false);
                                 if (open)
                                 {
@@ -368,7 +342,7 @@ namespace Fu
                             }
                             else // label only
                             {
-                                if (ImGui.BeginMenu(label, enabled))
+                                if (beginContextSubmenu(label, enabled))
                                 {
                                     drawContextMenuItems(menuItem.Children, layout, id + 1);
                                     ImGuiNative.igEndMenu();
@@ -439,6 +413,19 @@ namespace Fu
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Begins a submenu and draws the same popup backdrop used by the root context menu.
+        /// </summary>
+        private static bool beginContextSubmenu(string label, bool enabled)
+        {
+            bool open = ImGui.BeginMenu(label, enabled);
+            if (open)
+            {
+                Fugui.DrawCurrentPopupThemeBackdrop();
+            }
+            return open;
         }
 
         /// <summary>

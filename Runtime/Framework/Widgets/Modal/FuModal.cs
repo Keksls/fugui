@@ -154,14 +154,30 @@ namespace Fu
                 //ImGui.SetNextWindowFocus();
                 // beggin modal
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, Fugui.Themes.PopupRounding);
-                if (ImGui.BeginPopupModal(_modalTitle, ref _showModal, ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+                bool usePopupBackdrop = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
+                Fugui.Push(ImGuiCol.PopupBg, Fugui.Themes.GetColor(FuColors.PopupBg, usePopupBackdrop ? 0f : 1f));
+                ImGuiWindowFlags modalFlags = ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+                if (usePopupBackdrop)
                 {
+                    modalFlags |= ImGuiWindowFlags.NoBackground;
+                }
+
+                if (ImGui.BeginPopupModal(_modalTitle, ref _showModal, modalFlags))
+                {
+                    if (usePopupBackdrop)
+                    {
+                        Fugui.DrawThemeBackdrop(new Rect(_currentModalPos, modalSize), FuColors.PopupBg, 0.98f, Fugui.Themes.PopupRounding);
+                    }
+
                     // draw modal title
                     DrawTitle(_modalTitle);
 
                     ImDrawListPtr drawList = ImGui.GetWindowDrawList();
                     // draw body BG
-                    drawList.AddRectFilled(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.WindowBg)));
+                    if (!usePopupBackdrop)
+                    {
+                        drawList.AddRectFilled(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.PopupBg)));
+                    }
                     // draw title line
                     drawList.AddLine(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)));
                     // draw  footer line
@@ -192,6 +208,7 @@ namespace Fu
                     //end the modal
                     ImGui.EndPopup();
                 }
+                Fugui.PopColor();
                 ImGui.PopStyleVar();
                 // animate the modal
                 AnimateModal();

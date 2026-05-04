@@ -53,16 +53,20 @@ namespace Fu
         /// </summary>
         public static bool BeginChild(string id, Vector2 size, ImGuiChildFlags childFlags = ImGuiChildFlags.None, ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None)
         {
+            windowFlags = PrepareChildBackdrop(windowFlags, out Vector4 backdropColor, out float backdropBlur);
 #if FUMOBILE
             _currentChildId = ImGui.GetID(id);
             _currentChildOwner = FuWindow.CurrentDrawingWindow;
             _currentChildPos = ImGui.GetCursorScreenPos();
             bool opened = ImGui.BeginChild(id, size, childFlags, windowFlags);
+            DrawPreparedChildBackdrop(opened, backdropColor, backdropBlur);
             if (!windowFlags.HasFlag(ImGuiWindowFlags.NoScrollbar))
                 HandleCurrentChildScroll();
             return opened;
 #else
-            return ImGui.BeginChild(id, size, childFlags, windowFlags);
+            bool opened = ImGui.BeginChild(id, size, childFlags, windowFlags);
+            DrawPreparedChildBackdrop(opened, backdropColor, backdropBlur);
+            return opened;
 #endif
         }
 
@@ -74,15 +78,19 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         public static bool BeginChild(string str_id, Vector2 size)
         {
+            ImGuiWindowFlags windowFlags = PrepareChildBackdrop(ImGuiWindowFlags.None, out Vector4 backdropColor, out float backdropBlur);
 #if FUMOBILE
             _currentChildId = ImGui.GetID(str_id);
             _currentChildOwner = FuWindow.CurrentDrawingWindow;
             _currentChildPos = ImGui.GetCursorScreenPos();
-            bool opened = ImGui.BeginChild(str_id, size);
+            bool opened = ImGui.BeginChild(str_id, size, ImGuiChildFlags.None, windowFlags);
+            DrawPreparedChildBackdrop(opened, backdropColor, backdropBlur);
             HandleCurrentChildScroll();
             return opened;
 #else
-                        return ImGui.BeginChild(str_id, size);
+            bool opened = ImGui.BeginChild(str_id, size, ImGuiChildFlags.None, windowFlags);
+            DrawPreparedChildBackdrop(opened, backdropColor, backdropBlur);
+            return opened;
 #endif
         }
 
@@ -91,17 +99,53 @@ namespace Fu
         /// </summary>
         public static bool BeginChild(uint id, Vector2 size, ImGuiChildFlags childFlags = ImGuiChildFlags.None, ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None)
         {
+            windowFlags = PrepareChildBackdrop(windowFlags, out Vector4 backdropColor, out float backdropBlur);
 #if FUMOBILE
             _currentChildId = id;
             _currentChildOwner = FuWindow.CurrentDrawingWindow;
             _currentChildPos = ImGui.GetCursorScreenPos();
             bool opened = ImGui.BeginChild(id, size, childFlags, windowFlags);
+            DrawPreparedChildBackdrop(opened, backdropColor, backdropBlur);
             if (!windowFlags.HasFlag(ImGuiWindowFlags.NoScrollbar))
                 HandleCurrentChildScroll();
             return opened;
 #else
-            return ImGui.BeginChild(id, size, childFlags, windowFlags);
+            bool opened = ImGui.BeginChild(id, size, childFlags, windowFlags);
+            DrawPreparedChildBackdrop(opened, backdropColor, backdropBlur);
+            return opened;
 #endif
+        }
+
+        /// <summary>
+        /// Adds NoBackground when the current ChildBg style should be replaced by a themed backdrop.
+        /// </summary>
+        private static ImGuiWindowFlags PrepareChildBackdrop(ImGuiWindowFlags windowFlags, out Vector4 color, out float blurRadius)
+        {
+            color = ImGui.GetStyle().Colors[(int)ImGuiCol.ChildBg];
+            blurRadius = GetThemeBackdropBlur(FuColors.ChildBg);
+            if ((windowFlags & ImGuiWindowFlags.NoBackground) == 0 && ShouldUseBackdrop(color, blurRadius))
+            {
+                windowFlags |= ImGuiWindowFlags.NoBackground;
+            }
+            else
+            {
+                blurRadius = 0f;
+            }
+            return windowFlags;
+        }
+
+        /// <summary>
+        /// Draws the prepared child backdrop after BeginChild has resolved the child window rectangle.
+        /// </summary>
+        private static void DrawPreparedChildBackdrop(bool opened, Vector4 color, float blurRadius)
+        {
+            if (!opened || blurRadius <= 0f)
+            {
+                return;
+            }
+
+            Rect rect = new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+            DrawBackdrop(rect, color, blurRadius, ImGui.GetStyle().ChildRounding);
         }
 
         /// <summary>

@@ -29,10 +29,21 @@ namespace Fu
         public Vector2 CellPadding { get; private set; }
         public float WindowRounding { get; private set; }
         public float WindowBorderSize { get; private set; }
+        public float WindowBlur { get; private set; }
         public float ChildRounding { get; private set; }
         public float ChildBorderSize { get; private set; }
+        public float ChildBlur { get; private set; }
         public float PopupRounding { get; private set; }
         public float PopupBorderSize { get; private set; }
+        public float PopupBlur { get; private set; }
+        public int BackdropBlurMaxDownsample { get; private set; }
+        public float BackdropBlurFullResolutionMaxRadius { get; private set; }
+        public float BackdropBlurHalfResolutionMaxRadius { get; private set; }
+        public float BackdropBlurThirdResolutionMaxRadius { get; private set; }
+        public int BackdropBlurMaxIterations { get; private set; }
+        public float BackdropBlurTargetPassRadius { get; private set; }
+        public float BackdropBlurPrefilterRadius { get; private set; }
+        public float BackdropBlurCompositeFilterRadius { get; private set; }
         public float FrameRounding { get; private set; }
         public float FrameBorderSize { get; private set; }
         public float IndentSpacing { get; private set; }
@@ -62,11 +73,22 @@ namespace Fu
             WindowPadding = CurrentTheme.WindowPadding * scale;
             WindowRounding = CurrentTheme.WindowRounding * scale;
             WindowBorderSize = CurrentTheme.WindowBorderSize * scale;
+            WindowBlur = CurrentTheme.WindowBlur * scale;
             WindowMinSize = CurrentTheme.WindowMinSize * scale;
             ChildRounding = CurrentTheme.ChildRounding * scale;
             ChildBorderSize = CurrentTheme.ChildBorderSize * scale;
+            ChildBlur = CurrentTheme.ChildBlur * scale;
             PopupRounding = CurrentTheme.PopupRounding * scale;
             PopupBorderSize = CurrentTheme.PopupBorderSize * scale;
+            PopupBlur = CurrentTheme.PopupBlur * scale;
+            BackdropBlurMaxDownsample = Mathf.Clamp(CurrentTheme.BackdropBlurMaxDownsample, 1, 8);
+            BackdropBlurFullResolutionMaxRadius = CurrentTheme.BackdropBlurFullResolutionMaxRadius * scale;
+            BackdropBlurHalfResolutionMaxRadius = Mathf.Max(BackdropBlurFullResolutionMaxRadius, CurrentTheme.BackdropBlurHalfResolutionMaxRadius * scale);
+            BackdropBlurThirdResolutionMaxRadius = Mathf.Max(BackdropBlurHalfResolutionMaxRadius, CurrentTheme.BackdropBlurThirdResolutionMaxRadius * scale);
+            BackdropBlurMaxIterations = Mathf.Clamp(CurrentTheme.BackdropBlurMaxIterations, 1, 12);
+            BackdropBlurTargetPassRadius = Mathf.Max(0.5f, CurrentTheme.BackdropBlurTargetPassRadius);
+            BackdropBlurPrefilterRadius = Mathf.Max(0.01f, CurrentTheme.BackdropBlurPrefilterRadius);
+            BackdropBlurCompositeFilterRadius = Mathf.Max(0.01f, CurrentTheme.BackdropBlurCompositeFilterRadius);
             FramePadding = CurrentTheme.FramePadding * scale;
             FrameRounding = CurrentTheme.FrameRounding * scale;
             FrameBorderSize = CurrentTheme.FrameBorderSize * scale;

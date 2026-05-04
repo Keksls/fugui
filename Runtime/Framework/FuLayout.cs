@@ -484,7 +484,7 @@ namespace Fu.Framework
             bg.w = Mathf.Max(bg.w, 0.96f);
             Vector4 border = Fugui.Themes.GetColor(FuColors.Highlight);
             border.w = 0.65f;
-            drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(bg), rounding, ImDrawFlags.RoundCornersAll);
+            Fugui.DrawBackdrop(drawList, new Rect(pos, size), bg, Fugui.GetThemeBackdropBlur(FuColors.PopupBg), rounding, ImDrawFlags.RoundCornersAll);
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
             drawList.AddText(pos + padding, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text)), text);
         }

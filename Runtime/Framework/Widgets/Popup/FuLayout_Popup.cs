@@ -158,11 +158,21 @@ namespace Fu
                     ImGui.SetNextWindowPos(pos);
                 }
 
+                bool usePopupBackdrop = data.isComboBox && Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
+                if (data.isComboBox)
+                {
+                    Fugui.Push(ImGuiCol.PopupBg, Fugui.GetPopupBackdropStyleColor());
+                }
+
                 // draw popup
                 if (ImGui.BeginPopup(id, ImGuiWindowFlags.AlwaysAutoResize))
                 {
                     data.OpenThisFrame = false;
                     data.LastFrameRender = ImGui.GetFrameCount();
+                    if (usePopupBackdrop)
+                    {
+                        Fugui.DrawCurrentPopupThemeBackdrop();
+                    }
 
                     // push popup to stack
                     if (data.PopupIndex == -1)
@@ -200,6 +210,10 @@ namespace Fu
                 else
                 {
                     data.CloseThisFrame = true;
+                }
+                if (data.isComboBox)
+                {
+                    Fugui.PopColor();
                 }
                 if (data.CloseThisFrame)
                 {

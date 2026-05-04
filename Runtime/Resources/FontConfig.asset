@@ -206,6 +206,38 @@ MonoBehaviour:
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
     SubFonts_Italic: []
+  - Size: 13
+    SubFonts_Regular:
+    - FileName: regular.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 60797
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Bold:
+    - FileName: bold.ttf
+      FilePath: 
+      StartGlyph: 0
+      EndGlyph: 0
+      CustomGlyphRanges: 
+      SizeOffset: 0
+      GlyphOffset: {x: 0, y: 0}
+    - FileName: icons.ttf
+      FilePath: 
+      StartGlyph: 57445
+      EndGlyph: 60797
+      CustomGlyphRanges: 
+      SizeOffset: -4
+      GlyphOffset: {x: 0, y: -1}
+    SubFonts_Italic: []
   FontsFolder: Fugui/Fonts/current/
   UseBakedFontAtlas: 1
   BakedFontAtlasFolder: Fugui/FontAtlases

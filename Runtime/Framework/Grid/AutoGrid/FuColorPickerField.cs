@@ -19,7 +19,7 @@ namespace Fu.Framework
             /// <param name="fieldInfo">The field Info value.</param>
             public FuColorPickerField(FieldInfo fieldInfo) : base(fieldInfo)
             {
-                if (_fieldInfo.FieldType == typeof(Vector4))
+                if (_fieldInfo.FieldType == typeof(Vector4) || _fieldInfo.FieldType == typeof(Color))
                 {
                     alpha = true;
                 }
@@ -45,7 +45,17 @@ namespace Fu.Framework
                     grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
                 }
                 bool updated = false;
-                if (alpha)
+                if (_fieldInfo.FieldType == typeof(Color))
+                {
+                    Color color = (Color)_fieldInfo.GetValue(objectInstance);
+                    Vector4 value = new Vector4(color.r, color.g, color.b, color.a);
+                    updated = grid.ColorPicker(FieldName + "##" + objectID, ref value);
+                    if (updated)
+                    {
+                        _fieldInfo.SetValue(objectInstance, new Color(value.x, value.y, value.z, value.w));
+                    }
+                }
+                else if (alpha)
                 {
                     Vector4 value = (Vector4)_fieldInfo.GetValue(objectInstance);
                     updated = grid.ColorPicker(FieldName + "##" + objectID, ref value);

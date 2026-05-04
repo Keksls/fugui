@@ -134,6 +134,12 @@ namespace Fu
         /// A flag indicating whether the popup has focus
         /// </summary>
         internal static List<bool> IsPopupFocused { get; private set; } = new List<bool>();
+        /// <summary>
+        /// Reserved texture identifier used to carry backdrop blur draw commands through ImGui draw lists.
+        /// </summary>
+        internal static readonly IntPtr BackdropTextureID = new IntPtr(-67001);
+
+        private static readonly Stack<FuBackdropStyle> _backdropStack = new Stack<FuBackdropStyle>();
 
         /// <summary>
         /// Whatever cursors has just been unlocked
@@ -2563,6 +2569,138 @@ namespace Fu
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Pushes a backdrop style used by DrawBackdrop overloads that do not receive explicit colors.
+        /// </summary>
+        /// <param name="color">Overlay tint drawn above the blurred content.</param>
+        /// <param name="blurRadius">Blur radius in current Fugui UI pixels. Zero draws only the color.</param>
+        public static void PushBackdrop(Color color, float blurRadius = 0f)
+        {
+            _backdropStack.Push(new FuBackdropStyle(color, blurRadius));
+        }
+
+        /// <summary>
+        /// Pops the last pushed backdrop style.
+        /// </summary>
+        public static void PopBackdrop()
+        {
+            if (_backdropStack.Count > 0)
+            {
+                _backdropStack.Pop();
+            }
+        }
+
+        /// <summary>
+        /// Draws the currently pushed backdrop style in a screen-space rect.
+        /// </summary>
+        /// <param name="rect">Screen-space rect to cover.</param>
+        /// <param name="rounding">Optional corner rounding.</param>
+        /// <param name="flags">Rounded corner flags.</param>
+        public static void DrawBackdrop(Rect rect, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
+        {
+            FuBackdropStyle style = _backdropStack.Count > 0
+                ? _backdropStack.Peek()
+                : FuBackdropStyle.Default;
+            DrawBackdrop(ImGui.GetWindowDrawList(), rect, style.Color, style.BlurRadius, rounding, flags);
+        }
+
+        /// <summary>
+        /// Draws a backdrop in the current window draw list.
+        /// </summary>
+        /// <param name="rect">Screen-space rect to cover.</param>
+        /// <param name="color">Overlay tint drawn above the blurred content.</param>
+        /// <param name="blurRadius">Blur radius in current Fugui UI pixels. Zero draws only the color.</param>
+        /// <param name="rounding">Optional corner rounding.</param>
+        /// <param name="flags">Rounded corner flags.</param>
+        public static void DrawBackdrop(Rect rect, Color color, float blurRadius = 0f, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
+        {
+            DrawBackdrop(ImGui.GetWindowDrawList(), rect, color, blurRadius, rounding, flags);
+        }
+
+        /// <summary>
+        /// Draws a backdrop in any ImGui draw list.
+        /// </summary>
+        /// <param name="drawList">Target draw list.</param>
+        /// <param name="rect">Screen-space rect to cover.</param>
+        /// <param name="color">Overlay tint drawn above the blurred content.</param>
+        /// <param name="blurRadius">Blur radius in current Fugui UI pixels. Zero draws only the color.</param>
+        /// <param name="rounding">Optional corner rounding.</param>
+        /// <param name="flags">Rounded corner flags.</param>
+        public static void DrawBackdrop(ImDrawListPtr drawList, Rect rect, Color color, float blurRadius = 0f, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
+        {
+            Vector2 min = rect.position;
+            Vector2 max = rect.position + rect.size;
+            if (rect.width <= 0f || rect.height <= 0f || (color.a <= 0f && blurRadius <= 0f))
+            {
+                return;
+            }
+
+            uint colorU32 = ImGui.GetColorU32(color);
+            float scaledRounding = Mathf.Max(0f, rounding);
+            float scaledBlurRadius = Mathf.Max(0f, blurRadius);
+            if (Settings != null)
+            {
+                scaledBlurRadius = Settings.EnableBackdropBlur
+                    ? Mathf.Min(scaledBlurRadius, Mathf.Max(0f, Settings.BackdropMaxBlurRadius))
+                    : 0f;
+            }
+
+            if (scaledBlurRadius <= 0f)
+            {
+                if (color.a <= 0f)
+                {
+                    return;
+                }
+
+                drawList.AddRectFilled(min, max, colorU32, scaledRounding, flags);
+                return;
+            }
+
+            Vector2 uv = new Vector2(scaledBlurRadius, 0f);
+            Vector2 uvMax = new Vector2(scaledBlurRadius, 1f);
+            if (scaledRounding > 0f)
+            {
+                drawList.AddImageRounded(BackdropTextureID, min, max, uv, uvMax, colorU32, scaledRounding, flags);
+                return;
+            }
+
+            drawList.AddImage(BackdropTextureID, min, max, uv, uvMax, colorU32);
+        }
+
+        /// <summary>
+        /// Draws a backdrop over the current ImGui window rectangle.
+        /// </summary>
+        /// <param name="rounding">Optional corner rounding. Negative values use the current Fugui window rounding.</param>
+        public static void DrawCurrentWindowBackdrop(float rounding = -1f)
+        {
+            float resolvedRounding = rounding >= 0f ? rounding : (Themes != null ? Themes.WindowRounding : 0f);
+            DrawBackdrop(new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize()), resolvedRounding);
+        }
+
+        /// <summary>
+        /// Returns whether the texture id represents a Fugui backdrop command.
+        /// </summary>
+        /// <param name="textureId">ImGui texture id.</param>
+        /// <returns>True when this command should be handled by the backdrop renderer.</returns>
+        internal static bool IsBackdropTextureID(IntPtr textureId)
+        {
+            return textureId == BackdropTextureID;
+        }
+
+        private struct FuBackdropStyle
+        {
+            public static readonly FuBackdropStyle Default = new FuBackdropStyle(new Color(0f, 0f, 0f, 0f), 0f);
+
+            public Color Color;
+            public float BlurRadius;
+
+            public FuBackdropStyle(Color color, float blurRadius)
+            {
+                Color = color;
+                BlurRadius = blurRadius;
+            }
         }
 
         /// <summary>

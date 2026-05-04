@@ -171,21 +171,27 @@ namespace Fu
             if (!_childRects.ContainsKey(_currentChildId) || Fugui.IsDraggingAnything())
                 return;
 
+            if (ShouldBlockCurrentChildScrollForPopup())
+            {
+                CancelCurrentChildScroll();
+                return;
+            }
+
             if (!_isPressed && !(_inertiaActive && _activeChildId == _currentChildId))
                 return;
 
             Vector2 mousePosition = DefaultContainer.LocalMousePos;
-            Vector2 imguiTouch = new Vector2(mousePosition.x, ImGui.GetIO().DisplaySize.y - mousePosition.y);
+            Vector2 imguiPointerPosition = mousePosition;
 
             Rect childRect = _childRects[_currentChildId];
             Vector2 windowPos = childRect.position;
             Vector2 windowSize = childRect.size;
 
             bool isInside =
-                imguiTouch.x >= windowPos.x &&
-                imguiTouch.x <= windowPos.x + windowSize.x &&
-                imguiTouch.y >= windowPos.y &&
-                imguiTouch.y <= windowPos.y + windowSize.y;
+                imguiPointerPosition.x >= windowPos.x &&
+                imguiPointerPosition.x <= windowPos.x + windowSize.x &&
+                imguiPointerPosition.y >= windowPos.y &&
+                imguiPointerPosition.y <= windowPos.y + windowSize.y;
 
             if (!_isScrolling)
             {
@@ -305,6 +311,31 @@ namespace Fu
                 //    childRect.position + childRect.size,
                 //    ImGui.GetColorU32(new Vector4(1f, 0f, 0f, 0.5f)));
             }
+        }
+
+        /// <summary>
+        /// Returns whether the current child is background content blocked by an open popup.
+        /// </summary>
+        private static bool ShouldBlockCurrentChildScrollForPopup()
+        {
+            return Fugui.IsThereAnyOpenPopup() && !Fugui.IsDrawingInsidePopup();
+        }
+
+        /// <summary>
+        /// Cancels scrolling if the current child owns the active touch scroll.
+        /// </summary>
+        private static void CancelCurrentChildScroll()
+        {
+            if (_activeChildId != _currentChildId)
+            {
+                return;
+            }
+
+            _isScrolling = false;
+            _activeChildId = 0;
+            _smoothedScrollDelta = Vector2.zero;
+            _scrollVelocityY = 0f;
+            _inertiaActive = false;
         }
 
         /// <summary>

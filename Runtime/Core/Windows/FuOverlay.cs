@@ -869,8 +869,21 @@ namespace Fu
             Vector2 referenceOffset = getSnapReferenceOffset();
             Vector2 referencePosition = position + referenceOffset;
             return new Vector2(
-                Mathf.Round(referencePosition.x / step) * step,
-                Mathf.Round(referencePosition.y / step) * step) - referenceOffset;
+                snapAxisPosition(referencePosition.x, Window.WorkingAreaSize.x, step, isAnchoredRight()),
+                snapAxisPosition(referencePosition.y, Window.WorkingAreaSize.y, step, isAnchoredBottom())) - referenceOffset;
+        }
+
+        /// <summary>
+        /// Snaps an axis position from either the start or end of the working area.
+        /// </summary>
+        private float snapAxisPosition(float position, float axisSize, float step, bool fromEnd)
+        {
+            if (fromEnd)
+            {
+                return axisSize - Mathf.Round((axisSize - position) / step) * step;
+            }
+
+            return Mathf.Round(position / step) * step;
         }
 
         /// <summary>
@@ -890,6 +903,40 @@ namespace Fu
 
                 default:
                     return Vector2.zero;
+            }
+        }
+
+        /// <summary>
+        /// Returns whether the overlay is anchored on the right side of the working area.
+        /// </summary>
+        private bool isAnchoredRight()
+        {
+            switch (_anchorLocation)
+            {
+                case FuOverlayAnchorLocation.TopRight:
+                case FuOverlayAnchorLocation.MiddleRight:
+                case FuOverlayAnchorLocation.BottomRight:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns whether the overlay is anchored on the bottom side of the working area.
+        /// </summary>
+        private bool isAnchoredBottom()
+        {
+            switch (_anchorLocation)
+            {
+                case FuOverlayAnchorLocation.BottomLeft:
+                case FuOverlayAnchorLocation.BottomCenter:
+                case FuOverlayAnchorLocation.BottomRight:
+                    return true;
+
+                default:
+                    return false;
             }
         }
 
@@ -933,15 +980,24 @@ namespace Fu
 
             drawList.AddRectFilled(startPos, endPos, ImGui.GetColorU32(fill));
 
+            bool fromRight = isAnchoredRight();
+            bool fromBottom = isAnchoredBottom();
+
+            float xStart = fromRight ? endPos.x : startPos.x;
+            float xLimit = fromRight ? startPos.x - 0.5f : endPos.x + 0.5f;
+            float xStep = fromRight ? -step : step;
             int index = 0;
-            for (float x = startPos.x; x <= endPos.x + 0.5f; x += step, index++)
+            for (float x = xStart; fromRight ? x >= xLimit : x <= xLimit; x += xStep, index++)
             {
                 uint color = index % 4 == 0 ? majorColor : minorColor;
                 drawList.AddLine(new Vector2(x, startPos.y), new Vector2(x, endPos.y), color, _gridWidth * Fugui.Scale);
             }
 
+            float yStart = fromBottom ? endPos.y : startPos.y;
+            float yLimit = fromBottom ? startPos.y - 0.5f : endPos.y + 0.5f;
+            float yStep = fromBottom ? -step : step;
             index = 0;
-            for (float y = startPos.y; y <= endPos.y + 0.5f; y += step, index++)
+            for (float y = yStart; fromBottom ? y >= yLimit : y <= yLimit; y += yStep, index++)
             {
                 uint color = index % 4 == 0 ? majorColor : minorColor;
                 drawList.AddLine(new Vector2(startPos.x, y), new Vector2(endPos.x, y), color, _gridWidth * Fugui.Scale);

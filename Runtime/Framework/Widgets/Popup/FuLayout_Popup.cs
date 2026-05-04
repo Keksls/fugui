@@ -247,7 +247,7 @@ namespace Fu
         /// </summary>
         private static void _closePopup(string id)
         {
-            ExecuteAfterRenderWindows(() => // defer the popup removal after fugui rendering to avoid multiple click on same frame issues
+            ExecuteAfterCurrentRenderContext(() => // defer popup removal after the current context render to avoid multiple click on same frame issues
             {
                 // invoke the OnClose callback
                 if (_registeredPopups.ContainsKey(id))

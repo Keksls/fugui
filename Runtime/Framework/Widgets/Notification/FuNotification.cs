@@ -72,9 +72,9 @@ namespace Fu.Framework
         public void ForceCollapsed(bool collapsed) { if (CanCollapse) IsCollapsed = collapsed; }
 
         /// <summary>Draw the card (accent per anchor, header click collapse, body background, AutoResizeY).</summary>
-        public bool Draw(ImDrawListPtr parentDrawList, int i, float deltaTime)
+        public bool Draw(ImDrawListPtr parentDrawList, int i, float deltaTime, float width)
         {
-            float width = Fugui.Settings.NotifyPanelWidth * Fugui.CurrentContext.Scale;
+            width = Mathf.Max(1f, width);
             Vector2 childTopLeft = ImGui.GetCursorScreenPos();
 
             // child with AutoResizeY (pas AlwaysAutoResize)
@@ -101,7 +101,7 @@ namespace Fu.Framework
                     else
                     {
                         Fugui.PushFont(Fugui.CurrentContext.DefaultFont.Size, FontType.Bold);
-                        grid.Text((Quantity > 1 ? "(" + Quantity + ") " : "") + Title, TextColor);
+                        grid.Text((Quantity > 1 ? "(" + Quantity + ") " : "") + Title, TextColor, FuTextWrapping.Clip);
                         Fugui.PopFont();
                     }
 
@@ -149,9 +149,10 @@ namespace Fu.Framework
                     ImGuiNative.igSpacing();
 
                     Fugui.MoveXUnscaled(bodyPad);
-                    float wrapWidth = ImGui.GetContentRegionAvail().x - bodyPad * 2.0f;
+                    float wrapWidth = Mathf.Max(1f, ImGui.GetContentRegionAvail().x - bodyPad * 2.0f);
                     ImGui.PushTextWrapPos(ImGui.GetCursorPos().x + wrapWidth);
                     ImGui.TextWrapped(Message);
+                    ImGui.PopTextWrapPos();
                     ImGui.Dummy(new Vector2(0f, bodyPad));
                     float afterY = ImGui.GetCursorScreenPos().y;
 
@@ -166,6 +167,7 @@ namespace Fu.Framework
                     Fugui.MoveXUnscaled(bodyPad);
                     ImGui.PushTextWrapPos(ImGui.GetCursorPos().x + wrapWidth);
                     ImGui.TextWrapped(Message);
+                    ImGui.PopTextWrapPos();
                     ImGui.Dummy(new Vector2(0f, bodyPad));
                 }
 

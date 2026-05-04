@@ -536,7 +536,12 @@ Le dossier `Samples/Demo` contient:
 - `NodalEditorDemo`: graphe nodal, types, nodes variables/math, minimap, save/load JSON.
 - `FuWindowsNames`: registre de noms de fenetres de demo.
 
-Le sample package reference `Samples~/Demo` dans `Package.json`; dans ce workspace, le dossier present est `Samples/Demo`.
+Le dossier `Samples/MobileDemo` contient:
+
+- `MobileDemoBootstrap`: comportement `FuWindowBehaviour` qui cree une appli mobile de demo type smart home au Play Mode, avec header/footer Fugui, navigation basse, dashboard, rooms/devices filtrables, timeline, panels scrollables, charts, sliders/toggles tactiles, modales et notifications.
+- `FuMobileDemoWindowNames`: registre du nom de fenetre `Mobile Demo`.
+
+Le sample package reference `Samples~/Demo` et `Samples~/MobileDemo` dans `Package.json`; dans ce workspace, les dossiers presents sont `Samples/Demo` et `Samples/MobileDemo`.
 
 ## Depannage
 

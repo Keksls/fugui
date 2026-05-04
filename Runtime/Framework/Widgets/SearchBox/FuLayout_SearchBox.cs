@@ -139,7 +139,8 @@ namespace Fu.Framework
             Fugui.Push(ImGuiCol.FrameBgActive, Vector4.zero);
             Fugui.Push(ImGuiCol.TextDisabled, placeholder);
             Fugui.Push(ImGuiStyleVar.FrameBorderSize, 0f);
-            Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(0f, ImGui.GetStyle().FramePadding.y));
+            float inputPaddingY = Mathf.Max(0f, (height - ImGui.GetTextLineHeight()) * 0.5f) / Mathf.Max(0.001f, scale);
+            Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(0f, inputPaddingY));
             edited = ImGui.InputTextWithHint("##" + elementID + "_input", hint, ref search, SEARCH_BOX_BUFFER_SIZE, inputFlags);
             bool focused = ImGui.IsItemActive() || ImGui.IsItemFocused();
             Fugui.PopStyle(2);

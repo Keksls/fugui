@@ -154,6 +154,11 @@ namespace Fu
         /// <param name="mouseButton">Mouse button to use to open the context menu</param>
         public static bool TryOpenContextMenuOnWindowClick(FuMouseButton mouseButton = FuMouseButton.Right)
         {
+            if (IsContextMenuOpen)
+            {
+                return false;
+            }
+
             // whatever the current window is hovered and right clicked
             if (FuWindow.CurrentDrawingWindow != null && FuWindow.CurrentDrawingWindow.IsHoveredContent && FuWindow.CurrentDrawingWindow.Mouse.IsClicked(mouseButton))
             {
@@ -196,7 +201,10 @@ namespace Fu
             // do not close the context menu if it's not open
             if (IsContextMenuOpen)
             {
+                IsContextMenuOpen = false;
                 _currentOpenContextID = -1;
+                _currentContextMenuItems = null;
+                _openThisFrameLevel = -1;
                 ImGui.CloseCurrentPopup();
             }
         }
@@ -220,8 +228,21 @@ namespace Fu
                 _openThisFrameLevel = -1;
             }
 
-            Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 8f));
-            Push(ImGuiStyleVar.ItemSpacing, new Vector2(8f, 8f));
+            Push(ImGuiStyleVar.WindowPadding, new Vector2(10f, 8f));
+            Push(ImGuiStyleVar.ItemSpacing, new Vector2(4f, 3f));
+            Push(ImGuiStyleVar.ItemInnerSpacing, new Vector2(8f, 4f));
+            Push(ImGuiStyleVar.FramePadding, new Vector2(10f, 6f));
+            Push(ImGuiStyleVar.PopupRounding, 7f);
+            Push(ImGuiStyleVar.PopupBorderSize, 1f);
+            Push(ImGuiCol.PopupBg, Fugui.Themes.GetColor(FuColors.PopupBg, 0.98f));
+            Push(ImGuiCol.Border, Fugui.Themes.GetColor(FuColors.Border, 0.70f));
+            Push(ImGuiCol.BorderShadow, new Vector4(0f, 0f, 0f, 0.22f));
+            Push(ImGuiCol.Header, Fugui.Themes.GetColor(FuColors.Selected, 0.32f));
+            Push(ImGuiCol.HeaderHovered, Fugui.Themes.GetColor(FuColors.SelectedHovered, 0.72f));
+            Push(ImGuiCol.HeaderActive, Fugui.Themes.GetColor(FuColors.SelectedActive, 0.88f));
+            Push(ImGuiCol.Separator, Fugui.Themes.GetColor(FuColors.Separator, 0.58f));
+            float scale = CurrentContext != null ? CurrentContext.Scale : 1f;
+            ImGui.SetNextWindowSizeConstraints(new Vector2(180f * scale, 0f), new Vector2(420f * scale, float.MaxValue));
             // draw the context menu
             if (ImGui.BeginPopup(CONTEXT_MENU_NAME, ImGuiWindowFlags.NoMove))
             {
@@ -246,8 +267,11 @@ namespace Fu
             else
             {
                 IsContextMenuOpen = false;
+                _currentOpenContextID = -1;
+                _currentContextMenuItems = null;
             }
-            PopStyle(2);
+            PopColor(7);
+            PopStyle(6);
         }
 
         /// <summary>

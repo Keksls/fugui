@@ -685,6 +685,7 @@ namespace Fu
             Vector2Int mouseLocal = new Vector2Int(mx, my);
             Vector2Int mouseAbs = Fugui.AbsoluteMonitorMousePosition;
             Vector2Int windowSize = Window.Size;
+            bool mouseBlockedByPopup = Fugui.IsInsideAnyPopup(mouseLocal);
 
             //
             // --- RESIZE ---
@@ -692,7 +693,7 @@ namespace Fu
             // Detect hover edge (even when not resizing)
             if (!IsDragging && !IsResizing)
             {
-                if (IsMaximized)
+                if (IsMaximized || mouseBlockedByPopup)
                     HoverResizeEdge = ResizeEdge.None;   // interdit resize
                 else
                     HoverResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
@@ -704,7 +705,7 @@ namespace Fu
             }
 
             // detect edge if not resizing or dragging
-            if (!IsMaximized && !IsDragging && !IsResizing && Window.Mouse.IsDown(FuMouseButton.Left))
+            if (!IsMaximized && !mouseBlockedByPopup && !IsDragging && !IsResizing && Window.Mouse.IsDown(FuMouseButton.Left))
             {
                 currentResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
 

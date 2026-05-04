@@ -25,7 +25,7 @@ Cette documentation decrit l'architecture et les APIs principales du package Fug
 - Version: `0.1.2`.
 - Display name: `Fugui Unity6`.
 - Dependence package: `com.unity.postprocessing` version `3.2.2`.
-- Sample declare: `Samples~/Demo`.
+- Samples dans `Package.json`: `Samples~/Demo`, `Samples~/MobileDemo`.
 
 ## Architecture generale
 
@@ -1439,6 +1439,6 @@ public override void OnUI(FuWindow window, FuLayout layout)
 ## Notes de maintenance
 
 - Le workspace actuel contient beaucoup de modifications non commitees hors documentation; cette doc ne les annule pas.
-- Le dossier sample declare dans `Package.json` est `Samples~/Demo`, tandis que le dossier present ici est `Samples/Demo`.
+- Les dossiers samples declares dans `Package.json` sont `Samples~/Demo` et `Samples~/MobileDemo`, tandis que les dossiers presents ici sont `Samples/Demo` et `Samples/MobileDemo`.
 - Plusieurs fichiers ImGui/SDL sont des bindings generes ou wrappers natifs; ils doivent etre traites comme dependances bas niveau.
 - Le renderer cible explicitement URP RenderGraph Unity 6, avec fallback `Execute` obsolete pour versions avant `UNITY_6000_4_OR_NEWER`.

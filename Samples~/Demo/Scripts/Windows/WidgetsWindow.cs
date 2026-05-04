@@ -125,6 +125,8 @@ public class WidgetsWindow : FuWindowBehaviour
     private float chartDemoHeight = 280f;
     private float chartDemoThreshold = 0.65f;
     private int chartDemoMaxPoints = 512;
+    // layout surfaces
+    private int layoutSurfaceDemoNavigationIndex = 0;
     #endregion
 
     #region Methods
@@ -145,6 +147,7 @@ public class WidgetsWindow : FuWindowBehaviour
         {
             layout.Collapsable("Sliders", drawSliders);
             layout.Collapsable("Basics Widgets", () => { drawBasics(layout); }, 0);
+            layout.Collapsable("Layout Surfaces", () => { drawLayoutSurfaces(layout); });
             layout.Collapsable("Texts", () => { drawTexts(layout); });
             layout.Collapsable("Buttons", () => { drawButtons(layout); });
             layout.Collapsable("Drags", drawDrags);
@@ -157,6 +160,71 @@ public class WidgetsWindow : FuWindowBehaviour
             layout.Collapsable("Lists", () => { drawBoxes(layout); });
             layout.Collapsable("Search and Table View", () => { drawSearchAndTableView(layout); });
             layout.Collapsable("Charts", () => { drawCharts(layout); });
+        }
+    }
+
+    /// <summary>
+    /// Runs the reusable layout surface widgets demo.
+    /// </summary>
+    /// <param name="layout">The layout value.</param>
+    private void drawLayoutSurfaces(FuLayout layout)
+    {
+        if (!_enableWidgets)
+        {
+            layout.DisableNextElements();
+        }
+
+        layout.FeaturePanel(
+            "layoutSurfaceDemoFeature",
+            "Reusable layout surfaces",
+            "Use these helpers for clean in-window chrome without rewriting draw-list code in every demo or tool.",
+            new string[] { "Surface", "Callout", "Pills" },
+            new FuColors[] { FuColors.Highlight, FuColors.BackgroundInfo, FuColors.BackgroundSuccess },
+            FuColors.Highlight,
+            104f);
+
+        layout.Dummy(0f, 8f);
+        layout.Callout("layoutSurfaceDemoCallout", "Callout sizes itself around wrapped text and keeps a readable accent stripe for notes, summaries and warnings.", FuColors.BackgroundInfo);
+
+        layout.Text("NavigationItem");
+        if (layout.NavigationItem("layoutSurfaceDemoNavOverview", "Overview", layoutSurfaceDemoNavigationIndex == 0, "A selected sidebar row with a soft accent."))
+        {
+            layoutSurfaceDemoNavigationIndex = 0;
+        }
+        if (layout.NavigationItem("layoutSurfaceDemoNavDetails", "Details", layoutSurfaceDemoNavigationIndex == 1, "A compact hoverable row for documentation or inspectors."))
+        {
+            layoutSurfaceDemoNavigationIndex = 1;
+        }
+        if (layout.NavigationItem("layoutSurfaceDemoNavReference", "Reference", layoutSurfaceDemoNavigationIndex == 2, "Click rows update local demo state."))
+        {
+            layoutSurfaceDemoNavigationIndex = 2;
+        }
+
+        layout.Dummy(0f, 8f);
+        layout.Text("Pills");
+        layout.Pill("layoutSurfaceDemoPillImmediate", "Immediate mode", FuColors.Highlight);
+        layout.SameLine();
+        layout.Pill("layoutSurfaceDemoPillDockable", "Dockable", FuColors.BackgroundSuccess);
+        layout.SameLine();
+        layout.Pill("layoutSurfaceDemoPillRuntime", "Unity runtime", FuColors.BackgroundInfo);
+
+        layout.Dummy(0f, 6f);
+        layout.PillRow(
+            "layoutSurfaceDemoPillRow",
+            new string[] { "runtime UI", "Dear ImGui", "Unity 6", "theme aware", "wrapping row", "small labels" },
+            new FuColors[] { FuColors.BackgroundInfo, FuColors.Highlight, FuColors.BackgroundSuccess, FuColors.BackgroundWarning, FuColors.BackgroundInfo, FuColors.Highlight });
+
+        layout.Dummy(0f, 8f);
+        Rect surfaceRect = layout.Surface("layoutSurfaceDemoCustomSurface", new FuElementSize(-1f, 58f), FuColors.BackgroundSuccess, FuSurfaceFlags.Border | FuSurfaceFlags.AccentTop, 0.34f, 0.24f, 0.80f, 6f);
+        if (surfaceRect.width > 0f && surfaceRect.height > 0f)
+        {
+            float scale = Fugui.CurrentContext.Scale;
+            layout.EnboxedText("Surface returns a Rect, so custom content can be drawn inside while Fugui owns spacing, border and accent styling.", surfaceRect.position + new Vector2(12f, 10f) * scale, surfaceRect.size - new Vector2(24f, 18f) * scale, Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Wrap);
+        }
+
+        if (!_enableWidgets)
+        {
+            layout.EnableNextElements();
         }
     }
 

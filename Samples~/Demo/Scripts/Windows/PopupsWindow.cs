@@ -183,6 +183,7 @@ public class PopupsWindow : FuWindowBehaviour
 
                 Fugui.PushContextMenuItems(yetAnotherContextMenuItem);
                 layout.FramedText("I have extra item");
+                Fugui.TryOpenContextMenuOnItemClick();
                 Fugui.PopContextMenuItems(2);
             });
             Fugui.TryOpenContextMenuOnWindowClick();

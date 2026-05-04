@@ -1315,6 +1315,7 @@ namespace Fu
             }
 
             Vector2Int mousePos = Container.LocalMousePos;
+            bool mouseBlockedByPopup = Fugui.IsInsideAnyPopup(mousePos);
             bool leftMouseDown = _customResizeLocksWindowInputs
                 ? IsRawMouseDown(FuMouseButton.Left)
                 : Mouse.IsDown(FuMouseButton.Left);
@@ -1327,12 +1328,12 @@ namespace Fu
                 return;
             }
 
-            if (!IsDocked && leftMouseDown)
+            if (!IsDocked && leftMouseDown && !mouseBlockedByPopup)
             {
                 BringFloatingWindowToFront();
             }
 
-            if (leftMouseDown)
+            if (leftMouseDown && !mouseBlockedByPopup)
             {
                 FuWindowResizeEdge edge = _customResizeHoveredEdge != FuWindowResizeEdge.None
                     ? _customResizeHoveredEdge
@@ -1401,7 +1402,7 @@ namespace Fu
                 }
             }
 
-            if (CanCustomMoveWindow() && IsCustomTitleBarHovered(Mouse.Position) && !IsCustomCloseButtonHovered(Mouse.Position))
+            if (!mouseBlockedByPopup && CanCustomMoveWindow() && IsCustomTitleBarHovered(Mouse.Position) && !IsCustomCloseButtonHovered(Mouse.Position))
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
             }

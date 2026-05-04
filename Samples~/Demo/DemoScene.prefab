@@ -13048,6 +13048,7 @@ GameObject:
   - component: {fileID: 2335456719184029569}
   - component: {fileID: 4742880329986240731}
   - component: {fileID: 7505416273416394174}
+  - component: {fileID: 7860213528544289013}
   - component: {fileID: 7325860304142673871}
   m_Layer: 0
   m_Name: DemoScene
@@ -13212,6 +13213,28 @@ MonoBehaviour:
   _windowFlags: 0
   _externalWindowFlags: 49
   _size: {x: 0, y: 0}
+  _position: {x: 0, y: 0}
+  _forceCreateAloneOnAwake: 0
+--- !u!114 &7860213528544289013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5190680658197817161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6c93a8aa1bb4bdf8590b2b42d4c8e70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _windowName:
+    _id: 13
+    _name: Fugui Documentation
+    _autoInstantiateWindowOnlayoutSet: 1
+    _idleFPS: -1
+  _windowFlags: 0
+  _externalWindowFlags: 49
+  _size: {x: 860, y: 660}
   _position: {x: 0, y: 0}
   _forceCreateAloneOnAwake: 0
 --- !u!114 &7325860304142673871

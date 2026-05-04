@@ -351,7 +351,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="flags">Tab flags.</param>
         /// <returns>Height in screen pixels.</returns>
-        private static float GetTabBarHeight(FuTabsFlags flags)
+        public static float GetTabBarHeight(FuTabsFlags flags)
         {
             float scale = Fugui.CurrentContext.Scale;
             float textHeight = ImGui.CalcTextSize("Ap").y;

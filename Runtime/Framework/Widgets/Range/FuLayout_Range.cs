@@ -172,8 +172,9 @@ namespace Fu.Framework
                     return false;
                 }
 
-                float valueStartX = x + knobRadius;
-                float valueWidth = Mathf.Max(1f, width - knobRadius * 2f);
+                float knobTravelPadding = knobRadius + Mathf.Max(1f, Fugui.CurrentContext.Scale);
+                float valueStartX = x + knobTravelPadding;
+                float valueWidth = Mathf.Max(1f, width - knobTravelPadding * 2f);
                 float knobPosMin = valueStartX + valueWidth * Mathf.Clamp01((valueMin - min) / range);
                 float knobPosMax = valueStartX + valueWidth * Mathf.Clamp01((valueMax - min) / range);
                 // Check if the mouse is hovering over the knob
@@ -275,7 +276,7 @@ namespace Fu.Framework
                 }
                 else
                 {
-                    DrawValueKnobWithWindowClip(drawList, new Vector2(knobPosMin, y), visualKnobRadiusMin, knobColorMin, isKnobMinHovered, false, LastItemDisabled);
+                    DrawValueKnob(drawList, new Vector2(knobPosMin, y), visualKnobRadiusMin, knobColorMin, isKnobMinHovered, false, LastItemDisabled);
                 }
 
                 // Max Knob ============
@@ -286,7 +287,7 @@ namespace Fu.Framework
                 }
                 else
                 {
-                    DrawValueKnobWithWindowClip(drawList, new Vector2(knobPosMax, y), visualKnobRadiusMax, knobColorMax, isKnobMaxHovered, false, LastItemDisabled);
+                    DrawValueKnob(drawList, new Vector2(knobPosMax, y), visualKnobRadiusMax, knobColorMax, isKnobMaxHovered, false, LastItemDisabled);
                 }
 
                 if (isDraggingMin && !LastItemDisabled)

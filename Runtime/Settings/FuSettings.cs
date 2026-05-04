@@ -25,6 +25,11 @@ namespace Fu
         [FuToggle]
         public bool DisplaySettingsIfNoLayout = true;
 
+        [Tooltip("Display the list of currently open main-container windows in the main menu bar.")]
+        [FuTooltip("Display the list of currently open main-container windows in the main menu bar.")]
+        [FuToggle]
+        public bool DisplayOpenWindowsInMainMenu = false;
+
         [Tooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
         [Range(0, 120)]
@@ -205,9 +210,9 @@ namespace Fu
         [FuTooltip("pos offset of icons glyphs in font.")]
         public Vector2 FontIconsOffset = Vector2.zero;
 
-        [Tooltip("For more info look the imgui.h:1380(~). (default=NavEnableKeyboard | DockingEnable)")]
-        [FuTooltip("For more info look the imgui.h:1380(~). (default=NavEnableKeyboard | DockingEnable)")]
-        public ImGuiConfigFlags ImGuiConfig = ImGuiConfigFlags.NavEnableKeyboard | ImGuiConfigFlags.DockingEnable;
+        [Tooltip("For more info look the imgui.h:1380(~). Fugui uses its own docking layer, so DockingEnable is stripped at runtime. (default=NavEnableKeyboard)")]
+        [FuTooltip("For more info look the imgui.h:1380(~). Fugui uses its own docking layer, so DockingEnable is stripped at runtime. (default=NavEnableKeyboard)")]
+        public ImGuiConfigFlags ImGuiConfig = ImGuiConfigFlags.NavEnableKeyboard;
 
         [Tooltip("Time for a double-click, in seconds. (default=0.30f)")]
         [FuTooltip("Time for a double-click, in seconds. (default=0.30f)")]
@@ -396,7 +401,7 @@ namespace Fu
         /// <param name="io">current Imgui IO</param>
         public void ApplyTo(ImGuiIOPtr io)
         {
-            io.ConfigFlags = ImGuiConfig;
+            io.ConfigFlags = ImGuiConfig & ~ImGuiConfigFlags.DockingEnable;
 
             if(ImGuiConfig.HasFlag(ImGuiConfigFlags.ViewportsEnable))
             {

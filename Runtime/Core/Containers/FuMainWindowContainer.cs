@@ -34,6 +34,10 @@ namespace Fu
         /// The size of the container.
         /// </summary>
         public Vector2Int Size => _size;
+        /// <summary>
+        /// The drawable content area left after the main menu and footer.
+        /// </summary>
+        public Rect ContentRect { get; private set; }
 
         /// <summary>
         /// A dictionary of UI windows contained in the container.
@@ -70,6 +74,12 @@ namespace Fu
         private Queue<FuWindow> _toRemoveWindows;
         // A queue of windows to be added.
         private Queue<FuWindow> _toAddWindows;
+        private readonly List<string> _pendingBringToFrontWindowIds = new List<string>();
+        private bool _isRenderingWindows;
+        private readonly List<string> _floatingWindowSwitchOrder = new List<string>();
+        private bool _floatingWindowSwitcherOpen;
+        private int _floatingWindowSwitchIndex = -1;
+        private string _floatingWindowSwitchOriginId;
         // The mouse position relative to the container.
         private Vector2Int _mousePos;
         // The size of the container.
@@ -333,14 +343,63 @@ namespace Fu
         /// </summary>
         public void RenderFuWindows()
         {
+            ApplyPendingWindowOrder();
+            ProcessFloatingWindowSwitcherInput();
+            ApplyPendingWindowOrder();
             DrawMainLayout();
+            Fugui.Layouts?.UpdateCustomLayout(this, ContentRect);
 
-            // render every windows into this container
-            foreach (FuWindow window in Windows.Values)
+            _isRenderingWindows = true;
+            try
             {
-                // check whatever window must be draw
-                RenderFuWindow(window);
+                // Main-layout docked windows are the background layout surface.
+                foreach (FuWindow window in Windows.Values)
+                {
+                    if (window.IsDocked && !IsFloatingDockGroupWindow(window))
+                    {
+                        RenderFuWindow(window);
+                    }
+                }
             }
+            finally
+            {
+                _isRenderingWindows = false;
+            }
+            ApplyPendingWindowOrder();
+
+            _isRenderingWindows = true;
+            try
+            {
+                foreach (FuWindow window in Windows.Values)
+                {
+                    if ((!window.IsDocked && !window.IsDragging) || IsFloatingDockGroupWindow(window))
+                    {
+                        RenderFuWindow(window);
+                    }
+                }
+            }
+            finally
+            {
+                _isRenderingWindows = false;
+            }
+            ApplyPendingWindowOrder();
+
+            _isRenderingWindows = true;
+            try
+            {
+                foreach (FuWindow window in Windows.Values)
+                {
+                    if (!window.IsDocked && window.IsDragging)
+                    {
+                        RenderFuWindow(window);
+                    }
+                }
+            }
+            finally
+            {
+                _isRenderingWindows = false;
+            }
+            ApplyPendingWindowOrder();
 
             // invoke OnPostRenderWindows event
             OnPostRenderWindows?.Invoke();
@@ -356,6 +415,462 @@ namespace Fu
 
             // render notifications
             Fugui.RenderNotifications(this);
+
+            DrawFloatingWindowSwitcherOverlay();
+        }
+
+        /// <summary>
+        /// Return whether a window belongs to a floating dock group and should be rendered in the floating pass.
+        /// </summary>
+        private bool IsFloatingDockGroupWindow(FuWindow window)
+        {
+            return window != null &&
+                   window.IsDocked &&
+                   Fugui.Layouts != null &&
+                   Fugui.Layouts.IsWindowInFloatingDockRoot(window);
+        }
+
+        /// <summary>
+        /// Process Ctrl+Tab-style cycling between floating Fugui windows in this container.
+        /// </summary>
+        private void ProcessFloatingWindowSwitcherInput()
+        {
+            if (Keyboard == null)
+            {
+                return;
+            }
+
+            bool ctrlPressed = Keyboard.KeyCtrl;
+            bool tabDown = Keyboard.GetKeyDown(FuKeysCode.Tab);
+            if (ctrlPressed && tabDown)
+            {
+                if (_floatingWindowSwitcherOpen)
+                {
+                    CycleFloatingWindowSwitcher(Keyboard.KeyShift);
+                }
+                else
+                {
+                    BeginFloatingWindowSwitcher(Keyboard.KeyShift);
+                }
+                return;
+            }
+
+            if (!_floatingWindowSwitcherOpen)
+            {
+                return;
+            }
+
+            if (Keyboard.GetKeyDown(FuKeysCode.Escape))
+            {
+                CancelFloatingWindowSwitcher();
+                return;
+            }
+
+            if (!ctrlPressed)
+            {
+                ActivateSelectedFloatingWindow();
+                CloseFloatingWindowSwitcher();
+            }
+        }
+
+        /// <summary>
+        /// Start a floating window switch gesture.
+        /// </summary>
+        private void BeginFloatingWindowSwitcher(bool reverse)
+        {
+            RebuildFloatingWindowSwitchOrder();
+            if (_floatingWindowSwitchOrder.Count == 0)
+            {
+                CloseFloatingWindowSwitcher();
+                return;
+            }
+
+            _floatingWindowSwitchOriginId = GetActiveFloatingWindowSwitchCandidateId();
+            _floatingWindowSwitchIndex = _floatingWindowSwitchOrder.IndexOf(_floatingWindowSwitchOriginId);
+            if (_floatingWindowSwitchIndex < 0)
+            {
+                _floatingWindowSwitchIndex = _floatingWindowSwitchOrder.Count - 1;
+            }
+
+            if (_floatingWindowSwitchOrder.Count == 1)
+            {
+                ActivateSelectedFloatingWindow();
+                CloseFloatingWindowSwitcher();
+                return;
+            }
+
+            _floatingWindowSwitcherOpen = true;
+            CycleFloatingWindowSwitcher(reverse);
+        }
+
+        /// <summary>
+        /// Move the switcher selection to the next or previous candidate.
+        /// </summary>
+        private void CycleFloatingWindowSwitcher(bool reverse)
+        {
+            if (!RefreshFloatingWindowSwitchOrder())
+            {
+                CloseFloatingWindowSwitcher();
+                return;
+            }
+
+            int direction = reverse ? 1 : -1;
+            _floatingWindowSwitchIndex = WrapIndex(_floatingWindowSwitchIndex + direction, _floatingWindowSwitchOrder.Count);
+            Fugui.ForceDrawAllWindows(2);
+        }
+
+        /// <summary>
+        /// Activate the currently selected floating window.
+        /// </summary>
+        private void ActivateSelectedFloatingWindow()
+        {
+            if (_floatingWindowSwitchIndex < 0 ||
+                _floatingWindowSwitchIndex >= _floatingWindowSwitchOrder.Count ||
+                !Windows.TryGetValue(_floatingWindowSwitchOrder[_floatingWindowSwitchIndex], out FuWindow window))
+            {
+                return;
+            }
+
+            ActivateWindow(window);
+        }
+
+        /// <summary>
+        /// Restore the original active window when the switch gesture is cancelled.
+        /// </summary>
+        private void CancelFloatingWindowSwitcher()
+        {
+            if (!string.IsNullOrEmpty(_floatingWindowSwitchOriginId) &&
+                Windows.TryGetValue(_floatingWindowSwitchOriginId, out FuWindow window))
+            {
+                ActivateWindow(window);
+            }
+
+            CloseFloatingWindowSwitcher();
+        }
+
+        /// <summary>
+        /// End the current floating window switch gesture.
+        /// </summary>
+        private void CloseFloatingWindowSwitcher()
+        {
+            _floatingWindowSwitcherOpen = false;
+            _floatingWindowSwitchOrder.Clear();
+            _floatingWindowSwitchIndex = -1;
+            _floatingWindowSwitchOriginId = null;
+        }
+
+        /// <summary>
+        /// Bring a switch candidate to the front and request ImGui focus.
+        /// </summary>
+        internal void ActivateWindow(FuWindow window)
+        {
+            if (window == null || window.Container != this)
+            {
+                return;
+            }
+
+            if (window.IsDocked)
+            {
+                if (Fugui.Layouts != null && Fugui.Layouts.ActivateDockedWindow(window, this))
+                {
+                    return;
+                }
+
+                return;
+            }
+
+            BringWindowToFront(window);
+            ImGui.SetWindowFocus(window.ID);
+            window.ForceFocusOnNextFrame();
+            window.ForceDraw(2);
+            Fugui.ForceDrawAllWindows(2);
+        }
+
+        /// <summary>
+        /// Rebuild candidate order while preserving the selected window when possible.
+        /// </summary>
+        private bool RefreshFloatingWindowSwitchOrder()
+        {
+            string selectedId = _floatingWindowSwitchIndex >= 0 && _floatingWindowSwitchIndex < _floatingWindowSwitchOrder.Count
+                ? _floatingWindowSwitchOrder[_floatingWindowSwitchIndex]
+                : null;
+            RebuildFloatingWindowSwitchOrder();
+            if (_floatingWindowSwitchOrder.Count == 0)
+            {
+                return false;
+            }
+
+            int selectedIndex = !string.IsNullOrEmpty(selectedId) ? _floatingWindowSwitchOrder.IndexOf(selectedId) : -1;
+            _floatingWindowSwitchIndex = selectedIndex >= 0
+                ? selectedIndex
+                : Mathf.Clamp(_floatingWindowSwitchIndex, 0, _floatingWindowSwitchOrder.Count - 1);
+            return true;
+        }
+
+        /// <summary>
+        /// Collect floating windows in bottom-to-top render order.
+        /// </summary>
+        private void RebuildFloatingWindowSwitchOrder()
+        {
+            _floatingWindowSwitchOrder.Clear();
+            foreach (FuWindow window in Windows.Values)
+            {
+                if (IsFloatingWindowSwitchCandidate(window))
+                {
+                    _floatingWindowSwitchOrder.Add(window.ID);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Return whether a window participates in the floating window switcher.
+        /// </summary>
+        private bool IsFloatingWindowSwitchCandidate(FuWindow window)
+        {
+            if (window == null ||
+                window.Container != this ||
+                window.Is3DWindow ||
+                !window.IsInitialized ||
+                !window.IsOpened ||
+                !window.IsInterractable)
+            {
+                return false;
+            }
+
+            return !window.IsDocked || IsFloatingDockGroupWindow(window);
+        }
+
+        /// <summary>
+        /// Return the currently active floating candidate, falling back to the topmost candidate.
+        /// </summary>
+        private string GetActiveFloatingWindowSwitchCandidateId()
+        {
+            FuWindow inputFocusedWindow = FuWindow.InputFocusedWindow;
+            if (inputFocusedWindow != null && _floatingWindowSwitchOrder.Contains(inputFocusedWindow.ID))
+            {
+                return inputFocusedWindow.ID;
+            }
+
+            for (int i = _floatingWindowSwitchOrder.Count - 1; i >= 0; i--)
+            {
+                string windowId = _floatingWindowSwitchOrder[i];
+                if (Windows.TryGetValue(windowId, out FuWindow window) && window.HasFocus)
+                {
+                    return windowId;
+                }
+            }
+
+            return _floatingWindowSwitchOrder.Count > 0 ? _floatingWindowSwitchOrder[_floatingWindowSwitchOrder.Count - 1] : null;
+        }
+
+        /// <summary>
+        /// Draw the Ctrl+Tab floating window switcher overlay.
+        /// </summary>
+        private void DrawFloatingWindowSwitcherOverlay()
+        {
+            if (!_floatingWindowSwitcherOpen)
+            {
+                return;
+            }
+            if (!RefreshFloatingWindowSwitchOrder())
+            {
+                CloseFloatingWindowSwitcher();
+                return;
+            }
+
+            float scale = Context != null ? Context.Scale : Fugui.Scale;
+            float screenMargin = Mathf.Max(16f, 16f * scale);
+            float width = Mathf.Min(Mathf.Max(320f, 360f * scale), Mathf.Max(160f, Size.x - screenMargin * 2f));
+            float rowHeight = Mathf.Max(30f, 34f * scale);
+            float padding = Mathf.Max(8f, 8f * scale);
+            float maxHeight = Mathf.Max(rowHeight + padding * 2f, Size.y - screenMargin * 2f);
+            float height = Mathf.Min(maxHeight, padding * 2f + rowHeight * _floatingWindowSwitchOrder.Count);
+            Vector2 overlayPos = new Vector2(Size.x * 0.5f, Mathf.Max(screenMargin, Size.y * 0.18f));
+
+            ImGui.SetNextWindowPos(overlayPos, ImGuiCond.Always, new Vector2(0.5f, 0f));
+            ImGui.SetNextWindowSize(new Vector2(width, height), ImGuiCond.Always);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, Mathf.Max(4f, 5f * scale));
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(padding, padding));
+            ImGui.PushStyleColor(ImGuiCol.WindowBg, Fugui.Themes.GetColor(FuColors.PopupBg, 0.96f));
+            ImGui.PushStyleColor(ImGuiCol.Border, Fugui.Themes.GetColor(FuColors.Border, 0.85f));
+
+            ImGuiWindowFlags flags =
+                ImGuiWindowFlags.NoDecoration |
+                ImGuiWindowFlags.NoMove |
+                ImGuiWindowFlags.NoSavedSettings |
+                ImGuiWindowFlags.NoFocusOnAppearing |
+                ImGuiWindowFlags.NoBringToFrontOnFocus |
+                ImGuiWindowFlags.NoNav |
+                ImGuiWindowFlags.NoDocking |
+                ImGuiWindowFlags.NoMouseInputs;
+
+            if (ImGui.Begin("FuguiFloatingWindowSwitcher", flags))
+            {
+                for (int i = 0; i < _floatingWindowSwitchOrder.Count; i++)
+                {
+                    if (!Windows.TryGetValue(_floatingWindowSwitchOrder[i], out FuWindow window))
+                    {
+                        continue;
+                    }
+
+                    bool selected = i == _floatingWindowSwitchIndex;
+                    DrawFloatingWindowSwitcherRow(window, selected, rowHeight, scale);
+                    if (selected)
+                    {
+                        ImGui.SetScrollHereY(0.5f);
+                    }
+                }
+            }
+
+            ImGui.End();
+            ImGui.PopStyleColor(2);
+            ImGui.PopStyleVar(2);
+        }
+
+        /// <summary>
+        /// Draw a single switcher row.
+        /// </summary>
+        private void DrawFloatingWindowSwitcherRow(FuWindow window, bool selected, float rowHeight, float scale)
+        {
+            Vector2 rowMin = ImGui.GetCursorScreenPos();
+            Vector2 rowSize = new Vector2(Mathf.Max(1f, ImGui.GetContentRegionAvail().x), rowHeight);
+            Vector2 rowMax = rowMin + rowSize;
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            uint rowColor = selected
+                ? Fugui.Themes.GetColorU32(FuColors.HeaderActive, 0.95f)
+                : Fugui.Themes.GetColorU32(FuColors.FrameBg, 0.82f);
+            uint textColor = Fugui.Themes.GetColorU32(selected ? FuColors.HighlightText : FuColors.Text);
+            float rounding = Mathf.Max(3f, 4f * scale);
+
+            drawList.AddRectFilled(rowMin, rowMax, rowColor, rounding);
+
+            string label = Fugui.GetUntagedText(window.WindowName.Name);
+            Vector2 textSize = ImGui.CalcTextSize(label);
+            Vector2 textPos = rowMin + new Vector2(Mathf.Max(10f, 10f * scale), (rowHeight - textSize.y) * 0.5f);
+            drawList.PushClipRect(rowMin, rowMax, true);
+            drawList.AddText(textPos, textColor, label);
+            drawList.PopClipRect();
+
+            ImGui.Dummy(rowSize);
+            ImGui.Dummy(new Vector2(1f, Mathf.Max(2f, 2f * scale)));
+        }
+
+        /// <summary>
+        /// Wrap an index into a collection count.
+        /// </summary>
+        private static int WrapIndex(int index, int count)
+        {
+            if (count <= 0)
+            {
+                return -1;
+            }
+
+            index %= count;
+            if (index < 0)
+            {
+                index += count;
+            }
+            return index;
+        }
+
+        /// <summary>
+        /// Queue a floating window to be rendered above the other floating windows.
+        /// </summary>
+        internal void BringWindowToFront(FuWindow window)
+        {
+            if (window == null || window.IsDocked || !Windows.ContainsKey(window.ID))
+            {
+                return;
+            }
+
+            if (_isRenderingWindows)
+            {
+                QueuePendingWindowOrder(window.ID);
+                return;
+            }
+
+            MoveWindowToEnd(window.ID);
+        }
+
+        /// <summary>
+        /// Move a set of windows to the top of the render order while preserving their relative order.
+        /// </summary>
+        internal void BringWindowsToFront(IEnumerable<string> windowIds)
+        {
+            if (windowIds == null)
+            {
+                return;
+            }
+
+            if (_isRenderingWindows)
+            {
+                QueuePendingWindowOrder(windowIds);
+                return;
+            }
+
+            foreach (string windowId in windowIds)
+            {
+                MoveWindowToEnd(windowId);
+            }
+        }
+
+        /// <summary>
+        /// Queue a window id to move after the current render pass.
+        /// </summary>
+        private void QueuePendingWindowOrder(string windowId)
+        {
+            if (!string.IsNullOrEmpty(windowId) && Windows.ContainsKey(windowId))
+            {
+                _pendingBringToFrontWindowIds.Add(windowId);
+            }
+        }
+
+        /// <summary>
+        /// Queue window ids to move after the current render pass.
+        /// </summary>
+        private void QueuePendingWindowOrder(IEnumerable<string> windowIds)
+        {
+            if (windowIds == null)
+            {
+                return;
+            }
+
+            foreach (string windowId in windowIds)
+            {
+                QueuePendingWindowOrder(windowId);
+            }
+        }
+
+        /// <summary>
+        /// Move queued windows to the end of the dictionary insertion order.
+        /// </summary>
+        private void ApplyPendingWindowOrder()
+        {
+            if (_pendingBringToFrontWindowIds.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _pendingBringToFrontWindowIds.Count; i++)
+            {
+                MoveWindowToEnd(_pendingBringToFrontWindowIds[i]);
+            }
+
+            _pendingBringToFrontWindowIds.Clear();
+        }
+
+        /// <summary>
+        /// Move a window to the end of the dictionary insertion order.
+        /// </summary>
+        private void MoveWindowToEnd(string windowId)
+        {
+            if (!Windows.TryGetValue(windowId, out FuWindow window))
+            {
+                return;
+            }
+
+            Windows.Remove(windowId);
+            Windows.Add(windowId, window);
         }
 
         /// <summary>
@@ -407,15 +922,13 @@ namespace Fu
         }
 
         /// <summary>
-        /// Draw the Main Layout of the container, including main menu, dockspace and footer.
+        /// Draw the Main Layout of the container, including main menu and footer.
         /// </summary>
         /// <summary>
-        /// Draws the main layout of the container, including the main menu, dockspace and footer.
+        /// Draws the main layout of the container, including the main menu and footer.
         /// </summary>
         private void DrawMainLayout()
         {
-            bool dockingEnabled = Fugui.Settings.ImGuiConfig.HasFlag(ImGuiConfigFlags.DockingEnable);
-
             uint viewPortID = 0;
 
             ImGuiWindowFlags window_flags =
@@ -439,27 +952,8 @@ namespace Fu
                     ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered)));
             }
 
-            if (dockingEnabled)
-            {
-                ImGuiDockNodeFlags dockspace_flags = Fugui.Settings.DockingFlags;
-
-                if (Fugui.Layouts.CurrentLayout != null && Fugui.Layouts.CurrentLayout.AutoHideTopBar)
-                {
-                    dockspace_flags |= ImGuiDockNodeFlags.AutoHideTabBar;
-                }
-
-                ImGui.SetNextWindowPos(new Vector2(0f, mainMenuHeight));
-                ImGui.SetNextWindowSize(new Vector2(_size.x, _size.y - mainMenuHeight - Mathf.Max(0f, _footerHeight * Context.Scale)));
-                ImGui.SetNextWindowViewport(viewPortID);
-
-                if (ImGui.Begin("MainDockSpace", window_flags | ImGuiWindowFlags.NoBackground))
-                {
-                    Dockspace_id = ImGui.GetID("DockSpace");
-                    ImGui.DockSpace(Dockspace_id, Vector2.zero, dockspace_flags);
-                }
-
-                ImGui.End();
-            }
+            float footerHeight = Mathf.Max(0f, _footerHeight * Context.Scale);
+            ContentRect = new Rect(0f, mainMenuHeight, _size.x, Mathf.Max(1f, _size.y - mainMenuHeight - footerHeight));
 
             if (_footerHeight > 0f)
             {

@@ -110,8 +110,10 @@ namespace Fu
             _rTexture.Create();
 
             Camera.targetTexture = _rTexture;
+            OnResize += ImGuiCameraWindow_OnResize;
             OnResized += ImGuiCameraWindow_OnResize;
             OnDock += ImGuiCameraWindow_OnDock;
+            OnUnDock += ImGuiCameraWindow_OnDock;
             OnClosed += UICameraWindow_OnClosed;
             ImGuiCameraWindow_OnResize(this);
             _windowFlags |= ImGuiWindowFlags.NoScrollbar;
@@ -130,7 +132,7 @@ namespace Fu
             };
 
             // register raycaster
-            _raycaster = new FuRaycaster(ID, GetCameraRay, () => Container.Mouse.IsPressed(FuMouseButton.Left), () => Container.Mouse.IsPressed(FuMouseButton.Right), () => false, () => Container.Mouse.Wheel.y, () => Container == null ? false : LocalRect.Contains(Container.Mouse.Position));
+            _raycaster = new FuRaycaster(ID, GetCameraRay, () => !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Left), () => !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Right), () => false, () => InputsLocked ? 0f : Container.Mouse.Wheel.y, () => Container == null ? false : !InputsLocked && LocalRect.Contains(Container.Mouse.Position));
             FuRaycasting.RegisterRaycaster(_raycaster);
         }
 
@@ -142,6 +144,10 @@ namespace Fu
         private void UICameraWindow_OnClosed(FuWindow window)
         {
             FuRaycasting.UnRegisterRaycaster(window.ID);
+            window.OnResize -= ImGuiCameraWindow_OnResize;
+            window.OnResized -= ImGuiCameraWindow_OnResize;
+            window.OnDock -= ImGuiCameraWindow_OnDock;
+            window.OnUnDock -= ImGuiCameraWindow_OnDock;
             window.OnClosed -= UICameraWindow_OnClosed;
         }
 
@@ -152,16 +158,32 @@ namespace Fu
         {
             base.DrawDebugPanel();
 
-            if (!Fugui.Settings.DrawDebugPanel)
+            if (!Fugui.Settings.DrawDebugPanel || !DebugPanelExpanded)
             {
                 return;
             }
 
-            ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().x - (232f * Fugui.Scale), 16f));
-            Fugui.Push(ImGuiStyleVar.ChildRounding, 4f);
-            Fugui.Push(ImGuiCol.ChildBg, new Vector4(.1f, .1f, .1f, 1f));
-            if (ImGui.BeginChild(ID + "cs", new Vector2(224f, 96f) * Fugui.Scale))
+            Vector2 previousCursorPos = ImGui.GetCursorScreenPos();
+            Vector2 panelSize = GetDebugPanelSize(278f, 126f);
+            Vector2 basePanelSize = GetDebugPanelSize(DebugPanelWidth, DebugPanelHeight);
+            float scale = Container?.Context?.Scale ?? Fugui.Scale;
+            float yOffset = 0f;
+            if (ImGui.GetWindowSize().x < basePanelSize.x + panelSize.x + DebugPanelMargin * scale * 3f)
             {
+                yOffset = basePanelSize.y + DebugPanelMargin * scale;
+            }
+
+            ImGui.SetCursorScreenPos(GetDebugPanelPosition(panelSize, true, yOffset));
+
+            Fugui.Push(ImGuiStyleVar.ChildRounding, 5f * Fugui.Scale);
+            Fugui.Push(ImGuiStyleVar.ChildBorderSize, 1f);
+            Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 6f) * Fugui.Scale);
+            Fugui.Push(ImGuiCol.ChildBg, new Vector4(.055f, .065f, .085f, .88f));
+            Fugui.Push(ImGuiCol.Border, new Vector4(.2f, .55f, 1f, .55f));
+            if (ImGui.BeginChild(ID + "cs", panelSize, ImGuiChildFlags.Borders | ImGuiChildFlags.AlwaysUseWindowPadding, ImGuiWindowFlags.NoSavedSettings))
+            {
+                ImGui.Text("Camera debug");
+                ImGui.Separator();
                 // super sampling
                 if (ImGui.RadioButton("x0.5", _superSampling == 0.5f))
                 {
@@ -183,13 +205,14 @@ namespace Fu
                     SuperSampling = 2f;
                 }
                 // states
-                ImGui.Text("State : " + State);
-                ImGui.Text("FPS : " + (int)CurrentCameraFPS + " (" + (CameraDeltaTime * 1000f).ToString("f2") + " ms)");
-                ImGui.Text("Target : " + TargetCameraFPS + "  (" + ((int)(_targetCameraDeltaTimeMs * 1000)).ToString() + " ms)"); ImGui.Dummy(new Vector2(4f, 0f));
+                DrawDebugLine("State", State.ToString());
+                DrawDebugLine("FPS", (int)CurrentCameraFPS + " (" + (CameraDeltaTime * 1000f).ToString("f2") + " ms)");
+                DrawDebugLine("Target", TargetCameraFPS + " (" + ((int)(_targetCameraDeltaTimeMs * 1000)).ToString() + " ms)");
             }
-            ImGuiNative.igEndChild();
-            Fugui.PopColor();
-            Fugui.PopStyle();
+            ImGui.EndChild();
+            Fugui.PopColor(2);
+            Fugui.PopStyle(3);
+            ImGui.SetCursorScreenPos(previousCursorPos);
         }
 
         /// <summary>
@@ -199,6 +222,7 @@ namespace Fu
         private void ImGuiCameraWindow_OnDock(FuWindow window)
         {
             NeedToUpdateCamera = true;
+            ForceRenderCamera();
         }
 
         /// <summary>
@@ -208,6 +232,7 @@ namespace Fu
         private void ImGuiCameraWindow_OnResize(FuWindow window)
         {
             NeedToUpdateCamera = true;
+            ForceRenderCamera();
         }
 
         /// <summary>
@@ -226,12 +251,20 @@ namespace Fu
             {
                 return;
             }
-            _rTexture.Release();
-            _rTexture.width = (int)(WorkingAreaSize.x * _superSampling);
-            _rTexture.height = (int)(WorkingAreaSize.y * _superSampling);
+
+            int targetWidth = Mathf.Max(1, Mathf.RoundToInt(WorkingAreaSize.x * _superSampling));
+            int targetHeight = Mathf.Max(1, Mathf.RoundToInt(WorkingAreaSize.y * _superSampling));
+            bool textureSizeChanged = _rTexture.width != targetWidth || _rTexture.height != targetHeight || !_rTexture.IsCreated();
+            if (textureSizeChanged)
+            {
+                _rTexture.Release();
+                _rTexture.width = targetWidth;
+                _rTexture.height = targetHeight;
+                _rTexture.Create();
+            }
             Camera.targetTexture = _rTexture;
             // resize cam target
-            Camera.pixelRect = new Rect(0, 0, (int)(WorkingAreaSize.x * _superSampling), (int)(WorkingAreaSize.y * _superSampling));
+            Camera.pixelRect = new Rect(0, 0, targetWidth, targetHeight);
 
             ForceRenderCamera();
             updateCameraRender();
@@ -283,8 +316,8 @@ namespace Fu
         public override void DrawWindow(bool preventUpdatingMouse = false, bool preventUpdatingKeyboard = false)
         {
             base.DrawWindow(preventUpdatingMouse, preventUpdatingKeyboard);
-            updateCameraRender();
             updateCameraSize();
+            updateCameraRender();
         }
 
         /// <summary>

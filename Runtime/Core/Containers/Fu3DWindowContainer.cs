@@ -144,7 +144,7 @@ namespace Fu
             _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
             _fuguiContext.OnFramePrepared += _fuguiContext_OnFramePrepared;
             _fuguiContext.AutoUpdateMouse = false;
-            _fuguiContext.AutoUpdateKeyboard = Window.IsInterractable;
+            _fuguiContext.AutoUpdateKeyboard = Window.IsInterractable && !Window.InputsLocked;
             _fuguiContext.SetTargetTexture(RenderTexture);
             _fuguiContext.SetContainerScaleConfig(settings.ContainerScaleConfig, _size);
 
@@ -814,7 +814,7 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         private bool updateRuntimeResize(InputState panelInputState)
         {
-            if (_runtimeResizeBlocked || !_runtimeResizable || _panelGameObject == null || Window == null || !Window.IsInterractable)
+            if (_runtimeResizeBlocked || !_runtimeResizable || _panelGameObject == null || Window == null || !Window.IsInterractable || Window.InputsLocked)
             {
                 cancelRuntimeResize();
                 _hoveredResizeHandleIndex = -1;
@@ -1784,8 +1784,8 @@ namespace Fu
             // get input state for this container
             InputState inputState = FuRaycasting.GetInputState(ID, _panelGameObject);
             bool blockWindowInput = updateRuntimeResize(inputState);
-            blockWindowInput |= !Window.IsInterractable;
-            _fuguiContext.AutoUpdateKeyboard = Window.IsInterractable;
+            blockWindowInput |= !Window.IsInterractable || Window.InputsLocked;
+            _fuguiContext.AutoUpdateKeyboard = Window.IsInterractable && !Window.InputsLocked;
 
             // force to draw if hover in
             if (inputState.Hovered && !blockWindowInput)

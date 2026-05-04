@@ -229,7 +229,9 @@ namespace Fu.Framework
                 bool updateOnBarClick = flags.HasFlag(FuSliderFlags.UpdateOnBarClick) || noKnobs;
 
                 float normalizedValue = Mathf.Clamp01((value - min) / range);
-                float knobPos = x + width * normalizedValue;
+                float knobTravelPadding = knobRadius + Mathf.Max(1f, Fugui.CurrentContext.Scale);
+                float knobTravelWidth = Mathf.Max(1f, width - knobTravelPadding * 2f);
+                float knobPos = x + knobTravelPadding + knobTravelWidth * normalizedValue;
 
                 float knobHitRadius = knobRadius;
                 float lineHoverPaddingY = hoverPaddingY;
@@ -312,7 +314,7 @@ namespace Fu.Framework
                     }
                     else
                     {
-                        DrawValueKnobWithWindowClip(drawList, new Vector2(knobPos, y), visualKnobRadius, knobColor, isKnobHovered, false, LastItemDisabled);
+                        DrawValueKnob(drawList, new Vector2(knobPos, y), visualKnobRadius, knobColor, isKnobHovered, false, LastItemDisabled);
                     }
                 }
 
@@ -344,7 +346,7 @@ namespace Fu.Framework
                 if (_draggingSliders.Contains(text) && ImGui.IsMouseDown(0) && !LastItemDisabled)
                 {
                     float mouseX = ImGui.GetMousePos().x;
-                    value = min + ((mouseX - x) / width) * range;
+                    value = min + ((mouseX - x - knobTravelPadding) / knobTravelWidth) * range;
                     value = Mathf.Clamp(value, min, max);
 
                     if (isInt)

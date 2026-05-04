@@ -27,7 +27,7 @@ namespace Fu
             layout.Image("fLogo", Settings.FuguiLogo, new Vector2(64f, 64f));
 
             // Settings Panel
-            using (FuPanel panel = new FuPanel("fsP", FuStyle.Unpadded))
+            using (FuPanel panel = new FuPanel("fsP", FuStyle.Unpadded, useClipper: true))
             {
                 // Settings
                 layout.Collapsable("Settings", () =>

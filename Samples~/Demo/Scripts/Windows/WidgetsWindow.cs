@@ -92,11 +92,13 @@ public class WidgetsWindow : FuWindowBehaviour
     // date time pickers
     private DateTime dateTime = DateTime.Now;
     // spinners
-    private float spinnerSize = 20f;
-    private int spinnerNbDots = 6;
-    private float spinnerDotsSize = 2f;
+    private float spinnerSize = 32f;
+    private int spinnerNbDots = 8;
+    private float spinnerDotsSize = 2.4f;
+    private float spinnerRingThickness = 3f;
+    private int spinnerBars = 5;
     private bool spinnerDoubleColor = false;
-    private Vector2 spinnerV2Size = new Vector2(64f, 20f);
+    private Vector2 spinnerV2Size = new Vector2(96f, 24f);
     private float spinnerFrequency = 6f;
     // search and table view
     private FuSearchFilter tableDemoFilter = new FuSearchFilter();
@@ -108,7 +110,7 @@ public class WidgetsWindow : FuWindowBehaviour
         new WidgetTableDemoItem("Buttons", "Action", 12, 0.40f, true),
         new WidgetTableDemoItem("Sliders", "Numeric", 8, 0.50f, true),
         new WidgetTableDemoItem("Lists", "Selection", 4, 0.75f, true),
-        new WidgetTableDemoItem("Spinners", "Feedback", 10, 0.25f, false),
+        new WidgetTableDemoItem("Spinners", "Feedback", 14, 0.25f, false),
         new WidgetTableDemoItem("Path Fields", "Files", 2, 0.90f, true),
         new WidgetTableDemoItem("Date Picker", "Input", 1, 0.65f, false),
     };
@@ -769,57 +771,86 @@ public class WidgetsWindow : FuWindowBehaviour
         {
             if (!_enableWidgets)
                 grid.DisableNextElements();
+            grid.Loader_Arc(spinnerSize, spinnerRingThickness);
+            grid.Text("Arc");
+            layout.Slider("size##spinnerArc", ref spinnerSize, 8f, 128f);
+            layout.Slider("thickness##spinnerArc", ref spinnerRingThickness, 1f, 12f);
+
+            grid.Loader_DualRing(spinnerSize, spinnerRingThickness);
+            grid.Text("Dual Ring");
+            layout.Slider("size##spinnerDualRing", ref spinnerSize, 8f, 128f);
+            layout.Slider("thickness##spinnerDualRing", ref spinnerRingThickness, 1f, 12f);
+
             grid.Loader_Spinner(spinnerSize, spinnerNbDots, spinnerDotsSize, spinnerDoubleColor);
-            grid.Text("Spinner");
-            layout.Slider("size##spinner", ref spinnerSize, 4f, 128f);
-            layout.Slider("dots##spinner", ref spinnerNbDots, 1, 64);
-            layout.Slider("dot size##spinner", ref spinnerDotsSize, 1f, 16f);
-            layout.Toggle("double colors##spinner", ref spinnerDoubleColor);
+            grid.Text("Dot Trail");
+            layout.Slider("size##spinnerDots", ref spinnerSize, 8f, 128f);
+            layout.Slider("dots##spinnerDots", ref spinnerNbDots, 3, 32);
+            layout.Slider("dot size##spinnerDots", ref spinnerDotsSize, 1f, 16f);
+            layout.Toggle("double colors##spinnerDots", ref spinnerDoubleColor);
 
             grid.Loader_CircleSpinner(spinnerSize, spinnerNbDots);
             grid.Text("Circle spinner");
-            layout.Slider("size##spinner1", ref spinnerSize, 4f, 128f);
-            layout.Slider("dots##spinner2", ref spinnerNbDots, 1, 64);
+            layout.Slider("size##spinnerCircle", ref spinnerSize, 8f, 128f);
+            layout.Slider("dots##spinnerCircle", ref spinnerNbDots, 3, 32);
 
-            grid.Loader_ElipseSpinner(spinnerSize, spinnerNbDots, spinnerDotsSize, spinnerDoubleColor);
-            grid.Text("Elipse Spinner");
-            layout.Slider("size##spinner2", ref spinnerSize, 4f, 128f);
-            layout.Slider("dots##spinner2", ref spinnerNbDots, 1, 64);
-            layout.Slider("dot size##spinner2", ref spinnerDotsSize, 1f, 16f);
-            layout.Toggle("double colors##spinner2", ref spinnerDoubleColor);
+            grid.Loader_EllipseSpinner(spinnerSize, spinnerNbDots, spinnerDotsSize, spinnerDoubleColor);
+            grid.Text("Ellipse Spinner");
+            layout.Slider("size##spinnerEllipse", ref spinnerSize, 8f, 128f);
+            layout.Slider("dots##spinnerEllipse", ref spinnerNbDots, 4, 32);
+            layout.Slider("dot size##spinnerEllipse", ref spinnerDotsSize, 1f, 16f);
+            layout.Toggle("double colors##spinnerEllipse", ref spinnerDoubleColor);
+
+            grid.Loader_Orbit(spinnerSize, Mathf.Clamp(spinnerNbDots / 2, 1, 6));
+            grid.Text("Orbit");
+            layout.Slider("size##spinnerOrbit", ref spinnerSize, 8f, 128f);
+            layout.Slider("dots##spinnerOrbit", ref spinnerNbDots, 2, 12);
+
+            grid.Loader_BreathingDots(spinnerV2Size, Mathf.Clamp(spinnerNbDots, 2, 8));
+            grid.Text("Breathing Dots");
+            layout.Drag("size##spinnerBreathingDots", ref spinnerV2Size, "", "", 8f, 160f);
+            layout.Slider("dots##spinnerBreathingDots", ref spinnerNbDots, 2, 8);
+
+            grid.Loader_Bars(spinnerV2Size, spinnerBars);
+            grid.Text("Bars");
+            layout.Drag("size##spinnerBars", ref spinnerV2Size, "", "", 8f, 160f);
+            layout.Slider("bars##spinnerBars", ref spinnerBars, 3, 9);
+
+            grid.Loader_Shimmer(spinnerV2Size);
+            grid.Text("Shimmer");
+            layout.Drag("size##spinnerShimmer", ref spinnerV2Size, "", "", 8f, 180f);
 
             grid.Loader_Wheel(spinnerSize);
             grid.Text("Wheel");
-            layout.Slider("size##spinner3", ref spinnerSize, 4f, 128f);
+            layout.Slider("size##spinnerWheel", ref spinnerSize, 8f, 128f);
 
             grid.Loader_WavyLine(spinnerV2Size, spinnerFrequency, spinnerDoubleColor);
             grid.Text("Wavy Line");
-            layout.Drag("size##spinner4", ref spinnerV2Size, "", "", 4f, 128f);
-            layout.Slider("frequency##spinner4", ref spinnerFrequency, 0.01f, 128f);
+            layout.Drag("size##spinnerWave", ref spinnerV2Size, "", "", 8f, 180f);
+            layout.Slider("frequency##spinnerWave", ref spinnerFrequency, 0.5f, 24f);
 
             grid.Loader_Squares(spinnerSize);
             grid.Text("Squares");
-            layout.Slider("size##spinner5", ref spinnerSize, 4f, 128f);
+            layout.Slider("size##spinnerSquares", ref spinnerSize, 8f, 128f);
 
             grid.Loader_SquareCircleDance(spinnerSize);
-            grid.Text("SquareCircleDance");
-            layout.Slider("size##spinner6", ref spinnerSize, 4f, 128f);
+            grid.Text("Oval Orbit");
+            layout.Slider("size##spinnerOvalOrbit", ref spinnerSize, 8f, 128f);
 
             grid.Loader_PulsingLines(spinnerV2Size);
             grid.Text("Pulsing Lines");
-            layout.Drag("size##spinner7", ref spinnerV2Size, "", "", 4f, 128f);
+            layout.Drag("size##spinnerPulsingLines", ref spinnerV2Size, "", "", 8f, 160f);
 
             grid.Loader_Clocker(spinnerSize);
-            grid.Text("Clocker");
-            layout.Slider("size##spinner8", ref spinnerSize, 4f, 128f);
+            grid.Text("Clock");
+            layout.Slider("size##spinnerClock", ref spinnerSize, 8f, 128f);
 
             grid.Loader_Pulsar(spinnerSize);
             grid.Text("Pulsar");
-            layout.Slider("size##spinner9", ref spinnerSize, 4f, 128f);
+            layout.Slider("size##spinnerPulsar", ref spinnerSize, 8f, 128f);
 
             grid.Loader_SpikedWheel(spinnerV2Size);
-            grid.Text("Spiked Wheel");
-            layout.Drag("size##spinner10", ref spinnerV2Size, "", "", 4f, 128f);
+            grid.Text("Segment Wheel");
+            layout.Drag("size##spinnerSegmentWheel", ref spinnerV2Size, "", "", 8f, 160f);
             if (!_enableWidgets)
                 grid.EnableNextElements();
         }

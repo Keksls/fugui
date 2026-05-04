@@ -32,6 +32,8 @@ namespace Fu
         public bool NoDockingOverMe { get; private set; }
         // A flag indicating whether this window definition can instantiate more than one window at time
         public bool AllowMultipleWindow { get; private set; }
+        // A flag indicating whether this window can be closed by middle-clicking its header or docked tab
+        public bool CloseOnMiddleClick { get; private set; }
 
         // A flag indicating whether this window will use native title bar once externalized
         public bool UseNativeTitleBar { get; private set; }
@@ -90,6 +92,7 @@ namespace Fu
             IsClosable = !flags.HasFlag(FuWindowFlags.NoClosable);
             NoDockingOverMe = !flags.HasFlag(FuWindowFlags.NoDockingOverMe);
             AllowMultipleWindow = flags.HasFlag(FuWindowFlags.AllowMultipleWindow);
+            CloseOnMiddleClick = flags.HasFlag(FuWindowFlags.CloseOnMiddleClick);
             _uiWindowInstantiationFunc = (winDef) => new FuWindow(winDef);
             Overlays = new Dictionary<string, FuOverlay>();
 

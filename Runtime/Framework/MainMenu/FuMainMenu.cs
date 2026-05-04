@@ -216,8 +216,9 @@ namespace Fu
                 return false;
             }
 
+            bool drawOpenWindowsMenu = ShouldDrawOpenWindowsMainMenu();
             // Return early if no menu items are registered
-            if (_mainMenuItems.Count == 0)
+            if (_mainMenuItems.Count == 0 && !drawOpenWindowsMenu)
             {
                 return false;
             }
@@ -244,6 +245,11 @@ namespace Fu
                     }
                 }
 
+                if (drawOpenWindowsMenu)
+                {
+                    drawOpenWindowsMainMenu();
+                }
+
                 OnMainMenuDraw?.Invoke(new Rect(ImGui.GetItemRectMax() - startPos, ImGui.GetContentRegionAvail()));
                 // End the main menu bar
                 ImGui.EndMainMenuBar();
@@ -254,6 +260,73 @@ namespace Fu
             PopStyle(4);
 
             return true;
+        }
+
+        /// <summary>
+        /// Return whether the dynamic open-window list should be visible in the main menu bar.
+        /// </summary>
+        private static bool ShouldDrawOpenWindowsMainMenu()
+        {
+            return Settings != null &&
+                   Settings.DisplayOpenWindowsInMainMenu &&
+                   DefaultContainer != null &&
+                   DefaultContainer.Windows != null;
+        }
+
+        /// <summary>
+        /// Draw a dynamic menu that lists currently open main-container windows.
+        /// </summary>
+        private static void drawOpenWindowsMainMenu()
+        {
+            List<FuWindow> windows = GetMainMenuOpenWindows();
+            bool enabled = !IsMainMenuDisabled && windows.Count > 0;
+            if (!ImGui.BeginMenu("  Open Windows   ", enabled))
+            {
+                return;
+            }
+
+            for (int i = windows.Count - 1; i >= 0; i--)
+            {
+                FuWindow window = windows[i];
+                string label = GetUntagedText(window.WindowName.Name) + "##OpenWindow" + window.ID;
+                string stateLabel = window.IsDocked ? "Docked" : "Floating";
+                bool selected = FuWindow.InputFocusedWindow == window || window.HasFocus;
+                bool itemEnabled = window.IsInterractable && !IsMainMenuDisabled;
+                if (ImGui.MenuItem(label, stateLabel, selected, itemEnabled))
+                {
+                    DefaultContainer.ActivateWindow(window);
+                }
+            }
+
+            ImGui.EndMenu();
+        }
+
+        /// <summary>
+        /// Return open windows that can be activated from the main menu.
+        /// </summary>
+        private static List<FuWindow> GetMainMenuOpenWindows()
+        {
+            List<FuWindow> windows = new List<FuWindow>();
+            if (DefaultContainer == null || DefaultContainer.Windows == null)
+            {
+                return windows;
+            }
+
+            foreach (FuWindow window in DefaultContainer.Windows.Values)
+            {
+                if (window == null ||
+                    window.Container != DefaultContainer ||
+                    window.Is3DWindow ||
+                    !window.IsInitialized ||
+                    !window.IsOpened)
+                {
+                    continue;
+                }
+
+                windows.Add(window);
+            }
+
+            return windows;
         }
 
         /// <summary>

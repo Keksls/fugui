@@ -106,9 +106,17 @@
     public enum FuWindowFlags
     {
         /// <summary>
+        /// No FuWindow behaviour flags.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Close this window when middle-clicking its title header or docked tab.
+        /// </summary>
+        CloseOnMiddleClick = 128,
+        /// <summary>
         /// Default FuWindow behaviour
         /// </summary>
-        Default = 0,
+        Default = CloseOnMiddleClick,
         /// <summary>
         /// Prevent this window to be externalized
         /// </summary>

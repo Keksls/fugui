@@ -99,6 +99,33 @@ namespace Fu
         }
 
         /// <summary>
+        /// Create a deep copy that can be safely mutated at runtime.
+        /// </summary>
+        public FuDockingLayoutDefinition Clone()
+        {
+            FuDockingLayoutDefinition clone = new FuDockingLayoutDefinition(Name, ID, Proportion, Orientation)
+            {
+                AutoHideTopBar = AutoHideTopBar,
+                LayoutType = LayoutType,
+                WindowsDefinition = WindowsDefinition != null ? new List<ushort>(WindowsDefinition) : new List<ushort>(),
+                Children = new List<FuDockingLayoutDefinition>()
+            };
+
+            if (Children != null)
+            {
+                foreach (FuDockingLayoutDefinition child in Children)
+                {
+                    if (child != null)
+                    {
+                        clone.Children.Add(child.Clone());
+                    }
+                }
+            }
+
+            return clone;
+        }
+
+        /// <summary>
         /// Method that writes the serialized dock space definition to a file
         /// </summary>
         /// <param name="pathFile"> The path to the file containing the serialized dock space definition</param>

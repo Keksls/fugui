@@ -23,9 +23,9 @@ namespace Fu
         private class FuguiRenderGraphPass : ScriptableRenderPass
         {
             #region State
-            private Dictionary<int, Mesh> _meshs;
             private Dictionary<int, Material> _materials;
             private Dictionary<int, RTHandle> _targetHandles;
+            private Dictionary<int, List<DrawListMesh>> _transientMeshes;
             private readonly Shader _shader;
             private int _textureID;
             private int _textureIsAlphaID;
@@ -37,11 +37,11 @@ namespace Fu
             private MaterialPropertyBlock _materialProperties;
             private bool _renderMainSurfaceContexts;
             private bool _renderOffscreenContexts;
-            // Skip all checks and validation when updating the mesh.
             private const MeshUpdateFlags NoMeshChecks = MeshUpdateFlags.DontNotifyMeshUsers |
                 MeshUpdateFlags.DontRecalculateBounds |
                 MeshUpdateFlags.DontResetBoneBounds |
                 MeshUpdateFlags.DontValidateIndices;
+            // Skip all checks and validation when updating the mesh.
             // Color sent with TexCoord1 semantics because otherwise Color attribute would be reordered to come before UVs.
             private static VertexAttributeDescriptor[] _vertexAttributes = new[]
             {
@@ -67,6 +67,7 @@ namespace Fu
                 _prevIndexCounts = new Dictionary<int, int>();
                 _subMeshDescriptors = new Dictionary<int, List<SubMeshDescriptor>>();
                 _targetHandles = new Dictionary<int, RTHandle>();
+                _transientMeshes = new Dictionary<int, List<DrawListMesh>>();
 
                 renderPassEvent = passEvent;
 
@@ -74,7 +75,6 @@ namespace Fu
                 ConfigureInput(ScriptableRenderPassInput.None);
 
                 // (optionnel mais propre) évite les allocs répétées
-                _meshs = new Dictionary<int, Mesh>();
                 _materials = new Dictionary<int, Material>();
             }
             #endregion
@@ -221,16 +221,7 @@ namespace Fu
             /// <param name="drawData"></ param>
             public void RenderDrawLists(int ctxId, RasterCommandBuffer commandBuffer, DrawData drawData)
             {
-                // ensure mesh and material exist for this context
-                if (_meshs == null) _meshs = new Dictionary<int, Mesh>();
-                if (!_meshs.ContainsKey(ctxId))
-                {
-                    _meshs[ctxId] = new Mesh
-                    {
-                        name = "FuguiMesh"
-                    };
-                    _meshs[ctxId].MarkDynamic();
-                }
+                // ensure material exists for this context
                 if (_materials == null) _materials = new Dictionary<int, Material>();
                 if (!_materials.ContainsKey(ctxId))
                 {
@@ -239,7 +230,6 @@ namespace Fu
                         hideFlags = HideFlags.HideAndDontSave & ~HideFlags.DontUnloadUnusedAsset
                     };
                 }
-                Mesh _mesh = _meshs[ctxId];
                 Material _material = _materials[ctxId];
 
                 Vector2 fbOSize = drawData.DisplaySize * drawData.FramebufferScale;
@@ -247,11 +237,88 @@ namespace Fu
                 // Avoid rendering when minimized.
                 if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
 
-                // display draw data for debug
-                UpdateMesh(ctxId, _mesh, _material, drawData);
                 commandBuffer.BeginSample(_sampleName);
-                CreateDrawCommands(_mesh, _material, commandBuffer, drawData, fbOSize);
+                RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize);
                 commandBuffer.EndSample(_sampleName);
+            }
+
+            /// <summary>
+            /// Renders cached window meshes and transient non-window draw lists in draw order.
+            /// </summary>
+            /// <param name="ctxId">Context id.</param>
+            /// <param name="commandBuffer">Command buffer to use for rendering.</param>
+            /// <param name="material">Material used to render Fugui meshes.</param>
+            /// <param name="drawData">Draw data for the context.</param>
+            /// <param name="fbSize">Framebuffer size.</param>
+            private void RenderDrawItems(int ctxId, RasterCommandBuffer commandBuffer, Material material, DrawData drawData, Vector2 fbSize)
+            {
+                int transientMeshIndex = 0;
+
+                if (drawData.RenderItems == null || drawData.RenderItems.Count == 0)
+                {
+                    DrawListMesh fallbackMesh = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
+                    fallbackMesh.Update(drawData.DrawLists, drawData.DisplaySize, drawData.FramebufferScale);
+                    CreateDrawCommands(fallbackMesh.Mesh, material, commandBuffer, drawData.DrawLists, drawData, fbSize, Vector2.zero);
+                    return;
+                }
+
+                for (int i = 0; i < drawData.RenderItems.Count; i++)
+                {
+                    DrawDataRenderItem item = drawData.RenderItems[i];
+                    IReadOnlyList<DrawList> drawLists = item.DrawLists;
+                    if (drawLists == null || drawLists.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    DrawListMesh meshData;
+                    Vector2 renderOffset = Vector2.zero;
+                    if (item.IsWindow)
+                    {
+                        meshData = item.Window.RenderMeshData;
+                        renderOffset = item.Window.RenderMeshOffset;
+                    }
+                    else
+                    {
+                        meshData = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
+                        transientMeshIndex++;
+                        meshData.Update(drawLists, drawData.DisplaySize, drawData.FramebufferScale);
+                    }
+
+                    if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
+                    {
+                        continue;
+                    }
+
+                    CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset);
+                }
+            }
+
+            /// <summary>
+            /// Gets a reusable mesh for non-window draw lists.
+            /// </summary>
+            /// <param name="ctxId">Context id.</param>
+            /// <param name="meshIndex">Transient mesh index for this frame.</param>
+            /// <returns>Reusable mesh cache.</returns>
+            private DrawListMesh GetOrCreateTransientMesh(int ctxId, int meshIndex)
+            {
+                if (_transientMeshes == null)
+                {
+                    _transientMeshes = new Dictionary<int, List<DrawListMesh>>();
+                }
+
+                if (!_transientMeshes.TryGetValue(ctxId, out List<DrawListMesh> meshes))
+                {
+                    meshes = new List<DrawListMesh>();
+                    _transientMeshes.Add(ctxId, meshes);
+                }
+
+                while (meshes.Count <= meshIndex)
+                {
+                    meshes.Add(new DrawListMesh("FuguiTransientMesh_" + ctxId + "_" + meshes.Count));
+                }
+
+                return meshes[meshIndex];
             }
 
             /// <summary>
@@ -309,13 +376,17 @@ namespace Fu
             /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
             /// <param name="drawData"> The draw data containing the information to render.</param>
             /// <param name="fbSize"> The framebuffer size to use for rendering.</param>
-            private void CreateDrawCommands(Mesh _mesh, Material _material, RasterCommandBuffer commandBuffer, DrawData drawData, Vector2 fbSize)
+            private void CreateDrawCommands(Mesh _mesh, Material _material, RasterCommandBuffer commandBuffer, IReadOnlyList<DrawList> drawLists, DrawData drawData, Vector2 fbSize, Vector2 renderOffset)
             {
                 IntPtr prevTextureId = IntPtr.Zero;
                 Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
                     drawData.DisplayPos.x, drawData.DisplayPos.y);
                 Vector4 clipScale = new Vector4(drawData.FramebufferScale.x, drawData.FramebufferScale.y,
                     drawData.FramebufferScale.x, drawData.FramebufferScale.y);
+                Vector4 clipRenderOffset = new Vector4(renderOffset.x, renderOffset.y, renderOffset.x, renderOffset.y);
+                Matrix4x4 meshMatrix = renderOffset == Vector2.zero
+                    ? Matrix4x4.identity
+                    : Matrix4x4.Translate(new Vector3(renderOffset.x, renderOffset.y, 0f));
 
                 commandBuffer.SetViewport(new Rect(0f, 0f, fbSize.x, fbSize.y));
                 commandBuffer.SetViewProjectionMatrices(
@@ -323,9 +394,9 @@ namespace Fu
                     Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
 
                 int subOf = 0;
-                for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
+                for (int n = 0, nMax = drawLists.Count; n < nMax; ++n)
                 {
-                    DrawList drawList = drawData.DrawLists[n];
+                    DrawList drawList = drawLists[n];
                     for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i, ++subOf)
                     {
                         ImDrawCmd drawCmd = drawList.CmdBuffer[i];
@@ -336,7 +407,7 @@ namespace Fu
                         else
                         {
                             // Project scissor rectangle into framebuffer space and skip if fully outside.
-                            Vector4 clipSize = drawCmd.ClipRect - clipOffset;
+                            Vector4 clipSize = drawCmd.ClipRect + clipRenderOffset - clipOffset;
                             Vector4 clip = Vector4.Scale(clipSize, clipScale);
 
                             if (clip.x >= fbSize.x || clip.y >= fbSize.y || clip.z < 0f || clip.w < 0f) continue;
@@ -369,7 +440,7 @@ namespace Fu
                                 }
                             }
                             commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
-                            commandBuffer.DrawMesh(_mesh, Matrix4x4.identity, _material, subOf, 0, _materialProperties);
+                            commandBuffer.DrawMesh(_mesh, meshMatrix, _material, subOf, 0, _materialProperties);
                         }
                     }
                 }
@@ -430,16 +501,7 @@ namespace Fu
             /// <param name="drawData"></ param>
             public void RenderDrawLists(int ctxId, CommandBuffer commandBuffer, DrawData drawData)
             {
-                // ensure mesh and material exist for this context
-                if (_meshs == null) _meshs = new Dictionary<int, Mesh>();
-                if (!_meshs.ContainsKey(ctxId))
-                {
-                    _meshs[ctxId] = new Mesh
-                    {
-                        name = "FuguiMesh"
-                    };
-                    _meshs[ctxId].MarkDynamic();
-                }
+                // ensure material exists for this context
                 if (_materials == null) _materials = new Dictionary<int, Material>();
                 if (!_materials.ContainsKey(ctxId))
                 {
@@ -448,7 +510,6 @@ namespace Fu
                         hideFlags = HideFlags.HideAndDontSave & ~HideFlags.DontUnloadUnusedAsset
                     };
                 }
-                Mesh _mesh = _meshs[ctxId];
                 Material _material = _materials[ctxId];
 
                 Vector2 fbOSize = drawData.DisplaySize * drawData.FramebufferScale;
@@ -456,11 +517,61 @@ namespace Fu
                 // Avoid rendering when minimized.
                 if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
 
-                // display draw data for debug
-                UpdateMesh(ctxId, _mesh, _material, drawData);
                 commandBuffer.BeginSample(_sampleName);
-                CreateDrawCommands(_mesh, _material, commandBuffer, drawData, fbOSize);
+                RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize);
                 commandBuffer.EndSample(_sampleName);
+            }
+
+            /// <summary>
+            /// Renders cached window meshes and transient non-window draw lists in draw order.
+            /// </summary>
+            /// <param name="ctxId">Context id.</param>
+            /// <param name="commandBuffer">Command buffer to use for rendering.</param>
+            /// <param name="material">Material used to render Fugui meshes.</param>
+            /// <param name="drawData">Draw data for the context.</param>
+            /// <param name="fbSize">Framebuffer size.</param>
+            private void RenderDrawItems(int ctxId, CommandBuffer commandBuffer, Material material, DrawData drawData, Vector2 fbSize)
+            {
+                int transientMeshIndex = 0;
+
+                if (drawData.RenderItems == null || drawData.RenderItems.Count == 0)
+                {
+                    DrawListMesh fallbackMesh = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
+                    fallbackMesh.Update(drawData.DrawLists, drawData.DisplaySize, drawData.FramebufferScale);
+                    CreateDrawCommands(fallbackMesh.Mesh, material, commandBuffer, drawData.DrawLists, drawData, fbSize, Vector2.zero);
+                    return;
+                }
+
+                for (int i = 0; i < drawData.RenderItems.Count; i++)
+                {
+                    DrawDataRenderItem item = drawData.RenderItems[i];
+                    IReadOnlyList<DrawList> drawLists = item.DrawLists;
+                    if (drawLists == null || drawLists.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    DrawListMesh meshData;
+                    Vector2 renderOffset = Vector2.zero;
+                    if (item.IsWindow)
+                    {
+                        meshData = item.Window.RenderMeshData;
+                        renderOffset = item.Window.RenderMeshOffset;
+                    }
+                    else
+                    {
+                        meshData = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
+                        transientMeshIndex++;
+                        meshData.Update(drawLists, drawData.DisplaySize, drawData.FramebufferScale);
+                    }
+
+                    if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
+                    {
+                        continue;
+                    }
+
+                    CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset);
+                }
             }
 
             /// <summary>
@@ -469,13 +580,17 @@ namespace Fu
             /// <param name="commandBuffer"> The command buffer to use for rendering.</param>
             /// <param name="drawData"> The draw data containing the information to render.</param>
             /// <param name="fbSize"> The framebuffer size to use for rendering.</param>
-            private void CreateDrawCommands(Mesh _mesh, Material _material, CommandBuffer commandBuffer, DrawData drawData, Vector2 fbSize)
+            private void CreateDrawCommands(Mesh _mesh, Material _material, CommandBuffer commandBuffer, IReadOnlyList<DrawList> drawLists, DrawData drawData, Vector2 fbSize, Vector2 renderOffset)
             {
                 IntPtr prevTextureId = IntPtr.Zero;
                 Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
                     drawData.DisplayPos.x, drawData.DisplayPos.y);
                 Vector4 clipScale = new Vector4(drawData.FramebufferScale.x, drawData.FramebufferScale.y,
                     drawData.FramebufferScale.x, drawData.FramebufferScale.y);
+                Vector4 clipRenderOffset = new Vector4(renderOffset.x, renderOffset.y, renderOffset.x, renderOffset.y);
+                Matrix4x4 meshMatrix = renderOffset == Vector2.zero
+                    ? Matrix4x4.identity
+                    : Matrix4x4.Translate(new Vector3(renderOffset.x, renderOffset.y, 0f));
 
                 commandBuffer.SetViewport(new Rect(0f, 0f, fbSize.x, fbSize.y));
                 commandBuffer.SetViewProjectionMatrices(
@@ -483,9 +598,9 @@ namespace Fu
                     Matrix4x4.Ortho(0f, fbSize.x, fbSize.y, 0f, 0f, 1f));
 
                 int subOf = 0;
-                for (int n = 0, nMax = drawData.CmdListsCount; n < nMax; ++n)
+                for (int n = 0, nMax = drawLists.Count; n < nMax; ++n)
                 {
-                    DrawList drawList = drawData.DrawLists[n];
+                    DrawList drawList = drawLists[n];
                     for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i, ++subOf)
                     {
                         ImDrawCmd drawCmd = drawList.CmdBuffer[i];
@@ -496,7 +611,7 @@ namespace Fu
                         else
                         {
                             // Project scissor rectangle into framebuffer space and skip if fully outside.
-                            Vector4 clipSize = drawCmd.ClipRect - clipOffset;
+                            Vector4 clipSize = drawCmd.ClipRect + clipRenderOffset - clipOffset;
                             Vector4 clip = Vector4.Scale(clipSize, clipScale);
 
                             if (clip.x >= fbSize.x || clip.y >= fbSize.y || clip.z < 0f || clip.w < 0f) continue;
@@ -529,7 +644,7 @@ namespace Fu
                                 }
                             }
                             commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
-                            commandBuffer.DrawMesh(_mesh, Matrix4x4.identity, _material, subOf, 0, _materialProperties);
+                            commandBuffer.DrawMesh(_mesh, meshMatrix, _material, subOf, 0, _materialProperties);
                         }
                     }
                 }

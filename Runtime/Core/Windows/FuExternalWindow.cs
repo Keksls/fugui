@@ -19,13 +19,16 @@ namespace Fu
     public class FuExternalWindow
     {
         public FuWindow Window;
+        internal int ContextID { get; }
         public IntPtr SdlWindow { get; private set; }
         public uint SdlWindowId { get; private set; }
         public string Title { get; private set; }
         public bool CanInternalize { get; private set; } = false;
-        public int Width => Window.Size.x;
-        public int Height => Window.Size.y;
+        private bool _mouseHasLeftInternalizeBounds;
+        public int Width => _size.x;
+        public int Height => _size.y;
         private Vector2Int _position;
+        private Vector2Int _size;
         public Vector2Int Position
         {
             get => _position;
@@ -62,25 +65,48 @@ namespace Fu
         // CPU-side scratch (resized on demand)
         private int _vbCapacity;
         private int _ibCapacity;
+        private ImDrawVert[] _offsetVertexBuffer;
 
-        public FuExternalWindow(FuWindow window)
+        public FuExternalWindow(FuWindow window, int contextID)
         {
             Window = window;
+            ContextID = contextID;
             _position = window.WorldPosition;
+            _size = window.Size;
             Title = Window.WindowName.Name;
+        }
+
+        internal void SetWindow(FuWindow window)
+        {
+            Window = window;
+            if (window == null)
+            {
+                return;
+            }
+
+            Title = window.WindowName.Name;
+            if (SdlWindow != IntPtr.Zero)
+            {
+                SDL_SetWindowTitle(SdlWindow, Title);
+            }
+        }
+
+        internal void SetNativeSize(Vector2Int size)
+        {
+            _size = new Vector2Int(Math.Max(1, size.x), Math.Max(1, size.y));
         }
 
         /// <summary>
         /// Create and start the external SDL2 OpenGL window
         /// </summary>
-        public void Create(bool dragOnStart)
+        public void Create(bool dragOnStart, Vector2Int dragStartMouseOffset)
         {
+            _mouseHasLeftInternalizeBounds = false;
             SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
             SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "1");
             SDL_SetHint(SDL_HINT_WINDOWS_HANDLE_MOUSE_ACTIVATION, "1");
-            if (SDL_Init(SDL_INIT_VIDEO) < 0)
+            if (!Fugui.EnsureSDLVideo())
             {
-                Debug.LogError("SDL init failed: " + SDL_GetError());
                 return;
             }
 
@@ -94,6 +120,21 @@ namespace Fu
             SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_BLUE_SIZE, 8);
             SDL_GL_SetAttribute(SDL_GLattr.SDL_GL_ALPHA_SIZE, 8);
 
+            bool continueDragOnCreate = false;
+            Vector2Int createMouseAbs = Vector2Int.zero;
+            Vector2Int createMouseLocal = dragStartMouseOffset;
+            if (dragOnStart)
+            {
+                uint mouseState = SDL_GetGlobalMouseState(out int mx, out int my);
+                continueDragOnCreate = (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;
+                if (continueDragOnCreate)
+                {
+                    createMouseAbs = new Vector2Int(mx, my);
+                    _position = ClampDragPositionToVisibleBounds(_position, createMouseAbs);
+                    createMouseLocal = createMouseAbs - _position;
+                }
+            }
+
             SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_SHOWN;
             //if (Window.NoTaskBarIcon)
             //    flags |= SDL_WindowFlags.SDL_WINDOW_SKIP_TASKBAR;
@@ -105,8 +146,8 @@ namespace Fu
                 Title,
                 _position.x,
                 _position.y,
-                Window.Size.x,
-                Window.Size.y,
+                Width,
+                Height,
                 flags);
 
             if (SdlWindow == IntPtr.Zero)
@@ -115,25 +156,39 @@ namespace Fu
                 return;
             }
             SdlWindowId = SDL_GetWindowID(SdlWindow);
+            int actualX = 0, actualY = 0;
+            SDL_GetWindowPosition(SdlWindow, ref actualX, ref actualY);
+            _position = new Vector2Int(actualX, actualY);
+            int actualW = 0, actualH = 0;
+            SDL_GetWindowSize(SdlWindow, ref actualW, ref actualH);
+            SetNativeSize(new Vector2Int(actualW, actualH));
 
             // check is left click is down to start dragging right away
             if (dragOnStart)
             {
-                SDL_CaptureMouse(SDL_bool.SDL_TRUE);
-                SDL_GetMouseState(out int mx, out int my);
-                Vector2Int mouseLocal = new Vector2Int(mx, my);
-                Vector2Int mouseAbs = Fugui.AbsoluteMonitorMousePosition;
-                StartDrag(mouseLocal, mouseAbs);
+                if (continueDragOnCreate)
+                {
+                    SDL_CaptureMouse(SDL_bool.SDL_TRUE);
+                    Vector2Int mouseAbs = createMouseAbs;
+                    Vector2Int mouseLocal = createMouseLocal;
+                    Position = ClampDragPositionToVisibleBounds(mouseAbs - mouseLocal, mouseAbs);
+                    mouseLocal = mouseAbs - Position;
+                    StartDrag(mouseLocal, mouseAbs, true);
 
-                // push SDL mouse left button down event to avoid missing it
-                SDL_Event evt = new SDL_Event();
-                evt.type = SDL_EventType.SDL_MOUSEBUTTONDOWN;
-                evt.button.windowID = SdlWindowId;
-                evt.button.button = (byte)SDL_BUTTON_LEFT;
-                evt.button.state = SDL_PRESSED;
-                evt.button.x = mx;
-                evt.button.y = my;
-                Fugui.SDLEventRooter.Push(SdlWindowId, ref evt);
+                    // push SDL mouse left button down event to avoid missing it
+                    SDL_Event evt = new SDL_Event();
+                    evt.type = SDL_EventType.SDL_MOUSEBUTTONDOWN;
+                    evt.button.windowID = SdlWindowId;
+                    evt.button.button = (byte)SDL_BUTTON_LEFT;
+                    evt.button.state = SDL_PRESSED;
+                    evt.button.x = Math.Max(0, Math.Min(mouseLocal.x, Math.Max(0, Width - 1)));
+                    evt.button.y = Math.Max(0, Math.Min(mouseLocal.y, Math.Max(0, Height - 1)));
+                    Fugui.SDLEventRooter.Push(SdlWindowId, ref evt);
+                }
+                else
+                {
+                    Window.IsDragging = false;
+                }
             }
 
             _glContext = SDL_GL_CreateContext(SdlWindow);
@@ -172,6 +227,7 @@ namespace Fu
 
             // Create fallback white texture
             CreateFallbackWhiteTexture();
+            CreateFallbackTexturePlaceholder();
 
             // Register window to sdl event rooter
             Fugui.SDLEventRooter.RegisterWindow(SdlWindowId);
@@ -207,11 +263,14 @@ namespace Fu
             // perform buffer swap
             SDL_GL_SwapWindow(SdlWindow);
 
-            // ensure local position is zero
-            Window.LocalPosition = Vector2Int.zero;
             int w = 0, h = 0;
             SDL_GetWindowSize(SdlWindow, ref w, ref h);
-            Window.Size = new Vector2Int(w, h);
+            SetNativeSize(new Vector2Int(w, h));
+            if (PrimaryWindowFillsNativeWindow())
+            {
+                Window.LocalPosition = Vector2Int.zero;
+                Window.Size = _size;
+            }
 
             // clamp sdl window poisition to screen bounds
             if (!IsDragging && !IsResizing) // don't clamp while dragging/resizing
@@ -267,7 +326,11 @@ namespace Fu
         /// </summary>
         public void Close(Action onClosed)
         {
-            if (_isClosed) return; // already closed
+            if (_isClosed)
+            {
+                onClosed?.Invoke();
+                return;
+            }
             OnClosed = onClosed;
             _shouldClose = true;
         }
@@ -290,8 +353,9 @@ namespace Fu
                 }
                 _registeredTextures.Clear();
 
-                // Also delete fallback texture
+                // Also delete fallback textures
                 if (_fallbackWhiteTex != 0) { glDeleteTexture(_fallbackWhiteTex); _fallbackWhiteTex = 0; }
+                if (_fallbackTexturePlaceholderTex != 0) { glDeleteTexture(_fallbackTexturePlaceholderTex); _fallbackTexturePlaceholderTex = 0; }
 
                 // GL objects
                 if (_shaderProgram != 0) { GLMini.glUseProgram(0); glDeleteProgram(_shaderProgram); _shaderProgram = 0; }
@@ -315,7 +379,7 @@ namespace Fu
                     SdlWindow = IntPtr.Zero;
                 }
 
-                Fugui.RemoveExternalWindow(Window);
+                Fugui.RemoveExternalWindow(Window, ContextID);
 
                 // unregister from SDL event rooter
                 Fugui.SDLEventRooter.UnregisterWindow(SdlWindowId);
@@ -345,18 +409,22 @@ namespace Fu
             SDL_GetGlobalMouseState(out mx, out my);
             Vector2Int absMousePos = new Vector2Int(mx, my);
             Vector2Int windowPos = Position;
-            Vector2Int windowSize = Window.Size;
+            Vector2Int windowSize = _size;
             _isMouseHover = absMousePos.x >= windowPos.x && absMousePos.x < windowPos.x + windowSize.x &&
                              absMousePos.y >= windowPos.y && absMousePos.y < windowPos.y + windowSize.y;
         }
 
         // Fallback white texture (1x1) used when a texture is missing
         private uint _fallbackWhiteTex = 0;
+        // Visible placeholder used when an image texture cannot be copied into the external GL context
+        private uint _fallbackTexturePlaceholderTex = 0;
         // Keep for compatibility with rest of the pipeline
         private readonly Dictionary<IntPtr, uint> _registeredTextures = new Dictionary<IntPtr, uint>();
         // Per-unityId state
         private readonly Dictionary<IntPtr, PBOPair> _gpu = new Dictionary<IntPtr, PBOPair>();
         private readonly Dictionary<IntPtr, ReadbackState> _rb = new Dictionary<IntPtr, ReadbackState>();
+        private readonly HashSet<IntPtr> _textureUploadFailures = new HashSet<IntPtr>();
+        private readonly HashSet<IntPtr> _textureUploadWarnings = new HashSet<IntPtr>();
 
         // ===== Runtime structures =====
         private sealed class PBOPair
@@ -394,12 +462,66 @@ namespace Fu
 
             unsafe
             {
-                byte white = 128;
+                byte* white = stackalloc byte[4] { 255, 255, 255, 255 };
                 GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA,
-                    1, 1, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, (IntPtr)(&white));
+                    1, 1, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, (IntPtr)white);
             }
 
             GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, 0);
+        }
+
+        /// <summary>
+        /// Create a visible placeholder texture for external images that cannot be uploaded.
+        /// </summary>
+        private unsafe void CreateFallbackTexturePlaceholder()
+        {
+            GLMini.glGenTextures(1, out _fallbackTexturePlaceholderTex);
+            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, _fallbackTexturePlaceholderTex);
+
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MIN_FILTER, (int)GLMini.GL_LINEAR);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MAG_FILTER, (int)GLMini.GL_LINEAR);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
+            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
+            GLMini.glPixelStorei(GLMini.GL_UNPACK_ALIGNMENT, 1);
+
+            const int size = 16;
+            byte[] pixels = new byte[size * size * 4];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    bool checker = ((x / 4) + (y / 4)) % 2 == 0;
+                    int i = (y * size + x) * 4;
+                    pixels[i] = checker ? (byte)255 : (byte)55;
+                    pixels[i + 1] = checker ? (byte)0 : (byte)55;
+                    pixels[i + 2] = checker ? (byte)255 : (byte)55;
+                    pixels[i + 3] = 255;
+                }
+            }
+
+            fixed (byte* ptr = pixels)
+            {
+                GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA,
+                    size, size, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, (IntPtr)ptr);
+            }
+
+            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, 0);
+        }
+
+        private uint GetTexturePlaceholder()
+        {
+            return _fallbackTexturePlaceholderTex != 0 ? _fallbackTexturePlaceholderTex : _fallbackWhiteTex;
+        }
+
+        private void WarnTextureUploadFallback(IntPtr unityId, Texture texture, string reason)
+        {
+            if (!_textureUploadWarnings.Add(unityId))
+                return;
+
+            string textureName = texture != null && !string.IsNullOrEmpty(texture.name) ? texture.name : "<unnamed>";
+            int width = texture != null ? texture.width : 0;
+            int height = texture != null ? texture.height : 0;
+            Debug.LogWarning($"External window cannot upload texture '{textureName}' ({width}x{height}): {reason}. Drawing a placeholder instead.");
         }
 
         /// <summary>
@@ -425,6 +547,7 @@ namespace Fu
             GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MAG_FILTER, (int)GLMini.GL_LINEAR);
             GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
             GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
+            GLMini.glPixelStorei(GLMini.GL_UNPACK_ALIGNMENT, 1);
             GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA, w, h, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, IntPtr.Zero);
 
             // Double PBO
@@ -465,6 +588,7 @@ namespace Fu
             // Issue async upload from the other PBO
             GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, gpu.pbo[next]);
             GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, gpu.glTex);
+            GLMini.glPixelStorei(GLMini.GL_UNPACK_ALIGNMENT, 1);
             GLMini.glTexSubImage2D(GLMini.GL_TEXTURE_2D, 0, 0, 0, gpu.w, gpu.h, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, IntPtr.Zero);
 
             // Cleanup
@@ -477,12 +601,90 @@ namespace Fu
         /// </summary>
         private unsafe void UploadTexture2D(IntPtr unityId, Texture2D t2d)
         {
-            var raw = t2d.GetRawTextureData<byte>(); // NativeArray<byte>
+            if (!t2d.isReadable)
+                return;
+
+            NativeArray<byte> raw;
+            try
+            {
+                raw = t2d.GetRawTextureData<byte>(); // NativeArray<byte>
+            }
+            catch
+            {
+                return;
+            }
+
             if (!raw.IsCreated || raw.Length == 0) return;
 
             PBOPair gpu = EnsurePBOPair(unityId, t2d.width, t2d.height);
             void* src = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(raw);
             UploadWithPBO(gpu, (IntPtr)src, raw.Length);
+        }
+
+        /// <summary>
+        /// Upload a Unity Texture2D into the currently bound GL texture.
+        /// Alpha-only textures are expanded to white RGBA so ImGui's standard shader can tint them.
+        /// </summary>
+        private unsafe bool UploadTexture2DImage(IntPtr unityId, Texture2D t2d)
+        {
+            if (!t2d.isReadable)
+            {
+                WarnTextureUploadFallback(unityId, t2d, $"texture is not readable (format: {t2d.format})");
+                return false;
+            }
+
+            NativeArray<byte> raw;
+            try
+            {
+                raw = t2d.GetRawTextureData<byte>();
+            }
+            catch (Exception e)
+            {
+                WarnTextureUploadFallback(unityId, t2d, e.Message);
+                return false;
+            }
+
+            if (!raw.IsCreated || raw.Length == 0)
+            {
+                WarnTextureUploadFallback(unityId, t2d, $"texture has no readable pixel data (format: {t2d.format})");
+                return false;
+            }
+
+            int pixelCount = t2d.width * t2d.height;
+            GLMini.glPixelStorei(GLMini.GL_UNPACK_ALIGNMENT, 1);
+
+            if (t2d.format == TextureFormat.Alpha8 || raw.Length == pixelCount)
+            {
+                byte[] rgba = new byte[pixelCount * 4];
+                for (int src = 0, dst = 0; src < pixelCount; src++, dst += 4)
+                {
+                    byte alpha = raw[src];
+                    rgba[dst] = 255;
+                    rgba[dst + 1] = 255;
+                    rgba[dst + 2] = 255;
+                    rgba[dst + 3] = alpha;
+                }
+
+                fixed (byte* ptr = rgba)
+                {
+                    GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA,
+                        t2d.width, t2d.height, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE,
+                        (IntPtr)ptr);
+                }
+                return true;
+            }
+
+            if (raw.Length < pixelCount * 4)
+            {
+                WarnTextureUploadFallback(unityId, t2d, $"unsupported readable texture format {t2d.format}");
+                return false;
+            }
+
+            void* srcPtr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(raw);
+            GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA,
+                t2d.width, t2d.height, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE,
+                (IntPtr)srcPtr);
+            return true;
         }
 
         /// <summary>
@@ -563,6 +765,9 @@ namespace Fu
             // Texture2D (readable): direct NativeArray → PBO upload (no stalls)
             if (tex is Texture2D t2d)
             {
+                if (_textureUploadFailures.Contains(unityId))
+                    return GetTexturePlaceholder();
+
                 if (!_gpu.TryGetValue(unityId, out var gpu))
                 {
                     // Create GL texture once
@@ -575,19 +780,29 @@ namespace Fu
                     GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
                     GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
 
-                    var raw = t2d.GetRawTextureData<byte>();
-                    unsafe
+                    bool uploaded;
+                    try
                     {
-                        void* ptr = NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(raw);
-                        GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA,
-                            t2d.width, t2d.height, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE,
-                            (IntPtr)ptr);
+                        uploaded = UploadTexture2DImage(unityId, t2d);
+                    }
+                    catch (Exception e)
+                    {
+                        WarnTextureUploadFallback(unityId, t2d, e.Message);
+                        uploaded = false;
                     }
 
                     GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, 0);
 
+                    if (!uploaded)
+                    {
+                        _textureUploadFailures.Add(unityId);
+                        glDeleteTexture(texId);
+                        return GetTexturePlaceholder();
+                    }
+
                     // Store it as if it were a PBOPair, but minimal
                     _gpu[unityId] = new PBOPair { glTex = texId, w = t2d.width, h = t2d.height };
+                    _registeredTextures[unityId] = texId;
                 }
 
                 return _gpu[unityId].glTex;
@@ -624,7 +839,12 @@ namespace Fu
                 {
                     // Window resize
                     case SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED:
-                        Window.Size = new Vector2Int(e.window.data1, e.window.data2);
+                        SetNativeSize(new Vector2Int(e.window.data1, e.window.data2));
+                        if (PrimaryWindowFillsNativeWindow())
+                        {
+                            Window.Size = _size;
+                        }
+                        Fugui.ForceDrawAllWindows(2);
                         break;
 
                     // Window moved
@@ -655,6 +875,22 @@ namespace Fu
         private Vector2Int dragStartMousePos;
         private Vector2Int dragStartWindowPos;
 
+        internal bool ShouldAutoInternalize(Rect mainContainerRect, Vector2Int mouseAbs)
+        {
+            if (!CanInternalize || !IsDragging)
+            {
+                return false;
+            }
+
+            if (!mainContainerRect.Contains(mouseAbs))
+            {
+                _mouseHasLeftInternalizeBounds = true;
+                return false;
+            }
+
+            return _mouseHasLeftInternalizeBounds;
+        }
+
         public ResizeEdge HoverResizeEdge { get; private set; } = ResizeEdge.None;
         public bool IsResizing { get; private set; } = false;
         private Vector2Int resizeStartMousePos;
@@ -681,10 +917,12 @@ namespace Fu
                 return;
             }
 
-            uint mouseState = SDL.SDL_GetMouseState(out int mx, out int my);
+            SDL.SDL_GetMouseState(out int mx, out int my);
+            uint globalMouseState = SDL.SDL_GetGlobalMouseState(out int gx, out int gy);
             Vector2Int mouseLocal = new Vector2Int(mx, my);
-            Vector2Int mouseAbs = Fugui.AbsoluteMonitorMousePosition;
-            Vector2Int windowSize = Window.Size;
+            Vector2Int mouseAbs = new Vector2Int(gx, gy);
+            Vector2Int windowSize = _size;
+            bool leftMousePressed = Window.Mouse.IsPressed(FuMouseButton.Left) || (globalMouseState & SDL.SDL_BUTTON(SDL.SDL_BUTTON_LEFT)) != 0;
             bool mouseBlockedByPopup = Fugui.IsInsideAnyPopup(mouseLocal);
 
             //
@@ -722,7 +960,7 @@ namespace Fu
             // continue resize
             if (IsResizing)
             {
-                if (Window.Mouse.IsPressed(FuMouseButton.Left))
+                if (leftMousePressed)
                 {
                     Vector2Int delta = mouseAbs - resizeStartMousePos;
 
@@ -762,8 +1000,12 @@ namespace Fu
 
                     // assign
                     Position = newPos;
-                    Window.Size = newSize;
-                    Window.ForceDraw();
+                    SetNativeSize(newSize);
+                    if (PrimaryWindowFillsNativeWindow())
+                    {
+                        Window.Size = _size;
+                    }
+                    Fugui.ForceDrawAllWindows(2);
                     SDL_SetWindowSize(SdlWindow, newSize.x, newSize.y);
                 }
                 else
@@ -793,14 +1035,27 @@ namespace Fu
 
             if (IsDragging)
             {
-                if (Window.Mouse.IsPressed(FuMouseButton.Left))
+                if (leftMousePressed)
                 {
                     Vector2Int delta = mouseAbs - dragStartMousePos;
-                    Position = dragStartWindowPos + delta;
+                    Position = ClampDragPositionToVisibleBounds(dragStartWindowPos + delta, mouseAbs);
+                    Window.Fire_OnDrag();
+                    Fugui.UpdateExternalWindowDockPreview(Window, mouseAbs);
                 }
                 else
                 {
+                    if (Fugui.TryDockExternalWindowOnPreview(Window, mouseAbs))
+                    {
+                        IsDragging = false;
+                        Window.IsDragging = false;
+                        CanInternalize = true;
+                        SDL_CaptureMouse(SDL_bool.SDL_FALSE);
+                        return;
+                    }
+
+                    Fugui.Layouts?.ClearExternalWindowDockPreview(Window);
                     IsDragging = false;
+                    Window.IsDragging = false;
                     CanInternalize = true;
                     SDL_CaptureMouse(SDL_bool.SDL_FALSE);
                 }
@@ -811,30 +1066,116 @@ namespace Fu
             //
             if (Window.Mouse.IsDown(FuMouseButton.Left) || Window.Mouse.IsDown(FuMouseButton.Right) || Window.Mouse.IsDown(FuMouseButton.Center))
             {
-                SDL_SetWindowAlwaysOnTop(SdlWindow, SDL_bool.SDL_FALSE);
-                SDL_SetWindowAlwaysOnTop(SdlWindow, SDL_bool.SDL_TRUE);
+                RaiseWindow();
             }
         }
 
-        private void StartDrag(Vector2Int mouseLocal, Vector2Int mouseAbs)
+        private void RaiseWindow()
+        {
+            if (SdlWindow == IntPtr.Zero)
+                return;
+
+            if (Window.AlwaysOnTop)
+            {
+                SDL_SetWindowAlwaysOnTop(SdlWindow, SDL_bool.SDL_TRUE);
+                return;
+            }
+
+            SDL_SetWindowAlwaysOnTop(SdlWindow, SDL_bool.SDL_FALSE);
+            SDL_RaiseWindow(SdlWindow);
+        }
+
+        private bool PrimaryWindowFillsNativeWindow()
+        {
+            if (Window == null)
+            {
+                return false;
+            }
+
+            return !Window.IsDocked || !(Fugui.Layouts?.IsWindowInFloatingDockRoot(Window) ?? false);
+        }
+
+        private Vector2Int ClampDragPositionToVisibleBounds(Vector2Int desiredPosition, Vector2Int mouseAbs)
+        {
+            if (!TryGetDisplayUsableBounds(mouseAbs, out SDL_Rect bounds))
+            {
+                return desiredPosition;
+            }
+
+            Vector2Int size = _size;
+            int minVisibleWidth = Math.Min(Math.Max(64, (int)(96f * Fugui.Scale)), Math.Max(1, size.x));
+            int minVisibleHeight = Math.Min(Math.Max(24, (int)(32f * Fugui.Scale)), Math.Max(1, size.y));
+
+            int minX = bounds.x - size.x + minVisibleWidth;
+            int maxX = bounds.x + bounds.w - minVisibleWidth;
+            int minY = bounds.y;
+            int maxY = bounds.y + bounds.h - minVisibleHeight;
+
+            return new Vector2Int(
+                Math.Max(minX, Math.Min(desiredPosition.x, maxX)),
+                Math.Max(minY, Math.Min(desiredPosition.y, maxY)));
+        }
+
+        private bool TryGetDisplayUsableBounds(Vector2Int point, out SDL_Rect bounds)
+        {
+            bounds = default;
+            int displayCount = SDL_GetNumVideoDisplays();
+            if (displayCount <= 0)
+            {
+                return false;
+            }
+
+            int fallbackDisplay = 0;
+            long fallbackDistance = long.MaxValue;
+            for (int i = 0; i < displayCount; i++)
+            {
+                SDL_Rect rect = default;
+                if (SDL_GetDisplayUsableBounds(i, ref rect) != 0)
+                {
+                    continue;
+                }
+
+                if (point.x >= rect.x && point.x < rect.x + rect.w && point.y >= rect.y && point.y < rect.y + rect.h)
+                {
+                    bounds = rect;
+                    return true;
+                }
+
+                long centerX = rect.x + rect.w / 2;
+                long centerY = rect.y + rect.h / 2;
+                long dx = point.x - centerX;
+                long dy = point.y - centerY;
+                long distance = dx * dx + dy * dy;
+                if (distance < fallbackDistance)
+                {
+                    fallbackDistance = distance;
+                    fallbackDisplay = i;
+                    bounds = rect;
+                }
+            }
+
+            return fallbackDistance != long.MaxValue && SDL_GetDisplayUsableBounds(fallbackDisplay, ref bounds) == 0;
+        }
+
+        private void StartDrag(Vector2Int mouseLocal, Vector2Int mouseAbs, bool forceMouseDown = false)
         {
             float titleBarHeight = Window.WorkingAreaPosition.y;
-            float titleBarWidth = Window.Size.x - (64f * Fugui.Scale);
+            float titleBarWidth = Width - (64f * Fugui.Scale);
 
             bool inTitleBar =
                 mouseLocal.y < titleBarHeight &&
                 mouseLocal.x < titleBarWidth;
 
             // pas dans la title bar → pas de drag
-            if (!inTitleBar || IsResizing)
+            if (IsResizing || (!forceMouseDown && !inTitleBar))
                 return;
 
-            if (!IsDragging && Window.Mouse.IsDown(FuMouseButton.Left))
+            if (!IsDragging && (forceMouseDown || Window.Mouse.IsDown(FuMouseButton.Left)))
             {
                 if (IsMaximized)
                 {
                     // 1. On calcule la fraction horizontale du click dans la titlebar
-                    float ratio = (float)mouseLocal.x / (float)Window.Size.x;
+                    float ratio = (float)mouseLocal.x / (float)Math.Max(1, Width);
 
                     // 2. Restore immédiatement
                     RestoreBorderlessWindow();
@@ -849,6 +1190,8 @@ namespace Fu
 
                 // 4. Commencer drag normal
                 IsDragging = true;
+                Window.IsDragging = true;
+                CanInternalize = true;
                 dragStartMousePos = mouseAbs;
                 dragStartWindowPos = Position;
             }
@@ -893,7 +1236,7 @@ namespace Fu
 
             var dl = ImGui.GetForegroundDrawList();
 
-            Vector2 windowSize = new Vector2(Window.Size.x, Window.Size.y);
+            Vector2 windowSize = new Vector2(Width, Height);
 
             // colors
             uint normalColor = Fugui.Themes.GetColorU32(FuColors.Highlight, 0.45f);
@@ -1050,17 +1393,26 @@ namespace Fu
             // However, many drivers prefer 4-byte alignment; 20 is fine.
 
             GLMini.glEnableVertexAttribArray(0); // Position
-            GLMini.glVertexAttribPointer(0, 2, GLMini.GL_FLOAT, false, stride, (IntPtr)0);
-
             GLMini.glEnableVertexAttribArray(1); // UV
-            GLMini.glVertexAttribPointer(1, 2, GLMini.GL_FLOAT, false, stride, (IntPtr)(4 * 2));
-
             GLMini.glEnableVertexAttribArray(2); // Color (normalized)
-            GLMini.glVertexAttribPointer(2, 4, GLMini.GL_UNSIGNED_BYTE, true, stride, (IntPtr)(4 * 4));
+            ConfigureVertexAttribPointers(0, stride);
 
             // Unbind
             GLMini.glBindVertexArray(0);
             return true;
+        }
+
+        private unsafe void ConfigureVertexAttribPointers(uint vertexOffset, int stride = 0)
+        {
+            if (stride == 0)
+            {
+                stride = sizeof(ImDrawVert);
+            }
+
+            long baseOffset = (long)vertexOffset * stride;
+            GLMini.glVertexAttribPointer(0, 2, GLMini.GL_FLOAT, false, stride, (IntPtr)baseOffset);
+            GLMini.glVertexAttribPointer(1, 2, GLMini.GL_FLOAT, false, stride, (IntPtr)(baseOffset + 4 * 2));
+            GLMini.glVertexAttribPointer(2, 4, GLMini.GL_UNSIGNED_BYTE, true, stride, (IntPtr)(baseOffset + 4 * 4));
         }
 
         /// <summary>
@@ -1074,7 +1426,7 @@ namespace Fu
             locProjMtx = -1; locTex = -1;
 
             string vs = @"
-\# version 130
+#version 130
                 uniform mat4 ProjMtx;
                 in vec2 Position;
                 in vec2 UV;
@@ -1089,7 +1441,7 @@ namespace Fu
                 }";
 
             string fs = @"
-\# version 130
+#version 130
                 uniform sampler2D Texture;
                 in vec2 Frag_UV;
                 in vec4 Frag_Color;
@@ -1205,7 +1557,7 @@ namespace Fu
                     return;
 
                 // Clear screen
-                GLMini.glViewport(0, 0, Window.Size.x, Window.Size.y);
+                GLMini.glViewport(0, 0, Width, Height);
                 var bgColor = Fugui.Themes.GetColor(FuColors.WindowBg);
                 GLMini.glClearColor(bgColor.x, bgColor.y, bgColor.z, bgColor.w);
                 GLMini.glClear(GLMini.GL_COLOR_BUFFER_BIT);
@@ -1256,64 +1608,24 @@ namespace Fu
             fixed (float* p = ortho)
                 GLMini.glUniformMatrix4fv(_locProjMtx, 1, false, (IntPtr)p);
 
-            // Upload + draw each command list
-            for (int n = 0; n < drawData.CmdListsCount; n++)
+            if (drawData.RenderItems != null && drawData.RenderItems.Count > 0)
             {
-                var cmdList = drawData.DrawLists[n];
-
-                int vtxSize = cmdList.VtxBuffer.Length * sizeof(ImDrawVert);
-                int idxSize = cmdList.IdxBuffer.Length * sizeof(ushort);
-
-                // Resize buffers if needed
-                if (vtxSize > _vbCapacity)
+                for (int n = 0; n < drawData.RenderItems.Count; n++)
                 {
-                    _vbCapacity = NextPow2(vtxSize);
-                    GLMini.glBindBuffer(GLMini.GL_ARRAY_BUFFER, _vbo);
-                    GLMini.glBufferData(GLMini.GL_ARRAY_BUFFER, (IntPtr)_vbCapacity, IntPtr.Zero, GLMini.GL_DYNAMIC_DRAW);
+                    DrawDataRenderItem item = drawData.RenderItems[n];
+                    IReadOnlyList<DrawList> drawLists = item.DrawLists;
+                    if (drawLists == null || drawLists.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    Vector2 renderOffset = item.IsWindow ? item.Window.RenderMeshOffset : Vector2.zero;
+                    RenderImGuiDrawLists(drawLists, drawData, fbWidth, fbHeight, renderOffset);
                 }
-
-                if (idxSize > _ibCapacity)
-                {
-                    _ibCapacity = NextPow2(idxSize);
-                    GLMini.glBindBuffer(GLMini.GL_ELEMENT_ARRAY_BUFFER, _ebo);
-                    GLMini.glBufferData(GLMini.GL_ELEMENT_ARRAY_BUFFER, (IntPtr)_ibCapacity, IntPtr.Zero, GLMini.GL_DYNAMIC_DRAW);
-                }
-
-                // Upload vertex/index buffers directly
-                fixed (ImDrawVert* v = cmdList.VtxBuffer)
-                    GLMini.glBufferSubData(GLMini.GL_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)vtxSize, (IntPtr)v);
-
-                fixed (ushort* i = cmdList.IdxBuffer)
-                    GLMini.glBufferSubData(GLMini.GL_ELEMENT_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)idxSize, (IntPtr)i);
-
-                int idxOffset = 0;
-
-                foreach (var cmd in cmdList.CmdBuffer)
-                {
-                    float clipX = (cmd.ClipRect.x - drawData.DisplayPos.x) * drawData.FramebufferScale.x;
-                    float clipY = (cmd.ClipRect.y - drawData.DisplayPos.y) * drawData.FramebufferScale.y;
-                    float clipW = (cmd.ClipRect.z - cmd.ClipRect.x) * drawData.FramebufferScale.x;
-                    float clipH = (cmd.ClipRect.w - cmd.ClipRect.y) * drawData.FramebufferScale.y;
-
-                    //Debug.Log($" DrawCmd: ElemCount={cmd.ElemCount}, ClipRect=({cmd.ClipRect.x},{cmd.ClipRect.y},{cmd.ClipRect.z},{cmd.ClipRect.w}), Scissor=({(int)clipX},{(int)(fbHeight - (int)(clipY + clipH))},{(int)clipW},{(int)clipH})");
-
-                    GLMini.glScissor(
-                        (int)clipX,
-                        fbHeight - (int)(clipY + clipH),
-                        (int)clipW,
-                        (int)clipH
-                    );
-
-                    uint texId = GetRegisteredTexture(cmd.TextureId);
-
-                    GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, texId);
-                    GLMini.glDrawElements(GLMini.GL_TRIANGLES,
-                                          (int)cmd.ElemCount,
-                                          GLMini.GL_UNSIGNED_SHORT,
-                                          (IntPtr)(idxOffset * 2));
-
-                    idxOffset += (int)cmd.ElemCount;
-                }
+            }
+            else
+            {
+                RenderImGuiDrawLists(drawData.DrawLists, drawData, fbWidth, fbHeight, Vector2.zero);
             }
 
             // Restore state
@@ -1321,6 +1633,136 @@ namespace Fu
             GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, 0);
             GLMini.glBindVertexArray(0);
             GLMini.glUseProgram(0);
+        }
+
+        private unsafe void RenderImGuiDrawLists(IReadOnlyList<DrawList> drawLists, DrawData drawData, int fbWidth, int fbHeight, Vector2 renderOffset)
+        {
+            bool hasRenderOffset = Mathf.Abs(renderOffset.x) > 0.001f || Mathf.Abs(renderOffset.y) > 0.001f;
+
+            for (int n = 0; n < drawLists.Count; n++)
+            {
+                DrawList cmdList = drawLists[n];
+                if (cmdList == null || cmdList.VtxBuffer.Length == 0 || cmdList.IdxBuffer.Length == 0)
+                {
+                    continue;
+                }
+
+                int vtxSize = cmdList.VtxBuffer.Length * sizeof(ImDrawVert);
+                int idxSize = cmdList.IdxBuffer.Length * sizeof(ushort);
+
+                // Resize buffers if needed
+                GLMini.glBindBuffer(GLMini.GL_ARRAY_BUFFER, _vbo);
+                if (vtxSize > _vbCapacity)
+                {
+                    _vbCapacity = NextPow2(vtxSize);
+                    GLMini.glBufferData(GLMini.GL_ARRAY_BUFFER, (IntPtr)_vbCapacity, IntPtr.Zero, GLMini.GL_DYNAMIC_DRAW);
+                }
+
+                GLMini.glBindBuffer(GLMini.GL_ELEMENT_ARRAY_BUFFER, _ebo);
+                if (idxSize > _ibCapacity)
+                {
+                    _ibCapacity = NextPow2(idxSize);
+                    GLMini.glBufferData(GLMini.GL_ELEMENT_ARRAY_BUFFER, (IntPtr)_ibCapacity, IntPtr.Zero, GLMini.GL_DYNAMIC_DRAW);
+                }
+
+                if (hasRenderOffset)
+                {
+                    ImDrawVert[] vertices = GetOffsetVertexBuffer(cmdList.VtxBuffer, renderOffset);
+                    fixed (ImDrawVert* v = vertices)
+                        GLMini.glBufferSubData(GLMini.GL_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)vtxSize, (IntPtr)v);
+                }
+                else
+                {
+                    fixed (ImDrawVert* v = cmdList.VtxBuffer)
+                        GLMini.glBufferSubData(GLMini.GL_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)vtxSize, (IntPtr)v);
+                }
+
+                fixed (ushort* i = cmdList.IdxBuffer)
+                    GLMini.glBufferSubData(GLMini.GL_ELEMENT_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)idxSize, (IntPtr)i);
+
+                uint currentVertexOffset = uint.MaxValue;
+
+                foreach (var cmd in cmdList.CmdBuffer)
+                {
+                    if (cmd.UserCallback != IntPtr.Zero)
+                    {
+                        Debug.Log("unhandled user callback");
+                        continue;
+                    }
+
+                    Vector4 clipRect = cmd.ClipRect;
+                    if (hasRenderOffset)
+                    {
+                        clipRect.x += renderOffset.x;
+                        clipRect.y += renderOffset.y;
+                        clipRect.z += renderOffset.x;
+                        clipRect.w += renderOffset.y;
+                    }
+
+                    float clipMinX = (clipRect.x - drawData.DisplayPos.x) * drawData.FramebufferScale.x;
+                    float clipMinY = (clipRect.y - drawData.DisplayPos.y) * drawData.FramebufferScale.y;
+                    float clipMaxX = (clipRect.z - drawData.DisplayPos.x) * drawData.FramebufferScale.x;
+                    float clipMaxY = (clipRect.w - drawData.DisplayPos.y) * drawData.FramebufferScale.y;
+
+                    if (clipMinX >= fbWidth || clipMinY >= fbHeight || clipMaxX < 0f || clipMaxY < 0f)
+                    {
+                        continue;
+                    }
+
+                    clipMinX = Mathf.Max(clipMinX, 0f);
+                    clipMinY = Mathf.Max(clipMinY, 0f);
+                    clipMaxX = Mathf.Min(clipMaxX, fbWidth);
+                    clipMaxY = Mathf.Min(clipMaxY, fbHeight);
+
+                    float clipW = clipMaxX - clipMinX;
+                    float clipH = clipMaxY - clipMinY;
+                    if (clipW <= 0f || clipH <= 0f)
+                    {
+                        continue;
+                    }
+
+                    //Debug.Log($" DrawCmd: ElemCount={cmd.ElemCount}, ClipRect=({cmd.ClipRect.x},{cmd.ClipRect.y},{cmd.ClipRect.z},{cmd.ClipRect.w}), Scissor=({(int)clipX},{(int)(fbHeight - (int)(clipY + clipH))},{(int)clipW},{(int)clipH})");
+
+                    GLMini.glScissor(
+                        (int)clipMinX,
+                        fbHeight - (int)clipMaxY,
+                        (int)clipW,
+                        (int)clipH
+                    );
+
+                    uint texId = GetRegisteredTexture(cmd.TextureId);
+
+                    if (cmd.VtxOffset != currentVertexOffset)
+                    {
+                        ConfigureVertexAttribPointers(cmd.VtxOffset);
+                        currentVertexOffset = cmd.VtxOffset;
+                    }
+
+                    GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, texId);
+                    GLMini.glDrawElements(GLMini.GL_TRIANGLES,
+                                          (int)cmd.ElemCount,
+                                          GLMini.GL_UNSIGNED_SHORT,
+                                          (IntPtr)((long)cmd.IdxOffset * sizeof(ushort)));
+                }
+            }
+        }
+
+        private ImDrawVert[] GetOffsetVertexBuffer(ImDrawVert[] source, Vector2 renderOffset)
+        {
+            if (_offsetVertexBuffer == null || _offsetVertexBuffer.Length < source.Length)
+            {
+                _offsetVertexBuffer = new ImDrawVert[source.Length];
+            }
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                ImDrawVert vertex = source[i];
+                vertex.pos.x += renderOffset.x;
+                vertex.pos.y += renderOffset.y;
+                _offsetVertexBuffer[i] = vertex;
+            }
+
+            return _offsetVertexBuffer;
         }
 
         /// <summary>
@@ -1382,6 +1824,7 @@ namespace Fu
 
             SDL_SetWindowPosition(SdlWindow, usableBounds.x, usableBounds.y);
             SDL_SetWindowSize(SdlWindow, usableBounds.w, usableBounds.h);
+            RaiseWindow();
 
             IsMaximized = true;
         }
@@ -1393,6 +1836,7 @@ namespace Fu
         {
             SDL_SetWindowPosition(SdlWindow, restoreRect.x, restoreRect.y);
             SDL_SetWindowSize(SdlWindow, restoreRect.w, restoreRect.h);
+            RaiseWindow();
 
             IsMaximized = false;
         }

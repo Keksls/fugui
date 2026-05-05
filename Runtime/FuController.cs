@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu
@@ -119,7 +120,19 @@ namespace Fu
                     if(context is FuExternalContext externalContext)
                     {
                         // remove external window from dictionary
-                        Fugui.ExternalWindows.Remove(externalContext.Window.Window.ID);
+                        List<string> externalWindowIds = new List<string>();
+                        foreach (KeyValuePair<string, FuExternalWindowContainer> pair in Fugui.ExternalWindows)
+                        {
+                            if (pair.Value != null && pair.Value.Context == externalContext)
+                            {
+                                externalWindowIds.Add(pair.Key);
+                            }
+                        }
+                        foreach (string windowId in externalWindowIds)
+                        {
+                            Fugui.ExternalWindows.Remove(windowId);
+                        }
+                        Fugui.RestoreExternalWindowUpdateLoop();
                     }
 #endif
                     if (context.RenderPrepared)

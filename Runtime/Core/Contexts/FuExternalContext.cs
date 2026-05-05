@@ -21,7 +21,7 @@ namespace Fu
 
         public FuExternalContext(int index, float scale, float fontScale, System.Action onInitialize, FuWindow window) : base(index, scale, fontScale, onInitialize)
         {
-            _window = new FuExternalWindow(window);
+            _window = new FuExternalWindow(window, ID);
             initialize(onInitialize);
         }
 
@@ -35,7 +35,9 @@ namespace Fu
 
             // Initialize ImGui IO
             IO.ConfigFlags |= ImGuiConfigFlags.DockingEnable | ImGuiConfigFlags.NavEnableKeyboard;
-            IO.BackendFlags |= ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos;
+            IO.BackendFlags |= ImGuiBackendFlags.HasMouseCursors |
+                               ImGuiBackendFlags.HasSetMousePos |
+                               ImGuiBackendFlags.RendererHasVtxOffset;
             IO.DisplaySize = new Vector2(Width, Height);
 
             // Load fonts and atlas

@@ -155,6 +155,8 @@ namespace Fu
 #if FU_EXTERNALIZATION
         internal static Dictionary<string, FuExternalWindowContainer> ExternalWindows = new Dictionary<string, FuExternalWindowContainer>();
         internal static SDLEventRooter SDLEventRooter { get; private set; } = new SDLEventRooter();
+        private static bool _hasExternalWindowUpdateLoopOverride;
+        private static bool _runInBackgroundBeforeExternalWindows;
         /// <summary>
         /// The absolute mouse position on the monitor (used for multi context / multi window support)
         /// </summary>
@@ -603,8 +605,11 @@ namespace Fu
             // set shared time
             Time = UnityEngine.Time.unscaledTime;
 
-            // execute mainThread actions stack
-            while (_executeInMainThreadActionsStack.Count > 0)
+            // Execute only the actions that were queued before this update.
+            // Actions queued by callbacks must wait for the next Unity tick, otherwise
+            // retry loops such as deferred layout changes can spin forever in one frame.
+            int mainThreadActionsCount = _executeInMainThreadActionsStack.Count;
+            for (int i = 0; i < mainThreadActionsCount; i++)
             {
                 _executeInMainThreadActionsStack.Dequeue()?.Invoke();
             }
@@ -635,8 +640,146 @@ namespace Fu
 
 #if FU_EXTERNALIZATION
             SDL.SDL_Quit();
+            RestoreExternalWindowUpdateLoop(true);
 #endif
         }
+
+#if FU_EXTERNALIZATION
+        /// <summary>
+        /// Keep Unity updating while SDL external windows have focus.
+        /// </summary>
+        internal static void EnsureExternalWindowUpdateLoop()
+        {
+            if (_hasExternalWindowUpdateLoopOverride)
+            {
+                return;
+            }
+
+            _runInBackgroundBeforeExternalWindows = Application.runInBackground;
+            _hasExternalWindowUpdateLoopOverride = true;
+            Application.runInBackground = true;
+        }
+
+        /// <summary>
+        /// Restore the user's run-in-background setting once no external window is alive.
+        /// </summary>
+        internal static void RestoreExternalWindowUpdateLoop(bool force = false)
+        {
+            if (!_hasExternalWindowUpdateLoopOverride || (!force && ExternalWindows.Count > 0))
+            {
+                return;
+            }
+
+            Application.runInBackground = _runInBackgroundBeforeExternalWindows;
+            _hasExternalWindowUpdateLoopOverride = false;
+        }
+
+        /// <summary>
+        /// Read the physical mouse button state from SDL, even if Unity did not receive the original mouse down.
+        /// </summary>
+        internal static bool IsGlobalMouseButtonPressed(FuMouseButton button)
+        {
+            if (!EnsureSDLVideo())
+            {
+                return false;
+            }
+
+            uint sdlButton = button switch
+            {
+                FuMouseButton.Left => SDL.SDL_BUTTON_LEFT,
+                FuMouseButton.Right => SDL.SDL_BUTTON_RIGHT,
+                FuMouseButton.Center => SDL.SDL_BUTTON_MIDDLE,
+                _ => 0
+            };
+
+            if (sdlButton == 0)
+            {
+                return false;
+            }
+
+            uint state = SDL.SDL_GetGlobalMouseState(out _, out _);
+            return (state & SDL.SDL_BUTTON(sdlButton)) != 0;
+        }
+
+        /// <summary>
+        /// Read and cache the current absolute mouse position from SDL.
+        /// </summary>
+        internal static Vector2Int GetGlobalMousePosition()
+        {
+            if (!EnsureSDLVideo())
+            {
+                return AbsoluteMonitorMousePosition;
+            }
+
+            SDL.SDL_GetGlobalMouseState(out int x, out int y);
+            AbsoluteMonitorMousePosition = new Vector2Int(x, y);
+            return AbsoluteMonitorMousePosition;
+        }
+
+        internal static void UpdateExternalWindowDockPreview(FuWindow uiWindow, Vector2Int mousePosition)
+        {
+            if (uiWindow?.Container is not FuExternalWindowContainer sourceContainer)
+            {
+                Layouts?.ClearExternalWindowDockPreview(uiWindow);
+                return;
+            }
+
+            FuExternalWindowContainer targetContainer = FindExternalContainerAt(mousePosition, sourceContainer);
+            if (targetContainer == null)
+            {
+                Layouts?.ClearExternalWindowDockPreview(uiWindow);
+                return;
+            }
+
+            Layouts?.UpdateExternalWindowDockPreview(uiWindow, sourceContainer, targetContainer, mousePosition);
+        }
+
+        internal static bool TryDockExternalWindowOnPreview(FuWindow uiWindow, Vector2Int mousePosition)
+        {
+            return Layouts != null && Layouts.TryDockExternalWindowOnPreview(uiWindow, mousePosition);
+        }
+
+        internal static FuExternalWindowContainer FindExternalContainerAt(Vector2Int mousePosition, FuExternalWindowContainer excludedContainer)
+        {
+            HashSet<FuExternalWindowContainer> visited = new HashSet<FuExternalWindowContainer>();
+            foreach (FuExternalWindowContainer container in ExternalWindows.Values.ToList())
+            {
+                if (container == null ||
+                    container == excludedContainer ||
+                    !visited.Add(container))
+                {
+                    continue;
+                }
+
+                Rect rect = new Rect(container.Position, container.Size);
+                if (rect.Contains(mousePosition))
+                {
+                    return container;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Ensure SDL video is ready before querying global mouse or creating native windows.
+        /// </summary>
+        internal static bool EnsureSDLVideo()
+        {
+            if ((SDL.SDL_WasInit(SDL.SDL_INIT_VIDEO) & SDL.SDL_INIT_VIDEO) != 0)
+            {
+                return true;
+            }
+
+            if (SDL.SDL_Init(SDL.SDL_INIT_VIDEO) < 0)
+            {
+                Debug.LogError("SDL init failed: " + SDL.SDL_GetError());
+                return false;
+            }
+
+            return true;
+        }
+#endif
 
         /// <summary>
         /// Lock fugui auto set cursor icons
@@ -1246,31 +1389,37 @@ namespace Fu
             CleanPopupStack();
 
             // render any other contexts BEFORE, because 3D containers need to handle input before default to handle HasHovered3DWindowThisFrame
-            foreach (var context in Contexts)
+            foreach (var contextPair in Contexts.ToList())
             {
-                if (context.Key != 0 && context.Value.Started)
+                if (!Contexts.TryGetValue(contextPair.Key, out FuContext context) ||
+                    contextPair.Key == 0 ||
+                    !context.Started)
                 {
-                    if (context.Value.PrepareRender())
-                    {
-                        HasRenderWindowThisFrame = false;
+                    continue;
+                }
+
+                if (context.PrepareRender())
+                {
+                    HasRenderWindowThisFrame = false;
 
 #if FU_EXTERNALIZATION
-                        FuExternalWindowContainer externalWindowContainer = null;
-                        if (context.Value is FuExternalContext externalContext)
+                    FuExternalWindowContainer externalWindowContainer = null;
+                    if (context is FuExternalContext externalContext)
+                    {
+                        externalWindowContainer = externalContext.Window?.Window?.Container as FuExternalWindowContainer;
+                        if (externalWindowContainer != null)
                         {
-                            // Update external window container
-                            externalWindowContainer = ((FuExternalWindowContainer)externalContext.Window.Window.Container);
                             externalWindowContainer.Update();
                         }
+                    }
 #endif
 
-                        context.Value.Render();
-                        ExecuteAfterCurrentRenderContextCallbacks();
-                        context.Value.EndRender();
-                        if (_targetScale != -1f)
-                        {
-                            context.Value.SetScale(_targetScale, _targetFontScale);
-                        }
+                    context.Render();
+                    ExecuteAfterCurrentRenderContextCallbacks();
+                    context.EndRender();
+                    if (_targetScale != -1f)
+                    {
+                        context.SetScale(_targetScale, _targetFontScale);
                     }
                 }
             }
@@ -1353,10 +1502,30 @@ namespace Fu
                 return;
             }
 
-            if (ExternalWindows.ContainsKey(uiWindow.ID))
+            FuExternalWindowContainer sourceExternalContainer = uiWindow.Container as FuExternalWindowContainer;
+            bool detachFromExternalContainer = uiWindow.IsExternal && sourceExternalContainer != null;
+            if (ExternalWindows.ContainsKey(uiWindow.ID) && !detachFromExternalContainer)
             {
                 Debug.LogWarning($"External window for {uiWindow.ID} already exists.");
                 return;
+            }
+
+            EnsureExternalWindowUpdateLoop();
+            List<FuWindow> windowsToExternalize = Layouts != null
+                ? Layouts.GetExternalizationGroup(uiWindow)
+                : new List<FuWindow> { uiWindow };
+            if (windowsToExternalize.Count == 0)
+            {
+                windowsToExternalize.Add(uiWindow);
+            }
+            if (detachFromExternalContainer && sourceExternalContainer.Windows.Count <= windowsToExternalize.Count)
+            {
+                return;
+            }
+            Rect? externalizationRect = null;
+            if (Layouts != null && Layouts.TryGetFloatingDockRootRect(uiWindow, out Rect floatingRootRect))
+            {
+                externalizationRect = floatingRootRect;
             }
 
             // 1) Create the external Fugui context
@@ -1364,11 +1533,22 @@ namespace Fu
             Contexts.Add(context.ID, context);
 
             // 2) Create the external container bound to this context
-            var container = new FuExternalWindowContainer(uiWindow, context);
+            var container = new FuExternalWindowContainer(uiWindow, context, windowsToExternalize, externalizationRect);
             container.SetContainerScaleConfig(GetDefaultContainerScaleConfig());
+            if (externalizationRect.HasValue && Layouts != null)
+            {
+                Rect externalRootRect = new Rect(0f, 0f, Mathf.Max(1f, externalizationRect.Value.width), Mathf.Max(1f, externalizationRect.Value.height));
+                Layouts.MoveFloatingDockRootToContainer(uiWindow, container, externalRootRect);
+            }
 
-            // 3) Register and attach the window to this container
-            ExternalWindows.Add(uiWindow.ID, container);
+            // 3) Register and attach the windows to this container
+            foreach (FuWindow externalizedWindow in windowsToExternalize)
+            {
+                if (externalizedWindow != null)
+                {
+                    ExternalWindows[externalizedWindow.ID] = container;
+                }
+            }
 #else
             Debug.LogWarning("You are trying to externalize a window but externalizations are disabled in the settings.\n" +
                 "Add FU_EXTERNALIZATION define to your build settings to enable externalizations.");
@@ -1392,18 +1572,86 @@ namespace Fu
                 Debug.LogWarning($"No external window found for {uiWindow.ID}.");
                 return;
             }
-            // Close the external window container
             if(uiWindow.Container is FuExternalWindowContainer externalContainer)
             {
                 FuExternalContext externalContext = (FuExternalContext)externalContainer.Context;
-                Vector2Int windPose = externalContext.Window.Position;
-                Vector2Int defContainerPos = DefaultContainer.Position;
-                Vector2Int finalPos = windPose - defContainerPos;
+                Vector2Int mousePosition = GetGlobalMousePosition();
+                bool resumeDrag = externalContext.Window.IsDragging && IsGlobalMouseButtonPressed(FuMouseButton.Left);
+                Vector2Int dragMouseOffset = mousePosition - externalContext.Window.Position;
+                Vector2Int mainMousePosition = DefaultContainer.AbsoluteScreenToLocalPosition(mousePosition);
+                List<FuWindow> windowsToInternalize = externalContainer.Windows.Values.ToList();
+                if (windowsToInternalize.Count == 0)
+                {
+                    windowsToInternalize.Add(uiWindow);
+                }
+
+                Dictionary<string, Rect> floatingRootRects = new Dictionary<string, Rect>();
+                if (Layouts != null)
+                {
+                    foreach (FuWindow window in windowsToInternalize)
+                    {
+                        if (window == null || floatingRootRects.ContainsKey(window.ID))
+                        {
+                            continue;
+                        }
+
+                        if (!Layouts.TryGetFloatingDockRootRect(window, out Rect rootRect))
+                        {
+                            continue;
+                        }
+
+                        List<FuWindow> rootWindows = Layouts.GetExternalizationGroup(window);
+                        foreach (FuWindow rootWindow in rootWindows)
+                        {
+                            if (rootWindow != null && !floatingRootRects.ContainsKey(rootWindow.ID))
+                            {
+                                floatingRootRects.Add(rootWindow.ID, rootRect);
+                            }
+                        }
+                    }
+                }
 
                 externalContext.Window.Close(() => {
-                    // Re-add the window to the default container
-                    uiWindow.TryAddToContainer(DefaultContainer);
-                    //uiWindow.LocalPosition = finalPos;
+                    foreach (FuWindow window in windowsToInternalize)
+                    {
+                        if (window == null)
+                        {
+                            continue;
+                        }
+
+                        if (resumeDrag && window == uiWindow && !floatingRootRects.ContainsKey(window.ID))
+                        {
+                            window.RequestInternalizedDragResume(dragMouseOffset);
+                        }
+
+                        window.TryAddToContainer(DefaultContainer);
+                    }
+
+                    HashSet<string> movedFloatingRoots = new HashSet<string>();
+                    foreach (FuWindow window in windowsToInternalize)
+                    {
+                        if (window == null ||
+                            floatingRootRects.Count == 0 ||
+                            !floatingRootRects.TryGetValue(window.ID, out Rect rootRect))
+                        {
+                            continue;
+                        }
+
+                        List<FuWindow> rootWindows = Layouts.GetExternalizationGroup(window);
+                        string rootKey = rootWindows.Count > 0 && rootWindows[0] != null ? rootWindows[0].ID : window.ID;
+                        if (!movedFloatingRoots.Add(rootKey))
+                        {
+                            continue;
+                        }
+
+                        Vector2Int rootPosition = mainMousePosition - dragMouseOffset + new Vector2Int(Mathf.RoundToInt(rootRect.x), Mathf.RoundToInt(rootRect.y));
+                        Rect internalRootRect = new Rect(rootPosition.x, rootPosition.y, rootRect.width, rootRect.height);
+                        Layouts.MoveFloatingDockRootToContainer(window, DefaultContainer, internalRootRect);
+                        if (resumeDrag)
+                        {
+                            Layouts.TryBeginFloatingDockRootDrag(window, DefaultContainer, mainMousePosition);
+                        }
+                    }
                 });
             }
 #else
@@ -1417,13 +1665,22 @@ namespace Fu
         /// </summary>
         internal static void RemoveExternalWindow(FuWindow uiWindow)
         {
+            if (uiWindow == null || uiWindow.Container == null) return;
+            RemoveExternalWindow(uiWindow, uiWindow.Container.Context.ID);
+        }
+
+        /// <summary>
+        /// Remove an externalized window by its owning external context.
+        /// </summary>
+        internal static void RemoveExternalWindow(FuWindow uiWindow, int contextID)
+        {
             if (uiWindow == null) return;
             if (FuWindow.InputFocusedWindow == uiWindow)
             {
                 FuWindow.InputFocusedWindow = null;
                 FuWindow.NbInputFocusedWindow = 0;
             }
-            DestroyContext(uiWindow.Container.Context.ID);
+            DestroyContext(contextID);
         }
 
 #if !FUDEBUG

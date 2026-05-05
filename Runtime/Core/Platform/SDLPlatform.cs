@@ -21,7 +21,9 @@ namespace Fu
             base.Initialize(io, platformIO, platformName ?? "Fugui SDL Platform");
             _initialized = true;
 
-            io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors | ImGuiBackendFlags.HasSetMousePos;
+            io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors |
+                               ImGuiBackendFlags.HasSetMousePos |
+                               ImGuiBackendFlags.RendererHasVtxOffset;
             io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
 
             return true;
@@ -94,13 +96,24 @@ namespace Fu
             //{
             uint state = 0;
             int x = 0, y = 0;
-            if (_window.IsDragging && !_window.CanInternalize)
+            bool forceGlobalMouse = (_window.IsDragging && !_window.CanInternalize) ||
+                                    (FuWindow.InputFocusedWindow != null &&
+                                     _window.Window != null &&
+                                     FuWindow.InputFocusedWindow.Container == _window.Window.Container);
+            if (forceGlobalMouse)
+            {
                 state = SDL.SDL_GetGlobalMouseState(out x, out y);
+                Vector2Int windowPosition = _window.Position;
+                x -= windowPosition.x;
+                y -= windowPosition.y;
+            }
             else
+            {
                 state = SDL.SDL_GetMouseState(out x, out y);
+            }
             _mouseX = x;
             _mouseY = y;
-            if (!_window.IsMouseHover && FuWindow.InputFocusedWindow != _window.Window)
+            if (!_window.IsMouseHover && !forceGlobalMouse && FuWindow.InputFocusedWindow != _window.Window)
             {
                 _mouseX = -float.MaxValue;
                 _mouseY = -float.MaxValue;

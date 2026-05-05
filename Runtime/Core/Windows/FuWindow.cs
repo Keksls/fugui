@@ -199,6 +199,9 @@ namespace Fu
         private Vector2Int _customResizeStartWindowPos;
         private Vector2Int _customResizeStartWindowSize;
         private bool _customDragging;
+        private bool _customDraggingUsesGlobalMouseButton;
+        private bool _pendingInternalizedDragResume;
+        private Vector2Int _pendingInternalizedDragMouseOffset;
         private bool _customResizeLocksWindowInputs;
         private FuWindowResizeEdge _customResizeHoveredEdge = FuWindowResizeEdge.None;
         private FuWindowResizeEdge _customResizeEdge = FuWindowResizeEdge.None;
@@ -726,8 +729,7 @@ namespace Fu
             {
                 effectiveWindowFlags |= ImGuiWindowFlags.NoBringToFrontOnFocus;
             }
-            bool useWindowBackdrop = !externalBefore &&
-                (effectiveWindowFlags & ImGuiWindowFlags.NoBackground) == 0 &&
+            bool useWindowBackdrop = (effectiveWindowFlags & ImGuiWindowFlags.NoBackground) == 0 &&
                 Fugui.ShouldUseThemeBackdrop(FuColors.WindowBg);
             if (useWindowBackdrop)
             {
@@ -736,7 +738,7 @@ namespace Fu
 
             if (externalBefore)
             {
-                ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
+                ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, IsDocked ? 0f : Fugui.Themes.WindowRounding);
                 nativeWantDrawWindow = ImGui.Begin(ID, effectiveWindowFlags);
             }
             else if (IsClosable)
@@ -765,7 +767,7 @@ namespace Fu
             {
                 if (useWindowBackdrop)
                 {
-                    float backdropRounding = IsDocked || IsExternal ? 0f : Fugui.Themes.WindowRounding;
+                    float backdropRounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
                     Fugui.DrawCurrentWindowThemeBackdrop(FuColors.WindowBg, 1f, backdropRounding);
                 }
 
@@ -984,8 +986,12 @@ namespace Fu
 #if FU_EXTERNALIZATION
                 if (IsExternal)
                 {
-                    ((FuExternalContext)Container.Context).Window.DrawResizeHandles();
-                    DrawExternalWindowTitleButtons();
+                    FuExternalWindowContainer externalContainer = Container as FuExternalWindowContainer;
+                    if (externalContainer != null && externalContainer.IsNativeChromeOwner(this))
+                    {
+                        ((FuExternalContext)externalContainer.Context).Window.DrawResizeHandles();
+                        DrawExternalWindowTitleButtons();
+                    }
                 }
 #endif
 
@@ -1096,14 +1102,14 @@ namespace Fu
             ImDrawListPtr dl = ImGui.GetWindowDrawList();
             Vector2 pos = ImGui.GetWindowPos();
             Vector2 size = ImGui.GetWindowSize();
-            float rounding = IsDocked || IsExternal ? 0f : Fugui.Themes.WindowRounding;
+            float rounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
 
             if (customTopHeight > 0f && !customTopBarIsDockTabs)
             {
                 Vector2 titleMax = pos + new Vector2(size.x, customTopHeight);
                 uint titleColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.TitleBgActive : FuColors.TitleBg);
                 uint separatorColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.SeparatorActive : FuColors.Separator, HasFocus ? 0.9f : 0.55f);
-                dl.AddRectFilled(pos, titleMax, titleColor, rounding, IsExternal ? ImDrawFlags.None : ImDrawFlags.RoundCornersTop);
+                dl.AddRectFilled(pos, titleMax, titleColor, rounding, ImDrawFlags.RoundCornersTop);
                 dl.AddLine(new Vector2(pos.x, titleMax.y - 1f * Fugui.Scale), new Vector2(pos.x + size.x, titleMax.y - 1f * Fugui.Scale), separatorColor, Mathf.Max(1f, 1f * Fugui.Scale));
                 if (HasFocus)
                 {
@@ -1116,7 +1122,8 @@ namespace Fu
                 float textX = pos.x + (HasFocus ? 12f : 8f) * Fugui.Scale;
                 float textY = pos.y + (customTopHeight - textSize.y) * 0.5f;
                 Rect closeRect = GetCustomCloseButtonRect(customTopHeight);
-                float textClipRight = IsClosable && !IsExternal ? pos.x + closeRect.xMin - 4f * Fugui.Scale : pos.x + size.x - 8f * Fugui.Scale;
+                float externalButtonReserve = IsExternal ? (16f * Fugui.Scale + 4f * Fugui.Scale) * 3f + 8f * Fugui.Scale : 0f;
+                float textClipRight = IsClosable && !IsExternal ? pos.x + closeRect.xMin - 4f * Fugui.Scale : pos.x + size.x - 8f * Fugui.Scale - externalButtonReserve;
 
                 dl.PushClipRect(new Vector2(textX, pos.y), new Vector2(Mathf.Max(textX, textClipRight), pos.y + customTopHeight), true);
                 dl.AddText(new Vector2(textX, textY), Fugui.Themes.GetColorU32(HasFocus ? FuColors.HighlightText : FuColors.Text), title);
@@ -1135,7 +1142,7 @@ namespace Fu
         private void DrawCustomWindowChromeOverlay(ImDrawListPtr dl, Vector2 pos, Vector2 size)
         {
             Vector2 max = pos + size;
-            float rounding = IsDocked || IsExternal ? 0f : Fugui.Themes.WindowRounding;
+            float rounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
             float borderSize = Mathf.Max(1f * Fugui.Scale, Fugui.Themes.WindowBorderSize);
             if (borderSize > 0f)
             {
@@ -1323,6 +1330,7 @@ namespace Fu
             if (!CanCustomMoveWindow() && !CanCustomResizeWindow())
             {
                 _customDragging = false;
+                _customDraggingUsesGlobalMouseButton = false;
                 _customResizeEdge = FuWindowResizeEdge.None;
                 return;
             }
@@ -1335,6 +1343,12 @@ namespace Fu
             bool leftMousePressed = _customResizeEdge != FuWindowResizeEdge.None || _customResizeLocksWindowInputs
                 ? IsRawMousePressed(FuMouseButton.Left)
                 : Mouse.IsPressed(FuMouseButton.Left);
+#if FU_EXTERNALIZATION
+            if (_customDraggingUsesGlobalMouseButton && Fugui.IsGlobalMouseButtonPressed(FuMouseButton.Left))
+            {
+                leftMousePressed = true;
+            }
+#endif
             if (ShouldCloseOnMiddleClickFromHeader())
             {
                 _open = false;
@@ -1359,10 +1373,12 @@ namespace Fu
                     _customResizeStartWindowSize = Size;
                     IsResizing = true;
                     _customDragging = false;
+                    _customDraggingUsesGlobalMouseButton = false;
                 }
                 else if (CanCustomMoveWindow() && IsCustomTitleBarHovered(Mouse.Position) && !IsCustomCloseButtonHovered(Mouse.Position))
                 {
                     _customDragging = true;
+                    _customDraggingUsesGlobalMouseButton = false;
                     _customDragStartMousePos = mousePos;
                     _customDragStartWindowPos = LocalPosition;
                     IsDragging = true;
@@ -1385,7 +1401,7 @@ namespace Fu
 
             if (_customDragging)
             {
-                if (Mouse.IsPressed(FuMouseButton.Left))
+                if (leftMousePressed)
                 {
                     Vector2Int delta = mousePos - _customDragStartMousePos;
                     Vector2Int newPos = _customDragStartWindowPos + delta;
@@ -1412,6 +1428,7 @@ namespace Fu
                     {
                         ReleaseInputFocus();
                     }
+                    _customDraggingUsesGlobalMouseButton = false;
                 }
             }
 
@@ -1438,6 +1455,7 @@ namespace Fu
             ClampHeaderVisibleInContainer(ref fittedStartPos, fittedSize);
             _customResizeEdge = FuWindowResizeEdge.None;
             _customDragging = true;
+            _customDraggingUsesGlobalMouseButton = false;
             _customDragStartMousePos = currentMousePos;
             _customDragStartWindowPos = fittedStartPos;
             IsDragging = true;
@@ -1454,6 +1472,68 @@ namespace Fu
             ForceDraw(2);
             Fugui.ForceDrawAllWindows(2);
         }
+
+#if FU_EXTERNALIZATION
+        /// <summary>
+        /// Request a Fugui-owned drag continuation when an external window is reattached to the main container.
+        /// </summary>
+        internal void RequestInternalizedDragResume(Vector2Int mouseOffset)
+        {
+            _pendingInternalizedDragResume = true;
+            _pendingInternalizedDragMouseOffset = mouseOffset;
+            IsDragging = true;
+            ClearDrawDataCache();
+            ForceDraw(10);
+        }
+
+        /// <summary>
+        /// Start the pending internalization drag once the window exists in the main container again.
+        /// </summary>
+        internal bool TryBeginPendingInternalizedDrag(Vector2Int currentMousePos, bool leftMousePressed)
+        {
+            if (!_pendingInternalizedDragResume)
+            {
+                return false;
+            }
+
+            Vector2Int mouseOffset = _pendingInternalizedDragMouseOffset;
+            _pendingInternalizedDragResume = false;
+            leftMousePressed = true;
+
+            if (!leftMousePressed)
+            {
+                IsDragging = false;
+                _customDragging = false;
+                _customDraggingUsesGlobalMouseButton = false;
+                return false;
+            }
+
+            Vector2Int startWindowPos = currentMousePos - mouseOffset;
+            _customResizeEdge = FuWindowResizeEdge.None;
+            _customResizeHoveredEdge = FuWindowResizeEdge.None;
+            _customResizeLocksWindowInputs = false;
+            _customDragging = true;
+            _customDraggingUsesGlobalMouseButton = true;
+            _customDragStartMousePos = currentMousePos;
+            _customDragStartWindowPos = startWindowPos;
+            IsDragging = true;
+            IsResizing = false;
+            HasMovedThisFrame = true;
+            LocalPosition = startWindowPos;
+            _lastFramePos = startWindowPos;
+            _ignoreTransformThisFrame = true;
+            Focus();
+            _releaseFocusNextFrame = false;
+            InputFocusedWindow = this;
+            if (NbInputFocusedWindow <= 0)
+            {
+                NbInputFocusedWindow = 1;
+            }
+            ForceDraw(2);
+            Fugui.ForceDrawAllWindows(2);
+            return true;
+        }
+#endif
 
         /// <summary>
         /// Keep the docked size for normal windows, reducing only very large windows when detaching.
@@ -1982,7 +2062,9 @@ namespace Fu
             float iconRounding = 2f * Fugui.Scale;  // Icon rounding for maximize/restore
             float TitleBar_Height = WorkingAreaPosition.y;
 
-            bool IsMaximized = ((FuExternalContext)((FuExternalWindowContainer)Container).Context).Window.IsMaximized;
+            FuExternalWindowContainer externalContainer = (FuExternalWindowContainer)Container;
+            FuExternalWindow externalWindow = ((FuExternalContext)externalContainer.Context).Window;
+            bool IsMaximized = externalWindow.IsMaximized;
             float btnHeight = btnSize.ScaledSize.y;                      // Vertical size forced by the title bar
             float btnCenterOffset = (TitleBar_Height - btnSize.ScaledSize.y) * 0.5f;
 
@@ -1993,13 +2075,13 @@ namespace Fu
             // PRECALC
             // -----------------------------
             float fullBtnWidth = btnSize.ScaledSize.x + btnPaddingH;
-            float startX = Size.x - (fullBtnWidth * 3f) - 4f * Fugui.Scale;
+            float startX = externalWindow.Width - (fullBtnWidth * 3f) - 4f * Fugui.Scale;
 
             ImDrawListPtr dl = ImGui.GetForegroundDrawList();
 
-            Vector2 mousePos = Mouse.Position;
-            bool mouseDown = Mouse.IsDown(FuMouseButton.Left);
-            bool mouseClicked = Mouse.IsClicked(FuMouseButton.Left);
+            Vector2 mousePos = externalContainer.LocalMousePos;
+            bool mouseDown = externalContainer.Mouse.IsDown(FuMouseButton.Left);
+            bool mouseClicked = externalContainer.Mouse.IsClicked(FuMouseButton.Left);
 
             // Helper for hit test
             Func<Vector2, bool> isHovered = (pos) =>
@@ -2037,7 +2119,7 @@ namespace Fu
             dl.AddLine(lineStart, lineEnd, iconColor, iconThickness);
 
             if (hovered && mouseClicked)
-                ((FuExternalContext)((FuExternalWindowContainer)Container).Context).Window.Minimize();
+                externalWindow.Minimize();
 
             // -------------------------------------------------------
             // 2) MAXIMIZE / RESTORE BUTTON
@@ -2086,7 +2168,7 @@ namespace Fu
             }
 
             if (hovered && mouseClicked)
-                ((FuExternalContext)((FuExternalWindowContainer)Container).Context).Window.ToggleMaximize();
+                externalWindow.ToggleMaximize();
 
             // -------------------------------------------------------
             // 3) CLOSE BUTTON
@@ -2293,7 +2375,7 @@ namespace Fu
                     break;
 
                 case FuWindowState.Manipulating:
-                    if (!IsDragging || IsResizing || !HasCachedRenderMesh)
+                    if (!IsDragging || IsResizing || !HasCachedRenderMesh || _customDraggingUsesGlobalMouseButton)
                     {
                         mustBeDraw |= IsInterractable;
                     }
@@ -2316,12 +2398,21 @@ namespace Fu
         /// </summary>
         private void CheckAutoExternalize()
         {
-            if (!IsExternalizable || IsExternal || !IsDragging || Container == null || Container is not FuMainWindowContainer)
+            if (!IsExternalizable || !IsDragging || Container == null)
             {
                 return;
             }
 
-            // if mouse is out of container bounds, externalize
+            if (Container is not FuMainWindowContainer
+#if FU_EXTERNALIZATION
+                && Container is not FuExternalWindowContainer
+#endif
+            )
+            {
+                return;
+            }
+
+            // if mouse is out of container bounds, externalize or detach into another native window
             Vector2Int mousePos = Container.LocalMousePos;
             Rect containerRect = new Rect(Vector2.zero, Container.Size);
             if (!containerRect.Contains(mousePos))
@@ -2350,13 +2441,10 @@ namespace Fu
             }
             FuExternalWindowContainer externalContainer = (FuExternalWindowContainer)Container;
             FuExternalContext externalContext = (FuExternalContext)externalContainer.Context;
-            if (!externalContext.Window.CanInternalize || !externalContext.Window.IsDragging)
-                return;
-
             FuMainWindowContainer mainContainer = Fugui.DefaultContainer;
-            Vector2Int mousePos = externalContainer.Window.Mouse.Position + externalContainer.Position;
-            Rect mainContainerRect = new Rect(mainContainer.Position, mainContainer.Size);
-            if (mainContainerRect.Contains(mousePos))
+            Vector2Int mousePos = Fugui.AbsoluteMonitorMousePosition;
+            Rect mainContainerRect = mainContainer.AbsoluteScreenRect;
+            if (externalContext.Window.ShouldAutoInternalize(mainContainerRect, mousePos))
             {
                 Fugui.InternalizeWindow(this);
             }

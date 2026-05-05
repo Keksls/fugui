@@ -80,7 +80,7 @@ namespace Fu
             // add to dic
             FuPopupData data = new FuPopupData()
             {
-                LastFrameRender = ImGui.GetFrameCount(),
+                LastFrameRender = UnityEngine.Time.frameCount,
                 OpenThisFrame = true,
                 CloseThisFrame = false,
                 isComboBox = isComboBoxPopup,
@@ -168,7 +168,7 @@ namespace Fu
                 if (ImGui.BeginPopup(id, ImGuiWindowFlags.AlwaysAutoResize))
                 {
                     data.OpenThisFrame = false;
-                    data.LastFrameRender = ImGui.GetFrameCount();
+                    data.LastFrameRender = UnityEngine.Time.frameCount;
                     if (usePopupBackdrop)
                     {
                         Fugui.DrawCurrentPopupThemeBackdrop();
@@ -304,7 +304,7 @@ namespace Fu
         public static void CleanPopupStack()
         {
             List<string> popupIDs = _registeredPopups.Keys.ToList();
-            int lastFrameCount = ImGui.GetFrameCount() - 1;
+            int lastFrameCount = UnityEngine.Time.frameCount - 1;
             foreach (string popupID in popupIDs)
             {
                 if (_registeredPopups[popupID].LastFrameRender < lastFrameCount)

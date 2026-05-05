@@ -64,6 +64,9 @@ namespace Fu
         private Vector2Int _floatingRootResizeStartMousePos;
         private Rect _floatingRootResizeStartRect;
         private FloatingDockRootResizeEdge _floatingRootResizeEdge = FloatingDockRootResizeEdge.None;
+#if FU_EXTERNALIZATION
+        private ExternalDockPreviewState _externalDockPreview;
+#endif
 
         public event Action OnDockLayoutSet;
         public event Action OnBeforeDockLayoutSet;
@@ -773,14 +776,15 @@ namespace Fu
         /// <summary>
         /// Update manual dock node rectangles and apply them to their windows.
         /// </summary>
-        internal void UpdateCustomLayout(FuMainWindowContainer container, Rect contentRect)
+        internal void UpdateCustomLayout(IFuWindowContainer container, Rect contentRect)
         {
             if (container == null)
             {
                 return;
             }
 
-            if (CurrentLayout != null)
+            bool isMainContainer = container == Fugui.DefaultContainer;
+            if (isMainContainer && CurrentLayout != null)
             {
                 EnsureCustomLayoutPrepared(CurrentLayout);
             }
@@ -788,13 +792,18 @@ namespace Fu
             _nodeRects.Clear();
             _mainDockSplitters.Clear();
             _floatingDockSplitters.Clear();
-            if (CurrentLayout != null)
+            if (isMainContainer && CurrentLayout != null)
             {
                 UpdateCustomLayoutRecursive(CurrentLayout, contentRect, container, true);
             }
             foreach (FloatingDockRoot floatingRoot in _floatingDockRoots.ToList())
             {
                 if (!_floatingDockRoots.Contains(floatingRoot))
+                {
+                    continue;
+                }
+
+                if (floatingRoot.Container != container)
                 {
                     continue;
                 }
@@ -812,7 +821,7 @@ namespace Fu
         /// <summary>
         /// Recursively compute and apply custom dock rects.
         /// </summary>
-        private void UpdateCustomLayoutRecursive(FuDockingLayoutDefinition node, Rect rect, FuMainWindowContainer container = null, bool deferSplitterDraw = false, FloatingDockRoot owningFloatingRoot = null)
+        private void UpdateCustomLayoutRecursive(FuDockingLayoutDefinition node, Rect rect, IFuWindowContainer container = null, bool deferSplitterDraw = false, FloatingDockRoot owningFloatingRoot = null)
         {
             if (node == null)
                 return;
@@ -865,7 +874,7 @@ namespace Fu
         /// <summary>
         /// Draw and process the splitter between two dock children.
         /// </summary>
-        private void ProcessDockSplitter(FuDockingLayoutDefinition node, Rect rect, FuMainWindowContainer container, bool deferDraw, FloatingDockRoot owningFloatingRoot)
+        private void ProcessDockSplitter(FuDockingLayoutDefinition node, Rect rect, IFuWindowContainer container, bool deferDraw, FloatingDockRoot owningFloatingRoot)
         {
             if (node == null || container == null || rect.width <= 1f || rect.height <= 1f)
             {
@@ -939,7 +948,7 @@ namespace Fu
                     VisualThickness = visualThickness,
                     Scale = scale,
                     MousePosition = mousePos,
-                    ClipRect = owningFloatingRoot != null ? owningFloatingRoot.Rect : container.ContentRect,
+                    ClipRect = owningFloatingRoot != null ? owningFloatingRoot.Rect : GetContainerContentRect(container),
                     OwningFloatingRoot = owningFloatingRoot
                 };
 
@@ -954,7 +963,7 @@ namespace Fu
             }
             else
             {
-                DrawDockSplitter(ImGui.GetForegroundDrawList(), grabRect, horizontal, hovered, active, visualThickness, scale, mousePos, container.ContentRect);
+                DrawDockSplitter(ImGui.GetForegroundDrawList(), grabRect, horizontal, hovered, active, visualThickness, scale, mousePos, GetContainerContentRect(container));
             }
         }
 
@@ -965,11 +974,12 @@ namespace Fu
         {
             if (window == null ||
                 !window.IsDocked ||
-                window.Container is not FuMainWindowContainer container)
+                window.Container == null)
             {
                 return;
             }
 
+            IFuWindowContainer container = window.Container;
             FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(GetDockNodeId(window));
             List<DockSplitterDrawData> splitters = floatingRoot != null ? _floatingDockSplitters : _mainDockSplitters;
             if (!IsDockSplitterDrawOwner(window, container, floatingRoot))
@@ -977,7 +987,7 @@ namespace Fu
                 return;
             }
 
-            Rect clipRect = floatingRoot != null ? floatingRoot.Rect : container.ContentRect;
+            Rect clipRect = floatingRoot != null ? floatingRoot.Rect : GetContainerContentRect(container);
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             drawList.PushClipRect(clipRect.position, clipRect.position + clipRect.size, false);
             for (int i = 0; i < splitters.Count; i++)
@@ -1000,10 +1010,10 @@ namespace Fu
         /// <summary>
         /// Return whether the current docked window is the top-most visible window for its dock surface.
         /// </summary>
-        private bool IsDockSplitterDrawOwner(FuWindow candidate, FuMainWindowContainer container, FloatingDockRoot floatingRoot)
+        private bool IsDockSplitterDrawOwner(FuWindow candidate, IFuWindowContainer container, FloatingDockRoot floatingRoot)
         {
             FuWindow topMost = null;
-            foreach (FuWindow window in container.Windows.Values)
+            foreach (FuWindow window in GetContainerWindows(container))
             {
                 if (window == null ||
                     !window.IsDocked ||
@@ -1188,9 +1198,9 @@ namespace Fu
         /// <summary>
         /// Return whether a floating window or floating dock root above the owner should receive this pointer interaction.
         /// </summary>
-        private bool IsDockInteractionBlockedByHigherFloatingSurface(FuMainWindowContainer container, Vector2 mousePos, FloatingDockRoot owningFloatingRoot)
+        private bool IsDockInteractionBlockedByHigherFloatingSurface(IFuWindowContainer container, Vector2 mousePos, FloatingDockRoot owningFloatingRoot)
         {
-            if (container == null || container.Windows == null)
+            if (container == null)
             {
                 return false;
             }
@@ -1200,7 +1210,7 @@ namespace Fu
                 return true;
             }
 
-            List<FuWindow> windows = container.Windows.Values.ToList();
+            List<FuWindow> windows = GetContainerWindows(container);
             for (int i = windows.Count - 1; i >= 0; i--)
             {
                 FuWindow window = windows[i];
@@ -1287,21 +1297,20 @@ namespace Fu
         /// <summary>
         /// Return whether a window participates in floating mouse occlusion for custom docking.
         /// </summary>
-        private bool IsDockInteractionSurface(FuWindow window, FuMainWindowContainer container)
+        private bool IsDockInteractionSurface(FuWindow window, IFuWindowContainer container)
         {
             return window != null &&
                    window.Container == container &&
                    window.IsOpened &&
                    window.IsInitialized &&
                    window.IsInterractable &&
-                   !window.IsExternal &&
                    !window.Is3DWindow;
         }
 
         /// <summary>
         /// Draw and process the movable shell around a floating dock tree.
         /// </summary>
-        private void ProcessFloatingDockRoot(FloatingDockRoot floatingRoot, FuMainWindowContainer container)
+        private void ProcessFloatingDockRoot(FloatingDockRoot floatingRoot, IFuWindowContainer container)
         {
             if (floatingRoot == null || floatingRoot.Layout == null || container == null)
             {
@@ -1369,6 +1378,10 @@ namespace Fu
                         _floatingRootDragStartRect.y + delta.y,
                         _floatingRootDragStartRect.width,
                         _floatingRootDragStartRect.height);
+                    if (TryExternalizeFloatingDockRootDrag(floatingRoot, container, mousePos))
+                    {
+                        return;
+                    }
                     _dockDragPreviewTarget = ResolveDockDropTarget(mousePos, floatingRoot, true, container);
                     DrawDockDragPreview();
                     Fugui.ForceDrawAllWindows(2);
@@ -1401,6 +1414,47 @@ namespace Fu
                 SetFloatingDockRootResizeCursor(floatingRoot.ResizeEdge);
                 Fugui.ForceDrawAllWindows(2);
             }
+        }
+
+        /// <summary>
+        /// Move a floating dock root to a native external window when it is dragged outside its current container.
+        /// </summary>
+        private bool TryExternalizeFloatingDockRootDrag(FloatingDockRoot floatingRoot, IFuWindowContainer container, Vector2Int mousePos)
+        {
+#if FU_EXTERNALIZATION
+            if (floatingRoot == null || floatingRoot.Layout == null || container == null)
+            {
+                return false;
+            }
+
+            Rect containerRect = new Rect(Vector2.zero, container.Size);
+            if (containerRect.Contains(mousePos))
+            {
+                return false;
+            }
+
+            FuWindow representativeWindow = GetFirstRuntimeWindowInNodeTree(floatingRoot.Layout);
+            if (representativeWindow == null || !representativeWindow.IsExternalizable)
+            {
+                return false;
+            }
+
+            bool wasDragging = representativeWindow.IsDragging;
+            representativeWindow.IsDragging = true;
+            Fugui.ExternalizeWindow(representativeWindow);
+            if (representativeWindow.Container == container)
+            {
+                representativeWindow.IsDragging = wasDragging;
+                return false;
+            }
+
+            floatingRoot.HeaderHovered = false;
+            floatingRoot.HeaderActive = false;
+            ClearFloatingRootDragState();
+            return true;
+#else
+            return false;
+#endif
         }
 
         /// <summary>
@@ -1538,7 +1592,7 @@ namespace Fu
         /// <summary>
         /// Move a floating dock root and its windows above the other docked surfaces.
         /// </summary>
-        private void MoveFloatingDockRootToFront(FloatingDockRoot floatingRoot, FuMainWindowContainer container)
+        private void MoveFloatingDockRootToFront(FloatingDockRoot floatingRoot, IFuWindowContainer container)
         {
             if (floatingRoot == null)
             {
@@ -1547,7 +1601,54 @@ namespace Fu
 
             _floatingDockRoots.Remove(floatingRoot);
             _floatingDockRoots.Add(floatingRoot);
-            container?.BringWindowsToFront(GetRuntimeWindowIdsInNodeTree(floatingRoot.Layout));
+            BringContainerWindowsToFront(container, GetRuntimeWindowIdsInNodeTree(floatingRoot.Layout));
+        }
+
+        private List<FuWindow> GetContainerWindows(IFuWindowContainer container)
+        {
+            List<FuWindow> windows = new List<FuWindow>();
+            container?.OnEachWindow(window =>
+            {
+                if (window != null)
+                {
+                    windows.Add(window);
+                }
+            });
+            return windows;
+        }
+
+        private Rect GetContainerContentRect(IFuWindowContainer container)
+        {
+            if (container is FuMainWindowContainer mainContainer)
+            {
+                return mainContainer.ContentRect;
+            }
+
+            if (container == null)
+            {
+                return new Rect(0f, 0f, 1f, 1f);
+            }
+
+            return new Rect(Vector2.zero, container.Size);
+        }
+
+        private void BringContainerWindowsToFront(IFuWindowContainer container, IEnumerable<string> windowIds)
+        {
+            if (container == null || windowIds == null)
+            {
+                return;
+            }
+
+            if (container is FuMainWindowContainer mainContainer)
+            {
+                mainContainer.BringWindowsToFront(windowIds);
+            }
+#if FU_EXTERNALIZATION
+            else if (container is FuExternalWindowContainer externalContainer)
+            {
+                externalContainer.BringWindowsToFront(windowIds);
+            }
+#endif
         }
 
         /// <summary>
@@ -1574,15 +1675,13 @@ namespace Fu
         private Rect BuildFloatingDockRootRectFromContent(Rect contentRect, IFuWindowContainer container)
         {
             Rect rect = contentRect;
-            return container is FuMainWindowContainer mainContainer
-                ? FitFloatingDockRootInsideContainer(rect, mainContainer)
-                : rect;
+            return FitFloatingDockRootInsideContainer(rect, container);
         }
 
         /// <summary>
         /// Clamp a floating dock root so it stays fully visible in the main container.
         /// </summary>
-        private Rect FitFloatingDockRootInsideContainer(Rect rect, FuMainWindowContainer container)
+        private Rect FitFloatingDockRootInsideContainer(Rect rect, IFuWindowContainer container)
         {
             if (container == null)
             {
@@ -1601,7 +1700,7 @@ namespace Fu
         /// <summary>
         /// Move a floating dock root only enough to keep part of its tab header visible.
         /// </summary>
-        private Rect ClampFloatingDockRootHeaderVisibleInContainer(Rect rect, FuMainWindowContainer container)
+        private Rect ClampFloatingDockRootHeaderVisibleInContainer(Rect rect, IFuWindowContainer container)
         {
             if (container == null)
             {
@@ -1892,6 +1991,19 @@ namespace Fu
             return windowIds;
         }
 
+        private FuWindow GetFirstRuntimeWindowInNodeTree(FuDockingLayoutDefinition node)
+        {
+            foreach (string windowId in GetRuntimeWindowIdsInNodeTree(node))
+            {
+                if (Fugui.UIWindows.TryGetValue(windowId, out FuWindow window))
+                {
+                    return window;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Recursively collect runtime window ids under a dock node.
         /// </summary>
@@ -2002,10 +2114,278 @@ namespace Fu
             return nodeId != 0u && FindFloatingDockRootForNode(nodeId) != null;
         }
 
+        internal List<FuWindow> GetExternalizationGroup(FuWindow window)
+        {
+            FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(GetDockNodeId(window));
+            if (floatingRoot == null)
+            {
+                return window != null ? new List<FuWindow> { window } : new List<FuWindow>();
+            }
+
+            List<FuWindow> windows = new List<FuWindow>();
+            foreach (string windowId in GetRuntimeWindowIdsInNodeTree(floatingRoot.Layout))
+            {
+                if (Fugui.UIWindows.TryGetValue(windowId, out FuWindow dockedWindow))
+                {
+                    windows.Add(dockedWindow);
+                }
+            }
+
+            return windows.Count > 0 ? windows : new List<FuWindow> { window };
+        }
+
+        internal bool TryGetFloatingDockRootRect(FuWindow window, out Rect rect)
+        {
+            FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(GetDockNodeId(window));
+            if (floatingRoot != null)
+            {
+                rect = floatingRoot.Rect;
+                return true;
+            }
+
+            rect = default;
+            return false;
+        }
+
+        internal void MoveFloatingDockRootToContainer(FuWindow window, IFuWindowContainer container, Rect rect)
+        {
+            FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(GetDockNodeId(window));
+            if (floatingRoot == null || container == null)
+            {
+                return;
+            }
+
+            floatingRoot.Container = container;
+            floatingRoot.Rect = rect;
+            MoveFloatingDockRootToFront(floatingRoot, container);
+            UpdateCustomLayoutRecursive(floatingRoot.Layout, GetFloatingDockRootContentRect(floatingRoot), container);
+        }
+
+        internal bool TryBeginFloatingDockRootDrag(FuWindow window, IFuWindowContainer container, Vector2Int mousePos)
+        {
+            FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(GetDockNodeId(window));
+            if (floatingRoot == null || container == null)
+            {
+                return false;
+            }
+
+            BeginFloatingDockRootDrag(floatingRoot, container, mousePos);
+            return true;
+        }
+
+#if FU_EXTERNALIZATION
+        internal void UpdateExternalWindowDockPreview(FuWindow sourceWindow, FuExternalWindowContainer sourceContainer, FuExternalWindowContainer targetContainer, Vector2Int mousePosition)
+        {
+            if (sourceWindow == null || sourceContainer == null || targetContainer == null || sourceContainer == targetContainer)
+            {
+                ClearExternalWindowDockPreview(sourceWindow);
+                return;
+            }
+
+            if (_externalDockPreview == null || _externalDockPreview.SourceWindow != sourceWindow)
+            {
+                _externalDockPreview = new ExternalDockPreviewState();
+            }
+
+            _externalDockPreview.SourceWindow = sourceWindow;
+            _externalDockPreview.SourceContainer = sourceContainer;
+            _externalDockPreview.TargetContainer = targetContainer;
+            _externalDockPreview.MousePosition = mousePosition;
+        }
+
+        internal void ClearExternalWindowDockPreview(FuWindow sourceWindow)
+        {
+            if (_externalDockPreview == null)
+            {
+                return;
+            }
+
+            if (sourceWindow == null || _externalDockPreview.SourceWindow == sourceWindow)
+            {
+                _externalDockPreview = null;
+            }
+        }
+
+        internal void DrawExternalWindowDockPreview(FuExternalWindowContainer container)
+        {
+            if (_externalDockPreview == null ||
+                container == null ||
+                _externalDockPreview.SourceWindow == null ||
+                _externalDockPreview.SourceContainer == null ||
+                _externalDockPreview.TargetContainer == null)
+            {
+                return;
+            }
+
+            if (container != _externalDockPreview.TargetContainer &&
+                container != _externalDockPreview.SourceContainer)
+            {
+                return;
+            }
+
+            bool drawTargetContainer = container == _externalDockPreview.TargetContainer;
+            if (drawTargetContainer)
+            {
+                UpdateAndDrawExternalDockPreviewInTargetContainer(_externalDockPreview);
+                return;
+            }
+
+            DrawExternalDockPreviewInSourceContainer(_externalDockPreview);
+        }
+
+        internal bool TryDockExternalWindowOnPreview(FuWindow sourceWindow, Vector2Int mousePosition)
+        {
+            if (_externalDockPreview == null ||
+                sourceWindow == null ||
+                _externalDockPreview.SourceWindow != sourceWindow ||
+                _externalDockPreview.SourceContainer == null ||
+                _externalDockPreview.TargetContainer == null ||
+                !_externalDockPreview.ResolvedTarget.IsValid)
+            {
+                ClearExternalWindowDockPreview(sourceWindow);
+                return false;
+            }
+
+            FuExternalWindowContainer sourceContainer = _externalDockPreview.SourceContainer;
+            FuExternalWindowContainer targetContainer = _externalDockPreview.TargetContainer;
+            DockDropZone releaseZone = GetHoveredDockZone(_externalDockPreview.ZoneRects, mousePosition - targetContainer.Position);
+            if (releaseZone == DockDropZone.None)
+            {
+                ClearExternalWindowDockPreview(sourceWindow);
+                return false;
+            }
+
+            if (releaseZone != _externalDockPreview.HoveredZone)
+            {
+                _externalDockPreview.HoveredZone = releaseZone;
+                Rect previewRect = GetDropPreviewRect(_externalDockPreview.TargetSurfaceRect, releaseZone);
+                _externalDockPreview.ResolvedTarget = _externalDockPreview.ResolvedTarget.FloatingWindow != null
+                    ? DockDropTarget.ForFloatingWindow(_externalDockPreview.ResolvedTarget.FloatingWindow, releaseZone, previewRect)
+                    : DockDropTarget.ForNode(_externalDockPreview.ResolvedTarget.NodeId, releaseZone, previewRect);
+            }
+
+            DockDropTarget target = _externalDockPreview.ResolvedTarget;
+            FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(GetDockNodeId(sourceWindow));
+            List<FuWindow> windowsToMove = sourceContainer.Windows.Values.ToList();
+            if (windowsToMove.Count == 0)
+            {
+                windowsToMove.Add(sourceWindow);
+            }
+
+            bool docked = floatingRoot != null
+                ? DockFloatingRootToTarget(floatingRoot, target, targetContainer)
+                : DockWindowToTarget(sourceWindow, target);
+            if (!docked)
+            {
+                ClearExternalWindowDockPreview(sourceWindow);
+                return false;
+            }
+
+            foreach (FuWindow window in windowsToMove)
+            {
+                if (window == null)
+                {
+                    continue;
+                }
+
+                window.IsDragging = false;
+                window.TryAddToContainer(targetContainer);
+                Fugui.ExternalWindows[window.ID] = targetContainer;
+            }
+
+            if (sourceContainer.Windows.Count == 0)
+            {
+                ((FuExternalContext)sourceContainer.Context).Window.Close(null);
+            }
+
+            ClearExternalWindowDockPreview(sourceWindow);
+            Fugui.ForceDrawAllWindows(2);
+            return true;
+        }
+
+        private void UpdateAndDrawExternalDockPreviewInTargetContainer(ExternalDockPreviewState state)
+        {
+            Vector2Int localMouse = state.MousePosition - state.TargetContainer.Position;
+            FloatingDockRoot draggedRoot = FindFloatingDockRootForNode(GetDockNodeId(state.SourceWindow));
+            DockSurfaceTarget surface = FindDockSurfaceTarget(localMouse, null, draggedRoot, state.TargetContainer);
+            if (!surface.IsValid)
+            {
+                state.ZoneRects = null;
+                state.ResolvedTarget = DockDropTarget.Invalid;
+                return;
+            }
+
+            state.TargetSurfaceRect = surface.Rect;
+            state.ZoneRects = GetDockZoneButtonRects(surface.Rect);
+            state.HoveredZone = GetHoveredDockZone(state.ZoneRects, localMouse);
+            DrawDockZoneButtons(state.ZoneRects, state.HoveredZone);
+
+            state.ResolvedTarget = state.HoveredZone == DockDropZone.None
+                ? DockDropTarget.Invalid
+                : surface.FloatingWindow != null
+                    ? DockDropTarget.ForFloatingWindow(surface.FloatingWindow, state.HoveredZone, GetDropPreviewRect(surface.Rect, state.HoveredZone))
+                    : DockDropTarget.ForNode(surface.NodeId, state.HoveredZone, GetDropPreviewRect(surface.Rect, state.HoveredZone));
+
+            if (state.ResolvedTarget.IsValid)
+            {
+                DrawDockDragPreview(state.ResolvedTarget.PreviewRect);
+            }
+        }
+
+        private void DrawExternalDockPreviewInSourceContainer(ExternalDockPreviewState state)
+        {
+            if (state.ZoneRects == null || state.ZoneRects.Count == 0)
+            {
+                return;
+            }
+
+            Vector2 offset = state.TargetContainer.Position - state.SourceContainer.Position;
+            Dictionary<DockDropZone, Rect> transformedZoneRects = OffsetDockZoneRects(state.ZoneRects, offset);
+            DrawDockZoneButtons(transformedZoneRects, state.HoveredZone);
+            if (state.ResolvedTarget.IsValid)
+            {
+                DrawDockDragPreview(OffsetRect(state.ResolvedTarget.PreviewRect, offset));
+            }
+        }
+
+        private DockDropZone GetHoveredDockZone(Dictionary<DockDropZone, Rect> zoneRects, Vector2 mousePos)
+        {
+            if (zoneRects == null)
+            {
+                return DockDropZone.None;
+            }
+
+            foreach (KeyValuePair<DockDropZone, Rect> pair in zoneRects)
+            {
+                if (pair.Value.Contains(mousePos))
+                {
+                    return pair.Key;
+                }
+            }
+
+            return DockDropZone.None;
+        }
+
+        private Dictionary<DockDropZone, Rect> OffsetDockZoneRects(Dictionary<DockDropZone, Rect> zoneRects, Vector2 offset)
+        {
+            Dictionary<DockDropZone, Rect> result = new Dictionary<DockDropZone, Rect>();
+            foreach (KeyValuePair<DockDropZone, Rect> pair in zoneRects)
+            {
+                result[pair.Key] = OffsetRect(pair.Value, offset);
+            }
+            return result;
+        }
+
+        private Rect OffsetRect(Rect rect, Vector2 offset)
+        {
+            return new Rect(rect.position + offset, rect.size);
+        }
+#endif
+
         /// <summary>
         /// Select and bring forward a docked window.
         /// </summary>
-        internal bool ActivateDockedWindow(FuWindow window, FuMainWindowContainer container)
+        internal bool ActivateDockedWindow(FuWindow window, IFuWindowContainer container)
         {
             uint nodeId = GetDockNodeId(window);
             if (window == null || nodeId == 0u)
@@ -2144,8 +2524,7 @@ namespace Fu
             }
 
             Vector2Int mousePos = ownerWindow.Container.LocalMousePos;
-            if (ownerWindow.Container is FuMainWindowContainer mainContainer &&
-                IsDockInteractionBlockedByHigherFloatingSurface(mainContainer, mousePos, FindFloatingDockRootForNode(nodeId)))
+            if (IsDockInteractionBlockedByHigherFloatingSurface(ownerWindow.Container, mousePos, FindFloatingDockRootForNode(nodeId)))
             {
                 return false;
             }
@@ -2185,8 +2564,7 @@ namespace Fu
 
             FuMouseState mouse = ownerWindow.Container.Mouse;
             Vector2Int mousePos = ownerWindow.Container.LocalMousePos;
-            bool inputBlocked = ownerWindow.Container is FuMainWindowContainer mainContainer &&
-                                IsDockInteractionBlockedByHigherFloatingSurface(mainContainer, mousePos, floatingRoot);
+            bool inputBlocked = IsDockInteractionBlockedByHigherFloatingSurface(ownerWindow.Container, mousePos, floatingRoot);
             bool hovered = _draggedFloatingRoot == null &&
                            _resizedFloatingRoot == null &&
                            _activeResizeNodeId == 0u &&
@@ -2221,7 +2599,7 @@ namespace Fu
             _floatingRootDragStartMousePos = mousePos;
             _floatingRootDragStartRect = floatingRoot.Rect;
             floatingRoot.HeaderActive = true;
-            MoveFloatingDockRootToFront(floatingRoot, container as FuMainWindowContainer);
+            MoveFloatingDockRootToFront(floatingRoot, container);
             ClearPendingTabDrag();
             Fugui.ForceDrawAllWindows(2);
         }
@@ -2271,8 +2649,7 @@ namespace Fu
 
             FuMouseState mouse = ownerWindow.Container.Mouse;
             Vector2Int mousePos = ownerWindow.Container.LocalMousePos;
-            if (ownerWindow.Container is FuMainWindowContainer mainContainer &&
-                IsDockInteractionBlockedByHigherFloatingSurface(mainContainer, mousePos, FindFloatingDockRootForNode(nodeId)))
+            if (IsDockInteractionBlockedByHigherFloatingSurface(ownerWindow.Container, mousePos, FindFloatingDockRootForNode(nodeId)))
             {
                 if (_pendingTabDragNodeId == nodeId)
                 {
@@ -2469,14 +2846,14 @@ namespace Fu
 
             FuDockingLayoutDefinition root = CreateRuntimeDockNode("FloatingDockRoot");
             root.AutoHideTopBar = false;
-            FloatingDockRoot newFloatingRoot = new FloatingDockRoot(root, rootRect);
+            FloatingDockRoot newFloatingRoot = new FloatingDockRoot(root, rootRect, targetWindow.Container);
             _floatingDockRoots.Add(newFloatingRoot);
 
             if (zone == DockDropZone.Center || zone == DockDropZone.None)
             {
                 RegisterWindowToDockNode(targetWindow, root);
                 RegisterWindowToDockNode(draggedWindow, root);
-                UpdateCustomLayoutRecursive(root, GetFloatingDockRootContentRect(newFloatingRoot));
+                UpdateCustomLayoutRecursive(root, GetFloatingDockRootContentRect(newFloatingRoot), targetWindow.Container);
                 return true;
             }
 
@@ -2487,14 +2864,14 @@ namespace Fu
 
             RegisterWindowToDockNode(targetWindow, existingLeaf);
             RegisterWindowToDockNode(draggedWindow, incomingLeaf);
-            UpdateCustomLayoutRecursive(root, GetFloatingDockRootContentRect(newFloatingRoot));
+            UpdateCustomLayoutRecursive(root, GetFloatingDockRootContentRect(newFloatingRoot), targetWindow.Container);
             return true;
         }
 
         /// <summary>
         /// Dock an entire floating dock root into a resolved target.
         /// </summary>
-        private bool DockFloatingRootToTarget(FloatingDockRoot floatingRoot, DockDropTarget target, FuMainWindowContainer container)
+        private bool DockFloatingRootToTarget(FloatingDockRoot floatingRoot, DockDropTarget target, IFuWindowContainer container)
         {
             if (floatingRoot == null || floatingRoot.Layout == null || !target.IsValid)
             {
@@ -2602,7 +2979,7 @@ namespace Fu
         /// <summary>
         /// Dock a floating root with a regular floating window.
         /// </summary>
-        private bool DockFloatingRootWithFloatingWindow(FloatingDockRoot floatingRoot, FuWindow targetWindow, DockDropZone zone, FuMainWindowContainer container)
+        private bool DockFloatingRootWithFloatingWindow(FloatingDockRoot floatingRoot, FuWindow targetWindow, DockDropZone zone, IFuWindowContainer container)
         {
             if (floatingRoot == null ||
                 floatingRoot.Layout == null ||
@@ -2628,7 +3005,7 @@ namespace Fu
 
                 FuDockingLayoutDefinition root = CreateRuntimeDockNode("FloatingDockRoot");
                 root.AutoHideTopBar = false;
-                FloatingDockRoot newFloatingRoot = new FloatingDockRoot(root, rootRect);
+                FloatingDockRoot newFloatingRoot = new FloatingDockRoot(root, rootRect, targetWindow.Container);
                 _floatingDockRoots.Add(newFloatingRoot);
 
                 RegisterWindowToDockNode(targetWindow, root);
@@ -2647,7 +3024,7 @@ namespace Fu
             rootNode.AutoHideTopBar = false;
             FuDockingLayoutDefinition existingLeaf = CreateRuntimeDockNode("FloatingDockExisting");
             _floatingDockRoots.Remove(floatingRoot);
-            FloatingDockRoot combinedRoot = new FloatingDockRoot(rootNode, rootRect);
+            FloatingDockRoot combinedRoot = new FloatingDockRoot(rootNode, rootRect, targetWindow.Container);
             _floatingDockRoots.Add(combinedRoot);
 
             ConfigureSplitNode(rootNode, existingLeaf, floatingRoot.Layout, zone);
@@ -2701,7 +3078,7 @@ namespace Fu
             RebuildNodeIndex();
 
             RegisterWindowToDockNode(window, incomingLeaf);
-            UpdateCustomLayoutRecursive(targetNode, targetRect);
+            UpdateCustomLayoutRecursive(targetNode, targetRect, window.Container);
             return true;
         }
 
@@ -2741,7 +3118,7 @@ namespace Fu
         /// <summary>
         /// Resolve a dock target for an entire floating dock root.
         /// </summary>
-        private DockDropTarget ResolveDockDropTarget(Vector2 mousePos, FloatingDockRoot draggedRoot, bool drawZones, FuMainWindowContainer container)
+        private DockDropTarget ResolveDockDropTarget(Vector2 mousePos, FloatingDockRoot draggedRoot, bool drawZones, IFuWindowContainer container)
         {
             DockSurfaceTarget surface = FindDockSurfaceTarget(mousePos, null, draggedRoot, container);
             return ResolveDockDropTarget(mousePos, surface, drawZones);
@@ -2787,7 +3164,7 @@ namespace Fu
         /// <summary>
         /// Find the smallest dockable surface under the pointer.
         /// </summary>
-        private DockSurfaceTarget FindDockSurfaceTarget(Vector2 mousePos, FuWindow draggedWindow, FloatingDockRoot draggedRoot, FuMainWindowContainer container)
+        private DockSurfaceTarget FindDockSurfaceTarget(Vector2 mousePos, FuWindow draggedWindow, FloatingDockRoot draggedRoot, IFuWindowContainer container)
         {
             DockSurfaceTarget frontFloatingTarget = draggedWindow != null
                 ? FindFrontFloatingDockSurfaceTarget(mousePos, draggedWindow)
@@ -2832,33 +3209,33 @@ namespace Fu
         /// </summary>
         private DockSurfaceTarget FindFrontFloatingDockSurfaceTarget(Vector2 mousePos, FuWindow draggedWindow)
         {
-            if (draggedWindow == null || draggedWindow.Container is not FuMainWindowContainer mainContainer)
+            if (draggedWindow == null || draggedWindow.Container == null)
             {
                 return DockSurfaceTarget.Invalid;
             }
 
-            return FindFrontFloatingDockSurfaceTarget(mousePos, mainContainer, draggedWindow);
+            return FindFrontFloatingDockSurfaceTarget(mousePos, draggedWindow.Container, draggedWindow);
         }
 
         /// <summary>
         /// Find the front-most floating dockable window under the pointer inside a given container.
         /// </summary>
-        private DockSurfaceTarget FindFrontFloatingDockSurfaceTarget(Vector2 mousePos, FuMainWindowContainer mainContainer)
+        private DockSurfaceTarget FindFrontFloatingDockSurfaceTarget(Vector2 mousePos, IFuWindowContainer container)
         {
-            return FindFrontFloatingDockSurfaceTarget(mousePos, mainContainer, null);
+            return FindFrontFloatingDockSurfaceTarget(mousePos, container, null);
         }
 
         /// <summary>
         /// Find the front-most floating dockable window under the pointer inside a given container.
         /// </summary>
-        private DockSurfaceTarget FindFrontFloatingDockSurfaceTarget(Vector2 mousePos, FuMainWindowContainer mainContainer, FuWindow draggedWindow)
+        private DockSurfaceTarget FindFrontFloatingDockSurfaceTarget(Vector2 mousePos, IFuWindowContainer container, FuWindow draggedWindow)
         {
-            if (mainContainer == null)
+            if (container == null)
             {
                 return DockSurfaceTarget.Invalid;
             }
 
-            List<FuWindow> windows = mainContainer.Windows.Values.ToList();
+            List<FuWindow> windows = GetContainerWindows(container);
             for (int i = windows.Count - 1; i >= 0; i--)
             {
                 FuWindow targetWindow = windows[i];
@@ -2866,8 +3243,7 @@ namespace Fu
                     targetWindow == draggedWindow ||
                     targetWindow.IsDocked ||
                     !targetWindow.IsDockable ||
-                    targetWindow.IsExternal ||
-                    targetWindow.Container != mainContainer ||
+                    targetWindow.Container != container ||
                     targetWindow.IsDragging ||
                     !targetWindow.LocalRect.Contains(mousePos))
                 {
@@ -3013,7 +3389,11 @@ namespace Fu
                 return;
             }
 
-            Rect rect = _dockDragPreviewTarget.PreviewRect;
+            DrawDockDragPreview(_dockDragPreviewTarget.PreviewRect);
+        }
+
+        private void DrawDockDragPreview(Rect rect)
+        {
             ImDrawListPtr drawList = ImGui.GetForegroundDrawList();
             Vector2 min = rect.position;
             Vector2 max = rect.position + rect.size;
@@ -3505,19 +3885,35 @@ namespace Fu
             }
         }
 
+#if FU_EXTERNALIZATION
+        private class ExternalDockPreviewState
+        {
+            public FuWindow SourceWindow;
+            public FuExternalWindowContainer SourceContainer;
+            public FuExternalWindowContainer TargetContainer;
+            public Vector2Int MousePosition;
+            public Rect TargetSurfaceRect;
+            public Dictionary<DockDropZone, Rect> ZoneRects;
+            public DockDropZone HoveredZone;
+            public DockDropTarget ResolvedTarget;
+        }
+#endif
+
         private class FloatingDockRoot
         {
             public FuDockingLayoutDefinition Layout;
             public Rect Rect;
+            public IFuWindowContainer Container;
             public bool HeaderHovered;
             public bool HeaderActive;
             public FloatingDockRootResizeEdge ResizeEdge;
             public bool ResizeActive;
 
-            public FloatingDockRoot(FuDockingLayoutDefinition layout, Rect rect)
+            public FloatingDockRoot(FuDockingLayoutDefinition layout, Rect rect, IFuWindowContainer container)
             {
                 Layout = layout;
                 Rect = rect;
+                Container = container;
             }
         }
 

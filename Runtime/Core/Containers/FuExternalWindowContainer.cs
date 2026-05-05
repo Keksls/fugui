@@ -1,6 +1,8 @@
 #if FU_EXTERNALIZATION
 using ImGuiNET;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Fu
@@ -19,10 +21,12 @@ namespace Fu
         public FuMouseState Mouse => _mouse;
         public FuContainerScaleConfig ContainerScaleConfig => _context.ContainerScaleConfig;
         public FuWindow Window => _window;
+        public Dictionary<string, FuWindow> Windows { get; private set; }
 
         private readonly FuExternalContext _context;
         private readonly FuMouseState _mouse;
         private readonly FuKeyboardState _keyboard;
+        private readonly List<string> _pendingBringToFrontWindowIds = new List<string>();
 
         private FuWindow _window;
 
@@ -31,31 +35,43 @@ namespace Fu
 
         public event Action OnPostRenderWindows;
 
-        public FuExternalWindowContainer(FuWindow window, FuExternalContext context)
+        public FuExternalWindowContainer(FuWindow window, FuExternalContext context, IReadOnlyList<FuWindow> windows = null, Rect? externalizationRect = null)
         {
             _context = context;
-            _context.AddContainer(this);
 
+            Windows = new Dictionary<string, FuWindow>();
             _mouse = new FuMouseState();
             _keyboard = new FuKeyboardState(_context.IO);
-            _size = window.Size;
+            _size = externalizationRect.HasValue
+                ? new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(externalizationRect.Value.width)), Mathf.Max(1, Mathf.RoundToInt(externalizationRect.Value.height)))
+                : window.Size;
             _context.OnPrepareFrame += context_OnPrepareFrame;
             _context.OnRender += RenderFuWindows;
 
-            Vector2Int absMousePos = Fugui.AbsoluteMonitorMousePosition;
+            Vector2Int absMousePos = Fugui.GetGlobalMousePosition();
             Vector2Int winContainerMousePos = window.Container.LocalMousePos;
             Vector2Int absContainerPos = absMousePos - winContainerMousePos;
+            Vector2Int sourceLocalPosition = externalizationRect.HasValue
+                ? new Vector2Int(Mathf.RoundToInt(externalizationRect.Value.x), Mathf.RoundToInt(externalizationRect.Value.y))
+                : window.LocalPosition;
+            Vector2Int initialWindowPosition = absContainerPos + sourceLocalPosition;
+            Vector2Int dragStartMouseOffset = absMousePos - initialWindowPosition;
 
-            _context.Window.Position = absContainerPos + window.LocalPosition;
+            _context.Window.Position = initialWindowPosition;
 
-            TryAddWindow(window);
-
-            _window.OnResized += (window) =>
+            if (externalizationRect.HasValue)
             {
-                _size = window.Size;
-            };
+                window.Size = _size;
+            }
 
-            _context.Window.Create(_window.IsDragging);
+            IReadOnlyList<FuWindow> windowsToAdd = windows != null && windows.Count > 0 ? windows : new List<FuWindow> { window };
+            for (int i = 0; i < windowsToAdd.Count; i++)
+            {
+                TryAddWindow(windowsToAdd[i]);
+            }
+
+            _context.Window.SetNativeSize(_size);
+            _context.Window.Create(window.IsDragging, dragStartMouseOffset);
         }
 
         /// <summary>
@@ -93,28 +109,83 @@ namespace Fu
         /// </summary>
         public void RenderFuWindows()
         {
-            // render each window
-            RenderFuWindow(_window);
+            ApplyPendingWindowOrder();
+            _context.Window.UpdateManipulation();
+            Fugui.Layouts?.UpdateCustomLayout(this, new Rect(Vector2.zero, Size));
+            SyncPrimaryWindowToNativeBounds();
 
             if (_window == null || !_window.IsExternal)
+            {
+                _context.Window.Render();
                 return;
+            }
+
+            foreach (FuWindow window in Windows.Values.ToList())
+            {
+                if (window.IsDocked && !(Fugui.Layouts?.IsWindowInFloatingDockRoot(window) ?? false))
+                {
+                    RenderFuWindow(window);
+                }
+            }
+
+            foreach (FuWindow window in Windows.Values.ToList())
+            {
+                bool floatingDockWindow = window.IsDocked && (Fugui.Layouts?.IsWindowInFloatingDockRoot(window) ?? false);
+                if ((!window.IsDocked && !window.IsDragging) || floatingDockWindow)
+                {
+                    RenderFuWindow(window);
+                }
+            }
+
+            foreach (FuWindow window in Windows.Values.ToList())
+            {
+                if (!window.IsDocked && window.IsDragging)
+                {
+                    RenderFuWindow(window);
+                }
+            }
+
+            Fugui.Layouts?.DrawExternalWindowDockPreview(this);
+            _context.Window.Render();
+            FuWindow primaryWindow = _window;
+            if (primaryWindow == null)
+            {
+                return;
+            }
 
             // render notifications
-            if (!_window.NoContextMenu)
+            if (!primaryWindow.NoContextMenu)
                 Fugui.RenderContextMenu();
 
             // render modal
-            if (!_window.NoModal)
+            if (!primaryWindow.NoModal)
                 Fugui.RenderModal(this);
 
             // render popup message
             Fugui.RenderPopupMessage();
 
             // render notifications
-            if (!_window.NoNotify)
+            if (!primaryWindow.NoNotify)
                 Fugui.RenderNotifications(this);
 
             OnPostRenderWindows?.Invoke();
+        }
+
+        private void SyncPrimaryWindowToNativeBounds()
+        {
+            if (_window == null)
+            {
+                return;
+            }
+
+            bool floatingDockRoot = _window.IsDocked && (Fugui.Layouts?.IsWindowInFloatingDockRoot(_window) ?? false);
+            if (floatingDockRoot)
+            {
+                return;
+            }
+
+            _window.LocalPosition = Vector2Int.zero;
+            _window.Size = _size;
         }
 
         /// <summary>
@@ -133,58 +204,131 @@ namespace Fu
                 // to block fugui mouse events, we first need to update mouse state so manipulations update have current inputs
                 // then we clear mouse events before drawing
                 window.Mouse.UpdateState(window);
-                _context.Window.UpdateManipulation();
                 window.Mouse.Clear();
                 window.DrawWindow(true, true);
             }
             else
             {
-                _context.Window.UpdateManipulation();
                 window.DrawWindow();
             }
-            _context.Window.Render();
         }
 
         public void OnEachWindow(Action<FuWindow> callback)
         {
-            callback?.Invoke(_window);
+            foreach (FuWindow window in Windows.Values)
+            {
+                callback?.Invoke(window);
+            }
         }
 
-        public bool HasWindow(string id) => _window != null && _window.ID == id;
+        public bool HasWindow(string id) => !string.IsNullOrEmpty(id) && Windows.ContainsKey(id);
+
+        internal bool IsNativeChromeOwner(FuWindow window)
+        {
+            return window != null && window == _window;
+        }
 
         public bool TryAddWindow(FuWindow window)
         {
             if (window == null)
                 return false;
-            if (_window != null && !_window.TryRemoveFromContainer())
-            {
+            if (Windows.ContainsKey(window.ID))
                 return false;
-            }
 
+            Vector2Int worldPosition = window.Container != null ? window.WorldPosition : Position + window.LocalPosition;
             if (window.Container != null && !window.TryRemoveFromContainer())
             {
                 return false;
             }
-            _window = window;
-            _window.Container = this;
-            _window.IsExternal = true;
-            _window.LocalPosition = Vector2Int.zero;
-            _window.InitializeOnContainer();
+
+            if (_window == null)
+            {
+                _window = window;
+            }
+
+            Windows.Add(window.ID, window);
+            window.Container = this;
+            window.IsExternal = true;
+            if (!window.IsDocked)
+            {
+                window.LocalPosition = worldPosition - Position;
+            }
+            window.InitializeOnContainer();
+#if FU_EXTERNALIZATION
+            Vector2Int handoffMousePos = Fugui.GetGlobalMousePosition() - Position;
+            bool handoffLeftMousePressed = Fugui.IsGlobalMouseButtonPressed(FuMouseButton.Left);
+            window.TryBeginPendingInternalizedDrag(handoffMousePos, handoffLeftMousePressed);
+#endif
             return true;
         }
 
         public bool TryRemoveWindow(string id)
         {
-            if (_window != null && _window.ID == id)
+            if (string.IsNullOrEmpty(id) || !Windows.TryGetValue(id, out FuWindow window))
             {
-                _window.IsExternal = false;
-                _window = null;
-                return true;
+                return false;
             }
-            return false;
+
+            Windows.Remove(id);
+            window.IsExternal = false;
+            if (_window == window)
+            {
+                _window = Windows.Count > 0 ? Windows.Values.First() : null;
+                if (_window != null)
+                {
+                    ((FuExternalContext)_context).Window.SetWindow(_window);
+                }
+            }
+            if (window.Container == this)
+            {
+                window.Container = null;
+            }
+            return true;
         }
 
         public bool ForcePos() => true;
+
+        internal void BringWindowsToFront(IEnumerable<string> windowIds)
+        {
+            if (windowIds == null)
+            {
+                return;
+            }
+
+            foreach (string windowId in windowIds)
+            {
+                if (!string.IsNullOrEmpty(windowId) && Windows.ContainsKey(windowId))
+                {
+                    _pendingBringToFrontWindowIds.Add(windowId);
+                }
+            }
+        }
+
+        private void ApplyPendingWindowOrder()
+        {
+            if (_pendingBringToFrontWindowIds.Count == 0)
+            {
+                return;
+            }
+
+            foreach (string windowId in _pendingBringToFrontWindowIds)
+            {
+                MoveWindowToEnd(windowId);
+            }
+
+            _pendingBringToFrontWindowIds.Clear();
+        }
+
+        private void MoveWindowToEnd(string windowId)
+        {
+            if (!Windows.TryGetValue(windowId, out FuWindow window))
+            {
+                return;
+            }
+
+            Windows.Remove(windowId);
+            Windows.Add(windowId, window);
+        }
 
         /// <summary>
         /// Configure how this container scales its context.
@@ -204,7 +348,6 @@ namespace Fu
             _context.OnPrepareFrame -= context_OnPrepareFrame;
             _context.OnRender -= RenderFuWindows;
             _context.Window.Close(onClosed);
-            _context.RemoveContainer(this);
         }
     }
 }

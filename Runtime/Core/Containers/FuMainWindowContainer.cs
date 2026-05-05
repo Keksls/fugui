@@ -30,6 +30,24 @@ namespace Fu
         /// The position of the container in world space.
         /// </summary>
         public Vector2Int Position => _worldPosition;
+        internal Vector2Int AbsoluteScreenPosition
+        {
+            get
+            {
+                Vector2Int position = _worldPosition;
+#if UNITY_EDITOR
+                position.y += EditorGameViewContentYOffset;
+#endif
+                return position;
+            }
+        }
+        internal Rect AbsoluteScreenRect
+        {
+            get
+            {
+                return new Rect(AbsoluteScreenPosition, _size);
+            }
+        }
         /// <summary>
         /// The size of the container.
         /// </summary>
@@ -80,6 +98,9 @@ namespace Fu
         private bool _floatingWindowSwitcherOpen;
         private int _floatingWindowSwitchIndex = -1;
         private string _floatingWindowSwitchOriginId;
+#if UNITY_EDITOR
+        private const int EditorGameViewContentYOffset = 40;
+#endif
         // The mouse position relative to the container.
         private Vector2Int _mousePos;
         // The size of the container.
@@ -183,9 +204,8 @@ namespace Fu
                 if (window.Container != null)
                 {
                     Vector2Int worldPos = window.WorldPosition;
-                    worldPos.y -= 40;
                     window.Container = this;
-                    window.LocalPosition = worldPos - Position;
+                    window.LocalPosition = AbsoluteScreenToLocalPosition(worldPos);
                 }
                 else
                 {
@@ -195,7 +215,23 @@ namespace Fu
                 // register window events
                 window.OnClosed += UIWindow_OnClose;
                 window.InitializeOnContainer();
+#if FU_EXTERNALIZATION
+                Vector2Int handoffMousePos = AbsoluteScreenToLocalPosition(Fugui.AbsoluteMonitorMousePosition);
+                bool handoffLeftMousePressed = _fuMouseState.IsPressed(FuMouseButton.Left);
+                window.TryBeginPendingInternalizedDrag(handoffMousePos, handoffLeftMousePressed);
+#endif
             }
+        }
+
+        internal Vector2Int AbsoluteScreenToLocalPosition(Vector2Int screenPosition)
+        {
+#if FU_EXTERNALIZATION
+            if (Fugui.ExternalWindows.Count > 0)
+            {
+                return screenPosition - (Fugui.AbsoluteMonitorMousePosition - _mousePos);
+            }
+#endif
+            return screenPosition - AbsoluteScreenPosition;
         }
 
         /// <summary>

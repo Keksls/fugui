@@ -177,11 +177,20 @@ namespace Fu.Framework
             }
 
             bool grabHovered = tryGetGrabInput(out InputState inputState);
-            _grabHandleHovered = grabHovered;
-            setContainerResizeBlocked(grabHovered || _dragging);
+            bool canUseGrabHandle = grabHovered && !Fugui.IsMouseButtonPressedBeforeCurrentFrame(FuMouseButton.Left);
+            _grabHandleHovered = canUseGrabHandle;
+            setContainerResizeBlocked(canUseGrabHandle || _dragging);
+            if (canUseGrabHandle || _dragging)
+            {
+                Fugui.BlockWindowInputsForFrame();
+            }
             updateGrabHandleVisualState();
 
-            if (grabHovered && inputState.MouseButtons[0])
+            bool grabMouseDown = canUseGrabHandle &&
+                                 inputState.MouseButtons[0] &&
+                                 Fugui.TryGetBlockedFrameRawMouseDown(FuMouseButton.Left, out bool rawMouseDown) &&
+                                 rawMouseDown;
+            if (grabMouseDown)
             {
                 startDrag(inputState.RaycasterID);
                 return;

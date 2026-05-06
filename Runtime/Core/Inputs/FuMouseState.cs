@@ -107,6 +107,18 @@ namespace Fu
         }
 
         /// <summary>
+        /// Suppress per-window mouse buttons and wheel without modifying ImGui's shared IO state.
+        /// </summary>
+        internal void SuppressWindowInputs()
+        {
+            _wheel = Vector2.zero;
+            for (int i = 0; i < ButtonStates.Length; i++)
+            {
+                ButtonStates[i] = new FuButtonState(i);
+            }
+        }
+
+        /// <summary>
         /// set current mouse position
         /// </summary>
         /// <param name="window">window to set mouse position on</param>
@@ -173,6 +185,11 @@ namespace Fu
             // set mouse pos and wheel
             SetPosition(window);
             SetWheel(new Vector2(window.Container.Context.IO.MouseWheelH, window.Container.Context.IO.MouseWheel));
+            if (Fugui.WindowInputsBlockedThisFrame)
+            {
+                SuppressWindowInputs();
+                return;
+            }
 
             bool btn0State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Left) != 0;
             bool btn1State = ImGuiNative.igIsMouseDown_Nil(ImGuiMouseButton.Right) != 0;

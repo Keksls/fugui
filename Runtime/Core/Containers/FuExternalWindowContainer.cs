@@ -1,5 +1,4 @@
 #if FU_EXTERNALIZATION
-using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +8,7 @@ namespace Fu
 {
     /// <summary>
     /// Container used by an external ImGui context.
-    /// It manages one or several FuWindow instances in a separate GL context.
+    /// It renders FuWindow instances in a separate native GL context without running Fugui docking.
     /// </summary>
     public class FuExternalWindowContainer : IFuWindowContainer
     {
@@ -35,40 +34,27 @@ namespace Fu
 
         public event Action OnPostRenderWindows;
 
-        public FuExternalWindowContainer(FuWindow window, FuExternalContext context, IReadOnlyList<FuWindow> windows = null, Rect? externalizationRect = null)
+        public FuExternalWindowContainer(FuWindow window, FuExternalContext context)
         {
             _context = context;
 
             Windows = new Dictionary<string, FuWindow>();
             _mouse = new FuMouseState();
             _keyboard = new FuKeyboardState(_context.IO);
-            _size = externalizationRect.HasValue
-                ? new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(externalizationRect.Value.width)), Mathf.Max(1, Mathf.RoundToInt(externalizationRect.Value.height)))
-                : window.Size;
+            _size = window.Size;
             _context.OnPrepareFrame += context_OnPrepareFrame;
             _context.OnRender += RenderFuWindows;
 
             Vector2Int absMousePos = Fugui.GetGlobalMousePosition();
             Vector2Int winContainerMousePos = window.Container.LocalMousePos;
             Vector2Int absContainerPos = absMousePos - winContainerMousePos;
-            Vector2Int sourceLocalPosition = externalizationRect.HasValue
-                ? new Vector2Int(Mathf.RoundToInt(externalizationRect.Value.x), Mathf.RoundToInt(externalizationRect.Value.y))
-                : window.LocalPosition;
+            Vector2Int sourceLocalPosition = window.LocalPosition;
             Vector2Int initialWindowPosition = absContainerPos + sourceLocalPosition;
             Vector2Int dragStartMouseOffset = absMousePos - initialWindowPosition;
 
             _context.Window.Position = initialWindowPosition;
 
-            if (externalizationRect.HasValue)
-            {
-                window.Size = _size;
-            }
-
-            IReadOnlyList<FuWindow> windowsToAdd = windows != null && windows.Count > 0 ? windows : new List<FuWindow> { window };
-            for (int i = 0; i < windowsToAdd.Count; i++)
-            {
-                TryAddWindow(windowsToAdd[i]);
-            }
+            TryAddWindow(window);
 
             _context.Window.SetNativeSize(_size);
             _context.Window.Create(window.IsDragging, dragStartMouseOffset);
@@ -111,7 +97,6 @@ namespace Fu
         {
             ApplyPendingWindowOrder();
             _context.Window.UpdateManipulation();
-            Fugui.Layouts?.UpdateCustomLayout(this, new Rect(Vector2.zero, Size));
             SyncPrimaryWindowToNativeBounds();
 
             if (_window == null || !_window.IsExternal)
@@ -122,30 +107,9 @@ namespace Fu
 
             foreach (FuWindow window in Windows.Values.ToList())
             {
-                if (window.IsDocked && !(Fugui.Layouts?.IsWindowInFloatingDockRoot(window) ?? false))
-                {
-                    RenderFuWindow(window);
-                }
+                RenderFuWindow(window);
             }
 
-            foreach (FuWindow window in Windows.Values.ToList())
-            {
-                bool floatingDockWindow = window.IsDocked && (Fugui.Layouts?.IsWindowInFloatingDockRoot(window) ?? false);
-                if ((!window.IsDocked && !window.IsDragging) || floatingDockWindow)
-                {
-                    RenderFuWindow(window);
-                }
-            }
-
-            foreach (FuWindow window in Windows.Values.ToList())
-            {
-                if (!window.IsDocked && window.IsDragging)
-                {
-                    RenderFuWindow(window);
-                }
-            }
-
-            Fugui.Layouts?.DrawExternalWindowDockPreview(this);
             _context.Window.Render();
             FuWindow primaryWindow = _window;
             if (primaryWindow == null)
@@ -174,12 +138,6 @@ namespace Fu
         private void SyncPrimaryWindowToNativeBounds()
         {
             if (_window == null)
-            {
-                return;
-            }
-
-            bool floatingDockRoot = _window.IsDocked && (Fugui.Layouts?.IsWindowInFloatingDockRoot(_window) ?? false);
-            if (floatingDockRoot)
             {
                 return;
             }
@@ -232,6 +190,11 @@ namespace Fu
         {
             if (window == null)
                 return false;
+            if (window.IsDocked)
+            {
+                Debug.LogWarning($"Cannot add docked window {window.ID} to an external Fugui container.");
+                return false;
+            }
             if (Windows.ContainsKey(window.ID))
                 return false;
 
@@ -249,10 +212,7 @@ namespace Fu
             Windows.Add(window.ID, window);
             window.Container = this;
             window.IsExternal = true;
-            if (!window.IsDocked)
-            {
-                window.LocalPosition = worldPosition - Position;
-            }
+            window.LocalPosition = worldPosition - Position;
             window.InitializeOnContainer();
 #if FU_EXTERNALIZATION
             Vector2Int handoffMousePos = Fugui.GetGlobalMousePosition() - Position;

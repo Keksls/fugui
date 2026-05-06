@@ -824,6 +824,7 @@ namespace Fu
 
             if (_activeResizeHandleIndex != -1)
             {
+                Fugui.BlockWindowInputsForFrame();
                 setResizeHandlesVisible(true);
                 continueRuntimeResize();
                 Window.ForceDraw(2);
@@ -831,13 +832,22 @@ namespace Fu
             }
 
             bool handleHovered = tryGetHoveredResizeHandle(out int hoveredHandleIndex, out InputState handleInputState);
-            _hoveredResizeHandleIndex = handleHovered ? hoveredHandleIndex : -1;
-            if (handleHovered && handleInputState.MouseButtons[0])
+            bool canUseHoveredHandle = handleHovered && !Fugui.IsMouseButtonPressedBeforeCurrentFrame(FuMouseButton.Left);
+            _hoveredResizeHandleIndex = canUseHoveredHandle ? hoveredHandleIndex : -1;
+            if (canUseHoveredHandle)
+            {
+                Fugui.BlockWindowInputsForFrame();
+            }
+            bool handleMouseDown = canUseHoveredHandle &&
+                                   handleInputState.MouseButtons[0] &&
+                                   Fugui.TryGetBlockedFrameRawMouseDown(FuMouseButton.Left, out bool rawMouseDown) &&
+                                   rawMouseDown;
+            if (handleMouseDown)
             {
                 startRuntimeResize(hoveredHandleIndex, handleInputState.RaycasterID);
             }
 
-            bool handlesShouldBeVisible = panelInputState.Hovered || handleHovered || _activeResizeHandleIndex != -1;
+            bool handlesShouldBeVisible = panelInputState.Hovered || canUseHoveredHandle || _activeResizeHandleIndex != -1;
 
             setResizeHandlesVisible(handlesShouldBeVisible);
 
@@ -846,7 +856,7 @@ namespace Fu
                 Window.ForceDraw(2);
             }
 
-            return handleHovered || _activeResizeHandleIndex != -1;
+            return canUseHoveredHandle || _activeResizeHandleIndex != -1;
         }
 
         /// <summary>

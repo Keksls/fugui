@@ -1483,6 +1483,11 @@ namespace Fu
         /// <param name="uiWindow">The Fugui window to externalize.</param>
         public static void ExternalizeWindow(FuWindow uiWindow)
         {
+            ExternalizeWindow(uiWindow, false);
+        }
+
+        internal static void ExternalizeWindow(FuWindow uiWindow, bool allowDetachingLastExternalWindow)
+        {
 #if FU_EXTERNALIZATION
             if (uiWindow == null)
             {
@@ -1518,7 +1523,9 @@ namespace Fu
             {
                 windowsToExternalize.Add(uiWindow);
             }
-            if (detachFromExternalContainer && sourceExternalContainer.Windows.Count <= windowsToExternalize.Count)
+            if (detachFromExternalContainer &&
+                !allowDetachingLastExternalWindow &&
+                sourceExternalContainer.Windows.Count <= windowsToExternalize.Count)
             {
                 return;
             }
@@ -1576,9 +1583,11 @@ namespace Fu
             {
                 FuExternalContext externalContext = (FuExternalContext)externalContainer.Context;
                 Vector2Int mousePosition = GetGlobalMousePosition();
+                Vector2Int nativeWindowPosition = externalContext.Window.Position;
                 bool resumeDrag = externalContext.Window.IsDragging && IsGlobalMouseButtonPressed(FuMouseButton.Left);
-                Vector2Int dragMouseOffset = mousePosition - externalContext.Window.Position;
+                Vector2Int dragMouseOffset = mousePosition - nativeWindowPosition;
                 Vector2Int mainMousePosition = DefaultContainer.AbsoluteScreenToLocalPosition(mousePosition);
+                Vector2Int mainNativeWindowPosition = DefaultContainer.AbsoluteScreenToLocalPosition(nativeWindowPosition, false);
                 List<FuWindow> windowsToInternalize = externalContainer.Windows.Values.ToList();
                 if (windowsToInternalize.Count == 0)
                 {
@@ -1644,12 +1653,12 @@ namespace Fu
                             continue;
                         }
 
-                        Vector2Int rootPosition = mainMousePosition - dragMouseOffset + new Vector2Int(Mathf.RoundToInt(rootRect.x), Mathf.RoundToInt(rootRect.y));
+                        Vector2Int rootPosition = mainNativeWindowPosition + new Vector2Int(Mathf.RoundToInt(rootRect.x), Mathf.RoundToInt(rootRect.y));
                         Rect internalRootRect = new Rect(rootPosition.x, rootPosition.y, rootRect.width, rootRect.height);
                         Layouts.MoveFloatingDockRootToContainer(window, DefaultContainer, internalRootRect);
                         if (resumeDrag)
                         {
-                            Layouts.TryBeginFloatingDockRootDrag(window, DefaultContainer, mainMousePosition);
+                            Layouts.TryBeginFloatingDockRootDrag(window, DefaultContainer, mainMousePosition, true);
                         }
                     }
                 });

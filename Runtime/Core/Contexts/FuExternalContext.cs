@@ -18,6 +18,7 @@ namespace Fu
         public string Title => _window.Title;
         public int Width => _window.Width;
         public int Height => _window.Height;
+        internal bool HasPendingExternalRender { get; private set; } = true;
 
         public FuExternalContext(int index, float scale, float fontScale, System.Action onInitialize, FuWindow window) : base(index, scale, fontScale, onInitialize)
         {
@@ -51,6 +52,16 @@ namespace Fu
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
 
             SetDefaultImGuiIniFilePath(null);
+        }
+
+        internal void MarkExternalRenderDirty()
+        {
+            HasPendingExternalRender = true;
+        }
+
+        internal void MarkExternalRenderClean()
+        {
+            HasPendingExternalRender = false;
         }
 
         internal override bool PrepareRender()
@@ -144,6 +155,7 @@ namespace Fu
             }
             TextureManager.InitializeFontAtlas(IO);
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
+            MarkExternalRenderDirty();
         }
     }
 }

@@ -344,6 +344,13 @@ namespace Fu
         /// <param name="v">The v value.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glUniform1i_t(int loc, int v);
         /// <summary>
+        /// Defines the gl Uniform2f t callback signature.
+        /// </summary>
+        /// <param name="loc">The loc value.</param>
+        /// <param name="x">The x value.</param>
+        /// <param name="y">The y value.</param>
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void glUniform2f_t(int loc, float x, float y);
+        /// <summary>
         /// Defines the gl Uniform Matrix4fv t callback signature.
         /// </summary>
         /// <param name="loc">The loc value.</param>
@@ -492,6 +499,7 @@ namespace Fu
         public static glUseProgram_t glUseProgram;
         public static glGetUniformLocation_t glGetUniformLocation;
         public static glUniform1i_t glUniform1i;
+        public static glUniform2f_t glUniform2f;
         public static glUniformMatrix4fv_t glUniformMatrix4fv;
 
         public static glGenTextures_t glGenTextures;
@@ -556,6 +564,7 @@ namespace Fu
             glUseProgram = Load<glUseProgram_t>("glUseProgram");
             glGetUniformLocation = Load<glGetUniformLocation_t>("glGetUniformLocation");
             glUniform1i = Load<glUniform1i_t>("glUniform1i");
+            glUniform2f = Load<glUniform2f_t>("glUniform2f");
             glUniformMatrix4fv = Load<glUniformMatrix4fv_t>("glUniformMatrix4fv");
 
             glGenTextures = Load<glGenTextures_t>("glGenTextures");

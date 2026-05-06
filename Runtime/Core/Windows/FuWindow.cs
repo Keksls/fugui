@@ -51,6 +51,7 @@ namespace Fu
         public Action<FuWindow, Vector2> FooterUI { get; set; }
         public bool HasMovedThisFrame { get; private set; }
         public bool HasJustBeenDraw { get; set; }
+        internal bool HasPendingExternalRender { get; set; }
         public bool WantCaptureKeyboard { get; private set; }
         public bool CanInternalize { get; internal set; }
         public int TargetFPS
@@ -202,6 +203,8 @@ namespace Fu
         private bool _customDraggingUsesGlobalMouseButton;
         private bool _pendingInternalizedDragResume;
         private Vector2Int _pendingInternalizedDragMouseOffset;
+        private bool _suppressAutoExternalizeUntilRegistrationCleared;
+        private bool _isDrawingDockedChildContent;
         private bool _customResizeLocksWindowInputs;
         private FuWindowResizeEdge _customResizeHoveredEdge = FuWindowResizeEdge.None;
         private FuWindowResizeEdge _customResizeEdge = FuWindowResizeEdge.None;
@@ -302,9 +305,14 @@ namespace Fu
             get { return _size; }
             set
             {
+                bool changed = _size != value;
                 _size = value;
                 _localRect = new Rect(_localPosition, _size);
                 _forceSizeNextFrame = true;
+                if (changed && IsExternal)
+                {
+                    HasPendingExternalRender = true;
+                }
             }
         }
 
@@ -347,9 +355,14 @@ namespace Fu
             get { return _localPosition; }
             set
             {
+                bool changed = _localPosition != value;
                 _localPosition = value;
                 _localRect = new Rect(_localPosition, _size);
                 _forceLocationNextFrame = true;
+                if (changed && IsExternal)
+                {
+                    HasPendingExternalRender = true;
+                }
             }
         }
         #endregion
@@ -719,13 +732,17 @@ namespace Fu
             {
                 effectiveWindowFlags |= ImGuiWindowFlags.NoInputs;
             }
+            if (Fugui.Layouts?.IsWindowOccludedByFloatingDockSurface(this) ?? false)
+            {
+                effectiveWindowFlags |= ImGuiWindowFlags.NoInputs;
+            }
             effectiveWindowFlags |= ImGuiWindowFlags.NoTitleBar |
                                     ImGuiWindowFlags.NoResize |
                                     ImGuiWindowFlags.NoMove |
                                     ImGuiWindowFlags.NoCollapse |
                                     ImGuiWindowFlags.NoDocking |
                                     ImGuiWindowFlags.NoSavedSettings;
-            if (IsDocked)
+            if (IsDocked && !(Fugui.Layouts?.IsWindowInFloatingDockRoot(this) ?? false))
             {
                 effectiveWindowFlags |= ImGuiWindowFlags.NoBringToFrontOnFocus;
             }
@@ -842,6 +859,128 @@ namespace Fu
             Layout.Dispose();
         }
 
+        internal virtual void DrawDockedChildContent(Vector2 childSize, bool preventUpdatingMouse = false, bool preventUpdatingKeyboard = false)
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            if (Fugui.Layouts != null && !Fugui.Layouts.ShouldDrawWindow(this))
+            {
+                SkipDrawForCustomDocking();
+                return;
+            }
+
+            CheckAutoExternalize();
+            CheckAutoInternalize();
+
+            _ignoreResizeForThisFrame = false;
+            HasMovedThisFrame = false;
+            Vector2Int newFrameSize = Size;
+            Vector2Int newFramePos = LocalPosition;
+
+            if (_releaseFocusNextFrame)
+            {
+                InputFocusedWindow = null;
+                _releaseFocusNextFrame = false;
+            }
+
+            Layout = new FuLayout();
+            OnPreDraw?.Invoke(this);
+
+            if (IsHovered)
+            {
+                Fugui.Push(ImGuiCol.TabSelected, Fugui.Themes.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCol.TabDimmedSelected, Fugui.Themes.GetColor(FuColors.HoveredWindowTab));
+            }
+            else
+            {
+                Fugui.Push(ImGuiCol.TabSelected, Fugui.Themes.GetColor(FuColors.TabSelected));
+                Fugui.Push(ImGuiCol.TabDimmedSelected, Fugui.Themes.GetColor(FuColors.TabDimmedSelected));
+            }
+            Fugui.Push(ImGuiCol.ChildBg, Fugui.Themes.GetColor(FuColors.WindowBg));
+
+            Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(6f, 4f));
+            Fugui.Push(ImGuiStyleVar.WindowBorderSize, 0f);
+            int windowStylePushCount = 2;
+
+            bool lastFrameHovered = IsHovered;
+            ImGuiWindowFlags childFlags =
+                ImGuiWindowFlags.NoTitleBar |
+                ImGuiWindowFlags.NoResize |
+                ImGuiWindowFlags.NoMove |
+                ImGuiWindowFlags.NoCollapse |
+                ImGuiWindowFlags.NoDocking |
+                ImGuiWindowFlags.NoSavedSettings;
+            if (!IsInterractable || BlocksWindowInputs || (Fugui.Layouts?.IsWindowOccludedByFloatingDockSurface(this) ?? false))
+            {
+                childFlags |= ImGuiWindowFlags.NoInputs;
+            }
+
+            _isDrawingDockedChildContent = true;
+            bool nativeWantDrawWindow = ImGui.BeginChild(ID + "##DockedContent", childSize, ImGuiChildFlags.None, childFlags);
+
+            processHoverState();
+            if (!preventUpdatingMouse)
+                Mouse.UpdateState(this);
+            if (!preventUpdatingKeyboard)
+                Keyboard.UpdateState();
+            ProcessCustomWindowManipulation(ref newFrameSize, ref newFramePos);
+            FocusCurrentImGuiWindowIfRequested();
+
+            if (nativeWantDrawWindow)
+            {
+                TryDrawUI();
+                newFrameSize = Size;
+                newFramePos = LocalPosition;
+                HasFocus = ImGuiNative.igIsWindowFocused(ImGuiFocusedFlags.None) != 0;
+                DrawDebugPanel();
+                IsVisible = true;
+            }
+            else
+            {
+                IsVisible = false;
+                IsHovered = false;
+            }
+
+            ImGui.EndChild();
+            _isDrawingDockedChildContent = false;
+            Fugui.PopStyle(windowStylePushCount);
+
+            if (lastFrameHovered != IsHovered)
+            {
+                if (IsHovered)
+                {
+                    OnHoverIn?.Invoke(this);
+                }
+                else
+                {
+                    OnHoverOut?.Invoke(this);
+                }
+            }
+
+            Fugui.PopColor(3);
+            if (_lastFrameVisible != IsVisible)
+            {
+                Fugui.ForceDrawAllWindows();
+            }
+            _lastFrameVisible = IsVisible;
+            OnPostDraw?.Invoke(this);
+            if (_forceRedraw > 0)
+            {
+                _forceRedraw--;
+            }
+            if (_sendReadyNextFrame)
+            {
+                _sendReadyNextFrame = false;
+                OnInitialized?.Invoke(this);
+            }
+            Layout.Dispose();
+            _lastFramePos = newFramePos;
+            _lastFrameSize = newFrameSize;
+        }
+
         /// <summary>
         /// Process the hover state of this window.
         /// </summary>
@@ -881,6 +1020,11 @@ namespace Fu
                 }
             }
 
+            if (IsHovered && (Fugui.Layouts?.IsWindowOccludedByFloatingDockSurface(this) ?? false))
+            {
+                IsHovered = false;
+            }
+
             // if a 3D window is already hovered this frame, block non-3D windows only
             if (IsHovered && Fugui.HasHovered3DWindowThisFrame && !Is3DWindow)
             {
@@ -916,7 +1060,7 @@ namespace Fu
             DrawCustomWindowFrame(customTopHeight, customTopBarIsDockTabs);
             DrawCustomTopBarContent(customTopHeight, customTopBarIsDockTabs, baseCursorPos);
 
-            if (MustBeDraw())
+            if (_isDrawingDockedChildContent || MustBeDraw())
             {
                 Fugui.HasRenderWindowThisFrame = true;
                 CurrentDrawingWindow = this;
@@ -978,7 +1122,10 @@ namespace Fu
                 WantCaptureKeyboard = IsInterractable && ImGui.GetIO().WantTextInput;
                 // draw overlays
                 DrawOverlays();
-                Fugui.Layouts?.DrawDockSplittersForWindow(this);
+                if (!_isDrawingDockedChildContent)
+                {
+                    Fugui.Layouts?.DrawDockSplittersForWindow(this);
+                }
                 DrawCustomWindowChromeOverlay(ImGui.GetWindowDrawList(), ImGui.GetWindowPos(), ImGui.GetWindowSize());
 
                 // if external, draw resize grips and resize hover feedback
@@ -987,7 +1134,7 @@ namespace Fu
                 if (IsExternal)
                 {
                     FuExternalWindowContainer externalContainer = Container as FuExternalWindowContainer;
-                    if (externalContainer != null && externalContainer.IsNativeChromeOwner(this))
+                    if (externalContainer != null && ShouldDrawExternalNativeChrome())
                     {
                         ((FuExternalContext)externalContainer.Context).Window.DrawResizeHandles();
                         DrawExternalWindowTitleButtons();
@@ -1038,13 +1185,58 @@ namespace Fu
         /// </summary>
         private float GetCustomTopChromeHeight()
         {
-            if (IsDocked)
+            if (_isDrawingDockedChildContent)
             {
-                return Fugui.Layouts != null ? Fugui.Layouts.GetDockedTabBarHeight(this) : 0f;
+                return 0f;
             }
 
-            return ShouldDrawCustomTitleBar() ? GetCustomTitleBarHeight() : 0f;
+            float externalNativeTitleBarHeight = GetExternalNativeTitleBarHeight();
+            if (IsDocked)
+            {
+                float dockedTabBarHeight = Fugui.Layouts != null ? Fugui.Layouts.GetDockedTabBarHeight(this) : 0f;
+                return dockedTabBarHeight;
+            }
+
+            return externalNativeTitleBarHeight > 0f
+                ? externalNativeTitleBarHeight
+                : ShouldDrawCustomTitleBar() ? GetCustomTitleBarHeight() : 0f;
         }
+
+        /// <summary>
+        /// Returns the Fugui-owned title bar height that represents the native external window shell.
+        /// </summary>
+        internal float GetExternalNativeTitleBarHeight()
+        {
+#if FU_EXTERNALIZATION
+            if (IsDocked && (Fugui.Layouts?.IsWindowInExternalNativeDockRoot(this) ?? false))
+            {
+                return 0f;
+            }
+
+            if (ShouldDrawExternalNativeChrome() && ShouldDrawCustomTitleBar())
+            {
+                return GetCustomTitleBarHeight();
+            }
+#endif
+
+            return 0f;
+        }
+
+#if FU_EXTERNALIZATION
+        /// <summary>
+        /// Returns whether this visible window should draw the native external shell chrome.
+        /// </summary>
+        private bool ShouldDrawExternalNativeChrome()
+        {
+            if (!IsExternal || Container is not FuExternalWindowContainer externalContainer)
+            {
+                return false;
+            }
+
+            return externalContainer.IsNativeChromeOwner(this) &&
+                   !(Fugui.Layouts?.IsWindowInExternalNativeDockRoot(this) ?? false);
+        }
+#endif
 
         /// <summary>
         /// Returns whether this window should draw a Fugui title bar.
@@ -1068,6 +1260,11 @@ namespace Fu
         /// </summary>
         private float GetCustomBottomChromeReserve()
         {
+            if (_isDrawingDockedChildContent)
+            {
+                return 0f;
+            }
+
             return Mathf.Max(1f * Fugui.Scale, Fugui.Themes.WindowBorderSize);
         }
 
@@ -1081,13 +1278,15 @@ namespace Fu
                 return;
             }
 
-            ImGui.SetCursorScreenPos(baseCursorPos);
+            float externalNativeTitleBarHeight = GetExternalNativeTitleBarHeight();
             if (customTopBarIsDockTabs && Fugui.Layouts != null)
             {
+                ImGui.SetCursorScreenPos(baseCursorPos + new Vector2(0f, externalNativeTitleBarHeight));
                 Fugui.Layouts.DrawDockedTabs(this, Layout);
             }
             else
             {
+                ImGui.SetCursorScreenPos(baseCursorPos);
                 ImGui.Dummy(new Vector2(Mathf.Max(1f, ImGui.GetContentRegionAvail().x), customTopHeight));
             }
 
@@ -1103,10 +1302,15 @@ namespace Fu
             Vector2 pos = ImGui.GetWindowPos();
             Vector2 size = ImGui.GetWindowSize();
             float rounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
-
-            if (customTopHeight > 0f && !customTopBarIsDockTabs)
+            float titleBarHeight = GetExternalNativeTitleBarHeight();
+            if (titleBarHeight <= 0f && customTopHeight > 0f && !customTopBarIsDockTabs)
             {
-                Vector2 titleMax = pos + new Vector2(size.x, customTopHeight);
+                titleBarHeight = customTopHeight;
+            }
+
+            if (titleBarHeight > 0f)
+            {
+                Vector2 titleMax = pos + new Vector2(size.x, titleBarHeight);
                 uint titleColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.TitleBgActive : FuColors.TitleBg);
                 uint separatorColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.SeparatorActive : FuColors.Separator, HasFocus ? 0.9f : 0.55f);
                 dl.AddRectFilled(pos, titleMax, titleColor, rounding, ImDrawFlags.RoundCornersTop);
@@ -1120,12 +1324,12 @@ namespace Fu
                 string title = Fugui.GetUntagedText(WindowName.Name);
                 Vector2 textSize = ImGui.CalcTextSize(title);
                 float textX = pos.x + (HasFocus ? 12f : 8f) * Fugui.Scale;
-                float textY = pos.y + (customTopHeight - textSize.y) * 0.5f;
-                Rect closeRect = GetCustomCloseButtonRect(customTopHeight);
+                float textY = pos.y + (titleBarHeight - textSize.y) * 0.5f;
+                Rect closeRect = GetCustomCloseButtonRect(titleBarHeight);
                 float externalButtonReserve = IsExternal ? (16f * Fugui.Scale + 4f * Fugui.Scale) * 3f + 8f * Fugui.Scale : 0f;
                 float textClipRight = IsClosable && !IsExternal ? pos.x + closeRect.xMin - 4f * Fugui.Scale : pos.x + size.x - 8f * Fugui.Scale - externalButtonReserve;
 
-                dl.PushClipRect(new Vector2(textX, pos.y), new Vector2(Mathf.Max(textX, textClipRight), pos.y + customTopHeight), true);
+                dl.PushClipRect(new Vector2(textX, pos.y), new Vector2(Mathf.Max(textX, textClipRight), pos.y + titleBarHeight), true);
                 dl.AddText(new Vector2(textX, textY), Fugui.Themes.GetColorU32(HasFocus ? FuColors.HighlightText : FuColors.Text), title);
                 dl.PopClipRect();
 
@@ -1141,6 +1345,11 @@ namespace Fu
         /// </summary>
         private void DrawCustomWindowChromeOverlay(ImDrawListPtr dl, Vector2 pos, Vector2 size)
         {
+            if (_isDrawingDockedChildContent)
+            {
+                return;
+            }
+
             Vector2 max = pos + size;
             float rounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
             float borderSize = Mathf.Max(1f * Fugui.Scale, Fugui.Themes.WindowBorderSize);
@@ -1481,6 +1690,7 @@ namespace Fu
         {
             _pendingInternalizedDragResume = true;
             _pendingInternalizedDragMouseOffset = mouseOffset;
+            _suppressAutoExternalizeUntilRegistrationCleared = true;
             IsDragging = true;
             ClearDrawDataCache();
             ForceDraw(10);
@@ -2060,7 +2270,11 @@ namespace Fu
             float iconPadding = 4f * Fugui.Scale;                                // Internal padding for icons
             float iconThickness = 1f * Fugui.Scale;                               // Icon line thickness
             float iconRounding = 2f * Fugui.Scale;  // Icon rounding for maximize/restore
-            float TitleBar_Height = WorkingAreaPosition.y;
+            float TitleBar_Height = GetExternalNativeTitleBarHeight();
+            if (TitleBar_Height <= 0f)
+            {
+                return;
+            }
 
             FuExternalWindowContainer externalContainer = (FuExternalWindowContainer)Container;
             FuExternalWindow externalWindow = ((FuExternalContext)externalContainer.Context).Window;
@@ -2089,7 +2303,7 @@ namespace Fu
                 return mousePos.x >= pos.x &&
                        mousePos.x <= pos.x + btnSize.ScaledSize.x &&
                        mousePos.y >= pos.y &&
-                       mousePos.y <= pos.y + TitleBar_Height;
+                       mousePos.y <= pos.y + btnHeight;
             };
 
             // Helper to draw background
@@ -2412,6 +2626,18 @@ namespace Fu
                 return;
             }
 
+#if FU_EXTERNALIZATION
+            if (_suppressAutoExternalizeUntilRegistrationCleared)
+            {
+                if (Fugui.ExternalWindows.ContainsKey(ID))
+                {
+                    return;
+                }
+
+                _suppressAutoExternalizeUntilRegistrationCleared = false;
+            }
+#endif
+
             // if mouse is out of container bounds, externalize or detach into another native window
             Vector2Int mousePos = Container.LocalMousePos;
             Rect containerRect = new Rect(Vector2.zero, Container.Size);
@@ -2648,6 +2874,7 @@ namespace Fu
             _renderMeshData?.Destroy();
             _renderMeshData = null;
             HasJustBeenDraw = false;
+            HasPendingExternalRender = false;
         }
 
         /// <summary>
@@ -2683,6 +2910,10 @@ namespace Fu
             _renderMeshData ??= new DrawListMesh(ID + "_RenderMesh");
             _renderMeshLocalPosition = LocalPosition;
             _renderMeshData.Update(_cachedDrawLists, displaySize, framebufferScale);
+            if (IsExternal)
+            {
+                HasPendingExternalRender = true;
+            }
         }
 
         /// <summary>

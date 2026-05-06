@@ -1,4 +1,5 @@
 using ImGuiNET;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -15,6 +16,8 @@ namespace Fu
         public static long ImDrawVertSize { get; private set; }
 
         private static Dictionary<string, string> _unIconnizedTitleMapping = new Dictionary<string, string>();
+        [ThreadStatic]
+        private static Scratch _scratch;
         #endregion
 
         #region Constructors
@@ -35,11 +38,16 @@ namespace Fu
         /// <param name="windows">The windows value.</param>
         /// <param name="imDrawDataPtr">The im Draw Data Ptr value.</param>
         /// <param name="cmd">The cmd value.</param>
-        public static void GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr, ref DrawData cmd)
+        /// <returns>True when the render output changed and an offscreen target should be redrawn.</returns>
+        public static bool GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr, ref DrawData cmd)
         {
+            Scratch scratch = GetScratch();
+            scratch.ClearFrame(imDrawDataPtr.CmdListsCount);
+            bool hadRenderableData = cmd.CmdListsCount > 0 && cmd.TotalVtxCount > 0;
+            bool hadTransientDrawData = cmd.HasTransientRenderItems;
+
             cmd.Clear();
 
-            ResolvedDrawList[] drawLists = new ResolvedDrawList[imDrawDataPtr.CmdListsCount];
             for (int i = 0; i < imDrawDataPtr.CmdListsCount; i++)
             {
                 ImDrawListPtr nativeDrawList = imDrawDataPtr.CmdLists[i];
@@ -50,39 +58,38 @@ namespace Fu
 
                 if (!isWindowRoot) // it may be a window's child
                 {
-                    int firstSlashIndex = name.IndexOf('/');
-                    if (firstSlashIndex >= 0)
-                    {
-                        string rootWindowName = name.Substring(0, firstSlashIndex);
-                        if (windows.TryGetValue(rootWindowName, out FuWindow rootWindow)) // it's a window's child
-                        {
-                            window = rootWindow;
-                            isWindowChild = true;
-                        }
-                    }
+                    isWindowChild = TryResolveChildWindow(windows, name, out window);
                 }
 
-                drawLists[i] = new ResolvedDrawList
+                scratch.DrawLists.Add(new ResolvedDrawList
                 {
                     NativeDrawList = nativeDrawList,
                     Window = window,
                     IsWindowRoot = isWindowRoot,
                     IsWindowChild = isWindowChild
-                };
+                });
             }
 
-            RebuildWindowRenderMeshes(drawLists, imDrawDataPtr.DisplaySize, imDrawDataPtr.FramebufferScale);
+            bool renderOutputChanged = RebuildWindowRenderMeshes(
+                scratch.DrawLists,
+                imDrawDataPtr.DisplaySize,
+                imDrawDataPtr.FramebufferScale,
+                scratch.RebuiltWindows,
+                scratch.OrderedDrawLists);
 
-            Dictionary<FuWindow, int> lastWindowDrawListIndices = GetLastWindowDrawListIndices(drawLists);
-            HashSet<FuWindow> windowsWithNativeGeometry = GetWindowsWithNativeGeometry(drawLists);
-            for (int i = 0; i < drawLists.Length; i++)
+            BuildLastWindowDrawListIndices(scratch.DrawLists, scratch.LastWindowDrawListIndices);
+            BuildWindowsWithNativeGeometry(scratch.DrawLists, scratch.WindowsWithNativeGeometry);
+
+            bool hasTransientDrawData = false;
+            for (int i = 0; i < scratch.DrawLists.Count; i++)
             {
-                ResolvedDrawList drawList = drawLists[i];
+                ResolvedDrawList drawList = scratch.DrawLists[i];
                 if (drawList.Window != null)
                 {
-                    if (lastWindowDrawListIndices.TryGetValue(drawList.Window, out int lastIndex) &&
+                    if (scratch.LastWindowDrawListIndices.TryGetValue(drawList.Window, out int lastIndex) &&
                         i == lastIndex &&
-                        windowsWithNativeGeometry.Contains(drawList.Window))
+                        (scratch.WindowsWithNativeGeometry.Contains(drawList.Window) ||
+                         drawList.Window.CachedDrawLists.Count > 0))
                     {
                         cmd.AddWindowDrawData(drawList.Window);
                     }
@@ -90,23 +97,32 @@ namespace Fu
                 }
 
                 // it's nothing to do with an UIWindow, let store it without any edition
-                cmd.AddTransientDrawList(new DrawList(drawList.NativeDrawList));
+                if (HasNativeGeometry(drawList.NativeDrawList))
+                {
+                    cmd.AddTransientNativeDrawList(drawList.NativeDrawList);
+                    hasTransientDrawData = true;
+                }
             }
 
             cmd.FramebufferScale = imDrawDataPtr.FramebufferScale;
             cmd.DisplayPos = imDrawDataPtr.DisplayPos;
             cmd.DisplaySize = imDrawDataPtr.DisplaySize;
+
+            bool hasRenderableData = cmd.CmdListsCount > 0 && cmd.TotalVtxCount > 0;
+            renderOutputChanged |= hasTransientDrawData;
+            renderOutputChanged |= hadTransientDrawData != hasTransientDrawData;
+            renderOutputChanged |= hadRenderableData != hasRenderableData;
+            return renderOutputChanged;
         }
 
         /// <summary>
-        /// Returns the last native draw-list index for each Fugui window in the current ImGui frame.
+        /// Fills the last native draw-list index for each Fugui window in the current ImGui frame.
         /// </summary>
         /// <param name="drawLists">Resolved draw lists for the current frame.</param>
-        /// <returns>Last draw-list index by window.</returns>
-        private static Dictionary<FuWindow, int> GetLastWindowDrawListIndices(ResolvedDrawList[] drawLists)
+        /// <param name="result">Last draw-list index by window.</param>
+        private static void BuildLastWindowDrawListIndices(List<ResolvedDrawList> drawLists, Dictionary<FuWindow, int> result)
         {
-            Dictionary<FuWindow, int> result = new Dictionary<FuWindow, int>();
-            for (int i = 0; i < drawLists.Length; i++)
+            for (int i = 0; i < drawLists.Count; i++)
             {
                 FuWindow window = drawLists[i].Window;
                 if (window == null)
@@ -116,19 +132,16 @@ namespace Fu
 
                 result[window] = i;
             }
-
-            return result;
         }
 
         /// <summary>
-        /// Returns windows that still produced native ImGui geometry in this frame.
+        /// Fills windows that still produced native ImGui geometry in this frame.
         /// </summary>
         /// <param name="drawLists">Resolved draw lists for the current frame.</param>
-        /// <returns>Windows with at least one non-empty native draw list.</returns>
-        private static HashSet<FuWindow> GetWindowsWithNativeGeometry(ResolvedDrawList[] drawLists)
+        /// <param name="result">Windows with at least one non-empty native draw list.</param>
+        private static void BuildWindowsWithNativeGeometry(List<ResolvedDrawList> drawLists, HashSet<FuWindow> result)
         {
-            HashSet<FuWindow> result = new HashSet<FuWindow>();
-            for (int i = 0; i < drawLists.Length; i++)
+            for (int i = 0; i < drawLists.Count; i++)
             {
                 FuWindow window = drawLists[i].Window;
                 if (window == null || result.Contains(window))
@@ -141,8 +154,6 @@ namespace Fu
                     result.Add(window);
                 }
             }
-
-            return result;
         }
 
         /// <summary>
@@ -163,10 +174,18 @@ namespace Fu
         /// <param name="drawLists">Resolved draw lists for the current frame.</param>
         /// <param name="displaySize">Draw data display size.</param>
         /// <param name="framebufferScale">Draw data framebuffer scale.</param>
-        private static void RebuildWindowRenderMeshes(ResolvedDrawList[] drawLists, Vector2 displaySize, Vector2 framebufferScale)
+        /// <param name="rebuiltWindows">Scratch set used to avoid rebuilding a window twice.</param>
+        /// <param name="orderedDrawLists">Scratch list used to collect the window draw lists in render order.</param>
+        /// <returns>True when at least one window mesh was rebuilt.</returns>
+        private static bool RebuildWindowRenderMeshes(
+            List<ResolvedDrawList> drawLists,
+            Vector2 displaySize,
+            Vector2 framebufferScale,
+            HashSet<FuWindow> rebuiltWindows,
+            List<DrawList> orderedDrawLists)
         {
-            HashSet<FuWindow> rebuiltWindows = new HashSet<FuWindow>();
-            for (int i = 0; i < drawLists.Length; i++)
+            bool rebuiltAnyWindow = false;
+            for (int i = 0; i < drawLists.Count; i++)
             {
                 FuWindow window = drawLists[i].Window;
                 if (window == null || !window.HasJustBeenDraw || rebuiltWindows.Contains(window))
@@ -174,9 +193,9 @@ namespace Fu
                     continue;
                 }
 
-                List<DrawList> orderedDrawLists = new List<DrawList>();
+                orderedDrawLists.Clear();
                 int firstIncludedIndex = GetLastRootDrawListIndex(drawLists, window);
-                for (int j = 0; j < drawLists.Length; j++)
+                for (int j = 0; j < drawLists.Count; j++)
                 {
                     if (j < firstIncludedIndex)
                     {
@@ -204,7 +223,11 @@ namespace Fu
                 window.CacheDrawData(orderedDrawLists, displaySize, framebufferScale);
                 window.HasJustBeenDraw = false;
                 rebuiltWindows.Add(window);
+                rebuiltAnyWindow = true;
             }
+
+            orderedDrawLists.Clear();
+            return rebuiltAnyWindow;
         }
 
         /// <summary>
@@ -213,12 +236,12 @@ namespace Fu
         /// <param name="drawLists">Resolved draw lists for the current frame.</param>
         /// <param name="window">Window to inspect.</param>
         /// <returns>Last root draw-list index, or the first owned draw-list index when no root was found.</returns>
-        private static int GetLastRootDrawListIndex(ResolvedDrawList[] drawLists, FuWindow window)
+        private static int GetLastRootDrawListIndex(List<ResolvedDrawList> drawLists, FuWindow window)
         {
             int firstOwnedIndex = -1;
             int lastRootIndex = -1;
 
-            for (int i = 0; i < drawLists.Length; i++)
+            for (int i = 0; i < drawLists.Count; i++)
             {
                 if (drawLists[i].Window != window)
                 {
@@ -242,6 +265,15 @@ namespace Fu
             }
 
             return firstOwnedIndex >= 0 ? firstOwnedIndex : 0;
+        }
+
+        /// <summary>
+        /// Gets the reusable per-thread scratch buffers used while resolving draw data.
+        /// </summary>
+        /// <returns>Scratch buffers.</returns>
+        private static Scratch GetScratch()
+        {
+            return _scratch ??= new Scratch();
         }
 
         /// <summary>
@@ -285,6 +317,35 @@ namespace Fu
         }
 
         /// <summary>
+        /// Resolve an ImGui child draw list back to the Fugui window that owns it.
+        /// </summary>
+        /// <param name="windows">Known Fugui windows in the current container.</param>
+        /// <param name="name">Native ImGui draw list owner name.</param>
+        /// <param name="window">Resolved owner window.</param>
+        /// <returns>True when the draw list belongs to a Fugui child surface.</returns>
+        private static bool TryResolveChildWindow(Dictionary<string, FuWindow> windows, string name, out FuWindow window)
+        {
+            window = null;
+            if (string.IsNullOrEmpty(name))
+            {
+                return false;
+            }
+
+            int firstSlashIndex = name.IndexOf('/');
+            if (firstSlashIndex >= 0)
+            {
+                string rootWindowName = name.Substring(0, firstSlashIndex);
+                if (windows.TryGetValue(rootWindowName, out FuWindow rootWindow))
+                {
+                    window = rootWindow;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Resolved ownership for a native ImGui draw list.
         /// </summary>
         private struct ResolvedDrawList
@@ -293,6 +354,37 @@ namespace Fu
             public FuWindow Window;
             public bool IsWindowRoot;
             public bool IsWindowChild;
+        }
+
+        /// <summary>
+        /// Reusable scratch data for one GetDrawCmd invocation.
+        /// </summary>
+        private sealed class Scratch
+        {
+            public readonly List<ResolvedDrawList> DrawLists = new List<ResolvedDrawList>();
+            public readonly Dictionary<FuWindow, int> LastWindowDrawListIndices = new Dictionary<FuWindow, int>();
+            public readonly HashSet<FuWindow> WindowsWithNativeGeometry = new HashSet<FuWindow>();
+            public readonly HashSet<FuWindow> RebuiltWindows = new HashSet<FuWindow>();
+            public readonly List<DrawList> OrderedDrawLists = new List<DrawList>();
+
+            public void ClearFrame(int drawListCount)
+            {
+                DrawLists.Clear();
+                LastWindowDrawListIndices.Clear();
+                WindowsWithNativeGeometry.Clear();
+                RebuiltWindows.Clear();
+                OrderedDrawLists.Clear();
+
+                if (DrawLists.Capacity < drawListCount)
+                {
+                    DrawLists.Capacity = drawListCount;
+                }
+
+                if (OrderedDrawLists.Capacity < drawListCount)
+                {
+                    OrderedDrawLists.Capacity = drawListCount;
+                }
+            }
         }
         #endregion
     }

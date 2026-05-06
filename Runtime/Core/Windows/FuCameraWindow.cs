@@ -132,7 +132,7 @@ namespace Fu
             };
 
             // register raycaster
-            _raycaster = new FuRaycaster(ID, GetCameraRay, () => !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Left), () => !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Right), () => false, () => InputsLocked ? 0f : Container.Mouse.Wheel.y, () => Container == null ? false : !InputsLocked && LocalRect.Contains(Container.Mouse.Position));
+            _raycaster = new FuRaycaster(ID, GetCameraRay, () => !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Left), () => !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Right), () => false, () => InputsLocked ? 0f : Container.Mouse.Wheel.y, () => Container == null ? false : !InputsLocked && LocalRect.Contains(Container.Mouse.Position) && !(Fugui.Layouts?.IsWindowOccludedByFloatingDockSurface(this) ?? false));
             FuRaycasting.RegisterRaycaster(_raycaster);
         }
 
@@ -316,6 +316,13 @@ namespace Fu
         public override void DrawWindow(bool preventUpdatingMouse = false, bool preventUpdatingKeyboard = false)
         {
             base.DrawWindow(preventUpdatingMouse, preventUpdatingKeyboard);
+            updateCameraSize();
+            updateCameraRender();
+        }
+
+        internal override void DrawDockedChildContent(Vector2 childSize, bool preventUpdatingMouse = false, bool preventUpdatingKeyboard = false)
+        {
+            base.DrawDockedChildContent(childSize, preventUpdatingMouse, preventUpdatingKeyboard);
             updateCameraSize();
             updateCameraRender();
         }

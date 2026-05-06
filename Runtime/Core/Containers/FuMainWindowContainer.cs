@@ -223,10 +223,10 @@ namespace Fu
             }
         }
 
-        internal Vector2Int AbsoluteScreenToLocalPosition(Vector2Int screenPosition)
+        internal Vector2Int AbsoluteScreenToLocalPosition(Vector2Int screenPosition, bool useExternalMouseAnchor = true)
         {
 #if FU_EXTERNALIZATION
-            if (Fugui.ExternalWindows.Count > 0)
+            if (useExternalMouseAnchor && Fugui.ExternalWindows.Count > 0)
             {
                 return screenPosition - (Fugui.AbsoluteMonitorMousePosition - _mousePos);
             }
@@ -398,6 +398,10 @@ namespace Fu
                 {
                     if (window.IsDocked && !IsFloatingDockGroupWindow(window))
                     {
+                        if (Fugui.Layouts?.RenderDockspaceForWindow(window) ?? false)
+                        {
+                            continue;
+                        }
                         RenderFuWindow(window);
                     }
                 }
@@ -415,6 +419,10 @@ namespace Fu
                 {
                     if ((!window.IsDocked && !window.IsDragging) || IsFloatingDockGroupWindow(window))
                     {
+                        if (window.IsDocked && (Fugui.Layouts?.RenderDockspaceForWindow(window) ?? false))
+                        {
+                            continue;
+                        }
                         RenderFuWindow(window);
                     }
                 }

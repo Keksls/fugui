@@ -167,7 +167,7 @@ namespace Fu
 
                 builder.SetRenderFunc((PassData data, UnsafeGraphContext ctx) =>
                 {
-                    if (data.Context == null || data.Context.DrawData.CmdListsCount <= 0 || data.Context.DrawData.TotalVtxCount <= 0)
+                    if (data.Context == null)
                     {
                         return;
                     }
@@ -178,8 +178,15 @@ namespace Fu
                         ctx.cmd.ClearRenderTarget(false, true, Color.clear);
                     }
 
+                    if (data.Context.DrawData.CmdListsCount <= 0 || data.Context.DrawData.TotalVtxCount <= 0)
+                    {
+                        data.Context.MarkOffscreenRenderClean();
+                        return;
+                    }
+
                     _textureManager = data.Context.TextureManager;
                     RenderDrawLists(data.Context.ID, ctx.cmd, data.Context.DrawData, data.Target, data.BackdropA, data.BackdropB, data.Downsample, data.BlurWidth, data.BlurHeight);
+                    data.Context.MarkOffscreenRenderClean();
                 });
             }
 
@@ -248,16 +255,13 @@ namespace Fu
                         continue;
                     }
 
-                    if (unityContext.DrawData.CmdListsCount <= 0 || unityContext.DrawData.TotalVtxCount <= 0)
-                    {
-                        continue;
-                    }
-
                     // Skip default context if also present in Fugui.Contexts
                     if (ReferenceEquals(unityContext, Fugui.DefaultContext))
                     {
                         continue;
                     }
+
+                    bool hasDrawData = unityContext.DrawData.CmdListsCount > 0 && unityContext.DrawData.TotalVtxCount > 0;
 
                     // Offscreen target
                     if (unityContext.IsOffscreen)
@@ -269,7 +273,18 @@ namespace Fu
 
                         RenderTexture targetTexture = unityContext.TargetTexture;
 
-                        if (targetTexture == null || !targetTexture.IsCreated())
+                        if (targetTexture == null)
+                        {
+                            continue;
+                        }
+
+                        if (!targetTexture.IsCreated())
+                        {
+                            unityContext.MarkOffscreenRenderDirty();
+                            continue;
+                        }
+
+                        if (!unityContext.IsOffscreenRenderDirty)
                         {
                             continue;
                         }
@@ -277,7 +292,7 @@ namespace Fu
                         RTHandle rtHandle = GetOrCreateTargetHandle(unityContext.ID, targetTexture);
                         TextureHandle importedTarget = renderGraph.ImportTexture(rtHandle);
 
-                        if (CanUseBackdropBlur(unityContext.DrawData))
+                        if (hasDrawData && CanUseBackdropBlur(unityContext.DrawData))
                         {
                             AddUnsafeFuguiPass(renderGraph, $"Fugui_Offscreen_{unityContext.ID}", importedTarget, unityContext, true);
                         }
@@ -291,13 +306,22 @@ namespace Fu
                             {
                                 //DebugDumpDrawData("OFFSCREEN", unityContext.DrawData);
                                 ctx.cmd.ClearRenderTarget(false, true, Color.clear);
-                                _textureManager = unityContext.TextureManager;
-                                RenderDrawLists(unityContext.ID, ctx.cmd, unityContext.DrawData);
+                                if (unityContext.DrawData.CmdListsCount > 0 && unityContext.DrawData.TotalVtxCount > 0)
+                                {
+                                    _textureManager = unityContext.TextureManager;
+                                    RenderDrawLists(unityContext.ID, ctx.cmd, unityContext.DrawData);
+                                }
+                                unityContext.MarkOffscreenRenderClean();
                             });
                         }
                     }
                     else
                     {
+                        if (!hasDrawData)
+                        {
+                            continue;
+                        }
+
                         if (!_renderMainSurfaceContexts)
                         {
                             continue;

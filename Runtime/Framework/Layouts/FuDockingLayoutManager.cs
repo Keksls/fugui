@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 namespace Fu
@@ -45,6 +46,7 @@ namespace Fu
         private readonly Dictionary<uint, List<string>> _nodeWindowIds = new Dictionary<uint, List<string>>();
         private readonly Dictionary<uint, int> _nodeSelectedIndices = new Dictionary<uint, int>();
         private readonly Dictionary<uint, Rect> _nodeRects = new Dictionary<uint, Rect>();
+        private readonly Dictionary<uint, Rect> _nodeContentRects = new Dictionary<uint, Rect>();
         private readonly Dictionary<uint, FuDockingLayoutDefinition> _nodesById = new Dictionary<uint, FuDockingLayoutDefinition>();
         private readonly Dictionary<uint, FuDockingLayoutDefinition> _nodeParents = new Dictionary<uint, FuDockingLayoutDefinition>();
         private readonly List<FloatingDockRoot> _floatingDockRoots = new List<FloatingDockRoot>();
@@ -60,11 +62,13 @@ namespace Fu
         private FloatingDockRoot _draggedFloatingRoot;
         private Vector2Int _floatingRootDragStartMousePos;
         private Rect _floatingRootDragStartRect;
+        private bool _floatingRootDragUsesGlobalMouseButton;
         private FloatingDockRoot _resizedFloatingRoot;
         private Vector2Int _floatingRootResizeStartMousePos;
         private Rect _floatingRootResizeStartRect;
         private FloatingDockRootResizeEdge _floatingRootResizeEdge = FloatingDockRootResizeEdge.None;
 #if FU_EXTERNALIZATION
+        private Vector2Int _floatingRootResizeStartNativeWindowPosition;
         private ExternalDockPreviewState _externalDockPreview;
 #endif
 
@@ -510,6 +514,7 @@ namespace Fu
             _nodeWindowIds.Clear();
             _nodeSelectedIndices.Clear();
             _nodeRects.Clear();
+            _nodeContentRects.Clear();
             _nodesById.Clear();
             _nodeParents.Clear();
             _floatingDockRoots.Clear();
@@ -763,7 +768,7 @@ namespace Fu
         /// </summary>
         private void ApplyDockNodeRectToWindow(FuWindow window, uint nodeId, bool notifyResize = true)
         {
-            if (window == null || !_nodeRects.TryGetValue(nodeId, out Rect rect))
+            if (window == null || !TryGetDockNodeContentRect(nodeId, out Rect rect))
             {
                 return;
             }
@@ -771,6 +776,46 @@ namespace Fu
             Vector2Int pos = new Vector2Int(Mathf.RoundToInt(rect.x), Mathf.RoundToInt(rect.y));
             Vector2Int size = new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(rect.width)), Mathf.Max(1, Mathf.RoundToInt(rect.height)));
             window.ApplyProgrammaticRect(pos, size, notifyResize);
+        }
+
+        private bool TryGetDockNodeContentRect(uint nodeId, out Rect rect)
+        {
+            if (_nodeContentRects.TryGetValue(nodeId, out rect))
+            {
+                return true;
+            }
+
+            if (_nodeRects.TryGetValue(nodeId, out Rect nodeRect))
+            {
+                rect = GetDockNodeContentRect(nodeId, nodeRect);
+                return true;
+            }
+
+            rect = default;
+            return false;
+        }
+
+        private Rect GetDockNodeContentRect(uint nodeId, Rect nodeRect)
+        {
+            float tabHeight = Mathf.Min(GetDockedTabBarHeight(nodeId), Mathf.Max(0f, nodeRect.height));
+            float chrome = GetDockNodeChromeThickness();
+            float contentX = nodeRect.x + chrome;
+            float contentY = nodeRect.y + Mathf.Min(tabHeight, Mathf.Max(0f, nodeRect.height - chrome));
+            float contentWidth = Mathf.Max(1f, nodeRect.width - chrome * 2f);
+            float contentHeight = Mathf.Max(1f, nodeRect.yMax - contentY - chrome);
+            return new Rect(contentX, contentY, contentWidth, contentHeight);
+        }
+
+        private float GetDockNodeChromeThickness()
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            return Mathf.Max(1f, Fugui.Themes.WindowBorderSize, 1f * scale);
+        }
+
+        private float GetFloatingDockRootResizeGutter()
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            return Mathf.Max(5f, 5f * scale);
         }
 
         /// <summary>
@@ -790,6 +835,7 @@ namespace Fu
             }
             CleanupClosedWindows();
             _nodeRects.Clear();
+            _nodeContentRects.Clear();
             _mainDockSplitters.Clear();
             _floatingDockSplitters.Clear();
             if (isMainContainer && CurrentLayout != null)
@@ -814,6 +860,9 @@ namespace Fu
                     continue;
                 }
 
+#if FU_EXTERNALIZATION
+                SyncExternalFloatingDockRootToNativeContainer(floatingRoot, container);
+#endif
                 UpdateCustomLayoutRecursive(floatingRoot.Layout, GetFloatingDockRootContentRect(floatingRoot), container, false, floatingRoot);
             }
         }
@@ -829,28 +878,32 @@ namespace Fu
             if (node.Children != null && node.Children.Count >= 2 && node.Orientation != UIDockSpaceOrientation.None)
             {
                 ProcessDockSplitter(node, rect, container, deferSplitterDraw, owningFloatingRoot);
+                FuDockingLayoutDefinition firstChild = node.Children[0];
+                FuDockingLayoutDefinition secondChild = node.Children[1];
                 float proportion = Mathf.Clamp(node.Proportion, 0.05f, 0.95f);
                 if (node.Orientation == UIDockSpaceOrientation.Horizontal)
                 {
                     float firstWidth = Mathf.Round(rect.width * proportion);
                     Rect first = new Rect(rect.x, rect.y, firstWidth, rect.height);
                     Rect second = new Rect(rect.x + firstWidth, rect.y, Mathf.Max(1f, rect.width - firstWidth), rect.height);
-                    UpdateCustomLayoutRecursive(node.Children[0], first, container, deferSplitterDraw, owningFloatingRoot);
-                    UpdateCustomLayoutRecursive(node.Children[1], second, container, deferSplitterDraw, owningFloatingRoot);
+                    UpdateCustomLayoutRecursive(firstChild, first, container, deferSplitterDraw, owningFloatingRoot);
+                    UpdateCustomLayoutRecursive(secondChild, second, container, deferSplitterDraw, owningFloatingRoot);
                 }
                 else
                 {
                     float firstHeight = Mathf.Round(rect.height * proportion);
                     Rect first = new Rect(rect.x, rect.y, rect.width, firstHeight);
                     Rect second = new Rect(rect.x, rect.y + firstHeight, rect.width, Mathf.Max(1f, rect.height - firstHeight));
-                    UpdateCustomLayoutRecursive(node.Children[0], first, container, deferSplitterDraw, owningFloatingRoot);
-                    UpdateCustomLayoutRecursive(node.Children[1], second, container, deferSplitterDraw, owningFloatingRoot);
+                    UpdateCustomLayoutRecursive(firstChild, first, container, deferSplitterDraw, owningFloatingRoot);
+                    UpdateCustomLayoutRecursive(secondChild, second, container, deferSplitterDraw, owningFloatingRoot);
                 }
 
                 return;
             }
 
             _nodeRects[node.ID] = rect;
+            Rect contentRect = GetDockNodeContentRect(node.ID, rect);
+            _nodeContentRects[node.ID] = contentRect;
             if (!_nodeWindowIds.TryGetValue(node.ID, out List<string> windowIds))
             {
                 return;
@@ -863,8 +916,8 @@ namespace Fu
                     continue;
                 }
 
-                Vector2Int pos = new Vector2Int(Mathf.RoundToInt(rect.x), Mathf.RoundToInt(rect.y));
-                Vector2Int size = new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(rect.width)), Mathf.Max(1, Mathf.RoundToInt(rect.height)));
+                Vector2Int pos = new Vector2Int(Mathf.RoundToInt(contentRect.x), Mathf.RoundToInt(contentRect.y));
+                Vector2Int size = new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(contentRect.width)), Mathf.Max(1, Mathf.RoundToInt(contentRect.height)));
                 window.CurrentDockID = node.ID;
                 window.IsDocked = true;
                 window.ApplyProgrammaticRect(pos, size, true);
@@ -963,7 +1016,18 @@ namespace Fu
             }
             else
             {
-                DrawDockSplitter(ImGui.GetForegroundDrawList(), grabRect, horizontal, hovered, active, visualThickness, scale, mousePos, GetContainerContentRect(container));
+                _mainDockSplitters.Add(new DockSplitterDrawData
+                {
+                    GrabRect = grabRect,
+                    Horizontal = horizontal,
+                    Hovered = hovered,
+                    Active = active,
+                    VisualThickness = visualThickness,
+                    Scale = scale,
+                    MousePosition = mousePos,
+                    ClipRect = GetContainerContentRect(container),
+                    OwningFloatingRoot = null
+                });
             }
         }
 
@@ -999,10 +1063,6 @@ namespace Fu
                 }
 
                 DrawDockSplitter(drawList, splitter.GrabRect, splitter.Horizontal, splitter.Hovered, splitter.Active, splitter.VisualThickness, splitter.Scale, splitter.MousePosition, splitter.ClipRect);
-            }
-            if (floatingRoot != null)
-            {
-                DrawFloatingDockRootResizeFeedback(floatingRoot, container.LocalMousePos);
             }
             drawList.PopClipRect();
         }
@@ -1063,7 +1123,7 @@ namespace Fu
                     Vector2 handleSize = new Vector2(handleShort, Mathf.Min(handleLong, Mathf.Max(handleShort, grabRect.height)));
                     float handleY = Mathf.Clamp(mousePos.y, grabRect.y + handleSize.y * 0.5f, grabRect.yMax - handleSize.y * 0.5f);
                     Rect handle = new Rect(new Vector2(centerX - handleSize.x * 0.5f, handleY - handleSize.y * 0.5f), handleSize);
-                    DrawResizeFeedbackHandle(handle, handleColor, handleSize.x * 0.5f, clipRect);
+                    DrawResizeFeedbackHandle(drawList, handle, handleColor, handleSize.x * 0.5f, clipRect);
                 }
             }
             else
@@ -1074,7 +1134,7 @@ namespace Fu
                     Vector2 handleSize = new Vector2(Mathf.Min(handleLong, Mathf.Max(handleShort, grabRect.width)), handleShort);
                     float handleX = Mathf.Clamp(mousePos.x, grabRect.x + handleSize.x * 0.5f, grabRect.xMax - handleSize.x * 0.5f);
                     Rect handle = new Rect(new Vector2(handleX - handleSize.x * 0.5f, centerY - handleSize.y * 0.5f), handleSize);
-                    DrawResizeFeedbackHandle(handle, handleColor, handleSize.y * 0.5f, clipRect);
+                    DrawResizeFeedbackHandle(drawList, handle, handleColor, handleSize.y * 0.5f, clipRect);
                 }
             }
         }
@@ -1082,18 +1142,17 @@ namespace Fu
         /// <summary>
         /// Draw an accented resize handle above child content while keeping it inside the dock surface.
         /// </summary>
-        private void DrawResizeFeedbackHandle(Rect handle, uint color, float rounding, Rect clipRect)
+        private void DrawResizeFeedbackHandle(ImDrawListPtr drawList, Rect handle, uint color, float rounding, Rect clipRect)
         {
-            ImDrawListPtr foreground = ImGui.GetForegroundDrawList();
-            foreground.PushClipRect(clipRect.position, clipRect.position + clipRect.size, false);
-            foreground.AddRectFilled(handle.position, handle.position + handle.size, color, rounding);
-            foreground.PopClipRect();
+            drawList.PushClipRect(clipRect.position, clipRect.position + clipRect.size, false);
+            drawList.AddRectFilled(handle.position, handle.position + handle.size, color, rounding);
+            drawList.PopClipRect();
         }
 
         /// <summary>
         /// Draw hover/active resize feedback for a floating dock root with the same visual language as floating windows.
         /// </summary>
-        private void DrawFloatingDockRootResizeFeedback(FloatingDockRoot floatingRoot, Vector2 mousePos)
+        private void DrawFloatingDockRootResizeFeedback(ImDrawListPtr drawList, FloatingDockRoot floatingRoot, Vector2 mousePos)
         {
             if (floatingRoot == null || floatingRoot.ResizeEdge == FloatingDockRootResizeEdge.None)
             {
@@ -1121,7 +1180,6 @@ namespace Fu
             float horizontalHandleLong = Mathf.Min(handleLong, Mathf.Max(handleShort, max.x - min.x));
             float rounding = handleShort * 0.5f;
 
-            ImDrawListPtr drawList = ImGui.GetForegroundDrawList();
             drawList.PushClipRect(rect.position, rect.position + rect.size, false);
 
             FloatingDockRootResizeEdge edge = floatingRoot.ResizeEdge;
@@ -1239,6 +1297,82 @@ namespace Fu
             return false;
         }
 
+        internal bool IsWindowOccludedByFloatingDockSurface(FuWindow window)
+        {
+            if (window == null || window.Container == null)
+            {
+                return false;
+            }
+
+            Vector2 mousePos = window.Container.LocalMousePos;
+            FloatingDockRoot owningFloatingRoot = window.IsDocked
+                ? FindFloatingDockRootForNode(GetDockNodeId(window))
+                : null;
+
+            for (int i = _floatingDockRoots.Count - 1; i >= 0; i--)
+            {
+                FloatingDockRoot floatingRoot = _floatingDockRoots[i];
+                if (floatingRoot == null ||
+                    floatingRoot.Container != window.Container ||
+                    floatingRoot == owningFloatingRoot ||
+                    !floatingRoot.Rect.Contains(mousePos))
+                {
+                    continue;
+                }
+
+                if (IsFloatingDockRootAboveWindow(floatingRoot, window, owningFloatingRoot))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsFloatingDockRootAboveWindow(FloatingDockRoot floatingRoot, FuWindow window, FloatingDockRoot owningFloatingRoot)
+        {
+            if (floatingRoot == null || window == null)
+            {
+                return false;
+            }
+
+            if (owningFloatingRoot != null)
+            {
+                return _floatingDockRoots.IndexOf(floatingRoot) > _floatingDockRoots.IndexOf(owningFloatingRoot);
+            }
+
+            if (window.IsDocked)
+            {
+                return true;
+            }
+
+            bool foundWindow = false;
+            bool rootWindowAfterTarget = false;
+            window.Container.OnEachWindow(containerWindow =>
+            {
+                if (rootWindowAfterTarget)
+                {
+                    return;
+                }
+
+                if (containerWindow == window)
+                {
+                    foundWindow = true;
+                    return;
+                }
+
+                if (foundWindow &&
+                    containerWindow != null &&
+                    NodeTreeContainsWindowId(floatingRoot.Layout, containerWindow.ID) &&
+                    ShouldDrawWindow(containerWindow))
+                {
+                    rootWindowAfterTarget = true;
+                }
+            });
+
+            return rootWindowAfterTarget;
+        }
+
         /// <summary>
         /// Return whether an already pressed window should keep dock splitters from taking the same drag.
         /// </summary>
@@ -1317,14 +1451,24 @@ namespace Fu
                 return;
             }
 
-            Vector2Int mousePos = container.LocalMousePos;
             bool active = _draggedFloatingRoot == floatingRoot;
+            Vector2Int mousePos = active ? GetFloatingRootDragMousePosition(container) : container.LocalMousePos;
             bool resizing = _resizedFloatingRoot == floatingRoot;
             if (!active)
             {
                 floatingRoot.HeaderHovered = false;
             }
+            floatingRoot.ExplodeHovered = false;
+            floatingRoot.ExplodeActive = false;
             bool inputBlocked = IsDockInteractionBlockedByHigherFloatingSurface(container, mousePos, floatingRoot);
+            if (ProcessFloatingDockRootHeader(floatingRoot, container, inputBlocked))
+            {
+                return;
+            }
+
+            active = _draggedFloatingRoot == floatingRoot;
+            mousePos = active ? GetFloatingRootDragMousePosition(container) : container.LocalMousePos;
+            resizing = _resizedFloatingRoot == floatingRoot;
             if (resizing && inputBlocked)
             {
                 ClearFloatingRootResizeState();
@@ -1344,9 +1488,12 @@ namespace Fu
             if (hoveredResizeEdge != FloatingDockRootResizeEdge.None && container.Mouse.IsDown(FuMouseButton.Left))
             {
                 _resizedFloatingRoot = floatingRoot;
-                _floatingRootResizeStartMousePos = mousePos;
+                _floatingRootResizeStartMousePos = GetFloatingRootResizeMousePosition(container);
                 _floatingRootResizeStartRect = floatingRoot.Rect;
                 _floatingRootResizeEdge = hoveredResizeEdge;
+#if FU_EXTERNALIZATION
+                _floatingRootResizeStartNativeWindowPosition = container is FuExternalWindowContainer externalContainer ? externalContainer.Position : Vector2Int.zero;
+#endif
                 MoveFloatingDockRootToFront(floatingRoot, container);
                 resizing = true;
                 floatingRoot.ResizeActive = true;
@@ -1357,7 +1504,7 @@ namespace Fu
             {
                 if (container.Mouse.IsPressed(FuMouseButton.Left))
                 {
-                    ApplyFloatingDockRootResize(floatingRoot, mousePos);
+                    ApplyFloatingDockRootResize(floatingRoot, GetFloatingRootResizeMousePosition(container));
                     Fugui.ForceDrawAllWindows(2);
                 }
                 else
@@ -1370,8 +1517,9 @@ namespace Fu
 
             if (active)
             {
-                if (container.Mouse.IsPressed(FuMouseButton.Left))
+                if (IsFloatingRootDragMousePressed(container))
                 {
+                    mousePos = GetFloatingRootDragMousePosition(container);
                     Vector2Int delta = mousePos - _floatingRootDragStartMousePos;
                     floatingRoot.Rect = new Rect(
                         _floatingRootDragStartRect.x + delta.x,
@@ -1414,6 +1562,35 @@ namespace Fu
                 SetFloatingDockRootResizeCursor(floatingRoot.ResizeEdge);
                 Fugui.ForceDrawAllWindows(2);
             }
+        }
+
+        private bool IsFloatingRootDragMousePressed(IFuWindowContainer container)
+        {
+            bool localPressed = container?.Mouse != null && container.Mouse.IsPressed(FuMouseButton.Left);
+#if FU_EXTERNALIZATION
+            return localPressed ||
+                   (_floatingRootDragUsesGlobalMouseButton && Fugui.IsGlobalMouseButtonPressed(FuMouseButton.Left));
+#else
+            return localPressed;
+#endif
+        }
+
+        private Vector2Int GetFloatingRootDragMousePosition(IFuWindowContainer container)
+        {
+#if FU_EXTERNALIZATION
+            if (_floatingRootDragUsesGlobalMouseButton)
+            {
+                Vector2Int globalMouse = Fugui.GetGlobalMousePosition();
+                if (container is FuMainWindowContainer mainContainer)
+                {
+                    return mainContainer.AbsoluteScreenToLocalPosition(globalMouse);
+                }
+
+                return container != null ? globalMouse - container.Position : Vector2Int.zero;
+            }
+#endif
+
+            return container != null ? container.LocalMousePos : Vector2Int.zero;
         }
 
         /// <summary>
@@ -1495,7 +1672,84 @@ namespace Fu
             }
 
             floatingRoot.Rect = rect;
+#if FU_EXTERNALIZATION
+            ApplyExternalFloatingDockRootNativeResize(floatingRoot);
+#endif
         }
+
+        private Vector2Int GetFloatingRootResizeMousePosition(IFuWindowContainer container)
+        {
+#if FU_EXTERNALIZATION
+            if (container is FuExternalWindowContainer)
+            {
+                return Fugui.GetGlobalMousePosition();
+            }
+#endif
+
+            return container != null ? container.LocalMousePos : Vector2Int.zero;
+        }
+
+#if FU_EXTERNALIZATION
+        private void ApplyExternalFloatingDockRootNativeResize(FloatingDockRoot floatingRoot)
+        {
+            if (!IsExternalNativeDockRoot(floatingRoot, floatingRoot?.Container) ||
+                floatingRoot.Container is not FuExternalWindowContainer externalContainer)
+            {
+                return;
+            }
+
+            Rect rect = floatingRoot.Rect;
+            Vector2Int nativeOffset = new Vector2Int(Mathf.RoundToInt(rect.x), Mathf.RoundToInt(rect.y));
+            Vector2Int nativePosition = _floatingRootResizeStartNativeWindowPosition + nativeOffset;
+            Vector2Int nativeSize = new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(rect.width)), Mathf.Max(1, Mathf.RoundToInt(rect.height)));
+            externalContainer.SetNativeBounds(nativePosition, nativeSize);
+            floatingRoot.Rect = new Rect(Vector2.zero, nativeSize);
+        }
+
+        private void SyncExternalFloatingDockRootToNativeContainer(FloatingDockRoot floatingRoot, IFuWindowContainer container)
+        {
+            if (_resizedFloatingRoot == floatingRoot ||
+                _draggedFloatingRoot == floatingRoot ||
+                !IsExternalNativeDockRoot(floatingRoot, container))
+            {
+                return;
+            }
+
+            Vector2Int size = container.Size;
+            Rect nativeRect = new Rect(Vector2.zero, new Vector2(Mathf.Max(1, size.x), Mathf.Max(1, size.y)));
+            if (Mathf.Abs(floatingRoot.Rect.x) < 0.5f &&
+                Mathf.Abs(floatingRoot.Rect.y) < 0.5f &&
+                Mathf.Abs(floatingRoot.Rect.width - nativeRect.width) < 0.5f &&
+                Mathf.Abs(floatingRoot.Rect.height - nativeRect.height) < 0.5f)
+            {
+                return;
+            }
+
+            floatingRoot.Rect = nativeRect;
+        }
+
+        private bool IsExternalNativeDockRoot(FloatingDockRoot floatingRoot, IFuWindowContainer container)
+        {
+            if (floatingRoot == null ||
+                floatingRoot.Layout == null ||
+                container is not FuExternalWindowContainer externalContainer)
+            {
+                return false;
+            }
+
+            foreach (string windowId in GetRuntimeWindowIdsInNodeTree(floatingRoot.Layout))
+            {
+                if (Fugui.UIWindows.TryGetValue(windowId, out FuWindow window) &&
+                    window.Container == container &&
+                    externalContainer.IsNativeChromeOwner(window))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+#endif
 
         /// <summary>
         /// Apply left-edge floating dock root resize while preserving the minimum width.
@@ -1656,7 +1910,23 @@ namespace Fu
         /// </summary>
         private Rect GetFloatingDockRootContentRect(FloatingDockRoot floatingRoot)
         {
-            return floatingRoot.Rect;
+            if (floatingRoot == null)
+            {
+                return default;
+            }
+
+            float headerHeight = Mathf.Min(GetFloatingDockRootHeaderHeight(), Mathf.Max(0f, floatingRoot.Rect.height));
+            float border = GetDockNodeChromeThickness();
+            float resizeGutter = GetFloatingDockRootResizeGutter();
+            float contentX = floatingRoot.Rect.x + resizeGutter;
+            float contentY = floatingRoot.Rect.y + headerHeight + border;
+            float contentWidth = Mathf.Max(1f, floatingRoot.Rect.width - resizeGutter * 2f);
+            float contentHeight = Mathf.Max(1f, floatingRoot.Rect.yMax - contentY - resizeGutter);
+            return new Rect(
+                contentX,
+                contentY,
+                contentWidth,
+                contentHeight);
         }
 
         /// <summary>
@@ -1674,8 +1944,857 @@ namespace Fu
         /// </summary>
         private Rect BuildFloatingDockRootRectFromContent(Rect contentRect, IFuWindowContainer container)
         {
-            Rect rect = contentRect;
+            float headerHeight = GetFloatingDockRootHeaderHeight();
+            float border = GetDockNodeChromeThickness();
+            float resizeGutter = GetFloatingDockRootResizeGutter();
+            Rect rect = new Rect(
+                contentRect.x - resizeGutter,
+                contentRect.y - headerHeight - border,
+                contentRect.width + resizeGutter * 2f,
+                contentRect.height + headerHeight + border + resizeGutter);
             return FitFloatingDockRootInsideContainer(rect, container);
+        }
+
+        private Rect GetFloatingDockRootHeaderRect(FloatingDockRoot floatingRoot)
+        {
+            if (floatingRoot == null)
+            {
+                return default;
+            }
+
+            float headerHeight = Mathf.Min(GetFloatingDockRootHeaderHeight(), Mathf.Max(0f, floatingRoot.Rect.height));
+            return new Rect(floatingRoot.Rect.x, floatingRoot.Rect.y, floatingRoot.Rect.width, headerHeight);
+        }
+
+        internal void DrawDockspaceBeforeWindow(FuWindow window)
+        {
+            RenderDockspaceForWindow(window);
+        }
+
+        internal bool RenderDockspaceForWindow(FuWindow window, bool preventUpdatingMouse = false, bool preventUpdatingKeyboard = false)
+        {
+            if (window == null || !window.IsDocked || window.Container == null)
+            {
+                return false;
+            }
+
+            uint nodeId = GetDockNodeId(window);
+            FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(nodeId);
+            FuDockingLayoutDefinition root = floatingRoot != null ? floatingRoot.Layout : CurrentLayout;
+            if (root == null || !NodeTreeContainsNode(root, nodeId))
+            {
+                return true;
+            }
+
+            if (!IsDockspaceRenderOwner(window, root, floatingRoot))
+            {
+                return true;
+            }
+
+            Rect rect = floatingRoot != null ? floatingRoot.Rect : GetContainerContentRect(window.Container);
+            Rect contentRect = floatingRoot != null ? GetFloatingDockRootContentRect(floatingRoot) : rect;
+            DrawDockspaceWindow(root, rect, contentRect, window.Container, floatingRoot, preventUpdatingMouse, preventUpdatingKeyboard);
+            return true;
+        }
+
+        private bool IsDockspaceRenderOwner(FuWindow candidate, FuDockingLayoutDefinition root, FloatingDockRoot floatingRoot)
+        {
+            if (candidate == null || root == null || candidate.Container == null)
+            {
+                return false;
+            }
+
+            bool foundOwner = false;
+            bool isOwner = false;
+            candidate.Container.OnEachWindow(containerWindow =>
+            {
+                if (foundOwner)
+                {
+                    return;
+                }
+
+                if (containerWindow == null ||
+                    containerWindow.Container != candidate.Container ||
+                    !containerWindow.IsDocked ||
+                    !ShouldDrawWindow(containerWindow))
+                {
+                    return;
+                }
+
+                uint nodeId = GetDockNodeId(containerWindow);
+                if (floatingRoot != null)
+                {
+                    if (FindFloatingDockRootForNode(nodeId) != floatingRoot)
+                    {
+                        return;
+                    }
+                }
+                else if (FindFloatingDockRootForNode(nodeId) != null || !NodeTreeContainsNode(root, nodeId))
+                {
+                    return;
+                }
+
+                foundOwner = true;
+                isOwner = containerWindow == candidate;
+            });
+
+            return isOwner;
+        }
+
+        private void DrawDockspaceWindow(
+            FuDockingLayoutDefinition root,
+            Rect rect,
+            Rect contentRect,
+            IFuWindowContainer container,
+            FloatingDockRoot floatingRoot,
+            bool preventUpdatingMouse,
+            bool preventUpdatingKeyboard)
+        {
+            if (root == null || container == null || rect.width <= 1f || rect.height <= 1f)
+            {
+                return;
+            }
+
+            float rounding = floatingRoot != null ? Mathf.Max(2f, Fugui.Themes.WindowRounding) : 0f;
+            ImGui.SetNextWindowPos(rect.position, ImGuiCond.Always);
+            ImGui.SetNextWindowSize(rect.size, ImGuiCond.Always);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.zero);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, rounding);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
+            ImGuiWindowFlags flags =
+                ImGuiWindowFlags.NoTitleBar |
+                ImGuiWindowFlags.NoResize |
+                ImGuiWindowFlags.NoMove |
+                ImGuiWindowFlags.NoCollapse |
+                ImGuiWindowFlags.NoScrollbar |
+                ImGuiWindowFlags.NoScrollWithMouse |
+                ImGuiWindowFlags.NoSavedSettings |
+                ImGuiWindowFlags.NoDocking |
+                ImGuiWindowFlags.NoNav |
+                ImGuiWindowFlags.NoFocusOnAppearing |
+                ImGuiWindowFlags.NoBringToFrontOnFocus |
+                ImGuiWindowFlags.NoBackground;
+
+            string dockspaceWindowId = GetDockspaceWindowId(root, floatingRoot);
+            bool beganDockspaceWindow = false;
+            try
+            {
+                bool visible = ImGui.Begin(dockspaceWindowId, flags);
+                beganDockspaceWindow = true;
+                if (floatingRoot == null)
+                {
+                    BringImGuiWindowToDisplayBack(dockspaceWindowId);
+                }
+
+                if (visible)
+                {
+                    ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                    if (floatingRoot != null)
+                    {
+                        DrawFloatingDockRootShell(drawList, floatingRoot, container);
+                    }
+                    else
+                    {
+                        drawList.AddRectFilled(rect.position, rect.position + rect.size, Fugui.Themes.GetColorU32(FuColors.WindowBg, 1f), 0f);
+                    }
+
+                    DrawDockNodeTree(root, contentRect, container, preventUpdatingMouse, preventUpdatingKeyboard);
+                    DrawDockspaceSplitters(drawList, container, floatingRoot);
+                }
+            }
+            finally
+            {
+                if (beganDockspaceWindow)
+                {
+                    ImGui.End();
+                }
+                ImGui.PopStyleVar(3);
+            }
+        }
+
+        private string GetDockspaceWindowId(FuDockingLayoutDefinition root, FloatingDockRoot floatingRoot)
+        {
+            if (floatingRoot != null && floatingRoot.Layout != null)
+            {
+                return "##FuFloatingDockspace_" + floatingRoot.Layout.ID;
+            }
+
+            return root != null ? "##FuDockspace_" + root.ID : "##FuDockspace";
+        }
+
+        private unsafe void BringImGuiWindowToDisplayBack(string windowId)
+        {
+            if (string.IsNullOrEmpty(windowId))
+            {
+                return;
+            }
+
+            int byteCount = Encoding.UTF8.GetByteCount(windowId);
+            byte* nativeName = stackalloc byte[byteCount + 1];
+            int offset = Fugui.GetUtf8(windowId, nativeName, byteCount);
+            nativeName[offset] = 0;
+
+            ImGuiWindow* nativeWindow = ImGuiInternal.igFindWindowByName(nativeName);
+            if (nativeWindow == null)
+            {
+                return;
+            }
+
+            ImGuiInternal.igBringWindowToDisplayBack(nativeWindow);
+        }
+
+        private void DrawDockNodeTree(
+            FuDockingLayoutDefinition node,
+            Rect rect,
+            IFuWindowContainer container,
+            bool preventUpdatingMouse,
+            bool preventUpdatingKeyboard)
+        {
+            if (node == null || container == null || rect.width <= 1f || rect.height <= 1f)
+            {
+                return;
+            }
+
+            if (node.Children != null && node.Children.Count >= 2 && node.Orientation != UIDockSpaceOrientation.None)
+            {
+                FuDockingLayoutDefinition firstChild = node.Children[0];
+                FuDockingLayoutDefinition secondChild = node.Children[1];
+                float proportion = Mathf.Clamp(node.Proportion, 0.05f, 0.95f);
+                if (node.Orientation == UIDockSpaceOrientation.Horizontal)
+                {
+                    float firstWidth = Mathf.Round(rect.width * proportion);
+                    DrawDockNodeTree(firstChild, new Rect(rect.x, rect.y, firstWidth, rect.height), container, preventUpdatingMouse, preventUpdatingKeyboard);
+                    DrawDockNodeTree(secondChild, new Rect(rect.x + firstWidth, rect.y, Mathf.Max(1f, rect.width - firstWidth), rect.height), container, preventUpdatingMouse, preventUpdatingKeyboard);
+                }
+                else
+                {
+                    float firstHeight = Mathf.Round(rect.height * proportion);
+                    DrawDockNodeTree(firstChild, new Rect(rect.x, rect.y, rect.width, firstHeight), container, preventUpdatingMouse, preventUpdatingKeyboard);
+                    DrawDockNodeTree(secondChild, new Rect(rect.x, rect.y + firstHeight, rect.width, Mathf.Max(1f, rect.height - firstHeight)), container, preventUpdatingMouse, preventUpdatingKeyboard);
+                }
+
+                return;
+            }
+
+            DrawDockLeaf(node, rect, preventUpdatingMouse, preventUpdatingKeyboard);
+        }
+
+        private void DrawDockLeaf(FuDockingLayoutDefinition node, Rect rect, bool preventUpdatingMouse, bool preventUpdatingKeyboard)
+        {
+            if (node == null ||
+                !_nodeWindowIds.TryGetValue(node.ID, out List<string> windowIds) ||
+                windowIds.Count == 0)
+            {
+                return;
+            }
+
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            uint body = Fugui.Themes.GetColorU32(FuColors.WindowBg, 1f);
+            uint border = Fugui.Themes.GetColorU32(FuColors.Border, 0.72f);
+            drawList.PushClipRect(rect.position, rect.position + rect.size, false);
+            drawList.AddRectFilled(rect.position, rect.position + rect.size, body, 0f);
+
+            float tabHeight = GetDockedTabBarHeight(node.ID);
+            if (tabHeight > 0f)
+            {
+                ImGui.SetCursorScreenPos(rect.position);
+                using (FuLayout tabLayout = new FuLayout())
+                {
+                    FuWindow ownerWindow = GetSelectedWindowForNode(node.ID);
+                    DrawDockNodeTabs(node.ID, ownerWindow, tabLayout);
+                }
+            }
+
+            drawList.AddRect(
+                rect.position,
+                rect.position + rect.size,
+                border,
+                0f,
+                ImDrawFlags.None,
+                Mathf.Max(1f, Fugui.Themes.WindowBorderSize));
+            drawList.PopClipRect();
+
+            if (!_nodeContentRects.TryGetValue(node.ID, out Rect contentRect))
+            {
+                contentRect = GetDockNodeContentRect(node.ID, rect);
+            }
+
+            FuWindow selectedWindow = GetSelectedWindowForNode(node.ID);
+            if (selectedWindow == null)
+            {
+                return;
+            }
+
+            ImGui.SetCursorScreenPos(contentRect.position);
+            selectedWindow.DrawDockedChildContent(contentRect.size, preventUpdatingMouse, preventUpdatingKeyboard);
+        }
+
+        private FuWindow GetSelectedWindowForNode(uint nodeId)
+        {
+            if (!_nodeWindowIds.TryGetValue(nodeId, out List<string> windowIds) || windowIds.Count == 0)
+            {
+                return null;
+            }
+
+            int selected = _nodeSelectedIndices.TryGetValue(nodeId, out int selectedIndex) ? selectedIndex : 0;
+            selected = Mathf.Clamp(selected, 0, windowIds.Count - 1);
+            return Fugui.UIWindows.TryGetValue(windowIds[selected], out FuWindow window) ? window : null;
+        }
+
+        private void DrawDockspaceSplitters(ImDrawListPtr drawList, IFuWindowContainer container, FloatingDockRoot floatingRoot)
+        {
+            List<DockSplitterDrawData> splitters = floatingRoot != null ? _floatingDockSplitters : _mainDockSplitters;
+            Rect clipRect = floatingRoot != null ? floatingRoot.Rect : GetContainerContentRect(container);
+            drawList.PushClipRect(clipRect.position, clipRect.position + clipRect.size, false);
+            for (int i = 0; i < splitters.Count; i++)
+            {
+                DockSplitterDrawData splitter = splitters[i];
+                if (splitter.OwningFloatingRoot != floatingRoot)
+                {
+                    continue;
+                }
+
+                DrawDockSplitter(drawList, splitter.GrabRect, splitter.Horizontal, splitter.Hovered, splitter.Active, splitter.VisualThickness, splitter.Scale, splitter.MousePosition, splitter.ClipRect);
+            }
+            drawList.PopClipRect();
+        }
+
+        private void DrawFloatingDockRootShell(ImDrawListPtr drawList, FloatingDockRoot floatingRoot, IFuWindowContainer container)
+        {
+            if (floatingRoot == null)
+            {
+                return;
+            }
+
+            float rounding = Mathf.Max(2f, Fugui.Themes.WindowRounding);
+            uint body = Fugui.Themes.GetColorU32(FuColors.WindowBg, 1f);
+            uint border = Fugui.Themes.GetColorU32(FuColors.Border, 0.86f);
+            Rect headerRect = GetFloatingDockRootHeaderRect(floatingRoot);
+
+            drawList.PushClipRect(floatingRoot.Rect.position, floatingRoot.Rect.position + floatingRoot.Rect.size, false);
+            drawList.AddRectFilled(floatingRoot.Rect.position, floatingRoot.Rect.position + floatingRoot.Rect.size, body, rounding);
+            drawList.AddRect(
+                floatingRoot.Rect.position,
+                floatingRoot.Rect.position + floatingRoot.Rect.size,
+                border,
+                rounding,
+                ImDrawFlags.None,
+                Mathf.Max(1f, Fugui.Themes.WindowBorderSize));
+            if (headerRect.width > 0f && headerRect.height > 0f)
+            {
+                bool externalNativeRoot = false;
+#if FU_EXTERNALIZATION
+                externalNativeRoot = IsExternalNativeDockRoot(floatingRoot, container);
+#endif
+                Rect explodeRect = GetFloatingDockRootExplodeButtonRect(headerRect, externalNativeRoot);
+                DrawFloatingDockRootHeader(drawList, floatingRoot, container, headerRect, externalNativeRoot, floatingRoot.HeaderHovered, explodeRect, floatingRoot.ExplodeHovered, floatingRoot.ExplodeActive);
+            }
+            DrawFloatingDockRootResizeFeedback(drawList, floatingRoot, GetFloatingRootDragMousePosition(container));
+            drawList.PopClipRect();
+        }
+
+        private bool IsFloatingDockRootShellDrawOwner(FuWindow window, FloatingDockRoot floatingRoot)
+        {
+            if (window == null || floatingRoot == null)
+            {
+                return false;
+            }
+
+            bool foundOwner = false;
+            bool isOwner = false;
+            window.Container.OnEachWindow(containerWindow =>
+            {
+                if (foundOwner)
+                {
+                    return;
+                }
+
+                if (containerWindow == null ||
+                    containerWindow.Container != window.Container ||
+                    !containerWindow.IsDocked ||
+                    !ShouldDrawWindow(containerWindow))
+                {
+                    return;
+                }
+
+                if (FindFloatingDockRootForNode(GetDockNodeId(containerWindow)) != floatingRoot)
+                {
+                    return;
+                }
+
+                foundOwner = true;
+                isOwner = containerWindow == window;
+            });
+
+            return isOwner;
+        }
+
+        private bool ProcessFloatingDockRootHeader(FloatingDockRoot floatingRoot, IFuWindowContainer container, bool inputBlocked)
+        {
+            if (floatingRoot == null || container == null || container.Mouse == null)
+            {
+                return false;
+            }
+
+            Rect headerRect = GetFloatingDockRootHeaderRect(floatingRoot);
+            if (headerRect.width <= 1f || headerRect.height <= 1f)
+            {
+                return false;
+            }
+
+            Vector2 mousePos = container.LocalMousePos;
+            bool externalNativeRoot = false;
+#if FU_EXTERNALIZATION
+            externalNativeRoot = IsExternalNativeDockRoot(floatingRoot, container);
+#endif
+            Rect explodeRect = GetFloatingDockRootExplodeButtonRect(headerRect, externalNativeRoot);
+            bool explodeHovered = !inputBlocked && explodeRect.Contains(mousePos);
+            bool explodeActive = explodeHovered && container.Mouse.IsPressed(FuMouseButton.Left);
+            floatingRoot.ExplodeHovered = explodeHovered;
+            floatingRoot.ExplodeActive = explodeActive;
+            if (explodeHovered)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                if (container.Mouse.IsClicked(FuMouseButton.Left))
+                {
+                    ExplodeFloatingDockRoot(floatingRoot, container);
+                    return true;
+                }
+            }
+
+            float rightReserve = GetFloatingDockRootHeaderRightReserve(externalNativeRoot);
+            Rect dragRect = new Rect(headerRect.x, headerRect.y, Mathf.Max(0f, headerRect.width - rightReserve), headerRect.height);
+            bool hovered = _draggedFloatingRoot == null &&
+                           _resizedFloatingRoot == null &&
+                           _activeResizeNodeId == 0u &&
+                           !inputBlocked &&
+                           !explodeHovered &&
+                           !Fugui.IsDraggingAnything() &&
+                           dragRect.Contains(mousePos);
+            floatingRoot.HeaderHovered = hovered;
+            if (hovered)
+            {
+                ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
+                if (!externalNativeRoot && container.Mouse.IsDown(FuMouseButton.Left))
+                {
+                    BeginFloatingDockRootDrag(floatingRoot, container, container.LocalMousePos);
+                }
+            }
+
+            return false;
+        }
+
+        private void DrawFloatingDockRootHeader(
+            ImDrawListPtr drawList,
+            FloatingDockRoot floatingRoot,
+            IFuWindowContainer container,
+            Rect headerRect,
+            bool externalNativeRoot,
+            bool hovered,
+            Rect explodeRect,
+            bool explodeHovered,
+            bool explodeActive)
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            bool active = floatingRoot.HeaderActive || (_draggedFloatingRoot == floatingRoot);
+            uint bg = active
+                ? Fugui.Themes.GetColorU32(FuColors.TitleBgActive, 1f)
+                : hovered
+                    ? Fugui.Themes.GetColorU32(FuColors.TitleBgActive, 1f)
+                    : Fugui.Themes.GetColorU32(FuColors.TitleBg, 1f);
+            uint border = Fugui.Themes.GetColorU32(FuColors.Border, 0.86f);
+            uint separator = Fugui.Themes.GetColorU32(FuColors.Border, 0.55f);
+            uint icon = Fugui.Themes.GetColorU32(FuColors.Text, hovered || active ? 0.88f : 0.62f);
+
+            Vector2 min = headerRect.position;
+            Vector2 max = headerRect.position + headerRect.size;
+            drawList.AddRectFilled(min, max, bg, Mathf.Max(2f, Fugui.Themes.WindowRounding));
+            drawList.AddLine(new Vector2(min.x, max.y - scale), new Vector2(max.x, max.y - scale), separator, Mathf.Max(1f, scale));
+            drawList.AddRect(floatingRoot.Rect.position, floatingRoot.Rect.position + floatingRoot.Rect.size, border, Mathf.Max(2f, Fugui.Themes.WindowRounding), ImDrawFlags.None, Mathf.Max(1f, Fugui.Themes.WindowBorderSize));
+
+            float logoSize = Mathf.Max(16f * scale, headerRect.height - 8f * scale);
+            Rect logoRect = new Rect(
+                headerRect.x + 8f * scale,
+                headerRect.y + (headerRect.height - logoSize) * 0.5f,
+                logoSize,
+                logoSize);
+            DrawDockRootGrabLogo(drawList, logoRect, icon);
+
+            DrawDockRootExplodeButton(drawList, explodeRect, explodeHovered, explodeActive);
+#if FU_EXTERNALIZATION
+            if (externalNativeRoot && container is FuExternalWindowContainer externalContainer)
+            {
+                DrawExternalDockRootWindowControls(drawList, externalContainer, headerRect);
+            }
+#endif
+        }
+
+        private void DrawDockRootGrabLogo(ImDrawListPtr drawList, Rect rect, uint color)
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            float radius = Mathf.Max(1.1f, 1.35f * scale);
+            float step = Mathf.Max(4.5f, 5f * scale);
+            Vector2 center = rect.center;
+            for (int y = -1; y <= 1; y++)
+            {
+                drawList.AddCircleFilled(center + new Vector2(-step * 0.5f, y * step), radius, color, 10);
+                drawList.AddCircleFilled(center + new Vector2(step * 0.5f, y * step), radius, color, 10);
+            }
+        }
+
+        private void DrawDockRootExplodeButton(ImDrawListPtr drawList, Rect rect, bool hovered, bool active)
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            uint bg = active
+                ? Fugui.Themes.GetColorU32(FuColors.ButtonActive, 0.95f)
+                : hovered
+                    ? Fugui.Themes.GetColorU32(FuColors.ButtonHovered, 0.90f)
+                    : Fugui.Themes.GetColorU32(FuColors.Button, 0.34f);
+            uint icon = Fugui.Themes.GetColorU32(FuColors.Text, hovered || active ? 0.95f : 0.70f);
+            float rounding = Mathf.Max(3f, 4f * scale);
+            drawList.AddRectFilled(rect.position, rect.position + rect.size, bg, rounding);
+
+            Vector2 c = rect.center;
+            float inner = Mathf.Max(2.5f, 3f * scale);
+            float outer = Mathf.Max(6f, 7f * scale);
+            float thickness = Mathf.Max(1f, 1.25f * scale);
+            DrawExplodeRay(drawList, c, new Vector2(-inner, -inner), new Vector2(-outer, -outer), icon, thickness);
+            DrawExplodeRay(drawList, c, new Vector2(inner, -inner), new Vector2(outer, -outer), icon, thickness);
+            DrawExplodeRay(drawList, c, new Vector2(-inner, inner), new Vector2(-outer, outer), icon, thickness);
+            DrawExplodeRay(drawList, c, new Vector2(inner, inner), new Vector2(outer, outer), icon, thickness);
+        }
+
+        private void DrawExplodeRay(ImDrawListPtr drawList, Vector2 center, Vector2 inner, Vector2 outer, uint color, float thickness)
+        {
+            Vector2 start = center + inner;
+            Vector2 end = center + outer;
+            drawList.AddLine(start, end, color, thickness);
+            Vector2 direction = (outer - inner).normalized;
+            Vector2 side = new Vector2(-direction.y, direction.x);
+            float arrow = Mathf.Max(2f, thickness * 2f);
+            drawList.AddLine(end, end - direction * arrow + side * arrow * 0.65f, color, thickness);
+            drawList.AddLine(end, end - direction * arrow - side * arrow * 0.65f, color, thickness);
+        }
+
+        private Rect GetFloatingDockRootExplodeButtonRect(Rect headerRect, bool externalNativeRoot)
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            float size = GetFloatingDockRootHeaderButtonSize(headerRect.height);
+            float right = headerRect.xMax - 6f * scale;
+            if (externalNativeRoot)
+            {
+                right -= GetExternalNativeWindowControlsWidth(headerRect.height);
+            }
+
+            return new Rect(
+                right - size,
+                headerRect.y + (headerRect.height - size) * 0.5f,
+                size,
+                size);
+        }
+
+        private float GetFloatingDockRootHeaderRightReserve(bool externalNativeRoot)
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            float headerHeight = GetFloatingDockRootHeaderHeight();
+            float reserve = GetFloatingDockRootHeaderButtonSize(headerHeight) + 14f * scale;
+            if (externalNativeRoot)
+            {
+                reserve += GetExternalNativeWindowControlsWidth(headerHeight);
+            }
+
+            return reserve;
+        }
+
+        private float GetFloatingDockRootHeaderButtonSize(float headerHeight)
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            return Mathf.Max(18f * scale, headerHeight - 7f * scale);
+        }
+
+        private float GetExternalNativeWindowControlsWidth(float headerHeight)
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            return GetExternalNativeWindowControlButtonWidth(headerHeight) * 3f + 4f * scale;
+        }
+
+        private float GetExternalNativeWindowControlButtonWidth(float headerHeight)
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            return Mathf.Max(26f * scale, headerHeight);
+        }
+
+#if FU_EXTERNALIZATION
+        private void DrawExternalDockRootWindowControls(ImDrawListPtr drawList, FuExternalWindowContainer externalContainer, Rect headerRect)
+        {
+            if (externalContainer == null || externalContainer.Context is not FuExternalContext externalContext || externalContext.Window == null)
+            {
+                return;
+            }
+
+            FuExternalWindow externalWindow = externalContext.Window;
+            FuMouseState mouse = externalContainer.Mouse;
+            Vector2 mousePos = externalContainer.LocalMousePos;
+            bool mouseDown = mouse != null && mouse.IsPressed(FuMouseButton.Left);
+            bool mouseClicked = mouse != null && mouse.IsClicked(FuMouseButton.Left);
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            float buttonWidth = GetExternalNativeWindowControlButtonWidth(headerRect.height);
+            float iconSize = Mathf.Max(12f * scale, headerRect.height - 12f * scale);
+            float iconPadding = Mathf.Max(4f * scale, (headerRect.height - iconSize) * 0.5f);
+            float thickness = Mathf.Max(1f, 1.15f * scale);
+            float startX = headerRect.xMax - buttonWidth * 3f - 4f * scale;
+            uint iconColor = Fugui.Themes.GetColorU32(FuColors.Text, 0.86f);
+
+            Rect minimizeRect = new Rect(startX, headerRect.y, buttonWidth, headerRect.height);
+            DrawExternalHeaderButtonBackground(drawList, minimizeRect, minimizeRect.Contains(mousePos), mouseDown);
+            Vector2 minLineA = new Vector2(minimizeRect.x + iconPadding, minimizeRect.y + minimizeRect.height * 0.66f);
+            Vector2 minLineB = new Vector2(minimizeRect.xMax - iconPadding, minimizeRect.y + minimizeRect.height * 0.66f);
+            drawList.AddLine(minLineA, minLineB, iconColor, thickness);
+            if (minimizeRect.Contains(mousePos) && mouseClicked)
+            {
+                externalWindow.Minimize();
+            }
+
+            Rect maximizeRect = new Rect(startX + buttonWidth, headerRect.y, buttonWidth, headerRect.height);
+            bool maximizeHovered = maximizeRect.Contains(mousePos);
+            DrawExternalHeaderButtonBackground(drawList, maximizeRect, maximizeHovered, mouseDown);
+            DrawExternalHeaderMaximizeIcon(drawList, maximizeRect, externalWindow.IsMaximized, iconColor, iconPadding, thickness);
+            if (maximizeHovered && mouseClicked)
+            {
+                externalWindow.ToggleMaximize();
+            }
+
+            Rect closeRect = new Rect(startX + buttonWidth * 2f, headerRect.y, buttonWidth, headerRect.height);
+            bool closeHovered = closeRect.Contains(mousePos);
+            DrawExternalHeaderButtonBackground(drawList, closeRect, closeHovered, mouseDown);
+            Vector2 closeA = new Vector2(closeRect.x + iconPadding, closeRect.y + iconPadding);
+            Vector2 closeB = new Vector2(closeRect.xMax - iconPadding, closeRect.yMax - iconPadding);
+            Vector2 closeC = new Vector2(closeA.x, closeB.y);
+            Vector2 closeD = new Vector2(closeB.x, closeA.y);
+            drawList.AddLine(closeA, closeB, iconColor, thickness);
+            drawList.AddLine(closeC, closeD, iconColor, thickness);
+            if (closeHovered && mouseClicked)
+            {
+                externalWindow.Close(null);
+            }
+        }
+
+        private void DrawExternalHeaderButtonBackground(ImDrawListPtr drawList, Rect rect, bool hovered, bool mouseDown)
+        {
+            if (!hovered)
+            {
+                return;
+            }
+
+            uint bg = mouseDown
+                ? Fugui.Themes.GetColorU32(FuColors.ButtonActive, 0.88f)
+                : Fugui.Themes.GetColorU32(FuColors.ButtonHovered, 0.72f);
+            drawList.AddRectFilled(rect.position, rect.position + rect.size, bg, 0f);
+        }
+
+        private void DrawExternalHeaderMaximizeIcon(ImDrawListPtr drawList, Rect rect, bool restoredIcon, uint color, float padding, float thickness)
+        {
+            float rounding = Mathf.Max(1f, Fugui.Themes.FrameRounding * 0.5f);
+            if (!restoredIcon)
+            {
+                drawList.AddRect(
+                    rect.position + new Vector2(padding, padding),
+                    rect.position + rect.size - new Vector2(padding, padding),
+                    color,
+                    rounding,
+                    ImDrawFlags.None,
+                    thickness);
+                return;
+            }
+
+            float offset = Mathf.Max(2f, padding * 0.45f);
+            Rect back = new Rect(
+                rect.x + padding + offset,
+                rect.y + padding,
+                rect.width - padding * 2f - offset,
+                rect.height - padding * 2f - offset);
+            Rect front = new Rect(
+                rect.x + padding,
+                rect.y + padding + offset,
+                rect.width - padding * 2f - offset,
+                rect.height - padding * 2f - offset);
+            drawList.AddRect(back.position, back.position + back.size, color, rounding, ImDrawFlags.None, thickness);
+            drawList.AddRectFilled(front.position, front.position + front.size, Fugui.Themes.GetColorU32(FuColors.TitleBg), rounding);
+            drawList.AddRect(front.position, front.position + front.size, color, rounding, ImDrawFlags.None, thickness);
+        }
+
+        internal float GetExternalNativeDragHeaderHeight(FuWindow window)
+        {
+            if (window != null && IsWindowInExternalNativeDockRoot(window))
+            {
+                return GetFloatingDockRootHeaderHeight();
+            }
+
+            return window != null ? window.GetExternalNativeTitleBarHeight() : 0f;
+        }
+
+        internal float GetExternalNativeDragHeaderRightReserve(FuWindow window)
+        {
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            if (window != null && IsWindowInExternalNativeDockRoot(window))
+            {
+                return GetFloatingDockRootHeaderRightReserve(true);
+            }
+
+            return 64f * scale;
+        }
+#endif
+
+        private void ExplodeFloatingDockRoot(FloatingDockRoot floatingRoot, IFuWindowContainer container)
+        {
+            if (floatingRoot == null || floatingRoot.Layout == null || container == null)
+            {
+                return;
+            }
+
+            List<string> windowIds = GetRuntimeWindowIdsInNodeTree(floatingRoot.Layout);
+            if (windowIds.Count == 0)
+            {
+                return;
+            }
+
+            Rect contentRect = GetFloatingDockRootContentRect(floatingRoot);
+#if FU_EXTERNALIZATION
+            if (container is FuExternalWindowContainer externalContainer)
+            {
+                ExplodeExternalFloatingDockRoot(floatingRoot, externalContainer, windowIds, contentRect);
+                return;
+            }
+#endif
+
+            RemoveFloatingDockRootState(floatingRoot);
+
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            float cascade = Mathf.Max(22f, 28f * scale);
+            Vector2 baseSize = new Vector2(
+                Mathf.Min(Mathf.Max(1f, contentRect.width), Mathf.Max(160f * scale, contentRect.width * 0.72f)),
+                Mathf.Min(Mathf.Max(1f, contentRect.height), Mathf.Max(120f * scale, contentRect.height * 0.78f)));
+
+            for (int i = 0; i < windowIds.Count; i++)
+            {
+                if (!Fugui.UIWindows.TryGetValue(windowIds[i], out FuWindow window) || window == null)
+                {
+                    continue;
+                }
+
+                bool wasDocked = window.IsDocked;
+                window.CurrentDockID = 0u;
+                window.IsDocked = false;
+                Vector2 position = contentRect.position + new Vector2(i * cascade, i * cascade);
+                Rect rect = FitWindowRectInsideContainer(new Rect(position, baseSize), container);
+                window.ApplyProgrammaticRect(
+                    new Vector2Int(Mathf.RoundToInt(rect.x), Mathf.RoundToInt(rect.y)),
+                    new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(rect.width)), Mathf.Max(1, Mathf.RoundToInt(rect.height))),
+                    true,
+                    true);
+                if (wasDocked)
+                {
+                    window.Fire_OnUnDock();
+                }
+                window.ForceDraw(2);
+            }
+
+            RebuildNodeIndex();
+            BringContainerWindowsToFront(container, windowIds);
+            Fugui.ForceDrawAllWindows(2);
+        }
+
+        private void RemoveFloatingDockRootState(FloatingDockRoot floatingRoot)
+        {
+            if (floatingRoot == null)
+            {
+                return;
+            }
+
+            _floatingDockRoots.Remove(floatingRoot);
+            UnregisterNodeTree(floatingRoot.Layout);
+            if (_draggedFloatingRoot == floatingRoot)
+            {
+                ClearFloatingRootDragState();
+            }
+            if (_resizedFloatingRoot == floatingRoot)
+            {
+                ClearFloatingRootResizeState();
+            }
+        }
+
+#if FU_EXTERNALIZATION
+        private void ExplodeExternalFloatingDockRoot(FloatingDockRoot floatingRoot, FuExternalWindowContainer sourceContainer, List<string> windowIds, Rect contentRect)
+        {
+            if (floatingRoot == null || sourceContainer == null || windowIds == null || windowIds.Count == 0)
+            {
+                return;
+            }
+
+            RemoveFloatingDockRootState(floatingRoot);
+
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
+            float cascade = Mathf.Max(22f, 28f * scale);
+            Vector2 baseSize = new Vector2(
+                Mathf.Min(Mathf.Max(1f, contentRect.width), Mathf.Max(160f * scale, contentRect.width * 0.72f)),
+                Mathf.Min(Mathf.Max(1f, contentRect.height), Mathf.Max(120f * scale, contentRect.height * 0.78f)));
+            List<FuWindow> windowsToExternalize = new List<FuWindow>();
+
+            for (int i = 0; i < windowIds.Count; i++)
+            {
+                if (!Fugui.UIWindows.TryGetValue(windowIds[i], out FuWindow window) || window == null)
+                {
+                    continue;
+                }
+
+                bool wasDocked = window.IsDocked;
+                window.CurrentDockID = 0u;
+                window.IsDocked = false;
+                window.IsDragging = false;
+                Vector2 position = contentRect.position + new Vector2(i * cascade, i * cascade);
+                Rect rect = FitWindowRectInsideContainer(new Rect(position, baseSize), sourceContainer);
+                window.ApplyProgrammaticRect(
+                    new Vector2Int(Mathf.RoundToInt(rect.x), Mathf.RoundToInt(rect.y)),
+                    new Vector2Int(Mathf.Max(1, Mathf.RoundToInt(rect.width)), Mathf.Max(1, Mathf.RoundToInt(rect.height))),
+                    true,
+                    true);
+                if (wasDocked)
+                {
+                    window.Fire_OnUnDock();
+                }
+                window.ForceDraw(2);
+                windowsToExternalize.Add(window);
+            }
+
+            RebuildNodeIndex();
+            for (int i = 0; i < windowsToExternalize.Count; i++)
+            {
+                Fugui.ExternalizeWindow(windowsToExternalize[i], true);
+            }
+
+            if (sourceContainer.Windows.Count == 0 && sourceContainer.Context is FuExternalContext sourceContext)
+            {
+                sourceContext.Window.Close(null);
+            }
+
+            Fugui.ForceDrawAllWindows(2);
+        }
+#endif
+
+        private Rect FitWindowRectInsideContainer(Rect rect, IFuWindowContainer container)
+        {
+            if (container == null)
+            {
+                return rect;
+            }
+
+            Vector2 size = new Vector2(
+                Mathf.Clamp(rect.width, 1f, Mathf.Max(1, container.Size.x)),
+                Mathf.Clamp(rect.height, 1f, Mathf.Max(1, container.Size.y)));
+            Vector2 position = rect.position;
+            position.x = Mathf.Clamp(position.x, 0f, Mathf.Max(0f, container.Size.x - size.x));
+            position.y = Mathf.Clamp(position.y, 0f, Mathf.Max(0f, container.Size.y - size.y));
+            return new Rect(position, size);
         }
 
         /// <summary>
@@ -1934,6 +3053,7 @@ namespace Fu
             _nodesById.Remove(sourceId);
             _nodeParents.Remove(sourceId);
             _nodeRects.Remove(sourceId);
+            _nodeContentRects.Remove(sourceId);
         }
 
         /// <summary>
@@ -1957,6 +3077,7 @@ namespace Fu
             _nodeWindowIds.Remove(node.ID);
             _nodeSelectedIndices.Remove(node.ID);
             _nodeRects.Remove(node.ID);
+            _nodeContentRects.Remove(node.ID);
             _nodesById.Remove(node.ID);
             _nodeParents.Remove(node.ID);
 
@@ -2067,6 +3188,34 @@ namespace Fu
             return false;
         }
 
+        private bool NodeTreeContainsWindowId(FuDockingLayoutDefinition root, string windowId)
+        {
+            if (root == null || string.IsNullOrEmpty(windowId))
+            {
+                return false;
+            }
+
+            if (_nodeWindowIds.TryGetValue(root.ID, out List<string> windowIds) && windowIds.Contains(windowId))
+            {
+                return true;
+            }
+
+            if (root.Children == null)
+            {
+                return false;
+            }
+
+            foreach (FuDockingLayoutDefinition child in root.Children)
+            {
+                if (NodeTreeContainsWindowId(child, windowId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Return whether a window should be rendered this frame.
         /// </summary>
@@ -2113,6 +3262,19 @@ namespace Fu
             uint nodeId = GetDockNodeId(window);
             return nodeId != 0u && FindFloatingDockRootForNode(nodeId) != null;
         }
+
+#if FU_EXTERNALIZATION
+        internal bool IsWindowInExternalNativeDockRoot(FuWindow window)
+        {
+            if (window == null)
+            {
+                return false;
+            }
+
+            FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(GetDockNodeId(window));
+            return IsExternalNativeDockRoot(floatingRoot, window.Container);
+        }
+#endif
 
         internal List<FuWindow> GetExternalizationGroup(FuWindow window)
         {
@@ -2163,13 +3325,18 @@ namespace Fu
 
         internal bool TryBeginFloatingDockRootDrag(FuWindow window, IFuWindowContainer container, Vector2Int mousePos)
         {
+            return TryBeginFloatingDockRootDrag(window, container, mousePos, false);
+        }
+
+        internal bool TryBeginFloatingDockRootDrag(FuWindow window, IFuWindowContainer container, Vector2Int mousePos, bool useGlobalMouseButton)
+        {
             FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(GetDockNodeId(window));
             if (floatingRoot == null || container == null)
             {
                 return false;
             }
 
-            BeginFloatingDockRootDrag(floatingRoot, container, mousePos);
+            BeginFloatingDockRootDrag(floatingRoot, container, mousePos, useGlobalMouseButton);
             return true;
         }
 
@@ -2421,12 +3588,14 @@ namespace Fu
         internal bool HasDockedTabBar(FuWindow window)
         {
             uint nodeId = GetDockNodeId(window);
-            if (nodeId == 0u || !_nodeWindowIds.TryGetValue(nodeId, out List<string> windowIds))
-            {
-                return false;
-            }
+            return HasDockedTabBar(nodeId);
+        }
 
-            return windowIds.Count > 1 || window.IsDockable || CurrentLayout == null || !CurrentLayout.AutoHideTopBar;
+        private bool HasDockedTabBar(uint nodeId)
+        {
+            return nodeId != 0u &&
+                   _nodeWindowIds.TryGetValue(nodeId, out List<string> windowIds) &&
+                   windowIds.Count > 1;
         }
 
         /// <summary>
@@ -2434,7 +3603,12 @@ namespace Fu
         /// </summary>
         internal float GetDockedTabBarHeight(FuWindow window)
         {
-            if (!HasDockedTabBar(window))
+            return GetDockedTabBarHeight(GetDockNodeId(window));
+        }
+
+        private float GetDockedTabBarHeight(uint nodeId)
+        {
+            if (!HasDockedTabBar(nodeId))
             {
                 return 0f;
             }
@@ -2453,12 +3627,15 @@ namespace Fu
         internal void DrawDockedTabs(FuWindow window, FuLayout layout)
         {
             uint nodeId = GetDockNodeId(window);
-            if (nodeId == 0u || layout == null || !_nodeWindowIds.TryGetValue(nodeId, out List<string> windowIds) || windowIds.Count == 0)
+            DrawDockNodeTabs(nodeId, window, layout);
+        }
+
+        private void DrawDockNodeTabs(uint nodeId, FuWindow ownerWindow, FuLayout layout)
+        {
+            if (nodeId == 0u || layout == null || !_nodeWindowIds.TryGetValue(nodeId, out List<string> windowIds) || windowIds.Count <= 1)
             {
                 return;
             }
-
-            FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(nodeId);
 
             List<string> labels = new List<string>();
             for (int i = 0; i < windowIds.Count; i++)
@@ -2478,7 +3655,6 @@ namespace Fu
             selected = Mathf.Clamp(selected, 0, labels.Count - 1);
             string tabBarId = "customDockTabs" + nodeId;
             FuTabsFlags tabFlags = FuTabsFlags.Compact;
-            tabFlags |= floatingRoot != null ? FuTabsFlags.ReserveTrailingSpace : FuTabsFlags.Stretch;
             if (layout.Tabs(tabBarId, labels, ref selected, tabFlags))
             {
                 _nodeSelectedIndices[nodeId] = selected;
@@ -2493,15 +3669,57 @@ namespace Fu
                 _nodeSelectedIndices[nodeId] = selected;
             }
 
-            if (floatingRoot != null)
-            {
-                ProcessFloatingDockRootTabHeader(floatingRoot, window, tabBarId);
-            }
-            if (ProcessDockedTabMiddleClickClose(window, nodeId, windowIds))
+            ProcessDockedTabSelectionFallback(ownerWindow, nodeId, windowIds, tabBarId);
+            if (ProcessDockedTabMiddleClickClose(ownerWindow, nodeId, windowIds))
             {
                 return;
             }
-            ProcessDockedTabDrag(window, nodeId, windowIds);
+            ProcessDockedTabDrag(ownerWindow, nodeId, windowIds);
+        }
+
+        /// <summary>
+        /// Keep docked tab selection robust when the container mouse space differs from ImGui screen space.
+        /// </summary>
+        private void ProcessDockedTabSelectionFallback(FuWindow ownerWindow, uint nodeId, List<string> windowIds, string tabBarId)
+        {
+            if (ownerWindow == null ||
+                ownerWindow.Container == null ||
+                windowIds == null ||
+                windowIds.Count == 0 ||
+                string.IsNullOrEmpty(tabBarId))
+            {
+                return;
+            }
+
+            FuMouseState mouse = ownerWindow.Container.Mouse;
+            if (mouse == null || !mouse.IsClicked(FuMouseButton.Left))
+            {
+                return;
+            }
+
+            Vector2Int mousePos = ownerWindow.Container.LocalMousePos;
+            if (IsDockInteractionBlockedByHigherFloatingSurface(ownerWindow.Container, mousePos, FindFloatingDockRootForNode(nodeId)))
+            {
+                return;
+            }
+
+            if (!FuLayout.TryGetLastTabHitIndex(tabBarId, ImGui.GetMousePos(), out int hitTabIndex))
+            {
+                return;
+            }
+
+            hitTabIndex = Mathf.Clamp(hitTabIndex, 0, windowIds.Count - 1);
+            if (_nodeSelectedIndices.TryGetValue(nodeId, out int selectedIndex) && selectedIndex == hitTabIndex)
+            {
+                return;
+            }
+
+            _nodeSelectedIndices[nodeId] = hitTabIndex;
+            if (Fugui.UIWindows.TryGetValue(windowIds[hitTabIndex], out FuWindow selectedWindow))
+            {
+                selectedWindow.ForceFocusOnNextFrame();
+            }
+            Fugui.ForceDrawAllWindows(2);
         }
 
         /// <summary>
@@ -2530,7 +3748,7 @@ namespace Fu
             }
 
             string tabBarId = "customDockTabs" + nodeId;
-            if (!FuLayout.TryGetLastTabHitIndex(tabBarId, mousePos, out int hitTabIndex))
+            if (!FuLayout.TryGetLastTabHitIndex(tabBarId, ImGui.GetMousePos(), out int hitTabIndex))
             {
                 return false;
             }
@@ -2550,45 +3768,9 @@ namespace Fu
         }
 
         /// <summary>
-        /// Use the trailing part of a floating dock root tab bar as the group drag handle.
+        /// Start dragging a floating dock root from its global header.
         /// </summary>
-        private void ProcessFloatingDockRootTabHeader(FloatingDockRoot floatingRoot, FuWindow ownerWindow, string tabBarId)
-        {
-            if (floatingRoot == null ||
-                ownerWindow == null ||
-                ownerWindow.Container == null ||
-                !FuLayout.TryGetLastTabTrailingRect(tabBarId, out Rect grabRect))
-            {
-                return;
-            }
-
-            FuMouseState mouse = ownerWindow.Container.Mouse;
-            Vector2Int mousePos = ownerWindow.Container.LocalMousePos;
-            bool inputBlocked = IsDockInteractionBlockedByHigherFloatingSurface(ownerWindow.Container, mousePos, floatingRoot);
-            bool hovered = _draggedFloatingRoot == null &&
-                           _resizedFloatingRoot == null &&
-                           _activeResizeNodeId == 0u &&
-                           !inputBlocked &&
-                           !Fugui.IsDraggingAnything() &&
-                           grabRect.Contains(mousePos);
-
-            if (hovered)
-            {
-                floatingRoot.HeaderHovered = true;
-                ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
-                if (mouse.IsDown(FuMouseButton.Left))
-                {
-                    BeginFloatingDockRootDrag(floatingRoot, ownerWindow.Container, mousePos);
-                }
-            }
-
-            DrawFloatingDockRootTabGrab(ownerWindow, grabRect, hovered || floatingRoot.HeaderActive, floatingRoot.HeaderActive);
-        }
-
-        /// <summary>
-        /// Start dragging a floating dock root from its tab header.
-        /// </summary>
-        private void BeginFloatingDockRootDrag(FloatingDockRoot floatingRoot, IFuWindowContainer container, Vector2Int mousePos)
+        private void BeginFloatingDockRootDrag(FloatingDockRoot floatingRoot, IFuWindowContainer container, Vector2Int mousePos, bool useGlobalMouseButton = false)
         {
             if (floatingRoot == null)
             {
@@ -2598,43 +3780,11 @@ namespace Fu
             _draggedFloatingRoot = floatingRoot;
             _floatingRootDragStartMousePos = mousePos;
             _floatingRootDragStartRect = floatingRoot.Rect;
+            _floatingRootDragUsesGlobalMouseButton = useGlobalMouseButton;
             floatingRoot.HeaderActive = true;
             MoveFloatingDockRootToFront(floatingRoot, container);
             ClearPendingTabDrag();
             Fugui.ForceDrawAllWindows(2);
-        }
-
-        /// <summary>
-        /// Draw a subtle grip in the trailing part of a floating dock root tab bar.
-        /// </summary>
-        private void DrawFloatingDockRootTabGrab(FuWindow ownerWindow, Rect grabRect, bool hovered, bool active)
-        {
-            if (ownerWindow == null || grabRect.width <= 1f || grabRect.height <= 1f)
-            {
-                return;
-            }
-
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
-            uint bg = active
-                ? Fugui.Themes.GetColorU32(FuColors.ButtonActive, 0.42f)
-                : hovered
-                    ? Fugui.Themes.GetColorU32(FuColors.ButtonHovered, 0.34f)
-                    : Fugui.Themes.GetColorU32(FuColors.Header, 0.18f);
-            uint dotColor = Fugui.Themes.GetColorU32(FuColors.Text, hovered || active ? 0.88f : 0.52f);
-            float rounding = Mathf.Max(4f, 5f * scale);
-
-            drawList.AddRectFilled(grabRect.position, grabRect.position + grabRect.size, bg, rounding);
-            float dotRadius = Mathf.Max(1.15f, 1.25f * scale);
-            float spacing = Mathf.Max(5f, 5f * scale);
-            Vector2 center = grabRect.center;
-            for (int y = -1; y <= 1; y++)
-            {
-                for (int x = -1; x <= 1; x++)
-                {
-                    drawList.AddCircleFilled(center + new Vector2(x * spacing, y * spacing), dotRadius, dotColor, 10);
-                }
-            }
         }
 
         /// <summary>
@@ -2659,8 +3809,9 @@ namespace Fu
             }
 
             string tabBarId = "customDockTabs" + nodeId;
+            Vector2 tabMousePos = ImGui.GetMousePos();
 
-            if (mouse.IsDown(FuMouseButton.Left) && FuLayout.TryGetLastTabHitIndex(tabBarId, mousePos, out int hitTabIndex))
+            if (mouse.IsDown(FuMouseButton.Left) && FuLayout.TryGetLastTabHitIndex(tabBarId, tabMousePos, out int hitTabIndex))
             {
                 hitTabIndex = Mathf.Clamp(hitTabIndex, 0, windowIds.Count - 1);
                 if (Fugui.UIWindows.TryGetValue(windowIds[hitTabIndex], out FuWindow tabWindow) && tabWindow.IsDockable)
@@ -2671,6 +3822,11 @@ namespace Fu
                     _pendingTabDragStartWindowPos = _nodeRects.TryGetValue(nodeId, out Rect nodeRect)
                         ? new Vector2Int(Mathf.RoundToInt(nodeRect.x), Mathf.RoundToInt(nodeRect.y))
                         : tabWindow.LocalPosition;
+                    FuWindow.InputFocusedWindow = tabWindow;
+                    if (FuWindow.NbInputFocusedWindow <= 0)
+                    {
+                        FuWindow.NbInputFocusedWindow = 1;
+                    }
                 }
                 return;
             }
@@ -2691,17 +3847,17 @@ namespace Fu
                 return;
             }
 
-            if (FuLayout.TryGetLastTabHitIndex(tabBarId, mousePos, out int hoveredTabIndex))
-            {
-                hoveredTabIndex = Mathf.Clamp(hoveredTabIndex, 0, windowIds.Count - 1);
-                ReorderDockedTab(nodeId, windowIds, _pendingTabDragWindowId, hoveredTabIndex);
-                return;
-            }
-
             float dragDistance = (mousePos - _pendingTabDragStartMousePos).magnitude;
             float threshold = Mathf.Max(4f, Fugui.Settings.ClickMaxDist * Fugui.Scale);
             if (dragDistance < threshold)
             {
+                return;
+            }
+
+            if (FuLayout.TryGetLastTabHitIndex(tabBarId, tabMousePos, out int hoveredTabIndex))
+            {
+                hoveredTabIndex = Mathf.Clamp(hoveredTabIndex, 0, windowIds.Count - 1);
+                ReorderDockedTab(nodeId, windowIds, _pendingTabDragWindowId, hoveredTabIndex);
                 return;
             }
 
@@ -2711,8 +3867,10 @@ namespace Fu
                 return;
             }
 
-            BeginDockedWindowDrag(draggedWindow, _pendingTabDragStartMousePos, _pendingTabDragStartWindowPos, mousePos);
+            Vector2Int startMousePos = _pendingTabDragStartMousePos;
+            Vector2Int startWindowPos = _pendingTabDragStartWindowPos;
             ClearPendingTabDrag();
+            BeginDockedWindowDrag(draggedWindow, startMousePos, startWindowPos, mousePos);
         }
 
         /// <summary>
@@ -3407,6 +4565,14 @@ namespace Fu
         /// </summary>
         private void ClearPendingTabDrag()
         {
+            if (!string.IsNullOrEmpty(_pendingTabDragWindowId) &&
+                FuWindow.InputFocusedWindow != null &&
+                FuWindow.InputFocusedWindow.ID == _pendingTabDragWindowId)
+            {
+                FuWindow.InputFocusedWindow = null;
+                FuWindow.NbInputFocusedWindow = 0;
+            }
+
             _pendingTabDragWindowId = null;
             _pendingTabDragNodeId = 0u;
             _pendingTabDragStartMousePos = Vector2Int.zero;
@@ -3430,6 +4596,7 @@ namespace Fu
             _draggedFloatingRoot = null;
             _floatingRootDragStartMousePos = Vector2Int.zero;
             _floatingRootDragStartRect = default;
+            _floatingRootDragUsesGlobalMouseButton = false;
             _dockDragPreviewTarget = DockDropTarget.Invalid;
         }
 
@@ -3448,6 +4615,9 @@ namespace Fu
             _floatingRootResizeStartMousePos = Vector2Int.zero;
             _floatingRootResizeStartRect = default;
             _floatingRootResizeEdge = FloatingDockRootResizeEdge.None;
+#if FU_EXTERNALIZATION
+            _floatingRootResizeStartNativeWindowPosition = Vector2Int.zero;
+#endif
         }
 
         /// <summary>
@@ -3899,13 +5069,15 @@ namespace Fu
         }
 #endif
 
-        private class FloatingDockRoot
+        private sealed class FloatingDockRoot
         {
             public FuDockingLayoutDefinition Layout;
             public Rect Rect;
             public IFuWindowContainer Container;
             public bool HeaderHovered;
             public bool HeaderActive;
+            public bool ExplodeHovered;
+            public bool ExplodeActive;
             public FloatingDockRootResizeEdge ResizeEdge;
             public bool ResizeActive;
 

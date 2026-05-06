@@ -197,10 +197,21 @@ namespace Fu
             OnPostRender?.Invoke();
 
             // keep draw data for this context while rendering
+            bool drawDataChanged;
             lock (DrawData)
             {
-                ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData(), ref _drawData);
+                drawDataChanged = ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData(), ref _drawData);
             }
+            if (drawDataChanged && this is FuUnityContext unityContext)
+            {
+                unityContext.MarkOffscreenRenderDirty();
+            }
+#if FU_EXTERNALIZATION
+            if (drawDataChanged && this is FuExternalContext externalContext)
+            {
+                externalContext.MarkExternalRenderDirty();
+            }
+#endif
             //Debug.Log(this.ID + " Rendered with " + _drawData.CmdListsCount + " Draw Lists and " + _drawData.TotalVtxCount + " vertices.");
         }
 

@@ -118,6 +118,13 @@ namespace ImGuiNET
         /// <param name="window">The internal ImGui window pointer.</param>
         [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
         public static extern void igBringWindowToDisplayFront(ImGuiWindow* window);
+
+        /// <summary>
+        /// Moves an internal ImGui window to the back of the display order.
+        /// </summary>
+        /// <param name="window">The internal ImGui window pointer.</param>
+        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void igBringWindowToDisplayBack(ImGuiWindow* window);
         #endregion
     }
 }

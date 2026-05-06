@@ -61,11 +61,12 @@ namespace Fu
         private uint _shaderProgram;
         private int _locProjMtx;
         private int _locTexture;
+        private int _locRenderOffset;
+        private readonly float[] _orthoProjection = new float[16];
 
         // CPU-side scratch (resized on demand)
         private int _vbCapacity;
         private int _ibCapacity;
-        private ImDrawVert[] _offsetVertexBuffer;
 
         public FuExternalWindow(FuWindow window, int contextID)
         {
@@ -94,6 +95,28 @@ namespace Fu
         internal void SetNativeSize(Vector2Int size)
         {
             _size = new Vector2Int(Math.Max(1, size.x), Math.Max(1, size.y));
+        }
+
+        internal void SetNativeBounds(Vector2Int position, Vector2Int size)
+        {
+            _position = position;
+            SetNativeSize(size);
+
+            if (SdlWindow == IntPtr.Zero)
+            {
+                return;
+            }
+
+            SDL_SetWindowPosition(SdlWindow, _position.x, _position.y);
+            SDL_SetWindowSize(SdlWindow, _size.x, _size.y);
+
+            int actualX = 0, actualY = 0;
+            SDL_GetWindowPosition(SdlWindow, ref actualX, ref actualY);
+            _position = new Vector2Int(actualX, actualY);
+
+            int actualW = 0, actualH = 0;
+            SDL_GetWindowSize(SdlWindow, ref actualW, ref actualH);
+            SetNativeSize(new Vector2Int(actualW, actualH));
         }
 
         /// <summary>
@@ -253,12 +276,14 @@ namespace Fu
                 return;
             }
 
-            // Only render if the window has been marked as dirty
-            if (!Window.HasJustBeenDraw)
+            // Docked external tabs can make the native owner inactive while another
+            // window in the same SDL container is the one producing draw data.
+            if (!HasExternalRenderWork())
                 return;
 
             // Render frame from queued batches (if any)
             RenderFrame();
+            ClearPendingExternalRenderWork();
 
             // perform buffer swap
             SDL_GL_SwapWindow(SdlWindow);
@@ -301,6 +326,74 @@ namespace Fu
                         _position = new Vector2Int(clampedX, clampedY);
                     }
                 }
+            }
+        }
+
+        private bool HasExternalRenderWork()
+        {
+            if (Window == null)
+            {
+                return false;
+            }
+
+            if (IsDragging || IsResizing || HoverResizeEdge != ResizeEdge.None)
+            {
+                return true;
+            }
+
+            if (Fugui.Layouts != null && Fugui.Layouts.IsCustomDockManipulating)
+            {
+                return true;
+            }
+
+            if (Window.Container?.Context is FuExternalContext externalContext && externalContext.HasPendingExternalRender)
+            {
+                return true;
+            }
+
+            if (Window.HasJustBeenDraw || Window.HasPendingExternalRender)
+            {
+                return true;
+            }
+
+            if (Window.Container is not FuExternalWindowContainer externalContainer)
+            {
+                return false;
+            }
+
+            bool hasRenderWork = false;
+            externalContainer.OnEachWindow(window =>
+            {
+                if (window != null && (window.HasJustBeenDraw || window.HasPendingExternalRender))
+                {
+                    hasRenderWork = true;
+                }
+            });
+            return hasRenderWork;
+        }
+
+        private void ClearPendingExternalRenderWork()
+        {
+            if (Window?.Container?.Context is FuExternalContext externalContext)
+            {
+                externalContext.MarkExternalRenderClean();
+            }
+
+            if (Window?.Container is FuExternalWindowContainer externalContainer)
+            {
+                externalContainer.OnEachWindow(window =>
+                {
+                    if (window != null)
+                    {
+                        window.HasPendingExternalRender = false;
+                    }
+                });
+                return;
+            }
+
+            if (Window != null)
+            {
+                Window.HasPendingExternalRender = false;
             }
         }
 
@@ -924,6 +1017,7 @@ namespace Fu
             Vector2Int windowSize = _size;
             bool leftMousePressed = Window.Mouse.IsPressed(FuMouseButton.Left) || (globalMouseState & SDL.SDL_BUTTON(SDL.SDL_BUTTON_LEFT)) != 0;
             bool mouseBlockedByPopup = Fugui.IsInsideAnyPopup(mouseLocal);
+            bool canResizeNativeChrome = PrimaryWindowFillsNativeWindow();
 
             //
             // --- RESIZE ---
@@ -931,7 +1025,7 @@ namespace Fu
             // Detect hover edge (even when not resizing)
             if (!IsDragging && !IsResizing)
             {
-                if (IsMaximized || mouseBlockedByPopup)
+                if (IsMaximized || mouseBlockedByPopup || !canResizeNativeChrome)
                     HoverResizeEdge = ResizeEdge.None;   // interdit resize
                 else
                     HoverResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
@@ -943,7 +1037,7 @@ namespace Fu
             }
 
             // detect edge if not resizing or dragging
-            if (!IsMaximized && !mouseBlockedByPopup && !IsDragging && !IsResizing && Window.Mouse.IsDown(FuMouseButton.Left))
+            if (canResizeNativeChrome && !IsMaximized && !mouseBlockedByPopup && !IsDragging && !IsResizing && Window.Mouse.IsDown(FuMouseButton.Left))
             {
                 currentResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
 
@@ -999,14 +1093,12 @@ namespace Fu
                     newSize.y = Math.Max(newSize.y, 50);
 
                     // assign
-                    Position = newPos;
-                    SetNativeSize(newSize);
+                    SetNativeBounds(newPos, newSize);
                     if (PrimaryWindowFillsNativeWindow())
                     {
                         Window.Size = _size;
                     }
                     Fugui.ForceDrawAllWindows(2);
-                    SDL_SetWindowSize(SdlWindow, newSize.x, newSize.y);
                 }
                 else
                 {
@@ -1028,7 +1120,7 @@ namespace Fu
             //
             // --- DRAG ---
             //
-            if (Window.Mouse.IsDown(FuMouseButton.Left))
+            if (IsNativeDragMouseDown())
             {
                 StartDrag(mouseLocal, mouseAbs);
             }
@@ -1088,6 +1180,11 @@ namespace Fu
         private bool PrimaryWindowFillsNativeWindow()
         {
             if (Window == null)
+            {
+                return false;
+            }
+
+            if (Window.Container is FuExternalWindowContainer externalContainer && externalContainer.Windows.Count > 1)
             {
                 return false;
             }
@@ -1159,8 +1256,14 @@ namespace Fu
 
         private void StartDrag(Vector2Int mouseLocal, Vector2Int mouseAbs, bool forceMouseDown = false)
         {
-            float titleBarHeight = Window.WorkingAreaPosition.y;
-            float titleBarWidth = Width - (64f * Fugui.Scale);
+            float titleBarHeight = Fugui.Layouts?.GetExternalNativeDragHeaderHeight(Window) ?? Window.GetExternalNativeTitleBarHeight();
+            if (titleBarHeight <= 0f)
+            {
+                return;
+            }
+
+            float titleBarRightReserve = Fugui.Layouts?.GetExternalNativeDragHeaderRightReserve(Window) ?? (64f * Fugui.Scale);
+            float titleBarWidth = Width - titleBarRightReserve;
 
             bool inTitleBar =
                 mouseLocal.y < titleBarHeight &&
@@ -1170,7 +1273,7 @@ namespace Fu
             if (IsResizing || (!forceMouseDown && !inTitleBar))
                 return;
 
-            if (!IsDragging && (forceMouseDown || Window.Mouse.IsDown(FuMouseButton.Left)))
+            if (!IsDragging && (forceMouseDown || IsNativeDragMouseDown()))
             {
                 if (IsMaximized)
                 {
@@ -1195,6 +1298,18 @@ namespace Fu
                 dragStartMousePos = mouseAbs;
                 dragStartWindowPos = Position;
             }
+        }
+
+        private bool IsNativeDragMouseDown()
+        {
+            if (Window?.Mouse != null && Window.Mouse.IsDown(FuMouseButton.Left))
+            {
+                return true;
+            }
+
+            return Window?.Container is FuExternalWindowContainer externalContainer &&
+                   externalContainer.Mouse != null &&
+                   externalContainer.Mouse.IsDown(FuMouseButton.Left);
         }
 
         private float RESIZE_BORDER => 6 * Fugui.Scale;
@@ -1237,102 +1352,121 @@ namespace Fu
             var dl = ImGui.GetForegroundDrawList();
 
             Vector2 windowSize = new Vector2(Width, Height);
-
-            // colors
-            uint normalColor = Fugui.Themes.GetColorU32(FuColors.Highlight, 0.45f);
-            uint hoverColor = Fugui.Themes.GetColorU32(FuColors.HighlightHovered);
-            uint activeColor = Fugui.Themes.GetColorU32(FuColors.HighlightActive);
-
-            // thickness
-            float normalThickness = 1f * Fugui.Scale;
-            float hoverThickness = 8f * Fugui.Scale;
-            float activeThickness = 4f * Fugui.Scale;
-
-            // get hovered or active edge
             ResizeEdge edge = HoverResizeEdge;
             if (IsResizing)
                 edge = currentResizeEdge;
 
-            //
-            // LEFT EDGE
-            //
+            if (edge == ResizeEdge.None)
             {
-                bool hovered = (edge == ResizeEdge.Left);
-                bool active = IsResizing && hovered;
-                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
-                float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
-
-                Vector2 p1 = new Vector2(0, 0);
-                Vector2 p2 = new Vector2(0, windowSize.y);
-                dl.AddLine(p1, p2, color, thickness);
+                return;
             }
 
-            //
-            // RIGHT EDGE
-            //
+            DrawNativeResizeFeedback(dl, Vector2.zero, windowSize, edge, IsResizing);
+        }
+
+
+        private void DrawNativeResizeFeedback(ImDrawListPtr drawList, Vector2 windowPos, Vector2 windowSize, ResizeEdge edge, bool active)
+        {
+            float scale = Window?.Container?.Context?.Scale ?? Fugui.Scale;
+            uint feedbackColor = Fugui.Themes.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
+            uint edgeLineColor = Fugui.Themes.GetColorU32(FuColors.Border, active ? 0.88f : 0.62f);
+            float handleThickness = active ? Mathf.Max(2f, 2.5f * scale) : Mathf.Max(1.5f, 2f * scale);
+            float edgeLineThickness = Mathf.Max(1f, 1f * scale);
+            float inset = handleThickness * 0.5f;
+            Vector2 min = windowPos + new Vector2(inset, inset);
+            Vector2 max = windowPos + windowSize - new Vector2(inset, inset);
+            float handleShort = Mathf.Max(5f, 5f * scale);
+            float handleLong = Mathf.Max(36f, 42f * scale);
+            float verticalHandleLong = Mathf.Min(handleLong, Mathf.Max(handleShort, max.y - min.y));
+            float horizontalHandleLong = Mathf.Min(handleLong, Mathf.Max(handleShort, max.x - min.x));
+            float rounding = handleShort * 0.5f;
+            Vector2 mouse = Window != null ? (Vector2)Window.Mouse.Position : Vector2.zero;
+            float centerX = Mathf.Clamp(windowPos.x + mouse.x, min.x, max.x);
+            float centerY = Mathf.Clamp(windowPos.y + mouse.y, min.y, max.y);
+
+            drawList.PushClipRect(windowPos, windowPos + windowSize, false);
+
+            if (edge == ResizeEdge.Left || edge == ResizeEdge.BottomLeft)
             {
-                bool hovered = (edge == ResizeEdge.Right);
-                bool active = IsResizing && hovered;
-                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
-                float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
-
-                Vector2 p1 = new Vector2(windowSize.x, 0);
-                Vector2 p2 = new Vector2(windowSize.x, windowSize.y);
-                dl.AddLine(p1, p2, color, thickness);
-            }
-
-            //
-            // BOTTOM EDGE
-            //
-            {
-                bool hovered = (edge == ResizeEdge.Bottom);
-                bool active = IsResizing && hovered;
-                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
-                float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
-
-                Vector2 p1 = new Vector2(0, windowSize.y);
-                Vector2 p2 = new Vector2(windowSize.x, windowSize.y);
-                dl.AddLine(p1, p2, color, thickness);
-            }
-
-            //
-            // CORNER (bottom-right) — triangle
-            //
-            {
-                bool hovered = (edge == ResizeEdge.BottomRight);
-                bool active = IsResizing && hovered;
-                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
-
-                if (hovered || active)
+                drawList.AddLine(min, new Vector2(min.x, max.y), edgeLineColor, edgeLineThickness);
+                if (edge == ResizeEdge.Left)
                 {
-                    float s = 12f * Fugui.Scale;
-
-                    Vector2 c = new Vector2(windowSize.x, windowSize.y);
-                    Vector2 a = c + new Vector2(-s, 0);    // left
-                    Vector2 b = c + new Vector2(0, -s);    // up
-
-                    dl.AddTriangleFilled(a, b, c, color);
+                    float clampedY = Mathf.Clamp(centerY, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
+                    Rect handle = new Rect(new Vector2(min.x - handleShort * 0.5f + inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
+                    drawList.AddRectFilled(handle.position, handle.position + handle.size, feedbackColor, rounding);
                 }
             }
-
-            //
-            // CORNER (bottom-left) — triangle
-            //
+            if (edge == ResizeEdge.Right || edge == ResizeEdge.BottomRight)
             {
-                bool hovered = (edge == ResizeEdge.BottomLeft);
-                bool active = IsResizing && hovered;
-                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
-
-                if (hovered || active)
+                drawList.AddLine(new Vector2(max.x, min.y), max, edgeLineColor, edgeLineThickness);
+                if (edge == ResizeEdge.Right)
                 {
-                    float s = 12f * Fugui.Scale;
-
-                    Vector2 c = new Vector2(0, windowSize.y);
-                    Vector2 a = c + new Vector2(s, 0);     // right
-                    Vector2 b = c + new Vector2(0, -s);    // up
-
-                    dl.AddTriangleFilled(a, b, c, color);
+                    float clampedY = Mathf.Clamp(centerY, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
+                    Rect handle = new Rect(new Vector2(max.x - handleShort * 0.5f - inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
+                    drawList.AddRectFilled(handle.position, handle.position + handle.size, feedbackColor, rounding);
                 }
+            }
+            if (edge == ResizeEdge.Bottom || edge == ResizeEdge.BottomLeft || edge == ResizeEdge.BottomRight)
+            {
+                drawList.AddLine(new Vector2(min.x, max.y), max, edgeLineColor, edgeLineThickness);
+                if (edge == ResizeEdge.Bottom)
+                {
+                    float clampedX = Mathf.Clamp(centerX, min.x + horizontalHandleLong * 0.5f, max.x - horizontalHandleLong * 0.5f);
+                    Rect handle = new Rect(new Vector2(clampedX - horizontalHandleLong * 0.5f, max.y - handleShort * 0.5f - inset), new Vector2(horizontalHandleLong, handleShort));
+                    drawList.AddRectFilled(handle.position, handle.position + handle.size, feedbackColor, rounding);
+                }
+            }
+            if (edge == ResizeEdge.BottomLeft || edge == ResizeEdge.BottomRight)
+            {
+                DrawNativeCornerResizeHandle(drawList, edge, min, max, feedbackColor, handleThickness, scale);
+            }
+
+            drawList.PopClipRect();
+
+            switch (edge)
+            {
+                case ResizeEdge.Left:
+                case ResizeEdge.Right:
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+                    break;
+                case ResizeEdge.Bottom:
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
+                    break;
+                case ResizeEdge.BottomLeft:
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNESW);
+                    break;
+                case ResizeEdge.BottomRight:
+                    ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNWSE);
+                    break;
+            }
+        }
+
+        private void DrawNativeCornerResizeHandle(ImDrawListPtr drawList, ResizeEdge edge, Vector2 min, Vector2 max, uint color, float thickness, float scale)
+        {
+            float length = Mathf.Max(18f, 22f * scale);
+            float bar = Mathf.Max(thickness, 4f * scale);
+            float rounding = bar * 0.5f;
+            float inset = Mathf.Max(2f, 2.5f * scale);
+
+            if (edge == ResizeEdge.BottomLeft)
+            {
+                Vector2 hMin = new Vector2(min.x + inset, max.y - bar - inset);
+                Vector2 hMax = new Vector2(Mathf.Min(min.x + inset + length, max.x), max.y - inset);
+                Vector2 vMin = new Vector2(min.x + inset, Mathf.Max(min.y, max.y - inset - length));
+                Vector2 vMax = new Vector2(min.x + inset + bar, max.y - inset);
+                drawList.AddRectFilled(hMin, hMax, color, rounding);
+                drawList.AddRectFilled(vMin, vMax, color, rounding);
+                return;
+            }
+
+            if (edge == ResizeEdge.BottomRight)
+            {
+                Vector2 hMin = new Vector2(Mathf.Max(min.x, max.x - inset - length), max.y - bar - inset);
+                Vector2 hMax = new Vector2(max.x - inset, max.y - inset);
+                Vector2 vMin = new Vector2(max.x - inset - bar, Mathf.Max(min.y, max.y - inset - length));
+                Vector2 vMax = new Vector2(max.x - inset, max.y - inset);
+                drawList.AddRectFilled(hMin, hMax, color, rounding);
+                drawList.AddRectFilled(vMin, vMax, color, rounding);
             }
         }
 
@@ -1380,7 +1514,7 @@ namespace Fu
             GLMini.glBindBuffer(GLMini.GL_ELEMENT_ARRAY_BUFFER, _ebo);
 
             // Compile shader
-            _shaderProgram = CreateImGuiShaderProgram(out _locProjMtx, out _locTexture);
+            _shaderProgram = CreateImGuiShaderProgram(out _locProjMtx, out _locTexture, out _locRenderOffset);
             if (_shaderProgram == 0)
             {
                 Debug.LogError("Failed to create ImGui shader program");
@@ -1420,14 +1554,17 @@ namespace Fu
         /// </summary>
         /// <param name="locProjMtx"> the location of the projection matrix uniform </param>
         /// <param name="locTex"> the location of the texture uniform </param>
+        /// <param name="locRenderOffset"> the location of the render offset uniform </param>
         /// <returns> the shader program ID </returns>
-        private uint CreateImGuiShaderProgram(out int locProjMtx, out int locTex)
+        private uint CreateImGuiShaderProgram(out int locProjMtx, out int locTex, out int locRenderOffset)
         {
-            locProjMtx = -1; locTex = -1;
+            locProjMtx = -1;
+            locTex = -1;
+            locRenderOffset = -1;
 
-            string vs = @"
-#version 130
+            string vs = @"#version 130
                 uniform mat4 ProjMtx;
+                uniform vec2 RenderOffset;
                 in vec2 Position;
                 in vec2 UV;
                 in vec4 Color;
@@ -1437,11 +1574,10 @@ namespace Fu
                 {
                     Frag_UV = UV;
                     Frag_Color = Color;
-                    gl_Position = ProjMtx * vec4(Position.xy, 0.0, 1.0);
+                    gl_Position = ProjMtx * vec4(Position.xy + RenderOffset, 0.0, 1.0);
                 }";
 
-            string fs = @"
-#version 130
+            string fs = @"#version 130
                 uniform sampler2D Texture;
                 in vec2 Frag_UV;
                 in vec4 Frag_Color;
@@ -1502,6 +1638,7 @@ namespace Fu
 
             locProjMtx = GLMini.glGetUniformLocation(prog, "ProjMtx");
             locTex = GLMini.glGetUniformLocation(prog, "Texture");
+            locRenderOffset = GLMini.glGetUniformLocation(prog, "RenderOffset");
             return prog;
         }
 
@@ -1549,18 +1686,16 @@ namespace Fu
         /// </summary>
         private unsafe void RenderFrame()
         {
-            Window.ForceDraw(10);
             lock (Window.Container.Context.DrawData)
             {
                 var drawData = Window.Container.Context.DrawData;
-                if (drawData == null || drawData.CmdListsCount == 0)
-                    return;
-
                 // Clear screen
                 GLMini.glViewport(0, 0, Width, Height);
                 var bgColor = Fugui.Themes.GetColor(FuColors.WindowBg);
                 GLMini.glClearColor(bgColor.x, bgColor.y, bgColor.z, bgColor.w);
                 GLMini.glClear(GLMini.GL_COLOR_BUFFER_BIT);
+                if (drawData == null || drawData.CmdListsCount == 0)
+                    return;
 
                 RenderImGuiDrawData(drawData);
             }
@@ -1597,13 +1732,23 @@ namespace Fu
             float T = drawData.DisplayPos.y;
             float B = drawData.DisplayPos.y + drawData.DisplaySize.y;
 
-            float[] ortho =
-            {
-                2f/(R-L), 0,         0, 0,
-                0,        2f/(T-B),  0, 0,
-                0,        0,        -1, 0,
-                (R+L)/(L-R), (T+B)/(B-T), 0, 1
-            };
+            float[] ortho = _orthoProjection;
+            ortho[0] = 2f / (R - L);
+            ortho[1] = 0f;
+            ortho[2] = 0f;
+            ortho[3] = 0f;
+            ortho[4] = 0f;
+            ortho[5] = 2f / (T - B);
+            ortho[6] = 0f;
+            ortho[7] = 0f;
+            ortho[8] = 0f;
+            ortho[9] = 0f;
+            ortho[10] = -1f;
+            ortho[11] = 0f;
+            ortho[12] = (R + L) / (L - R);
+            ortho[13] = (T + B) / (B - T);
+            ortho[14] = 0f;
+            ortho[15] = 1f;
 
             fixed (float* p = ortho)
                 GLMini.glUniformMatrix4fv(_locProjMtx, 1, false, (IntPtr)p);
@@ -1638,6 +1783,10 @@ namespace Fu
         private unsafe void RenderImGuiDrawLists(IReadOnlyList<DrawList> drawLists, DrawData drawData, int fbWidth, int fbHeight, Vector2 renderOffset)
         {
             bool hasRenderOffset = Mathf.Abs(renderOffset.x) > 0.001f || Mathf.Abs(renderOffset.y) > 0.001f;
+            if (_locRenderOffset >= 0)
+            {
+                GLMini.glUniform2f(_locRenderOffset, renderOffset.x, renderOffset.y);
+            }
 
             for (int n = 0; n < drawLists.Count; n++)
             {
@@ -1665,17 +1814,8 @@ namespace Fu
                     GLMini.glBufferData(GLMini.GL_ELEMENT_ARRAY_BUFFER, (IntPtr)_ibCapacity, IntPtr.Zero, GLMini.GL_DYNAMIC_DRAW);
                 }
 
-                if (hasRenderOffset)
-                {
-                    ImDrawVert[] vertices = GetOffsetVertexBuffer(cmdList.VtxBuffer, renderOffset);
-                    fixed (ImDrawVert* v = vertices)
-                        GLMini.glBufferSubData(GLMini.GL_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)vtxSize, (IntPtr)v);
-                }
-                else
-                {
-                    fixed (ImDrawVert* v = cmdList.VtxBuffer)
-                        GLMini.glBufferSubData(GLMini.GL_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)vtxSize, (IntPtr)v);
-                }
+                fixed (ImDrawVert* v = cmdList.VtxBuffer)
+                    GLMini.glBufferSubData(GLMini.GL_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)vtxSize, (IntPtr)v);
 
                 fixed (ushort* i = cmdList.IdxBuffer)
                     GLMini.glBufferSubData(GLMini.GL_ELEMENT_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)idxSize, (IntPtr)i);
@@ -1745,24 +1885,6 @@ namespace Fu
                                           (IntPtr)((long)cmd.IdxOffset * sizeof(ushort)));
                 }
             }
-        }
-
-        private ImDrawVert[] GetOffsetVertexBuffer(ImDrawVert[] source, Vector2 renderOffset)
-        {
-            if (_offsetVertexBuffer == null || _offsetVertexBuffer.Length < source.Length)
-            {
-                _offsetVertexBuffer = new ImDrawVert[source.Length];
-            }
-
-            for (int i = 0; i < source.Length; i++)
-            {
-                ImDrawVert vertex = source[i];
-                vertex.pos.x += renderOffset.x;
-                vertex.pos.y += renderOffset.y;
-                _offsetVertexBuffer[i] = vertex;
-            }
-
-            return _offsetVertexBuffer;
         }
 
         /// <summary>

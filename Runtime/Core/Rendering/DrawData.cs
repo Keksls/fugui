@@ -19,6 +19,11 @@ namespace Fu
             public Vector2 DisplaySize;
             public Vector2 FramebufferScale;
             public int CmdListsCount;
+
+            private readonly List<DrawList> _transientDrawListPool = new List<DrawList>();
+            private readonly List<DrawDataRenderItem> _renderItemPool = new List<DrawDataRenderItem>();
+            private int _transientDrawListPoolIndex;
+            private int _renderItemPoolIndex;
             #endregion
 
             #region Constructors
@@ -43,11 +48,17 @@ namespace Fu
                 {
                     DrawLists[i].Dispose();
                 }
+                for (int i = 0; i < RenderItems.Count; i++)
+                {
+                    RenderItems[i].Reset();
+                }
                 DrawLists.Clear();
                 RenderItems.Clear();
                 TotalVtxCount = 0;
                 TotalIdxCount = 0;
                 CmdListsCount = 0;
+                _transientDrawListPoolIndex = 0;
+                _renderItemPoolIndex = 0;
             }
 
             /// <summary>
@@ -82,7 +93,7 @@ namespace Fu
                     return;
                 }
 
-                RenderItems.Add(DrawDataRenderItem.ForWindow(window));
+                RenderItems.Add(RentRenderItem().SetWindow(window));
                 foreach (DrawList drawList in window.CachedDrawLists)
                 {
                     AddDrawListCounters(drawList);
@@ -100,8 +111,38 @@ namespace Fu
                     return;
                 }
 
-                RenderItems.Add(DrawDataRenderItem.ForDrawList(drawList));
+                RenderItems.Add(RentRenderItem().SetDrawList(drawList));
                 AddDrawListCounters(drawList);
+            }
+
+            /// <summary>
+            /// Copies a native non-window draw list into a pooled transient draw list.
+            /// </summary>
+            /// <param name="nativeDrawList">Native draw list to copy.</param>
+            internal void AddTransientNativeDrawList(ImDrawListPtr nativeDrawList)
+            {
+                DrawList drawList = RentTransientDrawList();
+                drawList.Bind(nativeDrawList);
+                AddTransientDrawList(drawList);
+            }
+
+            /// <summary>
+            /// Returns whether this draw data contains transient non-window render items.
+            /// </summary>
+            internal bool HasTransientRenderItems
+            {
+                get
+                {
+                    for (int i = 0; i < RenderItems.Count; i++)
+                    {
+                        if (!RenderItems[i].IsWindow)
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
             }
 
             /// <summary>
@@ -125,11 +166,39 @@ namespace Fu
                 Clear();
                 for (int i = 0; i < imDrawData.CmdListsCount; i++)
                 {
-                    AddTransientDrawList(new DrawList(imDrawData.CmdLists[i]));
+                    AddTransientNativeDrawList(imDrawData.CmdLists[i]);
                 }
                 FramebufferScale = imDrawData.FramebufferScale;
                 DisplayPos = imDrawData.DisplayPos;
                 DisplaySize = imDrawData.DisplaySize;
+            }
+
+            /// <summary>
+            /// Rents a transient draw list that can be reused on the next frame.
+            /// </summary>
+            /// <returns>Pooled draw list.</returns>
+            private DrawList RentTransientDrawList()
+            {
+                if (_transientDrawListPoolIndex >= _transientDrawListPool.Count)
+                {
+                    _transientDrawListPool.Add(new DrawList());
+                }
+
+                return _transientDrawListPool[_transientDrawListPoolIndex++];
+            }
+
+            /// <summary>
+            /// Rents a render item wrapper that can be reused on the next frame.
+            /// </summary>
+            /// <returns>Pooled render item.</returns>
+            private DrawDataRenderItem RentRenderItem()
+            {
+                if (_renderItemPoolIndex >= _renderItemPool.Count)
+                {
+                    _renderItemPool.Add(new DrawDataRenderItem());
+                }
+
+                return _renderItemPool[_renderItemPoolIndex++];
             }
             #endregion
         }
@@ -140,7 +209,7 @@ namespace Fu
         internal class DrawDataRenderItem
         {
             #region State
-            private readonly DrawList[] _drawLists;
+            private readonly DrawList[] _drawLists = new DrawList[1];
 
             public FuWindow Window { get; private set; }
             public bool IsWindow { get { return Window != null; } }
@@ -157,23 +226,25 @@ namespace Fu
             }
             #endregion
 
-            #region Constructors
-            private DrawDataRenderItem(FuWindow window, DrawList drawList)
+            #region Methods
+            public DrawDataRenderItem SetWindow(FuWindow window)
             {
                 Window = window;
-                _drawLists = drawList != null ? new DrawList[1] { drawList } : new DrawList[0];
-            }
-            #endregion
-
-            #region Methods
-            public static DrawDataRenderItem ForWindow(FuWindow window)
-            {
-                return new DrawDataRenderItem(window, null);
+                _drawLists[0] = null;
+                return this;
             }
 
-            public static DrawDataRenderItem ForDrawList(DrawList drawList)
+            public DrawDataRenderItem SetDrawList(DrawList drawList)
             {
-                return new DrawDataRenderItem(null, drawList);
+                Window = null;
+                _drawLists[0] = drawList;
+                return this;
+            }
+
+            public void Reset()
+            {
+                Window = null;
+                _drawLists[0] = null;
             }
             #endregion
         }

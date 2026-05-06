@@ -16,8 +16,10 @@ namespace Fu
 
         public RenderTexture TargetTexture {  get; private set; }
         public bool IsOffscreen => TargetTexture != null;
+        internal bool IsOffscreenRenderDirty => _offscreenRenderDirty;
 
         private PlatformBase _platform;
+        private bool _offscreenRenderDirty = true;
         #endregion
 
         #region Constructors
@@ -59,7 +61,35 @@ namespace Fu
         /// <param name="targetTexture"> new target texture of this context</param>
         public void SetTargetTexture(RenderTexture targetTexture)
         {
+            if (ReferenceEquals(TargetTexture, targetTexture))
+            {
+                return;
+            }
+
             TargetTexture = targetTexture;
+            MarkOffscreenRenderDirty();
+        }
+
+        /// <summary>
+        /// Marks the offscreen target as needing a render refresh.
+        /// </summary>
+        internal void MarkOffscreenRenderDirty()
+        {
+            if (IsOffscreen)
+            {
+                _offscreenRenderDirty = true;
+            }
+        }
+
+        /// <summary>
+        /// Marks the offscreen target as up to date after a render pass.
+        /// </summary>
+        internal void MarkOffscreenRenderClean()
+        {
+            if (IsOffscreen)
+            {
+                _offscreenRenderDirty = false;
+            }
         }
 
         /// <summary>
@@ -161,7 +191,13 @@ namespace Fu
         /// <param name="rect"> new pixel rect of this context</param>
         public void SetPixelRect(Rect rect)
         {
+            if (PixelRect == rect)
+            {
+                return;
+            }
+
             PixelRect = rect;
+            MarkOffscreenRenderDirty();
         }
 
         /// <summary>
@@ -256,6 +292,7 @@ namespace Fu
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
+            MarkOffscreenRenderDirty();
 
             // scale windows sizes for windows NOT docked, visible and in this context
             Fugui.UIWindows.Where(win => win.Value.Container.Context == this && win.Value.IsVisible && !win.Value.IsDocked && !win.Value.Is3DWindow).ToList()

@@ -1,0 +1,237 @@
+﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
+// it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
+//#define FUDEBUG
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
+#define FUMOBILE
+#endif
+using Fu.Framework;
+using ImGuiNET;
+#if FU_EXTERNALIZATION
+using SDL2;
+#endif
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.RegularExpressions;
+using UnityEngine;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering.Universal;
+
+namespace Fu
+{
+    /// <summary>
+    /// Fugui input query helpers.
+    /// </summary>
+    public static partial class Fugui
+    {
+        /// <summary>
+        /// Lock fugui auto set cursor icons
+        /// </summary>
+        public static void LockCursors()
+        {
+            IsCursorLocked = true;
+        }
+
+        /// <summary>
+        /// Unlock fugui auto set cursor icons
+        /// </summary>
+        public static void UnlockCursors()
+        {
+            IsCursorLocked = false;
+            CursorsJustUnlocked = true;
+        }
+
+        /// <summary>
+        /// Get Whatever fugui want to capture a user input at this frame
+        /// </summary>
+        /// <param name="onlyCurrentContext">Whatever you want to check only the current Fugui context</param>
+        /// <returns>true if Fugui want to capture user inputs this frame</returns>
+        public static bool GetWantCaptureInputs(bool onlyCurrentContext)
+        {
+            switch (onlyCurrentContext)
+            {
+                default:
+                case true:
+                    ImGuiIOPtr io = CurrentContext != null ? CurrentContext.IO : ImGui.GetIO();
+                    return io.WantTextInput;
+
+                case false:
+                    bool wantCapture = false;
+                    foreach (FuContext context in Contexts.Values)
+                    {
+                        if (!MainContainerEnabled && ReferenceEquals(context, DefaultContext))
+                        {
+                            continue;
+                        }
+
+                        wantCapture |= context.IO.WantTextInput;
+                    }
+                    return wantCapture;
+            }
+        }
+
+        /// <summary>
+        /// Check Whatever a Key is Down for some given FuWIndowNames.
+        /// If WindowNames array is empty, Fugui will check for any windows of any containers
+        /// </summary>
+        /// <param name="key">Key to check down state</param>
+        /// <param name="windowsNames">windows names to check key satet on (you can leave this empty, it will check on any windows of any containers)</param>
+        /// <returns>true if the key is pressed into the given scope</returns>
+        public static bool GetKeyDown(FuKeysCode key, params FuWindowName[] windowsNames)
+        {
+            bool isDown = false;
+            if (windowsNames == null || windowsNames.Length == 0)
+            {
+                isDown |= MainContainerEnabled && DefaultContainer != null && DefaultContainer.Keyboard.GetKeyDown(key);
+                if (!isDown)
+                {
+                    foreach (var threeDWindowContainer in _3DWindows.Values)
+                    {
+                        if (threeDWindowContainer.Keyboard.GetKeyDown(key))
+                        {
+                            isDown = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (FuWindowName windowName in windowsNames)
+                {
+                    foreach (var window in UIWindows)
+                    {
+                        if (window.Value == null || window.Value.Keyboard == null)
+                        {
+                            continue;
+                        }
+                        if (window.Value.WindowName.Equals(windowName))
+                        {
+                            if (window.Value.Keyboard.GetKeyDown(key))
+                            {
+                                isDown = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return isDown;
+        }
+
+        /// <summary>
+        /// Check Whatever a Key is Pressed for some given FuWIndowNames.
+        /// If WindowNames array is empty, Fugui will check for any windows of any containers
+        /// </summary>
+        /// <param name="key">Key to check down state</param>
+        /// <param name="windowsNames">windows names to check key satet on (you can leave this empty, it will check on any windows of any containers)</param>
+        /// <returns>true if the key is pressed into the given scope</returns>
+        public static bool GetKeyPressed(FuKeysCode key, params FuWindowName[] windowsNames)
+        {
+            bool isPressed = false;
+            if (windowsNames == null || windowsNames.Length == 0)
+            {
+                isPressed |= MainContainerEnabled && DefaultContainer != null && DefaultContainer.Keyboard.GetKeyPressed(key);
+                if (!isPressed)
+                {
+                    foreach (var threeDWindowContainer in _3DWindows.Values)
+                    {
+                        if (threeDWindowContainer.Keyboard.GetKeyPressed(key))
+                        {
+                            isPressed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (FuWindowName windowName in windowsNames)
+                {
+                    foreach (var window in UIWindows)
+                    {
+                        if (window.Value == null || window.Value.Keyboard == null)
+                        {
+                            continue;
+                        }
+                        if (window.Value.WindowName.Equals(windowName))
+                        {
+                            if (window.Value.Keyboard.GetKeyPressed(key))
+                            {
+                                isPressed = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return isPressed;
+        }
+
+        /// <summary>
+        /// Check Whatever a Key is Up for some given FuWIndowNames.
+        /// If WindowNames array is empty, Fugui will check for any windows of any containers
+        /// </summary>
+        /// <param name="key">Key to check down state</param>
+        /// <param name="windowsNames">windows names to check key satet on (you can leave this empty, it will check on any windows of any containers)</param>
+        /// <returns>true if the key is pressed into the given scope</returns>
+        public static bool GetKeyUp(FuKeysCode key, params FuWindowName[] windowsNames)
+        {
+            bool isUp = false;
+            if (windowsNames == null || windowsNames.Length == 0)
+            {
+                isUp |= MainContainerEnabled && DefaultContainer != null && DefaultContainer.Keyboard.GetKeyUp(key);
+                if (!isUp)
+                {
+                    foreach (var threeDWindowContainer in _3DWindows.Values)
+                    {
+                        if (threeDWindowContainer.Keyboard.GetKeyUp(key))
+                        {
+                            isUp = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (FuWindowName windowName in windowsNames)
+                {
+                    foreach (var window in UIWindows)
+                    {
+                        if (window.Value == null || window.Value.Keyboard == null)
+                        {
+                            continue;
+                        }
+                        if (window.Value.WindowName.Equals(windowName))
+                        {
+                            if (window.Value.Keyboard.GetKeyUp(key))
+                            {
+                                isUp = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            return isUp;
+        }
+
+        /// <summary>
+        /// Get the current mouse state
+        /// </summary>
+        /// <returns> current mouse state</returns>
+        public static FuMouseState GetCurrentMouse()
+        {
+            if (FuWindow.CurrentDrawingWindow != null)
+            {
+                return FuWindow.CurrentDrawingWindow.Mouse;
+            }
+            return DefaultContainer.Mouse;
+        }
+    }
+}

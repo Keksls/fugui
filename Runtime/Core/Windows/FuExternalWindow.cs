@@ -896,6 +896,7 @@ namespace Fu
         private Vector2Int resizeStartMousePos;
         private Vector2Int resizeStartWindowPos;
         private Vector2Int resizeStartWindowSize;
+        private bool _leftMouseWasPressed;
 
         private ResizeEdge currentResizeEdge = ResizeEdge.None;
 
@@ -910,6 +911,13 @@ namespace Fu
             if (!_isRunning || _shouldClose || _isClosed)
                 return;
 
+            SDL.SDL_GetMouseState(out int mx, out int my);
+            uint globalMouseState = SDL.SDL_GetGlobalMouseState(out int gx, out int gy);
+            bool leftMousePhysicalPressed = (globalMouseState & SDL.SDL_BUTTON(SDL.SDL_BUTTON_LEFT)) != 0;
+            bool leftMouseDown = leftMousePhysicalPressed && !_leftMouseWasPressed;
+            bool leftMousePressedBeforeHover = leftMousePhysicalPressed && !leftMouseDown;
+            _leftMouseWasPressed = leftMousePhysicalPressed;
+
             if (!IsResizing && !IsDragging && !_isMouseHover)
             {
                 HoverResizeEdge = ResizeEdge.None;
@@ -917,12 +925,10 @@ namespace Fu
                 return;
             }
 
-            SDL.SDL_GetMouseState(out int mx, out int my);
-            uint globalMouseState = SDL.SDL_GetGlobalMouseState(out int gx, out int gy);
             Vector2Int mouseLocal = new Vector2Int(mx, my);
             Vector2Int mouseAbs = new Vector2Int(gx, gy);
             Vector2Int windowSize = _size;
-            bool leftMousePressed = Window.Mouse.IsPressed(FuMouseButton.Left) || (globalMouseState & SDL.SDL_BUTTON(SDL.SDL_BUTTON_LEFT)) != 0;
+            bool leftMousePressed = Window.Mouse.IsPressed(FuMouseButton.Left) || leftMousePhysicalPressed;
             bool mouseBlockedByPopup = Fugui.IsInsideAnyPopup(mouseLocal);
 
             //
@@ -931,7 +937,7 @@ namespace Fu
             // Detect hover edge (even when not resizing)
             if (!IsDragging && !IsResizing)
             {
-                if (IsMaximized || mouseBlockedByPopup)
+                if (IsMaximized || mouseBlockedByPopup || leftMousePressedBeforeHover)
                     HoverResizeEdge = ResizeEdge.None;   // interdit resize
                 else
                     HoverResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
@@ -942,8 +948,13 @@ namespace Fu
                 HoverResizeEdge = ResizeEdge.None;
             }
 
+            if (HoverResizeEdge != ResizeEdge.None || IsResizing)
+            {
+                Fugui.BlockWindowInputsForFrame();
+            }
+
             // detect edge if not resizing or dragging
-            if (!IsMaximized && !mouseBlockedByPopup && !IsDragging && !IsResizing && Window.Mouse.IsDown(FuMouseButton.Left))
+            if (!IsMaximized && !mouseBlockedByPopup && !IsDragging && !IsResizing && leftMouseDown)
             {
                 currentResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
 
@@ -1040,20 +1051,9 @@ namespace Fu
                     Vector2Int delta = mouseAbs - dragStartMousePos;
                     Position = ClampDragPositionToVisibleBounds(dragStartWindowPos + delta, mouseAbs);
                     Window.Fire_OnDrag();
-                    Fugui.UpdateExternalWindowDockPreview(Window, mouseAbs);
                 }
                 else
                 {
-                    if (Fugui.TryDockExternalWindowOnPreview(Window, mouseAbs))
-                    {
-                        IsDragging = false;
-                        Window.IsDragging = false;
-                        CanInternalize = true;
-                        SDL_CaptureMouse(SDL_bool.SDL_FALSE);
-                        return;
-                    }
-
-                    Fugui.Layouts?.ClearExternalWindowDockPreview(Window);
                     IsDragging = false;
                     Window.IsDragging = false;
                     CanInternalize = true;
@@ -1087,12 +1087,7 @@ namespace Fu
 
         private bool PrimaryWindowFillsNativeWindow()
         {
-            if (Window == null)
-            {
-                return false;
-            }
-
-            return !Window.IsDocked || !(Fugui.Layouts?.IsWindowInFloatingDockRoot(Window) ?? false);
+            return Window != null;
         }
 
         private Vector2Int ClampDragPositionToVisibleBounds(Vector2Int desiredPosition, Vector2Int mouseAbs)
@@ -1197,8 +1192,8 @@ namespace Fu
             }
         }
 
-        private float RESIZE_BORDER => 6 * Fugui.Scale;
-        private float RESIZE_CORNER_SIZE => 12 * Fugui.Scale;
+        private float RESIZE_BORDER => 5 * Fugui.Scale;
+        private float RESIZE_CORNER_SIZE => 18 * Fugui.Scale;
         private ResizeEdge GetHoveredResizeEdge(Vector2Int mouseLocal, Vector2Int windowSize)
         {
             bool inLeftCorner = mouseLocal.x <= RESIZE_CORNER_SIZE;

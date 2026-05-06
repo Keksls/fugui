@@ -711,11 +711,12 @@ namespace Fu
             bool externalBefore = IsExternal;
             ImGuiWindowFlags effectiveWindowFlags = _windowFlags;
             UpdateCustomResizeInputBlock();
+            bool blockInputsThisFrame = BlocksWindowInputs || Fugui.WindowInputsBlockedThisFrame;
             if (!IsInterractable)
             {
                 effectiveWindowFlags |= ImGuiWindowFlags.NoInputs;
             }
-            if (BlocksWindowInputs)
+            if (blockInputsThisFrame)
             {
                 effectiveWindowFlags |= ImGuiWindowFlags.NoInputs;
             }
@@ -755,7 +756,13 @@ namespace Fu
 
             // update mouse buttons states
             if (!preventUpdatingMouse)
+            {
                 Mouse.UpdateState(this);
+                if (BlocksWindowInputs || Fugui.WindowInputsBlockedThisFrame)
+                {
+                    Mouse.SuppressWindowInputs();
+                }
+            }
             // update keyboard state
             if (!preventUpdatingKeyboard)
                 Keyboard.UpdateState();
@@ -935,6 +942,10 @@ namespace Fu
 
                 // draw user UI callback
                 FuStyle.Default.Push(true);
+                if (Fugui.WindowInputsBlockedThisFrame)
+                {
+                    Mouse.SuppressWindowInputs();
+                }
 
 #if FU_EXTERNALIZATION
                 if (IsExternal && Fugui.Settings.DrawDebugPanel)
@@ -1337,10 +1348,11 @@ namespace Fu
 
             Vector2Int mousePos = Container.LocalMousePos;
             bool mouseBlockedByPopup = Fugui.IsInsideAnyPopup(mousePos);
-            bool leftMouseDown = _customResizeLocksWindowInputs
+            bool useRawMouse = _customDragging || _customResizeEdge != FuWindowResizeEdge.None || _customResizeLocksWindowInputs;
+            bool leftMouseDown = useRawMouse
                 ? IsRawMouseDown(FuMouseButton.Left)
                 : Mouse.IsDown(FuMouseButton.Left);
-            bool leftMousePressed = _customResizeEdge != FuWindowResizeEdge.None || _customResizeLocksWindowInputs
+            bool leftMousePressed = useRawMouse
                 ? IsRawMousePressed(FuMouseButton.Left)
                 : Mouse.IsPressed(FuMouseButton.Left);
 #if FU_EXTERNALIZATION
@@ -1876,6 +1888,7 @@ namespace Fu
         private void LockInputsForCurrentFrame()
         {
             _inputLockedForThisFrame = true;
+            Fugui.BlockWindowInputsForFrame();
             ForceDraw(2);
         }
 
@@ -1886,6 +1899,12 @@ namespace Fu
         {
             _inputLockedForThisFrame = false;
             _customResizeHoveredEdge = FuWindowResizeEdge.None;
+            if (_customDragging)
+            {
+                LockInputsForCurrentFrame();
+                return;
+            }
+
             if (HasPersistentInputLocks())
             {
                 _customResizeLocksWindowInputs = false;
@@ -1910,6 +1929,11 @@ namespace Fu
             }
 
             if (Fugui.IsInsideAnyPopup(Container.LocalMousePos))
+            {
+                return;
+            }
+
+            if (Fugui.IsMouseButtonPressedBeforeCurrentFrame(FuMouseButton.Left))
             {
                 return;
             }
@@ -1955,8 +1979,8 @@ namespace Fu
         /// </summary>
         private FuWindowResizeEdge GetHoveredCustomResizeEdgeRaw(Vector2Int localMousePosition)
         {
-            float border = Mathf.Max(4f, 6f * Fugui.Scale);
-            float corner = Mathf.Max(10f, 14f * Fugui.Scale);
+            float border = Mathf.Max(6f, 7f * Fugui.Scale);
+            float corner = Mathf.Max(14f, 18f * Fugui.Scale);
             bool inVerticalRange = localMousePosition.y >= 0 && localMousePosition.y <= Size.y;
             bool inHorizontalRange = localMousePosition.x >= 0 && localMousePosition.x <= Size.x;
             bool left = inVerticalRange && localMousePosition.x >= 0 && localMousePosition.x <= border;
@@ -2035,7 +2059,14 @@ namespace Fu
         /// </summary>
         private static bool IsRawMouseDown(FuMouseButton button)
         {
-            return button != FuMouseButton.None && ImGui.IsMouseClicked((ImGuiMouseButton)button);
+            if (button == FuMouseButton.None)
+            {
+                return false;
+            }
+
+            return Fugui.TryGetBlockedFrameRawMouseDown(button, out bool isDown)
+                ? isDown
+                : ImGui.IsMouseClicked((ImGuiMouseButton)button);
         }
 
         /// <summary>
@@ -2043,7 +2074,14 @@ namespace Fu
         /// </summary>
         private static bool IsRawMousePressed(FuMouseButton button)
         {
-            return button != FuMouseButton.None && ImGui.IsMouseDown((ImGuiMouseButton)button);
+            if (button == FuMouseButton.None)
+            {
+                return false;
+            }
+
+            return Fugui.TryGetBlockedFrameRawMousePressed(button, out bool isPressed)
+                ? isPressed
+                : ImGui.IsMouseDown((ImGuiMouseButton)button);
         }
 
 #if FU_EXTERNALIZATION
@@ -2398,7 +2436,7 @@ namespace Fu
         /// </summary>
         private void CheckAutoExternalize()
         {
-            if (!IsExternalizable || !IsDragging || Container == null)
+            if (!IsExternalizable || !IsDragging || IsDocked || Container == null)
             {
                 return;
             }

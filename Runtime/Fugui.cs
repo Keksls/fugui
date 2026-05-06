@@ -149,6 +149,28 @@ namespace Fu
         /// Whatever a 3D window has been hovered this frame (used for input management between 3D windows and main container)
         /// </summary>
         internal static bool HasHovered3DWindowThisFrame;
+        /// <summary>
+        /// True while a Fugui chrome handle owns the current frame pointer input.
+        /// </summary>
+        internal static bool WindowInputsBlockedThisFrame { get; private set; }
+        private const int WindowInputBlockMouseButtonCount = 5;
+        private static readonly bool[] _blockedFrameRawMouseDown = new bool[WindowInputBlockMouseButtonCount];
+        private static readonly bool[] _blockedFrameRawMousePressed = new bool[WindowInputBlockMouseButtonCount];
+        private static readonly bool[] _blockedInputHeldFromOutside = new bool[WindowInputBlockMouseButtonCount];
+        private static readonly bool[] _blockedInputDownEmitted = new bool[WindowInputBlockMouseButtonCount];
+        private static bool _windowInputSnapshotCaptured;
+        private static readonly bool[] _inputSnapshotMouseDown = new bool[WindowInputBlockMouseButtonCount];
+        private static readonly bool[] _inputSnapshotMouseClicked = new bool[WindowInputBlockMouseButtonCount];
+        private static readonly bool[] _inputSnapshotMouseReleased = new bool[WindowInputBlockMouseButtonCount];
+        private static readonly bool[] _inputSnapshotMouseDoubleClicked = new bool[WindowInputBlockMouseButtonCount];
+        private static readonly bool[] _inputSnapshotMouseDownOwned = new bool[WindowInputBlockMouseButtonCount];
+        private static readonly bool[] _inputSnapshotMouseDownOwnedUnlessPopupClose = new bool[WindowInputBlockMouseButtonCount];
+        private static readonly ushort[] _inputSnapshotMouseClickedCount = new ushort[WindowInputBlockMouseButtonCount];
+        private static readonly ushort[] _inputSnapshotMouseClickedLastCount = new ushort[WindowInputBlockMouseButtonCount];
+        private static readonly float[] _inputSnapshotMouseDownDuration = new float[WindowInputBlockMouseButtonCount];
+        private static readonly float[] _inputSnapshotMouseDownDurationPrev = new float[WindowInputBlockMouseButtonCount];
+        private static readonly Vector2[] _inputSnapshotMouseDragMaxDistanceAbs = new Vector2[WindowInputBlockMouseButtonCount];
+        private static readonly float[] _inputSnapshotMouseDragMaxDistanceSqr = new float[WindowInputBlockMouseButtonCount];
         // The dictionary of 3D windows
         private static Dictionary<string, Fu3DWindowContainer> _3DWindows;
         // dictionary of external windows
@@ -714,51 +736,6 @@ namespace Fu
             SDL.SDL_GetGlobalMouseState(out int x, out int y);
             AbsoluteMonitorMousePosition = new Vector2Int(x, y);
             return AbsoluteMonitorMousePosition;
-        }
-
-        internal static void UpdateExternalWindowDockPreview(FuWindow uiWindow, Vector2Int mousePosition)
-        {
-            if (uiWindow?.Container is not FuExternalWindowContainer sourceContainer)
-            {
-                Layouts?.ClearExternalWindowDockPreview(uiWindow);
-                return;
-            }
-
-            FuExternalWindowContainer targetContainer = FindExternalContainerAt(mousePosition, sourceContainer);
-            if (targetContainer == null)
-            {
-                Layouts?.ClearExternalWindowDockPreview(uiWindow);
-                return;
-            }
-
-            Layouts?.UpdateExternalWindowDockPreview(uiWindow, sourceContainer, targetContainer, mousePosition);
-        }
-
-        internal static bool TryDockExternalWindowOnPreview(FuWindow uiWindow, Vector2Int mousePosition)
-        {
-            return Layouts != null && Layouts.TryDockExternalWindowOnPreview(uiWindow, mousePosition);
-        }
-
-        internal static FuExternalWindowContainer FindExternalContainerAt(Vector2Int mousePosition, FuExternalWindowContainer excludedContainer)
-        {
-            HashSet<FuExternalWindowContainer> visited = new HashSet<FuExternalWindowContainer>();
-            foreach (FuExternalWindowContainer container in ExternalWindows.Values.ToList())
-            {
-                if (container == null ||
-                    container == excludedContainer ||
-                    !visited.Add(container))
-                {
-                    continue;
-                }
-
-                Rect rect = new Rect(container.Position, container.Size);
-                if (rect.Contains(mousePosition))
-                {
-                    return container;
-                }
-            }
-
-            return null;
         }
 
         /// <summary>
@@ -1398,6 +1375,7 @@ namespace Fu
                     continue;
                 }
 
+                ResetWindowInputBlockForFrame();
                 if (context.PrepareRender())
                 {
                     HasRenderWindowThisFrame = false;
@@ -1417,6 +1395,7 @@ namespace Fu
                     context.Render();
                     ExecuteAfterCurrentRenderContextCallbacks();
                     context.EndRender();
+                    RestoreWindowInputsAfterFrame();
                     if (_targetScale != -1f)
                     {
                         context.SetScale(_targetScale, _targetFontScale);
@@ -1428,6 +1407,7 @@ namespace Fu
             {
                 // no one has render for now
                 HasRenderWindowThisFrame = false;
+                ResetWindowInputBlockForFrame();
                 // prepare a new frame for default render
                 DefaultContext.PrepareRender();
                 // execute before default renderer render actions
@@ -1452,6 +1432,7 @@ namespace Fu
                 }
 
                 DefaultContext.EndRender();
+                RestoreWindowInputsAfterFrame();
             }
             else if (DefaultContext != null)
             {
@@ -1496,6 +1477,12 @@ namespace Fu
                 return;
             }
 
+            if (uiWindow.IsDocked)
+            {
+                Debug.LogWarning($"Cannot externalize window {uiWindow.ID} because docked windows stay inside the main Fugui container.");
+                return;
+            }
+
             if(!Settings.EnableExternalizations)
             {
                 Debug.LogWarning("Externalizations are disabled in the settings.");
@@ -1511,21 +1498,9 @@ namespace Fu
             }
 
             EnsureExternalWindowUpdateLoop();
-            List<FuWindow> windowsToExternalize = Layouts != null
-                ? Layouts.GetExternalizationGroup(uiWindow)
-                : new List<FuWindow> { uiWindow };
-            if (windowsToExternalize.Count == 0)
-            {
-                windowsToExternalize.Add(uiWindow);
-            }
-            if (detachFromExternalContainer && sourceExternalContainer.Windows.Count <= windowsToExternalize.Count)
+            if (detachFromExternalContainer && sourceExternalContainer.Windows.Count <= 1)
             {
                 return;
-            }
-            Rect? externalizationRect = null;
-            if (Layouts != null && Layouts.TryGetFloatingDockRootRect(uiWindow, out Rect floatingRootRect))
-            {
-                externalizationRect = floatingRootRect;
             }
 
             // 1) Create the external Fugui context
@@ -1533,26 +1508,181 @@ namespace Fu
             Contexts.Add(context.ID, context);
 
             // 2) Create the external container bound to this context
-            var container = new FuExternalWindowContainer(uiWindow, context, windowsToExternalize, externalizationRect);
+            var container = new FuExternalWindowContainer(uiWindow, context);
             container.SetContainerScaleConfig(GetDefaultContainerScaleConfig());
-            if (externalizationRect.HasValue && Layouts != null)
-            {
-                Rect externalRootRect = new Rect(0f, 0f, Mathf.Max(1f, externalizationRect.Value.width), Mathf.Max(1f, externalizationRect.Value.height));
-                Layouts.MoveFloatingDockRootToContainer(uiWindow, container, externalRootRect);
-            }
 
-            // 3) Register and attach the windows to this container
-            foreach (FuWindow externalizedWindow in windowsToExternalize)
-            {
-                if (externalizedWindow != null)
-                {
-                    ExternalWindows[externalizedWindow.ID] = container;
-                }
-            }
+            // 3) Register the window to this container
+            ExternalWindows[uiWindow.ID] = container;
 #else
             Debug.LogWarning("You are trying to externalize a window but externalizations are disabled in the settings.\n" +
                 "Add FU_EXTERNALIZATION define to your build settings to enable externalizations.");
 #endif
+        }
+
+        internal static void BlockWindowInputsForFrame()
+        {
+            WindowInputsBlockedThisFrame = true;
+            SuppressCurrentContextWindowInputs();
+        }
+
+        internal static bool TryGetBlockedFrameRawMouseDown(FuMouseButton button, out bool isDown)
+        {
+            int index = (int)button;
+            if (!WindowInputsBlockedThisFrame || index < 0 || index >= WindowInputBlockMouseButtonCount)
+            {
+                isDown = false;
+                return false;
+            }
+
+            isDown = _blockedFrameRawMouseDown[index];
+            return true;
+        }
+
+        internal static bool TryGetBlockedFrameRawMousePressed(FuMouseButton button, out bool isPressed)
+        {
+            int index = (int)button;
+            if (!WindowInputsBlockedThisFrame || index < 0 || index >= WindowInputBlockMouseButtonCount)
+            {
+                isPressed = false;
+                return false;
+            }
+
+            isPressed = _blockedFrameRawMousePressed[index];
+            return true;
+        }
+
+        internal static bool IsMouseButtonPressedBeforeCurrentFrame(FuMouseButton button)
+        {
+            int index = (int)button;
+            if (index < 0 || index >= WindowInputBlockMouseButtonCount)
+            {
+                return false;
+            }
+
+            if (_windowInputSnapshotCaptured)
+            {
+                return _inputSnapshotMouseDown[index] && !_inputSnapshotMouseClicked[index];
+            }
+
+            if (CurrentContext == null || CurrentContext.ImGuiContext == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            ImGuiIOPtr io = CurrentContext.IO;
+            return io.MouseDown[index] && !io.MouseClicked[index];
+        }
+
+        private static void ResetWindowInputBlockForFrame()
+        {
+            WindowInputsBlockedThisFrame = false;
+            _windowInputSnapshotCaptured = false;
+            for (int i = 0; i < WindowInputBlockMouseButtonCount; i++)
+            {
+                _blockedFrameRawMouseDown[i] = false;
+                _blockedFrameRawMousePressed[i] = false;
+            }
+        }
+
+        private static void SuppressCurrentContextWindowInputs()
+        {
+            if (CurrentContext == null || CurrentContext.ImGuiContext == IntPtr.Zero)
+            {
+                return;
+            }
+
+            ImGuiIOPtr io = CurrentContext.IO;
+            if (!_windowInputSnapshotCaptured)
+            {
+                CaptureWindowInputSnapshot(io);
+            }
+            io.MouseWheel = 0f;
+            io.MouseWheelH = 0f;
+
+            for (int i = 0; i < WindowInputBlockMouseButtonCount; i++)
+            {
+                bool mousePressed = io.MouseDown[i];
+                bool mouseClicked = io.MouseClicked[i];
+                if (!mousePressed)
+                {
+                    _blockedInputHeldFromOutside[i] = false;
+                    _blockedInputDownEmitted[i] = false;
+                }
+                else if (!mouseClicked && !_blockedInputDownEmitted[i])
+                {
+                    _blockedInputHeldFromOutside[i] = true;
+                }
+
+                bool emitRawDown = mouseClicked && !_blockedInputHeldFromOutside[i] && !_blockedInputDownEmitted[i];
+                if (emitRawDown)
+                {
+                    _blockedInputDownEmitted[i] = true;
+                }
+
+                _blockedFrameRawMouseDown[i] |= emitRawDown;
+                _blockedFrameRawMousePressed[i] |= mousePressed;
+
+                io.MouseDown[i] = false;
+                io.MouseClicked[i] = false;
+                io.MouseReleased[i] = false;
+                io.MouseDoubleClicked[i] = false;
+                io.MouseDownOwned[i] = false;
+                io.MouseDownOwnedUnlessPopupClose[i] = false;
+                io.MouseClickedCount[i] = 0;
+                io.MouseClickedLastCount[i] = 0;
+                io.MouseDownDuration[i] = -1f;
+                io.MouseDownDurationPrev[i] = -1f;
+                io.MouseDragMaxDistanceAbs[i] = Vector2.zero;
+                io.MouseDragMaxDistanceSqr[i] = 0f;
+            }
+        }
+
+        private static void CaptureWindowInputSnapshot(ImGuiIOPtr io)
+        {
+            _windowInputSnapshotCaptured = true;
+            for (int i = 0; i < WindowInputBlockMouseButtonCount; i++)
+            {
+                _inputSnapshotMouseDown[i] = io.MouseDown[i];
+                _inputSnapshotMouseClicked[i] = io.MouseClicked[i];
+                _inputSnapshotMouseReleased[i] = io.MouseReleased[i];
+                _inputSnapshotMouseDoubleClicked[i] = io.MouseDoubleClicked[i];
+                _inputSnapshotMouseDownOwned[i] = io.MouseDownOwned[i];
+                _inputSnapshotMouseDownOwnedUnlessPopupClose[i] = io.MouseDownOwnedUnlessPopupClose[i];
+                _inputSnapshotMouseClickedCount[i] = io.MouseClickedCount[i];
+                _inputSnapshotMouseClickedLastCount[i] = io.MouseClickedLastCount[i];
+                _inputSnapshotMouseDownDuration[i] = io.MouseDownDuration[i];
+                _inputSnapshotMouseDownDurationPrev[i] = io.MouseDownDurationPrev[i];
+                _inputSnapshotMouseDragMaxDistanceAbs[i] = io.MouseDragMaxDistanceAbs[i];
+                _inputSnapshotMouseDragMaxDistanceSqr[i] = io.MouseDragMaxDistanceSqr[i];
+            }
+        }
+
+        private static void RestoreWindowInputsAfterFrame()
+        {
+            if (!_windowInputSnapshotCaptured || CurrentContext == null || CurrentContext.ImGuiContext == IntPtr.Zero)
+            {
+                _windowInputSnapshotCaptured = false;
+                return;
+            }
+
+            ImGuiIOPtr io = CurrentContext.IO;
+            for (int i = 0; i < WindowInputBlockMouseButtonCount; i++)
+            {
+                io.MouseDown[i] = _inputSnapshotMouseDown[i];
+                io.MouseClicked[i] = _inputSnapshotMouseClicked[i];
+                io.MouseReleased[i] = _inputSnapshotMouseReleased[i];
+                io.MouseDoubleClicked[i] = _inputSnapshotMouseDoubleClicked[i];
+                io.MouseDownOwned[i] = _inputSnapshotMouseDownOwned[i];
+                io.MouseDownOwnedUnlessPopupClose[i] = _inputSnapshotMouseDownOwnedUnlessPopupClose[i];
+                io.MouseClickedCount[i] = _inputSnapshotMouseClickedCount[i];
+                io.MouseClickedLastCount[i] = _inputSnapshotMouseClickedLastCount[i];
+                io.MouseDownDuration[i] = _inputSnapshotMouseDownDuration[i];
+                io.MouseDownDurationPrev[i] = _inputSnapshotMouseDownDurationPrev[i];
+                io.MouseDragMaxDistanceAbs[i] = _inputSnapshotMouseDragMaxDistanceAbs[i];
+                io.MouseDragMaxDistanceSqr[i] = _inputSnapshotMouseDragMaxDistanceSqr[i];
+            }
+
+            _windowInputSnapshotCaptured = false;
         }
 
         /// <summary>
@@ -1578,37 +1708,10 @@ namespace Fu
                 Vector2Int mousePosition = GetGlobalMousePosition();
                 bool resumeDrag = externalContext.Window.IsDragging && IsGlobalMouseButtonPressed(FuMouseButton.Left);
                 Vector2Int dragMouseOffset = mousePosition - externalContext.Window.Position;
-                Vector2Int mainMousePosition = DefaultContainer.AbsoluteScreenToLocalPosition(mousePosition);
                 List<FuWindow> windowsToInternalize = externalContainer.Windows.Values.ToList();
                 if (windowsToInternalize.Count == 0)
                 {
                     windowsToInternalize.Add(uiWindow);
-                }
-
-                Dictionary<string, Rect> floatingRootRects = new Dictionary<string, Rect>();
-                if (Layouts != null)
-                {
-                    foreach (FuWindow window in windowsToInternalize)
-                    {
-                        if (window == null || floatingRootRects.ContainsKey(window.ID))
-                        {
-                            continue;
-                        }
-
-                        if (!Layouts.TryGetFloatingDockRootRect(window, out Rect rootRect))
-                        {
-                            continue;
-                        }
-
-                        List<FuWindow> rootWindows = Layouts.GetExternalizationGroup(window);
-                        foreach (FuWindow rootWindow in rootWindows)
-                        {
-                            if (rootWindow != null && !floatingRootRects.ContainsKey(rootWindow.ID))
-                            {
-                                floatingRootRects.Add(rootWindow.ID, rootRect);
-                            }
-                        }
-                    }
                 }
 
                 externalContext.Window.Close(() => {
@@ -1619,38 +1722,12 @@ namespace Fu
                             continue;
                         }
 
-                        if (resumeDrag && window == uiWindow && !floatingRootRects.ContainsKey(window.ID))
+                        if (resumeDrag && window == uiWindow)
                         {
                             window.RequestInternalizedDragResume(dragMouseOffset);
                         }
 
                         window.TryAddToContainer(DefaultContainer);
-                    }
-
-                    HashSet<string> movedFloatingRoots = new HashSet<string>();
-                    foreach (FuWindow window in windowsToInternalize)
-                    {
-                        if (window == null ||
-                            floatingRootRects.Count == 0 ||
-                            !floatingRootRects.TryGetValue(window.ID, out Rect rootRect))
-                        {
-                            continue;
-                        }
-
-                        List<FuWindow> rootWindows = Layouts.GetExternalizationGroup(window);
-                        string rootKey = rootWindows.Count > 0 && rootWindows[0] != null ? rootWindows[0].ID : window.ID;
-                        if (!movedFloatingRoots.Add(rootKey))
-                        {
-                            continue;
-                        }
-
-                        Vector2Int rootPosition = mainMousePosition - dragMouseOffset + new Vector2Int(Mathf.RoundToInt(rootRect.x), Mathf.RoundToInt(rootRect.y));
-                        Rect internalRootRect = new Rect(rootPosition.x, rootPosition.y, rootRect.width, rootRect.height);
-                        Layouts.MoveFloatingDockRootToContainer(window, DefaultContainer, internalRootRect);
-                        if (resumeDrag)
-                        {
-                            Layouts.TryBeginFloatingDockRootDrag(window, DefaultContainer, mainMousePosition);
-                        }
                     }
                 });
             }

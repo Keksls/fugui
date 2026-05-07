@@ -1,9 +1,6 @@
 ﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
 //#define FUDEBUG
-#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
-#define FUMOBILE
-#endif
 using Fu.Framework;
 using ImGuiNET;
 #if FU_EXTERNALIZATION
@@ -29,32 +26,32 @@ namespace Fu
     public static partial class Fugui
     {
         /// <summary>
-        /// Read all bytes from a file, using UnityWebRequest on Android to support streaming assets, and File.ReadAllBytes on other platforms
+        /// Read all bytes from a file, using UnityWebRequest on Android to support streaming assets, and File.ReadAllBytes on other platforms.
         /// </summary>
         /// <param name="filePath"> path of the file to read</param>
         /// <returns> byte array of the file content, or null if an error occurs</returns>
         public static byte[] ReadAllBytes(string filePath)
         {
-#if FUMOBILE
-    using (var request = UnityEngine.Networking.UnityWebRequest.Get(filePath))
-    {
-        var operation = request.SendWebRequest();
-        while (!operation.isDone)
-        {
-        }
+#if UNITY_ANDROID && !UNITY_EDITOR
+            using (var request = UnityEngine.Networking.UnityWebRequest.Get(filePath))
+            {
+                var operation = request.SendWebRequest();
+                while (!operation.isDone)
+                {
+                }
 
-        if (request.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
-        {
-            Debug.LogError($"[FontLoader] Failed to load font from streaming assets: {filePath} - {request.error}");
-            return null;
-        }
+                if (request.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError($"[FileIO] Failed to load streaming asset: {filePath} - {request.error}");
+                    return null;
+                }
 
-        return request.downloadHandler.data;
-    }
+                return request.downloadHandler.data;
+            }
 #else
             if (!File.Exists(filePath))
             {
-                Debug.LogError($"[FontLoader] Font file not found: {filePath}");
+                Debug.LogError($"[FileIO] File not found: {filePath}");
                 return null;
             }
 
@@ -63,14 +60,14 @@ namespace Fu
         }
 
         /// <summary>
-        /// Read all text from a file, using UnityWebRequest on Android to support streaming assets, and File.ReadAllText on other platforms
+        /// Read all text from a file, using UnityWebRequest on Android to support streaming assets, and File.ReadAllText on other platforms.
         /// </summary>
         /// <param name="filePath"> path of the file to read</param>
         /// <returns> string of the file content, or null if an error occurs</returns>
         public static string ReadAllText(string filePath)
         {
-            string text = Encoding.UTF8.GetString(ReadAllBytes(filePath));
-            return text;
+            byte[] bytes = ReadAllBytes(filePath);
+            return bytes == null ? null : Encoding.UTF8.GetString(bytes);
         }
 
         /// <summary>

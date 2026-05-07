@@ -118,13 +118,6 @@ namespace ImGuiNET
         [DllImport(ImGuiNative.CimguiLibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ImGuiDockNode_destroy(ImGuiDockNode* self);
         /// <summary>
-        /// Returns the im gui dock node get merged flags result.
-        /// </summary>
-        /// <param name="self">The self value.</param>
-        /// <returns>The result of the operation.</returns>
-        [DllImport(ImGuiNative.CimguiLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern ImGuiDockNodeFlags ImGuiDockNode_GetMergedFlags(ImGuiDockNode* self);
-        /// <summary>
         /// Returns the im gui dock node im gui dock node result.
         /// </summary>
         /// <param name="id">The id value.</param>

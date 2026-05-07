@@ -23,20 +23,6 @@ namespace ImGuiNET
         public static extern void igShadeVertsLinearColorGradientKeepAlpha(ImDrawList* draw_list, int vert_start_idx, int vert_end_idx, Vector2 gradient_p0, Vector2 gradient_p1, uint col0, uint col1);
 
         /// <summary>
-        /// Runs the shade verts linear uv workflow.
-        /// </summary>
-        /// <param name="draw_list">The draw list value.</param>
-        /// <param name="vert_start_idx">The vert start idx value.</param>
-        /// <param name="vert_end_idx">The vert end idx value.</param>
-        /// <param name="a">The a value.</param>
-        /// <param name="b">The b value.</param>
-        /// <param name="uv_a">The uv a value.</param>
-        /// <param name="uv_b">The uv b value.</param>
-        /// <param name="clamp">The clamp value.</param>
-        [DllImport(ImGuiNative.CimguiLibraryName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void ShadeVertsLinearUV(ImDrawList* draw_list, int vert_start_idx, int vert_end_idx, ref Vector2 a, ref Vector2 b, ref Vector2 uv_a, ref Vector2 uv_b, bool clamp);
-
-        /// <summary>
         /// Runs the ig render text workflow.
         /// </summary>
         /// <param name="pos">The pos value.</param>

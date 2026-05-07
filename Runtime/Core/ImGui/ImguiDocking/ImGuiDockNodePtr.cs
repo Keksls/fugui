@@ -96,15 +96,6 @@ namespace ImGuiNET
                 NativeDocking.ImGuiDockNode_destroy((ImGuiDockNode*)(NativePtr));
             }
             /// <summary>
-            /// Gets the merged flags.
-            /// </summary>
-            /// <returns>The result of the operation.</returns>
-            public ImGuiDockNodeFlags GetMergedFlags()
-            {
-                ImGuiDockNodeFlags ret = NativeDocking.ImGuiDockNode_GetMergedFlags((ImGuiDockNode*)(NativePtr));
-                return ret;
-            }
-            /// <summary>
             /// Returns the is central node result.
             /// </summary>
             /// <returns>The result of the operation.</returns>

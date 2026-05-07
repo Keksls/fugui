@@ -14,14 +14,14 @@ namespace ImGuiNET
         /// </summary>
         /// <param name="platform_io">The platform io value.</param>
         /// <param name="funcPtr">The func Ptr value.</param>
-        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(CimguiLibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ImGuiPlatformIO_Set_Platform_GetWindowPos(ImGuiPlatformIO* platform_io, IntPtr funcPtr);
         /// <summary>
         /// Runs the im gui platform io set platform get window size workflow.
         /// </summary>
         /// <param name="platform_io">The platform io value.</param>
         /// <param name="funcPtr">The func Ptr value.</param>
-        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(CimguiLibraryName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void ImGuiPlatformIO_Set_Platform_GetWindowSize(ImGuiPlatformIO* platform_io, IntPtr funcPtr);
         #endregion
     }

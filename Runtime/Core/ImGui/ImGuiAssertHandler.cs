@@ -53,7 +53,7 @@ namespace ImGuiNET
         /// <summary>
         /// Imports the native function to set the ImGui assertion callback.
         /// </summary>
-        [DllImport("cimgui", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(ImGuiNative.CimguiLibraryName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void SetImGuiAssertCallback(ImGuiAssertCallback callback);
         #endregion
     }

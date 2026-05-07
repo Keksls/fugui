@@ -1420,8 +1420,7 @@ namespace Fu
         {
             locProjMtx = -1; locTex = -1;
 
-            string vs = @"
-#version 130
+            string vs = @"#version 130
                 uniform mat4 ProjMtx;
                 in vec2 Position;
                 in vec2 UV;
@@ -1435,8 +1434,7 @@ namespace Fu
                     gl_Position = ProjMtx * vec4(Position.xy, 0.0, 1.0);
                 }";
 
-            string fs = @"
-#version 130
+            string fs = @"#version 130
                 uniform sampler2D Texture;
                 in vec2 Frag_UV;
                 in vec4 Frag_Color;

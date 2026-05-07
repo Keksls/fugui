@@ -1,6 +1,3 @@
-#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
-#define FUMOBILE
-#endif
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -11,7 +8,7 @@ using System.Text;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
-#if FUMOBILE
+#if UNITY_ANDROID && !UNITY_EDITOR
 using UnityEngine.Networking;
 #endif
 
@@ -244,7 +241,7 @@ namespace Fu
 
         internal static byte[] ReadStreamingAssetBytes(string path, bool logErrors)
         {
-#if FUMOBILE
+#if UNITY_ANDROID && !UNITY_EDITOR
             using (UnityWebRequest request = UnityWebRequest.Get(path))
             {
                 UnityWebRequestAsyncOperation operation = request.SendWebRequest();

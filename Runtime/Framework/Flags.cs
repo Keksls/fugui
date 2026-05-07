@@ -125,47 +125,55 @@ namespace Fu.Framework
         /// <summary>
         /// The default input text flag.
         /// </summary>
-        Default = ImGuiInputTextFlags.CtrlEnterForNewLine | ImGuiInputTextFlags.AutoSelectAll,
+        Default = CtrlEnterForNewLine | AutoSelectAll,
         /// <summary>
         /// Allow decimal characters.
         /// </summary>
-        CharsDecimal = ImGuiInputTextFlags.CharsDecimal,
+        CharsDecimal = 1,
         /// <summary>
         /// Allow hexadecimal characters.
         /// </summary>
-        CharsHexadecimal = ImGuiInputTextFlags.CharsHexadecimal,
+        CharsHexadecimal = 2,
         /// <summary>
         /// Force uppercase characters.
         /// </summary>
-        CharsUppercase = ImGuiInputTextFlags.CharsUppercase,
+        CharsUppercase = 8,
         /// <summary>
         /// Disallow blank characters.
         /// </summary>
-        CharsNoBlank = ImGuiInputTextFlags.CharsNoBlank,
+        CharsNoBlank = 16,
         /// <summary>
         /// Mask the input as a password.
         /// </summary>
-        Password = ImGuiInputTextFlags.Password,
+        Password = 1024,
         /// <summary>
         /// Allow scientific notation characters.
         /// </summary>
-        CharsScientific = ImGuiInputTextFlags.CharsScientific,
+        CharsScientific = 4,
         /// <summary>
         /// Escape key will clear all input.
         /// </summary>
-        EscapeClearsAll = ImGuiInputTextFlags.EscapeClearsAll,
+        EscapeClearsAll = 128,
         /// <summary>
         /// Validate the input text box only on Enter pressed
         /// </summary>
-        EnterReturnsTrue = ImGuiInputTextFlags.EnterReturnsTrue,
+        EnterReturnsTrue = 64,
         /// <summary>
         /// The input is in readonly mode, user can not edit it (prefere using DisableNextElement if you need to disable the widget)
         /// </summary>
-        ReadOnly = ImGuiInputTextFlags.ReadOnly,
+        ReadOnly = 512,
         /// <summary>
         /// Callback on pressing TAB (for completion handling)
         /// </summary>
-        CallbackCompletion = ImGuiInputTextFlags.CallbackCompletion,
+        CallbackCompletion = 262144,
+        /// <summary>
+        /// Enter key inserts a newline unless Ctrl is pressed.
+        /// </summary>
+        CtrlEnterForNewLine = 256,
+        /// <summary>
+        /// Select all text when the input receives focus.
+        /// </summary>
+        AutoSelectAll = 4096,
     }
 
     /// <summary>
@@ -524,5 +532,36 @@ namespace Fu.Framework
         /// Default flag
         /// </summary>
         Default = ShowCompatiblesNodesOnVoidLink | AutoLinkColorFromConvertedType,
+    }
+
+    /// <summary>
+    /// State returned by low-level Fugui layout reservations.
+    /// </summary>
+    public readonly struct FuItemState
+    {
+        public readonly string ID;
+        public readonly UnityEngine.Rect Rect;
+        public readonly bool Hovered;
+        public readonly bool Active;
+        public readonly bool JustActivated;
+        public readonly bool JustDeactivated;
+        public readonly bool Updated;
+        public readonly FuMouseButton ClickedButton;
+        public readonly FuDrawList DrawList;
+
+        public bool Clicked => ClickedButton != FuMouseButton.None;
+
+        internal FuItemState(string id, UnityEngine.Rect rect, bool hovered, bool active, bool justActivated, bool justDeactivated, bool updated, FuMouseButton clickedButton, FuDrawList drawList)
+        {
+            ID = id;
+            Rect = rect;
+            Hovered = hovered;
+            Active = active;
+            JustActivated = justActivated;
+            JustDeactivated = justDeactivated;
+            Updated = updated;
+            ClickedButton = clickedButton;
+            DrawList = drawList;
+        }
     }
 }

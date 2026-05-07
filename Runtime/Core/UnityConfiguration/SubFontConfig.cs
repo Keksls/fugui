@@ -20,7 +20,7 @@ namespace Fu
             [HideInInspector]
             public IntPtr GlyphRangePtr;
             [HideInInspector]
-            public ImFontConfigPtr FontConfigPtr;
+            internal ImFontConfigPtr FontConfigPtr;
             public float SizeOffset = 0f;
             public Vector2 GlyphOffset = Vector2.zero;
             #endregion

@@ -8,11 +8,11 @@ namespace Fu
     /// <summary>
     /// Represents the Im Gui Draw List Utils type.
     /// </summary>
-    public static class ImGuiDrawListUtils
+    internal static class ImGuiDrawListUtils
     {
         #region State
-        public static long ImDrawCmdSize { get; private set; }
-        public static long ImDrawVertSize { get; private set; }
+        internal static long ImDrawCmdSize { get; private set; }
+        internal static long ImDrawVertSize { get; private set; }
 
         private static Dictionary<string, string> _unIconnizedTitleMapping = new Dictionary<string, string>();
         #endregion
@@ -35,7 +35,7 @@ namespace Fu
         /// <param name="windows">The windows value.</param>
         /// <param name="imDrawDataPtr">The im Draw Data Ptr value.</param>
         /// <param name="cmd">The cmd value.</param>
-        public static void GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr, ref DrawData cmd)
+        internal static void GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr, ref DrawData cmd)
         {
             cmd.Clear();
 
@@ -289,7 +289,7 @@ namespace Fu
         /// </summary>
         private struct ResolvedDrawList
         {
-            public ImDrawListPtr NativeDrawList;
+            internal ImDrawListPtr NativeDrawList;
             public FuWindow Window;
             public bool IsWindowRoot;
             public bool IsWindowChild;

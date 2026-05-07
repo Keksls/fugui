@@ -26,9 +26,9 @@ namespace Fu
         /// <summary>
         /// instantiate a new FuKeyboardState relatif to a FuWindow
         /// </summar>
-        /// <param name="io">the ImGUi Io ptr attached to this Keyboard State</param>
+        /// <param name="io">the internal IO ptr attached to this Keyboard State</param>
         /// <param name="window">the window attached to this Keyboard State (optional)</param>
-        public FuKeyboardState(ImGuiIOPtr io, FuWindow window = null)
+        internal FuKeyboardState(ImGuiIOPtr io, FuWindow window = null)
         {
             _window = window;
             _io = io;

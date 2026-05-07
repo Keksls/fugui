@@ -1,5 +1,4 @@
 using Fu;
-using ImGuiNET;
 using UnityEngine;
 
 /// <summary>
@@ -24,9 +23,9 @@ public class Test3DRaycaster : MonoBehaviour
     {
         FuRaycasting.RegisterRaycaster(new FuRaycaster("3DRaycasterTest",
             () => new Ray(transform.position, transform.forward),
-            () => ImGui.GetIO().MouseDown[0],
-            () => ImGui.GetIO().MouseDown[1],
-            () => ImGui.GetIO().MouseDown[2],
+            () => Fugui.IsMousePressed(FuMouseButton.Left),
+            () => Fugui.IsMousePressed(FuMouseButton.Right),
+            () => Fugui.IsMousePressed(FuMouseButton.Center),
             () => 0f,
             () => true));
     }

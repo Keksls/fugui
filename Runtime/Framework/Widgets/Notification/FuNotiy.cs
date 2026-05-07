@@ -84,7 +84,7 @@ namespace Fu
                 int visible = Math.Min(MaxVisibleNotifications, _notifications.Count);
                 for (int i = 0; i < visible; i++)
                 {
-                    if (_notifications[i].Draw(ImGui.GetWindowDrawList(), i, deltaTime, panelWidth)) removeIndex = i;
+                    if (_notifications[i].Draw(i, deltaTime, panelWidth)) removeIndex = i;
                     ImGui.Dummy(new Vector2(1f, CardSpacing * container.Context.Scale));
                 }
 

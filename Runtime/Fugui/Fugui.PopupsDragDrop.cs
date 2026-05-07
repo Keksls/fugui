@@ -86,10 +86,15 @@ namespace Fu
         /// Must be placed just after an UI element so this one can be dragged
         /// </summary>
         /// <param name="payloadID">Unique ID of the payload for the drag drop operation (must be same as used in BeginDragDropTarget method)</param>
-        /// <param name="dragDropFlags">lags for this drag drop operation (see ImGuiDragDropFlags on google)</param>
+        /// <param name="dragDropFlags">Flags for this drag drop operation.</param>
         /// <param name="onDraggingUICallback">Callback called each frame while a drag drop operation. Use it to draw the preview drag drop window UI)</param>
         /// <param name="payload">payload to set, will be passed to the target on Drop frame</param>
-        public static void BeginDragDropSource(string payloadID, ImGuiDragDropFlags dragDropFlags, Action onDraggingUICallback, object payload)
+        public static void BeginDragDropSource(string payloadID, FuDragDropFlags dragDropFlags, Action onDraggingUICallback, object payload)
+        {
+            CurrentContext.BeginDragDropSource(payloadID, dragDropFlags.ToImGui(), onDraggingUICallback, payload);
+        }
+
+        internal static void BeginDragDropSource(string payloadID, ImGuiDragDropFlags dragDropFlags, Action onDraggingUICallback, object payload)
         {
             CurrentContext.BeginDragDropSource(payloadID, dragDropFlags, onDraggingUICallback, payload);
         }

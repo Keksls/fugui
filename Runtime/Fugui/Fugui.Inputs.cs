@@ -233,5 +233,44 @@ namespace Fu
             }
             return DefaultContainer.Mouse;
         }
+
+        /// <summary>
+        /// Return whether a mouse button is currently pressed in the active Fugui context.
+        /// </summary>
+        public static bool IsMousePressed(FuMouseButton mouseButton)
+        {
+            int index = (int)mouseButton;
+            if (index < 0 || index >= 5)
+            {
+                return false;
+            }
+
+            ImGuiIOPtr io = CurrentContext != null ? CurrentContext.IO : ImGui.GetIO();
+            return io.MouseDown[index];
+        }
+
+        /// <summary>
+        /// Return whether a mouse button was released this frame.
+        /// </summary>
+        public static bool IsMouseReleased(FuMouseButton mouseButton)
+        {
+            if (mouseButton == FuMouseButton.None)
+            {
+                return false;
+            }
+            return ImGui.IsMouseReleased((ImGuiMouseButton)mouseButton);
+        }
+
+        /// <summary>
+        /// Return whether a mouse button was double-clicked this frame.
+        /// </summary>
+        public static bool IsMouseDoubleClicked(FuMouseButton mouseButton)
+        {
+            if (mouseButton == FuMouseButton.None)
+            {
+                return false;
+            }
+            return ImGui.IsMouseDoubleClicked((ImGuiMouseButton)mouseButton);
+        }
     }
 }

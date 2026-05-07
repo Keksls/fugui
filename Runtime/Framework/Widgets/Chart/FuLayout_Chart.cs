@@ -431,7 +431,7 @@ namespace Fu.Framework
         /// <returns>A draw context for callbacks.</returns>
         private FuChartDrawContext CreateChartDrawContext(ImDrawListPtr drawList, Rect chartRect, Rect plotRect, FuChartBounds bounds, Vector2 mouseValue, FuChartHoverState hover, int seriesIndex, FuChartOptions options)
         {
-            return new FuChartDrawContext(drawList, chartRect, plotRect, new Vector2(bounds.XMin, bounds.YMin), new Vector2(bounds.XMax, bounds.YMax), mouseValue, hover, seriesIndex, LastItemDisabled, Fugui.CurrentContext.Scale);
+            return new FuChartDrawContext(FuDrawList.FromImGui(drawList), chartRect, plotRect, new Vector2(bounds.XMin, bounds.YMin), new Vector2(bounds.XMax, bounds.YMax), mouseValue, hover, seriesIndex, LastItemDisabled, Fugui.CurrentContext.Scale);
         }
 
         /// <summary>

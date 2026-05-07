@@ -72,7 +72,7 @@ namespace Fu.Framework
         public void ForceCollapsed(bool collapsed) { if (CanCollapse) IsCollapsed = collapsed; }
 
         /// <summary>Draw the card (accent per anchor, header click collapse, body background, AutoResizeY).</summary>
-        public bool Draw(ImDrawListPtr parentDrawList, int i, float deltaTime, float width)
+        internal bool Draw(int i, float deltaTime, float width)
         {
             width = Mathf.Max(1f, width);
             Vector2 childTopLeft = ImGui.GetCursorScreenPos();

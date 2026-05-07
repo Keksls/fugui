@@ -2,6 +2,7 @@ using Fu.Framework;
 using ImGuiNET;
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Fu
 {
@@ -190,7 +191,7 @@ namespace Fu
         [Header("Docking")]
         [Tooltip("Docking flags for the main container dockSpace.")]
         [FuTooltip("Docking flags for the main container dockSpace.")]
-        public ImGuiDockNodeFlags DockingFlags = ImGuiDockNodeFlags.None;
+        public FuDockingFlags DockingFlags = FuDockingFlags.None;
 
         [Tooltip("Always display the Tab bar button.")]
         [FuTooltip("Always display the Tab bar button.")]
@@ -210,9 +211,10 @@ namespace Fu
         [FuTooltip("pos offset of icons glyphs in font.")]
         public Vector2 FontIconsOffset = Vector2.zero;
 
-        [Tooltip("For more info look the imgui.h:1380(~). Fugui uses its own docking layer, so DockingEnable is stripped at runtime. (default=NavEnableKeyboard)")]
-        [FuTooltip("For more info look the imgui.h:1380(~). Fugui uses its own docking layer, so DockingEnable is stripped at runtime. (default=NavEnableKeyboard)")]
-        public ImGuiConfigFlags ImGuiConfig = ImGuiConfigFlags.NavEnableKeyboard;
+        [Tooltip("Fugui IO config flags. Fugui uses its own docking layer, so DockingEnable is stripped at runtime. (default=NavEnableKeyboard)")]
+        [FuTooltip("Fugui IO config flags. Fugui uses its own docking layer, so DockingEnable is stripped at runtime. (default=NavEnableKeyboard)")]
+        [FormerlySerializedAs("ImGuiConfig")]
+        public FuConfigFlags ConfigFlags = FuConfigFlags.NavEnableKeyboard;
 
         [Tooltip("Time for a double-click, in seconds. (default=0.30f)")]
         [FuTooltip("Time for a double-click, in seconds. (default=0.30f)")]
@@ -396,14 +398,15 @@ namespace Fu
 
         #region Methods
         /// <summary>
-        /// Apply Imgui IO config variables to the given Imgui IO
+        /// Apply Fugui IO config variables to the given internal IO
         /// </summary>
-        /// <param name="io">current Imgui IO</param>
-        public void ApplyTo(ImGuiIOPtr io)
+        /// <param name="io">current internal IO</param>
+        internal void ApplyTo(ImGuiIOPtr io)
         {
-            io.ConfigFlags = ImGuiConfig & ~ImGuiConfigFlags.DockingEnable;
+            ImGuiConfigFlags configFlags = ConfigFlags.ToImGui();
+            io.ConfigFlags = configFlags & ~ImGuiConfigFlags.DockingEnable;
 
-            if(ImGuiConfig.HasFlag(ImGuiConfigFlags.ViewportsEnable))
+            if (ConfigFlags.HasFlag(FuConfigFlags.ViewportsEnable))
             {
                 io.ConfigFlags |= ImGuiConfigFlags.DpiEnableScaleViewports;
                 io.ConfigFlags |= ImGuiConfigFlags.DpiEnableScaleFonts;

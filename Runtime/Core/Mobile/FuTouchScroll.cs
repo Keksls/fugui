@@ -51,7 +51,12 @@ namespace Fu
         /// <summary>
         /// Begin a child with mobile touch scroll support.
         /// </summary>
-        public static bool BeginChild(string id, Vector2 size, ImGuiChildFlags childFlags = ImGuiChildFlags.None, ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None)
+        public static bool BeginChild(string id, Vector2 size, FuChildFlags childFlags = FuChildFlags.None, FuWindowRuntimeFlags windowFlags = FuWindowRuntimeFlags.None)
+        {
+            return BeginChild(id, size, childFlags.ToImGui(), windowFlags.ToImGui());
+        }
+
+        internal static bool BeginChild(string id, Vector2 size, ImGuiChildFlags childFlags, ImGuiWindowFlags windowFlags)
         {
             windowFlags = PrepareChildBackdrop(windowFlags, out Vector4 backdropColor, out float backdropBlur);
 #if FUMOBILE
@@ -97,7 +102,12 @@ namespace Fu
         /// <summary>
         /// Begin a child with mobile touch scroll support.
         /// </summary>
-        public static bool BeginChild(uint id, Vector2 size, ImGuiChildFlags childFlags = ImGuiChildFlags.None, ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None)
+        public static bool BeginChild(uint id, Vector2 size, FuChildFlags childFlags = FuChildFlags.None, FuWindowRuntimeFlags windowFlags = FuWindowRuntimeFlags.None)
+        {
+            return BeginChild(id, size, childFlags.ToImGui(), windowFlags.ToImGui());
+        }
+
+        internal static bool BeginChild(uint id, Vector2 size, ImGuiChildFlags childFlags, ImGuiWindowFlags windowFlags)
         {
             windowFlags = PrepareChildBackdrop(windowFlags, out Vector4 backdropColor, out float backdropBlur);
 #if FUMOBILE

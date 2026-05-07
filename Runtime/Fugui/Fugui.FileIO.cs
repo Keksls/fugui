@@ -24,6 +24,49 @@ using UnityEngine.Rendering.Universal;
 namespace Fu
 {
     /// <summary>
+    /// Internal native string helpers used by Fugui without depending on ImGuiNET internals.
+    /// </summary>
+    internal static unsafe class Util
+    {
+        internal const int StackAllocationSizeLimit = 2048;
+
+        internal static byte* Allocate(int byteCount)
+        {
+            return (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(byteCount);
+        }
+
+        internal static void Free(byte* ptr)
+        {
+            System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)ptr);
+        }
+
+        internal static int GetUtf8(string s, byte* utf8Bytes, int utf8ByteCount)
+        {
+            fixed (char* utf16Ptr = s)
+            {
+                return Encoding.UTF8.GetBytes(utf16Ptr, s.Length, utf8Bytes, utf8ByteCount);
+            }
+        }
+
+        internal static int CalcSizeInUtf8(string s, int start, int length)
+        {
+            if (start < 0 || length < 0 || start + length > s.Length)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+            if (s.Length == 0)
+            {
+                return 0;
+            }
+
+            fixed (char* utf16Ptr = s)
+            {
+                return Encoding.UTF8.GetByteCount(utf16Ptr + start, length);
+            }
+        }
+    }
+
+    /// <summary>
     /// Fugui file and encoding helpers.
     /// </summary>
     public static partial class Fugui
@@ -82,10 +125,7 @@ namespace Fu
         /// <returns> number of bytes written to the array</returns>
         public unsafe static int GetUtf8(string s, byte* utf8Bytes, int utf8ByteCount)
         {
-            fixed (char* utf16Ptr = s)
-            {
-                return Encoding.UTF8.GetBytes(utf16Ptr, s.Length, utf8Bytes, utf8ByteCount);
-            }
+            return Util.GetUtf8(s, utf8Bytes, utf8ByteCount);
         }
     }
 }

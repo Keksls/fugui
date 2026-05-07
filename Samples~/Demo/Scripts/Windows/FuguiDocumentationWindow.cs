@@ -1,6 +1,5 @@
 using Fu;
 using Fu.Framework;
-using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -157,23 +156,23 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
     {
         FuLayout layout = window.Layout;
         float scale = Fugui.CurrentContext.Scale;
-        Vector2 pos = ImGui.GetCursorScreenPos();
+        Vector2 pos = Fugui.GetCursorScreenPos();
         Vector2 padding = new Vector2(12f, 0f) * scale;
-        ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+        FuDrawList drawList = Fugui.GetWindowDrawList();
         Vector4 bg = Fugui.Themes.GetColor(FuColors.TitleBgActive, 0.92f);
         Vector4 accent = Fugui.Themes.GetColor(FuColors.Highlight, 0.85f);
-        drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(bg), 0f);
-        drawList.AddRectFilled(pos, new Vector2(pos.x + 3f * scale, pos.y + size.y), ImGui.GetColorU32(accent), 0f);
+        drawList.AddRectFilled(pos, pos + size, Fugui.ColorToU32(bg), 0f);
+        drawList.AddRectFilled(pos, new Vector2(pos.x + 3f * scale, pos.y + size.y), Fugui.ColorToU32(accent), 0f);
 
         Fugui.PushFont(FontType.Bold);
         layout.EnboxedText("Fugui Documentation", pos + padding, size - padding * 2f, Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopFont();
 
         string count = _sections.Count + " topics";
-        Vector2 countSize = ImGui.CalcTextSize(count) + new Vector2(16f, 4f) * scale;
+        Vector2 countSize = Fugui.CalcTextSize(count) + new Vector2(16f, 4f) * scale;
         Rect badge = new Rect(new Vector2(pos.x + size.x - countSize.x - 10f * scale, pos.y + (size.y - countSize.y) * 0.5f), countSize);
-        drawList.AddRectFilled(badge.min, badge.max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Highlight, 0.16f)), badge.height * 0.5f, ImDrawFlags.RoundCornersAll);
-        Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.HighlightText, 0.92f));
+        drawList.AddRectFilled(badge.min, badge.max, Fugui.ColorToU32(Fugui.Themes.GetColor(FuColors.Highlight, 0.16f)), badge.height * 0.5f, FuDrawFlags.RoundCornersAll);
+        Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.HighlightText, 0.92f));
         layout.EnboxedText(count, badge.position, badge.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopColor();
     }
@@ -240,25 +239,25 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
     {
         float scale = Fugui.CurrentContext.Scale;
         Rect rect = layout.Surface("fugui-docs-search-mode", new FuElementSize(-1f, 30f), FuColors.Highlight, FuSurfaceFlags.Border, 0.34f, 0.24f, 0.72f, 5f);
-        Vector2 afterSurfacePos = ImGui.GetCursorScreenPos();
-        ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+        Vector2 afterSurfacePos = Fugui.GetCursorScreenPos();
+        FuDrawList drawList = Fugui.GetWindowDrawList();
         int count = getNavigationSections().Count();
 
         string label = count + " search results";
-        Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.90f));
+        Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.90f));
         layout.EnboxedText(label, rect.position + new Vector2(10f, 0f) * scale, new Vector2(rect.width - 96f * scale, rect.height), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopColor();
 
         Rect clearRect = new Rect(new Vector2(rect.xMax - 78f * scale, rect.yMin + 4f * scale), new Vector2(68f * scale, rect.height - 8f * scale));
-        ImGui.SetCursorScreenPos(clearRect.position);
-        bool clicked = ImGui.InvisibleButton("##fugui-docs-clear-search", clearRect.size);
-        bool hovered = ImGui.IsItemHovered();
+        Fugui.SetCursorScreenPos(clearRect.position);
+        bool clicked = Fugui.InvisibleButton("##fugui-docs-clear-search", clearRect.size);
+        bool hovered = Fugui.IsItemHovered();
         Vector4 clearBg = Fugui.Themes.GetColor(hovered ? FuColors.ButtonHovered : FuColors.Button, hovered ? 0.72f : 0.42f);
-        drawList.AddRectFilled(clearRect.min, clearRect.max, ImGui.GetColorU32(clearBg), clearRect.height * 0.5f, ImDrawFlags.RoundCornersAll);
+        drawList.AddRectFilled(clearRect.min, clearRect.max, Fugui.ColorToU32(clearBg), clearRect.height * 0.5f, FuDrawFlags.RoundCornersAll);
         layout.EnboxedText("Clear", clearRect.position, clearRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
         if (hovered)
         {
-            ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+            Fugui.SetMouseCursor(FuMouseCursor.Hand);
         }
         if (clicked)
         {
@@ -267,7 +266,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
             ensureSelectedSectionForCurrentGroup();
         }
 
-        ImGui.SetCursorScreenPos(afterSurfacePos);
+        Fugui.SetCursorScreenPos(afterSurfacePos);
     }
 
     private void drawDocumentationBody(FuLayout layout)
@@ -284,14 +283,14 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         if (wide)
         {
             float navWidth = Mathf.Clamp(224f * scale, 190f * scale, Mathf.Min(300f * scale, available.x * 0.33f));
-            ImGui.BeginChild("fugui-docs-navigation", new Vector2(navWidth, 0f), ImGuiChildFlags.None, ImGuiWindowFlags.None);
+            Fugui.BeginChild("fugui-docs-navigation", new Vector2(navWidth, 0f), FuChildFlags.None, FuWindowRuntimeFlags.None);
             drawSidebar(layout);
-            ImGui.EndChild();
+            Fugui.EndChild();
 
-            ImGui.SameLine();
-            ImGui.BeginChild("fugui-docs-content", Vector2.zero, ImGuiChildFlags.None, ImGuiWindowFlags.None);
+            Fugui.SameLine();
+            Fugui.BeginChild("fugui-docs-content", Vector2.zero, FuChildFlags.None, FuWindowRuntimeFlags.None);
             drawSections(layout);
-            ImGui.EndChild();
+            Fugui.EndChild();
         }
         else
         {
@@ -357,7 +356,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
             bool selected = section.Id == _selectedSectionId;
             if (selected && _pendingScrollToSelected)
             {
-                ImGui.SetScrollHereY(0.08f);
+                Fugui.SetScrollHereY(0.08f);
                 _pendingScrollToSelected = false;
             }
 
@@ -410,7 +409,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         string subtitle = isSearchActive()
             ? visibleSections + " sections match"
             : getGroupSections(Groups[_selectedGroupIndex]).Count() + " sections in this area";
-        Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.76f));
+        Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.76f));
         layout.EnboxedText(subtitle, rect.position + new Vector2(10f, 27f) * scale, new Vector2(rect.width - 20f * scale, 18f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopColor();
     }
@@ -418,7 +417,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
     private void drawNavGroupLabel(FuLayout layout, string group)
     {
         Fugui.PushFont(12, FontType.Bold);
-        Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.78f));
+        Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.78f));
         layout.Text(group.ToUpperInvariant(), FuTextWrapping.Clip);
         Fugui.PopColor();
         Fugui.PopFont();
@@ -428,14 +427,14 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
     {
         float scale = Fugui.CurrentContext.Scale;
         float width = Mathf.Max(1f, layout.GetAvailableWidth());
-        Vector2 pos = ImGui.GetCursorScreenPos();
+        Vector2 pos = Fugui.GetCursorScreenPos();
         Vector2 textSize = Fugui.CalcTextSize(text, FuTextWrapping.Wrap, new Vector2(width - 24f * scale, 300f * scale));
-        float height = Mathf.Max(ImGui.GetTextLineHeight(), textSize.y) + 4f * scale;
-        ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+        float height = Mathf.Max(Fugui.GetTextLineHeight(), textSize.y) + 4f * scale;
+        FuDrawList drawList = Fugui.GetWindowDrawList();
         Vector2 dot = pos + new Vector2(7f, 9f) * scale;
-        drawList.AddCircleFilled(dot, 3f * scale, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Highlight, 0.84f)), 16);
+        drawList.AddCircleFilled(dot, 3f * scale, Fugui.ColorToU32(Fugui.Themes.GetColor(FuColors.Highlight, 0.84f)), 16);
         layout.EnboxedText(text, pos + new Vector2(20f, 0f) * scale, new Vector2(width - 20f * scale, height), Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Wrap);
-        ImGui.Dummy(new Vector2(width, height));
+        Fugui.Dummy(new Vector2(width, height));
     }
 
     private void drawCodeBlock(FuLayout layout, string title, string code)
@@ -453,20 +452,20 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         float width = Mathf.Max(1f, layout.GetAvailableWidth());
         Vector2 padding = new Vector2(10f, 8f) * scale;
         Fugui.PushFont(13, FontType.Regular);
-        float lineHeight = ImGui.GetTextLineHeightWithSpacing();
+        float lineHeight = Fugui.GetTextLineHeightWithSpacing();
         float height = padding.y * 2f + Mathf.Max(1, lines.Length) * lineHeight;
-        Vector2 pos = ImGui.GetCursorScreenPos();
+        Vector2 pos = Fugui.GetCursorScreenPos();
         Rect rect = new Rect(pos, new Vector2(width, height));
-        ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+        FuDrawList drawList = Fugui.GetWindowDrawList();
 
         Vector4 bg = Fugui.Themes.GetColor(FuColors.PopupBg, 0.82f);
         Vector4 border = Fugui.Themes.GetColor(FuColors.Border, 0.48f);
-        drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), 6f * scale, ImDrawFlags.RoundCornersAll);
-        drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), 6f * scale, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
+        drawList.AddRectFilled(rect.min, rect.max, Fugui.ColorToU32(bg), 6f * scale, FuDrawFlags.RoundCornersAll);
+        drawList.AddRect(rect.min, rect.max, Fugui.ColorToU32(border), 6f * scale, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
 
         drawList.PushClipRect(rect.min + padding * 0.5f, rect.max - padding * 0.5f, true);
         Vector2 linePos = pos + padding;
-        uint textColor = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.TextDisabled, 0.96f));
+        uint textColor = Fugui.ColorToU32(Fugui.Themes.GetColor(FuColors.TextDisabled, 0.96f));
         for (int i = 0; i < lines.Length; i++)
         {
             drawList.AddText(linePos + new Vector2(0f, i * lineHeight), textColor, lines[i]);
@@ -474,7 +473,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         drawList.PopClipRect();
 
         Fugui.PopFont();
-        ImGui.Dummy(new Vector2(width, height + 4f * scale));
+        Fugui.Dummy(new Vector2(width, height + 4f * scale));
     }
 
     private void drawEmptyState(FuLayout layout)
@@ -602,7 +601,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
             "overview",
             "Start",
             "What Fugui Is",
-            "Fugui is an immediate-mode UI framework for Unity 6, built on Dear ImGui and focused on runtime tools.",
+            "Fugui is an immediate-mode UI framework for Unity 6, with its backend kept internal and an API focused on runtime tools.",
             "Use Fugui when you need dockable runtime windows, debug panels, inspectors, camera views, 3D UI panels, overlays, native popups or dense production tools inside a Unity application.",
             new string[]
             {
@@ -610,7 +609,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
                 "Rendering is driven by FuController and FuguiRenderFeature, with Unity, 3D and optional external contexts.",
                 "The demo scene shows normal windows, a camera window, settings on a 3D panel, widgets, tree data, popups and a nodal editor."
             },
-            tags: new string[] { "runtime UI", "Dear ImGui", "Unity 6" }));
+            tags: new string[] { "runtime UI", "Fugui backend", "Unity 6" }));
 
         _sections.Add(new DocSection(
             "package-structure",
@@ -856,7 +855,7 @@ Fugui.CreateWindow(MyWindowNames.Tools);",
                 "Use layout.Surface, FeaturePanel, Callout, NavigationItem, Pill and PillRow for reusable framed content and badges.",
                 "Use layout.GetAvailableWidth and GetAvailableHeight for responsive sizing.",
                 "Use layout.SetNextElementToolTipWithLabel before a control to document intent.",
-                "Direct ImGui calls can be mixed when custom drawing is required."
+                "Use Fugui low-level helpers when custom drawing is required."
             },
             tags: new string[] { "FuLayout", "widgets", "immediate mode" }));
 
@@ -871,7 +870,7 @@ Fugui.CreateWindow(MyWindowNames.Tools);",
                 "Surface returns the drawn Rect so custom controls can be placed inside it.",
                 "FeaturePanel draws a modern content block with optional colored pills.",
                 "Callout sizes itself around wrapped text and adds an accent stripe.",
-                "NavigationItem provides selected, hovered and clicked states without the default orange ImGui selection.",
+                "NavigationItem provides selected, hovered and clicked states without backend-specific selection styling.",
                 "PillRow wraps compact badges across lines when space is tight."
             },
             "Reusable layout chrome",
@@ -882,7 +881,7 @@ Fugui.CreateWindow(MyWindowNames.Tools);",
     new string[] { ""Immediate mode"", ""Dockable"", ""Unity runtime"" });
 
 layout.Callout(""api-note"", ""Surface helpers return their Rect for custom composition."");
-layout.PillRow(""tags"", new string[] { ""runtime UI"", ""Dear ImGui"", ""Unity 6"" });",
+layout.PillRow(""tags"", new string[] { ""runtime UI"", ""Fugui backend"", ""Unity 6"" });",
             new string[] { "surface", "callout", "pill", "badge" }));
 
         _sections.Add(new DocSection(
@@ -988,7 +987,7 @@ layout.TableView(
             },
             "Theme-aware custom color",
             @"Vector4 accent = Fugui.Themes.GetColor(FuColors.Highlight, 0.8f);
-Fugui.Push(ImGuiCol.Text, accent);
+Fugui.Push(FuColors.Text, accent);
 layout.Text(""Theme-aware text"");
 Fugui.PopColor();",
             new string[] { "themes", "fonts", "icons" }));
@@ -1095,7 +1094,7 @@ Fugui.PopContextMenuItems();",
             "drag-drop",
             "Systems",
             "Drag And Drop",
-            "Fugui exposes typed payload drag and drop helpers over ImGui drag/drop primitives.",
+            "Fugui exposes typed payload drag and drop helpers over backend drag/drop primitives.",
             "Use typed payloads when building asset browsers, node editors, inspectors or reorderable tooling. Fugui tracks drag state globally so other systems can avoid conflicting interactions.",
             new string[]
             {

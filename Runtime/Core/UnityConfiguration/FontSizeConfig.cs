@@ -11,7 +11,7 @@ namespace Fu
         {
             #region State
             public int Size = 14;
-            public ImFontPtr FontPtr;
+            internal ImFontPtr FontPtr;
             public SubFontConfig[] SubFonts_Regular;
             public SubFontConfig[] SubFonts_Bold;
             public SubFontConfig[] SubFonts_Italic;

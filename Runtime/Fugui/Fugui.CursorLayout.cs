@@ -29,6 +29,114 @@ namespace Fu
     public static partial class Fugui
     {
         /// <summary>
+        /// Gets the current cursor position in screen coordinates.
+        /// </summary>
+        public static Vector2 GetCursorScreenPos()
+        {
+            return ImGui.GetCursorScreenPos();
+        }
+
+        /// <summary>
+        /// Sets the current cursor position in screen coordinates.
+        /// </summary>
+        public static void SetCursorScreenPos(Vector2 pos)
+        {
+            ImGui.SetCursorScreenPos(pos);
+        }
+
+        /// <summary>
+        /// Gets the current cursor position in local window coordinates.
+        /// </summary>
+        public static Vector2 GetCursorPos()
+        {
+            return ImGui.GetCursorPos();
+        }
+
+        /// <summary>
+        /// Sets the current cursor position in local window coordinates.
+        /// </summary>
+        public static void SetCursorPos(Vector2 pos)
+        {
+            ImGui.SetCursorPos(pos);
+        }
+
+        /// <summary>
+        /// Gets the remaining content region available in the current window.
+        /// </summary>
+        public static Vector2 GetContentRegionAvail()
+        {
+            return ImGui.GetContentRegionAvail();
+        }
+
+        /// <summary>
+        /// Reserve raw screen-space size in the current Fugui frame.
+        /// </summary>
+        public static void Dummy(Vector2 size)
+        {
+            ImGuiNative.igDummy(size);
+        }
+
+        /// <summary>
+        /// Continue drawing on the same line.
+        /// </summary>
+        public static void SameLine()
+        {
+            ImGui.SameLine();
+        }
+
+        /// <summary>
+        /// Draw an invisible interaction zone.
+        /// </summary>
+        public static bool InvisibleButton(string id, Vector2 size)
+        {
+            return ImGui.InvisibleButton(id, size);
+        }
+
+        /// <summary>
+        /// Return whether the last submitted item is hovered.
+        /// </summary>
+        public static bool IsItemHovered()
+        {
+            return ImGui.IsItemHovered();
+        }
+
+        /// <summary>
+        /// Return whether the last submitted item is active.
+        /// </summary>
+        public static bool IsItemActive()
+        {
+            return ImGui.IsItemActive();
+        }
+
+        /// <summary>
+        /// Return whether the last submitted item was clicked with the given button.
+        /// </summary>
+        public static bool IsItemClicked(FuMouseButton mouseButton)
+        {
+            if (mouseButton == FuMouseButton.None)
+            {
+                return false;
+            }
+            return ImGui.IsItemClicked((ImGuiMouseButton)mouseButton);
+        }
+
+        /// <summary>
+        /// Return whether the mouse is hovering the given screen-space rectangle.
+        /// </summary>
+        public static bool IsMouseHoveringRect(Vector2 min, Vector2 max)
+        {
+            return ImGui.IsMouseHoveringRect(min, max);
+        }
+
+        /// <summary>
+        /// Scroll the current child/window to the current item position.
+        /// </summary>
+        public static void SetScrollHereY(float centerYRatio = 0.5f)
+        {
+            ImGui.SetScrollHereY(centerYRatio);
+        }
+
+        /// <summary>
         /// Move the current drawing X position of strenght
         /// </summary>
         /// <param name="strenght">quantity of pixels to move on X from here</param>

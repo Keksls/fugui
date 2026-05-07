@@ -1,4 +1,3 @@
-using ImGuiNET;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -26,7 +25,7 @@ namespace Fu.Framework
     public struct FuChartDrawContext
     {
         #region State
-        public ImDrawListPtr DrawList { get; private set; }
+        public FuDrawList DrawList { get; private set; }
         public Rect ChartRect { get; private set; }
         public Rect PlotRect { get; private set; }
         public Vector2 Min { get; private set; }
@@ -42,7 +41,7 @@ namespace Fu.Framework
         /// <summary>
         /// Create a chart draw context.
         /// </summary>
-        /// <param name="drawList">ImGui drawlist used by the chart.</param>
+        /// <param name="drawList">Fugui draw list used by the chart.</param>
         /// <param name="chartRect">Outer chart rectangle in screen coordinates.</param>
         /// <param name="plotRect">Plot rectangle in screen coordinates.</param>
         /// <param name="min">Minimum chart values.</param>
@@ -52,7 +51,7 @@ namespace Fu.Framework
         /// <param name="seriesIndex">Current series index, or -1 for chart-level callbacks.</param>
         /// <param name="disabled">Whether the chart is disabled.</param>
         /// <param name="scale">Current Fugui scale.</param>
-        public FuChartDrawContext(ImDrawListPtr drawList, Rect chartRect, Rect plotRect, Vector2 min, Vector2 max, Vector2 mouseValue, FuChartHoverState hover, int seriesIndex, bool disabled, float scale)
+        public FuChartDrawContext(FuDrawList drawList, Rect chartRect, Rect plotRect, Vector2 min, Vector2 max, Vector2 mouseValue, FuChartHoverState hover, int seriesIndex, bool disabled, float scale)
         {
             DrawList = drawList;
             ChartRect = chartRect;

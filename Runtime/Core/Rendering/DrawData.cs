@@ -8,7 +8,7 @@ namespace Fu
         /// <summary>
         /// Class that represent all DrawList for a frame
         /// </summary>
-        public class DrawData
+        internal class DrawData
         {
             #region State
             public List<DrawList> DrawLists;
@@ -120,7 +120,7 @@ namespace Fu
             /// Bind this drawData from ImGui drawData Ptr
             /// </summary>
             /// <param name="imDrawData">ImDrawDataPtr for this frame</param>
-            public void Bind(ImDrawDataPtr imDrawData)
+            internal void Bind(ImDrawDataPtr imDrawData)
             {
                 Clear();
                 for (int i = 0; i < imDrawData.CmdListsCount; i++)

@@ -32,6 +32,16 @@ namespace Fu
         /// Get text size according to it's wrapping behaviour
         /// </summary>
         /// <param name="text">text to get size of</param>
+        /// <returns>Size of the text</returns>
+        public static Vector2 CalcTextSize(string text)
+        {
+            return CalcTextSize(text, FuTextWrapping.None);
+        }
+
+        /// <summary>
+        /// Get text size according to it's wrapping behaviour
+        /// </summary>
+        /// <param name="text">text to get size of</param>
         /// <param name="wrapping">however the text need to be wrapped</param>
         /// <returns>Size of the text</returns>
         public static Vector2 CalcTextSize(string text, FuTextWrapping wrapping)
@@ -81,6 +91,21 @@ namespace Fu
                     break;
             }
             return textSize;
+        }
+
+        public static float GetTextLineHeight()
+        {
+            return ImGui.GetTextLineHeight();
+        }
+
+        public static float GetTextLineHeightWithSpacing()
+        {
+            return ImGui.GetTextLineHeightWithSpacing();
+        }
+
+        public static float GetFrameHeight()
+        {
+            return ImGui.GetFrameHeight();
         }
 
         static Dictionary<string, string> _niceStrings = new Dictionary<string, string>();

@@ -377,13 +377,13 @@ namespace Fu
 
         internal sealed class Entry
         {
-            public string Key;
-            public float FontScale;
-            public ImFontAtlasPtr Atlas;
-            public Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
-            public FontSet DefaultFont;
-            public List<byte[]> FontBuffers = new List<byte[]>();
-            public int RefCount;
+            internal string Key;
+            internal float FontScale;
+            internal ImFontAtlasPtr Atlas;
+            internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
+            internal FontSet DefaultFont;
+            internal List<byte[]> FontBuffers = new List<byte[]>();
+            internal int RefCount;
         }
 
         internal static bool IsEnabled(FontConfig fontConfig)

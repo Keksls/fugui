@@ -766,17 +766,25 @@ namespace Fu.Framework
             if (label != null)
             {
                 num = Encoding.UTF8.GetByteCount(label);
-                ptr = Util.Allocate(num + 1);
-                int utf = Util.GetUtf8(label, ptr, num);
+                if (num > Fu.Util.StackAllocationSizeLimit)
+                {
+                    ptr = Fu.Util.Allocate(num + 1);
+                }
+                else
+                {
+                    byte* stackBytes = stackalloc byte[num + 1];
+                    ptr = stackBytes;
+                }
+                int utf = Fu.Util.GetUtf8(label, ptr, num);
                 ptr[utf] = 0;
             }
 
             // render cliped text
             ImGuiInternal.igRenderTextClipped(pos_min, pos_max, ptr, null, &text_size_if_known, align, &clip_rect);
 
-            if (num > 2048)
+            if (num > Fu.Util.StackAllocationSizeLimit)
             {
-                Util.Free(ptr);
+                Fu.Util.Free(ptr);
             }
             Vector2 size = pos_max - pos_min;
             style.Pop();
@@ -988,17 +996,25 @@ namespace Fu.Framework
                 if (label != null)
                 {
                     num = Encoding.UTF8.GetByteCount(label);
-                    ptr = Util.Allocate(num + 1);
-                    int utf = Util.GetUtf8(label, ptr, num);
+                    if (num > Fu.Util.StackAllocationSizeLimit)
+                    {
+                        ptr = Fu.Util.Allocate(num + 1);
+                    }
+                    else
+                    {
+                        byte* stackBytes = stackalloc byte[num + 1];
+                        ptr = stackBytes;
+                    }
+                    int utf = Fu.Util.GetUtf8(label, ptr, num);
                     ptr[utf] = 0;
                 }
 
                 // render cliped text
                 ImGuiInternal.igRenderTextClipped(pos_min, pos_max, ptr, null, &text_size_if_known, align, &clip_rect);
 
-                if (num > 2048)
+                if (num > Fu.Util.StackAllocationSizeLimit)
                 {
-                    Util.Free(ptr);
+                    Fu.Util.Free(ptr);
                 }
             }
         }

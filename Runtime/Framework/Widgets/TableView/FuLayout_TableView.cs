@@ -230,19 +230,19 @@ namespace Fu.Framework
             for (int i = 0; i < columns.Count; i++)
             {
                 FuTableViewColumn<T> column = columns[i];
-                ImGuiTableColumnFlags columnFlags = column.Flags;
+                FuTableColumnFlags columnFlags = column.Flags;
                 if (!tableViewFlags.HasFlag(FuTableViewFlags.Sortable) || !column.CanSort)
                 {
-                    columnFlags |= ImGuiTableColumnFlags.NoSort;
+                    columnFlags |= FuTableColumnFlags.NoSort;
                 }
 
-                if (column.Width > 0f && (columnFlags & ImGuiTableColumnFlags.WidthMask) == 0)
+                if (column.Width > 0f && (columnFlags & FuTableColumnFlags.WidthMask) == 0)
                 {
-                    columnFlags |= ImGuiTableColumnFlags.WidthFixed;
+                    columnFlags |= FuTableColumnFlags.WidthFixed;
                 }
 
                 float width = column.Width > 0f ? column.Width * Fugui.CurrentContext.Scale : 0f;
-                ImGui.TableSetupColumn(column.Header, columnFlags, width, (uint)i);
+                ImGui.TableSetupColumn(column.Header, columnFlags.ToImGui(), width, (uint)i);
             }
         }
 

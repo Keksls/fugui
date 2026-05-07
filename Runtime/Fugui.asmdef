@@ -2,6 +2,7 @@
     "name": "Fugui",
     "rootNamespace": "",
     "references": [
+        "GUID:7d9d3a2b0d064444b8cf8294c7efc531",
         "GUID:15fc0a57446b3144c949da3e2b9737a9",
         "GUID:df380645f10b7bc4b97d4f5eb6303d95",
         "GUID:75469ad4d38634e559750d17036d5f7c"

@@ -1,5 +1,4 @@
 using Fu.Framework;
-using ImGuiNET;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -118,9 +117,9 @@ namespace Fu.Samples.MobileDemo
         public override void OnWindowCreated(FuWindow window)
         {
             base.OnWindowCreated(window);
-            window.AddWindowFlag(ImGuiWindowFlags.NoMove
-                | ImGuiWindowFlags.NoResize
-                | ImGuiWindowFlags.NoDecoration);
+            window.AddWindowFlag(FuWindowRuntimeFlags.NoMove
+                | FuWindowRuntimeFlags.NoResize
+                | FuWindowRuntimeFlags.NoDecoration);
 
             if (_fitWindowToScreen)
             {

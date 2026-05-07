@@ -7,7 +7,7 @@ namespace Fu
 	/// <summary>
 	/// Represents the Cursor Shapes Asset type.
 	/// </summary>
-	[CreateAssetMenu(menuName = "Dear ImGui/Cursor Shapes")]
+	[CreateAssetMenu(menuName = "Fugui/Cursor Shapes")]
 	public sealed class CursorShapesAsset : ScriptableObject
 	{
 		#region State
@@ -38,23 +38,31 @@ namespace Fu
 		[Tooltip("When hovering something with disabled interaction. Usually a crossed circle.")]
 		public CursorShape NotAllowed;
 
-		public ref CursorShape this[ImGuiMouseCursor cursor]
+		public ref CursorShape this[FuMouseCursor cursor]
 		{
 			get
 			{
 				switch (cursor)
 				{
-					case ImGuiMouseCursor.Arrow: return ref Arrow;
-					case ImGuiMouseCursor.TextInput: return ref TextInput;
-					case ImGuiMouseCursor.ResizeAll: return ref ResizeAll;
-					case ImGuiMouseCursor.ResizeEW: return ref ResizeEW;
-					case ImGuiMouseCursor.ResizeNS: return ref ResizeNS;
-					case ImGuiMouseCursor.ResizeNESW: return ref ResizeNESW;
-					case ImGuiMouseCursor.ResizeNWSE: return ref ResizeNWSE;
-					case ImGuiMouseCursor.Hand: return ref Hand;
-					case ImGuiMouseCursor.NotAllowed: return ref NotAllowed;
+					case FuMouseCursor.Arrow: return ref Arrow;
+					case FuMouseCursor.TextInput: return ref TextInput;
+					case FuMouseCursor.ResizeAll: return ref ResizeAll;
+					case FuMouseCursor.ResizeEW: return ref ResizeEW;
+					case FuMouseCursor.ResizeNS: return ref ResizeNS;
+					case FuMouseCursor.ResizeNESW: return ref ResizeNESW;
+					case FuMouseCursor.ResizeNWSE: return ref ResizeNWSE;
+					case FuMouseCursor.Hand: return ref Hand;
+					case FuMouseCursor.NotAllowed: return ref NotAllowed;
 					default: return ref Arrow;
 				}
+			}
+		}
+
+		internal ref CursorShape this[ImGuiMouseCursor cursor]
+		{
+			get
+			{
+				return ref this[cursor.ToFugui()];
 			}
 		}
 		#endregion

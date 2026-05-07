@@ -187,7 +187,18 @@ namespace Fu
             }
         }
 
-        public static void Push(ImGuiCol imCol, Vector4 color)
+        public static void Push(FuColors imCol, Vector4 color)
+        {
+            if ((int)imCol >= (int)ImGuiCol.COUNT)
+            {
+                Debug.LogError("You are trying to push a Fugui theme-only color as a style color.");
+                return;
+            }
+
+            Push((ImGuiCol)imCol, color);
+        }
+
+        internal static void Push(ImGuiCol imCol, Vector4 color)
         {
             ImGui.PushStyleColor(imCol, color);
             _colorStack.Push(new pushColorData()
@@ -218,9 +229,14 @@ namespace Fu
             }
         }
 
-        public static void Push(ImGuiStyleVar imVar, Vector2 value)
+        public static void Push(FuStyleVar imVar, Vector2 value)
         {
-            ImGui.PushStyleVar(imVar, value);
+            Push(imVar.ToImGui(), value);
+        }
+
+        internal static void Push(ImGuiStyleVar imVar, Vector2 value)
+        {
+            ImGuiNative.igPushStyleVar_Vec2(imVar, value * CurrentContext.Scale);
             _stylesStack.Push(new pushStyleData()
             {
                 style = imVar,
@@ -228,9 +244,14 @@ namespace Fu
             });
             _nbPushStyle++;
         }
-        public static void Push(ImGuiStyleVar imVar, float value)
+        public static void Push(FuStyleVar imVar, float value)
         {
-            ImGui.PushStyleVar(imVar, value);
+            Push(imVar.ToImGui(), value);
+        }
+
+        internal static void Push(ImGuiStyleVar imVar, float value)
+        {
+            ImGuiNative.igPushStyleVar_Float(imVar, value * CurrentContext.Scale);
             _stylesStack.Push(new pushStyleData()
             {
                 style = imVar,
@@ -260,10 +281,10 @@ namespace Fu
         }
     }
 
-    public struct pushStyleData
+    internal struct pushStyleData
     {
-        public ImGuiStyleVar style;
-        public string stackTrace;
+        internal ImGuiStyleVar style;
+        internal string stackTrace;
 
         public override string ToString()
         {
@@ -271,10 +292,10 @@ namespace Fu
         }
     }
 
-    public struct pushColorData
+    internal struct pushColorData
     {
-        public ImGuiCol color;
-        public string stackTrace;
+        internal ImGuiCol color;
+        internal string stackTrace;
 
         public override string ToString()
         {

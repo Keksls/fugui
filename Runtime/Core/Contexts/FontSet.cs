@@ -11,10 +11,10 @@ namespace Fu
         internal class FontSet
         {
             #region State
-            public int Size;
-            public ImFontPtr Regular;
-            public ImFontPtr Bold;
-            public ImFontPtr Italic;
+            internal int Size;
+            internal ImFontPtr Regular;
+            internal ImFontPtr Bold;
+            internal ImFontPtr Italic;
             #endregion
 
             #region Constructors

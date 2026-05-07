@@ -484,7 +484,7 @@ namespace Fu.Framework
             bg.w = Mathf.Max(bg.w, 0.96f);
             Vector4 border = Fugui.Themes.GetColor(FuColors.Highlight);
             border.w = 0.65f;
-            Fugui.DrawBackdrop(drawList, new Rect(pos, size), bg, Fugui.GetThemeBackdropBlur(FuColors.PopupBg), rounding, ImDrawFlags.RoundCornersAll);
+            Fugui.DrawBackdropInternal(drawList, new Rect(pos, size), bg, Fugui.GetThemeBackdropBlur(FuColors.PopupBg), rounding, ImDrawFlags.RoundCornersAll);
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
             drawList.AddText(pos + padding, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text)), text);
         }
@@ -629,6 +629,109 @@ namespace Fu.Framework
             LastItemDisabled = false;
             _longDisabled = false;
         }
+
+        /// <summary>
+        /// Current cursor position in screen coordinates.
+        /// </summary>
+        public Vector2 CursorScreenPos
+        {
+            get => Fugui.GetCursorScreenPos();
+            set => Fugui.SetCursorScreenPos(value);
+        }
+
+        /// <summary>
+        /// Current cursor position in local window coordinates.
+        /// </summary>
+        public Vector2 CursorLocalPos
+        {
+            get => Fugui.GetCursorPos();
+            set => Fugui.SetCursorPos(value);
+        }
+
+        /// <summary>
+        /// Remaining Fugui-aware layout space.
+        /// </summary>
+        public Vector2 Available => GetAvailable();
+
+        /// <summary>
+        /// Remaining Fugui-aware layout width.
+        /// </summary>
+        public float AvailableWidth => GetAvailableWidth();
+
+        /// <summary>
+        /// Remaining Fugui-aware layout height.
+        /// </summary>
+        public float AvailableHeight => GetAvailableHeight();
+
+        /// <summary>
+        /// Current window draw list.
+        /// </summary>
+        public FuDrawList DrawList => Fugui.GetWindowDrawList();
+
+        /// <summary>
+        /// Reserve layout space and return its screen-space rectangle.
+        /// </summary>
+        public Rect Reserve(FuElementSize size)
+        {
+            Vector2 pos = ImGui.GetCursorScreenPos();
+            Vector2 resolvedSize = size.GetSize();
+            ImGuiNative.igDummy(resolvedSize);
+            _lastItemRect = new Rect(pos, resolvedSize);
+            return _lastItemRect;
+        }
+
+        /// <summary>
+        /// Reserve an interactive Fugui item without exposing raw ImGui widgets.
+        /// </summary>
+        public FuItemState ReserveItem(string id, FuElementSize size, bool clickable = true, bool updateOnClick = false, bool allowWhenBlockedByPopup = false)
+        {
+            string elementID = id;
+            beginElement(ref elementID, canBeHidden: false);
+            if (!_drawElement)
+            {
+                return new FuItemState(elementID, default, false, false, false, false, false, FuMouseButton.None, default);
+            }
+
+            Vector2 pos = ImGui.GetCursorScreenPos();
+            Vector2 resolvedSize = size.GetSize();
+            ImGuiNative.igDummy(resolvedSize);
+            setBaseElementState(elementID, pos, resolvedSize, clickable, false, updateOnClick, allowWhenBlockedByPopup);
+            FuItemState state = new FuItemState(elementID, LastItemRect, LastItemHovered, LastItemActive, LastItemJustActivated, LastItemJustDeactivated, LastItemUpdate, LastItemClickedButton, Fugui.GetWindowDrawList());
+            displayToolTip();
+            endElement();
+            return state;
+        }
+
+        /// <summary>
+        /// Move the current drawing X position.
+        /// </summary>
+        public void MoveX(float strenght, bool negValueUseMaxRect = false) => Fugui.MoveX(strenght, negValueUseMaxRect);
+
+        /// <summary>
+        /// Move the current drawing Y position.
+        /// </summary>
+        public void MoveY(float strenght, bool negValueUseMaxRect = false) => Fugui.MoveY(strenght, negValueUseMaxRect);
+
+        /// <summary>
+        /// Move the current drawing X position in raw pixels.
+        /// </summary>
+        public void MoveXUnscaled(float strenght, bool negValueUseMaxRect = false) => Fugui.MoveXUnscaled(strenght, negValueUseMaxRect);
+
+        /// <summary>
+        /// Move the current drawing Y position in raw pixels.
+        /// </summary>
+        public void MoveYUnscaled(float strenght, bool negValueUseMaxRect = false) => Fugui.MoveYUnscaled(strenght, negValueUseMaxRect);
+
+        /// <summary>
+        /// Set the current local X position.
+        /// </summary>
+        public void SetLocalX(float x) => Fugui.SetLocalX(x);
+
+        /// <summary>
+        /// Set the current local Y position.
+        /// </summary>
+        public void SetLocalY(float y) => Fugui.SetLocalY(y);
+
         /// <summary>
         /// Draw a Separator Line
         /// </summary>

@@ -1,6 +1,5 @@
 using Fu;
 using Fu.Framework;
-using ImGuiNET;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -84,12 +83,12 @@ namespace FuguiDemo
         {
             float scale = Fugui.CurrentContext.Scale;
             float rowHeight = _treeItemHeight * scale;
-            Vector2 pos = ImGui.GetCursorScreenPos();
-            float width = Mathf.Max(1f, ImGui.GetContentRegionAvail().x);
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            Vector2 pos = Fugui.GetCursorScreenPos();
+            float width = Mathf.Max(1f, Fugui.GetContentRegionAvail().x);
+            FuDrawList drawList = Fugui.GetWindowDrawList();
             bool selected = item.IsSelected == 1;
             Rect rowRect = new Rect(new Vector2(pos.x - 20f * scale, pos.y), new Vector2(width + 20f * scale, rowHeight));
-            bool rowHovered = ImGui.IsMouseHoveringRect(rowRect.min, rowRect.max);
+            bool rowHovered = Fugui.IsMouseHoveringRect(rowRect.min, rowRect.max);
 
             float iconSize = 18f * scale;
             float iconRadius = 5f * scale;
@@ -99,42 +98,42 @@ namespace FuguiDemo
             Vector4 accent = getStateColor(item.State, 1f);
             Vector4 iconBg = accent;
             iconBg.w = selected ? 0.24f : rowHovered ? 0.20f : 0.15f;
-            drawList.AddRectFilled(iconRect.min, iconRect.max, ImGui.GetColorU32(iconBg), iconRadius, ImDrawFlags.RoundCornersAll);
-            Fugui.Push(ImGuiCol.Text, accent);
+            drawList.AddRectFilled(iconRect.min, iconRect.max, Fugui.ColorToU32(iconBg), iconRadius, FuDrawFlags.RoundCornersAll);
+            Fugui.Push(FuColors.Text, accent);
             layout.EnboxedText(item.Icon, iconRect.position, iconRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
             float actionSize = 22f * scale;
             Rect deleteRect = new Rect(new Vector2(pos.x + width - actionSize - 8f * scale, pos.y + (rowHeight - actionSize) * 0.5f), new Vector2(actionSize, actionSize));
             bool showAction = rowHovered || selected;
-            bool deleteHovered = showAction && ImGui.IsMouseHoveringRect(deleteRect.min, deleteRect.max);
+            bool deleteHovered = showAction && Fugui.IsMouseHoveringRect(deleteRect.min, deleteRect.max);
             if (showAction)
             {
                 if (deleteHovered)
                 {
                     Vector4 deleteBg = Fugui.Themes.GetColor(FuColors.BackgroundDanger, 0.22f);
-                    drawList.AddRectFilled(deleteRect.min, deleteRect.max, ImGui.GetColorU32(deleteBg), 5f * scale, ImDrawFlags.RoundCornersAll);
-                    ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                    drawList.AddRectFilled(deleteRect.min, deleteRect.max, Fugui.ColorToU32(deleteBg), 5f * scale, FuDrawFlags.RoundCornersAll);
+                    Fugui.SetMouseCursor(FuMouseCursor.Hand);
                 }
-                Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDanger, deleteHovered ? 1f : 0.50f));
+                Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDanger, deleteHovered ? 1f : 0.50f));
                 layout.EnboxedText(Icons.Close, deleteRect.position, deleteRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
                 Fugui.PopColor();
             }
             layout.SetToolTip("deleteTreeItem" + item.Id, "Delete " + item.DisplayName, deleteHovered);
 
-            if (deleteHovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+            if (deleteHovered && Fugui.IsMouseReleased(FuMouseButton.Left))
             {
                 showDeleteConfirmation(item);
             }
 
             string badgeText = item.StatusLabel;
             Vector2 badgePadding = new Vector2(7f, 2f) * scale;
-            Vector2 badgeSize = ImGui.CalcTextSize(badgeText) + badgePadding * 2f;
+            Vector2 badgeSize = Fugui.CalcTextSize(badgeText) + badgePadding * 2f;
             Rect badgeRect = new Rect(new Vector2(deleteRect.xMin - badgeSize.x - 6f * scale, pos.y + (rowHeight - badgeSize.y) * 0.5f), badgeSize);
             Vector4 badgeBg = accent;
             badgeBg.w = selected ? 0.24f : 0.17f;
-            drawList.AddRectFilled(badgeRect.min, badgeRect.max, ImGui.GetColorU32(badgeBg), badgeRect.height * 0.5f, ImDrawFlags.RoundCornersAll);
-            Fugui.Push(ImGuiCol.Text, accent);
+            drawList.AddRectFilled(badgeRect.min, badgeRect.max, Fugui.ColorToU32(badgeBg), badgeRect.height * 0.5f, FuDrawFlags.RoundCornersAll);
+            Fugui.Push(FuColors.Text, accent);
             layout.EnboxedText(badgeText, badgeRect.position, badgeRect.size, badgePadding, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
@@ -142,7 +141,7 @@ namespace FuguiDemo
             float rightLimit = Mathf.Max(textX + 24f * scale, badgeRect.xMin - 8f * scale);
             Vector2 titlePos = new Vector2(textX, pos.y + 3f * scale);
             Vector2 titleSize = new Vector2(rightLimit - textX, 15f * scale);
-            Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.Text, selected ? 1f : 0.95f));
+            Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.Text, selected ? 1f : 0.95f));
             layout.EnboxedText(item.DisplayName, titlePos, titleSize, Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
@@ -151,11 +150,11 @@ namespace FuguiDemo
             {
                 details += " / " + item.DescendantCount + " items";
             }
-            Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, selected ? 0.95f : 0.78f));
+            Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, selected ? 0.95f : 0.78f));
             layout.EnboxedText(details, new Vector2(textX, pos.y + 16f * scale), new Vector2(rightLimit - textX, 13f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
-            ImGui.Dummy(new Vector2(width, rowHeight));
+            Fugui.Dummy(new Vector2(width, rowHeight));
         }
 
         /// <summary>
@@ -188,7 +187,7 @@ namespace FuguiDemo
             // Create a bordered panel to draw the tree on it.
             using (FuPanel panel = new FuPanel("treePanel", false, 0, 0, FuPanelFlags.DrawBorders))
             {
-                Fugui.Push(ImGuiStyleVar.ItemSpacing, Vector2.zero);
+                Fugui.Push(FuStyleVar.ItemSpacing, Vector2.zero);
                 _tree.DrawTree();
                 Fugui.PopStyle();
             }
@@ -205,20 +204,20 @@ namespace FuguiDemo
             float padding = 10f * scale;
             Rect headerRect = layout.Surface("treeHeaderSurface", new FuElementSize(-1f, headerHeight / scale), FuColors.Highlight, FuSurfaceFlags.Default, 0.68f, 0.58f, 0.80f, 8f);
             Vector2 headerPos = headerRect.position;
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetWindowDrawList();
 
             Rect iconRect = new Rect(headerPos + new Vector2(padding + 2f * scale, 8f * scale), new Vector2(22f * scale, 22f * scale));
             Vector4 iconBg = Fugui.Themes.GetColor(FuColors.Highlight, 0.20f);
-            drawList.AddRectFilled(iconRect.min, iconRect.max, ImGui.GetColorU32(iconBg), 6f * scale, ImDrawFlags.RoundCornersAll);
-            Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.HighlightText, 0.95f));
+            drawList.AddRectFilled(iconRect.min, iconRect.max, Fugui.ColorToU32(iconBg), 6f * scale, FuDrawFlags.RoundCornersAll);
+            Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.HighlightText, 0.95f));
             layout.EnboxedText(Icons.TreeList_solid, iconRect.position, iconRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
             string summary = getVisibleItems().Count + " matching / " + treeTestItem.getAll(_treeItems).Count + " total / " + getSelectedCount() + " selected";
             Vector2 titlePos = headerPos + new Vector2(padding + 31f * scale, 8f * scale);
-            float titleNaturalWidth = ImGui.CalcTextSize("Tree Explorer").x;
+            float titleNaturalWidth = Fugui.CalcTextSize("Tree Explorer").x;
             Vector2 summaryPadding = new Vector2(8f, 2f) * scale;
-            Vector2 summaryNaturalSize = ImGui.CalcTextSize(summary) + summaryPadding * 2f;
+            Vector2 summaryNaturalSize = Fugui.CalcTextSize(summary) + summaryPadding * 2f;
             Vector2 summarySize = summaryNaturalSize;
             float summaryMinX = titlePos.x + titleNaturalWidth + 18f * scale;
             float summaryAvailableWidth = Mathf.Max(0f, headerRect.xMax - padding - summaryMinX);
@@ -230,13 +229,13 @@ namespace FuguiDemo
             Vector4 summaryBg = Fugui.Themes.GetColor(FuColors.ChildBg, 0.58f);
             if (summarySize.x > 1f && summarySize.y > 1f)
             {
-                drawList.AddRectFilled(summaryRect.min, summaryRect.max, ImGui.GetColorU32(summaryBg), summaryRect.height * 0.5f, ImDrawFlags.RoundCornersAll);
-                Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.92f));
+                drawList.AddRectFilled(summaryRect.min, summaryRect.max, Fugui.ColorToU32(summaryBg), summaryRect.height * 0.5f, FuDrawFlags.RoundCornersAll);
+                Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.92f));
                 layout.EnboxedText(summary, summaryRect.position, summaryRect.size, summaryPadding, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
                 Fugui.PopColor();
             }
 
-            float controlHeight = ImGui.GetFrameHeight();
+            float controlHeight = Fugui.GetFrameHeight();
             float buttonSize = Mathf.Max(controlHeight, 32f * scale);
             float gap = 7f * scale;
             float controlsWidth = buttonSize * 4f + gap * 3f;
@@ -245,7 +244,7 @@ namespace FuguiDemo
             float searchX = headerPos.x + padding;
             float searchWidth = Mathf.Max(48f * scale, controlX - gap - searchX);
 
-            ImGui.SetCursorScreenPos(new Vector2(searchX, controlY));
+            Fugui.SetCursorScreenPos(new Vector2(searchX, controlY));
             bool searchUpdated = layout.SearchBox("treeSearch", ref _searchText, "Search nodes, assets or states...", searchWidth / scale);
 
             Vector2 buttonPos = new Vector2(controlX, controlY);
@@ -279,7 +278,7 @@ namespace FuguiDemo
                 _tree.UpdateTree(getVisibleRoots());
             }
 
-            ImGui.SetCursorScreenPos(headerPos + new Vector2(0f, headerHeight + 8f * scale));
+            Fugui.SetCursorScreenPos(headerPos + new Vector2(0f, headerHeight + 8f * scale));
         }
 
         /// <summary>
@@ -295,30 +294,30 @@ namespace FuguiDemo
         private bool drawHeaderIconButton(FuLayout layout, string id, string icon, Rect rect, FuButtonStyle style, string tooltip, FuColors textColorName = FuColors.Text)
         {
             float scale = Fugui.CurrentContext.Scale;
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-            ImGui.SetCursorScreenPos(rect.position);
-            ImGui.InvisibleButton("##" + id, rect.size, ImGuiButtonFlags.MouseButtonLeft);
-            bool hovered = ImGui.IsItemHovered();
-            bool active = ImGui.IsItemActive();
-            bool clicked = ImGui.IsItemClicked(ImGuiMouseButton.Left);
+            FuDrawList drawList = Fugui.GetWindowDrawList();
+            Fugui.SetCursorScreenPos(rect.position);
+            Fugui.InvisibleButton("##" + id, rect.size);
+            bool hovered = Fugui.IsItemHovered();
+            bool active = Fugui.IsItemActive();
+            bool clicked = Fugui.IsItemClicked(FuMouseButton.Left);
 
             Vector4 bg = active ? style.ButtonActive : hovered ? style.ButtonHovered : style.Button;
             Vector4 border = Fugui.Themes.GetColor(FuColors.Border, hovered ? 0.72f : 0.42f);
             float rounding = Mathf.Min(5f * scale, rect.height * 0.28f);
-            drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), rounding, ImDrawFlags.RoundCornersAll);
-            drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
+            drawList.AddRectFilled(rect.min, rect.max, Fugui.ColorToU32(bg), rounding, FuDrawFlags.RoundCornersAll);
+            drawList.AddRect(rect.min, rect.max, Fugui.ColorToU32(border), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
 
             Vector4 textColor = Fugui.Themes.GetColor(textColorName, active ? 0.92f : 1f);
             if (hovered)
             {
-                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                Fugui.SetMouseCursor(FuMouseCursor.Hand);
                 textColor.w = Mathf.Max(textColor.w, 0.96f);
             }
 
             string displayIcon = Fugui.GetUntagedText(icon);
-            Vector2 iconSize = ImGui.CalcTextSize(displayIcon);
+            Vector2 iconSize = Fugui.CalcTextSize(displayIcon);
             Vector2 iconPos = rect.position + (rect.size - iconSize) * 0.5f;
-            drawList.AddText(iconPos, ImGui.GetColorU32(textColor), displayIcon);
+            drawList.AddText(iconPos, Fugui.ColorToU32(textColor), displayIcon);
             layout.SetToolTip(id + "Tip", tooltip, hovered);
             return clicked;
         }

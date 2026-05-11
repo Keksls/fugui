@@ -177,7 +177,8 @@ namespace Fu.Framework
             }
 
             bool grabHovered = tryGetGrabInput(out InputState inputState);
-            bool canUseGrabHandle = grabHovered && !Fugui.IsMouseButtonPressedBeforeCurrentFrame(FuMouseButton.Left);
+            bool canUseGrabHandle = grabHovered &&
+                                    !FuRaycasting.IsMouseButtonPressedBeforeCurrentFrame(inputState.RaycasterID, FuMouseButton.Left);
             _grabHandleHovered = canUseGrabHandle;
             setContainerResizeBlocked(canUseGrabHandle || _dragging);
             if (canUseGrabHandle || _dragging)
@@ -187,9 +188,7 @@ namespace Fu.Framework
             updateGrabHandleVisualState();
 
             bool grabMouseDown = canUseGrabHandle &&
-                                 inputState.MouseButtons[0] &&
-                                 Fugui.TryGetBlockedFrameRawMouseDown(FuMouseButton.Left, out bool rawMouseDown) &&
-                                 rawMouseDown;
+                                 FuRaycasting.IsMouseButtonDownThisFrame(inputState.RaycasterID, FuMouseButton.Left);
             if (grabMouseDown)
             {
                 startDrag(inputState.RaycasterID);
@@ -280,7 +279,7 @@ namespace Fu.Framework
         private void continueDrag()
         {
             if (!FuRaycasting.TryGetRaycaster(_activeRaycasterID, out FuRaycaster raycaster) ||
-                !raycaster.MouseButton0())
+                !FuRaycasting.IsMouseButtonPressed(_activeRaycasterID, FuMouseButton.Left))
             {
                 finishDrag(true);
                 return;

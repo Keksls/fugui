@@ -931,6 +931,8 @@ namespace Fu
                 if (HeaderHeight > 0f && HeaderUI != null)
                 {
                     Vector2 screenCursorPos = ImGui.GetCursorScreenPos();
+                    ReserveCursorExtent(screenCursorPos, new Vector2(_workingAreaSize.x, HeaderHeight));
+                    ImGui.SetCursorScreenPos(screenCursorPos);
                     HeaderUI.Invoke(this, new Vector2(_workingAreaSize.x, HeaderHeight));
                     ImGui.SetCursorScreenPos(screenCursorPos + new Vector2(0f, HeaderHeight));
                 }
@@ -964,8 +966,10 @@ namespace Fu
                 if (FooterHeight > 0f && FooterUI != null)
                 {
                     Vector2 footerPos = new Vector2(_localPosition.x + _workingAreaPosition.x, _localPosition.y + _workingAreaPosition.y + _workingAreaSize.y);
+                    ReserveCursorExtent(footerPos, new Vector2(_workingAreaSize.x, FooterHeight));
                     ImGui.SetCursorScreenPos(footerPos);
                     FooterUI.Invoke(this, new Vector2(_workingAreaSize.x, FooterHeight));
+                    ImGui.SetCursorScreenPos(footerPos + new Vector2(0f, FooterHeight));
                 }
 
                 // pop missing push
@@ -1092,6 +1096,7 @@ namespace Fu
                 return;
             }
 
+            ReserveCursorExtent(baseCursorPos, new Vector2(Mathf.Max(1f, ImGui.GetContentRegionAvail().x), customTopHeight));
             ImGui.SetCursorScreenPos(baseCursorPos);
             if (customTopBarIsDockTabs && Fugui.Layouts != null)
             {
@@ -1103,6 +1108,22 @@ namespace Fu
             }
 
             ImGui.SetCursorScreenPos(new Vector2(baseCursorPos.x, baseCursorPos.y + customTopHeight));
+        }
+
+        /// <summary>
+        /// Submit an invisible item so owner-drawn chrome can move the cursor without tripping ImGui's SetCursorPos extent assert.
+        /// </summary>
+        private static void ReserveCursorExtent(Vector2 cursorPos, Vector2 size)
+        {
+            if (size.x <= 0f && size.y <= 0f)
+            {
+                return;
+            }
+
+            Vector2 previousCursorPos = ImGui.GetCursorScreenPos();
+            ImGui.SetCursorScreenPos(cursorPos);
+            ImGui.Dummy(new Vector2(Mathf.Max(0f, size.x), Mathf.Max(0f, size.y)));
+            ImGui.SetCursorScreenPos(previousCursorPos);
         }
 
         /// <summary>

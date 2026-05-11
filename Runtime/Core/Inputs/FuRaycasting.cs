@@ -35,7 +35,7 @@ namespace Fu
                 return getInactiveInputState();
             }
 
-            FuRaycaster selectedRaycaster = getRaycasterForInput(containerID, raycastableGameObject);
+            FuRaycaster selectedRaycaster = getRaycasterForInput(containerID, raycastableGameObject, out RaycastHit selectedHit);
             if (selectedRaycaster == null)
             {
                 latestRaycasters.Remove(containerID);
@@ -43,13 +43,13 @@ namespace Fu
             }
 
             latestRaycasters[containerID] = selectedRaycaster;
-            Vector3 localHitPoint = raycastableGameObject.transform.InverseTransformPoint(selectedRaycaster.Hit.point);
+            Vector3 localHitPoint = raycastableGameObject.transform.InverseTransformPoint(selectedHit.point);
             Vector2 localPosition = new Vector2(localHitPoint.x, localHitPoint.y);
-            if (panelMesh != null && panelMesh.TryGetLocalPositionFromUV(selectedRaycaster.Hit.textureCoord, out Vector2 panelLocalPosition))
+            if (panelMesh != null && panelMesh.TryGetLocalPositionFromUV(selectedHit.textureCoord, out Vector2 panelLocalPosition))
             {
                 localPosition = panelLocalPosition;
             }
-            return new InputState(selectedRaycaster.ID, true, selectedRaycaster.MouseButton0(), selectedRaycaster.MouseButton1(), selectedRaycaster.MouseButton2(), selectedRaycaster.MouseWheel(), localPosition);
+            return new InputState(selectedRaycaster.ID, true, selectedRaycaster.GetMouseButton(0), selectedRaycaster.GetMouseButton(1), selectedRaycaster.GetMouseButton(2), selectedRaycaster.GetMouseWheelDelta(), localPosition);
         }
 
         /// <summary>
@@ -57,70 +57,86 @@ namespace Fu
         /// </summary>
         /// <param name="containerID">Container or target input ID.</param>
         /// <param name="raycastableGameObject">Raycastable target.</param>
+        /// <param name="selectedHit">The hit on the selected target.</param>
         /// <returns>The selected raycaster, or null.</returns>
-        private static FuRaycaster getRaycasterForInput(string containerID, GameObject raycastableGameObject)
+        private static FuRaycaster getRaycasterForInput(string containerID, GameObject raycastableGameObject, out RaycastHit selectedHit)
         {
+            selectedHit = default;
             bool hasLatestRaycaster = latestRaycasters.TryGetValue(containerID, out FuRaycaster latestRaycaster) && latestRaycaster != null;
             bool latestRaycasterStillHits = false;
+            RaycastHit latestRaycasterHit = default;
             FuRaycaster inputCandidate = null;
+            RaycastHit inputCandidateHit = default;
+            float inputCandidateDistance = float.MaxValue;
             FuRaycaster closestCandidate = null;
+            RaycastHit closestCandidateHit = default;
             float closestDistance = float.MaxValue;
 
             foreach (FuRaycaster raycaster in _raycasters.Values)
             {
-                if (!raycasterHits(raycaster, raycastableGameObject))
+                if (!tryGetRaycasterHit(raycaster, raycastableGameObject, out RaycastHit raycasterHit))
                 {
                     continue;
                 }
 
+                raycaster.UpdateInputState();
                 if (hasLatestRaycaster && latestRaycaster == raycaster)
                 {
                     latestRaycasterStillHits = true;
+                    latestRaycasterHit = raycasterHit;
                 }
 
-                if (inputCandidate == null && raycasterHasInput(raycaster))
+                if (raycasterHasInput(raycaster) &&
+                    (inputCandidate == null || raycasterHit.distance < inputCandidateDistance))
                 {
                     inputCandidate = raycaster;
+                    inputCandidateHit = raycasterHit;
+                    inputCandidateDistance = raycasterHit.distance;
                 }
 
-                float distance = raycaster.Hit.distance;
+                float distance = raycasterHit.distance;
                 if (closestCandidate == null || distance < closestDistance)
                 {
                     closestCandidate = raycaster;
+                    closestCandidateHit = raycasterHit;
                     closestDistance = distance;
                 }
             }
 
             if (hasLatestRaycaster && latestRaycasterStillHits && raycasterHasInput(latestRaycaster))
             {
+                selectedHit = latestRaycasterHit;
                 return latestRaycaster;
             }
 
             if (inputCandidate != null)
             {
+                selectedHit = inputCandidateHit;
                 return inputCandidate;
             }
 
             if (hasLatestRaycaster && latestRaycasterStillHits)
             {
+                selectedHit = latestRaycasterHit;
                 return latestRaycaster;
             }
 
+            selectedHit = closestCandidateHit;
             return closestCandidate;
         }
 
         /// <summary>
-        /// Returns whether the raycaster hit the requested target this frame.
+        /// Attempts to retrieve a raycaster hit for the requested target this frame.
         /// </summary>
         /// <param name="raycaster">Raycaster to inspect.</param>
         /// <param name="raycastableGameObject">Target object.</param>
+        /// <param name="hit">Target hit.</param>
         /// <returns>True if the raycaster hit the target.</returns>
-        private static bool raycasterHits(FuRaycaster raycaster, GameObject raycastableGameObject)
+        private static bool tryGetRaycasterHit(FuRaycaster raycaster, GameObject raycastableGameObject, out RaycastHit hit)
         {
+            hit = default;
             return raycaster != null &&
-                   raycaster.RaycastThisFrame &&
-                   raycaster.Hit.collider != null &&
-                   raycaster.Hit.collider.gameObject == raycastableGameObject;
+                   raycaster.TryGetHit(raycastableGameObject, out hit);
         }
 
         /// <summary>
@@ -131,10 +147,10 @@ namespace Fu
         private static bool raycasterHasInput(FuRaycaster raycaster)
         {
             return raycaster != null &&
-                   (raycaster.MouseButton0() ||
-                    raycaster.MouseButton1() ||
-                    raycaster.MouseButton2() ||
-                    Mathf.Abs(raycaster.MouseWheel()) > Mathf.Epsilon);
+                   (raycaster.GetMouseButton(0) ||
+                    raycaster.GetMouseButton(1) ||
+                    raycaster.GetMouseButton(2) ||
+                    Mathf.Abs(raycaster.GetMouseWheelDelta()) > Mathf.Epsilon);
         }
 
         /// <summary>
@@ -203,6 +219,54 @@ namespace Fu
         public static bool TryGetRaycaster(string raycasterName, out FuRaycaster raycaster)
         {
             return _raycasters.TryGetValue(raycasterName, out raycaster);
+        }
+
+        /// <summary>
+        /// Returns whether a raycaster mouse/controller button started being pressed this frame.
+        /// </summary>
+        /// <param name="raycasterName">Raycaster name.</param>
+        /// <param name="button">Button to inspect.</param>
+        /// <returns>True if the raycaster button went down this frame.</returns>
+        public static bool IsMouseButtonDownThisFrame(string raycasterName, FuMouseButton button)
+        {
+            if (TryGetRaycaster(raycasterName, out FuRaycaster raycaster))
+            {
+                return raycaster.GetMouseButtonDownThisFrame((int)button);
+            }
+
+            return Fugui.TryGetBlockedFrameRawMouseDown(button, out bool rawMouseDown) && rawMouseDown;
+        }
+
+        /// <summary>
+        /// Returns whether a raycaster mouse/controller button is currently pressed.
+        /// </summary>
+        /// <param name="raycasterName">Raycaster name.</param>
+        /// <param name="button">Button to inspect.</param>
+        /// <returns>True if the raycaster button is pressed.</returns>
+        public static bool IsMouseButtonPressed(string raycasterName, FuMouseButton button)
+        {
+            if (TryGetRaycaster(raycasterName, out FuRaycaster raycaster))
+            {
+                return raycaster.GetMouseButton((int)button);
+            }
+
+            return Fugui.TryGetBlockedFrameRawMousePressed(button, out bool rawMousePressed) && rawMousePressed;
+        }
+
+        /// <summary>
+        /// Returns whether a raycaster mouse/controller button was already pressed before this frame.
+        /// </summary>
+        /// <param name="raycasterName">Raycaster name.</param>
+        /// <param name="button">Button to inspect.</param>
+        /// <returns>True if the raycaster button is held from an earlier frame.</returns>
+        public static bool IsMouseButtonPressedBeforeCurrentFrame(string raycasterName, FuMouseButton button)
+        {
+            if (TryGetRaycaster(raycasterName, out FuRaycaster raycaster))
+            {
+                return raycaster.IsMouseButtonPressedBeforeCurrentFrame((int)button);
+            }
+
+            return Fugui.IsMouseButtonPressedBeforeCurrentFrame(button);
         }
 
         /// <summary>

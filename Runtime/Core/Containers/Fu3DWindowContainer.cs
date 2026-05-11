@@ -832,16 +832,15 @@ namespace Fu
             }
 
             bool handleHovered = tryGetHoveredResizeHandle(out int hoveredHandleIndex, out InputState handleInputState);
-            bool canUseHoveredHandle = handleHovered && !Fugui.IsMouseButtonPressedBeforeCurrentFrame(FuMouseButton.Left);
+            bool canUseHoveredHandle = handleHovered &&
+                                       !FuRaycasting.IsMouseButtonPressedBeforeCurrentFrame(handleInputState.RaycasterID, FuMouseButton.Left);
             _hoveredResizeHandleIndex = canUseHoveredHandle ? hoveredHandleIndex : -1;
             if (canUseHoveredHandle)
             {
                 Fugui.BlockWindowInputsForFrame();
             }
             bool handleMouseDown = canUseHoveredHandle &&
-                                   handleInputState.MouseButtons[0] &&
-                                   Fugui.TryGetBlockedFrameRawMouseDown(FuMouseButton.Left, out bool rawMouseDown) &&
-                                   rawMouseDown;
+                                   FuRaycasting.IsMouseButtonDownThisFrame(handleInputState.RaycasterID, FuMouseButton.Left);
             if (handleMouseDown)
             {
                 startRuntimeResize(hoveredHandleIndex, handleInputState.RaycasterID);
@@ -934,7 +933,7 @@ namespace Fu
             }
 
             if (!FuRaycasting.TryGetRaycaster(_activeResizeRaycasterID, out FuRaycaster raycaster) ||
-                !raycaster.MouseButton0())
+                !FuRaycasting.IsMouseButtonPressed(_activeResizeRaycasterID, FuMouseButton.Left))
             {
                 finishRuntimeResize();
                 return;

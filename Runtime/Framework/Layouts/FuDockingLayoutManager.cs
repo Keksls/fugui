@@ -30,10 +30,11 @@ namespace Fu
         {
             get
             {
-                return _draggedFloatingRoot != null ||
+                return !IsDockingDisabled() &&
+                       (_draggedFloatingRoot != null ||
                        _resizedFloatingRoot != null ||
                        _activeResizeNodeId != 0u ||
-                       !string.IsNullOrEmpty(_pendingTabDragWindowId);
+                       !string.IsNullOrEmpty(_pendingTabDragWindowId));
             }
         }
 
@@ -97,6 +98,15 @@ namespace Fu
 
         #region Methods
         /// <summary>
+        /// Returns whether Fugui docking is disabled in settings.
+        /// </summary>
+        /// <returns>True when windows should stay floating.</returns>
+        private bool IsDockingDisabled()
+        {
+            return Fugui.Settings != null && Fugui.Settings.NoDocking;
+        }
+
+        /// <summary>
         /// Load all layouts from files
         /// </summary>
         /// <returns>number of loaded layouts</returns>
@@ -138,7 +148,11 @@ namespace Fu
             }
 
             // Select first layout
-            if (CurrentLayout == null && Layouts.Count > 0)
+            if (IsDockingDisabled())
+            {
+                CurrentLayout = null;
+            }
+            else if (CurrentLayout == null && Layouts.Count > 0)
             {
                 var firstLayoutInfo = Layouts.ElementAt(0);
                 CurrentLayout = firstLayoutInfo.Value.Clone();
@@ -156,7 +170,7 @@ namespace Fu
         /// <returns>whatever the window has been docked</returns>
         public bool AutoDockWindow(FuWindow window)
         {
-            if (window == null || CurrentLayout == null)
+            if (IsDockingDisabled() || window == null || CurrentLayout == null)
             {
                 return false;
             }
@@ -217,7 +231,14 @@ namespace Fu
                 return;
             }
 
-            setLayoutInstance(layout.Clone(), getOnlyAutoInstantiated);
+            FuDockingLayoutDefinition layoutInstance = layout.Clone();
+            if (IsDockingDisabled())
+            {
+                setLayoutWindowsOnly(layoutInstance, getOnlyAutoInstantiated);
+                return;
+            }
+
+            setLayoutInstance(layoutInstance, getOnlyAutoInstantiated);
         }
 
         /// <summary>
@@ -251,6 +272,37 @@ namespace Fu
             closeLayoutWindowsAsync(() =>
             {
                 createDynamicLayout(layout, getOnlyAutoInstantiated);
+            });
+        }
+
+        /// <summary>
+        /// Applies the window list from a layout without docking any window.
+        /// </summary>
+        /// <param name="layout">Layout whose windows should be created.</param>
+        /// <param name="getOnlyAutoInstantiated">Whether only auto-instantiated windows should be created.</param>
+        private void setLayoutWindowsOnly(FuDockingLayoutDefinition layout, bool getOnlyAutoInstantiated)
+        {
+            if (layout == null)
+            {
+                Debug.LogWarning("[Fugui] Cannot set a null docking layout.");
+                return;
+            }
+
+            if (!canSetLayer())
+            {
+                requestLayoutWhenReady(layout, getOnlyAutoInstantiated);
+                return;
+            }
+
+            OnBeforeDockLayoutSet?.Invoke();
+            Fugui.ShowPopupMessage("Setting Layout...");
+            IsSettingLayout = true;
+
+            breakDockingLayout();
+
+            closeLayoutWindowsAsync(() =>
+            {
+                createFloatingLayoutWindows(layout, getOnlyAutoInstantiated);
             });
         }
 
@@ -290,7 +342,14 @@ namespace Fu
             bool getOnlyAutoInstantiated = _pendingGetOnlyAutoInstantiated;
             _hasPendingLayoutRequest = false;
 
-            setLayoutInstance(layout, getOnlyAutoInstantiated);
+            if (IsDockingDisabled())
+            {
+                setLayoutWindowsOnly(layout, getOnlyAutoInstantiated);
+            }
+            else
+            {
+                setLayoutInstance(layout, getOnlyAutoInstantiated);
+            }
         }
 
         /// <summary>
@@ -354,12 +413,37 @@ namespace Fu
         }
 
         /// <summary>
+        /// Creates the windows declared by a layout while leaving them as regular floating windows.
+        /// </summary>
+        /// <param name="dockSpaceDefinition">Layout used as a window list.</param>
+        /// <param name="getOnlyAutoInstantiated">Whether only auto-instantiated windows should be created.</param>
+        private void createFloatingLayoutWindows(FuDockingLayoutDefinition dockSpaceDefinition, bool getOnlyAutoInstantiated)
+        {
+            List<FuWindowName> windowsToGet = dockSpaceDefinition.GetAllWindowsNames(getOnlyAutoInstantiated);
+
+            Fugui.CreateWindowsAsync(windowsToGet, (windows) =>
+            {
+                Fugui.ExecuteAfterRenderWindows(() =>
+                {
+                    CurrentLayout = null;
+                    Fugui.ForceDrawAllWindows(2);
+                    endSettingLayout();
+                });
+            });
+        }
+
+        /// <summary>
         /// Method that creates a dock layout based on a UIDockSpaceDefinition object, recursively creating child dock spaces and setting their orientation and proportion.
         /// </summary>
         /// <param name="windows">The windows created</param>
         /// <param name="layout">The UIDockSpaceDefinition object representing the layout to create</param>
         private void createDocking(List<(FuWindowName, FuWindow)> windows, FuDockingLayoutDefinition layout)
         {
+            if (IsDockingDisabled())
+            {
+                return;
+            }
+
             if (layout.WindowsDefinition.Count > 0)
             {
                 foreach (ushort windowID in layout.WindowsDefinition)
@@ -780,6 +864,18 @@ namespace Fu
                 return;
             }
 
+            if (IsDockingDisabled())
+            {
+                if (_windowDockNodeIds.Count > 0 || _floatingDockRoots.Count > 0)
+                {
+                    ClearCustomDocking();
+                }
+                _nodeRects.Clear();
+                _mainDockSplitters.Clear();
+                _floatingDockSplitters.Clear();
+                return;
+            }
+
             bool isMainContainer = container == Fugui.DefaultContainer;
             if (isMainContainer && CurrentLayout != null)
             {
@@ -971,7 +1067,8 @@ namespace Fu
         /// </summary>
         internal void DrawDockSplittersForWindow(FuWindow window)
         {
-            if (window == null ||
+            if (IsDockingDisabled() ||
+                window == null ||
                 !window.IsDocked ||
                 window.Container == null)
             {
@@ -2030,6 +2127,11 @@ namespace Fu
         /// </summary>
         internal bool ShouldDrawWindow(FuWindow window)
         {
+            if (IsDockingDisabled())
+            {
+                return true;
+            }
+
             if (window == null || !window.IsDocked)
             {
                 return true;
@@ -2068,6 +2170,11 @@ namespace Fu
         /// </summary>
         internal bool IsWindowInFloatingDockRoot(FuWindow window)
         {
+            if (IsDockingDisabled())
+            {
+                return false;
+            }
+
             uint nodeId = GetDockNodeId(window);
             return nodeId != 0u && FindFloatingDockRootForNode(nodeId) != null;
         }
@@ -2077,6 +2184,11 @@ namespace Fu
         /// </summary>
         internal bool ActivateDockedWindow(FuWindow window, IFuWindowContainer container)
         {
+            if (IsDockingDisabled())
+            {
+                return false;
+            }
+
             uint nodeId = GetDockNodeId(window);
             if (window == null || nodeId == 0u)
             {
@@ -2110,6 +2222,11 @@ namespace Fu
         /// </summary>
         internal bool HasDockedTabBar(FuWindow window)
         {
+            if (IsDockingDisabled())
+            {
+                return false;
+            }
+
             uint nodeId = GetDockNodeId(window);
             if (nodeId == 0u || !_nodeWindowIds.TryGetValue(nodeId, out List<string> windowIds))
             {
@@ -2142,6 +2259,11 @@ namespace Fu
         /// </summary>
         internal void DrawDockedTabs(FuWindow window, FuLayout layout)
         {
+            if (IsDockingDisabled())
+            {
+                return;
+            }
+
             uint nodeId = GetDockNodeId(window);
             if (nodeId == 0u || layout == null || !_nodeWindowIds.TryGetValue(nodeId, out List<string> windowIds) || windowIds.Count == 0)
             {
@@ -2456,7 +2578,7 @@ namespace Fu
         /// </summary>
         internal void UpdateDockDragPreview(FuWindow window, Vector2Int mousePos)
         {
-            if (window == null || !window.IsDockable || window.IsDocked)
+            if (IsDockingDisabled() || window == null || !window.IsDockable || window.IsDocked)
             {
                 ClearDockDragState();
                 return;
@@ -2471,7 +2593,7 @@ namespace Fu
         /// </summary>
         internal bool TryDockDraggedWindow(FuWindow window, Vector2Int mousePos)
         {
-            if (window == null || !window.IsDockable)
+            if (IsDockingDisabled() || window == null || !window.IsDockable)
             {
                 ClearDockDragState();
                 return false;

@@ -188,6 +188,11 @@ namespace Fu
         public bool StateModalsUseButtonColors = true;
 
         [Header("Docking")]
+        [Tooltip("Disable Fugui docking globally. Windows stay floating and docking layouts only create their windows.")]
+        [FuTooltip("Disable Fugui docking globally. Windows stay floating and docking layouts only create their windows.")]
+        [FuToggle]
+        public bool NoDocking = false;
+
         [Tooltip("Docking flags for the main container dockSpace.")]
         [FuTooltip("Docking flags for the main container dockSpace.")]
         public ImGuiDockNodeFlags DockingFlags = ImGuiDockNodeFlags.None;

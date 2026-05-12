@@ -19,6 +19,7 @@ namespace Fu
         public Dictionary<string, FuTheme> Themes { get; private set; }
 
         private List<Type> _uiElementStyleTypes;
+        private int _themeSetVersion;
         public const string DEFAULT_FUGUI_THEME_NAME = "DarkSky";
 
         public Vector2 WindowPadding { get; private set; }
@@ -69,7 +70,7 @@ namespace Fu
         /// </summary>
         internal void CurrentThemeUpdate()
         {
-            float scale = Fugui.CurrentContext.Scale;
+            float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : 1f;
             WindowPadding = CurrentTheme.WindowPadding * scale;
             WindowRounding = CurrentTheme.WindowRounding * scale;
             WindowBorderSize = CurrentTheme.WindowBorderSize * scale;
@@ -157,9 +158,15 @@ namespace Fu
         /// <param name="theme">Theme to set</param>
         public void SetTheme(FuTheme theme, bool allContexts = true)
         {
-            if (CurrentTheme == null)
+            if (theme == null)
             {
-                // we have no theme yet, Fugui just start, we have not started to draw anything, let's set theme directly
+                return;
+            }
+
+            int requestVersion = ++_themeSetVersion;
+            if (CanApplyThemeImmediately())
+            {
+                // No frame is active, so applying now avoids startup theme changes being split across frames.
                 setTheme(theme, allContexts);
             }
             else
@@ -168,7 +175,10 @@ namespace Fu
                 // Let's wait to apply theme before starting to draw a frame, let's finish the current frame with old theme
                 Fugui.ExecuteInMainThread(() =>
                 {
-                    setTheme(theme, allContexts);
+                    if (requestVersion == _themeSetVersion)
+                    {
+                        setTheme(theme, allContexts);
+                    }
                 });
             }
 
@@ -176,18 +186,24 @@ namespace Fu
             {
                 if (allContexts && Fugui.Contexts.Count > 1)
                 {
-                    // get current context id
-                    int currentContextID = Fugui.CurrentContext.ID;
+                    FuContext currentContext = Fugui.CurrentContext;
+                    bool currentContextApplied = false;
                     // apply theme on each contexts
                     foreach (FuContext context in Fugui.Contexts.Values)
                     {
-                        context.SetAsCurrent();
+                        Fugui.SetCurrentContext(context);
                         theme.Apply(context.Scale);
+                        currentContextApplied |= ReferenceEquals(context, currentContext);
+                    }
+                    if (currentContext != null && !currentContextApplied)
+                    {
+                        Fugui.SetCurrentContext(currentContext);
+                        theme.Apply(currentContext.Scale);
                     }
                     // set current last context
-                    Fugui.GetContext(currentContextID)?.SetAsCurrent();
+                    Fugui.SetCurrentContext(currentContext);
                 }
-                else
+                else if (Fugui.CurrentContext != null)
                 {
                     theme.Apply(Fugui.CurrentContext.Scale);
                 }
@@ -203,6 +219,33 @@ namespace Fu
                 OnThemeSet?.Invoke(CurrentTheme);
                 Fugui.ForceDrawAllWindows(2);
             }
+        }
+
+        /// <summary>
+        /// Returns whether the theme can be applied immediately without mutating an active ImGui frame.
+        /// </summary>
+        /// <returns>True when no context is currently prepared for rendering.</returns>
+        private bool CanApplyThemeImmediately()
+        {
+            if (CurrentTheme == null)
+            {
+                return true;
+            }
+
+            if (Fugui.Contexts == null || Fugui.Contexts.Count == 0)
+            {
+                return Fugui.CurrentContext != null;
+            }
+
+            foreach (FuContext context in Fugui.Contexts.Values)
+            {
+                if (context != null && context.RenderPrepared)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

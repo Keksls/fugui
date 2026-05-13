@@ -109,8 +109,9 @@ namespace Fu
             return textureArray;
         }
 #else
-        private static Dictionary<float, Texture2D> _atlasTexture = new Dictionary<float, Texture2D>();
+        private static Dictionary<string, Texture2D> _atlasTexture = new Dictionary<string, Texture2D>();
         private const int FontAtlasCleanupDelayFrames = 4;
+        private string _fontAtlasTextureKey;
 
         #region Nested Types
         /// <summary>
@@ -138,7 +139,15 @@ namespace Fu
             FlushPendingFontAtlasCleanups();
 
             float fontScale = Fugui.CurrentContext.FontScale;
-            if (!_atlasTexture.TryGetValue(fontScale, out Texture2D atlas) || atlas == null)
+            string fontAtlasTextureKey = GetCurrentFontAtlasTextureKey();
+            if (_fontAtlasTextureKey != fontAtlasTextureKey)
+            {
+                string previousKey = _fontAtlasTextureKey;
+                _fontAtlasTextureKey = fontAtlasTextureKey;
+                ReleaseFontAtlasTexture(previousKey);
+            }
+
+            if (!_atlasTexture.TryGetValue(fontAtlasTextureKey, out Texture2D atlas) || atlas == null)
             {
                 if (!ReferenceEquals(atlas, null))
                 {
@@ -159,7 +168,7 @@ namespace Fu
                     return;
                 }
 
-                _atlasTexture[fontScale] = atlas;
+                _atlasTexture[fontAtlasTextureKey] = atlas;
             }
 
             // register atlas texture
@@ -173,21 +182,29 @@ namespace Fu
         /// <param name="oldScale">scale to remove from texture manager</param>
         public void ClearFontAtlas(float oldScale)
         {
-            if (!_atlasTexture.ContainsKey(oldScale))
+            string fontAtlasTextureKey = _fontAtlasTextureKey;
+            _fontAtlasTextureKey = null;
+            ReleaseFontAtlasTexture(fontAtlasTextureKey);
+        }
+
+        private static void ReleaseFontAtlasTexture(string fontAtlasTextureKey)
+        {
+            if (string.IsNullOrEmpty(fontAtlasTextureKey) || !_atlasTexture.ContainsKey(fontAtlasTextureKey))
             {
                 return;
             }
 
             foreach (FuContext context in Fugui.Contexts.Values)
             {
-                if (Mathf.Abs(context.FontScale - oldScale) < 0.0001f)
+                if (context.TextureManager != null &&
+                    context.TextureManager._fontAtlasTextureKey == fontAtlasTextureKey)
                 {
                     return;
                 }
             }
 
-            Texture2D atlas = _atlasTexture[oldScale];
-            _atlasTexture.Remove(oldScale);
+            Texture2D atlas = _atlasTexture[fontAtlasTextureKey];
+            _atlasTexture.Remove(fontAtlasTextureKey);
             ScheduleFontAtlasCleanup(atlas);
         }
 
@@ -262,27 +279,10 @@ namespace Fu
             _textureIds.Clear();
             _spriteData.Clear();
 
-            float scale = Fugui.CurrentContext.FontScale;
-            if (_atlasTexture != null && _atlasTexture.ContainsKey(Fugui.CurrentContext.FontScale))
-            {
-                // check whatever no remaning context need the font atlas texture
-                bool destroyFontAtlas = true;
-                foreach (FuContext context in Fugui.Contexts.Values)
-                {
-                    if (context != Fugui.CurrentContext && Mathf.Abs(context.FontScale - scale) < 0.0001f)
-                    {
-                        destroyFontAtlas = false;
-                        break;
-                    }
-                }
-                if (destroyFontAtlas)
-                {
-                    UnregisterTextureFromAllManagers(_atlasTexture[scale]);
-                    UnityEngine.Object.Destroy(_atlasTexture[scale]);
-                    _atlasTexture[scale] = null;
-                    _atlasTexture.Remove(scale);
-                }
-            }
+            string fontAtlasTextureKey = _fontAtlasTextureKey;
+            _fontAtlasTextureKey = null;
+            ReleaseFontAtlasTexture(fontAtlasTextureKey);
+
             if (Fugui.CurrentContext == null || !Fugui.CurrentContext.UsesSharedFontAtlas)
             {
                 ImGui.GetIO().Fonts.Clear(); // Previous FontDefault reference no longer valid.
@@ -297,13 +297,15 @@ namespace Fu
         /// <param name="io">The io value.</param>
         public void PrepareFrame(ImGuiIOPtr io)
         {
-            float fontScale = Fugui.CurrentContext.FontScale;
-            if (!_atlasTexture.TryGetValue(fontScale, out Texture2D atlas) || atlas == null)
+            string fontAtlasTextureKey = GetCurrentFontAtlasTextureKey();
+            if (_fontAtlasTextureKey != fontAtlasTextureKey ||
+                !_atlasTexture.TryGetValue(fontAtlasTextureKey, out Texture2D atlas) ||
+                atlas == null)
             {
                 InitializeFontAtlas(io);
             }
 
-            if (!_atlasTexture.TryGetValue(fontScale, out atlas) || atlas == null)
+            if (!_atlasTexture.TryGetValue(fontAtlasTextureKey, out atlas) || atlas == null)
             {
                 return;
             }
@@ -370,7 +372,7 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         public IntPtr GetFontAtlasTextureId()
         {
-            return GetTextureId(_atlasTexture[Fugui.CurrentContext.FontScale]);
+            return GetTextureId(_atlasTexture[GetCurrentFontAtlasTextureKey()]);
         }
 
         /// <summary>
@@ -449,6 +451,17 @@ namespace Fu
             _textures.Add(id, texture);
             _textureIds.Add(texture, id);
             return id;
+        }
+
+        private static string GetCurrentFontAtlasTextureKey()
+        {
+            if (!string.IsNullOrEmpty(Fugui.CurrentContext?.FontAtlasCacheKey))
+            {
+                return Fugui.CurrentContext.FontAtlasCacheKey;
+            }
+
+            float fontScale = Fugui.CurrentContext != null ? Fugui.CurrentContext.FontScale : 1f;
+            return FuFontAtlasCache.GetAtlasCacheKey(Fugui.Settings?.FontConfig, fontScale, Application.streamingAssetsPath);
         }
 
         /// <summary>

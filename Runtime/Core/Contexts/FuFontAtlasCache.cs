@@ -109,28 +109,30 @@ namespace Fu
 
             using (SHA256 sha = SHA256.Create())
             {
-                string fontRoot = CombineStreamingPath(streamingAssetsPath, fontConfig.FontsFolder);
-                HashText(sha, AtlasHashVersion);
-                HashText(sha, NormalizeFolder(fontConfig.FontsFolder));
-                HashText(sha, fontConfig.DefaultSize.ToString(CultureInfo.InvariantCulture));
+                HashFontConfig(sha, fontConfig, streamingAssetsPath, true);
+                sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                return ToHex(sha.Hash, 16);
+            }
+        }
 
-                HashSet<string> hashedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                if (fontConfig.Fonts != null)
-                {
-                    foreach (FontSizeConfig font in fontConfig.Fonts)
-                    {
-                        if (font == null)
-                        {
-                            continue;
-                        }
+        internal static string GetAtlasCacheKey(FontConfig fontConfig, float fontScale, string streamingAssetsPath)
+        {
+            return $"{GetAtlasHash(fontConfig, streamingAssetsPath)}:{GetScaleKey(fontScale)}";
+        }
 
-                        HashText(sha, $"size:{font.Size}");
-                        HashSubFonts(sha, fontRoot, "regular", font.SubFonts_Regular, hashedFiles);
-                        HashSubFonts(sha, fontRoot, "bold", font.SubFonts_Bold, hashedFiles);
-                        HashSubFonts(sha, fontRoot, "italic", font.SubFonts_Italic, hashedFiles);
-                    }
-                }
+        internal static string GetConfigSignature(FontConfig fontConfig)
+        {
+            if (fontConfig == null)
+            {
+                return "missing-config";
+            }
 
+            using (SHA256 sha = SHA256.Create())
+            {
+                HashText(sha, fontConfig.UseBakedFontAtlas ? "baked:on" : "baked:off");
+                HashText(sha, NormalizeFolder(fontConfig.BakedFontAtlasFolder));
+                HashText(sha, fontConfig.UseAlpha8FontAtlasTexture ? "alpha8:on" : "alpha8:off");
+                HashFontConfig(sha, fontConfig, null, false);
                 sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
                 return ToHex(sha.Hash, 16);
             }
@@ -287,6 +289,34 @@ namespace Fu
             return fontScale.ToString("0.###", CultureInfo.InvariantCulture);
         }
 
+        private static void HashFontConfig(SHA256 sha, FontConfig fontConfig, string streamingAssetsPath, bool hashFontFiles)
+        {
+            string fontRoot = hashFontFiles ? CombineStreamingPath(streamingAssetsPath, fontConfig.FontsFolder) : null;
+            HashSet<string> hashedFiles = hashFontFiles ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : null;
+
+            HashText(sha, AtlasHashVersion);
+            HashText(sha, NormalizeFolder(fontConfig.FontsFolder));
+            HashText(sha, fontConfig.DefaultSize.ToString(CultureInfo.InvariantCulture));
+
+            if (fontConfig.Fonts == null)
+            {
+                return;
+            }
+
+            foreach (FontSizeConfig font in fontConfig.Fonts)
+            {
+                if (font == null)
+                {
+                    continue;
+                }
+
+                HashText(sha, $"size:{font.Size}");
+                HashSubFonts(sha, fontRoot, "regular", font.SubFonts_Regular, hashedFiles);
+                HashSubFonts(sha, fontRoot, "bold", font.SubFonts_Bold, hashedFiles);
+                HashSubFonts(sha, fontRoot, "italic", font.SubFonts_Italic, hashedFiles);
+            }
+        }
+
         private static void HashSubFonts(SHA256 sha, string fontRoot, string label, SubFontConfig[] subFonts, HashSet<string> hashedFiles)
         {
             HashText(sha, label);
@@ -318,7 +348,7 @@ namespace Fu
                     }
                 }
 
-                if (!string.IsNullOrEmpty(subFont.FileName) && hashedFiles.Add(subFont.FileName))
+                if (hashedFiles != null && !string.IsNullOrEmpty(subFont.FileName) && hashedFiles.Add(subFont.FileName))
                 {
                     string fontPath = CombineStreamingPath(fontRoot, subFont.FileName);
                     byte[] fontBytes = ReadStreamingAssetBytes(fontPath, false);
@@ -487,7 +517,7 @@ namespace Fu
 
         private static string GetKey(FontConfig fontConfig, float fontScale, string streamingAssetsPath)
         {
-            return $"{FuFontAtlasCache.GetAtlasHash(fontConfig, streamingAssetsPath)}:{FuFontAtlasCache.GetScaleKey(fontScale)}";
+            return FuFontAtlasCache.GetAtlasCacheKey(fontConfig, fontScale, streamingAssetsPath);
         }
     }
 }

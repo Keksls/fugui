@@ -21,7 +21,7 @@ namespace Fu
     {
         public const string DefaultBakedAtlasFolder = "Fugui/FontAtlases";
 
-        private const string AtlasHashVersion = "FuguiFontAtlasCache/v1";
+        private const string AtlasHashVersion = "FuguiFontAtlasCache/v2";
 
         /// <summary>
         /// Kept for editor workflows that want to invalidate derived atlas state.

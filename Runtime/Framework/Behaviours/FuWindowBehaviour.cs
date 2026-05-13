@@ -23,7 +23,7 @@ namespace Fu.Framework
         [SerializeField]
         protected Vector2Int _size = Vector2Int.zero;
         [SerializeField]
-        protected Vector2Int _position = Vector2Int.zero;
+        protected Vector2Int _position = new Vector2Int(-1, -1);
         [SerializeField]
         protected bool _forceCreateAloneOnAwake = false;
         protected FuWindow _fuWindow;
@@ -42,7 +42,7 @@ namespace Fu.Framework
                 return;
 
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
-            FuWindowDefinition windowDefinition = new FuWindowDefinition(_windowName, OnUI, _position == Vector2Int.zero ? null : _position, _size == Vector2Int.zero ? null : _size, _windowFlags, _externalWindowFlags);
+            FuWindowDefinition windowDefinition = new FuWindowDefinition(_windowName, OnUI, GetInitialPosition(), GetInitialSize(), _windowFlags, _externalWindowFlags);
             // call the OnWindowDefinitionCreated method to allow further customization
             OnWindowDefinitionCreated(windowDefinition);
             // register the OnUIWindowCreated event to handle the window creation
@@ -68,6 +68,24 @@ namespace Fu.Framework
         {
             _fuWindow = window;
             OnWindowCreated(window);
+        }
+
+        /// <summary>
+        /// Returns the initial window position from the behaviour inspector.
+        /// </summary>
+        /// <returns>The configured position, or null when the window should use default placement.</returns>
+        protected Vector2Int? GetInitialPosition()
+        {
+            return _position;
+        }
+
+        /// <summary>
+        /// Returns the initial window size from the behaviour inspector.
+        /// </summary>
+        /// <returns>The configured size, or null when the window should use default size.</returns>
+        protected Vector2Int? GetInitialSize()
+        {
+            return _size == Vector2Int.zero ? null : _size;
         }
 
         /// <summary>

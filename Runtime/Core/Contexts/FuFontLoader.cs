@@ -158,11 +158,11 @@ namespace Fu
                 ImFontConfig* conf = ImGuiNative.ImFontConfig_ImFontConfig();
                 subFont.FontConfigPtr = new ImFontConfigPtr(conf);
                 subFont.FontConfigPtr.MergeMode = subFontIndex > 0;
-                subFont.FontConfigPtr.GlyphOffset = subFont.GlyphOffset;
+                subFont.FontConfigPtr.GlyphOffset = subFont.GlyphOffset * fontScale;
                 subFont.FontConfigPtr.FontDataOwnedByAtlas = false;
 
                 string fontFilePath = FuFontAtlasCache.CombineStreamingPath(fontPath, subFont.FileName);
-                float sizePixels = (font.Size + subFont.SizeOffset) * fontScale;
+                float sizePixels = (font.Size * fontScale) + (subFont.SizeOffset * fontScale);
                 ImFontPtr tmpFontPtr = LoadFont(io, fontFilePath, sizePixels, subFont, useDefaultGlyphRange, loadedFontBuffers);
 
                 if ((IntPtr)tmpFontPtr.NativePtr != IntPtr.Zero && subFontIndex == 0)

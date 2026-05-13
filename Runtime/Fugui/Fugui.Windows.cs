@@ -170,9 +170,7 @@ namespace Fu
 
                 if (autoAddToMainContainer)
                 {
-                    window.Size = new Vector2Int(
-                        (int)(windowDefinition.Size.x * DefaultContainer.Context.Scale),
-                        (int)(windowDefinition.Size.y * DefaultContainer.Context.Scale));
+                    window.Size = GetScaledMainContainerWindowSize(windowDefinition);
 
                     window.TryAddToContainer(DefaultContainer);
                 }
@@ -246,9 +244,7 @@ namespace Fu
                 };
 
                 window.OnInitialized += onWindowInitialized;
-                window.Size = new Vector2Int(
-                    (int)(windowDefinition.Size.x * DefaultContainer.Context.Scale),
-                    (int)(windowDefinition.Size.y * DefaultContainer.Context.Scale));
+                window.Size = GetScaledMainContainerWindowSize(windowDefinition);
 
                 if (!window.TryAddToContainer(DefaultContainer))
                 {
@@ -258,6 +254,22 @@ namespace Fu
                     completeOne();
                 }
             }
+        }
+
+        /// <summary>
+        /// Converts a window definition size authored at the reference resolution into the main container scale.
+        /// </summary>
+        /// <param name="windowDefinition">The window definition to scale.</param>
+        /// <returns>The scaled runtime window size.</returns>
+        private static Vector2Int GetScaledMainContainerWindowSize(FuWindowDefinition windowDefinition)
+        {
+            float scale = DefaultContainer != null && DefaultContainer.Context != null
+                ? DefaultContainer.Context.Scale
+                : 1f;
+
+            return new Vector2Int(
+                Mathf.Max(1, Mathf.RoundToInt(windowDefinition.Size.x * scale)),
+                Mathf.Max(1, Mathf.RoundToInt(windowDefinition.Size.y * scale)));
         }
 
         /// <summary>

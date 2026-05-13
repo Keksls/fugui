@@ -22,7 +22,7 @@ namespace Fu
             FontConfig fontConf,
             float fontScale,
             string streamingAssetsPath,
-            Dictionary<int, FontSet> fonts,
+            Dictionary<FontKey, FontSet> fonts,
             out FontSet defaultFont,
             List<byte[]> loadedFontBuffers)
         {
@@ -52,11 +52,18 @@ namespace Fu
                     continue;
                 }
 
+                string fontName = ResolveFontName(fontConf, font);
                 FontSet fontSet = null;
                 if (fonts != null)
                 {
-                    fontSet = new FontSet(font.Size);
-                    fonts[font.Size] = fontSet;
+                    FontKey fontKey = new FontKey(fontName, font.Size);
+                    if (fonts.ContainsKey(fontKey))
+                    {
+                        Debug.LogWarning($"[FontLoader] Duplicate font config for {fontKey}. The last entry will be used.");
+                    }
+
+                    fontSet = new FontSet(fontName, font.Size);
+                    fonts[fontKey] = fontSet;
                 }
 
                 if (ProcessSubFont(io, fontPath, fontScale, font, GetAvailableSubFonts("Regular", fontPath, font.SubFonts_Regular), loadedFontBuffers, out ImFontPtr regular))
@@ -83,11 +90,57 @@ namespace Fu
                     }
                 }
 
-                if (fontSet != null && font.Size == fontConf.DefaultSize)
+                if (fontSet != null &&
+                    font.Size == fontConf.DefaultSize &&
+                    string.Equals(fontSet.Name, fontConf.GetDefaultFontName(), StringComparison.OrdinalIgnoreCase))
                 {
                     defaultFont = fontSet;
                 }
             }
+
+            if (defaultFont == null && fonts != null)
+            {
+                defaultFont = FindFallbackFont(fonts, fontConf);
+            }
+        }
+
+        private static string ResolveFontName(FontConfig fontConf, FontSizeConfig font)
+        {
+            return fontConf != null
+                ? fontConf.ResolveFontName(font?.Name)
+                : FontKey.NormalizeName(font?.Name);
+        }
+
+        private static FontSet FindFallbackFont(Dictionary<FontKey, FontSet> fonts, FontConfig fontConf)
+        {
+            if (fonts == null || fonts.Count == 0)
+            {
+                return null;
+            }
+
+            FontKey defaultKey = new FontKey(fontConf.GetDefaultFontName(), fontConf.DefaultSize);
+            if (fonts.TryGetValue(defaultKey, out FontSet defaultFont))
+            {
+                return defaultFont;
+            }
+
+            foreach (FontSet fontSet in fonts.Values)
+            {
+                if (fontSet != null && fontSet.Size == fontConf.DefaultSize)
+                {
+                    return fontSet;
+                }
+            }
+
+            foreach (FontSet fontSet in fonts.Values)
+            {
+                if (fontSet != null)
+                {
+                    return fontSet;
+                }
+            }
+
+            return null;
         }
 
         private static SubFontConfig[] GetAvailableSubFonts(string label, string fontPath, SubFontConfig[] subFonts)

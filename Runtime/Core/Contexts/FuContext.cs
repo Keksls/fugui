@@ -51,7 +51,7 @@ namespace Fu
         public bool RenderPrepared { get; protected set; } = false;
         public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
 
-        internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
+        internal Dictionary<FontKey, FontSet> Fonts = new Dictionary<FontKey, FontSet>();
 
         internal FontSet DefaultFont { get; set; }
         internal string FontAtlasCacheKey { get; private set; }
@@ -404,7 +404,7 @@ namespace Fu
             IO.NativePtr->FontDefault = default;
             Fonts.Clear();
 
-            foreach (KeyValuePair<int, FontSet> font in _sharedFontAtlas.Fonts)
+            foreach (KeyValuePair<FontKey, FontSet> font in _sharedFontAtlas.Fonts)
             {
                 Fonts[font.Key] = font.Value;
             }
@@ -456,6 +456,37 @@ namespace Fu
             }
 
             return FuSharedFontAtlasCache.GetOrCreate(fontConfig, fontScale, Application.streamingAssetsPath);
+        }
+
+        internal bool TryGetFontSet(string fontName, int size, out FontSet fontSet)
+        {
+            return Fonts.TryGetValue(new FontKey(ResolveFontName(fontName), size), out fontSet);
+        }
+
+        internal string ResolveFontName(string fontName)
+        {
+            FontConfig fontConfig = Fugui.Settings?.FontConfig;
+            return fontConfig != null
+                ? fontConfig.ResolveFontName(fontName)
+                : FontKey.NormalizeName(fontName);
+        }
+
+        internal FontSet GetFallbackFontSet()
+        {
+            if (DefaultFont != null)
+            {
+                return DefaultFont;
+            }
+
+            foreach (FontSet fontSet in Fonts.Values)
+            {
+                if (fontSet != null)
+                {
+                    return fontSet;
+                }
+            }
+
+            return null;
         }
         #region State
         private readonly List<byte[]> _loadedFontBuffers = new List<byte[]>();

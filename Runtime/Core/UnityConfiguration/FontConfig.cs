@@ -13,8 +13,11 @@ namespace Fu
     [CreateAssetMenu(fileName = "FontConfig", menuName = "Fugui/FontConfig", order = 1)]
     public class FontConfig : ScriptableObject
     {
+        public const string FallbackFontName = "Default";
+
         #region State
         public int DefaultSize = 14;
+        public string DefaultFontName = FallbackFontName;
         public FontSizeConfig[] Fonts;
         [Header("The font folder must be paced into StreamingAssets")]
         public string FontsFolder = "Fugui/fonts/current/";
@@ -33,5 +36,19 @@ namespace Fu
         [Tooltip("Use an 8-bit alpha texture for generated font atlas textures. Baked PNG atlases may still decode as RGBA.")]
         public bool UseAlpha8FontAtlasTexture = true;
         #endregion
+
+        internal string GetDefaultFontName()
+        {
+            return string.IsNullOrWhiteSpace(DefaultFontName)
+                ? FallbackFontName
+                : DefaultFontName.Trim();
+        }
+
+        internal string ResolveFontName(string fontName)
+        {
+            return string.IsNullOrWhiteSpace(fontName)
+                ? GetDefaultFontName()
+                : fontName.Trim();
+        }
     }
 }

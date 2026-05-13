@@ -21,7 +21,7 @@ namespace Fu
     {
         public const string DefaultBakedAtlasFolder = "Fugui/FontAtlases";
 
-        private const string AtlasHashVersion = "FuguiFontAtlasCache/v2";
+        private const string AtlasHashVersion = "FuguiFontAtlasCache/v3";
 
         /// <summary>
         /// Kept for editor workflows that want to invalidate derived atlas state.
@@ -297,6 +297,7 @@ namespace Fu
             HashText(sha, AtlasHashVersion);
             HashText(sha, NormalizeFolder(fontConfig.FontsFolder));
             HashText(sha, fontConfig.DefaultSize.ToString(CultureInfo.InvariantCulture));
+            HashText(sha, fontConfig.GetDefaultFontName());
 
             if (fontConfig.Fonts == null)
             {
@@ -310,11 +311,19 @@ namespace Fu
                     continue;
                 }
 
+                HashText(sha, $"name:{ResolveFontName(fontConfig, font)}");
                 HashText(sha, $"size:{font.Size}");
                 HashSubFonts(sha, fontRoot, "regular", font.SubFonts_Regular, hashedFiles);
                 HashSubFonts(sha, fontRoot, "bold", font.SubFonts_Bold, hashedFiles);
                 HashSubFonts(sha, fontRoot, "italic", font.SubFonts_Italic, hashedFiles);
             }
+        }
+
+        private static string ResolveFontName(FontConfig fontConfig, FontSizeConfig font)
+        {
+            return fontConfig != null
+                ? fontConfig.ResolveFontName(font?.Name)
+                : FontKey.NormalizeName(font?.Name);
         }
 
         private static void HashSubFonts(SHA256 sha, string fontRoot, string label, SubFontConfig[] subFonts, HashSet<string> hashedFiles)
@@ -407,7 +416,7 @@ namespace Fu
             public string Key;
             public float FontScale;
             public ImFontAtlasPtr Atlas;
-            public Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
+            public Dictionary<FontKey, FontSet> Fonts = new Dictionary<FontKey, FontSet>();
             public FontSet DefaultFont;
             public List<byte[]> FontBuffers = new List<byte[]>();
             public int RefCount;

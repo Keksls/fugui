@@ -330,11 +330,21 @@ Les polices sont configurees avec `FontConfig`. Les glyphes d'icones respectent 
 
 Les atlas de polices peuvent etre bakes depuis `Tools > Fugui > Editor`, onglet `Font Atlas`. Les textures sont stockees dans `Assets/StreamingAssets/Fugui/FontAtlases/<font-hash>/scale_<scale>.png` et le runtime les recharge automatiquement quand `FontConfig.UseBakedFontAtlas` est actif. Si aucun atlas bake ne correspond au `FontScale` courant, Fugui reconstruit l'atlas en memoire comme avant.
 
+Chaque entree `FontSizeConfig` peut porter un `Name`. Deux polices peuvent donc partager la meme taille sans se remplacer; les appels sans nom utilisent `FontConfig.DefaultFontName`.
+
 Utilisation:
 
 ```csharp
 Fugui.PushFont(18, FontType.Bold);
 layout.Text("Titre");
+Fugui.PopFont();
+
+Fugui.PushFont("Mono", 14, FontType.Regular);
+layout.Text("Code");
+Fugui.PopFont();
+
+Fugui.PushFont(14, "Mono");
+layout.Text("Code compact");
 Fugui.PopFont();
 
 Fugui.Push(FuColors.Text, Color.cyan);

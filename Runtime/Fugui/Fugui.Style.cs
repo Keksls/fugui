@@ -128,25 +128,62 @@ namespace Fu
         /// <param name="type">type of the font</param>
         public static void PushFont(int size, FontType type = FontType.Regular)
         {
-            if (!CurrentContext.Fonts.ContainsKey(size))
+            PushFont(null, size, type);
+        }
+
+        /// <summary>
+        /// Push the named font.
+        /// </summary>
+        /// <param name="fontName">name of the font configured in FontConfig</param>
+        /// <param name="size">size of the font</param>
+        /// <param name="type">type of the font</param>
+        public static void PushFont(string fontName, int size, FontType type = FontType.Regular)
+        {
+            FontSet fontSet = ResolveFontSet(fontName, size);
+            if (fontSet == null)
             {
-                Debug.LogError("you are trying to push font for " + size + "px but it does not exists.");
-                size = Settings.FontConfig.DefaultSize;
+                return;
             }
-            switch (type)
+
+            ImFontPtr fontPtr = fontSet.GetFont(type);
+            if (fontPtr.Equals(default(ImFontPtr)))
             {
-                default:
-                case FontType.Regular:
-                    ImGui.PushFont(CurrentContext.Fonts[size].Regular);
-                    break;
-                case FontType.Bold:
-                    ImGui.PushFont(CurrentContext.Fonts[size].Bold);
-                    break;
-                case FontType.Italic:
-                    ImGui.PushFont(CurrentContext.Fonts[size].Italic);
-                    break;
+                Debug.LogError($"you are trying to push font '{fontSet.Name}' for {fontSet.Size}px as {type}, but this style does not exist.");
+                return;
             }
+
+            ImGui.PushFont(fontPtr);
             NbPushFont++;
+        }
+
+        /// <summary>
+        /// Push the named font.
+        /// </summary>
+        /// <param name="size">size of the font</param>
+        /// <param name="fontName">name of the font configured in FontConfig</param>
+        /// <param name="type">type of the font</param>
+        public static void PushFont(int size, string fontName, FontType type = FontType.Regular)
+        {
+            PushFont(fontName, size, type);
+        }
+
+        /// <summary>
+        /// Push the named font at the current font size.
+        /// </summary>
+        /// <param name="fontName">name of the font configured in FontConfig</param>
+        /// <param name="type">type of the font</param>
+        public static void PushFont(string fontName, FontType type)
+        {
+            PushFont(fontName, GetFontSize(), type);
+        }
+
+        /// <summary>
+        /// Push the named regular font at the current font size.
+        /// </summary>
+        /// <param name="fontName">name of the font configured in FontConfig</param>
+        public static void PushFont(string fontName)
+        {
+            PushFont(fontName, GetFontSize(), FontType.Regular);
         }
 
         /// <summary>
@@ -202,8 +239,40 @@ namespace Fu
         /// </summary>
         public static void PushDefaultFont()
         {
-            ImGui.PushFont(CurrentContext.DefaultFont.Regular);
+            FontSet fontSet = CurrentContext?.GetFallbackFontSet();
+            if (fontSet == null)
+            {
+                Debug.LogError("you are trying to push the default font but no font is loaded.");
+                return;
+            }
+
+            ImFontPtr fontPtr = fontSet.GetFont(FontType.Regular);
+            if (fontPtr.Equals(default(ImFontPtr)))
+            {
+                Debug.LogError($"you are trying to push default font '{fontSet.Name}' for {fontSet.Size}px, but its regular style does not exist.");
+                return;
+            }
+
+            ImGui.PushFont(fontPtr);
             NbPushFont++;
+        }
+
+        private static FontSet ResolveFontSet(string fontName, int size)
+        {
+            if (CurrentContext == null)
+            {
+                Debug.LogError("you are trying to push a font but there is no current Fugui context.");
+                return null;
+            }
+
+            string resolvedFontName = CurrentContext.ResolveFontName(fontName);
+            if (CurrentContext.TryGetFontSet(resolvedFontName, size, out FontSet fontSet))
+            {
+                return fontSet;
+            }
+
+            Debug.LogError($"you are trying to push font '{resolvedFontName}' for {size}px but it does not exist.");
+            return CurrentContext.GetFallbackFontSet();
         }
     }
 }

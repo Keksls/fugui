@@ -10,6 +10,7 @@ namespace Fu
         public class FontSizeConfig
         {
             #region State
+            public string Name = FontConfig.FallbackFontName;
             public int Size = 14;
             public ImFontPtr FontPtr;
             public SubFontConfig[] SubFonts_Regular;

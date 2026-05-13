@@ -13,8 +13,10 @@ MonoBehaviour:
   m_Name: FontConfig
   m_EditorClassIdentifier: 
   DefaultSize: 14
+  DefaultFontName: Default
   Fonts:
-  - Size: 14
+  - Name: Default
+    Size: 14
     SubFonts_Regular:
     - FileName: regular.ttf
       FilePath: 
@@ -46,7 +48,8 @@ MonoBehaviour:
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
     SubFonts_Italic: []
-  - Size: 10
+  - Name: Default
+    Size: 10
     SubFonts_Regular:
     - FileName: regular.ttf
       FilePath: 
@@ -78,7 +81,8 @@ MonoBehaviour:
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
     SubFonts_Italic: []
-  - Size: 12
+  - Name: Default
+    Size: 12
     SubFonts_Regular:
     - FileName: regular.ttf
       FilePath: 
@@ -110,7 +114,8 @@ MonoBehaviour:
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
     SubFonts_Italic: []
-  - Size: 16
+  - Name: Default
+    Size: 16
     SubFonts_Regular:
     - FileName: regular.ttf
       FilePath: 
@@ -142,7 +147,8 @@ MonoBehaviour:
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
     SubFonts_Italic: []
-  - Size: 18
+  - Name: Default
+    Size: 18
     SubFonts_Regular:
     - FileName: regular.ttf
       FilePath: 
@@ -174,7 +180,8 @@ MonoBehaviour:
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
     SubFonts_Italic: []
-  - Size: 20
+  - Name: Default
+    Size: 20
     SubFonts_Regular:
     - FileName: regular.ttf
       FilePath: 
@@ -206,7 +213,8 @@ MonoBehaviour:
       SizeOffset: -4
       GlyphOffset: {x: 0, y: -1}
     SubFonts_Italic: []
-  - Size: 13
+  - Name: Default
+    Size: 13
     SubFonts_Regular:
     - FileName: regular.ttf
       FilePath: 

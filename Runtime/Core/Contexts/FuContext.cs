@@ -54,6 +54,7 @@ namespace Fu
         internal Dictionary<int, FontSet> Fonts = new Dictionary<int, FontSet>();
 
         internal FontSet DefaultFont { get; set; }
+        internal string FontAtlasCacheKey { get; private set; }
         internal bool UsesSharedFontAtlas => _sharedFontAtlas != null;
 
         private Vector2Int _lastContainerScaleSize = new Vector2Int(-1, -1);
@@ -385,6 +386,7 @@ namespace Fu
                 _loadedFontBuffers);
 
             DefaultFont = defaultFont;
+            FontAtlasCacheKey = FuFontAtlasCache.GetAtlasCacheKey(Fugui.Settings?.FontConfig, FontScale, Application.streamingAssetsPath);
         }
 
         /// <summary>
@@ -408,6 +410,7 @@ namespace Fu
             }
 
             DefaultFont = _sharedFontAtlas.DefaultFont;
+            FontAtlasCacheKey = _sharedFontAtlas.Key;
             return true;
         }
 

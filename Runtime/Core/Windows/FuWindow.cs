@@ -1344,6 +1344,12 @@ namespace Fu
                 return;
             }
 
+            bool active = _customResizeEdge != FuWindowResizeEdge.None;
+            if (!active && Fugui.GetWantCapturePointer(this))
+            {
+                return;
+            }
+
             ImDrawListPtr drawList = _customResizeLocksWindowInputs ? ImGui.GetForegroundDrawList() : dl;
             bool clippedToWindow = _customResizeLocksWindowInputs;
             if (clippedToWindow)
@@ -1351,7 +1357,6 @@ namespace Fu
                 drawList.PushClipRect(windowPos, windowPos + windowSize, false);
             }
 
-            bool active = _customResizeEdge != FuWindowResizeEdge.None;
             uint feedbackColor = Fugui.Themes.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
             uint edgeLineColor = Fugui.Themes.GetColorU32(FuColors.Border, active ? 0.88f : 0.62f);
             uint handleColor = feedbackColor;
@@ -2044,6 +2049,11 @@ namespace Fu
                 return;
             }
             if (!CanCustomResizeWindow())
+            {
+                return;
+            }
+
+            if (Fugui.GetWantCapturePointer(this))
             {
                 return;
             }
@@ -2930,6 +2940,7 @@ namespace Fu
                 IsResizing = false;
                 Fire_OnResized();
             }
+            ReleaseStaleHoverWhenMouseOutside();
 
             // check for manipulating
             if (IsDragging || IsResizing || IsHovered || WantCaptureKeyboard)
@@ -2945,6 +2956,26 @@ namespace Fu
                 {
                     SetPerformanceState(FuWindowState.Idle);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Release hover state on frames where an idle window is not redrawn.
+        /// </summary>
+        private void ReleaseStaleHoverWhenMouseOutside()
+        {
+            if (!IsHovered || Container == null || LocalRect.Contains(Container.LocalMousePos))
+            {
+                return;
+            }
+
+            IsHovered = false;
+            IsHoveredContent = false;
+            if (!IsDragging && !IsResizing && !_customDragging && _customResizeEdge == FuWindowResizeEdge.None)
+            {
+                _customResizeHoveredEdge = FuWindowResizeEdge.None;
+                _customResizeLocksWindowInputs = false;
+                _inputLockedForThisFrame = false;
             }
         }
 

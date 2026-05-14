@@ -937,6 +937,7 @@ namespace Fu
             Vector2Int windowSize = _size;
             bool leftMousePressed = Window.Mouse.IsPressed(FuMouseButton.Left) || leftMousePhysicalPressed;
             bool mouseBlockedByPopup = Fugui.IsInsideAnyPopup(mouseLocal);
+            bool pointerCapturedByOtherSurface = !IsResizing && Fugui.GetWantCapturePointer(Window);
 
             //
             // --- RESIZE ---
@@ -944,7 +945,7 @@ namespace Fu
             // Detect hover edge (even when not resizing)
             if (!IsDragging && !IsResizing)
             {
-                if (IsMaximized || mouseBlockedByPopup || leftMousePressedBeforeHover)
+                if (IsMaximized || mouseBlockedByPopup || pointerCapturedByOtherSurface || leftMousePressedBeforeHover)
                     HoverResizeEdge = ResizeEdge.None;   // interdit resize
                 else
                     HoverResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
@@ -961,7 +962,7 @@ namespace Fu
             }
 
             // detect edge if not resizing or dragging
-            if (!IsMaximized && !mouseBlockedByPopup && !IsDragging && !IsResizing && leftMouseDown)
+            if (!IsMaximized && !mouseBlockedByPopup && !pointerCapturedByOtherSurface && !IsDragging && !IsResizing && leftMouseDown)
             {
                 currentResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
 
@@ -1229,6 +1230,13 @@ namespace Fu
         {
             if (!_isRunning || _shouldClose || _isClosed)
                 return;
+
+            if (!IsResizing && Fugui.GetWantCapturePointer(Window))
+            {
+                HoverResizeEdge = ResizeEdge.None;
+                currentResizeEdge = ResizeEdge.None;
+                return;
+            }
 
             // check if mouse is inside window
             if (!IsResizing && !IsDragging && !_isMouseHover)

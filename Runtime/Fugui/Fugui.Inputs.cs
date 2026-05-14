@@ -93,6 +93,38 @@ namespace Fu
         }
 
         /// <summary>
+        /// Get whether Fugui currently owns, blocks or wants pointer input outside a given window.
+        /// </summary>
+        /// <param name="ignoredWindow">Window whose own hover/focus/drag/resize state should be ignored.</param>
+        /// <returns>true if another Fugui surface needs the pointer; otherwise, false.</returns>
+        public static bool GetWantCapturePointer(FuWindow ignoredWindow)
+        {
+            if (ignoredWindow == null)
+            {
+                return GetWantCapturePointer();
+            }
+
+            bool hasOtherWindowHovered = WindowHoveredCount > (ignoredWindow.IsHovered ? 1 : 0);
+            bool hasOtherWindowWantCaptureInput = WindowWantCaptureInputCount > (ignoredWindow.WantCaptureKeyboard ? 1 : 0);
+            bool hasOtherWindowResizing = WindowResizingCount > (ignoredWindow.IsResizing ? 1 : 0);
+            bool hasOtherWindowDragging = WindowDraggingCount > (ignoredWindow.IsDragging ? 1 : 0);
+            bool hasOtherInputFocusedWindow = FuWindow.InputFocusedWindow != null
+                ? FuWindow.InputFocusedWindow != ignoredWindow
+                : FuWindow.NbInputFocusedWindow > 0;
+
+            return hasOtherWindowHovered ||
+                   hasOtherInputFocusedWindow ||
+                   hasOtherWindowWantCaptureInput ||
+                   IsThereAnyOpenPopup() ||
+                   IsAnyModalOpen() ||
+                   hasOtherWindowResizing ||
+                   hasOtherWindowDragging ||
+                   OverlayDraggingCount > 0 ||
+                   DraggingPayloadCount > 0 ||
+                   (Layouts?.IsCustomDockManipulating ?? false);
+        }
+
+        /// <summary>
         /// Get whether no Fugui window, popup, modal or manipulation currently owns the pointer.
         /// </summary>
         /// <returns>true if the pointer can be used by non-Fugui systems; otherwise, false.</returns>

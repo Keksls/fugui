@@ -34,6 +34,8 @@ namespace Fu
         public bool AllowMultipleWindow { get; private set; }
         // A flag indicating whether this window can be closed by middle-clicking its header or docked tab
         public bool CloseOnMiddleClick { get; private set; }
+        // ImGui window flags exposed through Fugui settings
+        public FuWindowStyleFlags WindowStyleFlags { get; private set; }
 
         // A flag indicating whether this window will use native title bar once externalized
         public bool UseNativeTitleBar { get; private set; }
@@ -79,13 +81,15 @@ namespace Fu
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
         /// <param name="flags">Behaviour flag of this window definition</param>
         /// <param name="externalFlags">External window flags of this window definition</param>
-        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default)
+        /// <param name="windowStyleFlags">ImGui window flags exposed through Fugui.</param>
+        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default)
         {
             // Assign the specified values to the corresponding fields
             WindowName = windowName;
             UI = ui;
             Position = pos.HasValue ? pos.Value : new Vector2Int(-1, -1);
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
+            WindowStyleFlags = windowStyleFlags;
             IsExternalizable = !flags.HasFlag(FuWindowFlags.NoExternalization);
             IsDockable = !flags.HasFlag(FuWindowFlags.NoDocking);
             IsInterractif = !flags.HasFlag(FuWindowFlags.NoInterractions);
@@ -271,6 +275,39 @@ namespace Fu
         {
             // Assign the specified size or the default value to the Size field
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the ImGui window flags exposed through Fugui.
+        /// </summary>
+        /// <param name="windowStyleFlags">The flags to set.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetWindowStyleFlags(FuWindowStyleFlags windowStyleFlags)
+        {
+            WindowStyleFlags = windowStyleFlags;
+            return this;
+        }
+
+        /// <summary>
+        /// Adds the specified ImGui window flag exposed through Fugui.
+        /// </summary>
+        /// <param name="windowStyleFlag">The flag to add.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition AddWindowStyleFlag(FuWindowStyleFlags windowStyleFlag)
+        {
+            WindowStyleFlags |= windowStyleFlag;
+            return this;
+        }
+
+        /// <summary>
+        /// Removes the specified ImGui window flag exposed through Fugui.
+        /// </summary>
+        /// <param name="windowStyleFlag">The flag to remove.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition RemoveWindowStyleFlag(FuWindowStyleFlags windowStyleFlag)
+        {
+            WindowStyleFlags &= ~windowStyleFlag;
             return this;
         }
 

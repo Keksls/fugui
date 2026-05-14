@@ -40,6 +40,7 @@ namespace Fu
             // instantiate UIWindows 
             UIWindows = new Dictionary<string, FuWindow>();
             UIWindowsDefinitions = new Dictionary<FuWindowName, FuWindowDefinition>();
+            ResetInputOwnershipCounters();
             // init dic and queue
             _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
             Themes = new FuThemeManager();

@@ -376,14 +376,7 @@ namespace Fu
         /// <returns> true if any window is being dragged, false otherwise</returns>
         public static bool IsAnyWindowDragging()
         {
-            foreach (var window in UIWindows)
-            {
-                if (window.Value.IsDragging)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return WindowDraggingCount > 0;
         }
 
         /// <summary>
@@ -392,14 +385,7 @@ namespace Fu
         /// <returns> true if any window is being resized, false otherwise</returns>
         public static bool IsAnyWindowResizing()
         {
-            foreach (var window in UIWindows)
-            {
-                if (window.Value.IsResizing)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return WindowResizingCount > 0;
         }
 
         /// <summary>
@@ -408,14 +394,43 @@ namespace Fu
         /// <returns>true if at least one window is displaying hover content; otherwise, false.</returns>
         public static bool IsAnyWindowHoverContent()
         {
-            foreach (var window in UIWindows)
-            {
-                if (window.Value.IsHoveredContent)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return WindowHoveredContentCount > 0;
+        }
+
+        /// <summary>
+        /// Determines whether any window is currently hovered.
+        /// </summary>
+        /// <returns>true if at least one window is hovered; otherwise, false.</returns>
+        public static bool IsAnyWindowHovered()
+        {
+            return WindowHoveredCount > 0;
+        }
+
+        /// <summary>
+        /// Determines whether any window is currently focused by ImGui.
+        /// </summary>
+        /// <returns>true if at least one window has focus; otherwise, false.</returns>
+        public static bool IsAnyWindowFocused()
+        {
+            return WindowFocusedCount > 0;
+        }
+
+        /// <summary>
+        /// Determines whether any window owns an active pointer input.
+        /// </summary>
+        /// <returns>true if a window has input focus; otherwise, false.</returns>
+        public static bool IsAnyWindowInputFocused()
+        {
+            return FuWindow.InputFocusedWindow != null || FuWindow.NbInputFocusedWindow > 0;
+        }
+
+        /// <summary>
+        /// Determines whether any window wants keyboard or text input capture.
+        /// </summary>
+        /// <returns>true if at least one window wants input capture; otherwise, false.</returns>
+        public static bool IsAnyWindowWantCaptureInput()
+        {
+            return WindowWantCaptureInputCount > 0;
         }
 
         /// <summary>
@@ -424,17 +439,7 @@ namespace Fu
         /// <returns> true if any overlay is being dragged, false otherwise</returns>
         public static bool IsAnyOverlayDragging()
         {
-            foreach (var window in UIWindows)
-            {
-                foreach (var overlay in window.Value.Overlays)
-                {
-                    if (overlay.Value.IsDraging)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
+            return OverlayDraggingCount > 0;
         }
 
         /// <summary>
@@ -443,7 +448,7 @@ namespace Fu
         /// <returns> true if any payload is being dragged, false otherwise</returns>
         public static bool IsDraggingAnyPayload()
         {
-            return CurrentContext?._isDraggingPayload ?? false;
+            return DraggingPayloadCount > 0;
         }
 
         /// <summary>

@@ -913,6 +913,10 @@ namespace Fu
             _activeResizeHandleIndex = handleIndex;
             _hoveredResizeHandleIndex = handleIndex;
             _activeResizeRaycasterID = raycasterID;
+            if (Window != null)
+            {
+                Window.IsResizing = true;
+            }
             _resizeStartPanelPosition = _panelGameObject.transform.position;
             _resizeStartPanelRotation = _panelGameObject.transform.rotation;
             _resizeStartLocalSize = getCurrentLocalSize();
@@ -1027,6 +1031,10 @@ namespace Fu
             _activeResizeRaycasterID = null;
             if (wasResizing)
             {
+                if (Window != null)
+                {
+                    Window.IsResizing = false;
+                }
                 Window?.Fire_OnResized();
             }
             setResizeHandlesVisible(false);
@@ -1038,9 +1046,14 @@ namespace Fu
         /// </summary>
         private void cancelRuntimeResize()
         {
+            bool wasResizing = _activeResizeHandleIndex != -1;
             _activeResizeHandleIndex = -1;
             _hoveredResizeHandleIndex = -1;
             _activeResizeRaycasterID = null;
+            if (wasResizing && Window != null)
+            {
+                Window.IsResizing = false;
+            }
             updateResizeHandleVisualStates();
         }
 
@@ -2143,8 +2156,8 @@ namespace Fu
                 Window.LocalPosition = Vector2Int.zero;
                 Window.Container = this;
                 Window.LocalPosition = Vector2Int.zero;
-                Window.AddWindowFlag(ImGuiWindowFlags.NoMove);
-                Window.AddWindowFlag(ImGuiWindowFlags.NoResize);
+                Window.AddWindowFlag(FuWindowStyleFlags.NoMove);
+                Window.AddWindowFlag(FuWindowStyleFlags.NoResize);
                 return true;
             }
             return false;
@@ -2207,8 +2220,8 @@ namespace Fu
                 Window.OnClosed -= Window_OnClosed;
                 Window.OnResized -= Window_OnResized;
                 Window.Container = null;
-                Window.RemoveWindowFlag(ImGuiWindowFlags.NoMove);
-                Window.RemoveWindowFlag(ImGuiWindowFlags.NoResize);
+                Window.RemoveWindowFlag(FuWindowStyleFlags.NoMove);
+                Window.RemoveWindowFlag(FuWindowStyleFlags.NoResize);
                 Window.Is3DWindow = false;
                 Window = null;
             }

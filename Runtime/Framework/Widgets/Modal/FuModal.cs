@@ -76,6 +76,15 @@ namespace Fu
         }
 
         /// <summary>
+        /// Determines whether any Fugui modal-style popup is currently open.
+        /// </summary>
+        /// <returns>true if a modal or popup message is open; otherwise, false.</returns>
+        public static bool IsAnyModalOpen()
+        {
+            return _showModal || _showPopup;
+        }
+
+        /// <summary>
         /// Prevent the modal to close on next CloseModal call
         /// </summary>
         public static void CancelNextModalClose()

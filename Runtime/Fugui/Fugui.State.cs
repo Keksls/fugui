@@ -146,6 +146,38 @@ namespace Fu
         /// True while a Fugui chrome handle owns the current frame pointer input.
         /// </summary>
         internal static bool WindowInputsBlockedThisFrame { get; private set; }
+        /// <summary>
+        /// Number of windows currently being dragged.
+        /// </summary>
+        internal static int WindowDraggingCount { get; private set; }
+        /// <summary>
+        /// Number of windows currently being resized.
+        /// </summary>
+        internal static int WindowResizingCount { get; private set; }
+        /// <summary>
+        /// Number of windows currently hovered.
+        /// </summary>
+        internal static int WindowHoveredCount { get; private set; }
+        /// <summary>
+        /// Number of windows currently hovered on their content area.
+        /// </summary>
+        internal static int WindowHoveredContentCount { get; private set; }
+        /// <summary>
+        /// Number of windows currently focused by ImGui.
+        /// </summary>
+        internal static int WindowFocusedCount { get; private set; }
+        /// <summary>
+        /// Number of windows currently requesting keyboard/text input capture.
+        /// </summary>
+        internal static int WindowWantCaptureInputCount { get; private set; }
+        /// <summary>
+        /// Number of overlays currently being dragged.
+        /// </summary>
+        internal static int OverlayDraggingCount { get; private set; }
+        /// <summary>
+        /// Number of drag-drop payloads currently active across contexts.
+        /// </summary>
+        internal static int DraggingPayloadCount { get; private set; }
         private const int WindowInputBlockMouseButtonCount = 5;
         private static readonly bool[] _blockedFrameRawMouseDown = new bool[WindowInputBlockMouseButtonCount];
         private static readonly bool[] _blockedFrameRawMousePressed = new bool[WindowInputBlockMouseButtonCount];
@@ -211,6 +243,32 @@ namespace Fu
         /// </summary>
         /// <param name="ex">exception of the event</param>
         internal static void Fire_OnUIException(Exception ex) => OnUIException?.Invoke(ex);
+
+        internal static void TrackWindowDragging(bool active) => WindowDraggingCount = AddInputOwnershipCount(WindowDraggingCount, active);
+        internal static void TrackWindowResizing(bool active) => WindowResizingCount = AddInputOwnershipCount(WindowResizingCount, active);
+        internal static void TrackWindowHovered(bool active) => WindowHoveredCount = AddInputOwnershipCount(WindowHoveredCount, active);
+        internal static void TrackWindowHoveredContent(bool active) => WindowHoveredContentCount = AddInputOwnershipCount(WindowHoveredContentCount, active);
+        internal static void TrackWindowFocused(bool active) => WindowFocusedCount = AddInputOwnershipCount(WindowFocusedCount, active);
+        internal static void TrackWindowWantCaptureInput(bool active) => WindowWantCaptureInputCount = AddInputOwnershipCount(WindowWantCaptureInputCount, active);
+        internal static void TrackOverlayDragging(bool active) => OverlayDraggingCount = AddInputOwnershipCount(OverlayDraggingCount, active);
+        internal static void TrackDraggingPayload(bool active) => DraggingPayloadCount = AddInputOwnershipCount(DraggingPayloadCount, active);
+
+        private static int AddInputOwnershipCount(int count, bool active)
+        {
+            return Math.Max(0, count + (active ? 1 : -1));
+        }
+
+        private static void ResetInputOwnershipCounters()
+        {
+            WindowDraggingCount = 0;
+            WindowResizingCount = 0;
+            WindowHoveredCount = 0;
+            WindowHoveredContentCount = 0;
+            WindowFocusedCount = 0;
+            WindowWantCaptureInputCount = 0;
+            OverlayDraggingCount = 0;
+            DraggingPayloadCount = 0;
+        }
         #endregion
 
         #region State

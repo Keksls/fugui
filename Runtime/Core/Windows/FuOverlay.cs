@@ -82,7 +82,20 @@ namespace Fu
         private bool _dragButtonHovered = false;
         // Private variable to track the dragging state of the window
 
-        public bool IsDraging { get; private set; } = false;
+        public bool IsDraging
+        {
+            get { return _isDraging; }
+            private set
+            {
+                if (_isDraging == value)
+                {
+                    return;
+                }
+
+                _isDraging = value;
+                Fugui.TrackOverlayDragging(value);
+            }
+        }
         // Private variable to track the mouse position during a drag operation
 
         private Vector2 _dragMousePosition = Vector2.zero;
@@ -119,6 +132,7 @@ namespace Fu
         private static int _nbFontPushOnFrameStart = 0;
         // whatever the overlay need to be drawn
         private bool _isVisible = true;
+        private bool _isDraging = false;
         #endregion
 
         #region Constructors
@@ -182,6 +196,8 @@ namespace Fu
         public void Hide()
         {
             _isVisible = false;
+            IsDraging = false;
+            _drawSnapGrid = false;
         }
 
         /// <summary>

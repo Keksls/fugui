@@ -79,6 +79,7 @@ namespace Fu.Samples.MobileDemo
         {
             _windowName = FuMobileDemoWindowNames.MobileDemo;
             _windowFlags = FuWindowFlags.NoDocking | FuWindowFlags.NoExternalization | FuWindowFlags.NoClosable;
+            _windowStyleFlags = FuWindowStyleFlags.NoMove | FuWindowStyleFlags.NoResize | FuWindowStyleFlags.NoDecoration;
             _size = _desktopPreviewSize;
             _position = Vector2Int.zero;
             _forceCreateAloneOnAwake = true;
@@ -118,9 +119,6 @@ namespace Fu.Samples.MobileDemo
         public override void OnWindowCreated(FuWindow window)
         {
             base.OnWindowCreated(window);
-            window.AddWindowFlag(ImGuiWindowFlags.NoMove
-                | ImGuiWindowFlags.NoResize
-                | ImGuiWindowFlags.NoDecoration);
 
             if (_fitWindowToScreen)
             {

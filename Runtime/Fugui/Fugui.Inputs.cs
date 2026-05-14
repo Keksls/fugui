@@ -75,6 +75,62 @@ namespace Fu
         }
 
         /// <summary>
+        /// Get whether Fugui currently owns, blocks or wants pointer input.
+        /// </summary>
+        /// <returns>true if Fugui needs the pointer; otherwise, false.</returns>
+        public static bool GetWantCapturePointer()
+        {
+            return WindowInputsBlockedThisFrame ||
+                   IsAnyWindowHovered() ||
+                   IsAnyWindowInputFocused() ||
+                   IsAnyWindowWantCaptureInput() ||
+                   IsThereAnyOpenPopup() ||
+                   IsAnyModalOpen() ||
+                   IsAnyWindowResizing() ||
+                   IsDraggingAnything() ||
+                   (Layouts?.IsCustomDockManipulating ?? false) ||
+                   GetAnyContextWantCapturePointer();
+        }
+
+        /// <summary>
+        /// Get whether no Fugui window, popup, modal or manipulation currently owns the pointer.
+        /// </summary>
+        /// <returns>true if the pointer can be used by non-Fugui systems; otherwise, false.</returns>
+        public static bool IsPointerFree()
+        {
+            return !GetWantCapturePointer();
+        }
+
+        private static bool GetAnyContextWantCapturePointer()
+        {
+            if (Contexts == null || Contexts.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (FuContext context in Contexts.Values)
+            {
+                if (context == null || context.ImGuiContext == IntPtr.Zero)
+                {
+                    continue;
+                }
+
+                if (!MainContainerEnabled && ReferenceEquals(context, DefaultContext))
+                {
+                    continue;
+                }
+
+                ImGuiIOPtr io = context.IO;
+                if (io.WantCaptureMouse || io.WantCaptureKeyboard || io.WantTextInput)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Check Whatever a Key is Down for some given FuWIndowNames.
         /// If WindowNames array is empty, Fugui will check for any windows of any containers
         /// </summary>

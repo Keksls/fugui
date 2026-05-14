@@ -66,7 +66,21 @@ namespace Fu
         // the payload of draggDrop operation
         internal object _dragDropPayload = null;
         // Whatever fugui is currently dragging a payload (using Drag Drop)
-        internal bool _isDraggingPayload = false;
+        private bool _isDraggingPayloadState = false;
+        internal bool _isDraggingPayload
+        {
+            get { return _isDraggingPayloadState; }
+            set
+            {
+                if (_isDraggingPayloadState == value)
+                {
+                    return;
+                }
+
+                _isDraggingPayloadState = value;
+                Fugui.TrackDraggingPayload(value);
+            }
+        }
         // ID of the current dragging payload (if there is some, else is null)
         internal string _draggingPayloadID;
         // Is it the first frame of the current drag drop operation
@@ -298,6 +312,7 @@ namespace Fu
         /// </summary>
         internal virtual void Destroy()
         {
+            _isDraggingPayload = false;
             TextureManager.Shutdown();
             FuSharedFontAtlasCache.Release(_sharedFontAtlas);
             _sharedFontAtlas = null;

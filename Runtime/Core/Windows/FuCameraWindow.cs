@@ -116,8 +116,8 @@ namespace Fu
             OnUnDock += ImGuiCameraWindow_OnDock;
             OnClosed += UICameraWindow_OnClosed;
             ImGuiCameraWindow_OnResize(this);
-            _windowFlags |= ImGuiWindowFlags.NoScrollbar;
-            _windowFlags |= ImGuiWindowFlags.NoScrollWithMouse;
+            _windowFlags |= FuWindowStyleFlags.NoScrollbar;
+            _windowFlags |= FuWindowStyleFlags.NoScrollWithMouse;
             NeedToUpdateCamera = true;
             _lastCameraRenderTime = float.MinValue;
             IsInterractable = true;

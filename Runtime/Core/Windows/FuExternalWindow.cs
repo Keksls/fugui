@@ -342,6 +342,13 @@ namespace Fu
         {
             if (_isClosed) return; // already closed
             _isClosed = true;
+            if (Window != null)
+            {
+                Window.IsDragging = false;
+                Window.IsResizing = false;
+            }
+            IsDragging = false;
+            IsResizing = false;
 
             try
             {
@@ -962,6 +969,7 @@ namespace Fu
                 {
                     // begin resize
                     IsResizing = true;
+                    Window.IsResizing = true;
                     resizeStartMousePos = mouseAbs;
                     resizeStartWindowPos = Position;
                     resizeStartWindowSize = windowSize;
@@ -1023,6 +1031,7 @@ namespace Fu
                 {
                     // stop resizing
                     IsResizing = false;
+                    Window.IsResizing = false;
                     if (FuWindow.InputFocusedWindow == Window)
                     {
                         FuWindow.InputFocusedWindow = null;

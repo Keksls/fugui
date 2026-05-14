@@ -27,6 +27,7 @@ namespace Fu
                 {
                     OnRemovedFromContainer?.Invoke(this);
                     Fugui.Fire_OnWindowRemovedFromContainer(this);
+                    ReleaseInputFocus();
                 }
                 else
                 {
@@ -51,7 +52,20 @@ namespace Fu
         public Action<FuWindow, Vector2> FooterUI { get; set; }
         public bool HasMovedThisFrame { get; private set; }
         public bool HasJustBeenDraw { get; set; }
-        public bool WantCaptureKeyboard { get; private set; }
+        public bool WantCaptureKeyboard
+        {
+            get { return _wantCaptureKeyboard; }
+            private set
+            {
+                if (_wantCaptureKeyboard == value)
+                {
+                    return;
+                }
+
+                _wantCaptureKeyboard = value;
+                Fugui.TrackWindowWantCaptureInput(value);
+            }
+        }
         public bool CanInternalize { get; internal set; }
         public int TargetFPS
         {
@@ -100,7 +114,20 @@ namespace Fu
         public FuLayout Layout { get; internal set; }
 
         // states flags
-        public bool HasFocus { get; internal set; }
+        public bool HasFocus
+        {
+            get { return _hasFocus; }
+            internal set
+            {
+                if (_hasFocus == value)
+                {
+                    return;
+                }
+
+                _hasFocus = value;
+                Fugui.TrackWindowFocused(value);
+            }
+        }
         public bool IsOpened { get { return _open; } internal set { _open = value; } }
 
         // behaviour flags
@@ -121,10 +148,62 @@ namespace Fu
         public bool NoNotify { get; private set; }
         public bool NoContextMenu { get; private set; }
 
-        public bool IsResizing { get; private set; }
-        public bool IsDragging { get; internal set; }
-        public bool IsHovered { get; internal set; }
-        public bool IsHoveredContent { get { return IsHovered && !BlocksWindowInputs && !Mouse.IsHoverOverlay && !Mouse.IsHoverPopup && !Mouse.IsHoverTopBar; } }
+        public bool IsResizing
+        {
+            get { return _isResizing; }
+            internal set
+            {
+                if (_isResizing == value)
+                {
+                    return;
+                }
+
+                _isResizing = value;
+                Fugui.TrackWindowResizing(value);
+            }
+        }
+        public bool IsDragging
+        {
+            get { return _isDragging; }
+            internal set
+            {
+                if (_isDragging == value)
+                {
+                    return;
+                }
+
+                _isDragging = value;
+                Fugui.TrackWindowDragging(value);
+            }
+        }
+        public bool IsHovered
+        {
+            get { return _isHovered; }
+            internal set
+            {
+                if (_isHovered == value)
+                {
+                    return;
+                }
+
+                _isHovered = value;
+                Fugui.TrackWindowHovered(value);
+            }
+        }
+        public bool IsHoveredContent
+        {
+            get { return _isHoveredContent; }
+            private set
+            {
+                if (_isHoveredContent == value)
+                {
+                    return;
+                }
+
+                _isHoveredContent = value;
+                Fugui.TrackWindowHoveredContent(value);
+            }
+        }
         public bool InputsLocked { get { return BlocksWindowInputs; } }
         public bool IsDocked { get; internal set; }
         public bool IsBusy { get; internal set; }
@@ -177,7 +256,7 @@ namespace Fu
 
         // private fields
 
-        internal ImGuiWindowFlags _windowFlags;
+        internal FuWindowStyleFlags _windowFlags;
         private bool _forceLocationNextFrame = false;
         private bool _forceSizeNextFrame = false;
         private bool _forceFocusNextFrame = false;
@@ -187,6 +266,12 @@ namespace Fu
         private Vector2Int _lastFrameSize;
         private Vector2Int _lastFramePos;
         private bool _lastFrameVisible;
+        private bool _wantCaptureKeyboard;
+        private bool _hasFocus;
+        private bool _isResizing;
+        private bool _isDragging;
+        private bool _isHovered;
+        private bool _isHoveredContent;
         internal float _targetDeltaTimeMs = 1;
         internal float _lastRenderTime = 0;
         private bool _open = true;
@@ -377,6 +462,7 @@ namespace Fu
             IsOpened = true;
             HasFocus = false;
             Size = windowDefinition.Size;
+            _windowFlags = windowDefinition.WindowStyleFlags;
             _lastFrameVisible = false;
 
             // behaviour flags
@@ -426,13 +512,13 @@ namespace Fu
             _lastFrameSize = Size;
             _lastFramePos = LocalPosition;
             // prevent to replace window flag if there is some
-            if (_windowFlags == ImGuiWindowFlags.None)
+            if (_windowFlags == FuWindowStyleFlags.None)
             {
-                _windowFlags = ImGuiWindowFlags.NoCollapse;
+                _windowFlags = FuWindowStyleFlags.NoCollapse;
             }
             if (!IsDockable)
             {
-                _windowFlags |= ImGuiWindowFlags.NoDocking;
+                _windowFlags |= FuWindowStyleFlags.NoDocking;
             }
             // assume that we are Idle
             State = FuWindowState.Idle;
@@ -463,7 +549,9 @@ namespace Fu
 
             _releaseFocusNextFrame = false;
             WantCaptureKeyboard = false;
+            HasFocus = false;
             IsHovered = false;
+            IsHoveredContent = false;
             IsDragging = false;
             IsResizing = false;
             _customResizeHoveredEdge = FuWindowResizeEdge.None;
@@ -709,46 +797,47 @@ namespace Fu
             // try to start drawing window, according to the closable flag state
             bool nativeWantDrawWindow;
             bool externalBefore = IsExternal;
-            ImGuiWindowFlags effectiveWindowFlags = _windowFlags;
+            FuWindowStyleFlags effectiveWindowFlags = _windowFlags;
             UpdateCustomResizeInputBlock();
             bool blockInputsThisFrame = BlocksWindowInputs || Fugui.WindowInputsBlockedThisFrame;
             if (!IsInterractable)
             {
-                effectiveWindowFlags |= ImGuiWindowFlags.NoInputs;
+                effectiveWindowFlags |= FuWindowStyleFlags.NoInputs;
             }
             if (blockInputsThisFrame)
             {
-                effectiveWindowFlags |= ImGuiWindowFlags.NoInputs;
+                effectiveWindowFlags |= FuWindowStyleFlags.NoInputs;
             }
-            effectiveWindowFlags |= ImGuiWindowFlags.NoTitleBar |
-                                    ImGuiWindowFlags.NoResize |
-                                    ImGuiWindowFlags.NoMove |
-                                    ImGuiWindowFlags.NoCollapse |
-                                    ImGuiWindowFlags.NoDocking |
-                                    ImGuiWindowFlags.NoSavedSettings;
+            effectiveWindowFlags |= FuWindowStyleFlags.NoTitleBar |
+                                    FuWindowStyleFlags.NoResize |
+                                    FuWindowStyleFlags.NoMove |
+                                    FuWindowStyleFlags.NoCollapse |
+                                    FuWindowStyleFlags.NoDocking |
+                                    FuWindowStyleFlags.NoSavedSettings;
             if (IsDocked)
             {
-                effectiveWindowFlags |= ImGuiWindowFlags.NoBringToFrontOnFocus;
+                effectiveWindowFlags |= FuWindowStyleFlags.NoBringToFrontOnFocus;
             }
-            bool useWindowBackdrop = (effectiveWindowFlags & ImGuiWindowFlags.NoBackground) == 0 &&
+            bool useWindowBackdrop = (effectiveWindowFlags & FuWindowStyleFlags.NoBackground) == 0 &&
                 Fugui.ShouldUseThemeBackdrop(FuColors.WindowBg);
             if (useWindowBackdrop)
             {
-                effectiveWindowFlags |= ImGuiWindowFlags.NoBackground;
+                effectiveWindowFlags |= FuWindowStyleFlags.NoBackground;
             }
+            ImGuiWindowFlags nativeWindowFlags = (ImGuiWindowFlags)effectiveWindowFlags;
 
             if (externalBefore)
             {
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, IsDocked ? 0f : Fugui.Themes.WindowRounding);
-                nativeWantDrawWindow = ImGui.Begin(ID, effectiveWindowFlags);
+                nativeWantDrawWindow = ImGui.Begin(ID, nativeWindowFlags);
             }
             else if (IsClosable)
             {
-                nativeWantDrawWindow = ImGui.Begin(ID, ref _open, effectiveWindowFlags);
+                nativeWantDrawWindow = ImGui.Begin(ID, ref _open, nativeWindowFlags);
             }
             else
             {
-                nativeWantDrawWindow = ImGui.Begin(ID, effectiveWindowFlags);
+                nativeWantDrawWindow = ImGui.Begin(ID, nativeWindowFlags);
             }
 
             // whatever window is hovered
@@ -763,6 +852,7 @@ namespace Fu
                     Mouse.SuppressWindowInputs();
                 }
             }
+            UpdateHoveredContentState();
             // update keyboard state
             if (!preventUpdatingKeyboard)
                 Keyboard.UpdateState();
@@ -806,6 +896,8 @@ namespace Fu
                 Fugui.PopStyle(windowStylePushCount);
                 IsVisible = false;
                 IsHovered = false;
+                IsHoveredContent = false;
+                HasFocus = false;
             }
             if (externalBefore)
             {
@@ -899,6 +991,16 @@ namespace Fu
             {
                 Fugui.HasHovered3DWindowThisFrame = true;
             }
+        }
+
+        private void UpdateHoveredContentState()
+        {
+            IsHoveredContent = IsHovered &&
+                               !BlocksWindowInputs &&
+                               Mouse != null &&
+                               !Mouse.IsHoverOverlay &&
+                               !Mouse.IsHoverPopup &&
+                               !Mouse.IsHoverTopBar;
         }
 
         /// <summary>
@@ -1036,6 +1138,8 @@ namespace Fu
 
             IsVisible = false;
             IsHovered = false;
+            IsHoveredContent = false;
+            HasFocus = false;
             HasJustBeenDraw = false;
             WantCaptureKeyboard = false;
             _customResizeHoveredEdge = FuWindowResizeEdge.None;
@@ -1066,7 +1170,7 @@ namespace Fu
         /// </summary>
         private bool ShouldDrawCustomTitleBar()
         {
-            return !_windowFlags.HasFlag(ImGuiWindowFlags.NoTitleBar);
+            return !_windowFlags.HasFlag(FuWindowStyleFlags.NoTitleBar);
         }
 
         /// <summary>
@@ -1900,7 +2004,7 @@ namespace Fu
                    !IsDocked &&
                    Container != null &&
                    !Container.ForcePos() &&
-                   !_windowFlags.HasFlag(ImGuiWindowFlags.NoMove);
+                   !_windowFlags.HasFlag(FuWindowStyleFlags.NoMove);
         }
 
         /// <summary>
@@ -1979,7 +2083,7 @@ namespace Fu
                    !Fugui.IsDraggingAnything() &&
                    Container != null &&
                    !Container.ForcePos() &&
-                   !_windowFlags.HasFlag(ImGuiWindowFlags.NoResize);
+                   !_windowFlags.HasFlag(FuWindowStyleFlags.NoResize);
         }
 
         /// <summary>
@@ -2686,6 +2790,7 @@ namespace Fu
         /// </summary>
         private void FinalizeClose()
         {
+            ReleaseInputFocus();
             ClearDrawDataCache();
             Fugui.TryRemoveUIWindow(this);
             Fugui.ForceDrawAllWindows(2);
@@ -2847,18 +2952,38 @@ namespace Fu
         /// Add a window flag to this windows
         /// </summary>
         /// <param name="flag">flag to add</param>
-        public void AddWindowFlag(ImGuiWindowFlags flag)
+        public void AddWindowFlag(FuWindowStyleFlags flag)
         {
             _windowFlags |= flag;
+        }
+
+        /// <summary>
+        /// Add a window flag to this windows.
+        /// </summary>
+        /// <param name="flag">flag to add</param>
+        [Obsolete("Use AddWindowFlag(FuWindowStyleFlags) instead.")]
+        public void AddWindowFlag(ImGuiWindowFlags flag)
+        {
+            _windowFlags |= (FuWindowStyleFlags)flag;
         }
 
         /// <summary>
         /// Remove a window flag from this window
         /// </summary>
         /// <param name="flag">flag to remove</param>
-        public void RemoveWindowFlag(ImGuiWindowFlags flag)
+        public void RemoveWindowFlag(FuWindowStyleFlags flag)
         {
             _windowFlags &= ~flag;
+        }
+
+        /// <summary>
+        /// Remove a window flag from this window.
+        /// </summary>
+        /// <param name="flag">flag to remove</param>
+        [Obsolete("Use RemoveWindowFlag(FuWindowStyleFlags) instead.")]
+        public void RemoveWindowFlag(ImGuiWindowFlags flag)
+        {
+            _windowFlags &= ~(FuWindowStyleFlags)flag;
         }
 
         /// <summary>

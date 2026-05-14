@@ -153,7 +153,7 @@ namespace Fu
                 }
 
                 ImGuiIOPtr io = context.IO;
-                if (io.WantCaptureMouse || io.WantCaptureKeyboard || io.WantTextInput)
+                if (io.WantCaptureMouse || io.WantTextInput)
                 {
                     return true;
                 }

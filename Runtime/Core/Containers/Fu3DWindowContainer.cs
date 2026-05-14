@@ -831,6 +831,13 @@ namespace Fu
                 return true;
             }
 
+            if (Fugui.GetWantCapturePointer(Window))
+            {
+                _hoveredResizeHandleIndex = -1;
+                setResizeHandlesVisible(false);
+                return false;
+            }
+
             bool handleHovered = tryGetHoveredResizeHandle(out int hoveredHandleIndex, out InputState handleInputState);
             bool canUseHoveredHandle = handleHovered &&
                                        !FuRaycasting.IsMouseButtonPressedBeforeCurrentFrame(handleInputState.RaycasterID, FuMouseButton.Left);

@@ -63,7 +63,9 @@ namespace Fu
         /// <returns>true if there is at least one popup open</returns>
         public static bool IsThereAnyOpenPopup()
         {
-            return PopUpIDs.Count > 0;
+            return PopUpIDs.Count > 0 ||
+                   _registeredPopups.Count > 0 ||
+                   IsContextMenuOpen;
         }
 
         /// <summary>

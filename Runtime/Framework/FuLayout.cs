@@ -87,6 +87,8 @@ namespace Fu.Framework
         protected int _currentToolTipsIndex = 0;
         // whatever tooltip must be display hover Labels
         protected bool _currentToolTipsOnLabels = false;
+        // whatever current tooltips must cache their draw output
+        protected bool _currentToolTipsFrozen = false;
         // has animations enabled
         protected bool _animationEnabled = true;
         // screen relative pos of the current drawing item
@@ -113,9 +115,46 @@ namespace Fu.Framework
         private static Dictionary<Type, List<IConvertible>> _enumValues = new Dictionary<Type, List<IConvertible>>();
         // A dictionary to store enum values as string according to the type of the enum
         private static Dictionary<Type, List<string>> _enumValuesString = new Dictionary<Type, List<string>>();
+        // Cached draw data for frozen tooltips.
+        private static Dictionary<string, FuFrozenToolTipDrawData> _frozenToolTipsDrawData = new Dictionary<string, FuFrozenToolTipDrawData>();
         protected bool _drawElement = true;
 
         public static bool IsThereAnyDraggingSlider => _draggingSliders.Count > 0;
+
+        /// <summary>
+        /// Represents captured draw commands for a frozen tooltip.
+        /// </summary>
+        private class FuFrozenToolTipDrawData
+        {
+            #region State
+            public Vector2 Position;
+            public Vector2 Size;
+            public Vector2 ContentSize;
+            public List<FuFrozenToolTipCommand> Commands = new List<FuFrozenToolTipCommand>();
+            #endregion
+
+            #region Constructors
+            public FuFrozenToolTipDrawData(Vector2 position, Vector2 size, Vector2 contentSize)
+            {
+                Position = position;
+                Size = size;
+                ContentSize = contentSize;
+            }
+            #endregion
+        }
+
+        /// <summary>
+        /// Represents a captured ImGui draw command.
+        /// </summary>
+        private struct FuFrozenToolTipCommand
+        {
+            #region State
+            public Vector4 ClipRect;
+            public IntPtr TextureId;
+            public ImDrawVert[] Vertices;
+            public ushort[] Indices;
+            #endregion
+        }
 
         #region Constructors
         /// <summary>
@@ -541,9 +580,20 @@ namespace Fu.Framework
         /// <param name="tooltips">array of tooltips to set</param>
         public void SetNextElementToolTip(params string[] tooltips)
         {
+            SetNextElementToolTip(false, tooltips);
+        }
+
+        /// <summary>
+        /// Set tooltips for the x next element(s)
+        /// </summary>
+        /// <param name="isFrozen">Whether tooltip UI is captured once and replayed while cached.</param>
+        /// <param name="tooltips">array of tooltips to set</param>
+        public void SetNextElementToolTip(bool isFrozen = false, params string[] tooltips)
+        {
             _currentToolTips = tooltips;
             _currentToolTipsIndex = 0;
             _currentToolTipsOnLabels = false;
+            _currentToolTipsFrozen = isFrozen;
         }
 
         /// <summary>
@@ -552,9 +602,20 @@ namespace Fu.Framework
         /// <param name="tooltips">array of tooltips to set</param>
         public void SetNextElementToolTipWithLabel(params string[] tooltips)
         {
+            SetNextElementToolTipWithLabel(false, tooltips);
+        }
+
+        /// <summary>
+        /// Set tooltips for the x next element(s), including labels
+        /// </summary>
+        /// <param name="isFrozen">Whether tooltip UI is captured once and replayed while cached.</param>
+        /// <param name="tooltips">array of tooltips to set</param>
+        public void SetNextElementToolTipWithLabel(bool isFrozen = false, params string[] tooltips)
+        {
             _currentToolTips = tooltips;
             _currentToolTipsIndex = 0;
             _currentToolTipsOnLabels = true;
+            _currentToolTipsFrozen = isFrozen;
         }
 
         /// <summary>
@@ -1014,7 +1075,7 @@ namespace Fu.Framework
                         style = _currentToolTipsStyles[_currentToolTipsIndex];
                     }
 
-                    SetToolTip(_lastItemID, _currentToolTips[_currentToolTipsIndex], _lastItemHovered, !LastItemDisabled, style);
+                    SetToolTip(_lastItemID, _currentToolTips[_currentToolTipsIndex], _lastItemHovered, !LastItemDisabled, style, _currentToolTipsFrozen);
                 }
                 // cancel smooth tooltip display
                 else if (_lastItemID == _currentHoveredElementId)
@@ -1033,6 +1094,7 @@ namespace Fu.Framework
                 if (_currentToolTipsIndex >= _currentToolTips.Length)
                 {
                     _currentToolTips = null;
+                    _currentToolTipsFrozen = false;
                 }
             }
         }
@@ -1043,9 +1105,10 @@ namespace Fu.Framework
         /// <param name="id">unique id of the tooltip</param>
         /// <param name="text">text of the tooltip</param>
         /// <param name="hoveredState">whatever the item is hovered</param>
-        public void SetToolTip(string id, string text, bool hoveredState)
+        /// <param name="isFrozen">Whether tooltip UI is captured once and replayed while cached.</param>
+        public void SetToolTip(string id, string text, bool hoveredState, bool isFrozen = false)
         {
-            SetToolTip(id, text, hoveredState, true, FuTextStyle.Default);
+            SetToolTip(id, text, hoveredState, true, FuTextStyle.Default, isFrozen);
         }
 
         /// <summary>
@@ -1056,14 +1119,15 @@ namespace Fu.Framework
         /// <param name="hoveredState">whatever the item is hovered</param>
         /// <param name="enabled">whatever the item is enabled</param>
         /// <param name="style">style on the tooltip</param>
-        public void SetToolTip(string id, string text, bool hoveredState, bool enabled, FuTextStyle style)
+        /// <param name="isFrozen">Whether tooltip UI is captured once and replayed while cached.</param>
+        public void SetToolTip(string id, string text, bool hoveredState, bool enabled, FuTextStyle style, bool isFrozen = false)
         {
             SetToolTip(id, () =>
             {
                 style.Push(enabled);
                 ImGui.Text(text);
                 style.Pop();
-            }, hoveredState);
+            }, hoveredState, isFrozen);
         }
 
         /// <summary>
@@ -1072,7 +1136,8 @@ namespace Fu.Framework
         /// <param name="id">unique id of the tooltip</param>
         /// <param name="callback">callback to draw inside tooltip popup</param>
         /// <param name="hoveredState">whatever the item is hovered</param>
-        public void SetToolTip(string id, Action callback, bool hoveredState)
+        /// <param name="isFrozen">Whether tooltip UI is captured once and replayed while cached.</param>
+        public void SetToolTip(string id, Action callback, bool hoveredState, bool isFrozen = false)
         {
             if (hoveredState)
             {
@@ -1085,12 +1150,25 @@ namespace Fu.Framework
 
                 if (Fugui.Time - _currentHoveredStartHoverTime >= _tooltipAppearDuration)
                 {
+                    bool useFrozenTooltip = isFrozen && !string.IsNullOrEmpty(id);
+                    if (useFrozenTooltip && _frozenToolTipsDrawData.TryGetValue(id, out FuFrozenToolTipDrawData frozenData))
+                    {
+                        ImGui.SetNextWindowSize(frozenData.Size, ImGuiCond.Always);
+                    }
+
                     // set padding and font
                     Fugui.PushDefaultFont();
                     Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
                     // Display the current tooltip
                     ImGui.BeginTooltip();
-                    callback?.Invoke();
+                    if (useFrozenTooltip)
+                    {
+                        DrawFrozenToolTip(id, callback);
+                    }
+                    else
+                    {
+                        callback?.Invoke();
+                    }
                     ImGui.EndTooltip();
                     Fugui.PopStyle();
                     Fugui.PopFont();
@@ -1100,6 +1178,181 @@ namespace Fu.Framework
             {
                 _currentHoveredElementId = string.Empty;
             }
+        }
+
+        /// <summary>
+        /// Invalidates cached draw data for a frozen tooltip.
+        /// </summary>
+        /// <param name="id">ID of the tooltip to invalidate.</param>
+        public void InvalidateToolTip(string id)
+        {
+            if (!string.IsNullOrEmpty(id))
+            {
+                _frozenToolTipsDrawData.Remove(id);
+            }
+        }
+
+        /// <summary>
+        /// Draws a frozen tooltip by capturing the callback output once, then replaying it.
+        /// </summary>
+        /// <param name="id">Tooltip ID.</param>
+        /// <param name="callback">Tooltip UI callback.</param>
+        private void DrawFrozenToolTip(string id, Action callback)
+        {
+            if (_frozenToolTipsDrawData.TryGetValue(id, out FuFrozenToolTipDrawData frozenData))
+            {
+                ReplayFrozenToolTipData(frozenData);
+                if (frozenData.ContentSize.x > 0f || frozenData.ContentSize.y > 0f)
+                {
+                    ImGui.Dummy(frozenData.ContentSize);
+                }
+                return;
+            }
+
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            int idxStart = drawList.IdxBuffer.Size;
+            callback?.Invoke();
+            _frozenToolTipsDrawData[id] = CaptureFrozenToolTipData(drawList, idxStart);
+        }
+
+        /// <summary>
+        /// Capture draw commands emitted by a frozen tooltip UI callback.
+        /// </summary>
+        /// <param name="drawList">Current tooltip draw list.</param>
+        /// <param name="idxStart">First index emitted by the callback.</param>
+        /// <returns>Captured frozen tooltip draw data.</returns>
+        private static unsafe FuFrozenToolTipDrawData CaptureFrozenToolTipData(ImDrawListPtr drawList, int idxStart)
+        {
+            int idxEnd = drawList.IdxBuffer.Size;
+            FuFrozenToolTipDrawData frozenData = new FuFrozenToolTipDrawData(ImGui.GetWindowPos(), ImGui.GetWindowSize(), GetFrozenToolTipContentSize());
+            if (idxEnd <= idxStart)
+            {
+                return frozenData;
+            }
+
+            for (int cmdIndex = 0; cmdIndex < drawList.CmdBuffer.Size; cmdIndex++)
+            {
+                ImDrawCmd cmd = *drawList.CmdBuffer[cmdIndex].NativePtr;
+                if (cmd.UserCallback != IntPtr.Zero || cmd.ElemCount == 0)
+                {
+                    continue;
+                }
+
+                int cmdIdxStart = (int)cmd.IdxOffset;
+                int cmdIdxEnd = cmdIdxStart + (int)cmd.ElemCount;
+                int captureStart = Mathf.Max(cmdIdxStart, idxStart);
+                int captureEnd = Mathf.Min(cmdIdxEnd, idxEnd);
+                if (captureStart >= captureEnd)
+                {
+                    continue;
+                }
+
+                Dictionary<int, ushort> remap = new Dictionary<int, ushort>();
+                List<ImDrawVert> vertices = new List<ImDrawVert>();
+                ushort[] indices = new ushort[captureEnd - captureStart];
+                bool commandInvalid = false;
+
+                for (int idx = captureStart; idx < captureEnd; idx++)
+                {
+                    int originalVertexIndex = (int)cmd.VtxOffset + drawList.IdxBuffer[idx];
+                    if (originalVertexIndex < 0 || originalVertexIndex >= drawList.VtxBuffer.Size)
+                    {
+                        commandInvalid = true;
+                        break;
+                    }
+
+                    if (!remap.TryGetValue(originalVertexIndex, out ushort localIndex))
+                    {
+                        if (vertices.Count >= ushort.MaxValue)
+                        {
+                            commandInvalid = true;
+                            break;
+                        }
+
+                        ImDrawVertPtr vertex = drawList.VtxBuffer[originalVertexIndex];
+                        localIndex = (ushort)vertices.Count;
+                        remap.Add(originalVertexIndex, localIndex);
+                        vertices.Add(new ImDrawVert
+                        {
+                            pos = vertex.pos,
+                            uv = vertex.uv,
+                            col = vertex.col
+                        });
+                    }
+
+                    indices[idx - captureStart] = localIndex;
+                }
+
+                if (commandInvalid)
+                {
+                    continue;
+                }
+
+                frozenData.Commands.Add(new FuFrozenToolTipCommand
+                {
+                    ClipRect = cmd.ClipRect,
+                    TextureId = cmd.TextureId,
+                    Vertices = vertices.ToArray(),
+                    Indices = indices
+                });
+            }
+
+            return frozenData;
+        }
+
+        /// <summary>
+        /// Replay captured draw commands for a frozen tooltip.
+        /// </summary>
+        /// <param name="frozenData">Captured frozen tooltip draw data.</param>
+        private static void ReplayFrozenToolTipData(FuFrozenToolTipDrawData frozenData)
+        {
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            Vector2 offset = ImGui.GetWindowPos() - frozenData.Position;
+
+            for (int commandIndex = 0; commandIndex < frozenData.Commands.Count; commandIndex++)
+            {
+                FuFrozenToolTipCommand command = frozenData.Commands[commandIndex];
+                if (command.Indices == null || command.Vertices == null || command.Indices.Length == 0 || command.Vertices.Length == 0)
+                {
+                    continue;
+                }
+
+                Vector4 clipRect = new Vector4(
+                    command.ClipRect.x + offset.x,
+                    command.ClipRect.y + offset.y,
+                    command.ClipRect.z + offset.x,
+                    command.ClipRect.w + offset.y);
+
+                drawList.PushClipRect(new Vector2(clipRect.x, clipRect.y), new Vector2(clipRect.z, clipRect.w));
+                drawList.PushTextureID(command.TextureId);
+                drawList.PrimReserve(command.Indices.Length, command.Vertices.Length);
+
+                uint vtxBase = drawList._VtxCurrentIdx;
+                for (int index = 0; index < command.Indices.Length; index++)
+                {
+                    drawList.PrimWriteIdx((ushort)(vtxBase + command.Indices[index]));
+                }
+
+                for (int vertexIndex = 0; vertexIndex < command.Vertices.Length; vertexIndex++)
+                {
+                    ImDrawVert vertex = command.Vertices[vertexIndex];
+                    drawList.PrimWriteVtx(vertex.pos + offset, vertex.uv, vertex.col);
+                }
+
+                drawList.PopTextureID();
+                drawList.PopClipRect();
+            }
+        }
+
+        /// <summary>
+        /// Returns a content size approximation for keeping frozen tooltip auto-size stable.
+        /// </summary>
+        /// <returns>Tooltip content size.</returns>
+        private static Vector2 GetFrozenToolTipContentSize()
+        {
+            Vector2 padding = ImGui.GetStyle().WindowPadding;
+            Vector2 size = ImGui.GetWindowSize() - padding * 2f;
+            return new Vector2(Mathf.Max(0f, size.x), Mathf.Max(0f, size.y));
         }
 
         /// <summary>

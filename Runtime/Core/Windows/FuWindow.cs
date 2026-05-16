@@ -840,6 +840,11 @@ namespace Fu
                 nativeWantDrawWindow = ImGui.Begin(ID, nativeWindowFlags);
             }
 
+            if (nativeWantDrawWindow)
+            {
+                DrawInvisibleWindowAnchor();
+            }
+
             // whatever window is hovered
             processHoverState();
 
@@ -939,6 +944,25 @@ namespace Fu
                 OnInitialized?.Invoke(this);
             }
             Layout.Dispose();
+        }
+
+        /// <summary>
+        /// Add a degenerate invisible primitive so a visible Fugui window always owns a native draw list.
+        /// </summary>
+        private void DrawInvisibleWindowAnchor()
+        {
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            Vector2 pos = ImGui.GetWindowPos();
+            Vector2 uv = ImGui.GetIO().Fonts.TexUvWhitePixel;
+            uint color = 0u;
+
+            drawList.PrimReserve(3, 3);
+            drawList.PrimWriteIdx((ushort)drawList._VtxCurrentIdx);
+            drawList.PrimWriteIdx((ushort)(drawList._VtxCurrentIdx + 1));
+            drawList.PrimWriteIdx((ushort)(drawList._VtxCurrentIdx + 2));
+            drawList.PrimWriteVtx(pos, uv, color);
+            drawList.PrimWriteVtx(pos, uv, color);
+            drawList.PrimWriteVtx(pos, uv, color);
         }
 
         /// <summary>

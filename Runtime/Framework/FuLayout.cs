@@ -166,7 +166,7 @@ namespace Fu.Framework
         public FuLayout()
         {
             CurrentDrawerPath.Push(this);
-            _tooltipAppearDuration = 0.7f;
+            _tooltipAppearDuration = Fugui.Settings.TooltipAppearDuration;
         }
         #endregion
 

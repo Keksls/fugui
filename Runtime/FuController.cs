@@ -20,6 +20,8 @@ namespace Fu
         [SerializeField]
         private bool _logErrors = true;
         [SerializeField]
+        private bool _keepControllerBetweenScenes = true;
+        [SerializeField]
         private FuguiUpdateMode _updateMode = FuguiUpdateMode.Update;
         #endregion
 
@@ -28,6 +30,9 @@ namespace Fu
         /// </summary>
         void Awake()
         {
+            if (_keepControllerBetweenScenes)
+                DontDestroyOnLoad(gameObject);
+
             // prepare FuGui before start using it
             Fugui.Initialize(_settings, this, _uiCamera, EnableMainContainer);
 
@@ -117,7 +122,7 @@ namespace Fu
                     FuContext context = Fugui.GetContext(contextID);
 
 #if FU_EXTERNALIZATION
-                    if(context is FuExternalContext externalContext)
+                    if (context is FuExternalContext externalContext)
                     {
                         // remove external window from dictionary
                         List<string> externalWindowIds = new List<string>();

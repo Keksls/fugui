@@ -2653,7 +2653,6 @@ namespace Fu
         /// </summary>
         public void Fire_OnResize()
         {
-            IsResizing = true;
             if (!_ignoreResizeForThisFrame)
             {
                 OnResize?.Invoke(this);

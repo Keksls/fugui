@@ -134,6 +134,8 @@ namespace Fu
                 DefaultContext.SetScale(_targetScale, _targetFontScale);
             }
 
+            CleanFrozenUICache();
+
             // prevent rescaling each frames
             _targetScale = -1f;
         }

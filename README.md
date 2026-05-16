@@ -461,25 +461,25 @@ if (layout.Button("Options"))
 Fugui.DrawPopup("options-popup");
 ```
 
-Pour figer le contenu d'une popup et eviter de reexecuter le callback UI a chaque frame:
+Le cache de rendu est aussi disponible pour n'importe quel bloc UI statique:
 
 ```csharp
-if (layout.Button("Help"))
+try
 {
-    Fugui.OpenPopUp("help-popup", DrawHelpPopup, new FuPopupOptions
+    if (Fugui.BeginFrozenUI("static-help", nbFrameBeforeCache: 3))
     {
-        Size = new Vector2(420f, 260f),
-        Mode = FuPopupRenderMode.Frozen
-    });
+        DrawStaticHelp();
+    }
+}
+finally
+{
+    Fugui.EndFrozenUI();
 }
 
-Fugui.DrawPopup("help-popup");
-
-// Quand les donnees affichees changent:
-Fugui.InvalidatePopup("help-popup");
+Fugui.InvalidateFrozenUI("static-help");
 ```
 
-`FuPopupRenderMode.Frozen` est adapte aux contenus visuels statiques. Pour une popup interactive, garde le mode `Live` par defaut ou invalide explicitement le cache quand l'UI doit etre reconstruite.
+`BeginFrozenUI` dessine le bloc en live pendant les premieres frames, puis rejoue les draw commands capturees. Le cache est purge automatiquement quand le bloc n'est plus soumis pendant les frames configurees.
 
 ### Modale
 

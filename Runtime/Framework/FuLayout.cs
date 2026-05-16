@@ -115,6 +115,7 @@ namespace Fu.Framework
         private static Dictionary<Type, List<IConvertible>> _enumValues = new Dictionary<Type, List<IConvertible>>();
         // A dictionary to store enum values as string according to the type of the enum
         private static Dictionary<Type, List<string>> _enumValuesString = new Dictionary<Type, List<string>>();
+        private const int FrozenToolTipWarmupFrameCount = 3;
         // Cached draw data for frozen tooltips.
         private static Dictionary<string, FuFrozenToolTipDrawData> _frozenToolTipsDrawData = new Dictionary<string, FuFrozenToolTipDrawData>();
         protected bool _drawElement = true;
@@ -130,15 +131,17 @@ namespace Fu.Framework
             public Vector2 Position;
             public Vector2 Size;
             public Vector2 ContentSize;
+            public int DrawFrameCount;
             public List<FuFrozenToolTipCommand> Commands = new List<FuFrozenToolTipCommand>();
             #endregion
 
             #region Constructors
-            public FuFrozenToolTipDrawData(Vector2 position, Vector2 size, Vector2 contentSize)
+            public FuFrozenToolTipDrawData(Vector2 position, Vector2 size, Vector2 contentSize, int drawFrameCount)
             {
                 Position = position;
                 Size = size;
                 ContentSize = contentSize;
+                DrawFrameCount = drawFrameCount;
             }
             #endregion
         }
@@ -1151,7 +1154,9 @@ namespace Fu.Framework
                 if (Fugui.Time - _currentHoveredStartHoverTime >= _tooltipAppearDuration)
                 {
                     bool useFrozenTooltip = isFrozen && !string.IsNullOrEmpty(id);
-                    if (useFrozenTooltip && _frozenToolTipsDrawData.TryGetValue(id, out FuFrozenToolTipDrawData frozenData))
+                    if (useFrozenTooltip &&
+                        _frozenToolTipsDrawData.TryGetValue(id, out FuFrozenToolTipDrawData frozenData) &&
+                        frozenData.DrawFrameCount >= FrozenToolTipWarmupFrameCount)
                     {
                         ImGui.SetNextWindowSize(frozenData.Size, ImGuiCond.Always);
                     }
@@ -1201,18 +1206,22 @@ namespace Fu.Framework
         {
             if (_frozenToolTipsDrawData.TryGetValue(id, out FuFrozenToolTipDrawData frozenData))
             {
-                ReplayFrozenToolTipData(frozenData);
-                if (frozenData.ContentSize.x > 0f || frozenData.ContentSize.y > 0f)
+                if (frozenData.DrawFrameCount >= FrozenToolTipWarmupFrameCount)
                 {
-                    ImGui.Dummy(frozenData.ContentSize);
+                    ReplayFrozenToolTipData(frozenData);
+                    if (frozenData.ContentSize.x > 0f || frozenData.ContentSize.y > 0f)
+                    {
+                        ImGui.Dummy(frozenData.ContentSize);
+                    }
+                    return;
                 }
-                return;
             }
 
+            int drawFrameCount = frozenData != null ? frozenData.DrawFrameCount + 1 : 1;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             int idxStart = drawList.IdxBuffer.Size;
             callback?.Invoke();
-            _frozenToolTipsDrawData[id] = CaptureFrozenToolTipData(drawList, idxStart);
+            _frozenToolTipsDrawData[id] = CaptureFrozenToolTipData(drawList, idxStart, drawFrameCount);
         }
 
         /// <summary>
@@ -1220,11 +1229,12 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="drawList">Current tooltip draw list.</param>
         /// <param name="idxStart">First index emitted by the callback.</param>
+        /// <param name="drawFrameCount">Number of live frames drawn before using the frozen cache.</param>
         /// <returns>Captured frozen tooltip draw data.</returns>
-        private static unsafe FuFrozenToolTipDrawData CaptureFrozenToolTipData(ImDrawListPtr drawList, int idxStart)
+        private static unsafe FuFrozenToolTipDrawData CaptureFrozenToolTipData(ImDrawListPtr drawList, int idxStart, int drawFrameCount)
         {
             int idxEnd = drawList.IdxBuffer.Size;
-            FuFrozenToolTipDrawData frozenData = new FuFrozenToolTipDrawData(ImGui.GetWindowPos(), ImGui.GetWindowSize(), GetFrozenToolTipContentSize());
+            FuFrozenToolTipDrawData frozenData = new FuFrozenToolTipDrawData(ImGui.GetWindowPos(), ImGui.GetWindowSize(), GetFrozenToolTipContentSize(), drawFrameCount);
             if (idxEnd <= idxStart)
             {
                 return frozenData;

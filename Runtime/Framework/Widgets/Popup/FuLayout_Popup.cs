@@ -8,6 +8,52 @@ using UnityEngine;
 namespace Fu
 {
     /// <summary>
+    /// Defines how a Fugui popup draws its content.
+    /// </summary>
+    public enum FuPopupRenderMode
+    {
+        /// <summary>
+        /// Run the popup UI callback every frame.
+        /// </summary>
+        Live,
+
+        /// <summary>
+        /// Run the popup UI callback once, then replay the captured draw commands until invalidated.
+        /// </summary>
+        Frozen
+    }
+
+    /// <summary>
+    /// Options used when opening a Fugui popup.
+    /// </summary>
+    public struct FuPopupOptions
+    {
+        #region State
+        public Vector2 Size;
+        public FuPopupRenderMode Mode;
+        public Action OnClose;
+        public bool IsComboBoxPopup;
+        #endregion
+
+        #region Constructors
+        /// <summary>
+        /// Initializes a new popup options instance.
+        /// </summary>
+        /// <param name="size">Default popup size.</param>
+        /// <param name="mode">Popup render mode.</param>
+        /// <param name="onClose">Callback invoked when the popup closes.</param>
+        /// <param name="isComboBoxPopup">Whether the popup uses combobox constraints and style.</param>
+        public FuPopupOptions(Vector2 size, FuPopupRenderMode mode = FuPopupRenderMode.Live, Action onClose = null, bool isComboBoxPopup = false)
+        {
+            Size = size;
+            Mode = mode;
+            OnClose = onClose;
+            IsComboBoxPopup = isComboBoxPopup;
+        }
+        #endregion
+    }
+
+    /// <summary>
     /// Represents the Fugui type.
     /// </summary>
     public static partial class Fugui
@@ -52,7 +98,7 @@ namespace Fu
         /// <param name="onClose">callback invoken then the popup close</param>
         public static void OpenPopUp(string id, Action ui, Action onClose = null, bool isComboBoxPopup = false)
         {
-            OpenPopUp(id, ui, Vector2.zero, onClose, isComboBoxPopup);
+            OpenPopUp(id, ui, new FuPopupOptions(Vector2.zero, FuPopupRenderMode.Live, onClose, isComboBoxPopup));
         }
 
         /// <summary>
@@ -65,10 +111,23 @@ namespace Fu
         /// <param name="onClose">callback invoken then the popup close</param>
         public static void OpenPopUp(string id, Action ui, Vector2 size, Action onClose = null, bool isComboBoxPopup = false)
         {
+            OpenPopUp(id, ui, new FuPopupOptions(size, FuPopupRenderMode.Live, onClose, isComboBoxPopup));
+        }
+
+        /// <summary>
+        /// Give the order to draw a specific popup.
+        /// You must call DrawPopup (each frames) to display the popup.
+        /// </summary>
+        /// <param name="id">ID of the popup to draw</param>
+        /// <param name="ui">UI to draw inside the popup</param>
+        /// <param name="options">Popup options.</param>
+        public static void OpenPopUp(string id, Action ui, FuPopupOptions options)
+        {
             id = GetUniquePopupID(id);
             // remove from dic if already exists
             _registeredPopups.Remove(id);
             // scale size
+            Vector2 size = options.Size;
             if (size.x > 0)
             {
                 size.x *= CurrentContext.Scale;
@@ -83,12 +142,64 @@ namespace Fu
                 LastFrameRender = UnityEngine.Time.frameCount,
                 OpenThisFrame = true,
                 CloseThisFrame = false,
-                isComboBox = isComboBoxPopup,
+                isComboBox = options.IsComboBoxPopup,
+                RenderMode = options.Mode,
+                FrozenDirty = options.Mode == FuPopupRenderMode.Frozen,
                 Size = size,
                 UI = ui,
-                OnClose = onClose
+                OnClose = options.OnClose
             };
             _registeredPopups.Add(id, data);
+        }
+
+        /// <summary>
+        /// Give the order to draw a frozen popup.
+        /// You must call DrawPopup (each frames) to display the popup.
+        /// </summary>
+        /// <param name="id">ID of the popup to draw</param>
+        /// <param name="ui">UI to draw once inside the popup</param>
+        /// <param name="onClose">callback invoken then the popup close</param>
+        /// <param name="isComboBoxPopup">Whether the popup uses combobox constraints and style.</param>
+        public static void OpenFrozenPopUp(string id, Action ui, Action onClose = null, bool isComboBoxPopup = false)
+        {
+            OpenPopUp(id, ui, new FuPopupOptions(Vector2.zero, FuPopupRenderMode.Frozen, onClose, isComboBoxPopup));
+        }
+
+        /// <summary>
+        /// Give the order to draw a frozen popup.
+        /// You must call DrawPopup (each frames) to display the popup.
+        /// </summary>
+        /// <param name="id">ID of the popup to draw</param>
+        /// <param name="ui">UI to draw once inside the popup</param>
+        /// <param name="size">default size of the popup</param>
+        /// <param name="onClose">callback invoken then the popup close</param>
+        /// <param name="isComboBoxPopup">Whether the popup uses combobox constraints and style.</param>
+        public static void OpenFrozenPopUp(string id, Action ui, Vector2 size, Action onClose = null, bool isComboBoxPopup = false)
+        {
+            OpenPopUp(id, ui, new FuPopupOptions(size, FuPopupRenderMode.Frozen, onClose, isComboBoxPopup));
+        }
+
+        /// <summary>
+        /// Invalidate a frozen popup draw cache so its UI callback runs again on the next draw.
+        /// </summary>
+        /// <param name="id">ID of the popup to invalidate.</param>
+        public static void InvalidatePopup(string id)
+        {
+            id = GetUniquePopupID(id);
+            if (_registeredPopups.TryGetValue(id, out FuPopupData data))
+            {
+                data.FrozenDirty = true;
+                data.FrozenDrawData = null;
+            }
+        }
+
+        /// <summary>
+        /// Invalidate a frozen popup draw cache so its UI callback runs again on the next draw.
+        /// </summary>
+        /// <param name="id">ID of the popup to refresh.</param>
+        public static void RefreshFrozenPopup(string id)
+        {
+            InvalidatePopup(id);
         }
 
         /// <summary>
@@ -189,8 +300,23 @@ namespace Fu
 
                     try
                     {
-                        // execute the callback
-                        data.UI?.Invoke();
+                        if (data.RenderMode == FuPopupRenderMode.Frozen && data.FrozenDrawData != null && !data.FrozenDirty)
+                        {
+                            DrawFrozenPopupData(data);
+                        }
+                        else
+                        {
+                            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                            int idxStart = drawList.IdxBuffer.Size;
+
+                            // execute the callback
+                            data.UI?.Invoke();
+
+                            if (data.RenderMode == FuPopupRenderMode.Frozen)
+                            {
+                                CaptureFrozenPopupData(data, drawList, idxStart);
+                            }
+                        }
 
                         // update popup value on stack
                         IsPopupDrawing[data.PopupIndex] = false;
@@ -198,7 +324,6 @@ namespace Fu
                     }
                     catch (Exception ex)
                     {
-                        ImGui.EndPopup();
                         _closePopup(id);
                         Fire_OnUIException(ex);
                     }
@@ -219,6 +344,149 @@ namespace Fu
                 {
                     _closePopup(id);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Capture draw commands emitted by a frozen popup UI callback.
+        /// </summary>
+        /// <param name="data">Popup data to update.</param>
+        /// <param name="drawList">Current popup draw list.</param>
+        /// <param name="idxStart">First index emitted by the callback.</param>
+        private static unsafe void CaptureFrozenPopupData(FuPopupData data, ImDrawListPtr drawList, int idxStart)
+        {
+            int idxEnd = drawList.IdxBuffer.Size;
+            if (idxEnd <= idxStart)
+            {
+                data.FrozenDrawData = new FuFrozenPopupDrawData(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+                data.FrozenDirty = false;
+                data.Size = ImGui.GetWindowSize();
+                return;
+            }
+
+            FuFrozenPopupDrawData frozenData = new FuFrozenPopupDrawData(ImGui.GetWindowPos(), ImGui.GetWindowSize());
+
+            for (int cmdIndex = 0; cmdIndex < drawList.CmdBuffer.Size; cmdIndex++)
+            {
+                ImDrawCmd cmd = *drawList.CmdBuffer[cmdIndex].NativePtr;
+                if (cmd.UserCallback != IntPtr.Zero || cmd.ElemCount == 0)
+                {
+                    continue;
+                }
+
+                int cmdIdxStart = (int)cmd.IdxOffset;
+                int cmdIdxEnd = cmdIdxStart + (int)cmd.ElemCount;
+                int captureStart = Mathf.Max(cmdIdxStart, idxStart);
+                int captureEnd = Mathf.Min(cmdIdxEnd, idxEnd);
+                if (captureStart >= captureEnd)
+                {
+                    continue;
+                }
+
+                Dictionary<int, ushort> remap = new Dictionary<int, ushort>();
+                List<ImDrawVert> vertices = new List<ImDrawVert>();
+                ushort[] indices = new ushort[captureEnd - captureStart];
+                bool commandTooLarge = false;
+
+                for (int idx = captureStart; idx < captureEnd; idx++)
+                {
+                    int originalVertexIndex = (int)cmd.VtxOffset + drawList.IdxBuffer[idx];
+                    if (originalVertexIndex < 0 || originalVertexIndex >= drawList.VtxBuffer.Size)
+                    {
+                        commandTooLarge = true;
+                        break;
+                    }
+
+                    if (!remap.TryGetValue(originalVertexIndex, out ushort localIndex))
+                    {
+                        if (vertices.Count >= ushort.MaxValue)
+                        {
+                            commandTooLarge = true;
+                            break;
+                        }
+
+                        ImDrawVertPtr vertex = drawList.VtxBuffer[originalVertexIndex];
+                        localIndex = (ushort)vertices.Count;
+                        remap.Add(originalVertexIndex, localIndex);
+                        vertices.Add(new ImDrawVert
+                        {
+                            pos = vertex.pos,
+                            uv = vertex.uv,
+                            col = vertex.col
+                        });
+                    }
+
+                    indices[idx - captureStart] = localIndex;
+                }
+
+                if (commandTooLarge)
+                {
+                    data.FrozenDrawData = null;
+                    data.FrozenDirty = true;
+                    return;
+                }
+
+                frozenData.Commands.Add(new FuFrozenPopupCommand
+                {
+                    ClipRect = cmd.ClipRect,
+                    TextureId = cmd.TextureId,
+                    Vertices = vertices.ToArray(),
+                    Indices = indices
+                });
+            }
+
+            data.FrozenDrawData = frozenData;
+            data.FrozenDirty = false;
+            data.Size = frozenData.Size;
+        }
+
+        /// <summary>
+        /// Replay a frozen popup draw cache in the current popup window.
+        /// </summary>
+        /// <param name="data">Popup data to draw.</param>
+        private static void DrawFrozenPopupData(FuPopupData data)
+        {
+            FuFrozenPopupDrawData frozenData = data.FrozenDrawData;
+            if (frozenData == null)
+            {
+                return;
+            }
+
+            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            Vector2 offset = ImGui.GetWindowPos() - frozenData.Position;
+
+            for (int commandIndex = 0; commandIndex < frozenData.Commands.Count; commandIndex++)
+            {
+                FuFrozenPopupCommand command = frozenData.Commands[commandIndex];
+                if (command.Indices == null || command.Vertices == null || command.Indices.Length == 0 || command.Vertices.Length == 0)
+                {
+                    continue;
+                }
+
+                Vector4 clipRect = new Vector4(
+                    command.ClipRect.x + offset.x,
+                    command.ClipRect.y + offset.y,
+                    command.ClipRect.z + offset.x,
+                    command.ClipRect.w + offset.y);
+
+                drawList.PushClipRect(new Vector2(clipRect.x, clipRect.y), new Vector2(clipRect.z, clipRect.w));
+                drawList.PushTextureID(command.TextureId);
+                drawList.PrimReserve(command.Indices.Length, command.Vertices.Length);
+
+                uint vtxBase = drawList._VtxCurrentIdx;
+                for (int index = 0; index < command.Indices.Length; index++)
+                {
+                    drawList.PrimWriteIdx((ushort)(vtxBase + command.Indices[index]));
+                }
+
+                for (int vertexIndex = 0; vertexIndex < command.Vertices.Length; vertexIndex++)
+                {
+                    ImDrawVert vertex = command.Vertices[vertexIndex];
+                    drawList.PrimWriteVtx(vertex.pos + offset, vertex.uv, vertex.col);
+                }
+
+                drawList.PopTextureID();
+                drawList.PopClipRect();
             }
         }
 
@@ -327,9 +595,45 @@ namespace Fu
             public Action UI;
             public Action OnClose;
             public bool isComboBox = false;
+            public FuPopupRenderMode RenderMode = FuPopupRenderMode.Live;
+            public bool FrozenDirty = false;
+            public FuFrozenPopupDrawData FrozenDrawData;
             public bool OpenThisFrame = false;
             public bool CloseThisFrame = false;
             public Vector2 Size;
+            #endregion
+        }
+
+        /// <summary>
+        /// Represents captured draw commands for a frozen popup.
+        /// </summary>
+        private class FuFrozenPopupDrawData
+        {
+            #region State
+            public Vector2 Position;
+            public Vector2 Size;
+            public List<FuFrozenPopupCommand> Commands = new List<FuFrozenPopupCommand>();
+            #endregion
+
+            #region Constructors
+            public FuFrozenPopupDrawData(Vector2 position, Vector2 size)
+            {
+                Position = position;
+                Size = size;
+            }
+            #endregion
+        }
+
+        /// <summary>
+        /// Represents a captured ImGui draw command.
+        /// </summary>
+        private struct FuFrozenPopupCommand
+        {
+            #region State
+            public Vector4 ClipRect;
+            public IntPtr TextureId;
+            public ImDrawVert[] Vertices;
+            public ushort[] Indices;
             #endregion
         }
         #endregion

@@ -74,7 +74,6 @@ namespace Fu
             RebuildWindowRenderMeshes(drawLists, imDrawDataPtr.DisplaySize, imDrawDataPtr.FramebufferScale);
 
             Dictionary<FuWindow, int> lastWindowDrawListIndices = GetLastWindowDrawListIndices(drawLists);
-            HashSet<FuWindow> windowsWithNativeGeometry = GetWindowsWithNativeGeometry(drawLists);
             for (int i = 0; i < drawLists.Length; i++)
             {
                 ResolvedDrawList drawList = drawLists[i];
@@ -82,7 +81,7 @@ namespace Fu
                 {
                     if (lastWindowDrawListIndices.TryGetValue(drawList.Window, out int lastIndex) &&
                         i == lastIndex &&
-                        windowsWithNativeGeometry.Contains(drawList.Window))
+                        drawList.Window.IsVisible)
                     {
                         cmd.AddWindowDrawData(drawList.Window);
                     }
@@ -118,43 +117,6 @@ namespace Fu
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// Returns windows that still produced native ImGui geometry in this frame.
-        /// </summary>
-        /// <param name="drawLists">Resolved draw lists for the current frame.</param>
-        /// <returns>Windows with at least one non-empty native draw list.</returns>
-        private static HashSet<FuWindow> GetWindowsWithNativeGeometry(ResolvedDrawList[] drawLists)
-        {
-            HashSet<FuWindow> result = new HashSet<FuWindow>();
-            for (int i = 0; i < drawLists.Length; i++)
-            {
-                FuWindow window = drawLists[i].Window;
-                if (window == null || result.Contains(window))
-                {
-                    continue;
-                }
-
-                if (HasNativeGeometry(drawLists[i].NativeDrawList))
-                {
-                    result.Add(window);
-                }
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Returns whether a native draw list contains geometry that can be rendered.
-        /// </summary>
-        /// <param name="drawList">Native ImGui draw list.</param>
-        /// <returns>True when the draw list has commands, vertices and indices.</returns>
-        private static bool HasNativeGeometry(ImDrawListPtr drawList)
-        {
-            return drawList.CmdBuffer.Size > 0 &&
-                   drawList.VtxBuffer.Size > 0 &&
-                   drawList.IdxBuffer.Size > 0;
         }
 
         /// <summary>

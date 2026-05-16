@@ -461,6 +461,26 @@ if (layout.Button("Options"))
 Fugui.DrawPopup("options-popup");
 ```
 
+Pour figer le contenu d'une popup et eviter de reexecuter le callback UI a chaque frame:
+
+```csharp
+if (layout.Button("Help"))
+{
+    Fugui.OpenPopUp("help-popup", DrawHelpPopup, new FuPopupOptions
+    {
+        Size = new Vector2(420f, 260f),
+        Mode = FuPopupRenderMode.Frozen
+    });
+}
+
+Fugui.DrawPopup("help-popup");
+
+// Quand les donnees affichees changent:
+Fugui.InvalidatePopup("help-popup");
+```
+
+`FuPopupRenderMode.Frozen` est adapte aux contenus visuels statiques. Pour une popup interactive, garde le mode `Live` par defaut ou invalide explicitement le cache quand l'UI doit etre reconstruite.
+
 ### Modale
 
 ```csharp

@@ -1083,6 +1083,10 @@ namespace Fu.Framework
                 // cancel smooth tooltip display
                 else if (_lastItemID == _currentHoveredElementId)
                 {
+                    if (_currentToolTipsFrozen)
+                    {
+                        InvalidateToolTip(_lastItemID);
+                    }
                     _currentHoveredElementId = string.Empty;
                 }
 
@@ -1181,6 +1185,10 @@ namespace Fu.Framework
             }
             else if (id == _currentHoveredElementId)
             {
+                if (isFrozen)
+                {
+                    InvalidateToolTip(id);
+                }
                 _currentHoveredElementId = string.Empty;
             }
         }

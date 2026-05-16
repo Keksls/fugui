@@ -92,6 +92,12 @@ namespace Fu
         [FuToggle]
         public bool DrawDebugPanel = true;
 
+        [Tooltip("Duration before the tooltip appears in seconds")]
+        [FuTooltip("Duration before the tooltip appears in seconds")]
+        [Range(0f, 1f)]
+        [FuSlider(0f, 1f)]
+        public float TooltipAppearDuration = 0.7f;
+
         [Tooltip("Duration of the modal activation animation in seconds")]
         [FuTooltip("Duration of the modal activation animation in seconds")]
         [Range(0f, 0.5f)]

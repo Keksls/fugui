@@ -206,6 +206,8 @@ namespace Fu
             data.Size = ImGui.GetWindowSize();
             data.ContentSize = ImGui.GetCursorScreenPos() - startCursorScreenPos;
             data.Commands.Clear();
+            bool hasDrawnBounds = false;
+            Vector2 drawnContentSize = Vector2.zero;
 
             int idxEnd = drawList.IdxBuffer.Size;
             if (idxEnd <= idxStart)
@@ -271,14 +273,38 @@ namespace Fu
                     continue;
                 }
 
+                ImDrawVert[] commandVertices = vertices.ToArray();
+                for (int vertexIndex = 0; vertexIndex < commandVertices.Length; vertexIndex++)
+                {
+                    Vector2 relativePosition = commandVertices[vertexIndex].pos - startCursorScreenPos;
+                    if (!hasDrawnBounds)
+                    {
+                        drawnContentSize = relativePosition;
+                        hasDrawnBounds = true;
+                    }
+                    else
+                    {
+                        drawnContentSize.x = Mathf.Max(drawnContentSize.x, relativePosition.x);
+                        drawnContentSize.y = Mathf.Max(drawnContentSize.y, relativePosition.y);
+                    }
+                }
+
                 data.Commands.Add(new FuFrozenUICommand
                 {
                     ClipRect = cmd.ClipRect,
                     TextureId = cmd.TextureId,
-                    Vertices = vertices.ToArray(),
+                    Vertices = commandVertices,
                     Indices = indices
                 });
             }
+
+            if (hasDrawnBounds)
+            {
+                data.ContentSize = new Vector2(
+                    Mathf.Max(data.ContentSize.x, drawnContentSize.x),
+                    Mathf.Max(data.ContentSize.y, drawnContentSize.y));
+            }
+            data.ContentSize = new Vector2(Mathf.Max(0f, data.ContentSize.x), Mathf.Max(0f, data.ContentSize.y));
         }
 
         /// <summary>

@@ -34,8 +34,12 @@ namespace Fu
         public bool AllowMultipleWindow { get; private set; }
         // A flag indicating whether this window can be closed by middle-clicking its header or docked tab
         public bool CloseOnMiddleClick { get; private set; }
+        // A flag indicating whether this window can be moved by dragging empty body space
+        public bool MoveFromBody { get; private set; }
         // ImGui window flags exposed through Fugui settings
         public FuWindowStyleFlags WindowStyleFlags { get; private set; }
+        // Sides that can resize this window when resize is enabled
+        public FuWindowResizeSides ResizableSides { get; private set; }
 
         // A flag indicating whether this window will use native title bar once externalized
         public bool UseNativeTitleBar { get; private set; }
@@ -60,6 +64,8 @@ namespace Fu
         // the callback UI of the optional toolbar of this window
 
         public Action<FuWindow, Vector2> HeaderUI { get; set; }
+        // Whether HeaderUI replaces the Fugui-owned floating window title bar instead of being drawn below it
+        public bool HeaderOverridesWindowDecorations { get; private set; }
         // the callback UI of the optional footer of this window
         public Action<FuWindow, Vector2> FooterUI { get; set; }
         // The height of the window topBar (optional)
@@ -82,7 +88,8 @@ namespace Fu
         /// <param name="flags">Behaviour flag of this window definition</param>
         /// <param name="externalFlags">External window flags of this window definition</param>
         /// <param name="windowStyleFlags">ImGui window flags exposed through Fugui.</param>
-        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default)
+        /// <param name="resizableSides">Sides that can resize this window when resize is enabled.</param>
+        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default, FuWindowResizeSides resizableSides = FuWindowResizeSides.Default)
         {
             // Assign the specified values to the corresponding fields
             WindowName = windowName;
@@ -90,6 +97,7 @@ namespace Fu
             Position = pos.HasValue ? pos.Value : new Vector2Int(-1, -1);
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
             WindowStyleFlags = windowStyleFlags;
+            ResizableSides = resizableSides;
             IsExternalizable = !flags.HasFlag(FuWindowFlags.NoExternalization);
             IsDockable = !flags.HasFlag(FuWindowFlags.NoDocking);
             IsInterractif = !flags.HasFlag(FuWindowFlags.NoInterractions);
@@ -97,6 +105,7 @@ namespace Fu
             NoDockingOverMe = !flags.HasFlag(FuWindowFlags.NoDockingOverMe);
             AllowMultipleWindow = flags.HasFlag(FuWindowFlags.AllowMultipleWindow);
             CloseOnMiddleClick = flags.HasFlag(FuWindowFlags.CloseOnMiddleClick);
+            MoveFromBody = flags.HasFlag(FuWindowFlags.MoveFromBody);
             _uiWindowInstantiationFunc = (winDef) => new FuWindow(winDef);
             Overlays = new Dictionary<string, FuOverlay>();
 
@@ -217,14 +226,40 @@ namespace Fu
         /// </summary>
         /// <param name="headerUI">The callback UI of the optional window Header.</param>
         /// <param name="headerHeight">The height of the optional window Header.</param>
+        /// <param name="overrideWindowDecorations">True to use the header as the floating window title bar decoration.</param>
         /// <returns>The current UIWindowDefinition object.</returns>
         public FuWindowDefinition SetHeaderUI(Action<FuWindow, Vector2> headerUI, float headerHeight)
+        {
+            return SetHeaderUI(headerUI, headerHeight, false);
+        }
+
+        /// <summary>
+        /// Sets the UI of the topBar of this window.
+        /// </summary>
+        /// <param name="headerUI">The callback UI of the optional window Header.</param>
+        /// <param name="headerHeight">The height of the optional window Header.</param>
+        /// <param name="overrideWindowDecorations">True to use the header as the floating window title bar decoration.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetHeaderUI(Action<FuWindow, Vector2> headerUI, float headerHeight, bool overrideWindowDecorations)
         {
             // Ensure the header height is not negative
             HeaderHeight = Mathf.Max(0f, headerHeight);
             // Assign the specified callback UI to the HeaderUI field
             HeaderUI = headerUI;
+            HeaderOverridesWindowDecorations = overrideWindowDecorations;
             return this;
+        }
+
+        /// <summary>
+        /// Sets a custom UI callback that replaces the default floating window title bar decorations.
+        /// Docked windows keep their dock tab bar; this callback is used for the floating title/header area.
+        /// </summary>
+        /// <param name="decorationUI">The callback UI of the custom floating window decoration.</param>
+        /// <param name="decorationHeight">The height of the custom floating window decoration.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetWindowDecorationUI(Action<FuWindow, Vector2> decorationUI, float decorationHeight)
+        {
+            return SetHeaderUI(decorationUI, decorationHeight, true);
         }
 
         /// <summary>
@@ -312,6 +347,17 @@ namespace Fu
         }
 
         /// <summary>
+        /// Sets the sides that can resize this window when resize is enabled.
+        /// </summary>
+        /// <param name="resizableSides">The resizable sides to set.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetResizableSides(FuWindowResizeSides resizableSides)
+        {
+            ResizableSides = resizableSides;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the externalizability of the UI window.
         /// </summary>
         /// <param name="isExternalizable">A boolean value indicating whether the UI window can be externalized.</param>
@@ -356,6 +402,17 @@ namespace Fu
         {
             // Assign the specified value to the IsInterractif field
             IsInterractif = isInterractif;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets whether the UI window can be moved by dragging empty body space.
+        /// </summary>
+        /// <param name="moveFromBody">A boolean value indicating whether empty body space can start window moves.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetMoveFromBody(bool moveFromBody)
+        {
+            MoveFromBody = moveFromBody;
             return this;
         }
 

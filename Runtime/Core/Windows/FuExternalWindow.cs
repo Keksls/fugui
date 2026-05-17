@@ -135,7 +135,11 @@ namespace Fu
                 }
             }
 
-            SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_SHOWN;
+            SDL_WindowFlags flags = SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL_WindowFlags.SDL_WINDOW_SHOWN;
+            if (CanResizeExternalWindow())
+            {
+                flags |= SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
+            }
             //if (Window.NoTaskBarIcon)
             //    flags |= SDL_WindowFlags.SDL_WINDOW_SKIP_TASKBAR;
             //if(!Window.UseNativeTitleBar)
@@ -907,6 +911,13 @@ namespace Fu
 
         private ResizeEdge currentResizeEdge = ResizeEdge.None;
 
+        private bool CanResizeExternalWindow()
+        {
+            return Window != null &&
+                   Window.ResizableSides != FuWindowResizeSides.None &&
+                   !Window._windowFlags.HasFlag(FuWindowStyleFlags.NoResize);
+        }
+
         /// <summary>
         /// Handle window dragging via title bar
         /// Handle window raising on mouse down
@@ -945,7 +956,7 @@ namespace Fu
             // Detect hover edge (even when not resizing)
             if (!IsDragging && !IsResizing)
             {
-                if (IsMaximized || mouseBlockedByPopup || pointerCapturedByOtherSurface || leftMousePressedBeforeHover)
+                if (IsMaximized || !CanResizeExternalWindow() || mouseBlockedByPopup || pointerCapturedByOtherSurface || leftMousePressedBeforeHover)
                     HoverResizeEdge = ResizeEdge.None;   // interdit resize
                 else
                     HoverResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
@@ -962,7 +973,7 @@ namespace Fu
             }
 
             // detect edge if not resizing or dragging
-            if (!IsMaximized && !mouseBlockedByPopup && !pointerCapturedByOtherSurface && !IsDragging && !IsResizing && leftMouseDown)
+            if (!IsMaximized && CanResizeExternalWindow() && !mouseBlockedByPopup && !pointerCapturedByOtherSurface && !IsDragging && !IsResizing && leftMouseDown)
             {
                 currentResizeEdge = GetHoveredResizeEdge(mouseLocal, windowSize);
 
@@ -986,37 +997,46 @@ namespace Fu
 
                     Vector2Int newPos = resizeStartWindowPos;
                     Vector2Int newSize = resizeStartWindowSize;
+                    const int minWindowSize = 50;
 
                     switch (currentResizeEdge)
                     {
                         case ResizeEdge.Left:
-                            newPos.x += delta.x;
-                            newSize.x -= delta.x;
+                            ApplyLeftResize(delta.x, minWindowSize, ref newPos, ref newSize);
                             break;
 
                         case ResizeEdge.Right:
-                            newSize.x += delta.x;
+                            newSize.x = Math.Max(minWindowSize, resizeStartWindowSize.x + delta.x);
+                            break;
+
+                        case ResizeEdge.Top:
+                            ApplyTopResize(delta.y, minWindowSize, ref newPos, ref newSize);
                             break;
 
                         case ResizeEdge.Bottom:
-                            newSize.y += delta.y;
+                            newSize.y = Math.Max(minWindowSize, resizeStartWindowSize.y + delta.y);
+                            break;
+
+                        case ResizeEdge.TopLeft:
+                            ApplyLeftResize(delta.x, minWindowSize, ref newPos, ref newSize);
+                            ApplyTopResize(delta.y, minWindowSize, ref newPos, ref newSize);
+                            break;
+
+                        case ResizeEdge.TopRight:
+                            newSize.x = Math.Max(minWindowSize, resizeStartWindowSize.x + delta.x);
+                            ApplyTopResize(delta.y, minWindowSize, ref newPos, ref newSize);
                             break;
 
                         case ResizeEdge.BottomLeft:
-                            newPos.x += delta.x;
-                            newSize.x -= delta.x;
-                            newSize.y += delta.y;
+                            ApplyLeftResize(delta.x, minWindowSize, ref newPos, ref newSize);
+                            newSize.y = Math.Max(minWindowSize, resizeStartWindowSize.y + delta.y);
                             break;
 
                         case ResizeEdge.BottomRight:
-                            newSize.x += delta.x;
-                            newSize.y += delta.y;
+                            newSize.x = Math.Max(minWindowSize, resizeStartWindowSize.x + delta.x);
+                            newSize.y = Math.Max(minWindowSize, resizeStartWindowSize.y + delta.y);
                             break;
                     }
-
-                    // enforce minimum
-                    newSize.x = Math.Max(newSize.x, 50);
-                    newSize.y = Math.Max(newSize.y, 50);
 
                     // assign
                     Position = newPos;
@@ -1202,26 +1222,56 @@ namespace Fu
             }
         }
 
+        private void ApplyLeftResize(int deltaX, int minSize, ref Vector2Int newPos, ref Vector2Int newSize)
+        {
+            int maxDelta = resizeStartWindowSize.x - minSize;
+            int clampedDelta = Math.Min(deltaX, maxDelta);
+            newPos.x = resizeStartWindowPos.x + clampedDelta;
+            newSize.x = resizeStartWindowSize.x - clampedDelta;
+        }
+
+        private void ApplyTopResize(int deltaY, int minSize, ref Vector2Int newPos, ref Vector2Int newSize)
+        {
+            int maxDelta = resizeStartWindowSize.y - minSize;
+            int clampedDelta = Math.Min(deltaY, maxDelta);
+            newPos.y = resizeStartWindowPos.y + clampedDelta;
+            newSize.y = resizeStartWindowSize.y - clampedDelta;
+        }
+
         private float RESIZE_BORDER => 5 * Fugui.Scale;
         private float RESIZE_CORNER_SIZE => 18 * Fugui.Scale;
         private ResizeEdge GetHoveredResizeEdge(Vector2Int mouseLocal, Vector2Int windowSize)
         {
+            if (!CanResizeExternalWindow())
+            {
+                return ResizeEdge.None;
+            }
+
+            bool canResizeLeft = Window.CanResizeSide(FuWindowResizeSides.Left);
+            bool canResizeRight = Window.CanResizeSide(FuWindowResizeSides.Right);
+            bool canResizeTop = Window.CanResizeSide(FuWindowResizeSides.Top);
+            bool canResizeBottom = Window.CanResizeSide(FuWindowResizeSides.Bottom);
             bool inLeftCorner = mouseLocal.x <= RESIZE_CORNER_SIZE;
             bool inRightCorner = mouseLocal.x >= windowSize.x - RESIZE_CORNER_SIZE;
+            bool inTopCorner = mouseLocal.y <= RESIZE_CORNER_SIZE;
             bool inBottomCorner = mouseLocal.y >= windowSize.y - RESIZE_CORNER_SIZE;
 
             // Corners first (using corner size)
-            if (inBottomCorner && inLeftCorner) return ResizeEdge.BottomLeft;
-            if (inBottomCorner && inRightCorner) return ResizeEdge.BottomRight;
+            if (inTopCorner && inLeftCorner && canResizeTop && canResizeLeft) return ResizeEdge.TopLeft;
+            if (inTopCorner && inRightCorner && canResizeTop && canResizeRight) return ResizeEdge.TopRight;
+            if (inBottomCorner && inLeftCorner && canResizeBottom && canResizeLeft) return ResizeEdge.BottomLeft;
+            if (inBottomCorner && inRightCorner && canResizeBottom && canResizeRight) return ResizeEdge.BottomRight;
 
             // Borders (using border size)
             bool left = mouseLocal.x <= RESIZE_BORDER;
             bool right = mouseLocal.x >= windowSize.x - RESIZE_BORDER;
+            bool top = mouseLocal.y <= RESIZE_BORDER;
             bool bottom = mouseLocal.y >= windowSize.y - RESIZE_BORDER;
 
-            if (left) return ResizeEdge.Left;
-            if (right) return ResizeEdge.Right;
-            if (bottom) return ResizeEdge.Bottom;
+            if (left && canResizeLeft) return ResizeEdge.Left;
+            if (right && canResizeRight) return ResizeEdge.Right;
+            if (top && canResizeTop) return ResizeEdge.Top;
+            if (bottom && canResizeBottom) return ResizeEdge.Bottom;
 
             return ResizeEdge.None;
         }
@@ -1230,6 +1280,13 @@ namespace Fu
         {
             if (!_isRunning || _shouldClose || _isClosed)
                 return;
+
+            if (!CanResizeExternalWindow())
+            {
+                HoverResizeEdge = ResizeEdge.None;
+                currentResizeEdge = ResizeEdge.None;
+                return;
+            }
 
             if (!IsResizing && Fugui.GetWantCapturePointer(Window))
             {
@@ -1268,6 +1325,7 @@ namespace Fu
             //
             // LEFT EDGE
             //
+            if (Window.CanResizeSide(FuWindowResizeSides.Left))
             {
                 bool hovered = (edge == ResizeEdge.Left);
                 bool active = IsResizing && hovered;
@@ -1282,6 +1340,7 @@ namespace Fu
             //
             // RIGHT EDGE
             //
+            if (Window.CanResizeSide(FuWindowResizeSides.Right))
             {
                 bool hovered = (edge == ResizeEdge.Right);
                 bool active = IsResizing && hovered;
@@ -1294,8 +1353,24 @@ namespace Fu
             }
 
             //
+            // TOP EDGE
+            //
+            if (Window.CanResizeSide(FuWindowResizeSides.Top))
+            {
+                bool hovered = (edge == ResizeEdge.Top);
+                bool active = IsResizing && hovered;
+                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
+                float thickness = active ? activeThickness : (hovered ? hoverThickness : normalThickness);
+
+                Vector2 p1 = new Vector2(0, 0);
+                Vector2 p2 = new Vector2(windowSize.x, 0);
+                dl.AddLine(p1, p2, color, thickness);
+            }
+
+            //
             // BOTTOM EDGE
             //
+            if (Window.CanResizeSide(FuWindowResizeSides.Bottom))
             {
                 bool hovered = (edge == ResizeEdge.Bottom);
                 bool active = IsResizing && hovered;
@@ -1308,8 +1383,54 @@ namespace Fu
             }
 
             //
+            // CORNER (top-right) triangle
+            //
+            if (Window.CanResizeSide(FuWindowResizeSides.Top) &&
+                Window.CanResizeSide(FuWindowResizeSides.Right))
+            {
+                bool hovered = (edge == ResizeEdge.TopRight);
+                bool active = IsResizing && hovered;
+                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
+
+                if (hovered || active)
+                {
+                    float s = 12f * Fugui.Scale;
+
+                    Vector2 c = new Vector2(windowSize.x, 0);
+                    Vector2 a = c + new Vector2(-s, 0);
+                    Vector2 b = c + new Vector2(0, s);
+
+                    dl.AddTriangleFilled(a, b, c, color);
+                }
+            }
+
+            //
+            // CORNER (top-left) triangle
+            //
+            if (Window.CanResizeSide(FuWindowResizeSides.Top) &&
+                Window.CanResizeSide(FuWindowResizeSides.Left))
+            {
+                bool hovered = (edge == ResizeEdge.TopLeft);
+                bool active = IsResizing && hovered;
+                uint color = active ? activeColor : (hovered ? hoverColor : normalColor);
+
+                if (hovered || active)
+                {
+                    float s = 12f * Fugui.Scale;
+
+                    Vector2 c = new Vector2(0, 0);
+                    Vector2 a = c + new Vector2(s, 0);
+                    Vector2 b = c + new Vector2(0, s);
+
+                    dl.AddTriangleFilled(a, b, c, color);
+                }
+            }
+
+            //
             // CORNER (bottom-right) — triangle
             //
+            if (Window.CanResizeSide(FuWindowResizeSides.Bottom) &&
+                Window.CanResizeSide(FuWindowResizeSides.Right))
             {
                 bool hovered = (edge == ResizeEdge.BottomRight);
                 bool active = IsResizing && hovered;
@@ -1330,6 +1451,8 @@ namespace Fu
             //
             // CORNER (bottom-left) — triangle
             //
+            if (Window.CanResizeSide(FuWindowResizeSides.Bottom) &&
+                Window.CanResizeSide(FuWindowResizeSides.Left))
             {
                 bool hovered = (edge == ResizeEdge.BottomLeft);
                 bool active = IsResizing && hovered;
@@ -1859,7 +1982,10 @@ namespace Fu
         Right,
         Bottom,
         BottomLeft,
-        BottomRight
+        BottomRight,
+        Top,
+        TopLeft,
+        TopRight
     }
 }
 #endif

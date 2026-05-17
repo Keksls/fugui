@@ -292,6 +292,11 @@ definition
     .SetCustomWindowType(def => new MyWindow(def));
 ```
 
+`SetHeaderUI(DrawHeader, 32f, overrideWindowDecorations: true)` ou
+`SetWindowDecorationUI(DrawHeader, 32f)` remplace le title bar Fugui des
+fenetres flottantes par un header custom. La zone reste utilisable pour le
+drag/docking; les fenetres dockees conservent leur tab bar de layout.
+
 Flags:
 
 - `NoExternalization`;

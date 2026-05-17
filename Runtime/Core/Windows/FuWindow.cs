@@ -49,6 +49,7 @@ namespace Fu
         public string ID { get; private set; }
         public Action<FuWindow, FuLayout> UI { get; set; }
         public Action<FuWindow, Vector2> HeaderUI { get; set; }
+        public bool HeaderOverridesWindowDecorations { get; set; }
         public Action<FuWindow, Vector2> FooterUI { get; set; }
         public bool HasMovedThisFrame { get; private set; }
         public bool HasJustBeenDraw { get; set; }
@@ -134,10 +135,12 @@ namespace Fu
         public bool IsDockable { get; private set; }
         public bool IsClosable { get; private set; }
         public bool CloseOnMiddleClick { get; private set; }
+        public bool MoveFromBody { get; private set; }
         public bool NoDockingOverMe { get; private set; }
         public bool IsExternalizable { get; private set; }
         public bool IsInitialized { get; private set; }
         public bool IsExternal { get; internal set; }
+        public FuWindowResizeSides ResizableSides { get; private set; }
 
         // external window flags
         public bool UseNativeTitleBar { get; private set; }
@@ -335,7 +338,10 @@ namespace Fu
             None,
             Left,
             Right,
+            Top,
             Bottom,
+            TopLeft,
+            TopRight,
             BottomLeft,
             BottomRight
         }
@@ -378,6 +384,30 @@ namespace Fu
             {
                 _footerHeight = value;
             }
+        }
+
+        /// <summary>
+        /// Sets the optional header UI for this window.
+        /// </summary>
+        /// <param name="headerUI">The callback UI of the optional window header.</param>
+        /// <param name="headerHeight">The unscaled height of the optional window header.</param>
+        /// <param name="overrideWindowDecorations">True to use the header as the floating window title bar decoration.</param>
+        public void SetHeaderUI(Action<FuWindow, Vector2> headerUI, float headerHeight, bool overrideWindowDecorations = false)
+        {
+            HeaderUI = headerUI;
+            HeaderHeight = Mathf.Max(0f, headerHeight);
+            HeaderOverridesWindowDecorations = overrideWindowDecorations;
+            ForceDraw();
+        }
+
+        /// <summary>
+        /// Sets a custom UI callback that replaces the default floating window title bar decorations.
+        /// </summary>
+        /// <param name="decorationUI">The callback UI of the custom floating window decoration.</param>
+        /// <param name="decorationHeight">The unscaled height of the custom floating window decoration.</param>
+        public void SetWindowDecorationUI(Action<FuWindow, Vector2> decorationUI, float decorationHeight)
+        {
+            SetHeaderUI(decorationUI, decorationHeight, true);
         }
 
         internal Vector2Int _size;
@@ -471,8 +501,10 @@ namespace Fu
             IsInterractable = windowDefinition.IsInterractif;
             IsClosable = windowDefinition.IsClosable;
             CloseOnMiddleClick = windowDefinition.CloseOnMiddleClick;
+            MoveFromBody = windowDefinition.MoveFromBody;
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
+            ResizableSides = windowDefinition.ResizableSides;
 
             // external window flags
             UseNativeTitleBar = windowDefinition.UseNativeTitleBar;
@@ -487,6 +519,7 @@ namespace Fu
             HeaderHeight = windowDefinition.HeaderHeight;
             FooterHeight = windowDefinition.BottomBarHeight;
             HeaderUI = windowDefinition.HeaderUI;
+            HeaderOverridesWindowDecorations = windowDefinition.HeaderOverridesWindowDecorations;
             FooterUI = windowDefinition.FooterUI;
 
             // add default overlays
@@ -874,6 +907,7 @@ namespace Fu
                 }
 
                 TryDrawUI();
+                TryBeginCustomBodyDragAfterContent();
 
                 if (Is3DWindow)
                 {
@@ -1034,6 +1068,7 @@ namespace Fu
         {
             float customTopHeight = GetCustomTopChromeHeight();
             bool customTopBarIsDockTabs = IsDocked && Fugui.Layouts != null && Fugui.Layouts.HasDockedTabBar(this);
+            float headerContentHeight = GetHeaderContentHeight();
             Vector2 baseCursorPos = ImGui.GetCursorScreenPos();
             Vector2 contentRegionAvail = ImGui.GetContentRegionAvail();
             float bottomChromeReserve = GetCustomBottomChromeReserve();
@@ -1041,10 +1076,10 @@ namespace Fu
             // save working area size and position
             _workingAreaSize = new Vector2Int(
                 (int)contentRegionAvail.x,
-                Mathf.Max(0, (int)(contentRegionAvail.y - customTopHeight - HeaderHeight - FooterHeight - bottomChromeReserve)));
+                Mathf.Max(0, (int)(contentRegionAvail.y - customTopHeight - headerContentHeight - FooterHeight - bottomChromeReserve)));
             _workingAreaPosition = new Vector2Int(
                 (int)baseCursorPos.x,
-                (int)(baseCursorPos.y + customTopHeight + HeaderHeight)) - _localPosition;
+                (int)(baseCursorPos.y + customTopHeight + headerContentHeight)) - _localPosition;
 
             DrawCustomWindowFrame(customTopHeight, customTopBarIsDockTabs);
             DrawCustomTopBarContent(customTopHeight, customTopBarIsDockTabs, baseCursorPos);
@@ -1054,13 +1089,13 @@ namespace Fu
                 Fugui.HasRenderWindowThisFrame = true;
                 CurrentDrawingWindow = this;
                 // draw topBar if needed
-                if (HeaderHeight > 0f && HeaderUI != null)
+                if (headerContentHeight > 0f && HeaderUI != null)
                 {
                     Vector2 screenCursorPos = ImGui.GetCursorScreenPos();
-                    ReserveCursorExtent(screenCursorPos, new Vector2(_workingAreaSize.x, HeaderHeight));
+                    ReserveCursorExtent(screenCursorPos, new Vector2(_workingAreaSize.x, headerContentHeight));
                     ImGui.SetCursorScreenPos(screenCursorPos);
-                    HeaderUI.Invoke(this, new Vector2(_workingAreaSize.x, HeaderHeight));
-                    ImGui.SetCursorScreenPos(screenCursorPos + new Vector2(0f, HeaderHeight));
+                    HeaderUI.Invoke(this, new Vector2(_workingAreaSize.x, headerContentHeight));
+                    ImGui.SetCursorScreenPos(screenCursorPos + new Vector2(0f, headerContentHeight));
                 }
 
                 // count nb push at render begin
@@ -1128,7 +1163,7 @@ namespace Fu
                 if (IsExternal)
                 {
                     FuExternalWindowContainer externalContainer = Container as FuExternalWindowContainer;
-                    if (externalContainer != null && externalContainer.IsNativeChromeOwner(this))
+                    if (externalContainer != null && externalContainer.IsNativeChromeOwner(this) && ShouldDrawDefaultCustomTitleBar())
                     {
                         ((FuExternalContext)externalContainer.Context).Window.DrawResizeHandles();
                         DrawExternalWindowTitleButtons();
@@ -1186,15 +1221,37 @@ namespace Fu
                 return Fugui.Layouts != null ? Fugui.Layouts.GetDockedTabBarHeight(this) : 0f;
             }
 
-            return ShouldDrawCustomTitleBar() ? GetCustomTitleBarHeight() : 0f;
+            if (HeaderOverridesWindowDecorations)
+            {
+                return HeaderHeight;
+            }
+
+            return ShouldDrawDefaultCustomTitleBar() ? GetCustomTitleBarHeight() : 0f;
         }
 
         /// <summary>
-        /// Returns whether this window should draw a Fugui title bar.
+        /// Returns the optional header height used inside the window content area.
         /// </summary>
-        private bool ShouldDrawCustomTitleBar()
+        private float GetHeaderContentHeight()
         {
-            return !_windowFlags.HasFlag(FuWindowStyleFlags.NoTitleBar);
+            return HeaderOverridesWindowDecorations ? 0f : HeaderHeight;
+        }
+
+        /// <summary>
+        /// Returns whether this window has a draggable floating title bar area.
+        /// </summary>
+        private bool HasCustomTitleBarArea()
+        {
+            return HeaderOverridesWindowDecorations || ShouldDrawDefaultCustomTitleBar();
+        }
+
+        /// <summary>
+        /// Returns whether this window should draw the default Fugui title bar.
+        /// </summary>
+        private bool ShouldDrawDefaultCustomTitleBar()
+        {
+            return !HeaderOverridesWindowDecorations &&
+                   !_windowFlags.HasFlag(FuWindowStyleFlags.NoTitleBar);
         }
 
         /// <summary>
@@ -1204,6 +1261,43 @@ namespace Fu
         {
             float scale = Container?.Context?.Scale ?? Fugui.Scale;
             return Mathf.Max(24f * scale, ImGui.CalcTextSize("Ap").y + 10f * scale);
+        }
+
+        /// <summary>
+        /// Returns true if a local mouse position is over the user-defined header area.
+        /// </summary>
+        internal bool IsMouseHoveringHeader(Vector2Int localMousePosition)
+        {
+            bool headerIsDecoration = HeaderOverridesWindowDecorations && !IsDocked;
+            if (HeaderHeight <= 0f ||
+                (HeaderOverridesWindowDecorations && !headerIsDecoration) ||
+                (!headerIsDecoration && HeaderUI == null))
+            {
+                return false;
+            }
+
+            float headerStartY = headerIsDecoration ? 0f : GetCustomTopChromeHeight();
+            return localMousePosition.x >= 0f &&
+                   localMousePosition.x <= Size.x &&
+                   localMousePosition.y >= headerStartY &&
+                   localMousePosition.y <= headerStartY + HeaderHeight;
+        }
+
+        /// <summary>
+        /// Returns true if a local mouse position is over the user-defined footer area.
+        /// </summary>
+        internal bool IsMouseHoveringFooter(Vector2Int localMousePosition)
+        {
+            if (FooterUI == null || FooterHeight <= 0f)
+            {
+                return false;
+            }
+
+            float footerStartY = WorkingAreaPosition.y + WorkingAreaSize.y;
+            return localMousePosition.x >= 0f &&
+                   localMousePosition.x <= Size.x &&
+                   localMousePosition.y >= footerStartY &&
+                   localMousePosition.y <= footerStartY + FooterHeight;
         }
 
         /// <summary>
@@ -1224,15 +1318,29 @@ namespace Fu
                 return;
             }
 
-            ReserveCursorExtent(baseCursorPos, new Vector2(Mathf.Max(1f, ImGui.GetContentRegionAvail().x), customTopHeight));
+            float customTopWidth = Mathf.Max(1f, ImGui.GetContentRegionAvail().x);
+            ReserveCursorExtent(baseCursorPos, new Vector2(customTopWidth, customTopHeight));
             ImGui.SetCursorScreenPos(baseCursorPos);
             if (customTopBarIsDockTabs && Fugui.Layouts != null)
             {
                 Fugui.Layouts.DrawDockedTabs(this, Layout);
             }
+            else if (HeaderOverridesWindowDecorations && HeaderUI != null)
+            {
+                FuWindow previousDrawingWindow = CurrentDrawingWindow;
+                CurrentDrawingWindow = this;
+                try
+                {
+                    HeaderUI.Invoke(this, new Vector2(customTopWidth, customTopHeight));
+                }
+                finally
+                {
+                    CurrentDrawingWindow = previousDrawingWindow;
+                }
+            }
             else
             {
-                ImGui.Dummy(new Vector2(Mathf.Max(1f, ImGui.GetContentRegionAvail().x), customTopHeight));
+                ImGui.Dummy(new Vector2(customTopWidth, customTopHeight));
             }
 
             ImGui.SetCursorScreenPos(new Vector2(baseCursorPos.x, baseCursorPos.y + customTopHeight));
@@ -1264,7 +1372,7 @@ namespace Fu
             Vector2 size = ImGui.GetWindowSize();
             float rounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
 
-            if (customTopHeight > 0f && !customTopBarIsDockTabs)
+            if (customTopHeight > 0f && !customTopBarIsDockTabs && ShouldDrawDefaultCustomTitleBar())
             {
                 Vector2 titleMax = pos + new Vector2(size.x, customTopHeight);
                 uint titleColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.TitleBgActive : FuColors.TitleBg);
@@ -1397,7 +1505,7 @@ namespace Fu
             float horizontalHandleLong = Mathf.Min(handleLong, Mathf.Max(handleShort, max.x - min.x));
             float rounding = handleShort * 0.5f;
 
-            if (edge == FuWindowResizeEdge.Left || edge == FuWindowResizeEdge.BottomLeft)
+            if (IsLeftResizeEdge(edge))
             {
                 drawList.AddLine(min, new Vector2(min.x, max.y), edgeLineColor, edgeLineThickness);
                 if (edge == FuWindowResizeEdge.Left)
@@ -1407,7 +1515,7 @@ namespace Fu
                     drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
                 }
             }
-            if (edge == FuWindowResizeEdge.Right || edge == FuWindowResizeEdge.BottomRight)
+            if (IsRightResizeEdge(edge))
             {
                 drawList.AddLine(new Vector2(max.x, min.y), max, edgeLineColor, edgeLineThickness);
                 if (edge == FuWindowResizeEdge.Right)
@@ -1417,7 +1525,17 @@ namespace Fu
                     drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
                 }
             }
-            if (edge == FuWindowResizeEdge.Bottom || edge == FuWindowResizeEdge.BottomLeft || edge == FuWindowResizeEdge.BottomRight)
+            if (IsTopResizeEdge(edge))
+            {
+                drawList.AddLine(min, new Vector2(max.x, min.y), edgeLineColor, edgeLineThickness);
+                if (edge == FuWindowResizeEdge.Top)
+                {
+                    float clampedX = Mathf.Clamp(centerX, min.x + horizontalHandleLong * 0.5f, max.x - horizontalHandleLong * 0.5f);
+                    Rect handle = new Rect(new Vector2(clampedX - horizontalHandleLong * 0.5f, min.y - handleShort * 0.5f + inset), new Vector2(horizontalHandleLong, handleShort));
+                    drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
+                }
+            }
+            if (IsBottomResizeEdge(edge))
             {
                 drawList.AddLine(new Vector2(min.x, max.y), max, edgeLineColor, edgeLineThickness);
                 if (edge == FuWindowResizeEdge.Bottom)
@@ -1427,7 +1545,7 @@ namespace Fu
                     drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
                 }
             }
-            if (edge == FuWindowResizeEdge.BottomLeft || edge == FuWindowResizeEdge.BottomRight)
+            if (IsCornerResizeEdge(edge))
             {
                 DrawCornerResizeHandle(drawList, edge, min, max, handleColor, handleThickness);
             }
@@ -1443,16 +1561,55 @@ namespace Fu
                 case FuWindowResizeEdge.Right:
                     ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
                     break;
+                case FuWindowResizeEdge.Top:
                 case FuWindowResizeEdge.Bottom:
                     ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
                     break;
+                case FuWindowResizeEdge.TopRight:
                 case FuWindowResizeEdge.BottomLeft:
                     ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNESW);
                     break;
+                case FuWindowResizeEdge.TopLeft:
                 case FuWindowResizeEdge.BottomRight:
                     ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNWSE);
                     break;
             }
+        }
+
+        private static bool IsLeftResizeEdge(FuWindowResizeEdge edge)
+        {
+            return edge == FuWindowResizeEdge.Left ||
+                   edge == FuWindowResizeEdge.TopLeft ||
+                   edge == FuWindowResizeEdge.BottomLeft;
+        }
+
+        private static bool IsRightResizeEdge(FuWindowResizeEdge edge)
+        {
+            return edge == FuWindowResizeEdge.Right ||
+                   edge == FuWindowResizeEdge.TopRight ||
+                   edge == FuWindowResizeEdge.BottomRight;
+        }
+
+        private static bool IsTopResizeEdge(FuWindowResizeEdge edge)
+        {
+            return edge == FuWindowResizeEdge.Top ||
+                   edge == FuWindowResizeEdge.TopLeft ||
+                   edge == FuWindowResizeEdge.TopRight;
+        }
+
+        private static bool IsBottomResizeEdge(FuWindowResizeEdge edge)
+        {
+            return edge == FuWindowResizeEdge.Bottom ||
+                   edge == FuWindowResizeEdge.BottomLeft ||
+                   edge == FuWindowResizeEdge.BottomRight;
+        }
+
+        private static bool IsCornerResizeEdge(FuWindowResizeEdge edge)
+        {
+            return edge == FuWindowResizeEdge.TopLeft ||
+                   edge == FuWindowResizeEdge.TopRight ||
+                   edge == FuWindowResizeEdge.BottomLeft ||
+                   edge == FuWindowResizeEdge.BottomRight;
         }
 
         /// <summary>
@@ -1464,6 +1621,28 @@ namespace Fu
             float bar = Mathf.Max(3.5f, 4f * Fugui.Scale);
             float rounding = bar * 0.5f;
             float inset = Mathf.Max(2f, 2.5f * Fugui.Scale);
+
+            if (edge == FuWindowResizeEdge.TopLeft)
+            {
+                Vector2 hMin = new Vector2(min.x + inset, min.y + inset);
+                Vector2 hMax = new Vector2(Mathf.Min(min.x + inset + length, max.x), min.y + inset + bar);
+                Vector2 vMin = new Vector2(min.x + inset, min.y + inset);
+                Vector2 vMax = new Vector2(min.x + inset + bar, Mathf.Min(min.y + inset + length, max.y));
+                dl.AddRectFilled(hMin, hMax, color, rounding);
+                dl.AddRectFilled(vMin, vMax, color, rounding);
+                return;
+            }
+
+            if (edge == FuWindowResizeEdge.TopRight)
+            {
+                Vector2 hMin = new Vector2(Mathf.Max(min.x, max.x - inset - length), min.y + inset);
+                Vector2 hMax = new Vector2(max.x - inset, min.y + inset + bar);
+                Vector2 vMin = new Vector2(max.x - inset - bar, min.y + inset);
+                Vector2 vMax = new Vector2(max.x - inset, Mathf.Min(min.y + inset + length, max.y));
+                dl.AddRectFilled(hMin, hMax, color, rounding);
+                dl.AddRectFilled(vMin, vMax, color, rounding);
+                return;
+            }
 
             if (edge == FuWindowResizeEdge.BottomLeft)
             {
@@ -1541,14 +1720,9 @@ namespace Fu
                     _customDragging = false;
                     _customDraggingUsesGlobalMouseButton = false;
                 }
-                else if (CanCustomMoveWindow() && IsCustomTitleBarHovered(Mouse.Position) && !IsCustomCloseButtonHovered(Mouse.Position))
+                else if (CanCustomMoveWindow() && IsCustomTitleBarDragHovered(Mouse.Position))
                 {
-                    _customDragging = true;
-                    _customDraggingUsesGlobalMouseButton = false;
-                    _customDragStartMousePos = mousePos;
-                    _customDragStartWindowPos = LocalPosition;
-                    IsDragging = true;
-                    _customResizeEdge = FuWindowResizeEdge.None;
+                    BeginCustomWindowDrag(mousePos);
                     BringFloatingWindowToFront();
                 }
             }
@@ -1598,10 +1772,48 @@ namespace Fu
                 }
             }
 
-            if (!mouseBlockedByPopup && CanCustomMoveWindow() && IsCustomTitleBarHovered(Mouse.Position) && !IsCustomCloseButtonHovered(Mouse.Position))
+            if (!mouseBlockedByPopup && CanCustomMoveWindow() && IsCustomTitleBarDragHovered(Mouse.Position))
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
             }
+        }
+
+        /// <summary>
+        /// Begin body drag after content submission, so widgets can capture the press first.
+        /// </summary>
+        private void TryBeginCustomBodyDragAfterContent()
+        {
+            if (!MoveFromBody ||
+                !HasJustBeenDraw ||
+                _customDragging ||
+                _customResizeEdge != FuWindowResizeEdge.None ||
+                !CanCustomMoveWindow() ||
+                !Mouse.IsDown(FuMouseButton.Left) ||
+                !IsCustomBodyDragHovered(Mouse.Position) ||
+                ImGui.IsAnyItemActive() ||
+                FuLayout.IsAnyItemActive ||
+                Fugui.IsDraggingAnything() ||
+                Fugui.GetWantCapturePointer(this) ||
+                Fugui.IsInsideAnyPopup(Container.LocalMousePos))
+            {
+                return;
+            }
+
+            BeginCustomWindowDrag(Container.LocalMousePos);
+            BringFloatingWindowToFront();
+        }
+
+        /// <summary>
+        /// Start a Fugui-owned custom window drag.
+        /// </summary>
+        private void BeginCustomWindowDrag(Vector2Int mousePos)
+        {
+            _customDragging = true;
+            _customDraggingUsesGlobalMouseButton = false;
+            _customDragStartMousePos = mousePos;
+            _customDragStartWindowPos = LocalPosition;
+            IsDragging = true;
+            _customResizeEdge = FuWindowResizeEdge.None;
         }
 
         /// <summary>
@@ -1812,8 +2024,19 @@ namespace Fu
                 case FuWindowResizeEdge.Right:
                     newSize.x = Mathf.Max(minSize, _customResizeStartWindowSize.x + delta.x);
                     break;
+                case FuWindowResizeEdge.Top:
+                    ApplyTopResize(delta.y, minSize, ref newPos, ref newSize);
+                    break;
                 case FuWindowResizeEdge.Bottom:
                     newSize.y = Mathf.Max(minSize, _customResizeStartWindowSize.y + delta.y);
+                    break;
+                case FuWindowResizeEdge.TopLeft:
+                    ApplyLeftResize(delta.x, minSize, ref newPos, ref newSize);
+                    ApplyTopResize(delta.y, minSize, ref newPos, ref newSize);
+                    break;
+                case FuWindowResizeEdge.TopRight:
+                    newSize.x = Mathf.Max(minSize, _customResizeStartWindowSize.x + delta.x);
+                    ApplyTopResize(delta.y, minSize, ref newPos, ref newSize);
                     break;
                 case FuWindowResizeEdge.BottomLeft:
                     ApplyLeftResize(delta.x, minSize, ref newPos, ref newSize);
@@ -1860,6 +2083,17 @@ namespace Fu
             int clampedDelta = Mathf.Min(deltaX, maxDelta);
             newPos.x = _customResizeStartWindowPos.x + clampedDelta;
             newSize.x = _customResizeStartWindowSize.x - clampedDelta;
+        }
+
+        /// <summary>
+        /// Apply top-edge resize while preserving the minimum height.
+        /// </summary>
+        private void ApplyTopResize(int deltaY, int minSize, ref Vector2Int newPos, ref Vector2Int newSize)
+        {
+            int maxDelta = _customResizeStartWindowSize.y - minSize;
+            int clampedDelta = Mathf.Min(deltaY, maxDelta);
+            newPos.y = _customResizeStartWindowPos.y + clampedDelta;
+            newSize.y = _customResizeStartWindowSize.y - clampedDelta;
         }
 
         /// <summary>
@@ -1983,7 +2217,7 @@ namespace Fu
         /// </summary>
         private bool IsCustomCloseButtonHovered(Vector2 localMousePosition)
         {
-            if (!IsClosable || IsExternal)
+            if (!ShouldDrawDefaultCustomTitleBar() || !IsClosable || IsExternal)
             {
                 return false;
             }
@@ -2010,7 +2244,7 @@ namespace Fu
         /// </summary>
         private bool IsCustomTitleBarHovered(Vector2 localMousePosition)
         {
-            if (IsDocked || !ShouldDrawCustomTitleBar())
+            if (IsDocked || !HasCustomTitleBarArea())
             {
                 return false;
             }
@@ -2021,6 +2255,40 @@ namespace Fu
                    localMousePosition.y <= titleBarHeight &&
                    localMousePosition.x >= 0f &&
                    localMousePosition.x <= Size.x;
+        }
+
+        /// <summary>
+        /// Returns true if the local mouse position can start a title bar drag.
+        /// </summary>
+        private bool IsCustomTitleBarDragHovered(Vector2 localMousePosition)
+        {
+            return IsCustomTitleBarHovered(localMousePosition) &&
+                   !IsCustomCloseButtonHovered(localMousePosition);
+        }
+
+        /// <summary>
+        /// Returns true if the local mouse position can start a body drag.
+        /// </summary>
+        private bool IsCustomBodyDragHovered(Vector2 localMousePosition)
+        {
+            if (!MoveFromBody ||
+                !IsHovered ||
+                BlocksWindowInputs ||
+                Mouse == null ||
+                Mouse.IsHoverOverlay ||
+                Mouse.IsHoverPopup ||
+                Mouse.IsHoverTopBar ||
+                Mouse.IsHoverBottomBar ||
+                WorkingAreaSize.x <= 0 ||
+                WorkingAreaSize.y <= 0)
+            {
+                return false;
+            }
+
+            Rect bodyRect = new Rect(
+                new Vector2(WorkingAreaPosition.x, WorkingAreaPosition.y),
+                new Vector2(WorkingAreaSize.x, WorkingAreaSize.y));
+            return bodyRect.Contains(localMousePosition);
         }
 
         /// <summary>
@@ -2117,7 +2385,42 @@ namespace Fu
                    !Fugui.IsDraggingAnything() &&
                    Container != null &&
                    !Container.ForcePos() &&
+                   ResizableSides != FuWindowResizeSides.None &&
                    !_windowFlags.HasFlag(FuWindowStyleFlags.NoResize);
+        }
+
+        internal bool CanResizeSide(FuWindowResizeSides side)
+        {
+            return (ResizableSides & side) == side;
+        }
+
+        private bool CanResizeEdge(FuWindowResizeEdge edge)
+        {
+            switch (edge)
+            {
+                case FuWindowResizeEdge.Left:
+                    return CanResizeSide(FuWindowResizeSides.Left);
+                case FuWindowResizeEdge.Right:
+                    return CanResizeSide(FuWindowResizeSides.Right);
+                case FuWindowResizeEdge.Top:
+                    return CanResizeSide(FuWindowResizeSides.Top);
+                case FuWindowResizeEdge.Bottom:
+                    return CanResizeSide(FuWindowResizeSides.Bottom);
+                case FuWindowResizeEdge.TopLeft:
+                    return CanResizeSide(FuWindowResizeSides.Top) &&
+                           CanResizeSide(FuWindowResizeSides.Left);
+                case FuWindowResizeEdge.TopRight:
+                    return CanResizeSide(FuWindowResizeSides.Top) &&
+                           CanResizeSide(FuWindowResizeSides.Right);
+                case FuWindowResizeEdge.BottomLeft:
+                    return CanResizeSide(FuWindowResizeSides.Bottom) &&
+                           CanResizeSide(FuWindowResizeSides.Left);
+                case FuWindowResizeEdge.BottomRight:
+                    return CanResizeSide(FuWindowResizeSides.Bottom) &&
+                           CanResizeSide(FuWindowResizeSides.Right);
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
@@ -2140,32 +2443,50 @@ namespace Fu
         {
             float border = Mathf.Max(6f, 7f * Fugui.Scale);
             float corner = Mathf.Max(14f, 18f * Fugui.Scale);
+            bool canResizeLeft = CanResizeSide(FuWindowResizeSides.Left);
+            bool canResizeRight = CanResizeSide(FuWindowResizeSides.Right);
+            bool canResizeTop = CanResizeSide(FuWindowResizeSides.Top);
+            bool canResizeBottom = CanResizeSide(FuWindowResizeSides.Bottom);
             bool inVerticalRange = localMousePosition.y >= 0 && localMousePosition.y <= Size.y;
             bool inHorizontalRange = localMousePosition.x >= 0 && localMousePosition.x <= Size.x;
             bool left = inVerticalRange && localMousePosition.x >= 0 && localMousePosition.x <= border;
             bool right = inVerticalRange && localMousePosition.x <= Size.x && localMousePosition.x >= Size.x - border;
+            bool top = inHorizontalRange && localMousePosition.y >= 0 && localMousePosition.y <= border;
             bool bottom = inHorizontalRange && localMousePosition.y <= Size.y && localMousePosition.y >= Size.y - border;
+            bool topCorner = inHorizontalRange && localMousePosition.y >= 0 && localMousePosition.y <= corner;
             bool bottomCorner = inHorizontalRange && localMousePosition.y <= Size.y && localMousePosition.y >= Size.y - corner;
             bool leftCorner = inVerticalRange && localMousePosition.x >= 0 && localMousePosition.x <= corner;
             bool rightCorner = inVerticalRange && localMousePosition.x <= Size.x && localMousePosition.x >= Size.x - corner;
 
-            if (bottomCorner && leftCorner)
+            if (topCorner && leftCorner && canResizeTop && canResizeLeft)
+            {
+                return FuWindowResizeEdge.TopLeft;
+            }
+            if (topCorner && rightCorner && canResizeTop && canResizeRight)
+            {
+                return FuWindowResizeEdge.TopRight;
+            }
+            if (bottomCorner && leftCorner && canResizeBottom && canResizeLeft)
             {
                 return FuWindowResizeEdge.BottomLeft;
             }
-            if (bottomCorner && rightCorner)
+            if (bottomCorner && rightCorner && canResizeBottom && canResizeRight)
             {
                 return FuWindowResizeEdge.BottomRight;
             }
-            if (left)
+            if (left && canResizeLeft)
             {
                 return FuWindowResizeEdge.Left;
             }
-            if (right)
+            if (right && canResizeRight)
             {
                 return FuWindowResizeEdge.Right;
             }
-            if (bottom)
+            if (top && canResizeTop)
+            {
+                return FuWindowResizeEdge.Top;
+            }
+            if (bottom && canResizeBottom)
             {
                 return FuWindowResizeEdge.Bottom;
             }
@@ -2934,6 +3255,26 @@ namespace Fu
         public void ForceFocusOnNextFrame()
         {
             _forceFocusNextFrame = true;
+        }
+
+        /// <summary>
+        /// Sets which sides can resize this window when resize is enabled.
+        /// </summary>
+        /// <param name="resizableSides">The resizable sides to set.</param>
+        public void SetResizableSides(FuWindowResizeSides resizableSides)
+        {
+            ResizableSides = resizableSides;
+            if (!CanResizeEdge(_customResizeEdge))
+            {
+                _customResizeEdge = FuWindowResizeEdge.None;
+                IsResizing = false;
+            }
+            if (!CanResizeEdge(_customResizeHoveredEdge))
+            {
+                _customResizeHoveredEdge = FuWindowResizeEdge.None;
+                _customResizeLocksWindowInputs = false;
+            }
+            ForceDraw(2);
         }
 
         /// <summary>

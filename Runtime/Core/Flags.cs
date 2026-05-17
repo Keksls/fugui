@@ -114,6 +114,10 @@
         /// </summary>
         CloseOnMiddleClick = 128,
         /// <summary>
+        /// Allow this window to be moved by dragging empty body space, not only its title header.
+        /// </summary>
+        MoveFromBody = 256,
+        /// <summary>
         /// Default FuWindow behaviour
         /// </summary>
         Default = CloseOnMiddleClick,
@@ -186,6 +190,42 @@
         ChildMenu = 268435456,
         DockNodeHost = 536870912,
         Default = NoCollapse
+    }
+
+    /// <summary>
+    /// Define which sides of a resizable Fugui window can be dragged.
+    /// </summary>
+    [System.Flags]
+    public enum FuWindowResizeSides
+    {
+        /// <summary>
+        /// No side can resize the window.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// The left side can resize the window.
+        /// </summary>
+        Left = 1 << 0,
+        /// <summary>
+        /// The right side can resize the window.
+        /// </summary>
+        Right = 1 << 1,
+        /// <summary>
+        /// The bottom side can resize the window.
+        /// </summary>
+        Bottom = 1 << 2,
+        /// <summary>
+        /// The top side can resize the window.
+        /// </summary>
+        Top = 1 << 3,
+        /// <summary>
+        /// Default Fugui resize sides. Top is locked by default.
+        /// </summary>
+        Default = Left | Bottom | Right,
+        /// <summary>
+        /// All sides can resize the window.
+        /// </summary>
+        All = Left | Right | Bottom | Top
     }
 
     /// <summary>

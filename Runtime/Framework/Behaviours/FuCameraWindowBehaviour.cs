@@ -36,7 +36,7 @@ namespace Fu.Framework
         public override void FuguiAwake()
         {
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
-            FuCameraWindowDefinition windowDefinition = new FuCameraWindowDefinition(_windowName, _camera, _idleCameraFPS, _manipulatingCameraFPS, _msaa, OnUI, GetInitialPosition(), GetInitialSize(), _windowFlags, _externalWindowFlags, _windowStyleFlags);
+            FuCameraWindowDefinition windowDefinition = new FuCameraWindowDefinition(_windowName, _camera, _idleCameraFPS, _manipulatingCameraFPS, _msaa, OnUI, GetInitialPosition(), GetInitialSize(), _windowFlags, _externalWindowFlags, _windowStyleFlags, _resizableSides);
             windowDefinition.SetSupersampling(_superSampling);
             windowDefinition.SetCustomWindowType((winDef) => {
                 return new FuCameraWindow((FuCameraWindowDefinition)winDef);

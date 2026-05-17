@@ -36,6 +36,9 @@ namespace Fu.Framework
         protected FuWindowStyleFlags _windowStyleFlags = FuWindowStyleFlags.Default;
 
         [SerializeField]
+        protected FuWindowResizeSides _resizableSides = FuWindowResizeSides.Default;
+
+        [SerializeField]
         protected bool _forceCreateAloneOnAwake = false;
 
         [SerializeField]
@@ -150,7 +153,8 @@ namespace Fu.Framework
                     GetWindowSizeFromPlaceholder(),
                     _windowFlags,
                     FuExternalWindowFlags.Default,
-                    _windowStyleFlags
+                    _windowStyleFlags,
+                    _resizableSides
                 );
 
                 OnWindowDefinitionCreated(_windowDefinition);
@@ -987,6 +991,7 @@ namespace Fu.Framework
 
         private SerializedProperty windowFlagsProp;
         private SerializedProperty windowStyleFlagsProp;
+        private SerializedProperty resizableSidesProp;
         private SerializedProperty forceCreateProp;
         private SerializedProperty runtimeResizableProp;
         private SerializedProperty depthProp;
@@ -1007,6 +1012,7 @@ namespace Fu.Framework
             "_windowName",
             "_windowFlags",
             "_windowStyleFlags",
+            "_resizableSides",
             "_forceCreateAloneOnAwake",
             "_runtimeResizable",
             "Depth",
@@ -1040,6 +1046,7 @@ namespace Fu.Framework
 
             windowFlagsProp = serializedObject.FindProperty("_windowFlags");
             windowStyleFlagsProp = serializedObject.FindProperty("_windowStyleFlags");
+            resizableSidesProp = serializedObject.FindProperty("_resizableSides");
             forceCreateProp = serializedObject.FindProperty("_forceCreateAloneOnAwake");
             runtimeResizableProp = serializedObject.FindProperty("_runtimeResizable");
             depthProp = serializedObject.FindProperty("Depth");
@@ -1073,6 +1080,7 @@ namespace Fu.Framework
 
             EditorGUILayout.PropertyField(windowFlagsProp, new GUIContent("Behaviour Flags"));
             EditorGUILayout.PropertyField(windowStyleFlagsProp, new GUIContent("Window Flags"));
+            EditorGUILayout.PropertyField(resizableSidesProp, new GUIContent("Resizable Sides"));
             EditorGUILayout.PropertyField(forceCreateProp);
             EditorGUILayout.PropertyField(runtimeResizableProp);
             EditorGUILayout.PropertyField(depthProp);

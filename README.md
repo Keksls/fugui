@@ -237,6 +237,16 @@ public class SceneViewWindow : FuCameraWindowBehaviour
 }
 ```
 
+Pour remplacer le title bar Fugui par ton propre header sur les fenetres flottantes, utilise:
+
+```csharp
+definition.SetWindowDecorationUI(DrawCustomHeader, 32f);
+// equivalent:
+definition.SetHeaderUI(DrawCustomHeader, 32f, overrideWindowDecorations: true);
+```
+
+Le header custom conserve la zone de drag/docking. Les fenetres dockees gardent leur tab bar de layout.
+
 `FuCameraWindow` gere:
 
 - camera source;

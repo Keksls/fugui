@@ -764,6 +764,8 @@ public class MyWindowNames : FuSystemWindowsNames
 );
 
 definition.SetHeaderUI(DrawHeader, 24f);
+// To replace the floating window title bar:
+// definition.SetWindowDecorationUI(DrawCustomHeader, 32f);
 Fugui.CreateWindow(MyWindowNames.Tools);",
             new string[] { "definition", "instance", "ForceDraw" }));
 

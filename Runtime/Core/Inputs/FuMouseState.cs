@@ -139,8 +139,8 @@ namespace Fu
                 _isHoverOverlay |= overlay.LocalRect.Contains(position);
             }
             _isHoverPupUp = Fugui.IsInsideAnyPopup(window.Container.LocalMousePos);
-            _isHoverTopBar = window.HeaderUI != null && window.HeaderHeight > 0f && position.y <= window.HeaderHeight + (window.WorkingAreaPosition.y - window.LocalPosition.y);
-            _isHoverBottomBar = window.FooterUI != null && window.FooterHeight > 0f && position.y >= window.WorkingAreaSize.y + window.WorkingAreaPosition.y - window.FooterHeight;
+            _isHoverTopBar = window.IsMouseHoveringHeader(position);
+            _isHoverBottomBar = window.IsMouseHoveringFooter(position);
         }
 
         /// <summary>

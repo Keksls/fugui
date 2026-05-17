@@ -24,6 +24,7 @@ namespace Fu
         private static List<FuContextMenuItem> _currentContextMenuItems = null;
         private static int _openThisFrameLevel = -1;
         private static int _currentOpenContextID = -1;
+        private static unsafe readonly ImGuiSizeCallback _contextMenuSizeCallback = ApplyContextMenuSizeConstraints;
         #endregion
 
         #region Methods
@@ -245,7 +246,7 @@ namespace Fu
             Push(ImGuiCol.HeaderActive, Fugui.Themes.GetColor(FuColors.SelectedActive, 0.88f));
             Push(ImGuiCol.Separator, Fugui.Themes.GetColor(FuColors.Separator, 0.58f));
             float scale = CurrentContext != null ? CurrentContext.Scale : 1f;
-            ImGui.SetNextWindowSizeConstraints(new Vector2(180f * scale, 0f), new Vector2(420f * scale, float.MaxValue));
+            ImGui.SetNextWindowSizeConstraints(new Vector2(180f * scale, 0f), new Vector2(420f * scale, float.MaxValue), _contextMenuSizeCallback);
             ImGuiWindowFlags popupFlags = ImGuiWindowFlags.NoMove;
             if (popupBackdropEnabled)
             {
@@ -282,6 +283,21 @@ namespace Fu
             }
             PopColor(7);
             PopStyle(6);
+        }
+
+        /// <summary>
+        /// Keeps constrained popup auto-fit from being rounded below its content height.
+        /// </summary>
+        private static unsafe void ApplyContextMenuSizeConstraints(ImGuiSizeCallbackData* data)
+        {
+            if (data == null)
+            {
+                return;
+            }
+
+            Vector2 desiredSize = data->DesiredSize;
+            desiredSize.y = Mathf.Ceil(desiredSize.y);
+            data->DesiredSize = desiredSize;
         }
 
         /// <summary>

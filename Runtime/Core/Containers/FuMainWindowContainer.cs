@@ -93,6 +93,7 @@ namespace Fu
         // A queue of windows to be added.
         private Queue<FuWindow> _toAddWindows;
         private readonly List<string> _pendingBringToFrontWindowIds = new List<string>();
+        private readonly HashSet<string> _renderedWindowIds = new HashSet<string>();
         private bool _isRenderingWindows;
         private readonly List<string> _floatingWindowSwitchOrder = new List<string>();
         private bool _floatingWindowSwitcherOpen;
@@ -384,6 +385,8 @@ namespace Fu
         /// </summary>
         public void RenderFuWindows()
         {
+            _renderedWindowIds.Clear();
+
             ApplyPendingWindowOrder();
             ProcessFloatingWindowSwitcherInput();
             ApplyPendingWindowOrder();
@@ -398,7 +401,7 @@ namespace Fu
                 {
                     if (window.IsDocked && !IsFloatingDockGroupWindow(window))
                     {
-                        RenderFuWindow(window);
+                        RenderFuWindowOnce(window);
                     }
                 }
             }
@@ -415,7 +418,7 @@ namespace Fu
                 {
                     if ((!window.IsDocked && !window.IsDragging) || IsFloatingDockGroupWindow(window))
                     {
-                        RenderFuWindow(window);
+                        RenderFuWindowOnce(window);
                     }
                 }
             }
@@ -432,7 +435,7 @@ namespace Fu
                 {
                     if (!window.IsDocked && window.IsDragging)
                     {
-                        RenderFuWindow(window);
+                        RenderFuWindowOnce(window);
                     }
                 }
             }
@@ -458,6 +461,19 @@ namespace Fu
             Fugui.RenderNotifications(this);
 
             DrawFloatingWindowSwitcherOverlay();
+        }
+
+        /// <summary>
+        /// Render a window at most once in the current ImGui frame.
+        /// </summary>
+        private void RenderFuWindowOnce(FuWindow window)
+        {
+            if (window == null || string.IsNullOrEmpty(window.ID) || !_renderedWindowIds.Add(window.ID))
+            {
+                return;
+            }
+
+            RenderFuWindow(window);
         }
 
         /// <summary>

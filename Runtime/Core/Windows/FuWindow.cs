@@ -141,6 +141,8 @@ namespace Fu
         public bool IsInitialized { get; private set; }
         public bool IsExternal { get; internal set; }
         public FuWindowResizeSides ResizableSides { get; private set; }
+        public bool CanTakeInputFocusFromMouse { get; private set; }
+        public bool CanTakeInputFocusFromKeyboard { get; private set; }
 
         // external window flags
         public bool UseNativeTitleBar { get; private set; }
@@ -505,6 +507,8 @@ namespace Fu
             LocalPosition = windowDefinition.Position;
             NoDockingOverMe = windowDefinition.NoDockingOverMe;
             ResizableSides = windowDefinition.ResizableSides;
+            CanTakeInputFocusFromMouse = windowDefinition.CanTakeInputFocusFromMouse;
+            CanTakeInputFocusFromKeyboard = windowDefinition.CanTakeInputFocusFromKeyboard;
 
             // external window flags
             UseNativeTitleBar = windowDefinition.UseNativeTitleBar;
@@ -1842,10 +1846,13 @@ namespace Fu
             ApplyProgrammaticRect(fittedStartPos, fittedSize, true);
             Focus();
             _releaseFocusNextFrame = false;
-            InputFocusedWindow = this;
-            if (NbInputFocusedWindow <= 0)
+            if (CanTakeInputFocusFromMouse)
             {
-                NbInputFocusedWindow = 1;
+                InputFocusedWindow = this;
+                if (NbInputFocusedWindow <= 0)
+                {
+                    NbInputFocusedWindow = 1;
+                }
             }
             ForceDraw(2);
             Fugui.ForceDrawAllWindows(2);
@@ -1902,10 +1909,13 @@ namespace Fu
             _ignoreTransformThisFrame = true;
             Focus();
             _releaseFocusNextFrame = false;
-            InputFocusedWindow = this;
-            if (NbInputFocusedWindow <= 0)
+            if (CanTakeInputFocusFromMouse)
             {
-                NbInputFocusedWindow = 1;
+                InputFocusedWindow = this;
+                if (NbInputFocusedWindow <= 0)
+                {
+                    NbInputFocusedWindow = 1;
+                }
             }
             ForceDraw(2);
             Fugui.ForceDrawAllWindows(2);

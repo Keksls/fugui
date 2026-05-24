@@ -201,7 +201,7 @@ namespace Fu
             _virtualButtonStates[2].SetState(btn2State, Vector2Int.zero);
 
             // check if a button is Down this frame if this window is hover and can take focus
-            if (window.IsHovered)
+            if (window.IsHovered && window.CanTakeInputFocusFromMouse)
             {
                 bool canTakeFocus =
                     FuWindow.InputFocusedWindow == null ||

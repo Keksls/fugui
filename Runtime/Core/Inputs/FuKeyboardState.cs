@@ -124,7 +124,7 @@ namespace Fu
                             bool keyState = _io.KeysData[key].Down == 1;
 
                             // the key has just been pressed this frame => KeyDown
-                            if (!_keysStates[key].IsPressed && keyState)
+                            if (!_keysStates[key].IsPressed && keyState && _window.CanTakeInputFocusFromKeyboard)
                             {
                                 // Set current window as input focus
                                 FuWindow.InputFocusedWindow = _window;

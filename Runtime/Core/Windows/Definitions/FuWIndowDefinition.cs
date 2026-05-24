@@ -40,6 +40,10 @@ namespace Fu
         public FuWindowStyleFlags WindowStyleFlags { get; private set; }
         // Sides that can resize this window when resize is enabled
         public FuWindowResizeSides ResizableSides { get; private set; }
+        // Whether mouse input can make this window the Fugui input-focused window
+        public bool CanTakeInputFocusFromMouse { get; private set; }
+        // Whether keyboard input can make this window the Fugui input-focused window
+        public bool CanTakeInputFocusFromKeyboard { get; private set; }
 
         // A flag indicating whether this window will use native title bar once externalized
         public bool UseNativeTitleBar { get; private set; }
@@ -98,6 +102,8 @@ namespace Fu
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
             WindowStyleFlags = windowStyleFlags;
             ResizableSides = resizableSides;
+            CanTakeInputFocusFromMouse = !flags.HasFlag(FuWindowFlags.NoMouseInputFocus);
+            CanTakeInputFocusFromKeyboard = !flags.HasFlag(FuWindowFlags.NoKeyboardInputFocus);
             IsExternalizable = !flags.HasFlag(FuWindowFlags.NoExternalization);
             IsDockable = !flags.HasFlag(FuWindowFlags.NoDocking);
             IsInterractif = !flags.HasFlag(FuWindowFlags.NoInterractions);

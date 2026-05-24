@@ -118,6 +118,14 @@
         /// </summary>
         MoveFromBody = 256,
         /// <summary>
+        /// Prevent mouse input from making this window the Fugui input-focused window.
+        /// </summary>
+        NoMouseInputFocus = 512,
+        /// <summary>
+        /// Prevent keyboard input from making this window the Fugui input-focused window.
+        /// </summary>
+        NoKeyboardInputFocus = 1024,
+        /// <summary>
         /// Default FuWindow behaviour
         /// </summary>
         Default = CloseOnMiddleClick,

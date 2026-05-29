@@ -128,7 +128,7 @@ namespace Fu
         /// <param name="type">type of the font</param>
         public static void PushFont(int size, FontType type = FontType.Regular)
         {
-            PushResolvedFont(null, size, type);
+            PushResolvedFont(Settings.FontConfig.DefaultFontName, size, type);
         }
 
         /// <summary>

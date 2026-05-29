@@ -128,7 +128,7 @@ namespace Fu
         /// <param name="type">type of the font</param>
         public static void PushFont(int size, FontType type = FontType.Regular)
         {
-            PushFont(null, size, type);
+            PushResolvedFont(null, size, type);
         }
 
         /// <summary>
@@ -139,20 +139,29 @@ namespace Fu
         /// <param name="type">type of the font</param>
         public static void PushFont(string fontName, int size, FontType type = FontType.Regular)
         {
+            PushResolvedFont(fontName, size, type);
+        }
+
+        private static void PushResolvedFont(string fontName, int size, FontType type)
+        {
             FontSet fontSet = ResolveFontSet(fontName, size);
             if (fontSet == null)
             {
                 return;
             }
 
-            ImFontPtr fontPtr = fontSet.GetFont(type);
-            if (fontPtr.Equals(default(ImFontPtr)))
+            if (!fontSet.TryGetFont(type, out ImFontPtr fontPtr))
             {
                 Debug.LogError($"you are trying to push font '{fontSet.Name}' for {fontSet.Size}px as {type}, but this style does not exist.");
                 return;
             }
 
-            ImGui.PushFont(fontPtr);
+            PushFontPtr(fontPtr);
+        }
+
+        private static unsafe void PushFontPtr(ImFontPtr fontPtr)
+        {
+            ImGuiNative.igPushFont(fontPtr.NativePtr);
             NbPushFont++;
         }
 
@@ -239,22 +248,8 @@ namespace Fu
         /// </summary>
         public static void PushDefaultFont()
         {
-            FontSet fontSet = CurrentContext?.GetFallbackFontSet();
-            if (fontSet == null)
-            {
-                Debug.LogError("you are trying to push the default font but no font is loaded.");
-                return;
-            }
-
-            ImFontPtr fontPtr = fontSet.GetFont(FontType.Regular);
-            if (fontPtr.Equals(default(ImFontPtr)))
-            {
-                Debug.LogError($"you are trying to push default font '{fontSet.Name}' for {fontSet.Size}px, but its regular style does not exist.");
-                return;
-            }
-
-            ImGui.PushFont(fontPtr);
-            NbPushFont++;
+            int defaultSize = Fugui.Settings?.FontConfig?.DefaultSize ?? 14;
+            PushResolvedFont(null, defaultSize, FontType.Regular);
         }
 
         private static FontSet ResolveFontSet(string fontName, int size)
@@ -265,13 +260,12 @@ namespace Fu
                 return null;
             }
 
-            string resolvedFontName = CurrentContext.ResolveFontName(fontName);
-            if (CurrentContext.TryGetFontSet(resolvedFontName, size, out FontSet fontSet))
+            if (CurrentContext.TryGetFontSet(fontName, size, out FontSet fontSet))
             {
                 return fontSet;
             }
 
-            Debug.LogError($"you are trying to push font '{resolvedFontName}' for {size}px but it does not exist.");
+            Debug.LogError($"you are trying to push font '{fontName}' for {size}px but it does not exist.");
             return CurrentContext.GetFallbackFontSet();
         }
     }

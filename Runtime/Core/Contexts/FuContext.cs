@@ -51,7 +51,7 @@ namespace Fu
         public bool RenderPrepared { get; protected set; } = false;
         public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
 
-        internal Dictionary<FontKey, FontSet> Fonts = new Dictionary<FontKey, FontSet>();
+        internal Dictionary<string, Dictionary<int, FontSet>> Fonts = new Dictionary<string, Dictionary<int, FontSet>>();
 
         internal FontSet DefaultFont { get; set; }
         internal string FontAtlasCacheKey { get; private set; }
@@ -402,6 +402,7 @@ namespace Fu
 
             DefaultFont = defaultFont;
             FontAtlasCacheKey = FuFontAtlasCache.GetAtlasCacheKey(Fugui.Settings?.FontConfig, FontScale, Application.streamingAssetsPath);
+            RebuildFontRuntimeData();
         }
 
         /// <summary>
@@ -419,13 +420,14 @@ namespace Fu
             IO.NativePtr->FontDefault = default;
             Fonts.Clear();
 
-            foreach (KeyValuePair<FontKey, FontSet> font in _sharedFontAtlas.Fonts)
+            foreach (var font in _sharedFontAtlas.Fonts)
             {
                 Fonts[font.Key] = font.Value;
             }
 
             DefaultFont = _sharedFontAtlas.DefaultFont;
             FontAtlasCacheKey = _sharedFontAtlas.Key;
+            RebuildFontRuntimeData();
             return true;
         }
 
@@ -475,15 +477,28 @@ namespace Fu
 
         internal bool TryGetFontSet(string fontName, int size, out FontSet fontSet)
         {
-            return Fonts.TryGetValue(new FontKey(ResolveFontName(fontName), size), out fontSet);
+            fontSet = null;
+            if (Fonts.TryGetValue(fontName, out var sizeDict))
+            {
+                sizeDict.TryGetValue(size, out fontSet);
+            }
+            return fontSet != null;
         }
 
-        internal string ResolveFontName(string fontName)
+        private void RebuildFontRuntimeData()
         {
-            FontConfig fontConfig = Fugui.Settings?.FontConfig;
-            return fontConfig != null
-                ? fontConfig.ResolveFontName(fontName)
-                : FontKey.NormalizeName(fontName);
+            foreach (var sizeDict in Fonts.Values)
+            {
+                foreach (var fontSet in sizeDict.Values)
+                {
+                    if (fontSet == null)
+                    {
+                        continue;
+                    }
+
+                    fontSet.RebuildResolvedFonts();
+                }
+            }
         }
 
         internal FontSet GetFallbackFontSet()
@@ -493,11 +508,14 @@ namespace Fu
                 return DefaultFont;
             }
 
-            foreach (FontSet fontSet in Fonts.Values)
+            foreach (var sizeDict in Fonts.Values)
             {
-                if (fontSet != null)
+                foreach (var fontSet in sizeDict.Values)
                 {
-                    return fontSet;
+                    if (fontSet != null)
+                    {
+                        return fontSet;
+                    }
                 }
             }
 

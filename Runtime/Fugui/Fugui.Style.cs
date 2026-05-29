@@ -248,8 +248,7 @@ namespace Fu
         /// </summary>
         public static void PushDefaultFont()
         {
-            int defaultSize = Fugui.Settings?.FontConfig?.DefaultSize ?? 14;
-            PushResolvedFont(null, defaultSize, FontType.Regular);
+            PushFont(FontType.Regular);
         }
 
         private static FontSet ResolveFontSet(string fontName, int size)

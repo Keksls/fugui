@@ -22,7 +22,7 @@ namespace Fu
             FontConfig fontConf,
             float fontScale,
             string streamingAssetsPath,
-            Dictionary<FontKey, FontSet> fonts,
+            Dictionary<string, Dictionary<int, FontSet>> fonts,
             out FontSet defaultFont,
             List<byte[]> loadedFontBuffers)
         {
@@ -52,18 +52,23 @@ namespace Fu
                     continue;
                 }
 
-                string fontName = ResolveFontName(fontConf, font);
+                string fontName = font.Name;
                 FontSet fontSet = null;
                 if (fonts != null)
                 {
-                    FontKey fontKey = new FontKey(fontName, font.Size);
-                    if (fonts.ContainsKey(fontKey))
+                    if (!fonts.TryGetValue(fontName, out var sizeDict))
                     {
-                        Debug.LogWarning($"[FontLoader] Duplicate font config for {fontKey}. The last entry will be used.");
+                        sizeDict = new Dictionary<int, FontSet>();
+                        fonts[fontName] = sizeDict;
+                    }
+
+                    if (sizeDict.ContainsKey(font.Size))
+                    {
+                        Debug.LogWarning($"[FontLoader] Duplicate font config for {fontName} with size {font.Size}. The last entry will be used.");
                     }
 
                     fontSet = new FontSet(fontName, font.Size);
-                    fonts[fontKey] = fontSet;
+                    sizeDict[font.Size] = fontSet;
                 }
 
                 if (ProcessSubFont(io, fontPath, fontScale, font, GetAvailableSubFonts("Regular", fontPath, font.SubFonts_Regular), loadedFontBuffers, out ImFontPtr regular))
@@ -90,9 +95,11 @@ namespace Fu
                     }
                 }
 
+                fontSet?.RebuildResolvedFonts();
+
                 if (fontSet != null &&
                     font.Size == fontConf.DefaultSize &&
-                    string.Equals(fontSet.Name, fontConf.GetDefaultFontName(), StringComparison.OrdinalIgnoreCase))
+                    string.Equals(fontSet.Name, fontConf.DefaultFontName, StringComparison.OrdinalIgnoreCase))
                 {
                     defaultFont = fontSet;
                 }
@@ -104,39 +111,34 @@ namespace Fu
             }
         }
 
-        private static string ResolveFontName(FontConfig fontConf, FontSizeConfig font)
-        {
-            return fontConf != null
-                ? fontConf.ResolveFontName(font?.Name)
-                : FontKey.NormalizeName(font?.Name);
-        }
-
-        private static FontSet FindFallbackFont(Dictionary<FontKey, FontSet> fonts, FontConfig fontConf)
+        private static FontSet FindFallbackFont(Dictionary<string, Dictionary<int, FontSet>> fonts, FontConfig fontConf)
         {
             if (fonts == null || fonts.Count == 0)
             {
                 return null;
             }
 
-            FontKey defaultKey = new FontKey(fontConf.GetDefaultFontName(), fontConf.DefaultSize);
-            if (fonts.TryGetValue(defaultKey, out FontSet defaultFont))
+            if (fonts.TryGetValue(fontConf.DefaultFontName, out var sizeDict) && sizeDict.TryGetValue(fontConf.DefaultSize, out FontSet defaultFont))
             {
                 return defaultFont;
             }
 
-            foreach (FontSet fontSet in fonts.Values)
+            foreach (var sDict in fonts.Values)
             {
-                if (fontSet != null && fontSet.Size == fontConf.DefaultSize)
+                if (sizeDict.TryGetValue(fontConf.DefaultSize, out FontSet fontSet))
                 {
                     return fontSet;
                 }
             }
 
-            foreach (FontSet fontSet in fonts.Values)
+            foreach (var sDict in fonts.Values)
             {
-                if (fontSet != null)
+                foreach (var fontSet in sizeDict.Values)
                 {
-                    return fontSet;
+                    if (fontSet != null)
+                    {
+                        return fontSet;
+                    }
                 }
             }
 

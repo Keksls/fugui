@@ -36,19 +36,5 @@ namespace Fu
         [Tooltip("Use an 8-bit alpha texture for generated font atlas textures. Baked PNG atlases may still decode as RGBA.")]
         public bool UseAlpha8FontAtlasTexture = true;
         #endregion
-
-        internal string GetDefaultFontName()
-        {
-            return string.IsNullOrWhiteSpace(DefaultFontName)
-                ? FallbackFontName
-                : DefaultFontName.Trim();
-        }
-
-        internal string ResolveFontName(string fontName)
-        {
-            return string.IsNullOrWhiteSpace(fontName)
-                ? GetDefaultFontName()
-                : fontName.Trim();
-        }
     }
 }

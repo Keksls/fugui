@@ -1031,6 +1031,11 @@ namespace Fu
                 IsHovered = true;
             }
 
+            if (IsHovered && IsCoveredByFrontMostFloatingSurfaceAtMouse())
+            {
+                IsHovered = false;
+            }
+
             // increase window hover state according to input focused window IF we are not dragging any payload
             if (_inputFocusedWindow != null && !Fugui.CurrentContext._isDraggingPayload)
             {
@@ -2364,6 +2369,7 @@ namespace Fu
 
             if (!IsFrontMostFloatingSurfaceAtMouse())
             {
+                BlockInputsForFrontMostResizeHandle();
                 return;
             }
 
@@ -2433,6 +2439,31 @@ namespace Fu
                 default:
                     return false;
             }
+        }
+
+        /// <summary>
+        /// Block content input for this frame when the top floating surface owns a resize handle under the pointer.
+        /// </summary>
+        private void BlockInputsForFrontMostResizeHandle()
+        {
+            FuWindow frontMost = GetFrontMostFloatingSurfaceAtMouse(Container);
+            if (frontMost == null ||
+                frontMost == this ||
+                !frontMost.CanCustomResizeWindow() ||
+                Fugui.IsInsideAnyPopup(Container.LocalMousePos) ||
+                Fugui.IsMouseButtonPressedBeforeCurrentFrame(FuMouseButton.Left))
+            {
+                return;
+            }
+
+            FuWindowResizeEdge edge = frontMost.GetHoveredCustomResizeEdgeRaw(Container.LocalMousePos - frontMost.LocalPosition);
+            if (edge == FuWindowResizeEdge.None)
+            {
+                return;
+            }
+
+            Fugui.BlockWindowInputsForFrame();
+            frontMost.ForceDraw(2);
         }
 
         /// <summary>
@@ -2511,30 +2542,48 @@ namespace Fu
         /// </summary>
         private bool IsFrontMostFloatingSurfaceAtMouse()
         {
-            if (Container is not FuMainWindowContainer mainContainer || mainContainer.Windows == null)
+            FuWindow frontMost = GetFrontMostFloatingSurfaceAtMouse(Container);
+            return frontMost == null || frontMost == this;
+        }
+
+        /// <summary>
+        /// Return true when another floating surface is visually above this window under the mouse.
+        /// </summary>
+        private bool IsCoveredByFrontMostFloatingSurfaceAtMouse()
+        {
+            FuWindow frontMost = GetFrontMostFloatingSurfaceAtMouse(Container);
+            return frontMost != null && frontMost != this;
+        }
+
+        /// <summary>
+        /// Return the top-most floating surface under the mouse in the container render order.
+        /// </summary>
+        private static FuWindow GetFrontMostFloatingSurfaceAtMouse(IFuWindowContainer container)
+        {
+            if (container == null)
             {
-                return true;
+                return null;
             }
 
-            Vector2Int mousePosition = mainContainer.LocalMousePos;
+            Vector2Int mousePosition = container.LocalMousePos;
             FuWindow frontMost = null;
-            foreach (FuWindow window in mainContainer.Windows.Values)
+            container.OnEachWindow(window =>
             {
                 if (window == null ||
-                    window.Container != mainContainer ||
+                    window.Container != container ||
                     !window.IsOpened ||
                     !window.IsInitialized ||
                     !(Fugui.Layouts?.ShouldDrawWindow(window) ?? true) ||
                     !IsFloatingSurface(window) ||
                     !window.LocalRect.Contains(mousePosition))
                 {
-                    continue;
+                    return;
                 }
 
                 frontMost = window;
-            }
+            });
 
-            return frontMost == null || frontMost == this;
+            return frontMost;
         }
 
         /// <summary>
@@ -3255,8 +3304,9 @@ namespace Fu
         /// Reuses a cached child draw list slot and binds it to the native ImGui draw list.
         /// </summary>
         /// <param name="drawList">Native ImGui draw list.</param>
+        /// <param name="windowName">Already resolved owner name.</param>
         /// <returns>Bound cached child draw list.</returns>
-        internal DrawList BindCachedChildDrawList(ImDrawListPtr drawList)
+        internal DrawList BindCachedChildDrawList(ImDrawListPtr drawList, string windowName)
         {
             DrawList cachedDrawList;
             if (_cachedChildDrawListPoolCursor < _cachedChildDrawListPool.Count)
@@ -3270,7 +3320,7 @@ namespace Fu
             }
 
             _cachedChildDrawListPoolCursor++;
-            cachedDrawList.Bind(drawList);
+            cachedDrawList.Bind(drawList, windowName);
             return cachedDrawList;
         }
 

@@ -73,14 +73,45 @@ namespace Fu
             {
                 Bind(drawList);
             }
+
+            /// <summary>
+            /// Initializes a new instance of the Draw List class with an already resolved owner name.
+            /// </summary>
+            /// <param name="drawList">The draw List value.</param>
+            /// <param name="windowName">Already resolved owner name.</param>
+            internal DrawList(ImDrawListPtr drawList, string windowName)
+            {
+                Bind(drawList, windowName);
+            }
             #endregion
 
             #region Methods
             /// <summary>
-            /// Bind the curretn drawList with an ImGui ImDrawListPtr
+            /// Bind the current drawList with an ImGui ImDrawListPtr.
             /// </summary>
             /// <param name="drawList">ImGui drawList ptr handle</param>
             public unsafe void Bind(ImDrawListPtr drawList)
+            {
+                bindBuffers(drawList);
+                _windowName = null;
+            }
+
+            /// <summary>
+            /// Bind the current drawList with an ImGui ImDrawListPtr and a cached owner name.
+            /// </summary>
+            /// <param name="drawList">ImGui drawList ptr handle.</param>
+            /// <param name="windowName">Already resolved owner name.</param>
+            internal unsafe void Bind(ImDrawListPtr drawList, string windowName)
+            {
+                bindBuffers(drawList);
+                _windowName = windowName;
+            }
+
+            /// <summary>
+            /// Copies native ImGui draw-list buffers without converting native strings.
+            /// </summary>
+            /// <param name="drawList">ImGui drawList ptr handle.</param>
+            private unsafe void bindBuffers(ImDrawListPtr drawList)
             {
                 // save cmd buffer
                 _cmdCount = drawList.CmdBuffer.Size;
@@ -121,7 +152,6 @@ namespace Fu
                 // save flags and vtx/idx
                 _flags = drawList.Flags;
                 _vtxCurrentIdx = drawList._VtxCurrentIdx;
-                _windowName = drawList._OwnerName;
             }
 
             /// <summary>

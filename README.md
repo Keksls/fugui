@@ -503,6 +503,12 @@ Fugui.ShowWarning(
 );
 ```
 
+`FuModalFlags.NoTitleBar` et `FuModalFlags.NoFooterBar` peuvent etre passes apres la taille pour masquer le titre ou le footer:
+
+```csharp
+Fugui.ShowModal("Progress", DrawProgress, FuModalSize.Small, FuModalFlags.NoTitleBar | FuModalFlags.NoFooterBar);
+```
+
 ### Notification
 
 ```csharp

@@ -42,6 +42,7 @@ namespace Fu
             private Dictionary<int, int> _prevVertexCounts;
             private Dictionary<int, int> _prevIndexCounts;
             private Dictionary<int, List<SubMeshDescriptor>> _subMeshDescriptors;
+            private readonly List<DrawList> _singleDrawList;
             private TextureManager _textureManager;
             private MaterialPropertyBlock _materialProperties;
             private MaterialPropertyBlock _backdropProperties;
@@ -90,6 +91,7 @@ namespace Fu
                 _subMeshDescriptors = new Dictionary<int, List<SubMeshDescriptor>>();
                 _targetHandles = new Dictionary<int, RTHandle>();
                 _transientMeshes = new Dictionary<int, List<DrawListMesh>>();
+                _singleDrawList = new List<DrawList>(1);
 
                 renderPassEvent = passEvent;
 
@@ -344,7 +346,15 @@ namespace Fu
                 {
                     for (int i = 0; i < drawData.RenderItems.Count; i++)
                     {
-                        if (ContainsBackdropCommand(drawData.RenderItems[i].DrawLists))
+                        DrawDataRenderItem item = drawData.RenderItems[i];
+                        if (item.IsWindow)
+                        {
+                            if (ContainsBackdropCommand(item.Window.CachedDrawLists))
+                            {
+                                return true;
+                            }
+                        }
+                        else if (ContainsBackdropCommand(item.DrawList))
                         {
                             return true;
                         }
@@ -370,18 +380,33 @@ namespace Fu
                 for (int n = 0; n < drawLists.Count; n++)
                 {
                     DrawList drawList = drawLists[n];
-                    if (drawList == null || drawList.CmdBuffer == null)
+                    if (ContainsBackdropCommand(drawList))
                     {
-                        continue;
+                        return true;
                     }
+                }
 
-                    ImDrawCmd[] commands = drawList.CmdBuffer;
-                    for (int i = 0; i < commands.Length; i++)
+                return false;
+            }
+
+            /// <summary>
+            /// Returns whether a draw list contains a Fugui backdrop draw command.
+            /// </summary>
+            /// <param name="drawList">Draw list to inspect.</param>
+            /// <returns>True when a backdrop command is present.</returns>
+            private bool ContainsBackdropCommand(DrawList drawList)
+            {
+                if (drawList == null || drawList.CmdBuffer == null)
+                {
+                    return false;
+                }
+
+                ImDrawCmd[] commands = drawList.CmdBuffer;
+                for (int i = 0; i < drawList.CmdCount; i++)
+                {
+                    if (Fugui.IsBackdropTextureID(commands[i].TextureId))
                     {
-                        if (Fugui.IsBackdropTextureID(commands[i].TextureId))
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
 
@@ -458,7 +483,10 @@ namespace Fu
                     float maxRadius = 0f;
                     for (int i = 0; i < drawData.RenderItems.Count; i++)
                     {
-                        maxRadius = Mathf.Max(maxRadius, GetMaxBackdropBlurRadius(drawData.RenderItems[i].DrawLists));
+                        DrawDataRenderItem item = drawData.RenderItems[i];
+                        maxRadius = Mathf.Max(maxRadius, item.IsWindow
+                            ? GetMaxBackdropBlurRadius(item.Window.CachedDrawLists)
+                            : GetMaxBackdropBlurRadius(item.DrawList));
                     }
                     return maxRadius;
                 }
@@ -480,19 +508,30 @@ namespace Fu
                 for (int n = 0; n < drawLists.Count; n++)
                 {
                     DrawList drawList = drawLists[n];
-                    if (drawList == null || drawList.CmdBuffer == null)
-                    {
-                        continue;
-                    }
+                    maxRadius = Mathf.Max(maxRadius, GetMaxBackdropBlurRadius(drawList));
+                }
 
-                    ImDrawCmd[] commands = drawList.CmdBuffer;
-                    for (int i = 0; i < commands.Length; i++)
+                return maxRadius;
+            }
+
+            /// <summary>
+            /// Returns the largest blur radius encoded in one draw list.
+            /// </summary>
+            private float GetMaxBackdropBlurRadius(DrawList drawList)
+            {
+                if (drawList == null || drawList.CmdBuffer == null)
+                {
+                    return 0f;
+                }
+
+                float maxRadius = 0f;
+                ImDrawCmd[] commands = drawList.CmdBuffer;
+                for (int i = 0; i < drawList.CmdCount; i++)
+                {
+                    ImDrawCmd command = commands[i];
+                    if (Fugui.IsBackdropTextureID(command.TextureId))
                     {
-                        ImDrawCmd command = commands[i];
-                        if (Fugui.IsBackdropTextureID(command.TextureId))
-                        {
-                            maxRadius = Mathf.Max(maxRadius, GetBackdropBlurRadius(drawList, command));
-                        }
+                        maxRadius = Mathf.Max(maxRadius, GetBackdropBlurRadius(drawList, command));
                     }
                 }
 
@@ -584,32 +623,43 @@ namespace Fu
                 for (int i = 0; i < drawData.RenderItems.Count; i++)
                 {
                     DrawDataRenderItem item = drawData.RenderItems[i];
-                    IReadOnlyList<DrawList> drawLists = item.DrawLists;
-                    if (drawLists == null || drawLists.Count == 0)
-                    {
-                        continue;
-                    }
-
                     DrawListMesh meshData;
                     Vector2 renderOffset = Vector2.zero;
                     if (item.IsWindow)
                     {
+                        IReadOnlyList<DrawList> drawLists = item.Window.CachedDrawLists;
+                        if (drawLists == null || drawLists.Count == 0)
+                        {
+                            continue;
+                        }
+
                         meshData = item.Window.RenderMeshData;
                         renderOffset = item.Window.RenderMeshOffset;
+                        if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
+                        {
+                            continue;
+                        }
+
+                        CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset);
                     }
                     else
                     {
+                        DrawList drawList = item.DrawList;
+                        if (drawList == null)
+                        {
+                            continue;
+                        }
+
                         meshData = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
                         transientMeshIndex++;
-                        meshData.Update(drawLists, drawData.DisplaySize, drawData.FramebufferScale);
-                    }
+                        meshData.Update(drawList, drawData.DisplaySize, drawData.FramebufferScale);
+                        if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
+                        {
+                            continue;
+                        }
 
-                    if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
-                    {
-                        continue;
+                        CreateDrawCommands(meshData.Mesh, material, commandBuffer, GetSingleDrawList(drawList), drawData, fbSize, renderOffset);
                     }
-
-                    CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset);
                 }
             }
 
@@ -642,32 +692,43 @@ namespace Fu
                 for (int i = 0; i < drawData.RenderItems.Count; i++)
                 {
                     DrawDataRenderItem item = drawData.RenderItems[i];
-                    IReadOnlyList<DrawList> drawLists = item.DrawLists;
-                    if (drawLists == null || drawLists.Count == 0)
-                    {
-                        continue;
-                    }
-
                     DrawListMesh meshData;
                     Vector2 renderOffset = Vector2.zero;
                     if (item.IsWindow)
                     {
+                        IReadOnlyList<DrawList> drawLists = item.Window.CachedDrawLists;
+                        if (drawLists == null || drawLists.Count == 0)
+                        {
+                            continue;
+                        }
+
                         meshData = item.Window.RenderMeshData;
                         renderOffset = item.Window.RenderMeshOffset;
+                        if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
+                        {
+                            continue;
+                        }
+
+                        CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
                     }
                     else
                     {
+                        DrawList drawList = item.DrawList;
+                        if (drawList == null)
+                        {
+                            continue;
+                        }
+
                         meshData = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
                         transientMeshIndex++;
-                        meshData.Update(drawLists, drawData.DisplaySize, drawData.FramebufferScale);
-                    }
+                        meshData.Update(drawList, drawData.DisplaySize, drawData.FramebufferScale);
+                        if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
+                        {
+                            continue;
+                        }
 
-                    if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
-                    {
-                        continue;
+                        CreateDrawCommands(meshData.Mesh, material, commandBuffer, GetSingleDrawList(drawList), drawData, fbSize, renderOffset, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
                     }
-
-                    CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
                 }
             }
 
@@ -699,6 +760,21 @@ namespace Fu
             }
 
             /// <summary>
+            /// Returns a reusable one-item draw-list view for renderer paths that expect a list.
+            /// </summary>
+            /// <param name="drawList">Draw list to expose.</param>
+            /// <returns>Reusable list containing the draw list.</returns>
+            private IReadOnlyList<DrawList> GetSingleDrawList(DrawList drawList)
+            {
+                _singleDrawList.Clear();
+                if (drawList != null)
+                {
+                    _singleDrawList.Add(drawList);
+                }
+                return _singleDrawList;
+            }
+
+            /// <summary>
             /// Runs the debug dump draw data workflow.
             /// </summary>
             /// <param name="label">The label value.</param>
@@ -712,16 +788,16 @@ namespace Fu
                     for (int n = 0; n < drawData.CmdListsCount; n++)
                     {
                         var dl = drawData.DrawLists[n];
-                        Debug.Log($"[{label}] DrawList #{n} -> Vtx={dl.VtxBuffer.Length}, Idx={dl.IdxBuffer.Length}, Cmd={dl.CmdBuffer.Length}");
+                        Debug.Log($"[{label}] DrawList #{n} -> Vtx={dl.VtxCount}, Idx={dl.IdxCount}, Cmd={dl.CmdCount}");
 
-                        int maxV = Mathf.Min(8, dl.VtxBuffer.Length);
+                        int maxV = Mathf.Min(8, dl.VtxCount);
                         for (int i = 0; i < maxV; i++)
                         {
                             var v = dl.VtxBuffer[i];
                             Debug.Log($"[{label}] V[{i}] pos=({v.pos.x}, {v.pos.y}) uv=({v.uv.x}, {v.uv.y}) col=0x{v.col:X8}");
                         }
 
-                        int maxI = Mathf.Min(18, dl.IdxBuffer.Length);
+                        int maxI = Mathf.Min(18, dl.IdxCount);
                         string idxText = "";
                         for (int i = 0; i < maxI; i++)
                         {
@@ -733,7 +809,7 @@ namespace Fu
                         }
                         Debug.Log($"[{label}] Indices: {idxText}");
 
-                        int maxC = Mathf.Min(8, dl.CmdBuffer.Length);
+                        int maxC = Mathf.Min(8, dl.CmdCount);
                         for (int i = 0; i < maxC; i++)
                         {
                             var cmd = dl.CmdBuffer[i];
@@ -774,7 +850,7 @@ namespace Fu
                 for (int n = 0, nMax = drawLists.Count; n < nMax; ++n)
                 {
                     DrawList drawList = drawLists[n];
-                    for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i, ++subOf)
+                    for (int i = 0, iMax = drawList.CmdCount; i < iMax; ++i, ++subOf)
                     {
                         ImDrawCmd drawCmd = drawList.CmdBuffer[i];
                         if (drawCmd.UserCallback != IntPtr.Zero)
@@ -866,7 +942,7 @@ namespace Fu
                 for (int n = 0, nMax = drawLists.Count; n < nMax; ++n)
                 {
                     DrawList drawList = drawLists[n];
-                    for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i, ++subOf)
+                    for (int i = 0, iMax = drawList.CmdCount; i < iMax; ++i, ++subOf)
                     {
                         ImDrawCmd drawCmd = drawList.CmdBuffer[i];
                         if (drawCmd.UserCallback != IntPtr.Zero)
@@ -1068,13 +1144,13 @@ namespace Fu
                 }
 
                 int idx = (int)drawCmd.IdxOffset;
-                if (idx < 0 || idx >= drawList.IdxBuffer.Length)
+                if (idx < 0 || idx >= drawList.IdxCount)
                 {
                     return 0f;
                 }
 
                 int vtx = drawList.IdxBuffer[idx] + (int)drawCmd.VtxOffset;
-                if (vtx < 0 || vtx >= drawList.VtxBuffer.Length)
+                if (vtx < 0 || vtx >= drawList.VtxCount)
                 {
                     return 0f;
                 }
@@ -1192,32 +1268,43 @@ namespace Fu
                 for (int i = 0; i < drawData.RenderItems.Count; i++)
                 {
                     DrawDataRenderItem item = drawData.RenderItems[i];
-                    IReadOnlyList<DrawList> drawLists = item.DrawLists;
-                    if (drawLists == null || drawLists.Count == 0)
-                    {
-                        continue;
-                    }
-
                     DrawListMesh meshData;
                     Vector2 renderOffset = Vector2.zero;
                     if (item.IsWindow)
                     {
+                        IReadOnlyList<DrawList> drawLists = item.Window.CachedDrawLists;
+                        if (drawLists == null || drawLists.Count == 0)
+                        {
+                            continue;
+                        }
+
                         meshData = item.Window.RenderMeshData;
                         renderOffset = item.Window.RenderMeshOffset;
+                        if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
+                        {
+                            continue;
+                        }
+
+                        CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset);
                     }
                     else
                     {
+                        DrawList drawList = item.DrawList;
+                        if (drawList == null)
+                        {
+                            continue;
+                        }
+
                         meshData = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
                         transientMeshIndex++;
-                        meshData.Update(drawLists, drawData.DisplaySize, drawData.FramebufferScale);
-                    }
+                        meshData.Update(drawList, drawData.DisplaySize, drawData.FramebufferScale);
+                        if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
+                        {
+                            continue;
+                        }
 
-                    if (meshData == null || meshData.Mesh == null || meshData.SubMeshCount == 0 || meshData.TotalVtxCount == 0)
-                    {
-                        continue;
+                        CreateDrawCommands(meshData.Mesh, material, commandBuffer, GetSingleDrawList(drawList), drawData, fbSize, renderOffset);
                     }
-
-                    CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawLists, drawData, fbSize, renderOffset);
                 }
             }
 
@@ -1248,7 +1335,7 @@ namespace Fu
                 for (int n = 0, nMax = drawLists.Count; n < nMax; ++n)
                 {
                     DrawList drawList = drawLists[n];
-                    for (int i = 0, iMax = drawList.CmdBuffer.Length; i < iMax; ++i, ++subOf)
+                    for (int i = 0, iMax = drawList.CmdCount; i < iMax; ++i, ++subOf)
                     {
                         ImDrawCmd drawCmd = drawList.CmdBuffer[i];
                         if (drawCmd.UserCallback != IntPtr.Zero)
@@ -1315,7 +1402,7 @@ namespace Fu
                 // Nombre de submeshes = nombre total de ImDrawCmd
                 int subMeshCount = 0;
                 for (int n = 0; n < drawData.CmdListsCount; ++n)
-                    subMeshCount += drawData.DrawLists[n].CmdBuffer.Length;
+                    subMeshCount += drawData.DrawLists[n].CmdCount;
 
                 if (!_prevSubMeshCounts.TryGetValue(ctxId, out int prevSubMeshCount))
                 {
@@ -1360,12 +1447,12 @@ namespace Fu
                     var dl = drawData.DrawLists[n];
 
                     // Upload direct des tableaux managés
-                    _mesh.SetVertexBufferData(dl.VtxBuffer, 0, vtxOf, dl.VtxBuffer.Length, 0, NoMeshChecks);
-                    _mesh.SetIndexBufferData(dl.IdxBuffer, 0, idxOf, dl.IdxBuffer.Length, NoMeshChecks);
+                    _mesh.SetVertexBufferData(dl.VtxBuffer, 0, vtxOf, dl.VtxCount, 0, NoMeshChecks);
+                    _mesh.SetIndexBufferData(dl.IdxBuffer, 0, idxOf, dl.IdxCount, NoMeshChecks);
 
                     // Définition des submeshes pour chaque ImDrawCmd
                     var cmds = dl.CmdBuffer;
-                    for (int i = 0; i < cmds.Length; ++i)
+                    for (int i = 0; i < dl.CmdCount; ++i)
                     {
                         var cmd = cmds[i];
                         var desc = new SubMeshDescriptor
@@ -1378,8 +1465,8 @@ namespace Fu
                         descriptors.Add(desc);
                     }
 
-                    vtxOf += dl.VtxBuffer.Length;
-                    idxOf += dl.IdxBuffer.Length;
+                    vtxOf += dl.VtxCount;
+                    idxOf += dl.IdxCount;
                 }
 
                 _mesh.SetSubMeshes(descriptors, NoMeshChecks);

@@ -1746,14 +1746,21 @@ namespace Fu
                 for (int n = 0; n < drawData.RenderItems.Count; n++)
                 {
                     DrawDataRenderItem item = drawData.RenderItems[n];
-                    IReadOnlyList<DrawList> drawLists = item.DrawLists;
-                    if (drawLists == null || drawLists.Count == 0)
+                    if (item.IsWindow)
                     {
-                        continue;
-                    }
+                        IReadOnlyList<DrawList> drawLists = item.Window.CachedDrawLists;
+                        if (drawLists == null || drawLists.Count == 0)
+                        {
+                            continue;
+                        }
 
-                    Vector2 renderOffset = item.IsWindow ? item.Window.RenderMeshOffset : Vector2.zero;
-                    RenderImGuiDrawLists(drawLists, drawData, fbWidth, fbHeight, renderOffset);
+                        RenderImGuiDrawLists(drawLists, drawData, fbWidth, fbHeight, item.Window.RenderMeshOffset);
+                    }
+                    else if (item.DrawList != null)
+                    {
+                        bool hasRenderOffset = false;
+                        RenderImGuiDrawList(item.DrawList, drawData, fbWidth, fbHeight, Vector2.zero, hasRenderOffset);
+                    }
                 }
             }
             else
@@ -1774,14 +1781,19 @@ namespace Fu
 
             for (int n = 0; n < drawLists.Count; n++)
             {
-                DrawList cmdList = drawLists[n];
-                if (cmdList == null || cmdList.VtxBuffer.Length == 0 || cmdList.IdxBuffer.Length == 0)
-                {
-                    continue;
-                }
+                RenderImGuiDrawList(drawLists[n], drawData, fbWidth, fbHeight, renderOffset, hasRenderOffset);
+            }
+        }
 
-                int vtxSize = cmdList.VtxBuffer.Length * sizeof(ImDrawVert);
-                int idxSize = cmdList.IdxBuffer.Length * sizeof(ushort);
+        private unsafe void RenderImGuiDrawList(DrawList cmdList, DrawData drawData, int fbWidth, int fbHeight, Vector2 renderOffset, bool hasRenderOffset)
+        {
+            if (cmdList == null || cmdList.VtxCount == 0 || cmdList.IdxCount == 0)
+            {
+                return;
+            }
+
+            int vtxSize = cmdList.VtxCount * sizeof(ImDrawVert);
+            int idxSize = cmdList.IdxCount * sizeof(ushort);
 
                 // Resize buffers if needed
                 GLMini.glBindBuffer(GLMini.GL_ARRAY_BUFFER, _vbo);
@@ -1800,7 +1812,7 @@ namespace Fu
 
                 if (hasRenderOffset)
                 {
-                    ImDrawVert[] vertices = GetOffsetVertexBuffer(cmdList.VtxBuffer, renderOffset);
+                    ImDrawVert[] vertices = GetOffsetVertexBuffer(cmdList.VtxBuffer, cmdList.VtxCount, renderOffset);
                     fixed (ImDrawVert* v = vertices)
                         GLMini.glBufferSubData(GLMini.GL_ARRAY_BUFFER, IntPtr.Zero, (IntPtr)vtxSize, (IntPtr)v);
                 }
@@ -1815,8 +1827,9 @@ namespace Fu
 
                 uint currentVertexOffset = uint.MaxValue;
 
-                foreach (var cmd in cmdList.CmdBuffer)
+                for (int commandIndex = 0; commandIndex < cmdList.CmdCount; commandIndex++)
                 {
+                    ImDrawCmd cmd = cmdList.CmdBuffer[commandIndex];
                     if (cmd.UserCallback != IntPtr.Zero)
                     {
                         Debug.Log("unhandled user callback");
@@ -1877,17 +1890,16 @@ namespace Fu
                                           GLMini.GL_UNSIGNED_SHORT,
                                           (IntPtr)((long)cmd.IdxOffset * sizeof(ushort)));
                 }
-            }
         }
 
-        private ImDrawVert[] GetOffsetVertexBuffer(ImDrawVert[] source, Vector2 renderOffset)
+        private ImDrawVert[] GetOffsetVertexBuffer(ImDrawVert[] source, int count, Vector2 renderOffset)
         {
-            if (_offsetVertexBuffer == null || _offsetVertexBuffer.Length < source.Length)
+            if (_offsetVertexBuffer == null || _offsetVertexBuffer.Length < count)
             {
-                _offsetVertexBuffer = new ImDrawVert[source.Length];
+                _offsetVertexBuffer = new ImDrawVert[NextPow2(count)];
             }
 
-            for (int i = 0; i < source.Length; i++)
+            for (int i = 0; i < count; i++)
             {
                 ImDrawVert vertex = source[i];
                 vertex.pos.x += renderOffset.x;

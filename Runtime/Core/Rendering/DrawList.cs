@@ -23,16 +23,31 @@ namespace Fu
             private IntPtr _vtxPtr;
             private ImDrawListFlags _flags;
             private uint _vtxCurrentIdx;
+            private int _cmdCount;
+            private int _idxCount;
+            private int _vtxCount;
             private GCHandle _cmdHandle;
             private GCHandle _idxHandle;
             private GCHandle _vtxHandle;
 
             public string WindowName { get { return _windowName; } }
+            /// <summary>
+            /// Backing command buffer. Only the first CmdCount entries are valid.
+            /// </summary>
             public ImDrawCmd[] CmdBuffer { get { return _cmdBuffer; } }
+            public int CmdCount { get { return _cmdCount; } }
             public IntPtr CmdPtr { get { return getCmdPtr(); } }
+            /// <summary>
+            /// Backing index buffer. Only the first IdxCount entries are valid.
+            /// </summary>
             public ushort[] IdxBuffer { get { return _idxBuffer; } }
+            public int IdxCount { get { return _idxCount; } }
             public IntPtr IdxPtr { get { return getIdxPtr(); } }
+            /// <summary>
+            /// Backing vertex buffer. Only the first VtxCount entries are valid.
+            /// </summary>
             public ImDrawVert[] VtxBuffer { get { return _vtxBuffer; } }
+            public int VtxCount { get { return _vtxCount; } }
             public IntPtr VtxPtr { get { return getVtxPtr(); } }
             public ImDrawListFlags Flags { get { return _flags; } }
             public uint VtxCurrentIdx { get { return _vtxCurrentIdx; } }
@@ -45,9 +60,9 @@ namespace Fu
             public DrawList()
             {
                 // Allocate arrays ptr for sizeof(ArrayType)
-                _cmdBuffer = new ImDrawCmd[0];
-                _idxBuffer = new ushort[0];
-                _vtxBuffer = new ImDrawVert[0];
+                _cmdBuffer = Array.Empty<ImDrawCmd>();
+                _idxBuffer = Array.Empty<ushort>();
+                _vtxBuffer = Array.Empty<ImDrawVert>();
             }
 
             /// <summary>
@@ -68,12 +83,9 @@ namespace Fu
             public unsafe void Bind(ImDrawListPtr drawList)
             {
                 // save cmd buffer
-                if (_cmdBuffer == null || _cmdBuffer.Length != drawList.CmdBuffer.Size)
-                {
-                    releaseCmdHandle();
-                    _cmdBuffer = new ImDrawCmd[drawList.CmdBuffer.Size];
-                }
-                long cmdBufferSize = ImGuiDrawListUtils.ImDrawCmdSize * _cmdBuffer.Length;
+                _cmdCount = drawList.CmdBuffer.Size;
+                ensureCmdCapacity(_cmdCount);
+                long cmdBufferSize = ImGuiDrawListUtils.ImDrawCmdSize * _cmdCount;
                 if (cmdBufferSize > 0)
                 {
                     fixed (ImDrawCmd* cmdPtr = _cmdBuffer)
@@ -83,12 +95,9 @@ namespace Fu
                 }
 
                 // save idx buffer
-                if (_idxBuffer == null || _idxBuffer.Length != drawList.IdxBuffer.Size)
-                {
-                    releaseIdxHandle();
-                    _idxBuffer = new ushort[drawList.IdxBuffer.Size];
-                }
-                long idxBufferSize = 2 * _idxBuffer.Length;
+                _idxCount = drawList.IdxBuffer.Size;
+                ensureIdxCapacity(_idxCount);
+                long idxBufferSize = 2 * _idxCount;
                 if (idxBufferSize > 0)
                 {
                     fixed (ushort* idxPtr = _idxBuffer)
@@ -98,12 +107,9 @@ namespace Fu
                 }
 
                 // save vtx buffer
-                if (_vtxBuffer == null || _vtxBuffer.Length != drawList.VtxBuffer.Size)
-                {
-                    releaseVtxHandle();
-                    _vtxBuffer = new ImDrawVert[drawList.VtxBuffer.Size];
-                }
-                long vtxBufferSize = ImGuiDrawListUtils.ImDrawVertSize * _vtxBuffer.Length;
+                _vtxCount = drawList.VtxBuffer.Size;
+                ensureVtxCapacity(_vtxCount);
+                long vtxBufferSize = ImGuiDrawListUtils.ImDrawVertSize * _vtxCount;
                 if (vtxBufferSize > 0)
                 {
                     fixed (ImDrawVert* vtxPtr = _vtxBuffer)
@@ -134,7 +140,7 @@ namespace Fu
             /// <returns>The command buffer pointer.</returns>
             private IntPtr getCmdPtr()
             {
-                if (_cmdBuffer == null || _cmdBuffer.Length == 0)
+                if (_cmdBuffer == null || _cmdCount == 0)
                 {
                     return IntPtr.Zero;
                 }
@@ -153,7 +159,7 @@ namespace Fu
             /// <returns>The index buffer pointer.</returns>
             private IntPtr getIdxPtr()
             {
-                if (_idxBuffer == null || _idxBuffer.Length == 0)
+                if (_idxBuffer == null || _idxCount == 0)
                 {
                     return IntPtr.Zero;
                 }
@@ -172,7 +178,7 @@ namespace Fu
             /// <returns>The vertex buffer pointer.</returns>
             private IntPtr getVtxPtr()
             {
-                if (_vtxBuffer == null || _vtxBuffer.Length == 0)
+                if (_vtxBuffer == null || _vtxCount == 0)
                 {
                     return IntPtr.Zero;
                 }
@@ -219,6 +225,96 @@ namespace Fu
                     _vtxHandle.Free();
                 }
                 _vtxPtr = IntPtr.Zero;
+            }
+
+            /// <summary>
+            /// Ensures the command buffer can hold the requested element count.
+            /// </summary>
+            /// <param name="count">The requested valid command count.</param>
+            private void ensureCmdCapacity(int count)
+            {
+                if (count <= 0)
+                {
+                    _cmdBuffer ??= Array.Empty<ImDrawCmd>();
+                    return;
+                }
+
+                if (_cmdBuffer != null && _cmdBuffer.Length >= count)
+                {
+                    return;
+                }
+
+                releaseCmdHandle();
+                _cmdBuffer = new ImDrawCmd[getExpandedCapacity(_cmdBuffer != null ? _cmdBuffer.Length : 0, count)];
+            }
+
+            /// <summary>
+            /// Ensures the index buffer can hold the requested element count.
+            /// </summary>
+            /// <param name="count">The requested valid index count.</param>
+            private void ensureIdxCapacity(int count)
+            {
+                if (count <= 0)
+                {
+                    _idxBuffer ??= Array.Empty<ushort>();
+                    return;
+                }
+
+                if (_idxBuffer != null && _idxBuffer.Length >= count)
+                {
+                    return;
+                }
+
+                releaseIdxHandle();
+                _idxBuffer = new ushort[getExpandedCapacity(_idxBuffer != null ? _idxBuffer.Length : 0, count)];
+            }
+
+            /// <summary>
+            /// Ensures the vertex buffer can hold the requested element count.
+            /// </summary>
+            /// <param name="count">The requested valid vertex count.</param>
+            private void ensureVtxCapacity(int count)
+            {
+                if (count <= 0)
+                {
+                    _vtxBuffer ??= Array.Empty<ImDrawVert>();
+                    return;
+                }
+
+                if (_vtxBuffer != null && _vtxBuffer.Length >= count)
+                {
+                    return;
+                }
+
+                releaseVtxHandle();
+                _vtxBuffer = new ImDrawVert[getExpandedCapacity(_vtxBuffer != null ? _vtxBuffer.Length : 0, count)];
+            }
+
+            /// <summary>
+            /// Returns an amortized capacity for a requested count.
+            /// </summary>
+            /// <param name="currentCapacity">Current buffer capacity.</param>
+            /// <param name="requiredCount">Required valid element count.</param>
+            /// <returns>Capacity to allocate.</returns>
+            private static int getExpandedCapacity(int currentCapacity, int requiredCount)
+            {
+                if (requiredCount <= 0)
+                {
+                    return 0;
+                }
+
+                int capacity = currentCapacity > 0 ? currentCapacity : 4;
+                while (capacity < requiredCount)
+                {
+                    if (capacity > int.MaxValue / 2)
+                    {
+                        return requiredCount;
+                    }
+
+                    capacity *= 2;
+                }
+
+                return capacity;
             }
             #endregion
         }

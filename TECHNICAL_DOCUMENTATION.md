@@ -956,10 +956,11 @@ Fugui.ShowInfo("Info", "Message", FuModalSize.Medium);
 Fugui.ShowWarning("Warning", "Message", FuModalSize.Medium);
 Fugui.ShowDanger("Danger", "Message", FuModalSize.Medium);
 Fugui.ShowSuccess("Success", "Message", FuModalSize.Medium);
+Fugui.ShowModal("Progress", body, FuModalSize.Small, FuModalFlags.NoTitleBar | FuModalFlags.NoFooterBar);
 Fugui.CloseModal();
 ```
 
-`FuModalButton` accepte texte, callback, style et raccourci clavier.
+`FuModalButton` accepte texte, callback, style et raccourci clavier. `FuModalFlags` expose `NoTitleBar` et `NoFooterBar`.
 
 ## Notifications
 

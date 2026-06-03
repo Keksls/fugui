@@ -298,6 +298,8 @@ namespace Fu
         private readonly HashSet<string> _inputLockIDs = new HashSet<string>();
         private bool _inputLockedForThisFrame;
         private readonly List<DrawList> _cachedDrawLists = new List<DrawList>();
+        private readonly List<DrawList> _cachedChildDrawListPool = new List<DrawList>();
+        private int _cachedChildDrawListPoolCursor;
         private DrawListMesh _renderMeshData;
         private Vector2Int _renderMeshLocalPosition;
         private bool _debugPanelExpanded;
@@ -3170,7 +3172,7 @@ namespace Fu
             DrawList?.Dispose();
             DrawList = new DrawList();
 
-            ClearCachedChildDrawLists();
+            ReleaseCachedChildDrawLists();
             ChildrenDrawLists ??= new Dictionary<string, DrawList>();
             _cachedDrawLists.Clear();
             _renderMeshData?.Destroy();
@@ -3223,11 +3225,53 @@ namespace Fu
                 return;
             }
 
-            foreach (DrawList child in ChildrenDrawLists.Values)
-            {
-                child.Dispose();
-            }
             ChildrenDrawLists.Clear();
+        }
+
+        /// <summary>
+        /// Releases cached child draw-list buffers when the window cache is destroyed.
+        /// </summary>
+        private void ReleaseCachedChildDrawLists()
+        {
+            for (int i = 0; i < _cachedChildDrawListPool.Count; i++)
+            {
+                _cachedChildDrawListPool[i].Dispose();
+            }
+
+            _cachedChildDrawListPool.Clear();
+            _cachedChildDrawListPoolCursor = 0;
+            ChildrenDrawLists?.Clear();
+        }
+
+        /// <summary>
+        /// Starts rebuilding cached child draw lists for the current ImGui frame.
+        /// </summary>
+        internal void BeginDrawDataCacheRebuild()
+        {
+            _cachedChildDrawListPoolCursor = 0;
+        }
+
+        /// <summary>
+        /// Reuses a cached child draw list slot and binds it to the native ImGui draw list.
+        /// </summary>
+        /// <param name="drawList">Native ImGui draw list.</param>
+        /// <returns>Bound cached child draw list.</returns>
+        internal DrawList BindCachedChildDrawList(ImDrawListPtr drawList)
+        {
+            DrawList cachedDrawList;
+            if (_cachedChildDrawListPoolCursor < _cachedChildDrawListPool.Count)
+            {
+                cachedDrawList = _cachedChildDrawListPool[_cachedChildDrawListPoolCursor];
+            }
+            else
+            {
+                cachedDrawList = new DrawList();
+                _cachedChildDrawListPool.Add(cachedDrawList);
+            }
+
+            _cachedChildDrawListPoolCursor++;
+            cachedDrawList.Bind(drawList);
+            return cachedDrawList;
         }
 
         /// <summary>

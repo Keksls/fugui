@@ -4,6 +4,26 @@ using UnityEngine;
 namespace Fu.Framework
 {
     /// <summary>
+    /// Flags used to tune Fugui modal chrome.
+    /// </summary>
+    [System.Flags]
+    public enum FuModalFlags
+    {
+        /// <summary>
+        /// Default modal behaviour.
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Hide the modal title bar.
+        /// </summary>
+        NoTitleBar = 1 << 0,
+        /// <summary>
+        /// Hide the modal footer bar and its buttons.
+        /// </summary>
+        NoFooterBar = 1 << 1
+    }
+
+    /// <summary>
     /// Represents the Fu Modal Size data structure.
     /// </summary>
     public struct FuModalSize

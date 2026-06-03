@@ -19,6 +19,8 @@ namespace Fu
             public Vector2 DisplaySize;
             public Vector2 FramebufferScale;
             public int CmdListsCount;
+            private readonly List<DrawList> _transientDrawListPool;
+            private int _transientDrawListPoolCursor;
             #endregion
 
             #region Constructors
@@ -29,6 +31,7 @@ namespace Fu
             {
                 DrawLists = new List<DrawList>();
                 RenderItems = new List<DrawDataRenderItem>();
+                _transientDrawListPool = new List<DrawList>();
                 Clear();
             }
             #endregion
@@ -39,12 +42,9 @@ namespace Fu
             /// </summary>
             public void Clear()
             {
-                for (int i = 0; i < DrawLists.Count; i++)
-                {
-                    DrawLists[i].Dispose();
-                }
                 DrawLists.Clear();
                 RenderItems.Clear();
+                _transientDrawListPoolCursor = 0;
                 TotalVtxCount = 0;
                 TotalIdxCount = 0;
                 CmdListsCount = 0;
@@ -105,6 +105,30 @@ namespace Fu
             }
 
             /// <summary>
+            /// Reuses a transient draw list slot and binds it to a native ImGui draw list.
+            /// </summary>
+            /// <param name="drawList">Native ImGui draw list.</param>
+            /// <returns>Bound transient draw list.</returns>
+            internal DrawList AddTransientDrawList(ImDrawListPtr drawList)
+            {
+                DrawList transientDrawList;
+                if (_transientDrawListPoolCursor < _transientDrawListPool.Count)
+                {
+                    transientDrawList = _transientDrawListPool[_transientDrawListPoolCursor];
+                }
+                else
+                {
+                    transientDrawList = new DrawList();
+                    _transientDrawListPool.Add(transientDrawList);
+                }
+
+                _transientDrawListPoolCursor++;
+                transientDrawList.Bind(drawList);
+                AddTransientDrawList(transientDrawList);
+                return transientDrawList;
+            }
+
+            /// <summary>
             /// Adds a draw list to aggregate counters without creating a render item.
             /// </summary>
             /// <param name="drawList">Draw list to count.</param>
@@ -112,8 +136,8 @@ namespace Fu
             {
                 DrawLists.Add(drawList);
                 CmdListsCount++;
-                TotalVtxCount += drawList.VtxBuffer.Length;
-                TotalIdxCount += drawList.IdxBuffer.Length;
+                TotalVtxCount += drawList.VtxCount;
+                TotalIdxCount += drawList.IdxCount;
             }
 
             /// <summary>
@@ -125,7 +149,7 @@ namespace Fu
                 Clear();
                 for (int i = 0; i < imDrawData.CmdListsCount; i++)
                 {
-                    AddTransientDrawList(new DrawList(imDrawData.CmdLists[i]));
+                    AddTransientDrawList(imDrawData.CmdLists[i]);
                 }
                 FramebufferScale = imDrawData.FramebufferScale;
                 DisplayPos = imDrawData.DisplayPos;
@@ -137,31 +161,19 @@ namespace Fu
         /// <summary>
         /// Render item for either a cached Fugui window or a transient ImGui draw list.
         /// </summary>
-        internal class DrawDataRenderItem
+        internal struct DrawDataRenderItem
         {
             #region State
-            private readonly DrawList[] _drawLists;
-
             public FuWindow Window { get; private set; }
+            public DrawList DrawList { get; private set; }
             public bool IsWindow { get { return Window != null; } }
-            public IReadOnlyList<DrawList> DrawLists
-            {
-                get
-                {
-                    if (Window != null)
-                    {
-                        return Window.CachedDrawLists;
-                    }
-                    return _drawLists;
-                }
-            }
             #endregion
 
             #region Constructors
             private DrawDataRenderItem(FuWindow window, DrawList drawList)
             {
                 Window = window;
-                _drawLists = drawList != null ? new DrawList[1] { drawList } : new DrawList[0];
+                DrawList = drawList;
             }
             #endregion
 
@@ -221,6 +233,77 @@ namespace Fu
             #endregion
 
             #region Methods
+            public void Update(DrawList drawList, Vector2 displaySize, Vector2 framebufferScale)
+            {
+                if (drawList == null || drawList.CmdCount == 0 || drawList.VtxCount == 0 || drawList.IdxCount == 0)
+                {
+                    _mesh.Clear(true);
+                    _prevSubMeshCount = 0;
+                    _prevVertexCount = 0;
+                    _prevIndexCount = 0;
+                    SubMeshCount = 0;
+                    TotalVtxCount = 0;
+                    TotalIdxCount = 0;
+                    return;
+                }
+
+                SubMeshCount = drawList.CmdCount;
+                TotalVtxCount = drawList.VtxCount;
+                TotalIdxCount = drawList.IdxCount;
+
+                bool meshLayoutChanged = _prevSubMeshCount != drawList.CmdCount;
+                if (meshLayoutChanged)
+                {
+                    _mesh.Clear(true);
+                    _mesh.subMeshCount = drawList.CmdCount;
+                    _prevSubMeshCount = drawList.CmdCount;
+                }
+
+                if (_prevVertexCount != drawList.VtxCount || meshLayoutChanged)
+                {
+                    _mesh.SetVertexBufferParams(drawList.VtxCount, VertexAttributes);
+                    _prevVertexCount = drawList.VtxCount;
+                }
+
+                if (_prevIndexCount != drawList.IdxCount || meshLayoutChanged)
+                {
+                    _mesh.SetIndexBufferParams(drawList.IdxCount, IndexFormat.UInt16);
+                    _prevIndexCount = drawList.IdxCount;
+                }
+
+                _mesh.SetVertexBufferData(drawList.VtxBuffer, 0, 0, drawList.VtxCount, 0, NoMeshChecks);
+                _mesh.SetIndexBufferData(drawList.IdxBuffer, 0, 0, drawList.IdxCount, NoMeshChecks);
+
+                _subMeshDescriptors.Clear();
+                if (_subMeshDescriptors.Capacity < drawList.CmdCount)
+                {
+                    _subMeshDescriptors.Capacity = drawList.CmdCount;
+                }
+
+                ImDrawCmd[] commands = drawList.CmdBuffer;
+                for (int i = 0; i < drawList.CmdCount; ++i)
+                {
+                    ImDrawCmd command = commands[i];
+                    _subMeshDescriptors.Add(new SubMeshDescriptor
+                    {
+                        topology = MeshTopology.Triangles,
+                        indexStart = (int)command.IdxOffset,
+                        indexCount = (int)command.ElemCount,
+                        baseVertex = (int)command.VtxOffset,
+                    });
+                }
+
+                _mesh.SetSubMeshes(_subMeshDescriptors, NoMeshChecks);
+
+                Vector2 fbSize = displaySize * framebufferScale;
+                _mesh.bounds = new Bounds(
+                    new Vector3(fbSize.x * 0.5f, fbSize.y * 0.5f, 0f),
+                    new Vector3(fbSize.x + 4f, fbSize.y + 4f, 1f)
+                );
+
+                _mesh.UploadMeshData(false);
+            }
+
             public void Update(IReadOnlyList<DrawList> drawLists, Vector2 displaySize, Vector2 framebufferScale)
             {
                 int subMeshCount = 0;
@@ -237,9 +320,9 @@ namespace Fu
                             continue;
                         }
 
-                        subMeshCount += drawList.CmdBuffer.Length;
-                        totalVtxCount += drawList.VtxBuffer.Length;
-                        totalIdxCount += drawList.IdxBuffer.Length;
+                        subMeshCount += drawList.CmdCount;
+                        totalVtxCount += drawList.VtxCount;
+                        totalIdxCount += drawList.IdxCount;
                     }
                 }
 
@@ -292,11 +375,11 @@ namespace Fu
                         continue;
                     }
 
-                    _mesh.SetVertexBufferData(drawList.VtxBuffer, 0, vtxOffset, drawList.VtxBuffer.Length, 0, NoMeshChecks);
-                    _mesh.SetIndexBufferData(drawList.IdxBuffer, 0, idxOffset, drawList.IdxBuffer.Length, NoMeshChecks);
+                    _mesh.SetVertexBufferData(drawList.VtxBuffer, 0, vtxOffset, drawList.VtxCount, 0, NoMeshChecks);
+                    _mesh.SetIndexBufferData(drawList.IdxBuffer, 0, idxOffset, drawList.IdxCount, NoMeshChecks);
 
                     ImDrawCmd[] commands = drawList.CmdBuffer;
-                    for (int i = 0; i < commands.Length; ++i)
+                    for (int i = 0; i < drawList.CmdCount; ++i)
                     {
                         ImDrawCmd command = commands[i];
                         _subMeshDescriptors.Add(new SubMeshDescriptor
@@ -308,8 +391,8 @@ namespace Fu
                         });
                     }
 
-                    vtxOffset += drawList.VtxBuffer.Length;
-                    idxOffset += drawList.IdxBuffer.Length;
+                    vtxOffset += drawList.VtxCount;
+                    idxOffset += drawList.IdxCount;
                 }
 
                 _mesh.SetSubMeshes(_subMeshDescriptors, NoMeshChecks);

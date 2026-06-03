@@ -15,6 +15,10 @@ namespace Fu
         public static long ImDrawVertSize { get; private set; }
 
         private static Dictionary<string, string> _unIconnizedTitleMapping = new Dictionary<string, string>();
+        private static readonly List<ResolvedDrawList> _resolvedDrawLists = new List<ResolvedDrawList>();
+        private static readonly Dictionary<FuWindow, int> _lastWindowDrawListIndices = new Dictionary<FuWindow, int>();
+        private static readonly HashSet<FuWindow> _rebuiltWindows = new HashSet<FuWindow>();
+        private static readonly List<DrawList> _orderedDrawLists = new List<DrawList>();
         #endregion
 
         #region Constructors
@@ -39,7 +43,12 @@ namespace Fu
         {
             cmd.Clear();
 
-            ResolvedDrawList[] drawLists = new ResolvedDrawList[imDrawDataPtr.CmdListsCount];
+            _resolvedDrawLists.Clear();
+            if (_resolvedDrawLists.Capacity < imDrawDataPtr.CmdListsCount)
+            {
+                _resolvedDrawLists.Capacity = imDrawDataPtr.CmdListsCount;
+            }
+
             for (int i = 0; i < imDrawDataPtr.CmdListsCount; i++)
             {
                 ImDrawListPtr nativeDrawList = imDrawDataPtr.CmdLists[i];
@@ -62,24 +71,24 @@ namespace Fu
                     }
                 }
 
-                drawLists[i] = new ResolvedDrawList
+                _resolvedDrawLists.Add(new ResolvedDrawList
                 {
                     NativeDrawList = nativeDrawList,
                     Window = window,
                     IsWindowRoot = isWindowRoot,
                     IsWindowChild = isWindowChild
-                };
+                });
             }
 
-            RebuildWindowRenderMeshes(drawLists, imDrawDataPtr.DisplaySize, imDrawDataPtr.FramebufferScale);
+            RebuildWindowRenderMeshes(_resolvedDrawLists, imDrawDataPtr.DisplaySize, imDrawDataPtr.FramebufferScale);
 
-            Dictionary<FuWindow, int> lastWindowDrawListIndices = GetLastWindowDrawListIndices(drawLists);
-            for (int i = 0; i < drawLists.Length; i++)
+            GetLastWindowDrawListIndices(_resolvedDrawLists, _lastWindowDrawListIndices);
+            for (int i = 0; i < _resolvedDrawLists.Count; i++)
             {
-                ResolvedDrawList drawList = drawLists[i];
+                ResolvedDrawList drawList = _resolvedDrawLists[i];
                 if (drawList.Window != null)
                 {
-                    if (lastWindowDrawListIndices.TryGetValue(drawList.Window, out int lastIndex) &&
+                    if (_lastWindowDrawListIndices.TryGetValue(drawList.Window, out int lastIndex) &&
                         i == lastIndex &&
                         drawList.Window.IsVisible)
                     {
@@ -89,7 +98,7 @@ namespace Fu
                 }
 
                 // it's nothing to do with an UIWindow, let store it without any edition
-                cmd.AddTransientDrawList(new DrawList(drawList.NativeDrawList));
+                cmd.AddTransientDrawList(drawList.NativeDrawList);
             }
 
             cmd.FramebufferScale = imDrawDataPtr.FramebufferScale;
@@ -101,11 +110,11 @@ namespace Fu
         /// Returns the last native draw-list index for each Fugui window in the current ImGui frame.
         /// </summary>
         /// <param name="drawLists">Resolved draw lists for the current frame.</param>
-        /// <returns>Last draw-list index by window.</returns>
-        private static Dictionary<FuWindow, int> GetLastWindowDrawListIndices(ResolvedDrawList[] drawLists)
+        /// <param name="result">Reusable result dictionary.</param>
+        private static void GetLastWindowDrawListIndices(List<ResolvedDrawList> drawLists, Dictionary<FuWindow, int> result)
         {
-            Dictionary<FuWindow, int> result = new Dictionary<FuWindow, int>();
-            for (int i = 0; i < drawLists.Length; i++)
+            result.Clear();
+            for (int i = 0; i < drawLists.Count; i++)
             {
                 FuWindow window = drawLists[i].Window;
                 if (window == null)
@@ -115,8 +124,6 @@ namespace Fu
 
                 result[window] = i;
             }
-
-            return result;
         }
 
         /// <summary>
@@ -125,20 +132,21 @@ namespace Fu
         /// <param name="drawLists">Resolved draw lists for the current frame.</param>
         /// <param name="displaySize">Draw data display size.</param>
         /// <param name="framebufferScale">Draw data framebuffer scale.</param>
-        private static void RebuildWindowRenderMeshes(ResolvedDrawList[] drawLists, Vector2 displaySize, Vector2 framebufferScale)
+        private static void RebuildWindowRenderMeshes(List<ResolvedDrawList> drawLists, Vector2 displaySize, Vector2 framebufferScale)
         {
-            HashSet<FuWindow> rebuiltWindows = new HashSet<FuWindow>();
-            for (int i = 0; i < drawLists.Length; i++)
+            _rebuiltWindows.Clear();
+            for (int i = 0; i < drawLists.Count; i++)
             {
                 FuWindow window = drawLists[i].Window;
-                if (window == null || !window.HasJustBeenDraw || rebuiltWindows.Contains(window))
+                if (window == null || !window.HasJustBeenDraw || _rebuiltWindows.Contains(window))
                 {
                     continue;
                 }
 
-                List<DrawList> orderedDrawLists = new List<DrawList>();
+                _orderedDrawLists.Clear();
+                window.BeginDrawDataCacheRebuild();
                 int firstIncludedIndex = GetLastRootDrawListIndex(drawLists, window);
-                for (int j = 0; j < drawLists.Length; j++)
+                for (int j = 0; j < drawLists.Count; j++)
                 {
                     if (j < firstIncludedIndex)
                     {
@@ -153,19 +161,18 @@ namespace Fu
 
                     if (drawList.IsWindowRoot)
                     {
-                        window.DrawList.Dispose();
                         window.DrawList.Bind(drawList.NativeDrawList);
-                        orderedDrawLists.Add(window.DrawList);
+                        _orderedDrawLists.Add(window.DrawList);
                     }
                     else if (drawList.IsWindowChild)
                     {
-                        orderedDrawLists.Add(new DrawList(drawList.NativeDrawList));
+                        _orderedDrawLists.Add(window.BindCachedChildDrawList(drawList.NativeDrawList));
                     }
                 }
 
-                window.CacheDrawData(orderedDrawLists, displaySize, framebufferScale);
+                window.CacheDrawData(_orderedDrawLists, displaySize, framebufferScale);
                 window.HasJustBeenDraw = false;
-                rebuiltWindows.Add(window);
+                _rebuiltWindows.Add(window);
             }
         }
 
@@ -175,12 +182,12 @@ namespace Fu
         /// <param name="drawLists">Resolved draw lists for the current frame.</param>
         /// <param name="window">Window to inspect.</param>
         /// <returns>Last root draw-list index, or the first owned draw-list index when no root was found.</returns>
-        private static int GetLastRootDrawListIndex(ResolvedDrawList[] drawLists, FuWindow window)
+        private static int GetLastRootDrawListIndex(List<ResolvedDrawList> drawLists, FuWindow window)
         {
             int firstOwnedIndex = -1;
             int lastRootIndex = -1;
 
-            for (int i = 0; i < drawLists.Length; i++)
+            for (int i = 0; i < drawLists.Count; i++)
             {
                 if (drawLists[i].Window != window)
                 {

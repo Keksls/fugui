@@ -811,6 +811,7 @@ namespace Fu.Framework
             Vector2 currentPosition = position;
             uint textColor = ImGui.GetColorU32(ImGuiCol.Text);
             bool cancel = false;
+            bool hasExplicitMaxHeight = maxSize.y > 0f;
             maxSize.x = maxSize.x == 0f ? ImGui.GetContentRegionAvail().x : maxSize.x;
             maxSize.y = maxSize.y == 0f ? ImGui.GetContentRegionAvail().y : maxSize.y;
             float maxX = currentPosition.x + maxSize.x;
@@ -914,7 +915,7 @@ namespace Fu.Framework
 
                     // prevent drawing next line if wrap text is out of max size height
                     case FuTextWrapping.Wrap:
-                        if (fullTextHeight > maxSize.y)
+                        if (hasExplicitMaxHeight && fullTextHeight > maxSize.y)
                         {
                             cancel = true;
                             return;

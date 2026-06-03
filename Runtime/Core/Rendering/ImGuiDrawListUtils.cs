@@ -1,4 +1,5 @@
 using ImGuiNET;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -15,6 +16,8 @@ namespace Fu
         public static long ImDrawVertSize { get; private set; }
 
         private static Dictionary<string, string> _unIconnizedTitleMapping = new Dictionary<string, string>();
+        private static readonly Dictionary<IntPtr, CachedOwnerName> _ownerNameCache = new Dictionary<IntPtr, CachedOwnerName>();
+        private static readonly Dictionary<string, string> _childRootWindowNameCache = new Dictionary<string, string>();
         private static readonly List<ResolvedDrawList> _resolvedDrawLists = new List<ResolvedDrawList>();
         private static readonly Dictionary<FuWindow, int> _lastWindowDrawListIndices = new Dictionary<FuWindow, int>();
         private static readonly HashSet<FuWindow> _rebuiltWindows = new HashSet<FuWindow>();
@@ -52,17 +55,16 @@ namespace Fu
             for (int i = 0; i < imDrawDataPtr.CmdListsCount; i++)
             {
                 ImDrawListPtr nativeDrawList = imDrawDataPtr.CmdLists[i];
-                string name = getWindowName(windows, nativeDrawList._OwnerName);
+                string name = getWindowName(windows, nativeDrawList);
                 FuWindow window = null;
                 bool isWindowRoot = windows.TryGetValue(name, out window);
                 bool isWindowChild = false;
 
                 if (!isWindowRoot) // it may be a window's child
                 {
-                    int firstSlashIndex = name.IndexOf('/');
-                    if (firstSlashIndex >= 0)
+                    string rootWindowName = getChildRootWindowName(name);
+                    if (!string.IsNullOrEmpty(rootWindowName))
                     {
-                        string rootWindowName = name.Substring(0, firstSlashIndex);
                         if (windows.TryGetValue(rootWindowName, out FuWindow rootWindow)) // it's a window's child
                         {
                             window = rootWindow;
@@ -74,6 +76,7 @@ namespace Fu
                 _resolvedDrawLists.Add(new ResolvedDrawList
                 {
                     NativeDrawList = nativeDrawList,
+                    OwnerName = name,
                     Window = window,
                     IsWindowRoot = isWindowRoot,
                     IsWindowChild = isWindowChild
@@ -161,12 +164,12 @@ namespace Fu
 
                     if (drawList.IsWindowRoot)
                     {
-                        window.DrawList.Bind(drawList.NativeDrawList);
+                        window.DrawList.Bind(drawList.NativeDrawList, drawList.OwnerName);
                         _orderedDrawLists.Add(window.DrawList);
                     }
                     else if (drawList.IsWindowChild)
                     {
-                        _orderedDrawLists.Add(window.BindCachedChildDrawList(drawList.NativeDrawList));
+                        _orderedDrawLists.Add(window.BindCachedChildDrawList(drawList.NativeDrawList, drawList.OwnerName));
                     }
                 }
 
@@ -217,6 +220,76 @@ namespace Fu
         /// Gets the draw list window name used by Fugui.
         /// </summary>
         /// <param name="windows">The windows value.</param>
+        /// <param name="drawList">Native ImGui draw list.</param>
+        /// <returns>The Fugui window name.</returns>
+        private static unsafe string getWindowName(Dictionary<string, FuWindow> windows, ImDrawListPtr drawList)
+        {
+            IntPtr ownerNamePtr = (IntPtr)drawList.NativePtr->_OwnerName;
+            if (ownerNamePtr == IntPtr.Zero)
+            {
+                return string.Empty;
+            }
+
+            byte* nameData = (byte*)ownerNamePtr;
+            int length = 0;
+            int hash = 17;
+            byte* ptr = nameData;
+            while (*ptr != 0)
+            {
+                hash = hash * 31 + *ptr;
+                length++;
+                ptr++;
+            }
+
+            if (_ownerNameCache.TryGetValue(ownerNamePtr, out CachedOwnerName cachedName) &&
+                cachedName.Length == length &&
+                cachedName.Hash == hash)
+            {
+                return cachedName.Name;
+            }
+
+            string resolvedName = getWindowName(windows, new NullTerminatedString(nameData));
+            _ownerNameCache[ownerNamePtr] = new CachedOwnerName
+            {
+                Length = length,
+                Hash = hash,
+                Name = resolvedName
+            };
+            return resolvedName;
+        }
+
+        /// <summary>
+        /// Gets the root window name for a child draw-list owner name.
+        /// </summary>
+        /// <param name="name">Resolved owner name.</param>
+        /// <returns>Root window name, or null when the name is not a child path.</returns>
+        private static string getChildRootWindowName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return null;
+            }
+
+            if (_childRootWindowNameCache.TryGetValue(name, out string rootWindowName))
+            {
+                return rootWindowName;
+            }
+
+            int firstSlashIndex = name.IndexOf('/');
+            if (firstSlashIndex < 0)
+            {
+                return null;
+            }
+
+            rootWindowName = name.Substring(0, firstSlashIndex);
+            _childRootWindowNameCache.Add(name, rootWindowName);
+            return rootWindowName;
+        }
+
+        /// <summary>
+        /// Gets the draw list window name used by Fugui.
+        /// </summary>
+        /// <param name="windows">The windows value.</param>
         /// <param name="name">The native draw list owner name.</param>
         /// <returns>The Fugui window name.</returns>
         private static string getWindowName(Dictionary<string, FuWindow> windows, string name)
@@ -259,9 +332,20 @@ namespace Fu
         private struct ResolvedDrawList
         {
             public ImDrawListPtr NativeDrawList;
+            public string OwnerName;
             public FuWindow Window;
             public bool IsWindowRoot;
             public bool IsWindowChild;
+        }
+
+        /// <summary>
+        /// Cached conversion of an ImGui owner-name pointer.
+        /// </summary>
+        private struct CachedOwnerName
+        {
+            public int Length;
+            public int Hash;
+            public string Name;
         }
         #endregion
     }

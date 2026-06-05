@@ -105,7 +105,7 @@ namespace Fu
                         ImGui.SetCursorScreenPos(chipPos + pad);
                         ImGui.Text(chipSize.x < 72f * container.Context.Scale ? $"+{remaining}" : $"+{remaining} more");
                     }
-                    ImGui.EndChild();
+                    EndRawChild();
                 }
 
                 _panelSize = new Vector2(panelWidth, ImGui.GetCursorScreenPos().y - startY + 8f);

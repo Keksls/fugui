@@ -214,7 +214,7 @@ namespace Fu.Framework
 
                 bool hoverChild = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows);
 
-                ImGuiNative.igEndChild();
+                Fugui.EndRawChild();
                 Fugui.PopStyle();
 
                 Vector2 childMin = childTopLeft;
@@ -228,7 +228,7 @@ namespace Fu.Framework
                 return toRemove;
             }
             else
-                ImGuiNative.igEndChild();
+                Fugui.EndRawChild();
             return false;
         }
 

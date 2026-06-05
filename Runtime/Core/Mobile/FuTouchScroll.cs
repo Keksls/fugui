@@ -155,6 +155,7 @@ namespace Fu
         {
 #if FUMOBILE
             float childWidth = ImGui.GetContentRegionAvail().x;
+            ValidateCursorExtentBeforeEndChild();
             ImGuiNative.igEndChild();
             _currentChildSize = new Vector2(childWidth, ImGui.GetCursorScreenPos().y - _currentChildPos.y);
             if (_childRects.ContainsKey(_currentChildId))
@@ -169,8 +170,25 @@ namespace Fu
             }
             _currentChildOwner = null;
 #else
-            ImGuiNative.igEndChild();
+            EndRawChild();
 #endif
+        }
+
+        /// <summary>
+        /// Ends an ImGui child that was opened directly without Fugui mobile-scroll bookkeeping.
+        /// </summary>
+        internal static void EndRawChild()
+        {
+            ValidateCursorExtentBeforeEndChild();
+            ImGuiNative.igEndChild();
+        }
+
+        /// <summary>
+        /// Validate the current cursor extent before EndChild performs ImGui's SetCursorPos error check.
+        /// </summary>
+        internal static void ValidateCursorExtentBeforeEndChild()
+        {
+            ImGuiNative.igDummy(Vector2.zero);
         }
 
         /// <summary>

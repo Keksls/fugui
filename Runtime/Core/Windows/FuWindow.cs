@@ -2841,7 +2841,7 @@ namespace Fu
                     DrawDebugLine("Child draw lists", (ChildrenDrawLists != null ? ChildrenDrawLists.Count : 0).ToString());
                 }
             }
-            ImGui.EndChild();
+            Fugui.EndRawChild();
             Fugui.PopColor(2);
             Fugui.PopStyle(3);
             ImGui.SetCursorScreenPos(previousCursorPos);

@@ -27,6 +27,7 @@ namespace Fu.Framework
         /// A flag indicating whether the panel has been created or not.
         /// </summary>
         private bool _panelCreated = false;
+        private bool _panelBegan = false;
         private string _ID;
         private bool _useClipper = true;
         // var to count how many push are at frame start, so we can pop missing push
@@ -142,6 +143,7 @@ namespace Fu.Framework
 
             Vector2 panelPosition = ImGui.GetCursorScreenPos();
             // draw imgui child panel
+            _panelBegan = true;
             _panelCreated = Fugui.BeginChild(_ID, new Vector2(width, height), childFlag, flag);
             if (!_panelCreated)
             {
@@ -176,6 +178,11 @@ namespace Fu.Framework
         /// </summary>
         public void Dispose()
         {
+            if (!_panelBegan)
+            {
+                return;
+            }
+
             if (_panelCreated)
             {
                 // pop missing push
@@ -203,7 +210,9 @@ namespace Fu.Framework
                 Clipper = null;
             }
             else
-                ImGuiNative.igEndChild();
+            {
+                Fugui.EndChild();
+            }
         }
         #endregion
     }

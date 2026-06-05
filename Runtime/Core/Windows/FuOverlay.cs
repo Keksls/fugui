@@ -404,7 +404,7 @@ namespace Fu
                     UI?.Invoke(this, Layout);
                     OnPostRender?.Invoke();
                 }
-                ImGuiNative.igEndChild();
+                Fugui.EndRawChild();
                 Layout.Dispose();
                 Fugui.PopColor(3);
                 _overlayStyle.Pop();

@@ -214,7 +214,7 @@ namespace Fu
                 DrawDebugLine("FPS", (int)CurrentCameraFPS + " (" + (CameraDeltaTime * 1000f).ToString("f2") + " ms)");
                 DrawDebugLine("Target", TargetCameraFPS + " (" + ((int)(_targetCameraDeltaTimeMs * 1000)).ToString() + " ms)");
             }
-            ImGui.EndChild();
+            Fugui.EndRawChild();
             Fugui.PopColor(2);
             Fugui.PopStyle(3);
             ImGui.SetCursorScreenPos(previousCursorPos);

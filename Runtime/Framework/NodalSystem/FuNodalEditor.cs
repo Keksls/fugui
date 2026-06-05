@@ -462,7 +462,7 @@ namespace Fu.Framework.Nodal
                     ClearSelection();
             }
 
-            ImGui.EndChild();
+            Fugui.EndRawChild();
         }
 
         /// <summary>
@@ -903,10 +903,10 @@ namespace Fu.Framework.Nodal
                 ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
             node.OnDraw(window.Layout);
             window.Layout.Dummy(0f, 2f);
-            ImGui.EndChild();
+            Fugui.EndRawChild();
 
             ImGui.SetWindowFontScale(1.0f);
-            ImGui.EndChild();
+            Fugui.EndRawChild();
             ImGui.PopStyleVar();
             ImGui.PopStyleColor();
             float endY = ImGui.GetCursorScreenPos().y;

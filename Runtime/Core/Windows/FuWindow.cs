@@ -281,6 +281,7 @@ namespace Fu
         internal float _lastRenderTime = 0;
         private bool _open = true;
         private bool _isInterractable = true;
+        private bool _holdsTextInputFocus;
         private static int _windowIndex = 0;
         private bool _ignoreTransformThisFrame = false;
         private Vector2Int _customDragStartMousePos;
@@ -587,6 +588,7 @@ namespace Fu
             }
 
             _releaseFocusNextFrame = false;
+            _holdsTextInputFocus = false;
             WantCaptureKeyboard = false;
             HasFocus = false;
             IsHovered = false;
@@ -1162,7 +1164,7 @@ namespace Fu
                 }
 
                 // save whatever ImGui want capture Keyboard
-                WantCaptureKeyboard = IsInterractable && ImGui.GetIO().WantTextInput;
+                UpdateTextInputFocusState(IsInterractable && ImGui.GetIO().WantTextInput);
                 // draw overlays
                 DrawOverlays();
                 Fugui.Layouts?.DrawDockSplittersForWindow(this);
@@ -1197,6 +1199,47 @@ namespace Fu
         }
 
         /// <summary>
+        /// Keep Fugui keyboard ownership on the window that owns the active ImGui text input.
+        /// </summary>
+        private void UpdateTextInputFocusState(bool wantsTextInput)
+        {
+            WantCaptureKeyboard = wantsTextInput;
+
+            if (!wantsTextInput)
+            {
+                ReleaseTextInputFocusHold();
+                return;
+            }
+
+            if (InputFocusedWindow != this && !ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows))
+            {
+                return;
+            }
+
+            InputFocusedWindow = this;
+            _releaseFocusNextFrame = false;
+            _holdsTextInputFocus = true;
+        }
+
+        /// <summary>
+        /// Release only the text-input focus hold, preserving normal mouse or key ownership.
+        /// </summary>
+        private void ReleaseTextInputFocusHold()
+        {
+            if (!_holdsTextInputFocus)
+            {
+                return;
+            }
+
+            _holdsTextInputFocus = false;
+            if (InputFocusedWindow == this && NbInputFocusedWindow <= 0)
+            {
+                InputFocusedWindow = null;
+                _releaseFocusNextFrame = false;
+            }
+        }
+
+        /// <summary>
         /// Mark a custom-docked inactive tab as not drawn for this frame.
         /// </summary>
         internal void SkipDrawForCustomDocking()
@@ -1211,6 +1254,7 @@ namespace Fu
             IsHoveredContent = false;
             HasFocus = false;
             HasJustBeenDraw = false;
+            _holdsTextInputFocus = false;
             WantCaptureKeyboard = false;
             _customResizeHoveredEdge = FuWindowResizeEdge.None;
             _customResizeLocksWindowInputs = false;
@@ -1692,6 +1736,7 @@ namespace Fu
 
             Vector2Int mousePos = Container.LocalMousePos;
             bool mouseBlockedByPopup = Fugui.IsInsideAnyPopup(mousePos);
+            bool canStartManipulationAtMouse = IsFrontMostFloatingSurfaceAtMouse();
             bool useRawMouse = _customDragging || _customResizeEdge != FuWindowResizeEdge.None || _customResizeLocksWindowInputs;
             bool leftMouseDown = useRawMouse
                 ? IsRawMouseDown(FuMouseButton.Left)
@@ -1711,12 +1756,12 @@ namespace Fu
                 return;
             }
 
-            if (!IsDocked && leftMouseDown && !mouseBlockedByPopup)
+            if (!IsDocked && canStartManipulationAtMouse && leftMouseDown && !mouseBlockedByPopup)
             {
                 BringFloatingWindowToFront();
             }
 
-            if (leftMouseDown && !mouseBlockedByPopup)
+            if (canStartManipulationAtMouse && leftMouseDown && !mouseBlockedByPopup)
             {
                 FuWindowResizeEdge edge = _customResizeHoveredEdge != FuWindowResizeEdge.None
                     ? _customResizeHoveredEdge
@@ -1783,7 +1828,7 @@ namespace Fu
                 }
             }
 
-            if (!mouseBlockedByPopup && CanCustomMoveWindow() && IsCustomTitleBarDragHovered(Mouse.Position))
+            if (canStartManipulationAtMouse && !mouseBlockedByPopup && CanCustomMoveWindow() && IsCustomTitleBarDragHovered(Mouse.Position))
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
             }
@@ -1799,6 +1844,7 @@ namespace Fu
                 _customDragging ||
                 _customResizeEdge != FuWindowResizeEdge.None ||
                 !CanCustomMoveWindow() ||
+                !IsFrontMostFloatingSurfaceAtMouse() ||
                 !Mouse.IsDown(FuMouseButton.Left) ||
                 !IsCustomBodyDragHovered(Mouse.Position) ||
                 ImGui.IsAnyItemActive() ||

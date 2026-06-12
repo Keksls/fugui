@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImDrawListFlags
+    internal enum ImDrawListFlags
     {
         None = 0,
         AntiAliasedLines = 1,

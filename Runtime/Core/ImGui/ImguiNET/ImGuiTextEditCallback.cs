@@ -8,5 +8,5 @@ namespace ImGuiNET
     /// <param name="data">The data value.</param>
     /// <returns>The result of the operation.</returns>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public unsafe delegate int ImGuiInputTextCallback(ImGuiInputTextCallbackData* data);
+    internal unsafe delegate int ImGuiInputTextCallback(ImGuiInputTextCallbackData* data);
 }

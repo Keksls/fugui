@@ -44,7 +44,7 @@ namespace Fu
         /// <param name="pio">ImGuiPlatformIOPtr instance to initialize with platform data.</param>
         /// <param name="platformName">Optional name for the platform backend, used for identification.</param>
         /// <returns>True if initialization was successful, false otherwise.</returns>
-        public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
+        internal override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
             base.Initialize(io, pio, "Input Manager (Old)");
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
@@ -59,7 +59,7 @@ namespace Fu
         /// <param name="displayRect">The rectangle representing the display area for ImGui.</param>
         /// <param name="updateMouse">Whether to update mouse state.</param>
         /// <param name="updateKeyboard">Whether to update keyboard state.</param>
-        public override void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
+        internal override void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
         {
             base.PrepareFrame(io, displayRect, updateMouse, updateKeyboard);
 

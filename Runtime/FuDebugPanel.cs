@@ -187,7 +187,12 @@ namespace Fu
             }
         }
 
-        public static void Push(ImGuiCol imCol, Vector4 color)
+        public static void Push(FuColors styleColor, Vector4 color)
+        {
+            Push((ImGuiCol)styleColor, color);
+        }
+
+        internal static void Push(ImGuiCol imCol, Vector4 color)
         {
             ImGui.PushStyleColor(imCol, color);
             _colorStack.Push(new pushColorData()
@@ -218,7 +223,12 @@ namespace Fu
             }
         }
 
-        public static void Push(ImGuiStyleVar imVar, Vector2 value)
+        public static void Push(FuStyleVar styleVar, Vector2 value)
+        {
+            Push((ImGuiStyleVar)styleVar, value);
+        }
+
+        internal static void Push(ImGuiStyleVar imVar, Vector2 value)
         {
             ImGui.PushStyleVar(imVar, value);
             _stylesStack.Push(new pushStyleData()
@@ -228,7 +238,12 @@ namespace Fu
             });
             _nbPushStyle++;
         }
-        public static void Push(ImGuiStyleVar imVar, float value)
+        public static void Push(FuStyleVar styleVar, float value)
+        {
+            Push((ImGuiStyleVar)styleVar, value);
+        }
+
+        internal static void Push(ImGuiStyleVar imVar, float value)
         {
             ImGui.PushStyleVar(imVar, value);
             _stylesStack.Push(new pushStyleData()
@@ -260,10 +275,10 @@ namespace Fu
         }
     }
 
-    public struct pushStyleData
+    internal struct pushStyleData
     {
-        public ImGuiStyleVar style;
-        public string stackTrace;
+        internal ImGuiStyleVar style;
+        internal string stackTrace;
 
         public override string ToString()
         {
@@ -271,10 +286,10 @@ namespace Fu
         }
     }
 
-    public struct pushColorData
+    internal struct pushColorData
     {
-        public ImGuiCol color;
-        public string stackTrace;
+        internal ImGuiCol color;
+        internal string stackTrace;
 
         public override string ToString()
         {

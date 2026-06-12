@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiMouseSource
+    internal enum ImGuiMouseSource
     {
         Mouse = 0,
         TouchScreen = 1,

@@ -9,11 +9,11 @@ namespace Fu
     /// <summary>
     /// Represents the Im Gui Draw List Utils type.
     /// </summary>
-    public static class ImGuiDrawListUtils
+    internal static class ImGuiDrawListUtils
     {
         #region State
-        public static long ImDrawCmdSize { get; private set; }
-        public static long ImDrawVertSize { get; private set; }
+        internal static long ImDrawCmdSize { get; private set; }
+        internal static long ImDrawVertSize { get; private set; }
 
         private static Dictionary<string, string> _unIconnizedTitleMapping = new Dictionary<string, string>();
         private static readonly Dictionary<IntPtr, CachedOwnerName> _ownerNameCache = new Dictionary<IntPtr, CachedOwnerName>();
@@ -42,7 +42,7 @@ namespace Fu
         /// <param name="windows">The windows value.</param>
         /// <param name="imDrawDataPtr">The im Draw Data Ptr value.</param>
         /// <param name="cmd">The cmd value.</param>
-        public static void GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr, ref DrawData cmd)
+        internal static void GetDrawCmd(Dictionary<string, FuWindow> windows, ImDrawDataPtr imDrawDataPtr, ref DrawData cmd)
         {
             cmd.Clear();
 
@@ -331,11 +331,11 @@ namespace Fu
         /// </summary>
         private struct ResolvedDrawList
         {
-            public ImDrawListPtr NativeDrawList;
-            public string OwnerName;
-            public FuWindow Window;
-            public bool IsWindowRoot;
-            public bool IsWindowChild;
+            internal ImDrawListPtr NativeDrawList;
+            internal string OwnerName;
+            internal FuWindow Window;
+            internal bool IsWindowRoot;
+            internal bool IsWindowChild;
         }
 
         /// <summary>
@@ -343,9 +343,9 @@ namespace Fu
         /// </summary>
         private struct CachedOwnerName
         {
-            public int Length;
-            public int Hash;
-            public string Name;
+            internal int Length;
+            internal int Hash;
+            internal string Name;
         }
         #endregion
     }

@@ -28,7 +28,7 @@ namespace Fu
         public Vector2 WindowMinSize = new Vector2(16.0f, 16.0f);
         [FuDrag(0f, 1f)]
         public Vector2 WindowTitleAlign = new Vector2(0.0f, 0.5f);
-        public ImGuiDir WindowMenuButtonPosition = ImGuiDir.Right;
+        public FuDirection WindowMenuButtonPosition = FuDirection.Right;
         [FuSlider(0f, 10f)]
         public float ChildRounding = 2.0f;
         [FuSlider(0f, 10f)]
@@ -99,7 +99,7 @@ namespace Fu
         public float TabMinWidth = 32f;
         [FuSlider(16f, 400f)]
         public float TabMaxWidth = 180f;
-        public ImGuiDir ColorButtonPosition = ImGuiDir.Right;
+        public FuDirection ColorButtonPosition = FuDirection.Right;
         [FuDrag(0f, 1f)]
         public Vector2 ButtonTextAlign = new Vector2(0.5f, 0.5f);
         [FuDrag(0f, 1f)]
@@ -243,7 +243,7 @@ namespace Fu
             WindowBlur = 0.0f;
             WindowMinSize = new Vector2(64.0f, 64.0f);
             WindowTitleAlign = new Vector2(0.0f, 0.5f);
-            WindowMenuButtonPosition = ImGuiDir.Right;
+            WindowMenuButtonPosition = FuDirection.Right;
             ChildRounding = 2.0f;
             ChildBorderSize = 1.0f;
             ChildBlur = 0.0f;
@@ -277,7 +277,7 @@ namespace Fu
             TabSpacing = 1f;
             TabMinWidth = 32f;
             TabMaxWidth = 180f;
-            ColorButtonPosition = ImGuiDir.Right;
+            ColorButtonPosition = FuDirection.Right;
             ButtonTextAlign = new Vector2(0.5f, 0.5f);
             SelectableTextAlign = new Vector2(0.0f, 0.0f);
             CircleTessellationMaxError = 0.01f;
@@ -425,7 +425,7 @@ namespace Fu
             WindowBlur = 0.0f;
             WindowMinSize = new Vector2(64.0f, 64.0f);
             WindowTitleAlign = new Vector2(0.0f, 0.5f);
-            WindowMenuButtonPosition = ImGuiDir.Right;
+            WindowMenuButtonPosition = FuDirection.Right;
             ChildRounding = 2.0f;
             ChildBorderSize = 1.0f;
             ChildBlur = 0.0f;
@@ -459,7 +459,7 @@ namespace Fu
             TabSpacing = 1f;
             TabMinWidth = 32f;
             TabMaxWidth = 180f;
-            ColorButtonPosition = ImGuiDir.Right;
+            ColorButtonPosition = FuDirection.Right;
             ButtonTextAlign = new Vector2(0.5f, 0.5f);
             SelectableTextAlign = new Vector2(0.0f, 0.0f);
             CircleTessellationMaxError = 0.01f;
@@ -604,7 +604,7 @@ namespace Fu
             style.WindowBorderSize = WindowBorderSize * scale;
             style.WindowMinSize = WindowMinSize * scale;
             style.WindowTitleAlign = WindowTitleAlign;
-            style.WindowMenuButtonPosition = WindowMenuButtonPosition;
+            style.WindowMenuButtonPosition = (ImGuiDir)WindowMenuButtonPosition;
             style.ChildRounding = ChildRounding * scale;
             style.ChildBorderSize = ChildBorderSize * scale;
             style.PopupRounding = PopupRounding * scale;
@@ -624,7 +624,7 @@ namespace Fu
             style.TabRounding = TabRounding * scale;
             style.TabBorderSize = TabBorderSize * scale;
             style.TabMinWidthForCloseButton = TabMinWidthForCloseButton * scale;
-            style.ColorButtonPosition = ColorButtonPosition;
+            style.ColorButtonPosition = (ImGuiDir)ColorButtonPosition;
             style.ButtonTextAlign = ButtonTextAlign;
             style.SelectableTextAlign = SelectableTextAlign;
             style.CircleTessellationMaxError = CircleTessellationMaxError;

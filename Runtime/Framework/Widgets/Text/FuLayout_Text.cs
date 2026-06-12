@@ -474,7 +474,7 @@ namespace Fu.Framework
         /// <returns>The result of the operation.</returns>
         private bool _internalClickableText(string id, string text, FuTextStyle style, Rect textRect, FuTextWrapping wrapping)
         {
-            bool clicked = InvisibleInteractionAt("##FuClickableText_" + id, textRect.min, textRect.size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+            bool clicked = InvisibleInteractionAt("##FuClickableText_" + id, textRect.min, textRect.size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
 
             // set mouse cursor
             if (hovered && !LastItemDisabled)
@@ -532,7 +532,7 @@ namespace Fu.Framework
             Vector2 rectMin = ImGui.GetCursorScreenPos() - new Vector2(4f, 0f);
             Vector2 rectMax = rectMin + Fugui.CalcTextSize(text, wrapping) + Fugui.Themes.FramePadding;
             Vector2 rectSize = rectMax - rectMin;
-            bool clicked = InvisibleInteractionAt("##FuTextUrl_" + text, rectMin, rectSize, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+            bool clicked = InvisibleInteractionAt("##FuTextUrl_" + text, rectMin, rectSize, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
 
             Color textColor = LastItemDisabled ? style.DisabledText : style.LinkText;
             if (!LastItemDisabled)

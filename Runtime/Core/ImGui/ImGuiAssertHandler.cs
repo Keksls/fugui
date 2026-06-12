@@ -8,7 +8,7 @@ namespace ImGuiNET
     /// <summary>
     /// Provides a managed callback to handle ImGui assertion failures from native code.
     /// </summary>
-    public static class ImGuiAssertHandler
+    internal static class ImGuiAssertHandler
     {
         #region Nested Types
         /// <summary>
@@ -18,7 +18,7 @@ namespace ImGuiNET
         /// <param name="file">Pointer to the file string.</param>
         /// <param name="line">Line number where the assertion occurred.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void ImGuiAssertCallback(IntPtr expression, IntPtr file, int line);
+        internal delegate void ImGuiAssertCallback(IntPtr expression, IntPtr file, int line);
         #endregion
 
         #region State

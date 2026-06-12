@@ -123,7 +123,7 @@ namespace Fu.Framework
             ImGuiNative.igSameLine(0f, -1f);
             float maxY = ImGui.GetItemRectMax().y;
             ImGui.SetCursorScreenPos(cursorPos);
-            InvisibleInteraction(text, new Vector2(width, maxY - cursorPos.y), out _, out _, ImGuiButtonFlags.None, !LastItemDisabled);
+            InvisibleInteraction(text, new Vector2(width, maxY - cursorPos.y), out _, out _, FuButtonFlags.None, !LastItemDisabled);
 
             // do not draw hover frame
             _elementHoverFramedEnabled = false;
@@ -162,7 +162,7 @@ namespace Fu.Framework
             // function that draw the slider
             bool drawSlider(string id, ref float valueMin, ref float valueMax, float min, float max, bool isInt, float knobRadius, float hoverPaddingY, float lineHeight, float width, float x, float y)
             {
-                InvisibleInteractionAt(id + "SliderArea", cursorPos, new Vector2(width, height), out _, out bool sliderActive, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+                InvisibleInteractionAt(id + "SliderArea", cursorPos, new Vector2(width, height), out _, out bool sliderActive, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
                 // get knobs ids
                 string knobMinID = id + "KnobMin";
                 string knobMaxID = id + "KnobMax";

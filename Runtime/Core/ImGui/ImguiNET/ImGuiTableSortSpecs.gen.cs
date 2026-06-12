@@ -5,13 +5,13 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiTableSortSpecs
+    internal unsafe partial struct ImGuiTableSortSpecs
     {
         public ImGuiTableColumnSortSpecs* Specs;
         public int SpecsCount;
         public byte SpecsDirty;
     }
-    public unsafe partial struct ImGuiTableSortSpecsPtr
+    internal unsafe partial struct ImGuiTableSortSpecsPtr
     {
         public ImGuiTableSortSpecs* NativePtr { get; }
         public ImGuiTableSortSpecsPtr(ImGuiTableSortSpecs* nativePtr) => NativePtr = nativePtr;

@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiCol
+    internal enum ImGuiCol
     {
         Text = 0,
         TextDisabled = 1,

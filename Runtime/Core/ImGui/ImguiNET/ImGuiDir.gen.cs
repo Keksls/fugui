@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiDir
+    internal enum ImGuiDir
     {
         None = -1,
         Left = 0,

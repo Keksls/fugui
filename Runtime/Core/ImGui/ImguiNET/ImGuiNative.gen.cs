@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace ImGuiNET
 {
-    public static unsafe partial class ImGuiNative
+    internal static unsafe partial class ImGuiNative
     {
         #if UNITY_IOS && !UNITY_EDITOR
         internal const string CimguiLibraryName = "__Internal";

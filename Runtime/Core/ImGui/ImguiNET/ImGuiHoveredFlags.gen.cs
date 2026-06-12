@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiHoveredFlags
+    internal enum ImGuiHoveredFlags
     {
         None = 0,
         ChildWindows = 1,

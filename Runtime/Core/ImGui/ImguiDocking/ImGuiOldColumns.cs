@@ -5,7 +5,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Gui Old Columns data structure.
     /// </summary>
-    public unsafe partial struct ImGuiOldColumns
+    internal unsafe partial struct ImGuiOldColumns
     {
         #region State
         public uint ID;
@@ -31,7 +31,7 @@ namespace ImGuiNET
     /// Lists the available Im Gui Old Column Flags values.
     /// </summary>
     [Flags]
-    public enum ImGuiOldColumnFlags
+    internal enum ImGuiOldColumnFlags
     {
         None = 0,
         NoBorder = 1 << 0,

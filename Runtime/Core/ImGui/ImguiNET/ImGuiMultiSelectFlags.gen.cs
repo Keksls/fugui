@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiMultiSelectFlags
+    internal enum ImGuiMultiSelectFlags
     {
         None = 0,
         SingleSelect = 1,

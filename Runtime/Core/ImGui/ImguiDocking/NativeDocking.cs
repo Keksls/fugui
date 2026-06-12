@@ -6,7 +6,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Native Docking type.
     /// </summary>
-    public unsafe static class NativeDocking
+    internal unsafe static class NativeDocking
     {
         #region Methods
         /// <summary>

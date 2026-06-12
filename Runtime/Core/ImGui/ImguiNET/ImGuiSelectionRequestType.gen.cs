@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiSelectionRequestType
+    internal enum ImGuiSelectionRequestType
     {
         None = 0,
         SetAll = 1,

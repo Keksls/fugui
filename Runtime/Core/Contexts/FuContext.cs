@@ -18,9 +18,9 @@ namespace Fu
     {
         #region State
         public int ID;
-        public ImGuiIOPtr IO;
-        public ImGuiPlatformIOPtr PlatformIO;
-        public IntPtr ImGuiContext;
+        internal ImGuiIOPtr IO;
+        internal ImGuiPlatformIOPtr PlatformIO;
+        internal IntPtr ImGuiContext;
 
         /// <summary>
         /// Whenever the context render
@@ -39,15 +39,15 @@ namespace Fu
 
         public bool AutoUpdateMouse = true;
         public bool AutoUpdateKeyboard = true;
-        public TextureManager TextureManager;
+        internal TextureManager TextureManager;
 
         public bool Started { get; protected set; }
         public float Scale { get; protected set; }
         public float FontScale { get; protected set; }
 
-        protected DrawData _drawData = new DrawData();
+        internal DrawData _drawData = new DrawData();
 
-        public DrawData DrawData => _drawData;
+        internal DrawData DrawData => _drawData;
         public bool RenderPrepared { get; protected set; } = false;
         public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
 
@@ -530,10 +530,15 @@ namespace Fu
         /// Must be placed just after an UI element so this one can be dragged
         /// </summary>
         /// <param name="payloadID">Unique ID of the payload for the drag drop operation (must be same as used in BeginDragDropTarget method)</param>
-        /// <param name="dragDropFlags">lags for this drag drop operation (see ImGuiDragDropFlags on google)</param>
+        /// <param name="dragDropFlags">Flags for this drag drop operation.</param>
         /// <param name="onDraggingUICallback">Callback called each frame while a drag drop operation. Use it to draw the preview drag drop window UI)</param>
         /// <param name="payload">payload to set, will be passed to the target on Drop frame</param>
-        public void BeginDragDropSource(string payloadID, ImGuiDragDropFlags dragDropFlags, Action onDraggingUICallback, object payload)
+        public void BeginDragDropSource(string payloadID, FuDragDropFlags dragDropFlags, Action onDraggingUICallback, object payload)
+        {
+            BeginDragDropSource(payloadID, (ImGuiDragDropFlags)dragDropFlags, onDraggingUICallback, payload);
+        }
+
+        internal void BeginDragDropSource(string payloadID, ImGuiDragDropFlags dragDropFlags, Action onDraggingUICallback, object payload)
         {
             if (ImGui.BeginDragDropSource(dragDropFlags))
             {

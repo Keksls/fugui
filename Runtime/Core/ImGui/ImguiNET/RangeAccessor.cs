@@ -6,7 +6,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Range Accessor data structure.
     /// </summary>
-    public unsafe struct RangeAccessor<T> where T : struct
+    internal unsafe struct RangeAccessor<T> where T : struct
     {
         #region State
         private static readonly int s_sizeOfT = Unsafe.SizeOf<T>();

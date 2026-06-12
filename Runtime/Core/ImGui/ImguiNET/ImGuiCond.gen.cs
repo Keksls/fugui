@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiCond
+    internal enum ImGuiCond
     {
         None = 0,
         Always = 1,

@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiButtonFlags
+    internal enum ImGuiButtonFlags
     {
         None = 0,
         MouseButtonLeft = 1,

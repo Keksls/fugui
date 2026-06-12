@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiDockNodeFlags
+    internal enum ImGuiDockNodeFlags
     {
         None = 0,
         KeepAliveOnly = 1,

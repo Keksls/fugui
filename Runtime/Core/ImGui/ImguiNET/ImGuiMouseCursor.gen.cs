@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiMouseCursor
+    internal enum ImGuiMouseCursor
     {
         None = -1,
         Arrow = 0,

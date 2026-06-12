@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImFontAtlasFlags
+    internal enum ImFontAtlasFlags
     {
         None = 0,
         NoPowerOfTwoHeight = 1,

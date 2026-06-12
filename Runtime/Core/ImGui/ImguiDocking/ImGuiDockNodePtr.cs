@@ -7,7 +7,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Dock Node Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImGuiDockNodePtr
+        internal unsafe partial struct ImGuiDockNodePtr
         {
             #region State
             public ImGuiDockNode* NativePtr { get; }

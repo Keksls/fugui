@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiViewportFlags
+    internal enum ImGuiViewportFlags
     {
         None = 0,
         IsPlatformWindow = 1,

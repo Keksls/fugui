@@ -5,13 +5,13 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImDrawCmdHeader
+    internal unsafe partial struct ImDrawCmdHeader
     {
         public Vector4 ClipRect;
         public IntPtr TextureId;
         public uint VtxOffset;
     }
-    public unsafe partial struct ImDrawCmdHeaderPtr
+    internal unsafe partial struct ImDrawCmdHeaderPtr
     {
         public ImDrawCmdHeader* NativePtr { get; }
         public ImDrawCmdHeaderPtr(ImDrawCmdHeader* nativePtr) => NativePtr = nativePtr;

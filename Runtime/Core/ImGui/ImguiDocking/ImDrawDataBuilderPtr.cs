@@ -5,7 +5,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Draw Data Builder Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImDrawDataBuilderPtr
+        internal unsafe partial struct ImDrawDataBuilderPtr
         {
             #region State
             public ImDrawDataBuilder* NativePtr { get; }

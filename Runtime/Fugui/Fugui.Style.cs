@@ -4,22 +4,11 @@
 #if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
 #define FUMOBILE
 #endif
-using Fu.Framework;
 using ImGuiNET;
 #if FU_EXTERNALIZATION
-using SDL2;
 #endif
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.RegularExpressions;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
-using UnityEngine.Rendering.Universal;
 
 namespace Fu
 {
@@ -29,14 +18,8 @@ namespace Fu
     public static partial class Fugui
     {
 #if !FUDEBUG
-
-        /// <summary>
-        /// Push a color style to ImGui color stack
-        /// </summary>
-        /// <param name="imCol">ImGui color to push</param>
-        /// <param name="color">colot value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Push(ImGuiCol imCol, Vector4 color)
+        internal static void Push(ImGuiCol imCol, Vector4 color)
         {
             ImGuiNative.igPushStyleColor_Vec4(imCol, color);
             NbPushColor++;
@@ -63,13 +46,12 @@ namespace Fu
         /// <summary>
         /// Push a style var to ImGui style var stack
         /// </summary>
-        /// <param name="imVar">ImGUi style var to push</param>
+        /// <param name="styleVar">Fugui style var to push</param>
         /// <param name="value">style var value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Push(ImGuiStyleVar imVar, Vector2 value)
+        public static void Push(FuStyleVar styleVar, Vector2 value)
         {
-            ImGuiNative.igPushStyleVar_Vec2(imVar, value * CurrentContext.Scale);
-            NbPushStyle++;
+            Push((ImGuiStyleVar)styleVar, value);
         }
 
         /// <summary>
@@ -78,7 +60,30 @@ namespace Fu
         /// <param name="imVar">ImGUi style var to push</param>
         /// <param name="value">style var value</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Push(ImGuiStyleVar imVar, float value)
+        internal static void Push(ImGuiStyleVar imVar, Vector2 value)
+        {
+            ImGuiNative.igPushStyleVar_Vec2(imVar, value * CurrentContext.Scale);
+            NbPushStyle++;
+        }
+
+        /// <summary>
+        /// Push a style var to the internal style var stack
+        /// </summary>
+        /// <param name="styleVar">Fugui style var to push</param>
+        /// <param name="value">style var value</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Push(FuStyleVar styleVar, float value)
+        {
+            Push((ImGuiStyleVar)styleVar, value);
+        }
+
+        /// <summary>
+        /// Push a style var to ImGui style var stack
+        /// </summary>
+        /// <param name="imVar">ImGUi style var to push</param>
+        /// <param name="value">style var value</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void Push(ImGuiStyleVar imVar, float value)
         {
             ImGuiNative.igPushStyleVar_Float(imVar, value * CurrentContext.Scale);
             NbPushStyle++;

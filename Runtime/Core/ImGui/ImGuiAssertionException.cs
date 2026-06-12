@@ -5,7 +5,7 @@ namespace ImGuiNET
         /// <summary>
         /// Exception thrown when an ImGui assertion fails.
         /// </summary>
-        public class ImGuiAssertionException : Exception
+        internal class ImGuiAssertionException : Exception
         {
             #region Constructors
             /// <summary>

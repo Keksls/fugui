@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImFontAtlas
+    internal unsafe partial struct ImFontAtlas
     {
         public ImFontAtlasFlags Flags;
         public IntPtr TexID;
@@ -93,7 +93,7 @@ namespace ImGuiNET
         public int PackIdMouseCursors;
         public int PackIdLines;
     }
-    public unsafe partial struct ImFontAtlasPtr
+    internal unsafe partial struct ImFontAtlasPtr
     {
         public ImFontAtlas* NativePtr { get; }
         public ImFontAtlasPtr(ImFontAtlas* nativePtr) => NativePtr = nativePtr;

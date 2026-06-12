@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiStyle
+    internal unsafe partial struct ImGuiStyle
     {
         public float Alpha;
         public float DisabledAlpha;
@@ -119,7 +119,7 @@ namespace ImGuiNET
         public ImGuiHoveredFlags HoverFlagsForTooltipMouse;
         public ImGuiHoveredFlags HoverFlagsForTooltipNav;
     }
-    public unsafe partial struct ImGuiStylePtr
+    internal unsafe partial struct ImGuiStylePtr
     {
         public ImGuiStyle* NativePtr { get; }
         public ImGuiStylePtr(ImGuiStyle* nativePtr) => NativePtr = nativePtr;

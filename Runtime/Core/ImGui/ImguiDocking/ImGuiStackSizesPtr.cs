@@ -6,7 +6,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Stack Sizes Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImGuiStackSizesPtr
+        internal unsafe partial struct ImGuiStackSizesPtr
         {
             #region State
             public ImGuiStackSizes* NativePtr { get; }

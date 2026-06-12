@@ -6,7 +6,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Old Columns Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImGuiOldColumnsPtr
+        internal unsafe partial struct ImGuiOldColumnsPtr
         {
             #region State
             public ImGuiOldColumns* NativePtr { get; }

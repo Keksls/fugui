@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImDrawData
+    internal unsafe partial struct ImDrawData
     {
         public byte Valid;
         public int CmdListsCount;
@@ -17,7 +17,7 @@ namespace ImGuiNET
         public Vector2 FramebufferScale;
         public ImGuiViewport* OwnerViewport;
     }
-    public unsafe partial struct ImDrawDataPtr
+    internal unsafe partial struct ImDrawDataPtr
     {
         public ImDrawData* NativePtr { get; }
         public ImDrawDataPtr(ImDrawData* nativePtr) => NativePtr = nativePtr;

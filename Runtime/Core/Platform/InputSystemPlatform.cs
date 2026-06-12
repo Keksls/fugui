@@ -42,7 +42,7 @@ namespace Fu
         /// <param name="io"> ImGui IO pointer.</param>
         /// <param name="pio"> ImGui Platform IO pointer.</param>
         /// <returns> True if initialization was successful, false otherwise.</returns>
-        public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
+        internal override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
             InputSystem.onDeviceChange += OnDeviceChange;
             base.Initialize(io, pio, "Input System (New)");
@@ -64,7 +64,7 @@ namespace Fu
         /// </summary>
         /// <param name="io"> ImGui IO pointer.</param>
         /// <param name="pio"> ImGui Platform IO pointer.</param>
-        public override void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
+        internal override void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
         {
             base.Shutdown(io, pio);
             InputSystem.onDeviceChange -= OnDeviceChange;
@@ -77,7 +77,7 @@ namespace Fu
         /// <param name="displayRect"> The display rectangle for the ImGui context.</param>
         /// <param name="updateMouse"> Whether to update the mouse state.</param>
         /// <param name="updateKeyboard"> Whether to update the keyboard state.</param>
-        public override void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
+        internal override void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
         {
             base.PrepareFrame(io, displayRect, updateMouse, updateKeyboard);
 

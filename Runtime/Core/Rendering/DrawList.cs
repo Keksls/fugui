@@ -8,7 +8,7 @@ namespace Fu
         /// Represent a memory copy of an ImGui DrawList.
         /// It need to be a class because we store it on x frames, and it will significatively incrase GC.Collect() time if we keep it too long.
         /// </summary>
-        public class DrawList
+        internal class DrawList
         {
             #region State
             // ImGui DrawList stuffs
@@ -57,7 +57,7 @@ namespace Fu
             /// <summary>
             /// Initializes a new instance of the Draw List class.
             /// </summary>
-            public DrawList()
+            internal DrawList()
             {
                 // Allocate arrays ptr for sizeof(ArrayType)
                 _cmdBuffer = Array.Empty<ImDrawCmd>();
@@ -69,7 +69,7 @@ namespace Fu
             /// Initializes a new instance of the Draw List class.
             /// </summary>
             /// <param name="drawList">The draw List value.</param>
-            public DrawList(ImDrawListPtr drawList)
+            internal DrawList(ImDrawListPtr drawList)
             {
                 Bind(drawList);
             }
@@ -90,7 +90,7 @@ namespace Fu
             /// Bind the current drawList with an ImGui ImDrawListPtr.
             /// </summary>
             /// <param name="drawList">ImGui drawList ptr handle</param>
-            public unsafe void Bind(ImDrawListPtr drawList)
+            internal unsafe void Bind(ImDrawListPtr drawList)
             {
                 bindBuffers(drawList);
                 _windowName = null;

@@ -7,7 +7,7 @@ namespace ImGuiNET
         /// Represents the Union Value data structure.
         /// </summary>
         [StructLayout(LayoutKind.Explicit)]
-        public struct UnionValue
+        internal struct UnionValue
         {
             #region State
             [FieldOffset(0)]

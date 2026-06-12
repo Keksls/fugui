@@ -5,13 +5,13 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiTextFilter
+    internal unsafe partial struct ImGuiTextFilter
     {
         public fixed byte InputBuf[256];
         public ImVector Filters;
         public int CountGrep;
     }
-    public unsafe partial struct ImGuiTextFilterPtr
+    internal unsafe partial struct ImGuiTextFilterPtr
     {
         public ImGuiTextFilter* NativePtr { get; }
         public ImGuiTextFilterPtr(ImGuiTextFilter* nativePtr) => NativePtr = nativePtr;

@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiWindowFlags
+    internal enum ImGuiWindowFlags
     {
         None = 0,
         NoTitleBar = 1,

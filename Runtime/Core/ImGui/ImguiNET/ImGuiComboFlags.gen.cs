@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiComboFlags
+    internal enum ImGuiComboFlags
     {
         None = 0,
         PopupAlignLeft = 1,

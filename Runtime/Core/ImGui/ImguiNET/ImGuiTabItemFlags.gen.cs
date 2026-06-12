@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiTabItemFlags
+    internal enum ImGuiTabItemFlags
     {
         None = 0,
         UnsavedDocument = 1,

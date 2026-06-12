@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiSliderFlags
+    internal enum ImGuiSliderFlags
     {
         None = 0,
         Logarithmic = 32,

@@ -7,7 +7,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Tab Bar Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImGuiTabBarPtr
+        internal unsafe partial struct ImGuiTabBarPtr
         {
             #region State
             public ImGuiTabBar* NativePtr { get; }

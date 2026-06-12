@@ -7,7 +7,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Rect Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImRectPtr
+        internal unsafe partial struct ImRectPtr
         {
             #region State
             public ImRect* NativePtr { get; }

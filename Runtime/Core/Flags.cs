@@ -81,6 +81,36 @@
     }
 
     /// <summary>
+    /// Fugui mouse cursor shapes. Values match ImGuiMouseCursor and are converted internally.
+    /// </summary>
+    public enum FuMouseCursor
+    {
+        Arrow = 0,
+        TextInput = 1,
+        ResizeAll = 2,
+        ResizeNS = 3,
+        ResizeEW = 4,
+        ResizeNESW = 5,
+        ResizeNWSE = 6,
+        Hand = 7,
+        NotAllowed = 8
+    }
+
+    /// <summary>
+    /// Fugui invisible interaction button flags. Values match ImGuiButtonFlags and are converted internally.
+    /// </summary>
+    [System.Flags]
+    public enum FuButtonFlags
+    {
+        None = 0,
+        MouseButtonLeft = 1,
+        MouseButtonRight = 2,
+        MouseButtonMiddle = 4,
+        MouseButtonMask = 7,
+        EnableNav = 8
+    }
+
+    /// <summary>
     /// Define Fugui font types
     /// </summary>
     public enum FontType
@@ -222,6 +252,270 @@
         ChildMenu = 268435456,
         DockNodeHost = 536870912,
         Default = NoCollapse
+    }
+
+    /// <summary>
+    /// Fugui child-window flags. Values match ImGuiChildFlags and are converted internally.
+    /// </summary>
+    [System.Flags]
+    public enum FuChildFlags
+    {
+        None = 0,
+        Borders = 1,
+        AlwaysUseWindowPadding = 2,
+        ResizeX = 4,
+        ResizeY = 8,
+        AutoResizeX = 16,
+        AutoResizeY = 32,
+        AlwaysAutoResize = 64,
+        FrameStyle = 128,
+        NavFlattened = 256
+    }
+
+    /// <summary>
+    /// Fugui style variable slots. Values match ImGuiStyleVar and are converted internally.
+    /// </summary>
+    public enum FuStyleVar
+    {
+        Alpha = 0,
+        DisabledAlpha = 1,
+        WindowPadding = 2,
+        WindowRounding = 3,
+        WindowBorderSize = 4,
+        WindowMinSize = 5,
+        WindowTitleAlign = 6,
+        ChildRounding = 7,
+        ChildBorderSize = 8,
+        PopupRounding = 9,
+        PopupBorderSize = 10,
+        FramePadding = 11,
+        FrameRounding = 12,
+        FrameBorderSize = 13,
+        ItemSpacing = 14,
+        ItemInnerSpacing = 15,
+        IndentSpacing = 16,
+        CellPadding = 17,
+        ScrollbarSize = 18,
+        ScrollbarRounding = 19,
+        GrabMinSize = 20,
+        GrabRounding = 21,
+        TabRounding = 22,
+        TabBorderSize = 23,
+        TabBarBorderSize = 24,
+        TabBarOverlineSize = 25,
+        TableAngledHeadersAngle = 26,
+        TableAngledHeadersTextAlign = 27,
+        ButtonTextAlign = 28,
+        SelectableTextAlign = 29,
+        SeparatorTextBorderSize = 30,
+        SeparatorTextAlign = 31,
+        SeparatorTextPadding = 32,
+        DockingSeparatorSize = 33
+    }
+
+    /// <summary>
+    /// Fugui drag-drop behavior flags. Values match ImGuiDragDropFlags and are converted internally.
+    /// </summary>
+    [System.Flags]
+    public enum FuDragDropFlags
+    {
+        None = 0,
+        SourceNoPreviewTooltip = 1,
+        SourceNoDisableHover = 2,
+        SourceNoHoldToOpenOthers = 4,
+        SourceAllowNullID = 8,
+        SourceExtern = 16,
+        PayloadAutoExpire = 32,
+        PayloadNoCrossContext = 64,
+        PayloadNoCrossProcess = 128,
+        AcceptBeforeDelivery = 1024,
+        AcceptNoDrawDefaultRect = 2048,
+        AcceptNoPreviewTooltip = 4096,
+        AcceptPeekOnly = 3072
+    }
+
+    /// <summary>
+    /// Fugui draw-list corner and path flags. Values match ImDrawFlags and are converted internally.
+    /// </summary>
+    [System.Flags]
+    public enum FuDrawFlags
+    {
+        None = 0,
+        Closed = 1,
+        RoundCornersTopLeft = 16,
+        RoundCornersTopRight = 32,
+        RoundCornersBottomLeft = 64,
+        RoundCornersBottomRight = 128,
+        RoundCornersNone = 256,
+        RoundCornersTop = 48,
+        RoundCornersBottom = 192,
+        RoundCornersLeft = 80,
+        RoundCornersRight = 160,
+        RoundCornersAll = 240,
+        RoundCornersDefault = 240,
+        RoundCornersMask = 496
+    }
+
+    /// <summary>
+    /// Opaque Fugui draw-list handle. Fugui converts it to the native ImGui draw list internally.
+    /// </summary>
+    public readonly struct FuDrawList
+    {
+        internal readonly ImGuiNET.ImDrawListPtr Native;
+
+        internal FuDrawList(ImGuiNET.ImDrawListPtr native)
+        {
+            Native = native;
+        }
+
+        /// <summary>
+        /// Whether this draw-list handle points to a native draw list.
+        /// </summary>
+        public unsafe bool IsValid => Native.NativePtr != null;
+
+        public void AddRectFilled(UnityEngine.Vector2 min, UnityEngine.Vector2 max, uint color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None)
+        {
+            Native.AddRectFilled(min, max, color, rounding, (ImGuiNET.ImDrawFlags)flags);
+        }
+
+        public void AddRectFilled(UnityEngine.Vector2 min, UnityEngine.Vector2 max, UnityEngine.Vector4 color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None)
+        {
+            AddRectFilled(min, max, ImGuiNET.ImGui.GetColorU32(color), rounding, flags);
+        }
+
+        public void AddRect(UnityEngine.Vector2 min, UnityEngine.Vector2 max, uint color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None, float thickness = 1f)
+        {
+            Native.AddRect(min, max, color, rounding, (ImGuiNET.ImDrawFlags)flags, thickness);
+        }
+
+        public void AddRect(UnityEngine.Vector2 min, UnityEngine.Vector2 max, UnityEngine.Vector4 color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None, float thickness = 1f)
+        {
+            AddRect(min, max, ImGuiNET.ImGui.GetColorU32(color), rounding, flags, thickness);
+        }
+
+        public void AddLine(UnityEngine.Vector2 p1, UnityEngine.Vector2 p2, uint color, float thickness = 1f)
+        {
+            Native.AddLine(p1, p2, color, thickness);
+        }
+
+        public void AddLine(UnityEngine.Vector2 p1, UnityEngine.Vector2 p2, UnityEngine.Vector4 color, float thickness = 1f)
+        {
+            AddLine(p1, p2, ImGuiNET.ImGui.GetColorU32(color), thickness);
+        }
+
+        public void AddText(UnityEngine.Vector2 pos, uint color, string text)
+        {
+            Native.AddText(pos, color, text);
+        }
+
+        public void AddText(UnityEngine.Vector2 pos, UnityEngine.Vector4 color, string text)
+        {
+            AddText(pos, ImGuiNET.ImGui.GetColorU32(color), text);
+        }
+
+        public void AddCircleFilled(UnityEngine.Vector2 center, float radius, uint color, int segments = 0)
+        {
+            Native.AddCircleFilled(center, radius, color, segments);
+        }
+
+        public void AddCircleFilled(UnityEngine.Vector2 center, float radius, UnityEngine.Vector4 color, int segments = 0)
+        {
+            AddCircleFilled(center, radius, ImGuiNET.ImGui.GetColorU32(color), segments);
+        }
+
+        public void PushClipRect(UnityEngine.Vector2 min, UnityEngine.Vector2 max, bool intersectWithCurrentClipRect = false)
+        {
+            Native.PushClipRect(min, max, intersectWithCurrentClipRect);
+        }
+
+        public void PopClipRect()
+        {
+            Native.PopClipRect();
+        }
+    }
+
+    /// <summary>
+    /// Fugui table column flags. Values match ImGuiTableColumnFlags and are converted internally.
+    /// </summary>
+    [System.Flags]
+    public enum FuTableColumnFlags
+    {
+        None = 0,
+        Disabled = 1,
+        DefaultHide = 2,
+        DefaultSort = 4,
+        WidthStretch = 8,
+        WidthFixed = 16,
+        NoResize = 32,
+        NoReorder = 64,
+        NoHide = 128,
+        NoClip = 256,
+        NoSort = 512,
+        NoSortAscending = 1024,
+        NoSortDescending = 2048,
+        NoHeaderLabel = 4096,
+        NoHeaderWidth = 8192,
+        PreferSortAscending = 16384,
+        PreferSortDescending = 32768,
+        IndentEnable = 65536,
+        IndentDisable = 131072,
+        AngledHeader = 262144,
+        IsEnabled = 16777216,
+        IsVisible = 33554432,
+        IsSorted = 67108864,
+        IsHovered = 134217728,
+        WidthMask = 24,
+        IndentMask = 196608,
+        StatusMask = 251658240,
+        NoDirectResize = 1073741824
+    }
+
+    /// <summary>
+    /// Fugui config flags applied to the internal ImGui IO. Values match ImGuiConfigFlags.
+    /// </summary>
+    [System.Flags]
+    public enum FuConfigFlags
+    {
+        None = 0,
+        NavEnableKeyboard = 1,
+        NavEnableGamepad = 2,
+        NoMouse = 16,
+        NoMouseCursorChange = 32,
+        NoKeyboard = 64,
+        DockingEnable = 128,
+        ViewportsEnable = 1024,
+        DpiEnableScaleViewports = 16384,
+        DpiEnableScaleFonts = 32768,
+        IsSRGB = 1048576,
+        IsTouchScreen = 2097152
+    }
+
+    /// <summary>
+    /// Fugui dock node flags. Values match ImGuiDockNodeFlags.
+    /// </summary>
+    [System.Flags]
+    public enum FuDockNodeFlags
+    {
+        None = 0,
+        KeepAliveOnly = 1,
+        NoDockingOverCentralNode = 4,
+        PassthruCentralNode = 8,
+        NoDockingSplit = 16,
+        NoResize = 32,
+        AutoHideTabBar = 64,
+        NoUndocking = 128
+    }
+
+    /// <summary>
+    /// Fugui direction enum. Values match ImGuiDir.
+    /// </summary>
+    public enum FuDirection
+    {
+        None = -1,
+        Left = 0,
+        Right = 1,
+        Up = 2,
+        Down = 3
     }
 
     /// <summary>

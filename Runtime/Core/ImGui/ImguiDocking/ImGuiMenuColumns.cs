@@ -4,7 +4,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Menu Columns data structure.
         /// </summary>
-        public unsafe partial struct ImGuiMenuColumns
+        internal unsafe partial struct ImGuiMenuColumns
         {
             #region State
             public float Spacing;

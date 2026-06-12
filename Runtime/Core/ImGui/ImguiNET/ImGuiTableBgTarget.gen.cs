@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiTableBgTarget
+    internal enum ImGuiTableBgTarget
     {
         None = 0,
         RowBg0 = 1,

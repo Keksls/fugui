@@ -4,7 +4,7 @@ namespace ImGuiNET
     /// Lists the available Im Gui Mod Flags values.
     /// </summary>
     [System.Flags]
-    public enum ImGuiModFlags
+    internal enum ImGuiModFlags
     {
         None = 0,
         Ctrl = 1,

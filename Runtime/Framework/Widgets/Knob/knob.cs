@@ -55,7 +55,7 @@ namespace Fu.Framework
                 float oldValue = p_value;
 
                 // Handle dragging
-                layout.InvisibleInteraction(_label, new Vector2(radius * 2.0f, radius * 2.0f), out bool knobHovered, out bool knobActive, ImGuiButtonFlags.MouseButtonLeft, !disabled);
+                layout.InvisibleInteraction(_label, new Vector2(radius * 2.0f, radius * 2.0f), out bool knobHovered, out bool knobActive, FuButtonFlags.MouseButtonLeft, !disabled);
                 float mouseDeltaX = Fugui.GetCurrentMouse().Movement.x;
                 if (knobActive && mouseDeltaX != 0.0f && !disabled)
                 {

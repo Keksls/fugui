@@ -6,7 +6,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Range Ptr Accessor data structure.
         /// </summary>
-        public unsafe struct RangePtrAccessor<T> where T : struct
+        internal unsafe struct RangePtrAccessor<T> where T : struct
         {
             #region State
             public readonly void* Data;

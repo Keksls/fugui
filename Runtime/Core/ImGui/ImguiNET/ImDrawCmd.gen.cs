@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImDrawCmd
+    internal unsafe partial struct ImDrawCmd
     {
         public Vector4 ClipRect;
         public IntPtr TextureId;
@@ -17,7 +17,7 @@ namespace ImGuiNET
         public int UserCallbackDataSize;
         public int UserCallbackDataOffset;
     }
-    public unsafe partial struct ImDrawCmdPtr
+    internal unsafe partial struct ImDrawCmdPtr
     {
         public ImDrawCmd* NativePtr { get; }
         public ImDrawCmdPtr(ImDrawCmd* nativePtr) => NativePtr = nativePtr;

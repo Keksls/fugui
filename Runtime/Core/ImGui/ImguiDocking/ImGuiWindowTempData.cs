@@ -6,7 +6,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Gui Window Temp Data data structure.
     /// </summary>
-    public unsafe partial struct ImGuiWindowTempData
+    internal unsafe partial struct ImGuiWindowTempData
     {
         #region State
         public Vector2 CursorPos;
@@ -54,14 +54,14 @@ namespace ImGuiNET
     }
     /// Lists the available Im Gui Layout Type values.
     /// </summary>
-    public enum ImGuiLayoutType
+    internal enum ImGuiLayoutType
     {
         Horizontal = 0,
         Vertical = 1,
     }
     /// Lists the available Im Gui Nav Layer values.
     /// </summary>
-    public enum ImGuiNavLayer
+    internal enum ImGuiNavLayer
     {
         _Main = 0,
         _Menu = 1,
@@ -70,7 +70,7 @@ namespace ImGuiNET
     /// Lists the available Im Gui Item Status Flags values.
     /// </summary>
     [System.Flags]
-    public enum ImGuiItemStatusFlags
+    internal enum ImGuiItemStatusFlags
     {
         None = 0,
         HoveredRect = 1 << 0,

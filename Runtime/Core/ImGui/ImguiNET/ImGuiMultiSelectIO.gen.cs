@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiMultiSelectIO
+    internal unsafe partial struct ImGuiMultiSelectIO
     {
         public ImVector Requests;
         public long RangeSrcItem;
@@ -14,7 +14,7 @@ namespace ImGuiNET
         public byte RangeSrcReset;
         public int ItemsCount;
     }
-    public unsafe partial struct ImGuiMultiSelectIOPtr
+    internal unsafe partial struct ImGuiMultiSelectIOPtr
     {
         public ImGuiMultiSelectIO* NativePtr { get; }
         public ImGuiMultiSelectIOPtr(ImGuiMultiSelectIO* nativePtr) => NativePtr = nativePtr;

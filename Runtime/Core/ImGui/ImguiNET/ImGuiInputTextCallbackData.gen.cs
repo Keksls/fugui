@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiInputTextCallbackData
+    internal unsafe partial struct ImGuiInputTextCallbackData
     {
         public IntPtr Ctx;
         public ImGuiInputTextFlags EventFlag;
@@ -21,7 +21,7 @@ namespace ImGuiNET
         public int SelectionStart;
         public int SelectionEnd;
     }
-    public unsafe partial struct ImGuiInputTextCallbackDataPtr
+    internal unsafe partial struct ImGuiInputTextCallbackDataPtr
     {
         public ImGuiInputTextCallbackData* NativePtr { get; }
         public ImGuiInputTextCallbackDataPtr(ImGuiInputTextCallbackData* nativePtr) => NativePtr = nativePtr;

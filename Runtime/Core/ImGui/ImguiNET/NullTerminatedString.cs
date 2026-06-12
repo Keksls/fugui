@@ -5,7 +5,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Null Terminated String data structure.
     /// </summary>
-    public unsafe struct NullTerminatedString
+    internal unsafe struct NullTerminatedString
     {
         #region State
         public readonly byte* Data;

@@ -6,7 +6,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Vector data structure.
     /// </summary>
-    public unsafe struct ImVector
+    internal unsafe struct ImVector
     {
         #region State
         public readonly int Size;

@@ -5,14 +5,14 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiSizeCallbackData
+    internal unsafe partial struct ImGuiSizeCallbackData
     {
         public void* UserData;
         public Vector2 Pos;
         public Vector2 CurrentSize;
         public Vector2 DesiredSize;
     }
-    public unsafe partial struct ImGuiSizeCallbackDataPtr
+    internal unsafe partial struct ImGuiSizeCallbackDataPtr
     {
         public ImGuiSizeCallbackData* NativePtr { get; }
         public ImGuiSizeCallbackDataPtr(ImGuiSizeCallbackData* nativePtr) => NativePtr = nativePtr;

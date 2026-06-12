@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiColorEditFlags
+    internal enum ImGuiColorEditFlags
     {
         None = 0,
         NoAlpha = 2,

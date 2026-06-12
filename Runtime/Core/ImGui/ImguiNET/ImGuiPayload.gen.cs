@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiPayload
+    internal unsafe partial struct ImGuiPayload
     {
         public void* Data;
         public int DataSize;
@@ -16,7 +16,7 @@ namespace ImGuiNET
         public byte Preview;
         public byte Delivery;
     }
-    public unsafe partial struct ImGuiPayloadPtr
+    internal unsafe partial struct ImGuiPayloadPtr
     {
         public ImGuiPayload* NativePtr { get; }
         public ImGuiPayloadPtr(ImGuiPayload* nativePtr) => NativePtr = nativePtr;

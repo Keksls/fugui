@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct StbUndoState
+    internal unsafe partial struct StbUndoState
     {
         public StbUndoRecord undo_rec_0;
         public StbUndoRecord undo_rec_1;
@@ -112,7 +112,7 @@ namespace ImGuiNET
         public int undo_char_point;
         public int redo_char_point;
     }
-    public unsafe partial struct StbUndoStatePtr
+    internal unsafe partial struct StbUndoStatePtr
     {
         public StbUndoState* NativePtr { get; }
         public StbUndoStatePtr(StbUndoState* nativePtr) => NativePtr = nativePtr;

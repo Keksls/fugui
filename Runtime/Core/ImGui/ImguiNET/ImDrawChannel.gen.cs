@@ -5,12 +5,12 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImDrawChannel
+    internal unsafe partial struct ImDrawChannel
     {
         public ImVector _CmdBuffer;
         public ImVector _IdxBuffer;
     }
-    public unsafe partial struct ImDrawChannelPtr
+    internal unsafe partial struct ImDrawChannelPtr
     {
         public ImDrawChannel* NativePtr { get; }
         public ImDrawChannelPtr(ImDrawChannel* nativePtr) => NativePtr = nativePtr;

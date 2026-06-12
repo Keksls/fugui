@@ -8,7 +8,7 @@ namespace Fu
         /// <summary>
         /// Class that represent all DrawList for a frame
         /// </summary>
-        public class DrawData
+        internal class DrawData
         {
             #region State
             public List<DrawList> DrawLists;

@@ -63,16 +63,16 @@ namespace Fu.Framework
 
         #region Methods
         /// <summary>Remove this notification (animated).</summary>
-        public void Close() { _removing = true; _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration; }
+        internal void Close() { _removing = true; _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration; }
 
         /// <summary>Add a stacked notification (refresh timer and quantity).</summary>
-        public void AddStackedNotification(float duration) { Duration = duration; _initialDuration = Mathf.Max(_initialDuration, duration); _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration; Quantity++; }
+        internal void AddStackedNotification(float duration) { Duration = duration; _initialDuration = Mathf.Max(_initialDuration, duration); _animationEnlapsed = Fugui.Settings.NotifyAnimlationDuration; Quantity++; }
 
         /// <summary>Force collapsed state if collapsible.</summary>
-        public void ForceCollapsed(bool collapsed) { if (CanCollapse) IsCollapsed = collapsed; }
+        internal void ForceCollapsed(bool collapsed) { if (CanCollapse) IsCollapsed = collapsed; }
 
         /// <summary>Draw the card (accent per anchor, header click collapse, body background, AutoResizeY).</summary>
-        public bool Draw(ImDrawListPtr parentDrawList, int i, float deltaTime, float width)
+        internal bool Draw(ImDrawListPtr parentDrawList, int i, float deltaTime, float width)
         {
             width = Mathf.Max(1f, width);
             Vector2 childTopLeft = ImGui.GetCursorScreenPos();

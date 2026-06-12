@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiFreeTypeBuilderFlags
+    internal enum ImGuiFreeTypeBuilderFlags
     {
         NoHinting = 1,
         NoAutoHint = 2,

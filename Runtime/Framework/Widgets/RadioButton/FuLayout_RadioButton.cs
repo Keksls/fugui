@@ -52,7 +52,7 @@ namespace Fu.Framework
             float radius = height * 0.42f;
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             // input stats
-            bool clicked = InvisibleInteractionAt("##FuRadio_" + id, pos, new Vector2(height, height), out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+            bool clicked = InvisibleInteractionAt("##FuRadio_" + id, pos, new Vector2(height, height), out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             animationData.Update(isChecked, _animationEnabled);
             // frame colors
             Vector4 BGColor;

@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiConfigFlags
+    internal enum ImGuiConfigFlags
     {
         None = 0,
         NavEnableKeyboard = 1,

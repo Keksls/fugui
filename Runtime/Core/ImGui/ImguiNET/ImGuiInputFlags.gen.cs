@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiInputFlags
+    internal enum ImGuiInputFlags
     {
         None = 0,
         Repeat = 1,

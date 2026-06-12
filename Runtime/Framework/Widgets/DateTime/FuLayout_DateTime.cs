@@ -340,7 +340,7 @@ namespace Fu.Framework
         {
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             ImGui.SetCursorScreenPos(pos);
-            bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+            bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(8f * Fugui.CurrentContext.Scale, size.y * 0.45f);
 
             if (active)
@@ -361,7 +361,7 @@ namespace Fu.Framework
         {
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             ImGui.SetCursorScreenPos(pos);
-            bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+            bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(10f * Fugui.CurrentContext.Scale, size.y * 0.45f);
             Vector4 bg = active
                 ? Fugui.Themes.GetColor(FuColors.HeaderActive, 0.95f)
@@ -392,7 +392,7 @@ namespace Fu.Framework
         {
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             ImGui.SetCursorScreenPos(pos);
-            bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+            bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(8f * Fugui.CurrentContext.Scale, size.y * 0.45f);
 
             if (selected)

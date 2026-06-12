@@ -62,15 +62,13 @@ namespace Fu.Framework
             drawList.AddRect(gradientRect.min, gradientRect.max, ImGui.GetColorU32(ImGuiCol.Border));
 
             // check whatever the preview is hovered
-            bool hovered = IsItemHovered(startPos, gradientRect.size);
+            bool clicked = InvisibleInteractionAt(text + "nvsbB", startPos, gradientRect.size, out bool hovered, out _, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
             if (hovered)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
 
-            // draw invisible button to prevent draw popup and handle native ImGui state on gradient image and carrets
-            ImGui.SetCursorScreenPos(startPos);
-            if (ImGui.InvisibleButton(text + "nvsbB", gradientRect.size))
+            if (clicked)
             {
                 Fugui.OpenPopUp(ppID, drawPicker);
             }
@@ -239,11 +237,9 @@ namespace Fu.Framework
                 {
                     Vector2 keyPos = new Vector2(gradientRect.x + key.Time * gradientRect.width, gradientRect.yMax);
                     Rect colorKeyRect = new Rect(gradientRect.x + key.Time * gradientRect.width - colorKeySize / 2, gradientRect.yMax + 4, colorKeySize, colorKeySize);
-                    ImGui.SetCursorScreenPos(colorKeyRect.min);
-                    ImGui.InvisibleButton(text + "ck" + i, colorKeyRect.size);
 
                     // get key states
-                    bool hovered = IsItemHovered(colorKeyRect.position, colorKeyRect.size);
+                    InvisibleInteractionAt(text + "ck" + i, colorKeyRect.min, colorKeyRect.size, out bool hovered, out bool activeInteraction, out FuMouseButton clickedButton, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight, !LastItemDisabled);
                     isAnyKeyHovered |= hovered;
                     bool active = _selectedColorKeyIndex == i;
 
@@ -260,7 +256,7 @@ namespace Fu.Framework
                     // start drag on mouse down
                     if (hovered)
                     {
-                        if (!isDraggingColorKey && ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                        if (!isDraggingColorKey && activeInteraction)
                         {
                             isDraggingColorKey = true;
                             _selectedColorKeyIndex = i;
@@ -284,7 +280,7 @@ namespace Fu.Framework
                     }
 
                     // remove on right click
-                    if (hovered && !isDraggingColorKey && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+                    if (hovered && !isDraggingColorKey && clickedButton == FuMouseButton.Right)
                     {
                         _currentGradient.RemoveColorKey(i);
                         edited = true;
@@ -299,21 +295,19 @@ namespace Fu.Framework
             // Handle mouse events
             if (!isDraggingColorKey && addKeyOnGradientClick)
             {
-                if (!isAnyKeyHovered && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                bool gradientClicked = InvisibleInteractionAt(text + "gradientArea", startPos, gradientRect.size, out bool gradientHovered, out _, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+                if (!isAnyKeyHovered && gradientClicked && gradientHovered)
                 {
-                    if (IsItemHovered(startPos, gradientRect.size))
-                    {
-                        // Add a new color key
-                        float t = Mathf.Clamp01((mousePos.x - gradientRect.x) / gradientRect.width);
-                        Color color = _currentGradient.Evaluate(t);
-                        _currentGradient.AddColorKey(t, color);
-                        edited = true;
-                    }
+                    // Add a new color key
+                    float t = Mathf.Clamp01((mousePos.x - gradientRect.x) / gradientRect.width);
+                    Color color = _currentGradient.Evaluate(t);
+                    _currentGradient.AddColorKey(t, color);
+                    edited = true;
                 }
             }
 
             // stop dragging key
-            if (ImGui.IsMouseReleased(ImGuiMouseButton.Left) && isDraggingColorKey)
+            if (Fugui.IsMouseReleased(FuMouseButton.Left) && isDraggingColorKey)
             {
                 isDraggingColorKey = false;
             }

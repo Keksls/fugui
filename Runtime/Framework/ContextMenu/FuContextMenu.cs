@@ -128,7 +128,7 @@ namespace Fu
         public static void TryOpenContextMenuOnItemClick(FuMouseButton mouseButton = FuMouseButton.Right)
         {
             // Whatever the last item drawed has just been clicked
-            if (ImGui.IsItemClicked((ImGuiMouseButton)mouseButton))
+            if (Fugui.IsCurrentItemClicked(mouseButton))
             {
                 // Open the context menu
                 TryOpenContextMenuOnWindowClick(mouseButton);

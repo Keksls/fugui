@@ -95,6 +95,7 @@ namespace Fu
         /// </summary>
         public void RenderFuWindows()
         {
+            Fugui.BeginSurfaceFrame(this);
             ApplyPendingWindowOrder();
             _context.Window.UpdateManipulation();
             SyncPrimaryWindowToNativeBounds();

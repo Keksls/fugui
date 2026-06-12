@@ -212,7 +212,7 @@ namespace Fu.Framework
             // function that draw the slider
             bool drawSlider(string text, ref float value, float min, float max, bool isInt, float knobRadius, float hoverPaddingY, float lineHeight, float width, float x, float y, FuSliderFlags flags)
             {
-                ImGui.InvisibleButton(text, new Vector2(width, height), ImGuiButtonFlags.None);
+                InvisibleInteraction(text, new Vector2(width, height), out _, out bool sliderActive, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
 
                 if (width < 24f * Fugui.Scale)
                 {
@@ -322,12 +322,12 @@ namespace Fu.Framework
                 {
                     bool shouldStartDrag = false;
 
-                    if (!noKnobs && rawKnobHovered && ImGui.IsMouseClicked(0))
+                    if (!noKnobs && rawKnobHovered && sliderActive)
                     {
                         shouldStartDrag = true;
                     }
 
-                    if (updateOnBarClick && rawLineHovered && ImGui.IsMouseClicked(0))
+                    if (updateOnBarClick && rawLineHovered && sliderActive)
                     {
                         shouldStartDrag = true;
                     }
@@ -338,12 +338,12 @@ namespace Fu.Framework
                     }
                 }
 
-                if (_draggingSliders.Contains(text) && !ImGui.IsMouseDown(0))
+                if (_draggingSliders.Contains(text) && !sliderActive)
                 {
                     _draggingSliders.Remove(text);
                 }
 
-                if (_draggingSliders.Contains(text) && ImGui.IsMouseDown(0) && !LastItemDisabled)
+                if (_draggingSliders.Contains(text) && sliderActive && !LastItemDisabled)
                 {
                     float mouseX = ImGui.GetMousePos().x;
                     value = min + ((mouseX - x - knobTravelPadding) / knobTravelWidth) * range;

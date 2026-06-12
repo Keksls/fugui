@@ -63,7 +63,7 @@ namespace Fu
             ApplyMainContainerCameraState();
 
             // register Fugui Settings Window
-            new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, DrawSettings, size: new Vector2Int(256, 256), flags: FuWindowFlags.Default | FuWindowFlags.AllowMultipleWindow);
+            new FuWindowDefinition(FuSystemWindowsNames.FuguiSettings, FuLayer.Normal, DrawSettings, size: new Vector2Int(256, 256), flags: FuWindowFlags.Default | FuWindowFlags.AllowMultipleWindow);
 
 #if FUDEBUG
             // initialize debug tool if debug is enabled

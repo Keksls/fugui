@@ -126,13 +126,30 @@ namespace Fu
 
             if (ImGui.BeginPopupModal("FuguiPopupMessage", ref open, popupFlags))
             {
-                ImGui.SetWindowFocus();
-                if (usePopupBackdrop)
+                Fugui.RegisterSurface(
+                    _popupContainer,
+                    "FuguiPopupMessage",
+                    FuSurfaceType.Modal,
+                    FuLayer.Top,
+                    null,
+                    new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize()),
+                    true,
+                    _popupAllowMouseInputs);
+                Fugui.BeginModalSurfaceDrawing(_popupAllowMouseInputs);
+                try
                 {
-                    Fugui.DrawCurrentWindowThemeBackdrop(FuColors.PopupBg, 0.98f);
+                    ImGui.SetWindowFocus();
+                    if (usePopupBackdrop)
+                    {
+                        Fugui.DrawCurrentWindowThemeBackdrop(FuColors.PopupBg, 0.98f);
+                    }
+                    _popupUI?.Invoke();
                 }
-                _popupUI?.Invoke();
-                ImGui.EndPopup();
+                finally
+                {
+                    Fugui.EndModalSurfaceDrawing();
+                    ImGui.EndPopup();
+                }
             }
             if (_popupCloseOnEscape && !open)
             {

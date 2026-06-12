@@ -44,6 +44,8 @@ namespace Fu
         public bool CanTakeInputFocusFromMouse { get; private set; }
         // Whether keyboard input can make this window the Fugui input-focused window
         public bool CanTakeInputFocusFromKeyboard { get; private set; }
+        // The intended top-level display layer of this window
+        public FuLayer Layer { get; private set; }
 
         // A flag indicating whether this window will use native title bar once externalized
         public bool UseNativeTitleBar { get; private set; }
@@ -86,6 +88,7 @@ namespace Fu
         /// Initializes a new instance of the UIWindowDefinition class with the specified parameters.
         /// </summary>
         /// <param name="windowName">The FuGui window definition</param>
+        /// <param name="layer">The required top-level Fugui display layer of this window.</param>
         /// <param name="ui">The action to be performed on the UI window.</param>
         /// <param name="pos">The position of the UI window. If not specified, the default value is (256, 256).</param>
         /// <param name="size">The size of the UI window. If not specified, the default value is (256, 128).</param>
@@ -93,7 +96,7 @@ namespace Fu
         /// <param name="externalFlags">External window flags of this window definition</param>
         /// <param name="windowStyleFlags">ImGui window flags exposed through Fugui.</param>
         /// <param name="resizableSides">Sides that can resize this window when resize is enabled.</param>
-        public FuWindowDefinition(FuWindowName windowName, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default, FuWindowResizeSides resizableSides = FuWindowResizeSides.Default)
+        public FuWindowDefinition(FuWindowName windowName, FuLayer layer, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default, FuWindowResizeSides resizableSides = FuWindowResizeSides.Default)
         {
             // Assign the specified values to the corresponding fields
             WindowName = windowName;
@@ -102,6 +105,7 @@ namespace Fu
             Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
             WindowStyleFlags = windowStyleFlags;
             ResizableSides = resizableSides;
+            Layer = layer;
             CanTakeInputFocusFromMouse = !flags.HasFlag(FuWindowFlags.NoMouseInputFocus);
             CanTakeInputFocusFromKeyboard = !flags.HasFlag(FuWindowFlags.NoKeyboardInputFocus);
             IsExternalizable = !flags.HasFlag(FuWindowFlags.NoExternalization);
@@ -361,6 +365,27 @@ namespace Fu
         {
             ResizableSides = resizableSides;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the intended top-level display layer of this window.
+        /// </summary>
+        /// <param name="layer">The layer to apply.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetLayer(FuLayer layer)
+        {
+            Layer = layer;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the intended top-level display layer of this window.
+        /// </summary>
+        /// <param name="layer">The layer to apply.</param>
+        /// <returns>The current UIWindowDefinition object.</returns>
+        public FuWindowDefinition SetWindowLayer(FuLayer layer)
+        {
+            return SetLayer(layer);
         }
 
         /// <summary>

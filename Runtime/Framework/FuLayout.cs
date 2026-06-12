@@ -245,11 +245,11 @@ namespace Fu.Framework
             }
             if (_elementHoverFramedEnabled && !LastItemDisabled)
             {
-                if (ImGuiNative.igIsItemFocused() != 0)
+                if (Fugui.IsCurrentItemFocused())
                 {
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
                 }
-                else if (ImGui.IsItemHovered())
+                else if (Fugui.IsCurrentItemHovered())
                 {
                     // ImGui fail on inputText since version 1.88, check on new version
                     ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
@@ -781,22 +781,9 @@ namespace Fu.Framework
 
             Vector2 mousePos = ImGui.GetMousePos();
             bool isDrawingInsidePopup = Fugui.IsDrawingInsidePopup();
-            // a popup is drawing
-            if (isDrawingInsidePopup)
+            if (!Fugui.CanInteractWithWidgetSurface(FuWindow.CurrentDrawingWindow, new Rect(pos, size), allowWhenBlockedByPopup))
             {
-                // the drawing popup does NOT have the focus
-                if (!Fugui.IsDrawingPopupFocused())
-                {
-                    return false;
-                }
-            }
-            // we are not drawing inside a popup but there is some
-            else if (Fugui.IsThereAnyOpenPopup())
-            {
-                if (!allowWhenBlockedByPopup || Fugui.IsInsideAnyPopup(mousePos))
-                {
-                    return false;
-                }
+                return false;
             }
 
             bool hovered;
@@ -829,6 +816,111 @@ namespace Fu.Framework
             }
 
             return hovered;
+        }
+
+        /// <summary>
+        /// Registers an invisible Fugui interaction item at the current cursor and returns its click state.
+        /// </summary>
+        protected internal bool InvisibleInteraction(string id, Vector2 size, out bool hovered, out bool active, ImGuiButtonFlags flags = ImGuiButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
+        {
+            return InvisibleInteraction(id, size, out hovered, out active, out _, flags, enabled, allowWhenBlockedByPopup);
+        }
+
+        /// <summary>
+        /// Registers an invisible Fugui interaction item at the current cursor and returns its clicked mouse button.
+        /// </summary>
+        protected internal bool InvisibleInteraction(string id, Vector2 size, out bool hovered, out bool active, out FuMouseButton clickedButton, ImGuiButtonFlags flags = ImGuiButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
+        {
+            Vector2 pos = ImGui.GetCursorScreenPos();
+            bool clicked = false;
+            clickedButton = FuMouseButton.None;
+            if (enabled)
+            {
+                ImGui.InvisibleButton(id, size, flags);
+                bool imguiHovered = ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenBlockedByActiveItem);
+                hovered = imguiHovered && IsItemHovered(pos, size, false, allowWhenBlockedByPopup);
+                active = false;
+                string scopedID = GetScopedInvisibleInteractionID(id);
+                UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Left, flags.HasFlag(ImGuiButtonFlags.MouseButtonLeft), hovered, ref active, ref clicked, ref clickedButton);
+                UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Right, flags.HasFlag(ImGuiButtonFlags.MouseButtonRight), hovered, ref active, ref clicked, ref clickedButton);
+                UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Center, flags.HasFlag(ImGuiButtonFlags.MouseButtonMiddle), hovered, ref active, ref clicked, ref clickedButton);
+            }
+            else
+            {
+                ImGui.Dummy(size);
+                hovered = false;
+                active = false;
+            }
+
+            return enabled && clicked;
+        }
+
+        /// <summary>
+        /// Registers an invisible Fugui interaction item at an explicit screen position without changing the final cursor.
+        /// </summary>
+        protected internal bool InvisibleInteractionAt(string id, Vector2 pos, Vector2 size, out bool hovered, out bool active, ImGuiButtonFlags flags = ImGuiButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
+        {
+            return InvisibleInteractionAt(id, pos, size, out hovered, out active, out _, flags, enabled, allowWhenBlockedByPopup);
+        }
+
+        /// <summary>
+        /// Registers an invisible Fugui interaction item at an explicit screen position without changing the final cursor.
+        /// </summary>
+        protected internal bool InvisibleInteractionAt(string id, Vector2 pos, Vector2 size, out bool hovered, out bool active, out FuMouseButton clickedButton, ImGuiButtonFlags flags = ImGuiButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
+        {
+            hovered = enabled && IsItemHovered(pos, size, false, allowWhenBlockedByPopup);
+            active = false;
+            clickedButton = FuMouseButton.None;
+            if (!enabled || size.x <= 0f || size.y <= 0f)
+            {
+                return false;
+            }
+
+            bool clicked = false;
+            string scopedID = GetScopedInvisibleInteractionID(id);
+            UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Left, flags.HasFlag(ImGuiButtonFlags.MouseButtonLeft), hovered, ref active, ref clicked, ref clickedButton);
+            UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Right, flags.HasFlag(ImGuiButtonFlags.MouseButtonRight), hovered, ref active, ref clicked, ref clickedButton);
+            UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Center, flags.HasFlag(ImGuiButtonFlags.MouseButtonMiddle), hovered, ref active, ref clicked, ref clickedButton);
+            return clicked;
+        }
+
+        private static string GetScopedInvisibleInteractionID(string id)
+        {
+            string windowID = FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.ID : string.Empty;
+            int contextID = Fugui.CurrentContext != null ? Fugui.CurrentContext.ID : -1;
+            return contextID.ToString() + "|" + windowID + "|" + id;
+        }
+
+        private static void UpdateInvisibleInteractionButton(string id, FuMouseButton mouseButton, bool enabled, bool hovered, ref bool active, ref bool clicked, ref FuMouseButton clickedButton)
+        {
+            if (!enabled)
+            {
+                return;
+            }
+
+            FuMouseState mouse = Fugui.GetCurrentMouse();
+            bool ownsButton = _activeInvisibleInteractionIDs.TryGetValue(mouseButton, out string activeID) && activeID == id;
+            if (hovered && mouse.IsDown(mouseButton))
+            {
+                _activeInvisibleInteractionIDs[mouseButton] = id;
+                ownsButton = true;
+            }
+
+            if (ownsButton && mouse.IsPressed(mouseButton))
+            {
+                active = true;
+            }
+
+            if (ownsButton && mouse.IsClicked(mouseButton))
+            {
+                clicked = true;
+                clickedButton = mouseButton;
+            }
+
+            if (ownsButton && mouse.IsUp(mouseButton))
+            {
+                _activeInvisibleInteractionIDs.Remove(mouseButton);
+            }
         }
 
         /// <summary>
@@ -1147,9 +1239,20 @@ namespace Fu.Framework
 
         #region State
         private static string _activeItem = null;
+        private static readonly Dictionary<FuMouseButton, string> _activeInvisibleInteractionIDs = new Dictionary<FuMouseButton, string>();
 
         public static bool IsAnyItemActive => !string.IsNullOrEmpty(_activeItem);
         #endregion
+
+        private struct FuItemInteractionState
+        {
+            public bool Hovered;
+            public bool Active;
+            public bool JustActivated;
+            public bool JustDeactivated;
+            public bool Updated;
+            public FuMouseButton ClickedButton;
+        }
 
         #region Methods
         /// <summary>
@@ -1180,45 +1283,74 @@ namespace Fu.Framework
                 return;
             }
 
-            _lastItemHovered = IsItemHovered(pos, size, false, allowWhenBlockedByPopup);
+            FuItemInteractionState interaction = ResolveItemInteraction(uniqueID, pos, size, clickable, updated, updateOnClick, allowWhenBlockedByPopup);
+            _lastItemHovered = interaction.Hovered;
+            _lastItemActive = interaction.Active;
+            _lastItemJustActivated = interaction.JustActivated;
+            _lastItemJustDeactivated = interaction.JustDeactivated;
+            _lastItemClickedButton = interaction.ClickedButton;
+            _lastItemUpdate = interaction.Updated;
+        }
 
-            if (clickable)
+        private FuItemInteractionState ResolveItemInteraction(string uniqueID, Vector2 pos, Vector2 size, bool clickable, bool updated, bool updateOnClick, bool allowWhenBlockedByPopup)
+        {
+            FuItemInteractionState state = new FuItemInteractionState
             {
-                // Activation on press
-                if (_lastItemHovered && Fugui.GetCurrentMouse().IsDown(FuMouseButton.Left))
+                Hovered = IsItemHovered(pos, size, false, allowWhenBlockedByPopup),
+                Updated = updated,
+                ClickedButton = FuMouseButton.None
+            };
+
+            if (!clickable)
+            {
+                return state;
+            }
+
+            bool useInvisibleButton = updateOnClick && size.x > 0f && size.y > 0f;
+            if (useInvisibleButton)
+            {
+                bool pressed = InvisibleInteractionAt("##FuInteraction_" + uniqueID, pos, size, out bool hovered, out bool active, out FuMouseButton clickedButton, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight, true, allowWhenBlockedByPopup);
+                state.Hovered = hovered;
+                state.Active = active;
+                state.JustActivated = state.Hovered && Fugui.GetCurrentMouse().IsDown(FuMouseButton.Left);
+                state.JustDeactivated = _activeItem == uniqueID && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left);
+                state.ClickedButton = clickedButton;
+                if (pressed && clickedButton == FuMouseButton.Left)
                 {
-                    _activeItem = uniqueID;
-                    _lastItemJustActivated = true;
+                    state.Updated = true;
                 }
+                _activeItem = state.Active ? uniqueID : (_activeItem == uniqueID && state.JustDeactivated ? null : _activeItem);
+                return state;
+            }
 
-                if (_lastItemHovered && Fugui.GetCurrentMouse().IsDown(FuMouseButton.Right))
+            if (state.Hovered && Fugui.GetCurrentMouse().IsDown(FuMouseButton.Left))
+            {
+                _activeItem = uniqueID;
+                state.JustActivated = true;
+            }
+
+            if (state.Hovered && Fugui.GetCurrentMouse().IsDown(FuMouseButton.Right))
+            {
+                state.ClickedButton = FuMouseButton.Right;
+            }
+
+            if (_activeItem == uniqueID && Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Left))
+            {
+                state.ClickedButton = FuMouseButton.Left;
+                if (updateOnClick)
                 {
-                    _lastItemClickedButton = FuMouseButton.Right;
-                }
-
-                // Click validation on release, based on active item rather than current hover
-                if (_activeItem == uniqueID)
-                {
-                    if (Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Left))
-                    {
-                        _lastItemClickedButton = FuMouseButton.Left;
-
-                        if (updateOnClick)
-                        {
-                            updated = true;
-                        }
-                    }
-                }
-
-                if (_activeItem == uniqueID && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
-                {
-                    _activeItem = null;
-                    _lastItemJustDeactivated = true;
+                    state.Updated = true;
                 }
             }
 
-            _lastItemActive = _activeItem == uniqueID;
-            _lastItemUpdate = updated;
+            if (_activeItem == uniqueID && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
+            {
+                _activeItem = null;
+                state.JustDeactivated = true;
+            }
+
+            state.Active = _activeItem == uniqueID;
+            return state;
         }
         #endregion
     }

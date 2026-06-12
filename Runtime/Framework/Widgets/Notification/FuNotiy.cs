@@ -72,6 +72,15 @@ namespace Fu
             ImGui.SetNextWindowSize(_panelSize, ImGuiCond.Always);
             ImGui.SetNextWindowPos(panelPosition, ImGuiCond.Always);
             if (!_hasSpawn) { ImGui.SetNextWindowFocus(); _hasSpawn = true; }
+            RegisterSurface(
+                container,
+                "notifyPanel",
+                FuSurfaceType.Notification,
+                FuLayer.Top,
+                null,
+                new Rect(panelPosition, _panelSize),
+                true,
+                true);
 
             Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
             Push(ImGuiCol.WindowBg, Vector4.zero);

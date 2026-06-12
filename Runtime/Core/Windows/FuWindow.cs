@@ -143,6 +143,7 @@ namespace Fu
         public FuWindowResizeSides ResizableSides { get; private set; }
         public bool CanTakeInputFocusFromMouse { get; private set; }
         public bool CanTakeInputFocusFromKeyboard { get; private set; }
+        public FuLayer Layer { get; private set; }
 
         // external window flags
         public bool UseNativeTitleBar { get; private set; }
@@ -512,6 +513,7 @@ namespace Fu
             ResizableSides = windowDefinition.ResizableSides;
             CanTakeInputFocusFromMouse = windowDefinition.CanTakeInputFocusFromMouse;
             CanTakeInputFocusFromKeyboard = windowDefinition.CanTakeInputFocusFromKeyboard;
+            Layer = windowDefinition.Layer;
 
             // external window flags
             UseNativeTitleBar = windowDefinition.UseNativeTitleBar;
@@ -799,6 +801,7 @@ namespace Fu
             // save frame size and position
             _lastFramePos = LocalPosition;
             _lastFrameSize = Size;
+            Fugui.RegisterWindowSurface(this);
         }
 
         /// <summary>
@@ -841,6 +844,10 @@ namespace Fu
             FuWindowStyleFlags effectiveWindowFlags = _windowFlags;
             UpdateCustomResizeInputBlock();
             bool blockInputsThisFrame = BlocksWindowInputs || Fugui.WindowInputsBlockedThisFrame;
+            if (Layer == FuLayer.Background)
+            {
+                effectiveWindowFlags |= FuWindowStyleFlags.NoBringToFrontOnFocus | FuWindowStyleFlags.NoFocusOnAppearing;
+            }
             if (!IsInterractable)
             {
                 effectiveWindowFlags |= FuWindowStyleFlags.NoInputs;
@@ -867,6 +874,8 @@ namespace Fu
             }
             ImGuiWindowFlags nativeWindowFlags = (ImGuiWindowFlags)effectiveWindowFlags;
 
+            ApplyNativeWindowLayerOrder(false);
+
             if (externalBefore)
             {
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, IsDocked ? 0f : Fugui.Themes.WindowRounding);
@@ -885,6 +894,8 @@ namespace Fu
             {
                 DrawInvisibleWindowAnchor();
             }
+
+            ApplyNativeWindowLayerOrder(false);
 
             // whatever window is hovered
             processHoverState();
@@ -929,7 +940,7 @@ namespace Fu
                 // get pos of this window
                 var pos = ImGui.GetWindowPos();
                 newFramePos = new Vector2Int((int)pos.x, (int)pos.y);
-                HasFocus = ImGuiNative.igIsWindowFocused(ImGuiFocusedFlags.None) != 0;
+                HasFocus = ImGuiNative.igIsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) != 0;
 
                 // draw debug data
                 DrawDebugPanel();
@@ -1033,7 +1044,7 @@ namespace Fu
                 IsHovered = true;
             }
 
-            if (IsHovered && IsCoveredByFrontMostFloatingSurfaceAtMouse())
+            if (IsHovered && Is3DWindow && IsCoveredByFrontMostFloatingSurfaceAtMouse())
             {
                 IsHovered = false;
             }
@@ -1434,15 +1445,9 @@ namespace Fu
                 uint separatorColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.SeparatorActive : FuColors.Separator, HasFocus ? 0.9f : 0.55f);
                 dl.AddRectFilled(pos, titleMax, titleColor, rounding, ImDrawFlags.RoundCornersTop);
                 dl.AddLine(new Vector2(pos.x, titleMax.y - 1f * Fugui.Scale), new Vector2(pos.x + size.x, titleMax.y - 1f * Fugui.Scale), separatorColor, Mathf.Max(1f, 1f * Fugui.Scale));
-                if (HasFocus)
-                {
-                    float accentWidth = Mathf.Max(2f, 3f * Fugui.Scale);
-                    dl.AddRectFilled(pos, new Vector2(pos.x + accentWidth, titleMax.y), Fugui.Themes.GetColorU32(FuColors.DockingPreview, 0.85f), rounding, ImDrawFlags.RoundCornersTopLeft);
-                }
-
                 string title = Fugui.GetUntagedText(WindowName.Name);
                 Vector2 textSize = ImGui.CalcTextSize(title);
-                float textX = pos.x + (HasFocus ? 12f : 8f) * Fugui.Scale;
+                float textX = pos.x + 8f * Fugui.Scale;
                 float textY = pos.y + (customTopHeight - textSize.y) * 0.5f;
                 Rect closeRect = GetCustomCloseButtonRect(customTopHeight);
                 float externalButtonReserve = IsExternal ? (16f * Fugui.Scale + 4f * Fugui.Scale) * 3f + 8f * Fugui.Scale : 0f;
@@ -2013,7 +2018,7 @@ namespace Fu
         /// </summary>
         private void BringFloatingWindowToFront()
         {
-            if (IsDocked)
+            if (IsDocked || Layer == FuLayer.Background)
             {
                 return;
             }
@@ -2038,19 +2043,26 @@ namespace Fu
                 return;
             }
 
+            if (Layer == FuLayer.Background)
+            {
+                ApplyNativeWindowLayerOrder(false);
+                _forceFocusNextFrame = false;
+                return;
+            }
+
             ImGui.SetWindowFocus();
-            BringImGuiWindowToDisplayFront();
+            BringImGuiWindowToDisplayFront(true);
             _forceFocusNextFrame = false;
         }
 
         /// <summary>
-        /// Synchronize ImGui's native display order with Fugui's floating window order.
+        /// Find the native ImGui window for this Fugui window.
         /// </summary>
-        private unsafe void BringImGuiWindowToDisplayFront()
+        private unsafe ImGuiWindow* FindNativeImGuiWindow()
         {
-            if (IsDocked || string.IsNullOrEmpty(ID))
+            if (string.IsNullOrEmpty(ID))
             {
-                return;
+                return null;
             }
 
             int byteCount = Encoding.UTF8.GetByteCount(ID);
@@ -2058,14 +2070,64 @@ namespace Fu
             int offset = Fugui.GetUtf8(ID, nativeName, byteCount);
             nativeName[offset] = 0;
 
-            ImGuiWindow* nativeWindow = ImGuiInternal.igFindWindowByName(nativeName);
+            return ImGuiInternal.igFindWindowByName(nativeName);
+        }
+
+        /// <summary>
+        /// Synchronize this window's declared layer with ImGui's native display order.
+        /// </summary>
+        /// <param name="focusTopLayer">Whether top-layer windows should also take ImGui focus.</param>
+        private unsafe void ApplyNativeWindowLayerOrder(bool focusTopLayer)
+        {
+            if (IsDocked || IsExternal || Layer == FuLayer.Normal)
+            {
+                return;
+            }
+
+            ImGuiWindow* nativeWindow = FindNativeImGuiWindow();
             if (nativeWindow == null)
             {
                 return;
             }
 
-            ImGuiInternal.igFocusWindow(nativeWindow, 0);
-            ImGuiInternal.igBringWindowToFocusFront(nativeWindow);
+            if (Layer == FuLayer.Background)
+            {
+                ImGuiInternal.igBringWindowToDisplayBack(nativeWindow);
+                return;
+            }
+
+            if (Layer == FuLayer.Top)
+            {
+                if (focusTopLayer)
+                {
+                    ImGuiInternal.igFocusWindow(nativeWindow, 0);
+                    ImGuiInternal.igBringWindowToFocusFront(nativeWindow);
+                }
+                ImGuiInternal.igBringWindowToDisplayFront(nativeWindow);
+            }
+        }
+
+        /// <summary>
+        /// Synchronize ImGui's native display order with Fugui's floating window order.
+        /// </summary>
+        private unsafe void BringImGuiWindowToDisplayFront(bool focusWindow = true)
+        {
+            if (IsDocked || IsExternal)
+            {
+                return;
+            }
+
+            ImGuiWindow* nativeWindow = FindNativeImGuiWindow();
+            if (nativeWindow == null)
+            {
+                return;
+            }
+
+            if (focusWindow)
+            {
+                ImGuiInternal.igFocusWindow(nativeWindow, 0);
+                ImGuiInternal.igBringWindowToFocusFront(nativeWindow);
+            }
             ImGuiInternal.igBringWindowToDisplayFront(nativeWindow);
         }
 
@@ -2492,6 +2554,11 @@ namespace Fu
         /// </summary>
         private void BlockInputsForFrontMostResizeHandle()
         {
+            if (!Is3DWindow)
+            {
+                return;
+            }
+
             FuWindow frontMost = GetFrontMostFloatingSurfaceAtMouse(Container);
             if (frontMost == null ||
                 frontMost == this ||
@@ -2588,6 +2655,11 @@ namespace Fu
         /// </summary>
         private bool IsFrontMostFloatingSurfaceAtMouse()
         {
+            if (!Is3DWindow)
+            {
+                return IsHovered || IsDragging || IsResizing || _customResizeHoveredEdge != FuWindowResizeEdge.None;
+            }
+
             FuWindow frontMost = GetFrontMostFloatingSurfaceAtMouse(Container);
             return frontMost == null || frontMost == this;
         }
@@ -2619,6 +2691,8 @@ namespace Fu
                     window.Container != container ||
                     !window.IsOpened ||
                     !window.IsInitialized ||
+                    !window.IsInterractable ||
+                    window.Layer == FuLayer.Background ||
                     !(Fugui.Layouts?.ShouldDrawWindow(window) ?? true) ||
                     !IsFloatingSurface(window) ||
                     !window.LocalRect.Contains(mousePosition))
@@ -3211,6 +3285,14 @@ namespace Fu
         /// </summary>
         public void Focus()
         {
+            if (Layer == FuLayer.Background)
+            {
+                ApplyNativeWindowLayerOrder(false);
+                ForceDraw(2);
+                Fugui.ForceDrawAllWindows(2);
+                return;
+            }
+
             if (Container is FuMainWindowContainer mainContainer)
             {
                 mainContainer.ActivateWindow(this);
@@ -3491,6 +3573,37 @@ namespace Fu
                 _customResizeLocksWindowInputs = false;
                 _inputLockedForThisFrame = false;
             }
+        }
+
+        /// <summary>
+        /// Sets this window's top-level display layer.
+        /// </summary>
+        /// <param name="layer">The layer to apply.</param>
+        public void SetLayer(FuLayer layer)
+        {
+            if (Layer == layer)
+            {
+                return;
+            }
+
+            Layer = layer;
+            if (Layer == FuLayer.Background)
+            {
+                ReleaseInputFocus();
+            }
+
+            ApplyNativeWindowLayerOrder(false);
+            ForceDraw(2);
+            Fugui.ForceDrawAllWindows(2);
+        }
+
+        /// <summary>
+        /// Sets this window's top-level display layer.
+        /// </summary>
+        /// <param name="layer">The layer to apply.</param>
+        public void SetWindowLayer(FuLayer layer)
+        {
+            SetLayer(layer);
         }
 
         /// <summary>

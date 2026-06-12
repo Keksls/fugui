@@ -99,11 +99,11 @@ namespace Fu.Framework
                 knob k = _knobs[label];
 
                 FuFrameStyle.Default.Push(!LastItemDisabled);
-                k.Draw(label, ref p_value, v_min, v_max, speed, format, flags, LastItemDisabled);
+                k.Draw(this, label, ref p_value, v_min, v_max, speed, format, flags, LastItemDisabled);
                 FuFrameStyle.Default.Pop();
 
                 // Draw tooltip
-                if (flags.HasFlag(FuKnobFlags.ValueTooltip) && (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) || ImGui.IsItemActive()))
+                if (flags.HasFlag(FuKnobFlags.ValueTooltip) && (k.is_hovered || k.is_active))
                 {
                     ImGui.SetTooltip(p_value.ToString("f2"));
                 }

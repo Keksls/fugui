@@ -78,6 +78,8 @@ namespace Fu
                 size.y *= CurrentContext.Scale;
             }
             // add to dic
+            FuWindow ownerWindow = FuWindow.CurrentDrawingWindow;
+            ownerWindow?.ForceDraw(2);
             FuPopupData data = new FuPopupData()
             {
                 LastFrameRender = UnityEngine.Time.frameCount,
@@ -86,7 +88,8 @@ namespace Fu
                 isComboBox = isComboBoxPopup,
                 Size = size,
                 UI = ui,
-                OnClose = onClose
+                OnClose = onClose,
+                OwnerWindow = ownerWindow
             };
             _registeredPopups.Add(id, data);
         }
@@ -122,6 +125,9 @@ namespace Fu
             id = GetUniquePopupID(id);
             if (_registeredPopups.TryGetValue(id, out FuPopupData data))
             {
+                FuWindow ownerWindow = data.OwnerWindow ?? FuWindow.CurrentDrawingWindow;
+                ownerWindow?.ForceDraw(2);
+
                 // open popup if needed
                 if (data.OpenThisFrame)
                 {
@@ -169,6 +175,15 @@ namespace Fu
                 {
                     data.OpenThisFrame = false;
                     data.LastFrameRender = UnityEngine.Time.frameCount;
+                    Fugui.RegisterSurface(
+                        ownerWindow?.Container ?? DefaultContainer,
+                        id,
+                        FuSurfaceType.Popup,
+                        FuLayer.Top,
+                        ownerWindow,
+                        new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize()),
+                        true,
+                        true);
                     if (usePopupBackdrop)
                     {
                         Fugui.DrawCurrentPopupThemeBackdrop();
@@ -178,14 +193,16 @@ namespace Fu
                     if (data.PopupIndex == -1)
                     {
                         data.PopupIndex = _currentPopupIndex++;
-                        PopUpWindowsIDs.Add(FuWindow.CurrentDrawingWindow?.ID);
+                        PopUpWindowsIDs.Add(ownerWindow?.ID);
                         PopUpIDs.Add(id);
                         IsPopupDrawing.Add(true);
                         IsPopupFocused.Add(true);
                         PopUpRects.Add(new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize()));
                     }
                     IsPopupDrawing[data.PopupIndex] = true;
-                    IsPopupFocused[data.PopupIndex] = ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows | ImGuiFocusedFlags.NoPopupHierarchy);
+                    IsPopupFocused[data.PopupIndex] =
+                        ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows | ImGuiFocusedFlags.NoPopupHierarchy) ||
+                        ImGui.IsWindowHovered(ImGuiHoveredFlags.RootAndChildWindows | ImGuiHoveredFlags.AllowWhenBlockedByActiveItem);
 
                     try
                     {
@@ -325,6 +342,7 @@ namespace Fu
             public int PopupIndex = -1;
             public Action UI;
             public Action OnClose;
+            public FuWindow OwnerWindow;
             public bool isComboBox = false;
             public bool OpenThisFrame = false;
             public bool CloseThisFrame = false;

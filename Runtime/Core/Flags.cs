@@ -161,6 +161,30 @@
     }
 
     /// <summary>
+    /// Declares the Fugui surface layer of a window.
+    /// ImGui remains authoritative for native focus and final display order; Fugui uses this layer to describe intent and arbitrate inputs between Fugui-owned surfaces.
+    /// </summary>
+    public enum FuLayer
+    {
+        /// <summary>
+        /// Default floating or docked interactive window layer.
+        /// </summary>
+        Normal = 0,
+        /// <summary>
+        /// Background windows such as HUDs. Fugui keeps them behind normal windows and they never block higher layers.
+        /// </summary>
+        Background = 1,
+        /// <summary>
+        /// Explicit alias for HUD surfaces. HUDs are background windows, not modals or popups.
+        /// </summary>
+        Hud = Background,
+        /// <summary>
+        /// Top layer for Fugui windows that must stay above normal windows. Fugui popups and notifications also register as top surfaces, but modals are not FuWindows.
+        /// </summary>
+        Top = 2
+    }
+
+    /// <summary>
     /// Define the ImGui window flags exposed through Fugui APIs.
     /// Values intentionally match ImGuiWindowFlags so they can be converted internally without remapping.
     /// </summary>

@@ -192,62 +192,90 @@ namespace Fu
 
                 if (ImGui.BeginPopupModal(_modalTitle, ref _showModal, modalFlags))
                 {
-                    if (usePopupBackdrop)
+                    Fugui.RegisterSurface(
+                        container,
+                        _modalTitle,
+                        FuSurfaceType.Modal,
+                        FuLayer.Top,
+                        null,
+                        new Rect(ImGui.GetWindowPos(), ImGui.GetWindowSize()),
+                        true,
+                        true);
+                    Fugui.BeginModalSurfaceDrawing(true);
+                    try
                     {
-                        Fugui.DrawThemeBackdrop(new Rect(_currentModalPos, modalSize), FuColors.PopupBg, 0.98f, Fugui.Themes.PopupRounding);
-                    }
-
-                    // draw modal title
-                    if (hasTitleBar)
-                    {
-                        DrawTitle(_modalTitle);
-                    }
-
-                    ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-                    // draw body BG
-                    if (!usePopupBackdrop)
-                    {
-                        drawList.AddRectFilled(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.PopupBg)));
-                    }
-                    // draw title line
-                    if (hasTitleBar)
-                    {
-                        drawList.AddLine(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)));
-                    }
-                    // draw  footer line
-                    if (hasFooterBar)
-                    {
-                        drawList.AddLine(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)));
-                    }
-
-                    // draw modal body
-                    if (_modalBody != null)
-                    {
-                        //call the stored body callback
-                        ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, _currentModalPos.y + _currentTitleHeight));
-                        FuStyle.NoBackgroundUnpadded.Push(true);
-                        Fugui.BeginChild("FuguiModalBody", _currentBodySize);
-                        float cursorY = ImGui.GetCursorScreenPos().y;
-                        ImGui.Dummy(Vector2.zero);
-                        using (FuLayout layout = new FuLayout())
+                        if (usePopupBackdrop)
                         {
-                            _modalBody(layout);
+                            Fugui.DrawThemeBackdrop(new Rect(_currentModalPos, modalSize), FuColors.PopupBg, 0.98f, Fugui.Themes.PopupRounding);
                         }
-                        ImGui.Dummy(Vector2.zero);
-                        // get body height for this frame
-                        SetMeasuredModalBodyHeight(ImGui.GetCursorScreenPos().y - cursorY);
-                        Fugui.EndChild();
-                        FuStyle.NoBackgroundUnpadded.Pop();
-                    }
 
-                    // draw footer
-                    if (hasFooterBar)
+                        // draw modal title
+                        if (hasTitleBar)
+                        {
+                            DrawTitle(_modalTitle);
+                        }
+
+                        ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                        // draw body BG
+                        if (!usePopupBackdrop)
+                        {
+                            drawList.AddRectFilled(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.PopupBg)));
+                        }
+                        // draw title line
+                        if (hasTitleBar)
+                        {
+                            drawList.AddLine(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)));
+                        }
+                        // draw  footer line
+                        if (hasFooterBar)
+                        {
+                            drawList.AddLine(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)));
+                        }
+
+                        // draw modal body
+                        if (_modalBody != null)
+                        {
+                            //call the stored body callback
+                            ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, _currentModalPos.y + _currentTitleHeight));
+                            FuStyle.NoBackgroundUnpadded.Push(true);
+                            try
+                            {
+                                Fugui.BeginChild("FuguiModalBody", _currentBodySize);
+                                try
+                                {
+                                    float cursorY = ImGui.GetCursorScreenPos().y;
+                                    ImGui.Dummy(Vector2.zero);
+                                    using (FuLayout layout = new FuLayout())
+                                    {
+                                        _modalBody(layout);
+                                    }
+                                    ImGui.Dummy(Vector2.zero);
+                                    // get body height for this frame
+                                    SetMeasuredModalBodyHeight(ImGui.GetCursorScreenPos().y - cursorY);
+                                }
+                                finally
+                                {
+                                    Fugui.EndChild();
+                                }
+                            }
+                            finally
+                            {
+                                FuStyle.NoBackgroundUnpadded.Pop();
+                            }
+                        }
+
+                        // draw footer
+                        if (hasFooterBar)
+                        {
+                            DrawFooter();
+                        }
+                    }
+                    finally
                     {
-                        DrawFooter();
+                        Fugui.EndModalSurfaceDrawing();
+                        //end the modal
+                        ImGui.EndPopup();
                     }
-
-                    //end the modal
-                    ImGui.EndPopup();
                 }
                 Fugui.PopColor();
                 ImGui.PopStyleVar();

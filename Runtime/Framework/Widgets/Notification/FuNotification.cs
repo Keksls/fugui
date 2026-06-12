@@ -136,11 +136,11 @@ namespace Fu.Framework
                 // header click→collapse (simple clic)
                 Vector2 headerStart = new Vector2(winPos.x, headerStartY);
                 Vector2 headerEnd = new Vector2(winPos.x + winSize.x, ImGui.GetCursorScreenPos().y);
-                ImGui.SetCursorScreenPos(headerStart);
-                ImGui.InvisibleButton("notify_header_" + i, headerEnd - headerStart);
-                bool headerHovered = ImGui.IsItemHovered();
-                bool closeButtonHovered = closeButtonRect.Contains(ImGui.GetMousePos());
-                if (headerHovered && !closeButtonHovered && ImGui.IsItemClicked(ImGuiMouseButton.Left) && CanCollapse) IsCollapsed = !IsCollapsed;
+                Rect headerRect = new Rect(headerStart, headerEnd - headerStart);
+                Vector2 mousePosition = Fugui.GetCurrentMouse().Position;
+                bool headerHovered = headerRect.Contains(mousePosition) && Fugui.CanInteractWithWidgetSurface(null, headerRect, false);
+                bool closeButtonHovered = closeButtonRect.Contains(mousePosition);
+                if (headerHovered && !closeButtonHovered && Fugui.IsMouseClicked(FuMouseButton.Left) && CanCollapse) IsCollapsed = !IsCollapsed;
 
                 // SEPARATOR + BODY BG
                 if (!string.IsNullOrEmpty(Title) && !string.IsNullOrEmpty(Message) && !IsCollapsed)

@@ -340,9 +340,7 @@ namespace Fu.Framework
         {
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             ImGui.SetCursorScreenPos(pos);
-            bool clicked = !LastItemDisabled && ImGui.InvisibleButton(id, size, ImGuiButtonFlags.MouseButtonLeft);
-            bool hovered = !LastItemDisabled && ImGui.IsItemHovered();
-            bool active = !LastItemDisabled && ImGui.IsItemActive();
+            bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(8f * Fugui.CurrentContext.Scale, size.y * 0.45f);
 
             if (active)
@@ -363,9 +361,7 @@ namespace Fu.Framework
         {
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             ImGui.SetCursorScreenPos(pos);
-            bool clicked = !LastItemDisabled && ImGui.InvisibleButton(id, size, ImGuiButtonFlags.MouseButtonLeft);
-            bool hovered = !LastItemDisabled && ImGui.IsItemHovered();
-            bool active = !LastItemDisabled && ImGui.IsItemActive();
+            bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(10f * Fugui.CurrentContext.Scale, size.y * 0.45f);
             Vector4 bg = active
                 ? Fugui.Themes.GetColor(FuColors.HeaderActive, 0.95f)
@@ -396,9 +392,7 @@ namespace Fu.Framework
         {
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             ImGui.SetCursorScreenPos(pos);
-            bool clicked = !LastItemDisabled && ImGui.InvisibleButton(id, size, ImGuiButtonFlags.MouseButtonLeft);
-            bool hovered = !LastItemDisabled && ImGui.IsItemHovered();
-            bool active = !LastItemDisabled && ImGui.IsItemActive();
+            bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(8f * Fugui.CurrentContext.Scale, size.y * 0.45f);
 
             if (selected)

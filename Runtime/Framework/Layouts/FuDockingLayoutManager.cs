@@ -992,15 +992,11 @@ namespace Fu
             bool active = _activeResizeNodeId == node.ID;
             bool mouseInGrabRect = grabRect.Contains(mousePos);
             bool leftMousePressedBeforeHover = Fugui.IsMouseButtonPressedBeforeCurrentFrame(FuMouseButton.Left);
-            bool inputBlocked = (active || mouseInGrabRect) &&
+            bool inputBlocked = !active &&
+                                mouseInGrabRect &&
                                 (IsDockInteractionBlockedByHigherFloatingSurface(container, mousePos, owningFloatingRoot) ||
                                  IsDockInteractionBlockedByInputOwner(owningFloatingRoot) ||
                                  IsPointerOverDockedTabBar(mousePos));
-            if (active && inputBlocked)
-            {
-                _activeResizeNodeId = 0u;
-                active = false;
-            }
 
             bool hovered = _activeResizeNodeId == 0u && !leftMousePressedBeforeHover && !inputBlocked && mouseInGrabRect;
 

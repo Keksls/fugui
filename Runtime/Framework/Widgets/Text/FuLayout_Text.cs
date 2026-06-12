@@ -456,7 +456,7 @@ namespace Fu.Framework
             // set states for this element
             Rect textRect = new Rect(ImGui.GetCursorScreenPos() - new Vector2(4f, 0f), Fugui.CalcTextSize(text, wrapping) + Fugui.Themes.FramePadding);
             setBaseElementState(id, textRect.min, textRect.size, true, false);
-            bool clicked = _internalClickableText(text, style, textRect, wrapping);
+            bool clicked = _internalClickableText(id, text, style, textRect, wrapping);
             displayToolTip();
             // prevent to draw full element hover frame
             _elementHoverFramedEnabled = false;
@@ -472,11 +472,9 @@ namespace Fu.Framework
         /// <param name="textRect">The text Rect value.</param>
         /// <param name="wrapping">The wrapping value.</param>
         /// <returns>The result of the operation.</returns>
-        private bool _internalClickableText(string text, FuTextStyle style, Rect textRect, FuTextWrapping wrapping)
+        private bool _internalClickableText(string id, string text, FuTextStyle style, Rect textRect, FuTextWrapping wrapping)
         {
-            bool hovered = IsItemHovered(textRect.min, textRect.size);
-            bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
-            bool clicked = LastItemClickedButton == FuMouseButton.Left && hovered && !LastItemDisabled;
+            bool clicked = InvisibleInteractionAt("##FuClickableText_" + id, textRect.min, textRect.size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
 
             // set mouse cursor
             if (hovered && !LastItemDisabled)
@@ -533,9 +531,8 @@ namespace Fu.Framework
 
             Vector2 rectMin = ImGui.GetCursorScreenPos() - new Vector2(4f, 0f);
             Vector2 rectMax = rectMin + Fugui.CalcTextSize(text, wrapping) + Fugui.Themes.FramePadding;
-            bool hovered = ImGui.IsMouseHoveringRect(rectMin, rectMax);
-            bool active = hovered && ImGui.IsMouseDown(ImGuiMouseButton.Left);
-            bool clicked = hovered && ImGui.IsMouseReleased(ImGuiMouseButton.Left) && !LastItemDisabled;
+            Vector2 rectSize = rectMax - rectMin;
+            bool clicked = InvisibleInteractionAt("##FuTextUrl_" + text, rectMin, rectSize, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
 
             Color textColor = LastItemDisabled ? style.DisabledText : style.LinkText;
             if (!LastItemDisabled)

@@ -321,5 +321,61 @@ namespace Fu
             }
             return DefaultContainer.Mouse;
         }
+
+        /// <summary>
+        /// Returns the raw pressed state for a mouse button in the current Fugui context.
+        /// </summary>
+        internal static bool IsMousePressed(FuMouseButton mouseButton)
+        {
+            return ImGuiNative.igIsMouseDown_Nil((ImGuiMouseButton)mouseButton) != 0;
+        }
+
+        /// <summary>
+        /// Returns the raw clicked state for a mouse button in the current Fugui context.
+        /// </summary>
+        internal static bool IsMouseClicked(FuMouseButton mouseButton)
+        {
+            return ImGuiNative.igIsMouseClicked_Bool((ImGuiMouseButton)mouseButton, 0) != 0;
+        }
+
+        /// <summary>
+        /// Returns the raw released state for a mouse button in the current Fugui context.
+        /// </summary>
+        internal static bool IsMouseReleased(FuMouseButton mouseButton)
+        {
+            return ImGuiNative.igIsMouseReleased_Nil((ImGuiMouseButton)mouseButton) != 0;
+        }
+
+        /// <summary>
+        /// Returns whether the last submitted native item is active.
+        /// </summary>
+        internal static bool IsCurrentItemActive()
+        {
+            return ImGui.IsItemActive();
+        }
+
+        /// <summary>
+        /// Returns whether the last submitted native item is focused.
+        /// </summary>
+        internal static bool IsCurrentItemFocused()
+        {
+            return ImGui.IsItemFocused();
+        }
+
+        /// <summary>
+        /// Returns whether the last submitted native item is hovered.
+        /// </summary>
+        internal static bool IsCurrentItemHovered(ImGuiHoveredFlags flags = ImGuiHoveredFlags.None)
+        {
+            return ImGui.IsItemHovered(flags);
+        }
+
+        /// <summary>
+        /// Returns whether the last submitted native item was clicked with the requested button.
+        /// </summary>
+        internal static bool IsCurrentItemClicked(FuMouseButton mouseButton)
+        {
+            return ImGui.IsItemClicked((ImGuiMouseButton)mouseButton);
+        }
     }
 }

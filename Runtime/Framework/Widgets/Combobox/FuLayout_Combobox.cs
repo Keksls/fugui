@@ -162,7 +162,7 @@ namespace Fu.Framework
             float carretWidth = 16f * Fugui.CurrentContext.Scale;
             bool openedBeforeClick = Fugui.IsPopupOpen(popupID);
             bool closePopupThisFrame = false;
-            bool clicked = _customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth, true);
+            bool clicked = _customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth);
             if (openedBeforeClick && LastItemJustActivated)
             {
                 Fugui.ClosePopup(popupID);
@@ -344,7 +344,7 @@ namespace Fu.Framework
             float carretWidth = 16f * Fugui.CurrentContext.Scale;
             bool openedBeforeClick = Fugui.IsPopupOpen(popupID);
             bool closePopupThisFrame = false;
-            bool clicked = _customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth, true);
+            bool clicked = _customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth);
             if (openedBeforeClick && LastItemJustActivated)
             {
                 Fugui.ClosePopup(popupID);

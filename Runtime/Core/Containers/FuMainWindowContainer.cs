@@ -386,6 +386,7 @@ namespace Fu
         public void RenderFuWindows()
         {
             _renderedWindowIds.Clear();
+            Fugui.BeginSurfaceFrame(this);
 
             ApplyPendingWindowOrder();
             ProcessFloatingWindowSwitcherInput();
@@ -636,6 +637,13 @@ namespace Fu
                 return;
             }
 
+            if (window.Layer == FuLayer.Background)
+            {
+                window.ForceDraw(2);
+                Fugui.ForceDrawAllWindows(2);
+                return;
+            }
+
             BringWindowToFront(window);
             ImGui.SetWindowFocus(window.ID);
             window.ForceFocusOnNextFrame();
@@ -689,6 +697,7 @@ namespace Fu
                 window.Is3DWindow ||
                 !window.IsInitialized ||
                 !window.IsOpened ||
+                window.Layer == FuLayer.Background ||
                 !window.IsInterractable)
             {
                 return false;
@@ -835,7 +844,7 @@ namespace Fu
         /// </summary>
         internal void BringWindowToFront(FuWindow window)
         {
-            if (window == null || window.IsDocked || !Windows.ContainsKey(window.ID))
+            if (window == null || window.IsDocked || window.Layer == FuLayer.Background || !Windows.ContainsKey(window.ID))
             {
                 return;
             }

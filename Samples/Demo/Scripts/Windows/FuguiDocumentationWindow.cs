@@ -749,15 +749,16 @@ public class MyWindowNames : FuSystemWindowsNames
             "A definition is the recipe. A window instance is the runtime object in a container. Fugui can create multiple instances when flags allow it, dock them, externalize them or attach them to 3D containers.",
             new string[]
             {
-                "FuguiAwake creates a FuWindowDefinition with window name, OnUI callback, optional position, size and flags.",
+                "FuguiAwake creates a FuWindowDefinition with window name, explicit layer, OnUI callback, optional position, size and flags.",
                 "OnWindowDefinitionCreated is called before instances are created.",
                 "WindowDefinition_OnUIWindowCreated stores the live FuWindow and calls OnWindowCreated.",
                 "Force Create Alone On Awake immediately creates the window outside the current docking layout.",
                 "Use window.ForceDraw when data changes while the window is idling."
             },
             "Explicit definition and creation",
-            @"var definition = new FuWindowDefinition(
+@"var definition = new FuWindowDefinition(
     MyWindowNames.Tools,
+    FuLayer.Normal,
     DrawTools,
     size: new Vector2Int(420, 320),
     flags: FuWindowFlags.Default

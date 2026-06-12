@@ -1599,11 +1599,11 @@ namespace Fu.Framework.Nodal
             }
 
             // 6b) Click & drag to pan the main view
-            if (hoveredMini && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            if (hoveredMini && Fugui.IsMouseClicked(FuMouseButton.Left))
             {
                 _isMinimapDragging = true;
             }
-            if (_isMinimapDragging && ImGui.IsMouseDown(ImGuiMouseButton.Left))
+            if (_isMinimapDragging && Fugui.IsMousePressed(FuMouseButton.Left))
             {
                 Vector2 mouseScreen = ImGui.GetIO().MousePos;
                 Vector2 clamped = new Vector2(
@@ -1613,7 +1613,7 @@ namespace Fu.Framework.Nodal
                 Vector2 canvasPt = gMin + (clamped - innerMin) / Mathf.Max(s, 1e-6f);
                 _pan = (_canvasSize * 0.5f) - canvasPt * _zoom;
             }
-            if (_isMinimapDragging && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+            if (_isMinimapDragging && Fugui.IsMouseReleased(FuMouseButton.Left))
             {
                 _isMinimapDragging = false;
             }

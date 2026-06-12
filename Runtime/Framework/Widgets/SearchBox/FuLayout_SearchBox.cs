@@ -123,7 +123,7 @@ namespace Fu.Framework
             iconColor.w *= string.IsNullOrEmpty(search) ? 0.78f : 0.9f;
             DrawSearchGlyph(drawList, framePos + new Vector2(iconWidth * 0.5f, height * 0.5f), Mathf.Max(4f, height * 0.18f), iconColor);
 
-            if (hovered && !clearHovered && ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !disabled)
+            if (hovered && !clearHovered && Fugui.IsMouseClicked(FuMouseButton.Left) && !disabled)
             {
                 ImGui.SetKeyboardFocusHere();
             }
@@ -142,17 +142,16 @@ namespace Fu.Framework
             float inputPaddingY = Mathf.Max(0f, (height - ImGui.GetTextLineHeight()) * 0.5f) / Mathf.Max(0.001f, scale);
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(0f, inputPaddingY));
             edited = ImGui.InputTextWithHint("##" + elementID + "_input", hint, ref search, SEARCH_BOX_BUFFER_SIZE, inputFlags);
-            bool focused = ImGui.IsItemActive() || ImGui.IsItemFocused();
+            bool focused = Fugui.IsCurrentItemActive() || Fugui.IsCurrentItemFocused();
             Fugui.PopStyle(2);
             Fugui.PopColor(4);
 
             if (canClear)
             {
                 ImGui.SetCursorScreenPos(clearRect.position);
-                ImGui.InvisibleButton("##" + elementID + "_clear", clearRect.size);
-                clearHovered = IsItemHovered(clearRect.position, clearRect.size);
+                bool clearClicked = InvisibleInteraction("##" + elementID + "_clear", clearRect.size, out clearHovered, out _);
                 DrawClearGlyph(drawList, clearRect.position + clearRect.size * 0.5f, height * 0.28f, iconColor, clearHovered);
-                if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+                if (clearClicked)
                 {
                     search = string.Empty;
                     edited = true;

@@ -188,7 +188,7 @@ namespace Fu.Framework
                         }
                         _pickersColors[text] = col;
                     }
-                    else if (_pickersEditedStates[text] && !ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                    else if (_pickersEditedStates[text] && !Fugui.IsMousePressed(FuMouseButton.Left))
                     {
                         _pickersEditedStates[text] = false;
                         _lastItemJustDeactivated = true;
@@ -375,9 +375,7 @@ namespace Fu.Framework
             drawList.AddRect(pos, max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.72f)), rounding);
 
             ImGui.SetCursorScreenPos(pos);
-            ImGui.InvisibleButton(id, size, ImGuiButtonFlags.MouseButtonLeft);
-            bool active = !LastItemDisabled && ImGui.IsItemActive();
-            bool hovered = !LastItemDisabled && ImGui.IsItemHovered();
+            InvisibleInteraction(id, size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
             bool edited = false;
             if (active)
             {
@@ -408,9 +406,7 @@ namespace Fu.Framework
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.72f)), rounding);
 
             ImGui.SetCursorScreenPos(pos);
-            ImGui.InvisibleButton(id, size, ImGuiButtonFlags.MouseButtonLeft);
-            bool active = !LastItemDisabled && ImGui.IsItemActive();
-            bool hovered = !LastItemDisabled && ImGui.IsItemHovered();
+            InvisibleInteraction(id, size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
             bool edited = false;
             if (active)
             {
@@ -440,9 +436,7 @@ namespace Fu.Framework
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.72f)), rounding);
 
             ImGui.SetCursorScreenPos(pos);
-            ImGui.InvisibleButton(id, size, ImGuiButtonFlags.MouseButtonLeft);
-            bool active = !LastItemDisabled && ImGui.IsItemActive();
-            bool hovered = !LastItemDisabled && ImGui.IsItemHovered();
+            InvisibleInteraction(id, size, out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
             bool edited = false;
             if (active)
             {
@@ -482,7 +476,7 @@ namespace Fu.Framework
             Fugui.Push(ImGuiCol.FrameBgHovered, Fugui.Themes.GetColor(FuColors.HeaderHovered, 0.72f));
             Fugui.Push(ImGuiCol.FrameBgActive, Fugui.Themes.GetColor(FuColors.HeaderActive, 0.86f));
             bool edited = ImGui.InputTextWithHint("##" + hexID, alpha ? "RRGGBBAA" : "RRGGBB", ref hex, alpha ? 9u : 7u, ImGuiInputTextFlags.CharsHexadecimal | ImGuiInputTextFlags.CharsUppercase | ImGuiInputTextFlags.CharsNoBlank);
-            bool isActive = ImGui.IsItemActive();
+            bool isActive = Fugui.IsCurrentItemActive();
             Fugui.PopColor(3);
             Fugui.PopStyle();
 
@@ -545,9 +539,7 @@ namespace Fu.Framework
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.55f)), rounding);
 
             ImGui.SetCursorScreenPos(pos - new Vector2(0f, 5f * Fugui.CurrentContext.Scale));
-            ImGui.InvisibleButton(id, new Vector2(size.x, size.y + 10f * Fugui.CurrentContext.Scale), ImGuiButtonFlags.MouseButtonLeft);
-            bool active = !LastItemDisabled && ImGui.IsItemActive();
-            bool hovered = !LastItemDisabled && ImGui.IsItemHovered();
+            InvisibleInteraction(id, new Vector2(size.x, size.y + 10f * Fugui.CurrentContext.Scale), out bool hovered, out bool active, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
             bool edited = false;
             if (active)
             {
@@ -597,8 +589,7 @@ namespace Fu.Framework
             AddRectFilledAntiAliased(drawList, pos, pos + size, ImGui.GetColorU32(color), rounding);
 
             ImGui.SetCursorScreenPos(pos);
-            bool clicked = !LastItemDisabled && ImGui.InvisibleButton(id, size, ImGuiButtonFlags.MouseButtonLeft);
-            bool hovered = !LastItemDisabled && ImGui.IsItemHovered();
+            bool clicked = InvisibleInteraction(id, size, out bool hovered, out _, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
             if (hovered)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
@@ -613,9 +604,7 @@ namespace Fu.Framework
             float scale = Fugui.CurrentContext.Scale;
             float rounding = getColorPickerFrameRounding(size);
             ImGui.SetCursorScreenPos(pos);
-            ImGui.InvisibleButton(id, size, ImGuiButtonFlags.MouseButtonLeft);
-            bool hovered = enabled && !LastItemDisabled && ImGui.IsItemHovered();
-            bool clicked = enabled && !LastItemDisabled && ImGui.IsItemClicked(ImGuiMouseButton.Left);
+            bool clicked = InvisibleInteraction(id, size, out bool hovered, out _, ImGuiButtonFlags.MouseButtonLeft, enabled && !LastItemDisabled);
 
             if (alpha)
             {

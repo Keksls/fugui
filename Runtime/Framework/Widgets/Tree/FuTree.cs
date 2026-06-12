@@ -567,7 +567,7 @@ namespace Fu.Framework
             {
                 ImGui.Dummy(new Vector2(carretHitWidth, height));
                 Rect carretRect = new Rect(cursorPos, new Vector2(carretHitWidth, height));
-                bool hover = ImGui.IsMouseHoveringRect(carretRect.min, carretRect.max);
+                bool clicked = layout.InvisibleInteractionAt(_id + "##caret" + element.GetHashCode(), carretRect.min, carretRect.size, out bool hover, out bool active, ImGuiButtonFlags.MouseButtonLeft, true);
 
                 // set mouse cursor
                 if (hover)
@@ -576,7 +576,7 @@ namespace Fu.Framework
                 }
 
                 // get 
-                if (hover && ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                if (hover && active)
                 {
                     color.w = 0.9f;
                     col = ImGui.GetColorU32(color);
@@ -612,7 +612,7 @@ namespace Fu.Framework
                 }
 
                 // click on carret
-                if (hover && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+                if (hover && clicked)
                 {
                     if (open)
                     {

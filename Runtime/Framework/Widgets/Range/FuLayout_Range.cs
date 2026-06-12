@@ -123,7 +123,7 @@ namespace Fu.Framework
             ImGuiNative.igSameLine(0f, -1f);
             float maxY = ImGui.GetItemRectMax().y;
             ImGui.SetCursorScreenPos(cursorPos);
-            ImGui.InvisibleButton(text, new Vector2(width, maxY - cursorPos.y), ImGuiButtonFlags.None);
+            InvisibleInteraction(text, new Vector2(width, maxY - cursorPos.y), out _, out _, ImGuiButtonFlags.None, !LastItemDisabled);
 
             // do not draw hover frame
             _elementHoverFramedEnabled = false;
@@ -162,6 +162,7 @@ namespace Fu.Framework
             // function that draw the slider
             bool drawSlider(string id, ref float valueMin, ref float valueMax, float min, float max, bool isInt, float knobRadius, float hoverPaddingY, float lineHeight, float width, float x, float y)
             {
+                InvisibleInteractionAt(id + "SliderArea", cursorPos, new Vector2(width, height), out _, out bool sliderActive, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
                 // get knobs ids
                 string knobMinID = id + "KnobMin";
                 string knobMaxID = id + "KnobMax";
@@ -303,12 +304,12 @@ namespace Fu.Framework
                 ImGui.Dummy(new Vector2(width, height));
 
                 // start dragging min knob
-                if (rawKnobMinHovered && !_draggingSliders.Contains(knobMinID) && ImGui.IsMouseClicked(0))
+                if (rawKnobMinHovered && !_draggingSliders.Contains(knobMinID) && sliderActive)
                 {
                     _draggingSliders.Add(knobMinID);
                 }
                 // start dragging max knob
-                if (rawKnobMaxHovered && !_draggingSliders.Contains(knobMaxID) && ImGui.IsMouseClicked(0))
+                if (rawKnobMaxHovered && !_draggingSliders.Contains(knobMaxID) && sliderActive)
                 {
                     _draggingSliders.Add(knobMaxID);
                 }
@@ -320,18 +321,18 @@ namespace Fu.Framework
                 }
 
                 // stop dragging min knob
-                if (_draggingSliders.Contains(knobMinID) && !ImGui.IsMouseDown(0))
+                if (_draggingSliders.Contains(knobMinID) && !sliderActive)
                 {
                     _draggingSliders.Remove(knobMinID);
                 }
                 // stop dragging max knob
-                if (_draggingSliders.Contains(knobMaxID) && !ImGui.IsMouseDown(0))
+                if (_draggingSliders.Contains(knobMaxID) && !sliderActive)
                 {
                     _draggingSliders.Remove(knobMaxID);
                 }
 
                 // If the mouse is hovering over the min knob, change the value when the mouse is clicked
-                if (_draggingSliders.Contains(knobMinID) && ImGui.IsMouseDown(0) && !LastItemDisabled)
+                if (_draggingSliders.Contains(knobMinID) && sliderActive && !LastItemDisabled)
                 {
                     // Calculate the new value based on the mouse position
                     float mouseX = ImGui.GetMousePos().x;
@@ -352,7 +353,7 @@ namespace Fu.Framework
                 }
 
                 // If the mouse is hovering over the max knob, change the value when the mouse is clicked
-                if (_draggingSliders.Contains(knobMaxID) && ImGui.IsMouseDown(0) && !LastItemDisabled)
+                if (_draggingSliders.Contains(knobMaxID) && sliderActive && !LastItemDisabled)
                 {
                     // Calculate the new value based on the mouse position
                     float mouseX = ImGui.GetMousePos().x;

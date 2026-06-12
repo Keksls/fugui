@@ -23,6 +23,8 @@ namespace Fu.Framework
         [SerializeField]
         protected FuWindowResizeSides _resizableSides = FuWindowResizeSides.Default;
         [SerializeField]
+        protected FuLayer _windowLayer = FuLayer.Normal;
+        [SerializeField]
         protected FuExternalWindowFlags _externalWindowFlags = FuExternalWindowFlags.Default;
         [SerializeField]
         protected Vector2Int _size = Vector2Int.zero;
@@ -46,7 +48,7 @@ namespace Fu.Framework
                 return;
 
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
-            FuWindowDefinition windowDefinition = new FuWindowDefinition(_windowName, OnUI, GetInitialPosition(), GetInitialSize(), _windowFlags, _externalWindowFlags, _windowStyleFlags, _resizableSides);
+            FuWindowDefinition windowDefinition = new FuWindowDefinition(_windowName, _windowLayer, OnUI, GetInitialPosition(), GetInitialSize(), _windowFlags, _externalWindowFlags, _windowStyleFlags, _resizableSides);
             // call the OnWindowDefinitionCreated method to allow further customization
             OnWindowDefinitionCreated(windowDefinition);
             // register the OnUIWindowCreated event to handle the window creation
@@ -135,6 +137,7 @@ namespace Fu.Framework
         private SerializedProperty windowFlagsProp;
         private SerializedProperty windowStyleFlagsProp;
         private SerializedProperty resizableSidesProp;
+        private SerializedProperty windowLayerProp;
         private SerializedProperty sizeProp;
         private SerializedProperty positionProp;
         private SerializedProperty forceCreateProp;
@@ -148,6 +151,7 @@ namespace Fu.Framework
             "_windowFlags",
             "_windowStyleFlags",
             "_resizableSides",
+            "_windowLayer",
             "_size",
             "_position",
             "_forceCreateAloneOnAwake",
@@ -166,6 +170,7 @@ namespace Fu.Framework
             windowFlagsProp = serializedObject.FindProperty("_windowFlags");
             windowStyleFlagsProp = serializedObject.FindProperty("_windowStyleFlags");
             resizableSidesProp = serializedObject.FindProperty("_resizableSides");
+            windowLayerProp = serializedObject.FindProperty("_windowLayer");
             sizeProp = serializedObject.FindProperty("_size");
             positionProp = serializedObject.FindProperty("_position");
             forceCreateProp = serializedObject.FindProperty("_forceCreateAloneOnAwake");
@@ -190,6 +195,7 @@ namespace Fu.Framework
             EditorGUILayout.PropertyField(windowFlagsProp, new GUIContent("Behaviour Flags"));
             EditorGUILayout.PropertyField(windowStyleFlagsProp, new GUIContent("Window Flags"));
             EditorGUILayout.PropertyField(resizableSidesProp, new GUIContent("Resizable Sides"));
+            EditorGUILayout.PropertyField(windowLayerProp, new GUIContent("Window Layer"));
             EditorGUILayout.PropertyField(sizeProp);
             EditorGUILayout.PropertyField(positionProp);
             EditorGUILayout.PropertyField(forceCreateProp);

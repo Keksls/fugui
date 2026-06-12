@@ -148,6 +148,7 @@ namespace Fu.Framework
             {
                 _windowDefinition = new FuWindowDefinition(
                     _windowName,
+                    FuLayer.Normal,
                     OnUI,
                     Vector2Int.zero,
                     GetWindowSizeFromPlaceholder(),

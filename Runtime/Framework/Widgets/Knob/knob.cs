@@ -48,33 +48,38 @@ namespace Fu.Framework
             /// <param name="format">The format value.</param>
             /// <param name="flags">The flags value.</param>
             /// <param name="disabled">The disabled value.</param>
-            public void Draw(string _label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobFlags flags, bool disabled)
+            public void Draw(FuLayout layout, string _label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobFlags flags, bool disabled)
             {
                 t = (p_value - v_min) / (v_max - v_min);
                 var screen_pos = ImGui.GetCursorScreenPos();
                 float oldValue = p_value;
 
                 // Handle dragging
-                ImGui.InvisibleButton(_label, new Vector2(radius * 2.0f, radius * 2.0f));
-                if (ImGui.IsItemActive() && ImGui.GetIO().MouseDelta.x != 0.0f && !disabled)
+                layout.InvisibleInteraction(_label, new Vector2(radius * 2.0f, radius * 2.0f), out bool knobHovered, out bool knobActive, ImGuiButtonFlags.MouseButtonLeft, !disabled);
+                float mouseDeltaX = Fugui.GetCurrentMouse().Movement.x;
+                if (knobActive && mouseDeltaX != 0.0f && !disabled)
                 {
                     float step = (v_max - v_min) / 200.0f;
-                    p_value += ImGui.GetIO().MouseDelta.x * step;
+                    p_value += mouseDeltaX * step;
                     if (p_value < v_min) p_value = v_min;
                     if (p_value > v_max) p_value = v_max;
                     value_changed = true;
                 }
 
+                bool inputActive = false;
+                bool inputHovered = false;
                 if (!flags.HasFlag(FuKnobFlags.NoInput))
                 {
                     value_changed = ImGui.DragFloat("##drag" + _label, ref p_value, speed, v_min, v_max, format, disabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+                    inputActive = Fugui.IsCurrentItemActive();
+                    inputHovered = Fugui.IsCurrentItemHovered();
                 }
 
                 angle_min = Mathf.PI * 0.75f;
                 angle_max = Mathf.PI * 2.25f;
                 center = new Vector2(screen_pos.x + radius, screen_pos.y + radius);
-                is_active = ImGui.IsItemActive();
-                is_hovered = ImGui.IsItemHovered();
+                is_active = knobActive || inputActive;
+                is_hovered = knobHovered || inputHovered;
                 angle = angle_min + (angle_max - angle_min) * t;
                 angle_cos = Mathf.Cos(angle);
                 angle_sin = Mathf.Sin(angle);

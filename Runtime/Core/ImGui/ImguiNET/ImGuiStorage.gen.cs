@@ -5,11 +5,11 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiStorage
+    internal unsafe partial struct ImGuiStorage
     {
         public ImVector Data;
     }
-    public unsafe partial struct ImGuiStoragePtr
+    internal unsafe partial struct ImGuiStoragePtr
     {
         public ImGuiStorage* NativePtr { get; }
         public ImGuiStoragePtr(ImGuiStorage* nativePtr) => NativePtr = nativePtr;

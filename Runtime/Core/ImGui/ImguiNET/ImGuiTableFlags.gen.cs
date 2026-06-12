@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiTableFlags
+    internal enum ImGuiTableFlags
     {
         None = 0,
         Resizable = 1,

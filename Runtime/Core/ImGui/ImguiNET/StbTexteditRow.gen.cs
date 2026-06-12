@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct StbTexteditRow
+    internal unsafe partial struct StbTexteditRow
     {
         public float x0;
         public float x1;
@@ -14,7 +14,7 @@ namespace ImGuiNET
         public float ymax;
         public int num_chars;
     }
-    public unsafe partial struct StbTexteditRowPtr
+    internal unsafe partial struct StbTexteditRowPtr
     {
         public StbTexteditRow* NativePtr { get; }
         public StbTexteditRowPtr(StbTexteditRow* nativePtr) => NativePtr = nativePtr;

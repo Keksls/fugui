@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiFocusedFlags
+    internal enum ImGuiFocusedFlags
     {
         None = 0,
         ChildWindows = 1,

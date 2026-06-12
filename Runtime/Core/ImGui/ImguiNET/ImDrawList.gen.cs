@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImDrawList
+    internal unsafe partial struct ImDrawList
     {
         public ImVector CmdBuffer;
         public ImVector IdxBuffer;
@@ -24,7 +24,7 @@ namespace ImGuiNET
         public float _FringeScale;
         public byte* _OwnerName;
     }
-    public unsafe partial struct ImDrawListPtr
+    internal unsafe partial struct ImDrawListPtr
     {
         public ImDrawList* NativePtr { get; }
         public ImDrawListPtr(ImDrawList* nativePtr) => NativePtr = nativePtr;

@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiItemFlags
+    internal enum ImGuiItemFlags
     {
         None = 0,
         NoTabStop = 1,

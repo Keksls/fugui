@@ -5,14 +5,14 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiKeyData
+    internal unsafe partial struct ImGuiKeyData
     {
         public byte Down;
         public float DownDuration;
         public float DownDurationPrev;
         public float AnalogValue;
     }
-    public unsafe partial struct ImGuiKeyDataPtr
+    internal unsafe partial struct ImGuiKeyDataPtr
     {
         public ImGuiKeyData* NativePtr { get; }
         public ImGuiKeyDataPtr(ImGuiKeyData* nativePtr) => NativePtr = nativePtr;

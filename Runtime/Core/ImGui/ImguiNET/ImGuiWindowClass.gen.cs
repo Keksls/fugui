@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiWindowClass
+    internal unsafe partial struct ImGuiWindowClass
     {
         public uint ClassId;
         public uint ParentViewportId;
@@ -17,7 +17,7 @@ namespace ImGuiNET
         public byte DockingAlwaysTabBar;
         public byte DockingAllowUnclassed;
     }
-    public unsafe partial struct ImGuiWindowClassPtr
+    internal unsafe partial struct ImGuiWindowClassPtr
     {
         public ImGuiWindowClass* NativePtr { get; }
         public ImGuiWindowClassPtr(ImGuiWindowClass* nativePtr) => NativePtr = nativePtr;

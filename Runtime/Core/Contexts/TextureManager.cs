@@ -14,7 +14,7 @@ namespace Fu
     /// <summary>
     /// Represents the Texture Manager type.
     /// </summary>
-    public class TextureManager
+    internal class TextureManager
     {
         private readonly Dictionary<IntPtr, UTexture> _textures = new Dictionary<IntPtr, UTexture>();
         private readonly Dictionary<UTexture, IntPtr> _textureIds = new Dictionary<UTexture, IntPtr>();
@@ -24,7 +24,7 @@ namespace Fu
 
 #if FUGUI_USE_TEXTUREARRAY
         private static Dictionary<float, Texture2DArray> _atlasTexture = new Dictionary<float, Texture2DArray>();
-        public unsafe void InitializeFontAtlas(ImGuiIOPtr io)
+        internal unsafe void InitializeFontAtlas(ImGuiIOPtr io)
         {
             // dol not create texture if already exists (context will share). raw textures are very heavy
             if (_atlasTexture.ContainsKey(FuGui.CurrentContext.FontScale))
@@ -134,7 +134,7 @@ namespace Fu
         /// Initializes the initialize font atlas workflow.
         /// </summary>
         /// <param name="io">The io value.</param>
-        public unsafe void InitializeFontAtlas(ImGuiIOPtr io)
+        internal unsafe void InitializeFontAtlas(ImGuiIOPtr io)
         {
             FlushPendingFontAtlasCleanups();
 
@@ -295,7 +295,7 @@ namespace Fu
         /// Runs the prepare frame workflow.
         /// </summary>
         /// <param name="io">The io value.</param>
-        public void PrepareFrame(ImGuiIOPtr io)
+        internal void PrepareFrame(ImGuiIOPtr io)
         {
             string fontAtlasTextureKey = GetCurrentFontAtlasTextureKey();
             if (_fontAtlasTextureKey != fontAtlasTextureKey ||

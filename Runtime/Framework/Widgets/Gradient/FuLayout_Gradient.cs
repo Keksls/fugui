@@ -62,7 +62,7 @@ namespace Fu.Framework
             drawList.AddRect(gradientRect.min, gradientRect.max, ImGui.GetColorU32(ImGuiCol.Border));
 
             // check whatever the preview is hovered
-            bool clicked = InvisibleInteractionAt(text + "nvsbB", startPos, gradientRect.size, out bool hovered, out _, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+            bool clicked = InvisibleInteractionAt(text + "nvsbB", startPos, gradientRect.size, out bool hovered, out _, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             if (hovered)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
@@ -239,7 +239,7 @@ namespace Fu.Framework
                     Rect colorKeyRect = new Rect(gradientRect.x + key.Time * gradientRect.width - colorKeySize / 2, gradientRect.yMax + 4, colorKeySize, colorKeySize);
 
                     // get key states
-                    InvisibleInteractionAt(text + "ck" + i, colorKeyRect.min, colorKeyRect.size, out bool hovered, out bool activeInteraction, out FuMouseButton clickedButton, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight, !LastItemDisabled);
+                    InvisibleInteractionAt(text + "ck" + i, colorKeyRect.min, colorKeyRect.size, out bool hovered, out bool activeInteraction, out FuMouseButton clickedButton, FuButtonFlags.MouseButtonLeft | FuButtonFlags.MouseButtonRight, !LastItemDisabled);
                     isAnyKeyHovered |= hovered;
                     bool active = _selectedColorKeyIndex == i;
 
@@ -295,7 +295,7 @@ namespace Fu.Framework
             // Handle mouse events
             if (!isDraggingColorKey && addKeyOnGradientClick)
             {
-                bool gradientClicked = InvisibleInteractionAt(text + "gradientArea", startPos, gradientRect.size, out bool gradientHovered, out _, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+                bool gradientClicked = InvisibleInteractionAt(text + "gradientArea", startPos, gradientRect.size, out bool gradientHovered, out _, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
                 if (!isAnyKeyHovered && gradientClicked && gradientHovered)
                 {
                     // Add a new color key

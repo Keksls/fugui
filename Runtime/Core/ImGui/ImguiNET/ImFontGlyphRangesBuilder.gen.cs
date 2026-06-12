@@ -5,11 +5,11 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImFontGlyphRangesBuilder
+    internal unsafe partial struct ImFontGlyphRangesBuilder
     {
         public ImVector UsedChars;
     }
-    public unsafe partial struct ImFontGlyphRangesBuilderPtr
+    internal unsafe partial struct ImFontGlyphRangesBuilderPtr
     {
         public ImFontGlyphRangesBuilder* NativePtr { get; }
         public ImFontGlyphRangesBuilderPtr(ImFontGlyphRangesBuilder* nativePtr) => NativePtr = nativePtr;

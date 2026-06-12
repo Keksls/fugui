@@ -6,7 +6,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Gui Native type.
     /// </summary>
-    public static unsafe partial class ImGuiNative
+    internal static unsafe partial class ImGuiNative
     {
         #region Methods
         /// <summary>

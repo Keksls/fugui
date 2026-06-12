@@ -230,7 +230,7 @@ namespace Fu.Framework
             for (int i = 0; i < columns.Count; i++)
             {
                 FuTableViewColumn<T> column = columns[i];
-                ImGuiTableColumnFlags columnFlags = column.Flags;
+                ImGuiTableColumnFlags columnFlags = (ImGuiTableColumnFlags)column.Flags;
                 if (!tableViewFlags.HasFlag(FuTableViewFlags.Sortable) || !column.CanSort)
                 {
                     columnFlags |= ImGuiTableColumnFlags.NoSort;

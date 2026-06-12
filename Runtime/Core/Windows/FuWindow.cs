@@ -83,8 +83,8 @@ namespace Fu
         public float CurrentFPS { get; internal set; }
         public uint CurrentDockID { get; internal set; }
         public FuWindowState State { get; private set; }
-        public DrawList DrawList { get; private set; }
-        public Dictionary<string, DrawList> ChildrenDrawLists { get; private set; }
+        internal DrawList DrawList { get; private set; }
+        internal Dictionary<string, DrawList> ChildrenDrawLists { get; private set; }
         public Mesh RenderMesh { get { return _renderMeshData != null ? _renderMeshData.Mesh : null; } }
         public FuMouseState Mouse { get; private set; }
         public FuKeyboardState Keyboard { get; private set; }
@@ -3620,7 +3620,7 @@ namespace Fu
         /// </summary>
         /// <param name="flag">flag to add</param>
         [Obsolete("Use AddWindowFlag(FuWindowStyleFlags) instead.")]
-        public void AddWindowFlag(ImGuiWindowFlags flag)
+        internal void AddWindowFlag(ImGuiWindowFlags flag)
         {
             _windowFlags |= (FuWindowStyleFlags)flag;
         }
@@ -3639,7 +3639,7 @@ namespace Fu
         /// </summary>
         /// <param name="flag">flag to remove</param>
         [Obsolete("Use RemoveWindowFlag(FuWindowStyleFlags) instead.")]
-        public void RemoveWindowFlag(ImGuiWindowFlags flag)
+        internal void RemoveWindowFlag(ImGuiWindowFlags flag)
         {
             _windowFlags &= ~(FuWindowStyleFlags)flag;
         }

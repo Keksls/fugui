@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiKey
+    internal enum ImGuiKey
     {
         None = 0,
         NamedKey_BEGIN = 512,

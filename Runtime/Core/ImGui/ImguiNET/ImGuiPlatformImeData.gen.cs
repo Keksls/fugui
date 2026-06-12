@@ -5,13 +5,13 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiPlatformImeData
+    internal unsafe partial struct ImGuiPlatformImeData
     {
         public byte WantVisible;
         public Vector2 InputPos;
         public float InputLineHeight;
     }
-    public unsafe partial struct ImGuiPlatformImeDataPtr
+    internal unsafe partial struct ImGuiPlatformImeDataPtr
     {
         public ImGuiPlatformImeData* NativePtr { get; }
         public ImGuiPlatformImeDataPtr(ImGuiPlatformImeData* nativePtr) => NativePtr = nativePtr;

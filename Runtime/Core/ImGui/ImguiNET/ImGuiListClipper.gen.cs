@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiListClipper
+    internal unsafe partial struct ImGuiListClipper
     {
         public IntPtr Ctx;
         public int DisplayStart;
@@ -16,7 +16,7 @@ namespace ImGuiNET
         public double StartSeekOffsetY;
         public void* TempData;
     }
-    public unsafe partial struct ImGuiListClipperPtr
+    internal unsafe partial struct ImGuiListClipperPtr
     {
         public ImGuiListClipper* NativePtr { get; }
         public ImGuiListClipperPtr(ImGuiListClipper* nativePtr) => NativePtr = nativePtr;

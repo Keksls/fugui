@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImDrawFlags
+    internal enum ImDrawFlags
     {
         None = 0,
         Closed = 1,

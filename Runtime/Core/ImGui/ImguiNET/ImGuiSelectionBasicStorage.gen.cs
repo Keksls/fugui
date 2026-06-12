@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiSelectionBasicStorage
+    internal unsafe partial struct ImGuiSelectionBasicStorage
     {
         public int Size;
         public byte PreserveOrder;
@@ -14,7 +14,7 @@ namespace ImGuiNET
         public int _SelectionOrder;
         public ImGuiStorage _Storage;
     }
-    public unsafe partial struct ImGuiSelectionBasicStoragePtr
+    internal unsafe partial struct ImGuiSelectionBasicStoragePtr
     {
         public ImGuiSelectionBasicStorage* NativePtr { get; }
         public ImGuiSelectionBasicStoragePtr(ImGuiSelectionBasicStorage* nativePtr) => NativePtr = nativePtr;

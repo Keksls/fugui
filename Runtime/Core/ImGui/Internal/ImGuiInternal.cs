@@ -6,7 +6,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Gui Internal type.
     /// </summary>
-    public unsafe class ImGuiInternal : MonoBehaviour
+    internal unsafe class ImGuiInternal : MonoBehaviour
     {
         #region Methods
         /// <summary>

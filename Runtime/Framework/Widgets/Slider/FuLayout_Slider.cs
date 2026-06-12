@@ -212,7 +212,7 @@ namespace Fu.Framework
             // function that draw the slider
             bool drawSlider(string text, ref float value, float min, float max, bool isInt, float knobRadius, float hoverPaddingY, float lineHeight, float width, float x, float y, FuSliderFlags flags)
             {
-                InvisibleInteraction(text, new Vector2(width, height), out _, out bool sliderActive, ImGuiButtonFlags.MouseButtonLeft, !LastItemDisabled);
+                InvisibleInteraction(text, new Vector2(width, height), out _, out bool sliderActive, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
 
                 if (width < 24f * Fugui.Scale)
                 {

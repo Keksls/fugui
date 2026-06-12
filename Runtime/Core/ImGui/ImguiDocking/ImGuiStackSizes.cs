@@ -4,7 +4,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Stack Sizes data structure.
         /// </summary>
-        public unsafe partial struct ImGuiStackSizes
+        internal unsafe partial struct ImGuiStackSizes
         {
             #region State
             public short SizeOfIDStack;

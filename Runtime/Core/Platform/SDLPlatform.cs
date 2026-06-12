@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Fu
 {
-    public unsafe class SDLPlatform : PlatformBase
+    internal unsafe class SDLPlatform : PlatformBase
     {
         private FuExternalWindow _window;
         private bool _initialized;
@@ -16,7 +16,7 @@ namespace Fu
             _window = window;
         }
 
-        public override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr platformIO, string platformName = null)
+        internal override bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr platformIO, string platformName = null)
         {
             base.Initialize(io, platformIO, platformName ?? "Fugui SDL Platform");
             _initialized = true;
@@ -30,7 +30,7 @@ namespace Fu
         }
 
         Queue<SDL.SDL_Event> forwardingEvts = new Queue<SDL.SDL_Event>();
-        public override void PrepareFrame(ImGuiIOPtr io, Rect rect, bool updateMouse, bool updateKeyboard)
+        internal override void PrepareFrame(ImGuiIOPtr io, Rect rect, bool updateMouse, bool updateKeyboard)
         {
             if (!_initialized) return;
             base.PrepareFrame(io, rect, updateMouse, updateKeyboard);
@@ -186,7 +186,7 @@ namespace Fu
             io.AddKeyEvent(ImGuiKey.ModSuper, (mods & SDL.SDL_Keymod.KMOD_GUI) != 0);
         }
 
-        public override void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr platformIO)
+        internal override void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr platformIO)
         {
             _initialized = false;
         }

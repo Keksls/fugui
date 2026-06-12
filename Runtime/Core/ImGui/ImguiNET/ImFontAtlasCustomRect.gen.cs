@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImFontAtlasCustomRect
+    internal unsafe partial struct ImFontAtlasCustomRect
     {
         public ushort X;
         public ushort Y;
@@ -17,7 +17,7 @@ namespace ImGuiNET
         public Vector2 GlyphOffset;
         public ImFont* Font;
     }
-    public unsafe partial struct ImFontAtlasCustomRectPtr
+    internal unsafe partial struct ImFontAtlasCustomRectPtr
     {
         public ImFontAtlasCustomRect* NativePtr { get; }
         public ImFontAtlasCustomRectPtr(ImFontAtlasCustomRect* nativePtr) => NativePtr = nativePtr;

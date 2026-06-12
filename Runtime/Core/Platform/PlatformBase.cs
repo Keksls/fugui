@@ -11,11 +11,11 @@ namespace Fu
     /// <summary>
     /// Represents the Platform Base type.
     /// </summary>
-    public abstract class PlatformBase
+    internal abstract class PlatformBase
     {
         #region State
         public readonly PlatformCallbacks _callbacks = new PlatformCallbacks();
-        public ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
+        internal ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
         protected Rect DisplayRect { get; private set; }
         private readonly HashSet<IntPtr> _managedAllocations = new HashSet<IntPtr>();
         #endregion
@@ -35,14 +35,15 @@ namespace Fu
         /// <param name="pio"> The ImGuiPlatformIOPtr instance. </param>
         /// <param name="platformName"> The name for the platform backend. </param>
         /// <returns> True if initialization was successful, false otherwise. </returns>
-        public virtual bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
+        internal virtual bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
             Debug.Log($"Initializing platform: {platformName ?? "Unnamed"}");
             SetBackendPlatformName(io, platformName);
             io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 
-            if ((Fugui.Settings.ImGuiConfig & ImGuiConfigFlags.NavEnableKeyboard) != 0 ||
-                (Fugui.Settings.ImGuiConfig & ImGuiConfigFlags.NavEnableGamepad) != 0)
+            FuConfigFlags config = Fugui.Settings.ConfigFlags;
+            if ((config & FuConfigFlags.NavEnableKeyboard) != 0 ||
+                (config & FuConfigFlags.NavEnableGamepad) != 0)
             {
                 io.BackendFlags |= ImGuiBackendFlags.HasSetMousePos;
                 io.WantSetMousePos = true;
@@ -70,7 +71,7 @@ namespace Fu
         /// <param name="displayRect"> The current display rectangle. </param>
         /// <param name="updateMouse"> Whether to update mouse state. </param>
         /// <param name="updateKeyboard"> Whether to update keyboard state. </param>
-        public virtual void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
+        internal virtual void PrepareFrame(ImGuiIOPtr io, Rect displayRect, bool updateMouse, bool updateKeyboard)
         {
             //Assert.IsTrue(io.Fonts.IsBuilt(), "Font atlas not built! Generally built by the renderer. Missing call to renderer NewFrame() function?");
             DisplayRect = displayRect;
@@ -107,7 +108,7 @@ namespace Fu
         /// </summary>
         /// <param name="io"> The ImGuiIOPtr instance. </param>
         /// <param name="pio"> The ImGuiPlatformIOPtr instance. </param>
-        public virtual void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
+        internal virtual void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
         {
             SetBackendPlatformName(io, null);
             _callbacks.Unset(pio);

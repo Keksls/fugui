@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiDragDropFlags
+    internal enum ImGuiDragDropFlags
     {
         None = 0,
         SourceNoPreviewTooltip = 1,

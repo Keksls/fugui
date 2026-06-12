@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImFontGlyph
+    internal unsafe partial struct ImFontGlyph
     {
         public uint Colored;
         public uint Visible;
@@ -20,7 +20,7 @@ namespace ImGuiNET
         public float U1;
         public float V1;
     }
-    public unsafe partial struct ImFontGlyphPtr
+    internal unsafe partial struct ImFontGlyphPtr
     {
         public ImFontGlyph* NativePtr { get; }
         public ImFontGlyphPtr(ImFontGlyph* nativePtr) => NativePtr = nativePtr;

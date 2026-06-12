@@ -144,7 +144,7 @@ namespace Fu.Framework
             Vector2 size = ResolveChartSize(chartOptions);
             Vector2 position = ImGui.GetCursorScreenPos();
             Rect chartRect = new Rect(position, size);
-            InvisibleInteraction("##" + chartID + "_canvas", size, out bool hovered, out _, ImGuiButtonFlags.None, !LastItemDisabled);
+            InvisibleInteraction("##" + chartID + "_canvas", size, out bool hovered, out _, FuButtonFlags.None, !LastItemDisabled);
 
             ImDrawListPtr drawList = ImGui.GetWindowDrawList();
             bool hasSeries = HasVisibleChartSeries(series);

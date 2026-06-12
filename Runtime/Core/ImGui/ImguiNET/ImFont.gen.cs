@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImFont
+    internal unsafe partial struct ImFont
     {
         public ImVector IndexAdvanceX;
         public float FallbackAdvanceX;
@@ -28,7 +28,7 @@ namespace ImGuiNET
         public int MetricsTotalSurface;
         public fixed byte Used4kPagesMap[2];
     }
-    public unsafe partial struct ImFontPtr
+    internal unsafe partial struct ImFontPtr
     {
         public ImFont* NativePtr { get; }
         public ImFontPtr(ImFont* nativePtr) => NativePtr = nativePtr;

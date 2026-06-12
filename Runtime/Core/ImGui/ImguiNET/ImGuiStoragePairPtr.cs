@@ -5,7 +5,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Storage Pair Ptr data structure.
         /// </summary>
-        public unsafe struct ImGuiStoragePairPtr
+        internal unsafe struct ImGuiStoragePairPtr
         {
             #region State
             public ImGuiStoragePair* NativePtr { get; }

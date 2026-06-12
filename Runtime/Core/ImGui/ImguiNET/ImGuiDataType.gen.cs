@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiDataType
+    internal enum ImGuiDataType
     {
         S8 = 0,
         U8 = 1,

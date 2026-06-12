@@ -821,7 +821,7 @@ namespace Fu.Framework
         /// <summary>
         /// Registers an invisible Fugui interaction item at the current cursor and returns its click state.
         /// </summary>
-        protected internal bool InvisibleInteraction(string id, Vector2 size, out bool hovered, out bool active, ImGuiButtonFlags flags = ImGuiButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
+        public bool InvisibleInteraction(string id, Vector2 size, out bool hovered, out bool active, FuButtonFlags flags = FuButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
         {
             return InvisibleInteraction(id, size, out hovered, out active, out _, flags, enabled, allowWhenBlockedByPopup);
         }
@@ -829,21 +829,21 @@ namespace Fu.Framework
         /// <summary>
         /// Registers an invisible Fugui interaction item at the current cursor and returns its clicked mouse button.
         /// </summary>
-        protected internal bool InvisibleInteraction(string id, Vector2 size, out bool hovered, out bool active, out FuMouseButton clickedButton, ImGuiButtonFlags flags = ImGuiButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
+        public bool InvisibleInteraction(string id, Vector2 size, out bool hovered, out bool active, out FuMouseButton clickedButton, FuButtonFlags flags = FuButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
         {
             Vector2 pos = ImGui.GetCursorScreenPos();
             bool clicked = false;
             clickedButton = FuMouseButton.None;
             if (enabled)
             {
-                ImGui.InvisibleButton(id, size, flags);
+                ImGui.InvisibleButton(id, size, (ImGuiButtonFlags)flags);
                 bool imguiHovered = ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenBlockedByActiveItem);
                 hovered = imguiHovered && IsItemHovered(pos, size, false, allowWhenBlockedByPopup);
                 active = false;
                 string scopedID = GetScopedInvisibleInteractionID(id);
-                UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Left, flags.HasFlag(ImGuiButtonFlags.MouseButtonLeft), hovered, ref active, ref clicked, ref clickedButton);
-                UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Right, flags.HasFlag(ImGuiButtonFlags.MouseButtonRight), hovered, ref active, ref clicked, ref clickedButton);
-                UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Center, flags.HasFlag(ImGuiButtonFlags.MouseButtonMiddle), hovered, ref active, ref clicked, ref clickedButton);
+                UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Left, flags.HasFlag(FuButtonFlags.MouseButtonLeft), hovered, ref active, ref clicked, ref clickedButton);
+                UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Right, flags.HasFlag(FuButtonFlags.MouseButtonRight), hovered, ref active, ref clicked, ref clickedButton);
+                UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Center, flags.HasFlag(FuButtonFlags.MouseButtonMiddle), hovered, ref active, ref clicked, ref clickedButton);
             }
             else
             {
@@ -858,7 +858,7 @@ namespace Fu.Framework
         /// <summary>
         /// Registers an invisible Fugui interaction item at an explicit screen position without changing the final cursor.
         /// </summary>
-        protected internal bool InvisibleInteractionAt(string id, Vector2 pos, Vector2 size, out bool hovered, out bool active, ImGuiButtonFlags flags = ImGuiButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
+        public bool InvisibleInteractionAt(string id, Vector2 pos, Vector2 size, out bool hovered, out bool active, FuButtonFlags flags = FuButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
         {
             return InvisibleInteractionAt(id, pos, size, out hovered, out active, out _, flags, enabled, allowWhenBlockedByPopup);
         }
@@ -866,7 +866,7 @@ namespace Fu.Framework
         /// <summary>
         /// Registers an invisible Fugui interaction item at an explicit screen position without changing the final cursor.
         /// </summary>
-        protected internal bool InvisibleInteractionAt(string id, Vector2 pos, Vector2 size, out bool hovered, out bool active, out FuMouseButton clickedButton, ImGuiButtonFlags flags = ImGuiButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
+        public bool InvisibleInteractionAt(string id, Vector2 pos, Vector2 size, out bool hovered, out bool active, out FuMouseButton clickedButton, FuButtonFlags flags = FuButtonFlags.MouseButtonLeft, bool enabled = true, bool allowWhenBlockedByPopup = false)
         {
             hovered = enabled && IsItemHovered(pos, size, false, allowWhenBlockedByPopup);
             active = false;
@@ -878,9 +878,9 @@ namespace Fu.Framework
 
             bool clicked = false;
             string scopedID = GetScopedInvisibleInteractionID(id);
-            UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Left, flags.HasFlag(ImGuiButtonFlags.MouseButtonLeft), hovered, ref active, ref clicked, ref clickedButton);
-            UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Right, flags.HasFlag(ImGuiButtonFlags.MouseButtonRight), hovered, ref active, ref clicked, ref clickedButton);
-            UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Center, flags.HasFlag(ImGuiButtonFlags.MouseButtonMiddle), hovered, ref active, ref clicked, ref clickedButton);
+            UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Left, flags.HasFlag(FuButtonFlags.MouseButtonLeft), hovered, ref active, ref clicked, ref clickedButton);
+            UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Right, flags.HasFlag(FuButtonFlags.MouseButtonRight), hovered, ref active, ref clicked, ref clickedButton);
+            UpdateInvisibleInteractionButton(scopedID, FuMouseButton.Center, flags.HasFlag(FuButtonFlags.MouseButtonMiddle), hovered, ref active, ref clicked, ref clickedButton);
             return clicked;
         }
 
@@ -1309,7 +1309,7 @@ namespace Fu.Framework
             bool useInvisibleButton = updateOnClick && size.x > 0f && size.y > 0f;
             if (useInvisibleButton)
             {
-                bool pressed = InvisibleInteractionAt("##FuInteraction_" + uniqueID, pos, size, out bool hovered, out bool active, out FuMouseButton clickedButton, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight, true, allowWhenBlockedByPopup);
+                bool pressed = InvisibleInteractionAt("##FuInteraction_" + uniqueID, pos, size, out bool hovered, out bool active, out FuMouseButton clickedButton, FuButtonFlags.MouseButtonLeft | FuButtonFlags.MouseButtonRight, true, allowWhenBlockedByPopup);
                 state.Hovered = hovered;
                 state.Active = active;
                 state.JustActivated = state.Hovered && Fugui.GetCurrentMouse().IsDown(FuMouseButton.Left);

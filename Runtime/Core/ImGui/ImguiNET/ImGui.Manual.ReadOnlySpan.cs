@@ -8,7 +8,7 @@ using UnityEngine;
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
 namespace ImGuiNET
 {
-    public static unsafe partial class ImGui
+    internal static unsafe partial class ImGui
     {
         public static bool InputText(
             ReadOnlySpan<char> label,

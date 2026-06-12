@@ -5,7 +5,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Gui Viewport P data structure.
     /// </summary>
-    public unsafe partial struct ImGuiViewportP
+    internal unsafe partial struct ImGuiViewportP
     {
         #region State
         public ImGuiViewport _ImGuiViewport;

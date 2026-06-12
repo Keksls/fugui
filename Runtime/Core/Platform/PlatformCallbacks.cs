@@ -102,7 +102,7 @@ namespace Fu
         /// Runs the assign workflow.
         /// </summary>
         /// <param name="io">The io value.</param>
-        public void Assign(ImGuiPlatformIOPtr io)
+        internal void Assign(ImGuiPlatformIOPtr io)
         {
             io.Platform_SetClipboardTextFn = Marshal.GetFunctionPointerForDelegate(_setClipboardText);
             io.Platform_GetClipboardTextFn = Marshal.GetFunctionPointerForDelegate(_getClipboardText);
@@ -112,7 +112,7 @@ namespace Fu
         /// Runs the unset workflow.
         /// </summary>
         /// <param name="io">The io value.</param>
-        public void Unset(ImGuiPlatformIOPtr io)
+        internal void Unset(ImGuiPlatformIOPtr io)
         {
             io.Platform_SetClipboardTextFn = IntPtr.Zero;
             io.Platform_GetClipboardTextFn = IntPtr.Zero;

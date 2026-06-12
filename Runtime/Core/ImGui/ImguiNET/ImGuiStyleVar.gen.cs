@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiStyleVar
+    internal enum ImGuiStyleVar
     {
         Alpha = 0,
         DisabledAlpha = 1,

@@ -5,7 +5,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Range Accessor Extensions type.
         /// </summary>
-        public static class RangeAccessorExtensions
+        internal static class RangeAccessorExtensions
         {
             #region Methods
             /// <summary>

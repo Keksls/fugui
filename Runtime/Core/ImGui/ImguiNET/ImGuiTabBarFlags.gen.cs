@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiTabBarFlags
+    internal enum ImGuiTabBarFlags
     {
         None = 0,
         Reorderable = 1,

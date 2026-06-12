@@ -6,7 +6,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Vec2ih Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImVec2ihPtr
+        internal unsafe partial struct ImVec2ihPtr
         {
             #region State
             public ImVec2ih* NativePtr { get; }

@@ -7,7 +7,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Window Temp Data Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImGuiWindowTempDataPtr
+        internal unsafe partial struct ImGuiWindowTempDataPtr
         {
             #region State
             public ImGuiWindowTempData* NativePtr { get; }

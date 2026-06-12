@@ -5,7 +5,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Rect data structure.
     /// </summary>
-    public unsafe partial struct ImRect
+    internal unsafe partial struct ImRect
     {
         #region State
         public Vector2 Min;

@@ -14,7 +14,7 @@ namespace Fu
         private FuExternalWindow _window;
         public FuExternalWindow Window => _window;
         private PlatformBase _platform;
-        public SDLPlatform Platform => _platform as SDLPlatform;
+        internal SDLPlatform Platform => _platform as SDLPlatform;
         public string Title => _window.Title;
         public int Width => _window.Width;
         public int Height => _window.Height;

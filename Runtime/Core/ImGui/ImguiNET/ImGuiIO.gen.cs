@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiIO
+    internal unsafe partial struct ImGuiIO
     {
         public ImGuiConfigFlags ConfigFlags;
         public ImGuiBackendFlags BackendFlags;
@@ -276,7 +276,7 @@ namespace ImGuiNET
         public ushort InputQueueSurrogate;
         public ImVector InputQueueCharacters;
     }
-    public unsafe partial struct ImGuiIOPtr
+    internal unsafe partial struct ImGuiIOPtr
     {
         public ImGuiIO* NativePtr { get; }
         public ImGuiIOPtr(ImGuiIO* nativePtr) => NativePtr = nativePtr;

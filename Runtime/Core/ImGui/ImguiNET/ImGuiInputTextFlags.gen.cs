@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiInputTextFlags
+    internal enum ImGuiInputTextFlags
     {
         None = 0,
         CharsDecimal = 1,

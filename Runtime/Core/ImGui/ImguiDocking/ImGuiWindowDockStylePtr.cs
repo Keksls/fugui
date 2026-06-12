@@ -5,7 +5,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Window Dock Style Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImGuiWindowDockStylePtr
+        internal unsafe partial struct ImGuiWindowDockStylePtr
         {
             #region State
             public ImGuiWindowDockStyle* NativePtr { get; }

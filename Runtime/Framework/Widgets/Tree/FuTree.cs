@@ -567,7 +567,7 @@ namespace Fu.Framework
             {
                 ImGui.Dummy(new Vector2(carretHitWidth, height));
                 Rect carretRect = new Rect(cursorPos, new Vector2(carretHitWidth, height));
-                bool clicked = layout.InvisibleInteractionAt(_id + "##caret" + element.GetHashCode(), carretRect.min, carretRect.size, out bool hover, out bool active, ImGuiButtonFlags.MouseButtonLeft, true);
+                bool clicked = layout.InvisibleInteractionAt(_id + "##caret" + element.GetHashCode(), carretRect.min, carretRect.size, out bool hover, out bool active, FuButtonFlags.MouseButtonLeft, true);
 
                 // set mouse cursor
                 if (hover)

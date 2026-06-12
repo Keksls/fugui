@@ -21,7 +21,7 @@ namespace Fu
             private ImFontPtr _boldPushFont;
             private ImFontPtr _italicPushFont;
 
-            public ImFontPtr Regular
+            internal ImFontPtr Regular
             {
                 get { return _regular; }
                 set
@@ -31,7 +31,7 @@ namespace Fu
                 }
             }
 
-            public ImFontPtr Bold
+            internal ImFontPtr Bold
             {
                 get { return _bold; }
                 set
@@ -41,7 +41,7 @@ namespace Fu
                 }
             }
 
-            public ImFontPtr Italic
+            internal ImFontPtr Italic
             {
                 get { return _italic; }
                 set

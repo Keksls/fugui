@@ -6,7 +6,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Gui Docking type.
     /// </summary>
-    public unsafe static class ImGuiDocking
+    internal unsafe static class ImGuiDocking
     {
         #region Methods
         /// <summary>

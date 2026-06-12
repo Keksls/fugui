@@ -6,7 +6,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Menu Columns Ptr data structure.
         /// </summary>
-        public unsafe partial struct ImGuiMenuColumnsPtr
+        internal unsafe partial struct ImGuiMenuColumnsPtr
         {
             #region State
             public ImGuiMenuColumns* NativePtr { get; }

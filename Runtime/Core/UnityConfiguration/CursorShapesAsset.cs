@@ -38,7 +38,7 @@ namespace Fu
 		[Tooltip("When hovering something with disabled interaction. Usually a crossed circle.")]
 		public CursorShape NotAllowed;
 
-		public ref CursorShape this[ImGuiMouseCursor cursor]
+		internal ref CursorShape this[ImGuiMouseCursor cursor]
 		{
 			get
 			{

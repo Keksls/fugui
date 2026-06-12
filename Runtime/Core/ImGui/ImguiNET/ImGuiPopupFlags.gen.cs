@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiPopupFlags
+    internal enum ImGuiPopupFlags
     {
         None = 0,
         MouseButtonLeft = 0,

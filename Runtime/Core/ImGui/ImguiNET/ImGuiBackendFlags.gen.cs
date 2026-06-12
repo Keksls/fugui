@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiBackendFlags
+    internal enum ImGuiBackendFlags
     {
         None = 0,
         HasGamepad = 1,

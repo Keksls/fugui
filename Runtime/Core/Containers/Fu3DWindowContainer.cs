@@ -2017,11 +2017,11 @@ namespace Fu
         }
 
         /// <summary>
-        /// Runs the im gui image workflow.
+        /// Draws an image in the current Fugui 3D container.
         /// </summary>
         /// <param name="texture">The texture value.</param>
         /// <param name="size">The size value.</param>
-        public void ImGuiImage(RenderTexture texture, Vector2 size)
+        public void Image(RenderTexture texture, Vector2 size)
         {
             if (texture == null)
             {
@@ -2032,11 +2032,11 @@ namespace Fu
         }
 
         /// <summary>
-        /// Runs the im gui image workflow.
+        /// Draws an image in the current Fugui 3D container.
         /// </summary>
         /// <param name="texture">The texture value.</param>
         /// <param name="size">The size value.</param>
-        public void ImGuiImage(Texture2D texture, Vector2 size)
+        public void Image(Texture2D texture, Vector2 size)
         {
             if (texture == null)
             {
@@ -2047,12 +2047,12 @@ namespace Fu
         }
 
         /// <summary>
-        /// Runs the im gui image workflow.
+        /// Draws an image in the current Fugui 3D container.
         /// </summary>
         /// <param name="texture">The texture value.</param>
         /// <param name="size">The size value.</param>
         /// <param name="color">The color value.</param>
-        public void ImGuiImage(RenderTexture texture, Vector2 size, Vector4 color)
+        public void Image(RenderTexture texture, Vector2 size, Vector4 color)
         {
             if (texture == null)
             {
@@ -2063,12 +2063,12 @@ namespace Fu
         }
 
         /// <summary>
-        /// Runs the im gui image workflow.
+        /// Draws an image in the current Fugui 3D container.
         /// </summary>
         /// <param name="texture">The texture value.</param>
         /// <param name="size">The size value.</param>
         /// <param name="color">The color value.</param>
-        public void ImGuiImage(Texture2D texture, Vector2 size, Vector4 color)
+        public void Image(Texture2D texture, Vector2 size, Vector4 color)
         {
             if (texture == null)
             {
@@ -2079,12 +2079,12 @@ namespace Fu
         }
 
         /// <summary>
-        /// Returns the im gui image button result.
+        /// Returns the Fugui image button result.
         /// </summary>
         /// <param name="texture">The texture value.</param>
         /// <param name="size">The size value.</param>
         /// <returns>The result of the operation.</returns>
-        public bool ImGuiImageButton(Texture2D texture, Vector2 size)
+        public bool ImageButton(Texture2D texture, Vector2 size)
         {
             if (texture == null)
             {
@@ -2096,13 +2096,13 @@ namespace Fu
         }
 
         /// <summary>
-        /// Returns the im gui image button result.
+        /// Returns the Fugui image button result.
         /// </summary>
         /// <param name="texture">The texture value.</param>
         /// <param name="size">The size value.</param>
         /// <param name="color">The color value.</param>
         /// <returns>The result of the operation.</returns>
-        public bool ImGuiImageButton(Texture2D texture, Vector2 size, Vector4 color)
+        public bool ImageButton(Texture2D texture, Vector2 size, Vector4 color)
         {
             if (texture == null)
             {

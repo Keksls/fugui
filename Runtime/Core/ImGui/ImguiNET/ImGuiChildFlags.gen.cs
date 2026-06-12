@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiChildFlags
+    internal enum ImGuiChildFlags
     {
         None = 0,
         Borders = 1,

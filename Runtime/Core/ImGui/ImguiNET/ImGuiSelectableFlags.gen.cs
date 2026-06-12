@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiSelectableFlags
+    internal enum ImGuiSelectableFlags
     {
         None = 0,
         NoAutoClosePopups = 1,

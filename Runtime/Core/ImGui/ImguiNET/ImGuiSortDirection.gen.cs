@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiSortDirection
+    internal enum ImGuiSortDirection
     {
         None = 0,
         Ascending = 1,

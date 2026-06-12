@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiPlatformIO
+    internal unsafe partial struct ImGuiPlatformIO
     {
         public IntPtr Platform_GetClipboardTextFn;
         public IntPtr Platform_SetClipboardTextFn;
@@ -43,7 +43,7 @@ namespace ImGuiNET
         public ImVector Monitors;
         public ImVector Viewports;
     }
-    public unsafe partial struct ImGuiPlatformIOPtr
+    internal unsafe partial struct ImGuiPlatformIOPtr
     {
         public ImGuiPlatformIO* NativePtr { get; }
         public ImGuiPlatformIOPtr(ImGuiPlatformIO* nativePtr) => NativePtr = nativePtr;

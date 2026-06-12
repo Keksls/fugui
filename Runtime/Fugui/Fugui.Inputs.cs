@@ -341,7 +341,7 @@ namespace Fu
         /// <summary>
         /// Returns the raw released state for a mouse button in the current Fugui context.
         /// </summary>
-        internal static bool IsMouseReleased(FuMouseButton mouseButton)
+        public static bool IsMouseReleased(FuMouseButton mouseButton)
         {
             return ImGuiNative.igIsMouseReleased_Nil((ImGuiMouseButton)mouseButton) != 0;
         }

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiViewport
+    internal unsafe partial struct ImGuiViewport
     {
         public uint ID;
         public ImGuiViewportFlags Flags;
@@ -25,7 +25,7 @@ namespace ImGuiNET
         public byte PlatformRequestResize;
         public byte PlatformRequestClose;
     }
-    public unsafe partial struct ImGuiViewportPtr
+    internal unsafe partial struct ImGuiViewportPtr
     {
         public ImGuiViewport* NativePtr { get; }
         public ImGuiViewportPtr(ImGuiViewport* nativePtr) => NativePtr = nativePtr;

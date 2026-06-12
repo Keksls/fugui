@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiPlatformMonitor
+    internal unsafe partial struct ImGuiPlatformMonitor
     {
         public Vector2 MainPos;
         public Vector2 MainSize;
@@ -14,7 +14,7 @@ namespace ImGuiNET
         public float DpiScale;
         public void* PlatformHandle;
     }
-    public unsafe partial struct ImGuiPlatformMonitorPtr
+    internal unsafe partial struct ImGuiPlatformMonitorPtr
     {
         public ImGuiPlatformMonitor* NativePtr { get; }
         public ImGuiPlatformMonitorPtr(ImGuiPlatformMonitor* nativePtr) => NativePtr = nativePtr;

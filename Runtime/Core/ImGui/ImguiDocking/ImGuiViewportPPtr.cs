@@ -7,7 +7,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Viewport PPtr data structure.
         /// </summary>
-        public unsafe partial struct ImGuiViewportPPtr
+        internal unsafe partial struct ImGuiViewportPPtr
         {
             #region State
             public ImGuiViewportP* NativePtr { get; }

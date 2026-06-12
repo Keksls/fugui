@@ -8,7 +8,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Gui type.
     /// </summary>
-    public static unsafe partial class ImGui
+    internal static unsafe partial class ImGui
     {
         #region Methods
         /// <summary>

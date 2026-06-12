@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct STB_TexteditState
+    internal unsafe partial struct STB_TexteditState
     {
         public int cursor;
         public int select_start;
@@ -22,7 +22,7 @@ namespace ImGuiNET
         public float preferred_x;
         public StbUndoState undostate;
     }
-    public unsafe partial struct STB_TexteditStatePtr
+    internal unsafe partial struct STB_TexteditStatePtr
     {
         public STB_TexteditState* NativePtr { get; }
         public STB_TexteditStatePtr(STB_TexteditState* nativePtr) => NativePtr = nativePtr;

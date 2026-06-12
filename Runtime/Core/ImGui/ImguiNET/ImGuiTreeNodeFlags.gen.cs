@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiTreeNodeFlags
+    internal enum ImGuiTreeNodeFlags
     {
         None = 0,
         Selected = 1,

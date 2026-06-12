@@ -2,6 +2,7 @@
     "name": "Fugui",
     "rootNamespace": "",
     "references": [
+        "GUID:f6a12d7e8b44a2bb7baf356b193a2d10",
         "GUID:15fc0a57446b3144c949da3e2b9737a9",
         "GUID:df380645f10b7bc4b97d4f5eb6303d95",
         "GUID:75469ad4d38634e559750d17036d5f7c"
@@ -12,11 +13,6 @@
     "overrideReferences": false,
     "precompiledReferences": [
         "System.Runtime.CompilerServices.Unsafe.dll",
-        "ImGui.NET.dll",
-        "ImGuizmo.NET.dll",
-        "ImNodes.NET.dll",
-        "ImPlot.NET.dll",
-        "OpenTK.dll",
         "Triangle.dll",
         "Ookii.Dialogs.dll",
         "Newtonsoft.Json.dll"

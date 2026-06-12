@@ -5,7 +5,7 @@ namespace ImGuiNET
         /// <summary>
         /// Represents the Im Gui Tab Item data structure.
         /// </summary>
-        public unsafe partial struct ImGuiTabItem
+        internal unsafe partial struct ImGuiTabItem
         {
             #region State
             public uint ID;

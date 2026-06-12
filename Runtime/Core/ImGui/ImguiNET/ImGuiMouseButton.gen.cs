@@ -1,6 +1,6 @@
 namespace ImGuiNET
 {
-    public enum ImGuiMouseButton
+    internal enum ImGuiMouseButton
     {
         Left = 0,
         Right = 1,

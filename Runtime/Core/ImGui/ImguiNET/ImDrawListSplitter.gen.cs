@@ -5,13 +5,13 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImDrawListSplitter
+    internal unsafe partial struct ImDrawListSplitter
     {
         public int _Current;
         public int _Count;
         public ImVector _Channels;
     }
-    public unsafe partial struct ImDrawListSplitterPtr
+    internal unsafe partial struct ImDrawListSplitterPtr
     {
         public ImDrawListSplitter* NativePtr { get; }
         public ImDrawListSplitterPtr(ImDrawListSplitter* nativePtr) => NativePtr = nativePtr;

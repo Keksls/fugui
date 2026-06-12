@@ -5,7 +5,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Gui Dock Node data structure.
     /// </summary>
-    public unsafe partial struct ImGuiDockNode
+    internal unsafe partial struct ImGuiDockNode
     {
         #region State
         public uint ID;
@@ -50,7 +50,7 @@ namespace ImGuiNET
     }
     /// Lists the available Im Gui Dock Node State values.
     /// </summary>
-    public enum ImGuiDockNodeState
+    internal enum ImGuiDockNodeState
     {
         _Unknown = 0,
         _HostWindowHiddenBecauseSingleWindow = 1,
@@ -60,7 +60,7 @@ namespace ImGuiNET
     /// <summary>
     /// Lists the available Im Gui Axis values.
     /// </summary>
-    public enum ImGuiAxis
+    internal enum ImGuiAxis
     {
         _None = -1,
         _X = 0,
@@ -69,7 +69,7 @@ namespace ImGuiNET
     /// <summary>
     /// Lists the available Im Gui Data Authority values.
     /// </summary>
-    public enum ImGuiDataAuthority
+    internal enum ImGuiDataAuthority
     {
         Auto = 0,
         DockNode = 1,

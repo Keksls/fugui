@@ -5,12 +5,12 @@ using System.Text;
 
 namespace ImGuiNET
 {
-    public unsafe partial struct ImGuiSelectionExternalStorage
+    internal unsafe partial struct ImGuiSelectionExternalStorage
     {
         public void* UserData;
         public IntPtr AdapterSetItemSelected;
     }
-    public unsafe partial struct ImGuiSelectionExternalStoragePtr
+    internal unsafe partial struct ImGuiSelectionExternalStoragePtr
     {
         public ImGuiSelectionExternalStorage* NativePtr { get; }
         public ImGuiSelectionExternalStoragePtr(ImGuiSelectionExternalStorage* nativePtr) => NativePtr = nativePtr;

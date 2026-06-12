@@ -1,4 +1,3 @@
-using ImGuiNET;
 using System;
 
 namespace Fu.Framework
@@ -11,7 +10,7 @@ namespace Fu.Framework
         #region State
         public string Header { get; }
         public float Width { get; }
-        public ImGuiTableColumnFlags Flags { get; }
+        public FuTableColumnFlags Flags { get; }
         public FuTextWrapping Wrapping { get; }
         public Func<T, string> TextGetter { get; }
         public Func<T, string> SearchGetter { get; }
@@ -27,11 +26,11 @@ namespace Fu.Framework
         /// <param name="header">Header label shown in the table.</param>
         /// <param name="textGetter">Text renderer used for the cell value and default sorting/searching.</param>
         /// <param name="width">Initial column width in unscaled Fugui pixels. 0 lets ImGui stretch the column.</param>
-        /// <param name="flags">Extra ImGui column flags.</param>
+        /// <param name="flags">Extra Fugui column flags.</param>
         /// <param name="sortComparison">Optional typed comparison used when this column is sorted.</param>
         /// <param name="searchGetter">Optional searchable text for this column.</param>
         /// <param name="wrapping">Text wrapping mode used when drawing this column.</param>
-        public FuTableViewColumn(string header, Func<T, string> textGetter, float width = 0f, ImGuiTableColumnFlags flags = ImGuiTableColumnFlags.None, Comparison<T> sortComparison = null, Func<T, string> searchGetter = null, FuTextWrapping wrapping = FuTextWrapping.Clip)
+        public FuTableViewColumn(string header, Func<T, string> textGetter, float width = 0f, FuTableColumnFlags flags = FuTableColumnFlags.None, Comparison<T> sortComparison = null, Func<T, string> searchGetter = null, FuTextWrapping wrapping = FuTextWrapping.Clip)
         {
             Header = header ?? string.Empty;
             TextGetter = textGetter;
@@ -48,10 +47,10 @@ namespace Fu.Framework
         /// <param name="header">Header label shown in the table.</param>
         /// <param name="drawCell">Callback used to draw each cell with the current layout.</param>
         /// <param name="width">Initial column width in unscaled Fugui pixels. 0 lets ImGui stretch the column.</param>
-        /// <param name="flags">Extra ImGui column flags.</param>
+        /// <param name="flags">Extra Fugui column flags.</param>
         /// <param name="sortComparison">Optional typed comparison used when this column is sorted.</param>
         /// <param name="searchGetter">Optional searchable text for this column.</param>
-        public FuTableViewColumn(string header, Action<T, FuLayout> drawCell, float width = 0f, ImGuiTableColumnFlags flags = ImGuiTableColumnFlags.None, Comparison<T> sortComparison = null, Func<T, string> searchGetter = null)
+        public FuTableViewColumn(string header, Action<T, FuLayout> drawCell, float width = 0f, FuTableColumnFlags flags = FuTableColumnFlags.None, Comparison<T> sortComparison = null, Func<T, string> searchGetter = null)
         {
             Header = header ?? string.Empty;
             DrawCell = drawCell;
@@ -70,11 +69,11 @@ namespace Fu.Framework
         /// <param name="header">Header label shown in the table.</param>
         /// <param name="drawCell">Callback used to draw each cell with the current layout.</param>
         /// <param name="width">Initial column width in unscaled Fugui pixels. 0 lets ImGui stretch the column.</param>
-        /// <param name="flags">Extra ImGui column flags.</param>
+        /// <param name="flags">Extra Fugui column flags.</param>
         /// <param name="sortComparison">Optional typed comparison used when this column is sorted.</param>
         /// <param name="searchGetter">Optional searchable text for this column.</param>
         /// <returns>A custom-drawn table view column.</returns>
-        public static FuTableViewColumn<T> Custom(string header, Action<T, FuLayout> drawCell, float width = 0f, ImGuiTableColumnFlags flags = ImGuiTableColumnFlags.None, Comparison<T> sortComparison = null, Func<T, string> searchGetter = null)
+        public static FuTableViewColumn<T> Custom(string header, Action<T, FuLayout> drawCell, float width = 0f, FuTableColumnFlags flags = FuTableColumnFlags.None, Comparison<T> sortComparison = null, Func<T, string> searchGetter = null)
         {
             return new FuTableViewColumn<T>(header, drawCell, width, flags, sortComparison, searchGetter);
         }

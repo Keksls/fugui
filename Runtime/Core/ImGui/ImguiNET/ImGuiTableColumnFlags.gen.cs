@@ -1,7 +1,7 @@
 namespace ImGuiNET
 {
     [System.Flags]
-    public enum ImGuiTableColumnFlags
+    internal enum ImGuiTableColumnFlags
     {
         None = 0,
         Disabled = 1,

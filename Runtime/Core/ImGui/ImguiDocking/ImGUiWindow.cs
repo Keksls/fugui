@@ -6,7 +6,7 @@ namespace ImGuiNET
     /// <summary>
     /// Represents the Im Gui Window data structure.
     /// </summary>
-    public unsafe partial struct ImGuiWindow
+    internal unsafe partial struct ImGuiWindow
     {
         #region State
         public byte* Name;

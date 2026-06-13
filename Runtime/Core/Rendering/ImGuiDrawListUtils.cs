@@ -54,7 +54,7 @@ namespace Fu
 
             for (int i = 0; i < imDrawDataPtr.CmdListsCount; i++)
             {
-                ImDrawListPtr nativeDrawList = imDrawDataPtr.CmdLists[i];
+                FuDrawList nativeDrawList = Fugui.ToFuDrawList(imDrawDataPtr.CmdLists[i]);
                 string name = getWindowName(windows, nativeDrawList);
                 FuWindow window = null;
                 bool isWindowRoot = windows.TryGetValue(name, out window);
@@ -222,7 +222,7 @@ namespace Fu
         /// <param name="windows">The windows value.</param>
         /// <param name="drawList">Native ImGui draw list.</param>
         /// <returns>The Fugui window name.</returns>
-        private static unsafe string getWindowName(Dictionary<string, FuWindow> windows, ImDrawListPtr drawList)
+        private static unsafe string getWindowName(Dictionary<string, FuWindow> windows, FuDrawList drawList)
         {
             IntPtr ownerNamePtr = (IntPtr)drawList.NativePtr->_OwnerName;
             if (ownerNamePtr == IntPtr.Zero)
@@ -331,7 +331,7 @@ namespace Fu
         /// </summary>
         private struct ResolvedDrawList
         {
-            internal ImDrawListPtr NativeDrawList;
+            internal FuDrawList NativeDrawList;
             internal string OwnerName;
             internal FuWindow Window;
             internal bool IsWindowRoot;

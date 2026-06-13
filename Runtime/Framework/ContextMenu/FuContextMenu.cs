@@ -329,7 +329,7 @@ namespace Fu
                             Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled));
 
                         // Draw secondary duotone glyph if needed
-                        DrawDuotoneSecondaryGlyph(label, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), enabled);
+                        DrawDuotoneSecondaryGlyph(label, ImGui.GetCursorScreenPos(), Fugui.GetCurrentWindowDrawList(), enabled);
 
                         // Parent item (submenu)
                         if (menuItem.Children.Count > 0)

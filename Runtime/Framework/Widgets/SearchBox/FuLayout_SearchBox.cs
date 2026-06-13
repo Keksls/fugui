@@ -111,9 +111,9 @@ namespace Fu.Framework
             frameColor.w = Mathf.Max(frameColor.w, disabled ? 0.35f : 0.92f);
             borderColor.w = Mathf.Max(borderColor.w, hovered ? 0.75f : 0.48f);
 
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-            drawList.AddRectFilled(frameRect.min, frameRect.max, ImGui.GetColorU32(frameColor), rounding, ImDrawFlags.RoundCornersAll);
-            drawList.AddRect(frameRect.min, frameRect.max, ImGui.GetColorU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
+            drawList.AddRectFilled(frameRect.min, frameRect.max, ImGui.GetColorU32(frameColor), rounding, FuDrawFlags.RoundCornersAll);
+            drawList.AddRect(frameRect.min, frameRect.max, ImGui.GetColorU32(borderColor), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
 
             Vector4 iconColor = disabled
                 ? style.TextStyle.DisabledText

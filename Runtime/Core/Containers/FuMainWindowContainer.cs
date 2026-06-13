@@ -801,7 +801,7 @@ namespace Fu
             Vector2 rowMin = ImGui.GetCursorScreenPos();
             Vector2 rowSize = new Vector2(Mathf.Max(1f, ImGui.GetContentRegionAvail().x), rowHeight);
             Vector2 rowMax = rowMin + rowSize;
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             uint rowColor = selected
                 ? Fugui.Themes.GetColorU32(FuColors.HeaderActive, 0.95f)
                 : Fugui.Themes.GetColorU32(FuColors.FrameBg, 0.82f);
@@ -1012,7 +1012,7 @@ namespace Fu
             {
                 mainMenuHeight = 24f * Context.Scale;
 
-                ImGui.GetBackgroundDrawList().AddLine(
+                Fugui.GetBackgroundDrawList().AddLine(
                     new Vector2(0f, mainMenuHeight - Context.Scale),
                     new Vector2(_size.x, mainMenuHeight - Context.Scale),
                     ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered)));

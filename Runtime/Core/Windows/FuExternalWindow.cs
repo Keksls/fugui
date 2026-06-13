@@ -447,7 +447,7 @@ namespace Fu
             public int byteSize => w * h * 4;
         }
 
-        // Async GPU → CPU readback per Unity texture (RenderTexture only)
+        // Async GPU â†’ CPU readback per Unity texture (RenderTexture only)
         private sealed class ReadbackState
         {
             public AsyncGPUReadbackRequest request;
@@ -544,7 +544,7 @@ namespace Fu
             {
                 if (gpu.w == w && gpu.h == h) return gpu;
 
-                // Size changed → recreate (simple path)
+                // Size changed â†’ recreate (simple path)
                 gpu = null;
                 _gpu.Remove(unityId);
             }
@@ -576,7 +576,7 @@ namespace Fu
         }
 
         /// <summary>
-        /// CPU → GPU upload using double PBO (no stalls).
+        /// CPU â†’ GPU upload using double PBO (no stalls).
         /// </summary>
         private unsafe void UploadWithPBO(PBOPair gpu, IntPtr src, int byteLen)
         {
@@ -699,7 +699,7 @@ namespace Fu
         }
 
         /// <summary>
-        /// For RenderTexture: fully async GPU→CPU using AsyncGPUReadback, then CPU→GPU PBO upload without stalls.
+        /// For RenderTexture: fully async GPUâ†’CPU using AsyncGPUReadback, then CPUâ†’GPU PBO upload without stalls.
         /// </summary>
         private void PumpRenderTextureReadback(IntPtr unityId, RenderTexture rt)
         {
@@ -773,7 +773,7 @@ namespace Fu
             if (!Window.Container.Context.TextureManager.TryGetTexture(unityId, out Texture tex) || tex == null)
                 return _fallbackWhiteTex;
 
-            // Texture2D (readable): direct NativeArray → PBO upload (no stalls)
+            // Texture2D (readable): direct NativeArray â†’ PBO upload (no stalls)
             if (tex is Texture2D t2d)
             {
                 if (_textureUploadFailures.Contains(unityId))
@@ -822,12 +822,12 @@ namespace Fu
             // RenderTexture: schedule/consume async readbacks
             if (tex is RenderTexture rt)
             {
-                PumpRenderTextureReadback(unityId, rt);                  // schedule GPU→CPU if possible
+                PumpRenderTextureReadback(unityId, rt);                  // schedule GPUâ†’CPU if possible
                 ConsumeRenderTextureFrame(unityId, rt.width, rt.height); // upload one completed frame if ready
                 return EnsurePBOPair(unityId, rt.width, rt.height).glTex;
             }
 
-            // Unsupported types → fallback
+            // Unsupported types â†’ fallback
             return _fallbackWhiteTex;
         }
 
@@ -1191,7 +1191,7 @@ namespace Fu
                 mouseLocal.y < titleBarHeight &&
                 mouseLocal.x < titleBarWidth;
 
-            // pas dans la title bar → pas de drag
+            // pas dans la title bar â†’ pas de drag
             if (IsResizing || (!forceMouseDown && !inTitleBar))
                 return;
 
@@ -1202,10 +1202,10 @@ namespace Fu
                     // 1. On calcule la fraction horizontale du click dans la titlebar
                     float ratio = (float)mouseLocal.x / (float)Math.Max(1, Width);
 
-                    // 2. Restore immédiatement
+                    // 2. Restore immÃ©diatement
                     RestoreBorderlessWindow();
 
-                    // 3. Positionner la fenêtre sous la souris
+                    // 3. Positionner la fenÃªtre sous la souris
                     //    (important pour un drag naturel)
                     int newX = mouseAbs.x - (int)(restoreRect.w * ratio);
                     int newY = mouseAbs.y - (int)(titleBarHeight * 0.5f);
@@ -1303,7 +1303,7 @@ namespace Fu
                 return;
             }
 
-            var dl = ImGui.GetForegroundDrawList();
+            var dl = Fugui.GetForegroundDrawList();
 
             Vector2 windowSize = new Vector2(Width, Height);
 
@@ -1427,7 +1427,7 @@ namespace Fu
             }
 
             //
-            // CORNER (bottom-right) — triangle
+            // CORNER (bottom-right) â€” triangle
             //
             if (Window.CanResizeSide(FuWindowResizeSides.Bottom) &&
                 Window.CanResizeSide(FuWindowResizeSides.Right))
@@ -1449,7 +1449,7 @@ namespace Fu
             }
 
             //
-            // CORNER (bottom-left) — triangle
+            // CORNER (bottom-left) â€” triangle
             //
             if (Window.CanResizeSide(FuWindowResizeSides.Bottom) &&
                 Window.CanResizeSide(FuWindowResizeSides.Left))

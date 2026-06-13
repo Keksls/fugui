@@ -40,7 +40,7 @@ namespace Fu.Framework
                 Vector2 arc1 = new Vector2(center[0] + ax - k2 * ay, center[1] + ay + k2 * ax);
                 Vector2 arc2 = new Vector2(center[0] + bx + k2 * by, center[1] + by - k2 * bx);
 
-                ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
+                FuDrawList draw_list = Fugui.GetCurrentWindowDrawList();
                 draw_list.AddBezierCubic(start, arc1, arc2, end, ImGui.GetColorU32(color), thickness, num_segments);
             }
 

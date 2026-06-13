@@ -146,7 +146,7 @@ namespace Fu.Framework
             Rect chartRect = new Rect(position, size);
             InvisibleInteraction("##" + chartID + "_canvas", size, out bool hovered, out _, FuButtonFlags.None, !LastItemDisabled);
 
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             bool hasSeries = HasVisibleChartSeries(series);
             DrawChartFrame(drawList, chartRect, chartOptions);
 
@@ -428,7 +428,7 @@ namespace Fu.Framework
         /// <param name="seriesIndex">Current series index.</param>
         /// <param name="options">Chart options.</param>
         /// <returns>A draw context for callbacks.</returns>
-        private FuChartDrawContext CreateChartDrawContext(ImDrawListPtr drawList, Rect chartRect, Rect plotRect, FuChartBounds bounds, Vector2 mouseValue, FuChartHoverState hover, int seriesIndex, FuChartOptions options)
+        private FuChartDrawContext CreateChartDrawContext(FuDrawList drawList, Rect chartRect, Rect plotRect, FuChartBounds bounds, Vector2 mouseValue, FuChartHoverState hover, int seriesIndex, FuChartOptions options)
         {
             return new FuChartDrawContext(drawList, chartRect, plotRect, new Vector2(bounds.XMin, bounds.YMin), new Vector2(bounds.XMax, bounds.YMax), mouseValue, hover, seriesIndex, LastItemDisabled, Fugui.CurrentContext.Scale);
         }
@@ -439,7 +439,7 @@ namespace Fu.Framework
         /// <param name="drawList">ImGui drawlist.</param>
         /// <param name="chartRect">Outer chart rectangle.</param>
         /// <param name="options">Chart options.</param>
-        private void DrawChartFrame(ImDrawListPtr drawList, Rect chartRect, FuChartOptions options)
+        private void DrawChartFrame(FuDrawList drawList, Rect chartRect, FuChartOptions options)
         {
             float rounding = ResolveChartRounding(options);
             drawList.AddRectFilled(chartRect.min, chartRect.max, ResolveChartColor(options.Style.BackgroundColor, Fugui.Themes.GetColor(FuColors.WindowBg), 1f), rounding);
@@ -455,7 +455,7 @@ namespace Fu.Framework
         /// <param name="drawList">ImGui drawlist.</param>
         /// <param name="plotRect">Plot rectangle.</param>
         /// <param name="options">Chart options.</param>
-        private void DrawChartPlotBackground(ImDrawListPtr drawList, Rect plotRect, FuChartOptions options)
+        private void DrawChartPlotBackground(FuDrawList drawList, Rect plotRect, FuChartOptions options)
         {
             if (!options.Flags.HasFlag(FuChartFlags.PlotBackground))
             {
@@ -471,7 +471,7 @@ namespace Fu.Framework
         /// <param name="drawList">ImGui drawlist.</param>
         /// <param name="chartRect">Outer chart rectangle.</param>
         /// <param name="options">Chart options.</param>
-        private void DrawChartEmptyState(ImDrawListPtr drawList, Rect chartRect, FuChartOptions options)
+        private void DrawChartEmptyState(FuDrawList drawList, Rect chartRect, FuChartOptions options)
         {
             string text = "No chart data";
             Vector2 textSize = ImGui.CalcTextSize(text);
@@ -486,7 +486,7 @@ namespace Fu.Framework
         /// <param name="plotRect">Plot rectangle.</param>
         /// <param name="bounds">Chart bounds.</param>
         /// <param name="options">Chart options.</param>
-        private void DrawChartGridAndAxes(ImDrawListPtr drawList, Rect plotRect, FuChartBounds bounds, FuChartOptions options)
+        private void DrawChartGridAndAxes(FuDrawList drawList, Rect plotRect, FuChartBounds bounds, FuChartOptions options)
         {
             uint gridColor = ResolveChartColor(options.Style.GridColor, Fugui.Themes.GetColor(FuColors.Border), 0.35f);
             uint axisColor = ResolveChartColor(options.Style.AxisColor, Fugui.Themes.GetColor(FuColors.Text), 0.65f);
@@ -519,7 +519,7 @@ namespace Fu.Framework
         /// <param name="options">Chart options.</param>
         /// <param name="gridColor">Grid line color.</param>
         /// <param name="textColor">Tick text color.</param>
-        private void DrawChartTicks(ImDrawListPtr drawList, Rect plotRect, FuChartBounds bounds, FuChartAxis axis, bool horizontal, FuChartOptions options, uint gridColor, uint textColor)
+        private void DrawChartTicks(FuDrawList drawList, Rect plotRect, FuChartBounds bounds, FuChartAxis axis, bool horizontal, FuChartOptions options, uint gridColor, uint textColor)
         {
             int tickCount = Mathf.Clamp(axis.TickCount, 2, 16);
             for (int i = 0; i < tickCount; i++)
@@ -563,7 +563,7 @@ namespace Fu.Framework
         /// <param name="x">Tick screen X position.</param>
         /// <param name="y">Tick label screen Y position.</param>
         /// <param name="color">Text color.</param>
-        private void DrawChartXAxisLabel(ImDrawListPtr drawList, string label, float x, float y, uint color)
+        private void DrawChartXAxisLabel(FuDrawList drawList, string label, float x, float y, uint color)
         {
             Vector2 textSize = ImGui.CalcTextSize(label);
             drawList.AddText(new Vector2(x - textSize.x * 0.5f, y), color, label);
@@ -577,7 +577,7 @@ namespace Fu.Framework
         /// <param name="x">Tick label right edge screen X position.</param>
         /// <param name="y">Tick screen Y position.</param>
         /// <param name="color">Text color.</param>
-        private void DrawChartYAxisLabel(ImDrawListPtr drawList, string label, float x, float y, uint color)
+        private void DrawChartYAxisLabel(FuDrawList drawList, string label, float x, float y, uint color)
         {
             Vector2 textSize = ImGui.CalcTextSize(label);
             drawList.AddText(new Vector2(x - textSize.x, y - textSize.y * 0.5f), color, label);
@@ -592,7 +592,7 @@ namespace Fu.Framework
         /// <param name="horizontal">Whether this is the X axis.</param>
         /// <param name="options">Chart options.</param>
         /// <param name="color">Text color.</param>
-        private void DrawChartAxisTitle(ImDrawListPtr drawList, Rect plotRect, FuChartAxis axis, bool horizontal, FuChartOptions options, uint color)
+        private void DrawChartAxisTitle(FuDrawList drawList, Rect plotRect, FuChartAxis axis, bool horizontal, FuChartOptions options, uint color)
         {
             if (!options.Flags.HasFlag(FuChartFlags.AxisLabels) || string.IsNullOrEmpty(axis.Label))
             {
@@ -613,7 +613,7 @@ namespace Fu.Framework
         /// <param name="chartRect">Outer chart rectangle.</param>
         /// <param name="series">Series to show.</param>
         /// <param name="options">Chart options.</param>
-        private void DrawChartLegend(ImDrawListPtr drawList, Rect chartRect, IList<FuChartSeries> series, FuChartOptions options)
+        private void DrawChartLegend(FuDrawList drawList, Rect chartRect, IList<FuChartSeries> series, FuChartOptions options)
         {
             if (!options.Flags.HasFlag(FuChartFlags.Legend) || series == null)
             {
@@ -703,7 +703,7 @@ namespace Fu.Framework
         /// <param name="series">Series to draw.</param>
         /// <param name="context">Chart draw context.</param>
         /// <param name="options">Chart options.</param>
-        private void DrawChartSeries(ImDrawListPtr drawList, IList<FuChartSeries> series, FuChartDrawContext context, FuChartOptions options)
+        private void DrawChartSeries(FuDrawList drawList, IList<FuChartSeries> series, FuChartDrawContext context, FuChartOptions options)
         {
             if (series == null)
             {
@@ -752,7 +752,7 @@ namespace Fu.Framework
         /// <param name="options">Chart options.</param>
         /// <param name="color">Resolved series color.</param>
         /// <param name="drawPoints">Whether markers should be drawn on the line.</param>
-        private void DrawChartLineSeries(ImDrawListPtr drawList, FuChartSeries series, FuChartDrawContext context, FuChartOptions options, Color color, bool drawPoints)
+        private void DrawChartLineSeries(FuDrawList drawList, FuChartSeries series, FuChartDrawContext context, FuChartOptions options, Color color, bool drawPoints)
         {
             int count = series.Count;
             if (count <= 0)
@@ -789,7 +789,7 @@ namespace Fu.Framework
         /// <param name="previousPoint">Previous screen point.</param>
         /// <param name="hasPrevious">Whether a valid previous point exists.</param>
         /// <param name="drawPoint">Whether a point marker should be drawn.</param>
-        private void DrawChartLinePoint(ImDrawListPtr drawList, FuChartSeries series, FuChartDrawContext context, int pointIndex, uint lineColor, ref Vector2 previousPoint, ref bool hasPrevious, bool drawPoint)
+        private void DrawChartLinePoint(FuDrawList drawList, FuChartSeries series, FuChartDrawContext context, int pointIndex, uint lineColor, ref Vector2 previousPoint, ref bool hasPrevious, bool drawPoint)
         {
             Vector2 value = series.GetPoint(pointIndex);
             if (!IsFiniteChartPoint(value))
@@ -820,7 +820,7 @@ namespace Fu.Framework
         /// <param name="context">Chart draw context.</param>
         /// <param name="options">Chart options.</param>
         /// <param name="color">Resolved series color.</param>
-        private void DrawChartAreaSeries(ImDrawListPtr drawList, FuChartSeries series, FuChartDrawContext context, FuChartOptions options, Color color)
+        private void DrawChartAreaSeries(FuDrawList drawList, FuChartSeries series, FuChartDrawContext context, FuChartOptions options, Color color)
         {
             int count = series.Count;
             if (count <= 0)
@@ -860,7 +860,7 @@ namespace Fu.Framework
         /// <param name="fillColor">Packed fill color.</param>
         /// <param name="previousValue">Previous chart value.</param>
         /// <param name="hasPrevious">Whether a valid previous value exists.</param>
-        private void DrawChartAreaSegment(ImDrawListPtr drawList, FuChartSeries series, FuChartDrawContext context, int pointIndex, float baseline, uint fillColor, ref Vector2 previousValue, ref bool hasPrevious)
+        private void DrawChartAreaSegment(FuDrawList drawList, FuChartSeries series, FuChartDrawContext context, int pointIndex, float baseline, uint fillColor, ref Vector2 previousValue, ref bool hasPrevious)
         {
             Vector2 value = series.GetPoint(pointIndex);
             if (!IsFiniteChartPoint(value))
@@ -894,7 +894,7 @@ namespace Fu.Framework
         /// <param name="color">Resolved series color.</param>
         /// <param name="barSeriesIndex">Index among visible bar series.</param>
         /// <param name="barSeriesCount">Number of visible bar series.</param>
-        private void DrawChartBarSeries(ImDrawListPtr drawList, FuChartSeries series, FuChartDrawContext context, FuChartOptions options, Color color, int barSeriesIndex, int barSeriesCount)
+        private void DrawChartBarSeries(FuDrawList drawList, FuChartSeries series, FuChartDrawContext context, FuChartOptions options, Color color, int barSeriesIndex, int barSeriesCount)
         {
             int count = series.Count;
             if (count <= 0)
@@ -928,7 +928,7 @@ namespace Fu.Framework
         /// <param name="fillColor">Packed fill color.</param>
         /// <param name="barSeriesIndex">Index among visible bar series.</param>
         /// <param name="barSeriesCount">Number of visible bar series.</param>
-        private void DrawChartBar(ImDrawListPtr drawList, FuChartSeries series, FuChartDrawContext context, int pointIndex, float baseline, uint fillColor, int barSeriesIndex, int barSeriesCount)
+        private void DrawChartBar(FuDrawList drawList, FuChartSeries series, FuChartDrawContext context, int pointIndex, float baseline, uint fillColor, int barSeriesIndex, int barSeriesCount)
         {
             Vector2 value = series.GetPoint(pointIndex);
             if (!IsFiniteChartPoint(value))
@@ -957,7 +957,7 @@ namespace Fu.Framework
         /// <param name="context">Chart draw context.</param>
         /// <param name="options">Chart options.</param>
         /// <param name="color">Resolved series color.</param>
-        private void DrawChartScatterSeries(ImDrawListPtr drawList, FuChartSeries series, FuChartDrawContext context, FuChartOptions options, Color color)
+        private void DrawChartScatterSeries(FuDrawList drawList, FuChartSeries series, FuChartDrawContext context, FuChartOptions options, Color color)
         {
             int count = series.Count;
             if (count <= 0)
@@ -989,7 +989,7 @@ namespace Fu.Framework
         /// <param name="pointIndex">Point index to draw.</param>
         /// <param name="pointColor">Packed point color.</param>
         /// <param name="radius">Point radius in screen pixels.</param>
-        private void DrawChartScatterPoint(ImDrawListPtr drawList, FuChartSeries series, FuChartDrawContext context, int pointIndex, uint pointColor, float radius)
+        private void DrawChartScatterPoint(FuDrawList drawList, FuChartSeries series, FuChartDrawContext context, int pointIndex, uint pointColor, float radius)
         {
             Vector2 value = series.GetPoint(pointIndex);
             if (!IsFiniteChartPoint(value))
@@ -1006,7 +1006,7 @@ namespace Fu.Framework
         /// <param name="drawList">ImGui drawlist.</param>
         /// <param name="context">Chart draw context.</param>
         /// <param name="options">Chart options.</param>
-        private void DrawChartHover(ImDrawListPtr drawList, FuChartDrawContext context, FuChartOptions options)
+        private void DrawChartHover(FuDrawList drawList, FuChartDrawContext context, FuChartOptions options)
         {
             if (!context.Hover.IsHovered)
             {

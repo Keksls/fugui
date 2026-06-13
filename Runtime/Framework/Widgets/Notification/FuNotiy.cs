@@ -93,7 +93,7 @@ namespace Fu
                 int visible = Math.Min(MaxVisibleNotifications, _notifications.Count);
                 for (int i = 0; i < visible; i++)
                 {
-                    if (_notifications[i].Draw(ImGui.GetWindowDrawList(), i, deltaTime, panelWidth)) removeIndex = i;
+                    if (_notifications[i].Draw(Fugui.GetCurrentWindowDrawList(), i, deltaTime, panelWidth)) removeIndex = i;
                     ImGui.Dummy(new Vector2(1f, CardSpacing * container.Context.Scale));
                 }
 
@@ -105,7 +105,7 @@ namespace Fu
                     Vector2 chipPos = ImGui.GetCursorScreenPos();
                     ImGui.BeginChild("notify_more_chip", chipSize, ImGuiChildFlags.AutoResizeY, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
                     {
-                        var chipDL = ImGui.GetWindowDrawList();
+                        var chipDL = Fugui.GetCurrentWindowDrawList();
                         uint bg = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameBg));
                         uint border = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border));
                         chipDL.AddRectFilled(chipPos, chipPos + chipSize, bg, radius);

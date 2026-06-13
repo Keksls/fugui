@@ -375,9 +375,9 @@ namespace Fu
                 if (_drawSnapGrid)
                 {
                     // draw drag snapping grid
-                    DrawGrid(ImGui.GetForegroundDrawList(), overlayScreenRect);
+                    DrawGrid(Fugui.GetForegroundDrawList(), overlayScreenRect);
                 }
-                DrawDragPreview(ImGui.GetForegroundDrawList(), unsnappedDragPosition, overlayScreenRect);
+                DrawDragPreview(Fugui.GetForegroundDrawList(), unsnappedDragPosition, overlayScreenRect);
 
                 // force render window next frame in case we are dragging but mouse is out of window
                 Window.ForceDraw();
@@ -392,7 +392,7 @@ namespace Fu
                 ImGuiNative.igSetCursorScreenPos(contentScreenPos);
 
                 _overlayStyle.Push(true);
-                DrawOverlayBody(ImGui.GetWindowDrawList(), new Rect(contentScreenPos, Size));
+                DrawOverlayBody(Fugui.GetCurrentWindowDrawList(), new Rect(contentScreenPos, Size));
                 Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
                 Fugui.Push(ImGuiCol.Border, Vector4.zero);
                 Fugui.Push(ImGuiCol.BorderShadow, Vector4.zero);
@@ -458,8 +458,8 @@ namespace Fu
                     : Fugui.Themes.GetColor(FuColors.Button);
             bg.w = Mathf.Max(bg.w, hovered || IsDraging ? 0.95f : 0.82f);
 
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-            Rect visualRect = getHandleVisualRect(handleRect, out ImDrawFlags cornerFlags);
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
+            Rect visualRect = getHandleVisualRect(handleRect, out FuDrawFlags cornerFlags);
             float rounding = Mathf.Min(6f * Fugui.Scale, Mathf.Min(visualRect.width, visualRect.height) * 0.45f);
             drawList.AddRectFilled(visualRect.min, visualRect.max, ImGui.GetColorU32(bg), rounding, cornerFlags);
             DrawGripLine(drawList, retractPos, retractButtonSize, hovered);
@@ -595,7 +595,7 @@ namespace Fu
         /// </summary>
         /// <param name="drawList">ImGui draw list.</param>
         /// <param name="bodyRect">Overlay body rectangle.</param>
-        private void DrawOverlayBody(ImDrawListPtr drawList, Rect bodyRect)
+        private void DrawOverlayBody(FuDrawList drawList, Rect bodyRect)
         {
             if (_noBackground)
             {
@@ -604,24 +604,24 @@ namespace Fu
 
             Vector4 bg = Fugui.Themes.GetColor(FuColors.WindowBg);
             float rounding = 6f * Fugui.Scale;
-            ImDrawFlags cornerFlags;
+            FuDrawFlags cornerFlags;
             switch (_dragButtonPosition)
             {
                 case FuOverlayDragPosition.Top:
-                    cornerFlags = ImDrawFlags.RoundCornersBottom;
+                    cornerFlags = FuDrawFlags.RoundCornersBottom;
                     break;
 
                 case FuOverlayDragPosition.Right:
-                    cornerFlags = ImDrawFlags.RoundCornersLeft;
+                    cornerFlags = FuDrawFlags.RoundCornersLeft;
                     break;
 
                 case FuOverlayDragPosition.Bottom:
-                    cornerFlags = ImDrawFlags.RoundCornersTop;
+                    cornerFlags = FuDrawFlags.RoundCornersTop;
                     break;
 
                 default:
                 case FuOverlayDragPosition.Left:
-                    cornerFlags = ImDrawFlags.RoundCornersRight;
+                    cornerFlags = FuDrawFlags.RoundCornersRight;
                     break;
             }
 
@@ -634,11 +634,11 @@ namespace Fu
         /// <param name="handleRect">Handle interaction rectangle.</param>
         /// <param name="cornerFlags">Rounded corners to draw.</param>
         /// <returns>Handle visual rectangle.</returns>
-        private Rect getHandleVisualRect(Rect handleRect, out ImDrawFlags cornerFlags)
+        private Rect getHandleVisualRect(Rect handleRect, out FuDrawFlags cornerFlags)
         {
             if (_collapsed)
             {
-                cornerFlags = ImDrawFlags.RoundCornersAll;
+                cornerFlags = FuDrawFlags.RoundCornersAll;
                 return handleRect;
             }
 
@@ -646,20 +646,20 @@ namespace Fu
             switch (_dragButtonPosition)
             {
                 case FuOverlayDragPosition.Top:
-                    cornerFlags = ImDrawFlags.RoundCornersTop;
+                    cornerFlags = FuDrawFlags.RoundCornersTop;
                     return new Rect(handleRect.position, new Vector2(handleRect.width, handleRect.height + overlap));
 
                 case FuOverlayDragPosition.Right:
-                    cornerFlags = ImDrawFlags.RoundCornersRight;
+                    cornerFlags = FuDrawFlags.RoundCornersRight;
                     return new Rect(new Vector2(handleRect.x - overlap, handleRect.y), new Vector2(handleRect.width + overlap, handleRect.height));
 
                 case FuOverlayDragPosition.Bottom:
-                    cornerFlags = ImDrawFlags.RoundCornersBottom;
+                    cornerFlags = FuDrawFlags.RoundCornersBottom;
                     return new Rect(new Vector2(handleRect.x, handleRect.y - overlap), new Vector2(handleRect.width, handleRect.height + overlap));
 
                 default:
                 case FuOverlayDragPosition.Left:
-                    cornerFlags = ImDrawFlags.RoundCornersLeft;
+                    cornerFlags = FuDrawFlags.RoundCornersLeft;
                     return new Rect(handleRect.position, new Vector2(handleRect.width + overlap, handleRect.height));
             }
         }
@@ -671,7 +671,7 @@ namespace Fu
         /// <param name="position">Handle position.</param>
         /// <param name="size">Handle size.</param>
         /// <param name="hovered">Whether the handle is hovered.</param>
-        private void DrawGripLine(ImDrawListPtr drawList, Vector2 position, Vector2 size, bool hovered)
+        private void DrawGripLine(FuDrawList drawList, Vector2 position, Vector2 size, bool hovered)
         {
             bool horizontal = _dragButtonPosition == FuOverlayDragPosition.Top || _dragButtonPosition == FuOverlayDragPosition.Bottom;
             float scale = Fugui.Scale;
@@ -693,7 +693,7 @@ namespace Fu
             Vector2 max = horizontal
                 ? new Vector2(center.x + length * 0.5f, center.y + thickness * 0.5f)
                 : new Vector2(center.x + thickness * 0.5f, center.y + length * 0.5f);
-            drawList.AddRectFilled(min, max, ImGui.GetColorU32(highlight), thickness * 0.5f, ImDrawFlags.RoundCornersAll);
+            drawList.AddRectFilled(min, max, ImGui.GetColorU32(highlight), thickness * 0.5f, FuDrawFlags.RoundCornersAll);
         }
 
         /// <summary>
@@ -702,7 +702,7 @@ namespace Fu
         /// <param name="drawList">ImGui draw list.</param>
         /// <param name="unsnappedScreenPos">Unsnapped screen position.</param>
         /// <param name="snappedRect">Snapped overlay rectangle.</param>
-        private void DrawDragPreview(ImDrawListPtr drawList, Vector2 unsnappedScreenPos, Rect snappedRect)
+        private void DrawDragPreview(FuDrawList drawList, Vector2 unsnappedScreenPos, Rect snappedRect)
         {
             Rect unsnappedRect = getOverlayScreenRect(unsnappedScreenPos);
             Vector4 snappedFill = Fugui.Themes.GetColor(FuColors.ButtonActive);
@@ -715,11 +715,11 @@ namespace Fu
             float rounding = 6f * Fugui.Scale;
             float thickness = Mathf.Max(1f, Fugui.Scale);
             drawList.AddRectFilled(snappedRect.min, snappedRect.max, ImGui.GetColorU32(snappedFill), rounding);
-            drawList.AddRect(snappedRect.min, snappedRect.max, ImGui.GetColorU32(snappedBorder), rounding, ImDrawFlags.None, thickness);
+            drawList.AddRect(snappedRect.min, snappedRect.max, ImGui.GetColorU32(snappedBorder), rounding, FuDrawFlags.None, thickness);
 
             if ((unsnappedRect.position - snappedRect.position).sqrMagnitude > 1f)
             {
-                drawList.AddRect(unsnappedRect.min, unsnappedRect.max, ImGui.GetColorU32(rawBorder), rounding, ImDrawFlags.None, thickness);
+                drawList.AddRect(unsnappedRect.min, unsnappedRect.max, ImGui.GetColorU32(rawBorder), rounding, FuDrawFlags.None, thickness);
             }
         }
 
@@ -980,7 +980,7 @@ namespace Fu
         /// Draw snap grid
         /// </summary>
         /// <param name="drawList">ImGui draw list to draw snap grid on</param>
-        private void DrawGrid(ImDrawListPtr drawList, Rect snappedRect)
+        private void DrawGrid(FuDrawList drawList, Rect snappedRect)
         {
             Vector2 startPos = Window.LocalPosition + Window.WorkingAreaPosition;
             Vector2 endPos = startPos + Window.WorkingAreaSize;
@@ -1020,7 +1020,7 @@ namespace Fu
             }
 
             drawList.AddRectFilled(snappedRect.min, snappedRect.max, ImGui.GetColorU32(snapCell), 6f * Fugui.Scale);
-            drawList.AddRect(startPos, endPos, majorColor, 0f, ImDrawFlags.None, Mathf.Max(1f, Fugui.Scale));
+            drawList.AddRect(startPos, endPos, majorColor, 0f, FuDrawFlags.None, Mathf.Max(1f, Fugui.Scale));
         }
         #endregion
     }

@@ -1,53 +1,53 @@
+using ImGuiNET;
 using System;
-using UnityEngine;
 using System.Runtime.CompilerServices;
 using System.Text;
+using UnityEngine;
 
-namespace ImGuiNET
+namespace Fu
 {
-    internal unsafe partial struct ImDrawList
+    public unsafe partial struct FuDrawList
     {
-        public ImVector CmdBuffer;
-        public ImVector IdxBuffer;
-        public ImVector VtxBuffer;
-        public ImDrawListFlags Flags;
-        public uint _VtxCurrentIdx;
-        public IntPtr _Data;
-        public ImDrawVert* _VtxWritePtr;
-        public ushort* _IdxWritePtr;
-        public ImVector _Path;
-        public ImDrawCmdHeader _CmdHeader;
-        public ImDrawListSplitter _Splitter;
-        public ImVector _ClipRectStack;
-        public ImVector _TextureIdStack;
-        public ImVector _CallbacksDataBuf;
-        public float _FringeScale;
-        public byte* _OwnerName;
-    }
-    internal unsafe partial struct ImDrawListPtr
-    {
-        public ImDrawList* NativePtr { get; }
-        public ImDrawListPtr(ImDrawList* nativePtr) => NativePtr = nativePtr;
-        public ImDrawListPtr(IntPtr nativePtr) => NativePtr = (ImDrawList*)nativePtr;
-        public static implicit operator ImDrawListPtr(ImDrawList* nativePtr) => new ImDrawListPtr(nativePtr);
-        public static implicit operator ImDrawList* (ImDrawListPtr wrappedPtr) => wrappedPtr.NativePtr;
-        public static implicit operator ImDrawListPtr(IntPtr nativePtr) => new ImDrawListPtr(nativePtr);
-        public ImPtrVector<ImDrawCmdPtr> CmdBuffer => new ImPtrVector<ImDrawCmdPtr>(NativePtr->CmdBuffer, Unsafe.SizeOf<ImDrawCmd>());
-        public ImVector<ushort> IdxBuffer => new ImVector<ushort>(NativePtr->IdxBuffer);
-        public ImPtrVector<ImDrawVertPtr> VtxBuffer => new ImPtrVector<ImDrawVertPtr>(NativePtr->VtxBuffer, Unsafe.SizeOf<ImDrawVert>());
-        public ref ImDrawListFlags Flags => ref Unsafe.AsRef<ImDrawListFlags>(&NativePtr->Flags);
-        public ref uint _VtxCurrentIdx => ref Unsafe.AsRef<uint>(&NativePtr->_VtxCurrentIdx);
-        public ref IntPtr _Data => ref Unsafe.AsRef<IntPtr>(&NativePtr->_Data);
-        public ImDrawVertPtr _VtxWritePtr => new ImDrawVertPtr(NativePtr->_VtxWritePtr);
-        public IntPtr _IdxWritePtr { get => (IntPtr)NativePtr->_IdxWritePtr; set => NativePtr->_IdxWritePtr = (ushort*)value; }
-        public ImVector<Vector2> _Path => new ImVector<Vector2>(NativePtr->_Path);
-        public ref ImDrawCmdHeader _CmdHeader => ref Unsafe.AsRef<ImDrawCmdHeader>(&NativePtr->_CmdHeader);
-        public ref ImDrawListSplitter _Splitter => ref Unsafe.AsRef<ImDrawListSplitter>(&NativePtr->_Splitter);
-        public ImVector<Vector4> _ClipRectStack => new ImVector<Vector4>(NativePtr->_ClipRectStack);
-        public ImVector<IntPtr> _TextureIdStack => new ImVector<IntPtr>(NativePtr->_TextureIdStack);
-        public ImVector<byte> _CallbacksDataBuf => new ImVector<byte>(NativePtr->_CallbacksDataBuf);
-        public ref float _FringeScale => ref Unsafe.AsRef<float>(&NativePtr->_FringeScale);
-        public NullTerminatedString _OwnerName => new NullTerminatedString(NativePtr->_OwnerName);
+        internal ImDrawList* NativePtr { get; }
+
+        private static IntPtr ResolveTextureId(Texture texture)
+        {
+            if (texture == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            TextureManager textureManager = FuWindow.CurrentDrawingWindow != null
+                ? FuWindow.CurrentDrawingWindow.Container?.Context?.TextureManager
+                : Fugui.CurrentContext?.TextureManager;
+
+            if (textureManager == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            return textureManager.GetTextureId(texture);
+        }
+        internal FuDrawList(ImDrawList* nativePtr) => NativePtr = nativePtr;
+        internal FuDrawList(ImDrawListPtr nativePtr) => NativePtr = nativePtr.NativePtr;
+        internal FuDrawList(IntPtr nativePtr) => NativePtr = (ImDrawList*)nativePtr;
+        public bool IsValid => NativePtr != null;
+        internal ImPtrVector<ImDrawCmdPtr> CmdBuffer => new ImPtrVector<ImDrawCmdPtr>(NativePtr->CmdBuffer, Unsafe.SizeOf<ImDrawCmd>());
+        internal ImVector<ushort> IdxBuffer => new ImVector<ushort>(NativePtr->IdxBuffer);
+        internal ImPtrVector<ImDrawVertPtr> VtxBuffer => new ImPtrVector<ImDrawVertPtr>(NativePtr->VtxBuffer, Unsafe.SizeOf<ImDrawVert>());
+        internal ref ImDrawListFlags Flags => ref Unsafe.AsRef<ImDrawListFlags>(&NativePtr->Flags);
+        internal ref uint _VtxCurrentIdx => ref Unsafe.AsRef<uint>(&NativePtr->_VtxCurrentIdx);
+        internal ref IntPtr _Data => ref Unsafe.AsRef<IntPtr>(&NativePtr->_Data);
+        internal ImDrawVertPtr _VtxWritePtr => new ImDrawVertPtr(NativePtr->_VtxWritePtr);
+        internal IntPtr _IdxWritePtr { get => (IntPtr)NativePtr->_IdxWritePtr; set => NativePtr->_IdxWritePtr = (ushort*)value; }
+        internal ImVector<Vector2> _Path => new ImVector<Vector2>(NativePtr->_Path);
+        internal ref ImDrawCmdHeader _CmdHeader => ref Unsafe.AsRef<ImDrawCmdHeader>(&NativePtr->_CmdHeader);
+        internal ref ImDrawListSplitter _Splitter => ref Unsafe.AsRef<ImDrawListSplitter>(&NativePtr->_Splitter);
+        internal ImVector<Vector4> _ClipRectStack => new ImVector<Vector4>(NativePtr->_ClipRectStack);
+        internal ImVector<IntPtr> _TextureIdStack => new ImVector<IntPtr>(NativePtr->_TextureIdStack);
+        internal ImVector<byte> _CallbacksDataBuf => new ImVector<byte>(NativePtr->_CallbacksDataBuf);
+        internal ref float _FringeScale => ref Unsafe.AsRef<float>(&NativePtr->_FringeScale);
+        internal NullTerminatedString _OwnerName => new NullTerminatedString(NativePtr->_OwnerName);
         public int _CalcCircleAutoSegmentCount(float radius)
         {
             int ret = ImGuiNative.ImDrawList__CalcCircleAutoSegmentCount((ImDrawList*)(NativePtr), radius);
@@ -201,29 +201,29 @@ namespace ImGuiNET
         {
             ImGuiNative.ImDrawList_AddEllipseFilled((ImDrawList*)(NativePtr), center, radius, col, rot, num_segments);
         }
-        public void AddImage(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max)
+        internal void AddImage(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max)
         {
             Vector2 uv_min = new Vector2();
             Vector2 uv_max = new Vector2(1, 1);
             uint col = 4294967295;
             ImGuiNative.ImDrawList_AddImage((ImDrawList*)(NativePtr), user_texture_id, p_min, p_max, uv_min, uv_max, col);
         }
-        public void AddImage(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min)
+        internal void AddImage(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min)
         {
             Vector2 uv_max = new Vector2(1, 1);
             uint col = 4294967295;
             ImGuiNative.ImDrawList_AddImage((ImDrawList*)(NativePtr), user_texture_id, p_min, p_max, uv_min, uv_max, col);
         }
-        public void AddImage(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max)
+        internal void AddImage(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max)
         {
             uint col = 4294967295;
             ImGuiNative.ImDrawList_AddImage((ImDrawList*)(NativePtr), user_texture_id, p_min, p_max, uv_min, uv_max, col);
         }
-        public void AddImage(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col)
+        internal void AddImage(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col)
         {
             ImGuiNative.ImDrawList_AddImage((ImDrawList*)(NativePtr), user_texture_id, p_min, p_max, uv_min, uv_max, col);
         }
-        public void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
+        internal void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
         {
             Vector2 uv1 = new Vector2();
             Vector2 uv2 = new Vector2(1, 0);
@@ -232,7 +232,7 @@ namespace ImGuiNET
             uint col = 4294967295;
             ImGuiNative.ImDrawList_AddImageQuad((ImDrawList*)(NativePtr), user_texture_id, p1, p2, p3, p4, uv1, uv2, uv3, uv4, col);
         }
-        public void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1)
+        internal void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1)
         {
             Vector2 uv2 = new Vector2(1, 0);
             Vector2 uv3 = new Vector2(1, 1);
@@ -240,36 +240,120 @@ namespace ImGuiNET
             uint col = 4294967295;
             ImGuiNative.ImDrawList_AddImageQuad((ImDrawList*)(NativePtr), user_texture_id, p1, p2, p3, p4, uv1, uv2, uv3, uv4, col);
         }
-        public void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2)
+        internal void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2)
         {
             Vector2 uv3 = new Vector2(1, 1);
             Vector2 uv4 = new Vector2(0, 1);
             uint col = 4294967295;
             ImGuiNative.ImDrawList_AddImageQuad((ImDrawList*)(NativePtr), user_texture_id, p1, p2, p3, p4, uv1, uv2, uv3, uv4, col);
         }
-        public void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3)
+        internal void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3)
         {
             Vector2 uv4 = new Vector2(0, 1);
             uint col = 4294967295;
             ImGuiNative.ImDrawList_AddImageQuad((ImDrawList*)(NativePtr), user_texture_id, p1, p2, p3, p4, uv1, uv2, uv3, uv4, col);
         }
-        public void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        internal void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
         {
             uint col = 4294967295;
             ImGuiNative.ImDrawList_AddImageQuad((ImDrawList*)(NativePtr), user_texture_id, p1, p2, p3, p4, uv1, uv2, uv3, uv4, col);
         }
-        public void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4, uint col)
+        internal void AddImageQuad(IntPtr user_texture_id, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4, uint col)
         {
             ImGuiNative.ImDrawList_AddImageQuad((ImDrawList*)(NativePtr), user_texture_id, p1, p2, p3, p4, uv1, uv2, uv3, uv4, col);
         }
-        public void AddImageRounded(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col, float rounding)
+        internal void AddImageRounded(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col, float rounding)
         {
             ImDrawFlags flags = (ImDrawFlags)0;
             ImGuiNative.ImDrawList_AddImageRounded((ImDrawList*)(NativePtr), user_texture_id, p_min, p_max, uv_min, uv_max, col, rounding, flags);
         }
-        public void AddImageRounded(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col, float rounding, ImDrawFlags flags)
+        internal void AddImageRoundedNative(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col, float rounding, ImDrawFlags flags)
         {
             ImGuiNative.ImDrawList_AddImageRounded((ImDrawList*)(NativePtr), user_texture_id, p_min, p_max, uv_min, uv_max, col, rounding, flags);
+        }
+        public void AddImage(Texture texture, Vector2 p_min, Vector2 p_max)
+        {
+            AddImage(ResolveTextureId(texture), p_min, p_max);
+        }
+
+        public void AddImage(Texture texture, Vector2 p_min, Vector2 p_max, Vector2 uv_min)
+        {
+            AddImage(ResolveTextureId(texture), p_min, p_max, uv_min);
+        }
+
+        public void AddImage(Texture texture, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max)
+        {
+            AddImage(ResolveTextureId(texture), p_min, p_max, uv_min, uv_max);
+        }
+
+        public void AddImage(Texture texture, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col)
+        {
+            AddImage(ResolveTextureId(texture), p_min, p_max, uv_min, uv_max, col);
+        }
+
+        public void AddImage(Texture texture, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, Vector4 color)
+        {
+            AddImage(texture, p_min, p_max, uv_min, uv_max, ImGui.GetColorU32(color));
+        }
+
+        public void AddImage(Texture texture, Vector2 p_min, Vector2 p_max, Vector4 color)
+        {
+            AddImage(texture, p_min, p_max, Vector2.zero, Vector2.one, ImGui.GetColorU32(color));
+        }
+
+        public void AddImageQuad(Texture texture, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
+        {
+            AddImageQuad(ResolveTextureId(texture), p1, p2, p3, p4);
+        }
+
+        public void AddImageQuad(Texture texture, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1)
+        {
+            AddImageQuad(ResolveTextureId(texture), p1, p2, p3, p4, uv1);
+        }
+
+        public void AddImageQuad(Texture texture, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2)
+        {
+            AddImageQuad(ResolveTextureId(texture), p1, p2, p3, p4, uv1, uv2);
+        }
+
+        public void AddImageQuad(Texture texture, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3)
+        {
+            AddImageQuad(ResolveTextureId(texture), p1, p2, p3, p4, uv1, uv2, uv3);
+        }
+
+        public void AddImageQuad(Texture texture, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4)
+        {
+            AddImageQuad(ResolveTextureId(texture), p1, p2, p3, p4, uv1, uv2, uv3, uv4);
+        }
+
+        public void AddImageQuad(Texture texture, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4, uint col)
+        {
+            AddImageQuad(ResolveTextureId(texture), p1, p2, p3, p4, uv1, uv2, uv3, uv4, col);
+        }
+
+        public void AddImageQuad(Texture texture, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4, Vector4 color)
+        {
+            AddImageQuad(texture, p1, p2, p3, p4, uv1, uv2, uv3, uv4, ImGui.GetColorU32(color));
+        }
+
+        public void AddImageRounded(Texture texture, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col, float rounding)
+        {
+            AddImageRounded(ResolveTextureId(texture), p_min, p_max, uv_min, uv_max, col, rounding);
+        }
+
+        public void AddImageRounded(Texture texture, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, Vector4 color, float rounding)
+        {
+            AddImageRounded(texture, p_min, p_max, uv_min, uv_max, ImGui.GetColorU32(color), rounding);
+        }
+
+        public void AddImageRounded(Texture texture, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col, float rounding, FuDrawFlags flags)
+        {
+            AddImageRoundedNative(ResolveTextureId(texture), p_min, p_max, uv_min, uv_max, col, rounding, (ImDrawFlags)flags);
+        }
+
+        public void AddImageRounded(Texture texture, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, Vector4 color, float rounding, FuDrawFlags flags)
+        {
+            AddImageRounded(texture, p_min, p_max, uv_min, uv_max, ImGui.GetColorU32(color), rounding, flags);
         }
         public void AddLine(Vector2 p1, Vector2 p2, uint col)
         {
@@ -293,7 +377,7 @@ namespace ImGuiNET
         {
             ImGuiNative.ImDrawList_AddNgonFilled((ImDrawList*)(NativePtr), center, radius, col, num_segments);
         }
-        public void AddPolyline(ref Vector2 points, int num_points, uint col, ImDrawFlags flags, float thickness)
+        internal void AddPolylineNative(ref Vector2 points, int num_points, uint col, ImDrawFlags flags, float thickness)
         {
             fixed (Vector2* native_points = &points)
             {
@@ -326,12 +410,12 @@ namespace ImGuiNET
             float thickness = 1.0f;
             ImGuiNative.ImDrawList_AddRect((ImDrawList*)(NativePtr), p_min, p_max, col, rounding, flags, thickness);
         }
-        public void AddRect(Vector2 p_min, Vector2 p_max, uint col, float rounding, ImDrawFlags flags)
+        internal void AddRectNative(Vector2 p_min, Vector2 p_max, uint col, float rounding, ImDrawFlags flags)
         {
             float thickness = 1.0f;
             ImGuiNative.ImDrawList_AddRect((ImDrawList*)(NativePtr), p_min, p_max, col, rounding, flags, thickness);
         }
-        public void AddRect(Vector2 p_min, Vector2 p_max, uint col, float rounding, ImDrawFlags flags, float thickness)
+        internal void AddRectNative(Vector2 p_min, Vector2 p_max, uint col, float rounding, ImDrawFlags flags, float thickness)
         {
             ImGuiNative.ImDrawList_AddRect((ImDrawList*)(NativePtr), p_min, p_max, col, rounding, flags, thickness);
         }
@@ -346,7 +430,7 @@ namespace ImGuiNET
             ImDrawFlags flags = (ImDrawFlags)0;
             ImGuiNative.ImDrawList_AddRectFilled((ImDrawList*)(NativePtr), p_min, p_max, col, rounding, flags);
         }
-        public void AddRectFilled(Vector2 p_min, Vector2 p_max, uint col, float rounding, ImDrawFlags flags)
+        internal void AddRectFilledNative(Vector2 p_min, Vector2 p_max, uint col, float rounding, ImDrawFlags flags)
         {
             ImGuiNative.ImDrawList_AddRectFilled((ImDrawList*)(NativePtr), p_min, p_max, col, rounding, flags);
         }
@@ -359,19 +443,19 @@ namespace ImGuiNET
         {
             byte* native_text_begin;
             int text_begin_byteCount = 0;
-                text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
-                if (text_begin_byteCount > Util.StackAllocationSizeLimit)
-                {
-                    native_text_begin = Util.Allocate(text_begin_byteCount + 1);
-                }
-                else
-                {
-                    byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
-                    native_text_begin = native_text_begin_stackBytes;
-                }
-                int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
-                native_text_begin[native_text_begin_offset] = 0;
-            ImGuiNative.ImDrawList_AddText_Vec2((ImDrawList*)(NativePtr), pos, col, native_text_begin, native_text_begin+text_begin_byteCount);
+            text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
+            if (text_begin_byteCount > Util.StackAllocationSizeLimit)
+            {
+                native_text_begin = Util.Allocate(text_begin_byteCount + 1);
+            }
+            else
+            {
+                byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
+                native_text_begin = native_text_begin_stackBytes;
+            }
+            int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
+            native_text_begin[native_text_begin_offset] = 0;
+            ImGuiNative.ImDrawList_AddText_Vec2((ImDrawList*)(NativePtr), pos, col, native_text_begin, native_text_begin + text_begin_byteCount);
             if (text_begin_byteCount > Util.StackAllocationSizeLimit)
             {
                 Util.Free(native_text_begin);
@@ -382,147 +466,147 @@ namespace ImGuiNET
         {
             byte* native_text_begin;
             int text_begin_byteCount = 0;
-                text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
-                if (text_begin_byteCount > Util.StackAllocationSizeLimit)
-                {
-                    native_text_begin = Util.Allocate(text_begin_byteCount + 1);
-                }
-                else
-                {
-                    byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
-                    native_text_begin = native_text_begin_stackBytes;
-                }
-                int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
-                native_text_begin[native_text_begin_offset] = 0;
-            ImGuiNative.ImDrawList_AddText_Vec2((ImDrawList*)(NativePtr), pos, col, native_text_begin, native_text_begin+text_begin_byteCount);
+            text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
+            if (text_begin_byteCount > Util.StackAllocationSizeLimit)
+            {
+                native_text_begin = Util.Allocate(text_begin_byteCount + 1);
+            }
+            else
+            {
+                byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
+                native_text_begin = native_text_begin_stackBytes;
+            }
+            int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
+            native_text_begin[native_text_begin_offset] = 0;
+            ImGuiNative.ImDrawList_AddText_Vec2((ImDrawList*)(NativePtr), pos, col, native_text_begin, native_text_begin + text_begin_byteCount);
             if (text_begin_byteCount > Util.StackAllocationSizeLimit)
             {
                 Util.Free(native_text_begin);
             }
         }
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
-        public void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, ReadOnlySpan<char> text_begin)
+        internal void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, ReadOnlySpan<char> text_begin)
         {
             ImFont* native_font = font.NativePtr;
             byte* native_text_begin;
             int text_begin_byteCount = 0;
-                text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
-                if (text_begin_byteCount > Util.StackAllocationSizeLimit)
-                {
-                    native_text_begin = Util.Allocate(text_begin_byteCount + 1);
-                }
-                else
-                {
-                    byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
-                    native_text_begin = native_text_begin_stackBytes;
-                }
-                int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
-                native_text_begin[native_text_begin_offset] = 0;
+            text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
+            if (text_begin_byteCount > Util.StackAllocationSizeLimit)
+            {
+                native_text_begin = Util.Allocate(text_begin_byteCount + 1);
+            }
+            else
+            {
+                byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
+                native_text_begin = native_text_begin_stackBytes;
+            }
+            int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
+            native_text_begin[native_text_begin_offset] = 0;
             float wrap_width = 0.0f;
             Vector4* cpu_fine_clip_rect = null;
-            ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin+text_begin_byteCount, wrap_width, cpu_fine_clip_rect);
+            ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin + text_begin_byteCount, wrap_width, cpu_fine_clip_rect);
             if (text_begin_byteCount > Util.StackAllocationSizeLimit)
             {
                 Util.Free(native_text_begin);
             }
         }
 #endif
-        public void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, string text_begin)
+        internal void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, string text_begin)
         {
             ImFont* native_font = font.NativePtr;
             byte* native_text_begin;
             int text_begin_byteCount = 0;
-                text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
-                if (text_begin_byteCount > Util.StackAllocationSizeLimit)
-                {
-                    native_text_begin = Util.Allocate(text_begin_byteCount + 1);
-                }
-                else
-                {
-                    byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
-                    native_text_begin = native_text_begin_stackBytes;
-                }
-                int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
-                native_text_begin[native_text_begin_offset] = 0;
+            text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
+            if (text_begin_byteCount > Util.StackAllocationSizeLimit)
+            {
+                native_text_begin = Util.Allocate(text_begin_byteCount + 1);
+            }
+            else
+            {
+                byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
+                native_text_begin = native_text_begin_stackBytes;
+            }
+            int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
+            native_text_begin[native_text_begin_offset] = 0;
             float wrap_width = 0.0f;
             Vector4* cpu_fine_clip_rect = null;
-            ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin+text_begin_byteCount, wrap_width, cpu_fine_clip_rect);
+            ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin + text_begin_byteCount, wrap_width, cpu_fine_clip_rect);
             if (text_begin_byteCount > Util.StackAllocationSizeLimit)
             {
                 Util.Free(native_text_begin);
             }
         }
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
-        public void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, ReadOnlySpan<char> text_begin, float wrap_width)
+        internal void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, ReadOnlySpan<char> text_begin, float wrap_width)
         {
             ImFont* native_font = font.NativePtr;
             byte* native_text_begin;
             int text_begin_byteCount = 0;
-                text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
-                if (text_begin_byteCount > Util.StackAllocationSizeLimit)
-                {
-                    native_text_begin = Util.Allocate(text_begin_byteCount + 1);
-                }
-                else
-                {
-                    byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
-                    native_text_begin = native_text_begin_stackBytes;
-                }
-                int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
-                native_text_begin[native_text_begin_offset] = 0;
+            text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
+            if (text_begin_byteCount > Util.StackAllocationSizeLimit)
+            {
+                native_text_begin = Util.Allocate(text_begin_byteCount + 1);
+            }
+            else
+            {
+                byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
+                native_text_begin = native_text_begin_stackBytes;
+            }
+            int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
+            native_text_begin[native_text_begin_offset] = 0;
             Vector4* cpu_fine_clip_rect = null;
-            ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin+text_begin_byteCount, wrap_width, cpu_fine_clip_rect);
+            ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin + text_begin_byteCount, wrap_width, cpu_fine_clip_rect);
             if (text_begin_byteCount > Util.StackAllocationSizeLimit)
             {
                 Util.Free(native_text_begin);
             }
         }
 #endif
-        public void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, string text_begin, float wrap_width)
+        internal void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, string text_begin, float wrap_width)
         {
             ImFont* native_font = font.NativePtr;
             byte* native_text_begin;
             int text_begin_byteCount = 0;
-                text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
-                if (text_begin_byteCount > Util.StackAllocationSizeLimit)
-                {
-                    native_text_begin = Util.Allocate(text_begin_byteCount + 1);
-                }
-                else
-                {
-                    byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
-                    native_text_begin = native_text_begin_stackBytes;
-                }
-                int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
-                native_text_begin[native_text_begin_offset] = 0;
+            text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
+            if (text_begin_byteCount > Util.StackAllocationSizeLimit)
+            {
+                native_text_begin = Util.Allocate(text_begin_byteCount + 1);
+            }
+            else
+            {
+                byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
+                native_text_begin = native_text_begin_stackBytes;
+            }
+            int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
+            native_text_begin[native_text_begin_offset] = 0;
             Vector4* cpu_fine_clip_rect = null;
-            ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin+text_begin_byteCount, wrap_width, cpu_fine_clip_rect);
+            ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin + text_begin_byteCount, wrap_width, cpu_fine_clip_rect);
             if (text_begin_byteCount > Util.StackAllocationSizeLimit)
             {
                 Util.Free(native_text_begin);
             }
         }
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
-        public void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, ReadOnlySpan<char> text_begin, float wrap_width, ref Vector4 cpu_fine_clip_rect)
+        internal void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, ReadOnlySpan<char> text_begin, float wrap_width, ref Vector4 cpu_fine_clip_rect)
         {
             ImFont* native_font = font.NativePtr;
             byte* native_text_begin;
             int text_begin_byteCount = 0;
-                text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
-                if (text_begin_byteCount > Util.StackAllocationSizeLimit)
-                {
-                    native_text_begin = Util.Allocate(text_begin_byteCount + 1);
-                }
-                else
-                {
-                    byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
-                    native_text_begin = native_text_begin_stackBytes;
-                }
-                int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
-                native_text_begin[native_text_begin_offset] = 0;
+            text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
+            if (text_begin_byteCount > Util.StackAllocationSizeLimit)
+            {
+                native_text_begin = Util.Allocate(text_begin_byteCount + 1);
+            }
+            else
+            {
+                byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
+                native_text_begin = native_text_begin_stackBytes;
+            }
+            int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
+            native_text_begin[native_text_begin_offset] = 0;
             fixed (Vector4* native_cpu_fine_clip_rect = &cpu_fine_clip_rect)
             {
-                ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin+text_begin_byteCount, wrap_width, native_cpu_fine_clip_rect);
+                ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin + text_begin_byteCount, wrap_width, native_cpu_fine_clip_rect);
                 if (text_begin_byteCount > Util.StackAllocationSizeLimit)
                 {
                     Util.Free(native_text_begin);
@@ -530,26 +614,26 @@ namespace ImGuiNET
             }
         }
 #endif
-        public void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, string text_begin, float wrap_width, ref Vector4 cpu_fine_clip_rect)
+        internal void AddText(ImFontPtr font, float font_size, Vector2 pos, uint col, string text_begin, float wrap_width, ref Vector4 cpu_fine_clip_rect)
         {
             ImFont* native_font = font.NativePtr;
             byte* native_text_begin;
             int text_begin_byteCount = 0;
-                text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
-                if (text_begin_byteCount > Util.StackAllocationSizeLimit)
-                {
-                    native_text_begin = Util.Allocate(text_begin_byteCount + 1);
-                }
-                else
-                {
-                    byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
-                    native_text_begin = native_text_begin_stackBytes;
-                }
-                int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
-                native_text_begin[native_text_begin_offset] = 0;
+            text_begin_byteCount = Encoding.UTF8.GetByteCount(text_begin);
+            if (text_begin_byteCount > Util.StackAllocationSizeLimit)
+            {
+                native_text_begin = Util.Allocate(text_begin_byteCount + 1);
+            }
+            else
+            {
+                byte* native_text_begin_stackBytes = stackalloc byte[text_begin_byteCount + 1];
+                native_text_begin = native_text_begin_stackBytes;
+            }
+            int native_text_begin_offset = Util.GetUtf8(text_begin, native_text_begin, text_begin_byteCount);
+            native_text_begin[native_text_begin_offset] = 0;
             fixed (Vector4* native_cpu_fine_clip_rect = &cpu_fine_clip_rect)
             {
-                ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin+text_begin_byteCount, wrap_width, native_cpu_fine_clip_rect);
+                ImGuiNative.ImDrawList_AddText_FontPtr((ImDrawList*)(NativePtr), native_font, font_size, pos, col, native_text_begin, native_text_begin + text_begin_byteCount, wrap_width, native_cpu_fine_clip_rect);
                 if (text_begin_byteCount > Util.StackAllocationSizeLimit)
                 {
                     Util.Free(native_text_begin);
@@ -581,10 +665,10 @@ namespace ImGuiNET
         {
             ImGuiNative.ImDrawList_ChannelsSplit((ImDrawList*)(NativePtr), count);
         }
-        public ImDrawListPtr CloneOutput()
+        public FuDrawList CloneOutput()
         {
             ImDrawList* ret = ImGuiNative.ImDrawList_CloneOutput((ImDrawList*)(NativePtr));
-            return new ImDrawListPtr(ret);
+            return new FuDrawList(ret);
         }
         public void Destroy()
         {
@@ -673,7 +757,7 @@ namespace ImGuiNET
             ImDrawFlags flags = (ImDrawFlags)0;
             ImGuiNative.ImDrawList_PathRect((ImDrawList*)(NativePtr), rect_min, rect_max, rounding, flags);
         }
-        public void PathRect(Vector2 rect_min, Vector2 rect_max, float rounding, ImDrawFlags flags)
+        internal void PathRectNative(Vector2 rect_min, Vector2 rect_max, float rounding, ImDrawFlags flags)
         {
             ImGuiNative.ImDrawList_PathRect((ImDrawList*)(NativePtr), rect_min, rect_max, rounding, flags);
         }
@@ -683,12 +767,12 @@ namespace ImGuiNET
             float thickness = 1.0f;
             ImGuiNative.ImDrawList_PathStroke((ImDrawList*)(NativePtr), col, flags, thickness);
         }
-        public void PathStroke(uint col, ImDrawFlags flags)
+        internal void PathStrokeNative(uint col, ImDrawFlags flags)
         {
             float thickness = 1.0f;
             ImGuiNative.ImDrawList_PathStroke((ImDrawList*)(NativePtr), col, flags, thickness);
         }
-        public void PathStroke(uint col, ImDrawFlags flags, float thickness)
+        internal void PathStrokeNative(uint col, ImDrawFlags flags, float thickness)
         {
             ImGuiNative.ImDrawList_PathStroke((ImDrawList*)(NativePtr), col, flags, thickness);
         }
@@ -732,6 +816,70 @@ namespace ImGuiNET
         {
             ImGuiNative.ImDrawList_PrimWriteVtx((ImDrawList*)(NativePtr), pos, uv, col);
         }
+        internal void AddImageRounded(IntPtr user_texture_id, Vector2 p_min, Vector2 p_max, Vector2 uv_min, Vector2 uv_max, uint col, float rounding, FuDrawFlags flags)
+        {
+            AddImageRoundedNative(user_texture_id, p_min, p_max, uv_min, uv_max, col, rounding, (ImDrawFlags)flags);
+        }
+
+        public void AddPolyline(ref Vector2 points, int num_points, uint col, FuDrawFlags flags, float thickness)
+        {
+            AddPolylineNative(ref points, num_points, col, (ImDrawFlags)flags, thickness);
+        }
+
+        public void AddRect(Vector2 p_min, Vector2 p_max, uint col, float rounding, FuDrawFlags flags)
+        {
+            AddRectNative(p_min, p_max, col, rounding, (ImDrawFlags)flags);
+        }
+
+        public void AddRect(Vector2 p_min, Vector2 p_max, uint col, float rounding, FuDrawFlags flags, float thickness)
+        {
+            AddRectNative(p_min, p_max, col, rounding, (ImDrawFlags)flags, thickness);
+        }
+
+        public void AddRectFilled(Vector2 p_min, Vector2 p_max, uint col, float rounding, FuDrawFlags flags)
+        {
+            AddRectFilledNative(p_min, p_max, col, rounding, (ImDrawFlags)flags);
+        }
+
+        public void AddRectFilled(Vector2 p_min, Vector2 p_max, Vector4 color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None)
+        {
+            AddRectFilledNative(p_min, p_max, ImGui.GetColorU32(color), rounding, (ImDrawFlags)flags);
+        }
+
+        public void AddRect(Vector2 p_min, Vector2 p_max, Vector4 color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None, float thickness = 1f)
+        {
+            AddRectNative(p_min, p_max, ImGui.GetColorU32(color), rounding, (ImDrawFlags)flags, thickness);
+        }
+
+        public void AddLine(Vector2 p1, Vector2 p2, Vector4 color, float thickness = 1f)
+        {
+            AddLine(p1, p2, ImGui.GetColorU32(color), thickness);
+        }
+
+        public void AddText(Vector2 pos, Vector4 color, string text_begin)
+        {
+            AddText(pos, ImGui.GetColorU32(color), text_begin);
+        }
+
+        public void AddCircleFilled(Vector2 center, float radius, Vector4 color, int num_segments = 0)
+        {
+            AddCircleFilled(center, radius, ImGui.GetColorU32(color), num_segments);
+        }
+
+        public void PathRect(Vector2 rect_min, Vector2 rect_max, float rounding, FuDrawFlags flags)
+        {
+            PathRectNative(rect_min, rect_max, rounding, (ImDrawFlags)flags);
+        }
+
+        public void PathStroke(uint col, FuDrawFlags flags)
+        {
+            PathStrokeNative(col, (ImDrawFlags)flags);
+        }
+
+        public void PathStroke(uint col, FuDrawFlags flags, float thickness)
+        {
+            PathStrokeNative(col, (ImDrawFlags)flags, thickness);
+        }
         public void PushClipRect(Vector2 clip_rect_min, Vector2 clip_rect_max)
         {
             byte intersect_with_current_clip_rect = 0;
@@ -746,7 +894,12 @@ namespace ImGuiNET
         {
             ImGuiNative.ImDrawList_PushClipRectFullScreen((ImDrawList*)(NativePtr));
         }
-        public void PushTextureID(IntPtr texture_id)
+        public void PushTexture(Texture texture)
+        {
+            PushTextureID(ResolveTextureId(texture));
+        }
+
+        internal void PushTextureID(IntPtr texture_id)
         {
             ImGuiNative.ImDrawList_PushTextureID((ImDrawList*)(NativePtr), texture_id);
         }

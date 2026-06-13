@@ -229,8 +229,8 @@ namespace Fu.Framework
                     }
                 }
 
-                ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-                ImDrawListPtr foregroundDrawList = ImGui.GetForegroundDrawList();
+                FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
+                FuDrawList foregroundDrawList = Fugui.GetForegroundDrawList();
                 float trackRounding = Fugui.Themes.FrameRounding;
                 Vector2 trackMin = new Vector2(valueStartX, y - lineHeight * 0.5f);
                 Vector2 trackMax = new Vector2(valueStartX + valueWidth, y + lineHeight * 0.5f);
@@ -240,7 +240,7 @@ namespace Fu.Framework
                 {
                     Vector4 hoverLine = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback);
                     hoverLine.w = Mathf.Max(hoverLine.w, 0.35f);
-                    drawList.AddRect(trackMin, trackMax, ImGui.GetColorU32(hoverLine), trackRounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.CurrentContext.Scale));
+                    drawList.AddRect(trackMin, trackMax, ImGui.GetColorU32(hoverLine), trackRounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.CurrentContext.Scale));
                     ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                 }
 

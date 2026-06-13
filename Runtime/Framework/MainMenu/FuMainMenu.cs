@@ -349,7 +349,7 @@ namespace Fu
             {
                 item.PreDrawCallback?.Invoke();
                 // draw secondary duotone glyph if needed
-                DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), IsMainMenuDisabled || !item.Enabled);
+                DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), Fugui.GetCurrentWindowDrawList(), IsMainMenuDisabled || !item.Enabled);
 
                 // Begin a submenu if the menu item has children
                 if (beginMainMenuPopup(item.Parent == null ? "  " + itemText + "   " : itemText, item.Enabled && !IsMainMenuDisabled))
@@ -377,7 +377,7 @@ namespace Fu
                 {
                     item.PreDrawCallback?.Invoke();
                     // draw secondary duotone glyph if needed
-                    DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), ImGui.GetWindowDrawList(), IsMainMenuDisabled || !item.Enabled);
+                    DrawDuotoneSecondaryGlyph(item.Parent == null ? "  " + itemText + "   " : itemText, ImGui.GetCursorScreenPos(), Fugui.GetCurrentWindowDrawList(), IsMainMenuDisabled || !item.Enabled);
 
                     if (ImGui.MenuItem(item.Parent == null ? "  " + itemText + "   " : itemText, item.Shortcut, item.Selected, item.Enabled && !IsMainMenuDisabled))
                     {

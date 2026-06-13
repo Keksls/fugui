@@ -49,7 +49,7 @@ namespace Fu.Framework
             Vector2 itemPadding = new Vector2(4f, 4f) * Fugui.CurrentContext.Scale;
             Vector2 itemCarretSize = new Vector2(14f * Fugui.CurrentContext.Scale + itemPadding.x * 2f, height);
             Vector2 popupPos = default;
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float drawedWidth = 0f;
 
             // get current MouseState

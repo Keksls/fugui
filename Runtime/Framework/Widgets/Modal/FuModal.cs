@@ -215,7 +215,7 @@ namespace Fu
                             DrawTitle(_modalTitle);
                         }
 
-                        ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+                        FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
                         // draw body BG
                         if (!usePopupBackdrop)
                         {

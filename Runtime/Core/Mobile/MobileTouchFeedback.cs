@@ -14,7 +14,7 @@ namespace Fu
         /// </summary>
         private static void DrawMobileTouchFeedback()
         {
-            ImDrawListPtr drawList = ImGui.GetForegroundDrawList();
+            FuDrawList drawList = Fugui.GetForegroundDrawList();
 
             foreach(Vector2 touchPos in mobileTouches)
             {

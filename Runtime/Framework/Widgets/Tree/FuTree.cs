@@ -425,7 +425,7 @@ namespace Fu.Framework
             float height = Fugui.CurrentContext.Scale * _itemHeight;
             float indent = 18f * Fugui.CurrentContext.Scale;
             // Get the draw list and color.
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             // Using a layout object and a list clipper, loop through the elements and draw them.
             using (FuLayout layout = new FuLayout())
             {
@@ -471,7 +471,7 @@ namespace Fu.Framework
         ///<param name="itemRect">The row rect.</param>
         ///<param name="indent">The indentation size.</param>
         ///<param name="level">The tree level.</param>
-        private void drawTreeGuides(ImDrawListPtr drawList, Vector2 startPos, Rect itemRect, float indent, int level)
+        private void drawTreeGuides(FuDrawList drawList, Vector2 startPos, Rect itemRect, float indent, int level)
         {
             Vector4 guideColor = Fugui.Themes.GetColor(FuColors.Border);
             guideColor.w *= 0.26f;
@@ -499,7 +499,7 @@ namespace Fu.Framework
         ///<param name="layout">The layout object.</param>
         ///<param name="drawList">The draw list.</param>
         ///<param name="itemRect">The rect of the item.</param>
-        private void drawElement(T element, FuLayout layout, ImDrawListPtr drawList, Rect itemRect)
+        private void drawElement(T element, FuLayout layout, FuDrawList drawList, Rect itemRect)
         {
             float scale = Fugui.CurrentContext.Scale;
             float height = Fugui.CurrentContext.Scale * _itemHeight;
@@ -533,17 +533,17 @@ namespace Fu.Framework
                 {
                     rowColor = Fugui.Themes.GetColor(FuColors.HeaderHovered, FuWindow.CurrentDrawingWindow.Mouse.IsDown(0) ? 0.40f : 0.26f);
                 }
-                drawList.AddRectFilled(rowRect.min, rowRect.max, ImGui.GetColorU32(rowColor), rounding, ImDrawFlags.RoundCornersAll);
+                drawList.AddRectFilled(rowRect.min, rowRect.max, ImGui.GetColorU32(rowColor), rounding, FuDrawFlags.RoundCornersAll);
 
                 if (selected)
                 {
                     Vector4 accent = Fugui.Themes.GetColor(FuColors.Highlight);
                     accent.w = Mathf.Max(accent.w, 0.9f);
-                    drawList.AddRectFilled(rowRect.min, new Vector2(rowRect.xMin + 3f * scale, rowRect.yMax), ImGui.GetColorU32(accent), rounding, ImDrawFlags.RoundCornersLeft);
+                    drawList.AddRectFilled(rowRect.min, new Vector2(rowRect.xMin + 3f * scale, rowRect.yMax), ImGui.GetColorU32(accent), rounding, FuDrawFlags.RoundCornersLeft);
 
                     Vector4 border = accent;
                     border.w *= rowHovered ? 0.52f : 0.34f;
-                    drawList.AddRect(rowRect.min, rowRect.max, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
+                    drawList.AddRect(rowRect.min, rowRect.max, ImGui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
                 }
 
                 // click on element

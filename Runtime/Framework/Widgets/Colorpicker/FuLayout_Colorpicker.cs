@@ -132,7 +132,7 @@ namespace Fu.Framework
             float scale = Fugui.CurrentContext.Scale;
             float height = 20f * scale;
             float width = ImGui.GetContentRegionAvail().x;
-            var drawList = ImGui.GetWindowDrawList();
+            var drawList = Fugui.GetCurrentWindowDrawList();
 
             Vector2 min = ImGui.GetCursorScreenPos();
             Vector2 max = min + new Vector2(width, height);
@@ -151,7 +151,7 @@ namespace Fu.Framework
             drawColorPreviewAlphaStrip(drawList, min, size, color, alpha, rounding);
 
             // draw frame
-            drawList.AddRect(min, max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.82f)), rounding, ImDrawFlags.RoundCornersDefault, 1f);
+            drawList.AddRect(min, max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.82f)), rounding, FuDrawFlags.RoundCornersDefault, 1f);
             // fake draw the element
             ImGui.Dummy(max - min + Vector2.one * 2f);
             _elementHoverFramedEnabled = true;
@@ -220,7 +220,7 @@ namespace Fu.Framework
             float popupWidth = alpha ? 326f * scale : 300f * scale;
             float popupHeight = alpha ? 388f * scale : 358f * scale;
 
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             Vector2 popupPos = ImGui.GetCursorScreenPos();
             Vector2 popupSize = new Vector2(popupWidth, popupHeight);
 
@@ -364,7 +364,7 @@ namespace Fu.Framework
 
         private bool drawSaturationValueArea(string id, FuColorPickerPopupState state, Vector2 pos, Vector2 size)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float rounding = getColorPickerFrameRounding(size);
             Vector4 hueColor = colorFromHSV(state.Hue, 1f, 1f, 1f);
             Vector2 max = pos + size;
@@ -400,7 +400,7 @@ namespace Fu.Framework
 
         private bool drawHueSlider(string id, FuColorPickerPopupState state, Vector2 pos, Vector2 size)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float rounding = getColorPickerFrameRounding(size);
             drawRoundedHueGradient(drawList, pos, size, rounding);
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.72f)), rounding);
@@ -425,7 +425,7 @@ namespace Fu.Framework
 
         private bool drawAlphaSlider(string id, FuColorPickerPopupState state, Vector2 pos, Vector2 size)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float rounding = getColorPickerFrameRounding(size);
             drawCheckerboard(drawList, pos, size, 4f * Fugui.CurrentContext.Scale, rounding);
             Vector4 opaque = colorFromPickerState(state, true);
@@ -456,7 +456,7 @@ namespace Fu.Framework
         private bool drawHexInput(string id, ref Vector4 color, bool alpha, Vector2 pos, float width)
         {
             float scale = Fugui.CurrentContext.Scale;
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             string hexID = id + "HexInput";
             bool wasActive = _pickerHexActiveStates.TryGetValue(id, out bool activeState) && activeState;
             if (!_pickerHexValues.ContainsKey(id) || !wasActive)
@@ -499,7 +499,7 @@ namespace Fu.Framework
             float trackWidth = width - labelWidth - valueWidth - 12f * scale;
             Vector2 trackPos = pos + new Vector2(labelWidth + 6f * scale, 3f * scale);
             Vector2 trackSize = new Vector2(trackWidth, 8f * scale);
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
             drawList.AddText(pos + new Vector2(0f, 1f * scale), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.TextDisabled, 0.86f)), label);
             float value = getColorChannel(color, channel);
@@ -533,7 +533,7 @@ namespace Fu.Framework
 
         private bool drawHorizontalColorSlider(string id, ref float value, Vector2 pos, Vector2 size, Vector4 minColor, Vector4 maxColor)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float rounding = getColorPickerFrameRounding(size);
             drawRoundedHorizontalGradient(drawList, pos, size, minColor, maxColor, rounding);
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.55f)), rounding);
@@ -583,7 +583,7 @@ namespace Fu.Framework
 
         private bool drawColorSwatch(string id, Vector4 color, Vector2 pos, Vector2 size, bool selected)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float rounding = getColorPickerFrameRounding(size);
             drawCheckerboard(drawList, pos, size, 4f * Fugui.CurrentContext.Scale, rounding);
             AddRectFilledAntiAliased(drawList, pos, pos + size, ImGui.GetColorU32(color), rounding);
@@ -594,13 +594,13 @@ namespace Fu.Framework
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(selected ? FuColors.Highlight : FuColors.Border, selected ? 1f : 0.72f)), rounding, ImDrawFlags.RoundCornersDefault, selected ? 2f * Fugui.CurrentContext.Scale : 1f);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(selected ? FuColors.Highlight : FuColors.Border, selected ? 1f : 0.72f)), rounding, FuDrawFlags.RoundCornersDefault, selected ? 2f * Fugui.CurrentContext.Scale : 1f);
             return clicked;
         }
 
         private bool drawColorPickerResetSwatch(string id, Vector2 pos, Vector2 size, Vector4 color, bool alpha, bool enabled)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float scale = Fugui.CurrentContext.Scale;
             float rounding = getColorPickerFrameRounding(size);
             ImGui.SetCursorScreenPos(pos);
@@ -620,7 +620,7 @@ namespace Fu.Framework
             Vector4 border = hovered
                 ? Fugui.Themes.GetColor(FuColors.Highlight, 0.95f)
                 : Fugui.Themes.GetColor(FuColors.Border, enabled ? 0.74f : 0.42f);
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersDefault, hovered ? 1.6f * scale : 1f);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersDefault, hovered ? 1.6f * scale : 1f);
 
             if (hovered)
             {
@@ -629,7 +629,7 @@ namespace Fu.Framework
             return clicked;
         }
 
-        private static void drawColorPreview(ImDrawListPtr drawList, Vector2 pos, Vector2 size, Vector4 color, bool alpha, float rounding)
+        private static void drawColorPreview(FuDrawList drawList, Vector2 pos, Vector2 size, Vector4 color, bool alpha, float rounding)
         {
             if (alpha)
             {
@@ -644,7 +644,7 @@ namespace Fu.Framework
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.76f)), rounding);
         }
 
-        private static void drawColorPreviewAlphaStrip(ImDrawListPtr drawList, Vector2 pos, Vector2 size, Vector4 color, bool alpha, float rounding)
+        private static void drawColorPreviewAlphaStrip(FuDrawList drawList, Vector2 pos, Vector2 size, Vector4 color, bool alpha, float rounding)
         {
             if (!alpha)
             {
@@ -666,7 +666,7 @@ namespace Fu.Framework
             drawList.AddLine(stripPos, stripPos + new Vector2(stripSize.x, 0f), ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.28f)), Mathf.Max(1f, scale));
         }
 
-        private static void drawVerticalHandle(ImDrawListPtr drawList, Vector2 pos, Vector2 size, float t)
+        private static void drawVerticalHandle(FuDrawList drawList, Vector2 pos, Vector2 size, float t)
         {
             float scale = Fugui.CurrentContext.Scale;
             float y = pos.y + Mathf.Clamp01(t) * size.y;
@@ -676,7 +676,7 @@ namespace Fu.Framework
             drawList.AddLine(left, right, ImGui.GetColorU32(Vector4.one), 2f * scale);
         }
 
-        private static void drawCheckerboard(ImDrawListPtr drawList, Vector2 pos, Vector2 size, float tileSize, float rounding)
+        private static void drawCheckerboard(FuDrawList drawList, Vector2 pos, Vector2 size, float tileSize, float rounding)
         {
             rounding = clampRounding(size, rounding);
             uint dark = ImGui.GetColorU32(new Vector4(0.24f, 0.24f, 0.24f, 1f));
@@ -698,7 +698,7 @@ namespace Fu.Framework
             }
         }
 
-        private static void drawCheckerboardClipped(ImDrawListPtr drawList, Vector2 shapePos, Vector2 shapeSize, Vector2 pos, Vector2 size, float tileSize, float rounding)
+        private static void drawCheckerboardClipped(FuDrawList drawList, Vector2 shapePos, Vector2 shapeSize, Vector2 pos, Vector2 size, float tileSize, float rounding)
         {
             rounding = clampRounding(shapeSize, rounding);
             uint dark = ImGui.GetColorU32(new Vector4(0.24f, 0.24f, 0.24f, 1f));
@@ -720,7 +720,7 @@ namespace Fu.Framework
             }
         }
 
-        private static void drawRoundedHorizontalGradient(ImDrawListPtr drawList, Vector2 pos, Vector2 size, Vector4 leftColor, Vector4 rightColor, float rounding)
+        private static void drawRoundedHorizontalGradient(FuDrawList drawList, Vector2 pos, Vector2 size, Vector4 leftColor, Vector4 rightColor, float rounding)
         {
             rounding = clampRounding(size, rounding);
             int steps = Mathf.Max(1, Mathf.CeilToInt(size.y / Mathf.Max(1f, Fugui.CurrentContext.Scale)));
@@ -751,7 +751,7 @@ namespace Fu.Framework
             }
         }
 
-        private static void drawRoundedVerticalGradient(ImDrawListPtr drawList, Vector2 pos, Vector2 size, Vector4 topColor, Vector4 bottomColor, float rounding)
+        private static void drawRoundedVerticalGradient(FuDrawList drawList, Vector2 pos, Vector2 size, Vector4 topColor, Vector4 bottomColor, float rounding)
         {
             rounding = clampRounding(size, rounding);
             int steps = Mathf.Max(1, Mathf.CeilToInt(size.y / Mathf.Max(1f, Fugui.CurrentContext.Scale)));
@@ -780,7 +780,7 @@ namespace Fu.Framework
             }
         }
 
-        private static void drawRoundedHueGradient(ImDrawListPtr drawList, Vector2 pos, Vector2 size, float rounding)
+        private static void drawRoundedHueGradient(FuDrawList drawList, Vector2 pos, Vector2 size, float rounding)
         {
             rounding = clampRounding(size, rounding);
             int steps = Mathf.Max(24, Mathf.CeilToInt(size.y / Mathf.Max(1f, Fugui.CurrentContext.Scale)));
@@ -809,7 +809,7 @@ namespace Fu.Framework
             }
         }
 
-        private static void drawRoundedClippedRectFilled(ImDrawListPtr drawList, Vector2 shapePos, Vector2 shapeSize, Vector2 rectMin, Vector2 rectMax, uint color, float rounding)
+        private static void drawRoundedClippedRectFilled(FuDrawList drawList, Vector2 shapePos, Vector2 shapeSize, Vector2 rectMin, Vector2 rectMax, uint color, float rounding)
         {
             rounding = clampRounding(shapeSize, rounding);
             float yStart = Mathf.Max(rectMin.y, shapePos.y);

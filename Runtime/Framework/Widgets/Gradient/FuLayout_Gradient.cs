@@ -37,7 +37,7 @@ namespace Fu.Framework
             _currentGradient = gradient;
 
             // get gradient data
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             Vector2 mousePos = ImGui.GetMousePos();
             Vector2 startPos = ImGui.GetCursorScreenPos();
             Rect gradientRect = new Rect(startPos, new Vector2(ImGui.GetContentRegionAvail().x, 18f * Fugui.CurrentContext.Scale));
@@ -121,7 +121,7 @@ namespace Fu.Framework
             text = "##" + text;
             bool edited = false;
             float colorKeySize = COLOR_KEY_SIZE * Fugui.CurrentContext.Scale;
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
             FuLayout layout = new FuLayout();
             // Draw Header

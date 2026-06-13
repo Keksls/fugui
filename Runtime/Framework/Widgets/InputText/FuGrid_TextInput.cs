@@ -27,6 +27,20 @@ namespace Fu.Framework
             label = "##" + label;
             return base.TextInput(label, hint, ref text, size, height, style, width, flags);
         }
+
+        /// <summary>
+        /// Input Text Element.
+        /// </summary>
+        public override bool TextInput(string label, string hint, ref string text, uint size, float height, FuFrameStyle style, float width, FuTextInputOptions options)
+        {
+            if (!_gridCreated)
+            {
+                return false;
+            }
+            drawElementLabel(label, style.TextStyle);
+            label = "##" + label;
+            return base.TextInput(label, hint, ref text, size, height, style, width, options);
+        }
         #endregion
     }
 }

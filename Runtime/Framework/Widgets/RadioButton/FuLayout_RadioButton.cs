@@ -50,7 +50,7 @@ namespace Fu.Framework
             Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 CircleCenter = new Vector2(pos.x + height / 2f, pos.y + height / 2f);
             float radius = height * 0.42f;
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             // input stats
             bool clicked = InvisibleInteractionAt("##FuRadio_" + id, pos, new Vector2(height, height), out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             animationData.Update(isChecked, _animationEnabled);

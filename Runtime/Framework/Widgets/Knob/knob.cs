@@ -105,7 +105,7 @@ namespace Fu.Framework
                 var dot_size = size * this.radius;
                 var dot_radius = radius * this.radius;
 
-                ImGui.GetWindowDrawList().AddCircleFilled(new Vector2(center.x + Mathf.Cos(angle) * dot_radius, center.y + Mathf.Sin(angle) * dot_radius), dot_size, ImGui.GetColorU32(is_active ? color.active : (is_hovered ? color.hovered : color.color)), segments);
+                Fugui.GetCurrentWindowDrawList().AddCircleFilled(new Vector2(center.x + Mathf.Cos(angle) * dot_radius, center.y + Mathf.Sin(angle) * dot_radius), dot_size, ImGui.GetColorU32(is_active ? color.active : (is_hovered ? color.hovered : color.color)), segments);
             }
 
             /// <summary>
@@ -123,7 +123,7 @@ namespace Fu.Framework
                 var angle_cos = Mathf.Cos(angle);
                 var angle_sin = Mathf.Sin(angle);
 
-                ImGui.GetWindowDrawList().AddLine(
+                Fugui.GetCurrentWindowDrawList().AddLine(
                         new Vector2(center.x + angle_cos * tick_end, center.y + angle_sin * tick_end),
                         new Vector2(center.x + angle_cos * tick_start, center.y + angle_sin * tick_start),
                         ImGui.GetColorU32(is_active ? color.active : (is_hovered ? color.hovered : color.color)),
@@ -139,7 +139,7 @@ namespace Fu.Framework
             internal void draw_circle(float size, color_set color, int segments)
             {
                 var circle_radius = size * radius;
-                ImGui.GetWindowDrawList().AddCircleFilled(center, circle_radius, ImGui.GetColorU32(is_active ? color.active : (is_hovered ? color.hovered : color.color)), segments);
+                Fugui.GetCurrentWindowDrawList().AddCircleFilled(center, circle_radius, ImGui.GetColorU32(is_active ? color.active : (is_hovered ? color.hovered : color.color)), segments);
             }
 
             /// <summary>

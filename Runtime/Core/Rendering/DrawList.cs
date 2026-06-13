@@ -69,7 +69,7 @@ namespace Fu
             /// Initializes a new instance of the Draw List class.
             /// </summary>
             /// <param name="drawList">The draw List value.</param>
-            internal DrawList(ImDrawListPtr drawList)
+            internal DrawList(FuDrawList drawList)
             {
                 Bind(drawList);
             }
@@ -79,7 +79,7 @@ namespace Fu
             /// </summary>
             /// <param name="drawList">The draw List value.</param>
             /// <param name="windowName">Already resolved owner name.</param>
-            internal DrawList(ImDrawListPtr drawList, string windowName)
+            internal DrawList(FuDrawList drawList, string windowName)
             {
                 Bind(drawList, windowName);
             }
@@ -90,7 +90,7 @@ namespace Fu
             /// Bind the current drawList with an ImGui ImDrawListPtr.
             /// </summary>
             /// <param name="drawList">ImGui drawList ptr handle</param>
-            internal unsafe void Bind(ImDrawListPtr drawList)
+            internal unsafe void Bind(FuDrawList drawList)
             {
                 bindBuffers(drawList);
                 _windowName = null;
@@ -101,7 +101,7 @@ namespace Fu
             /// </summary>
             /// <param name="drawList">ImGui drawList ptr handle.</param>
             /// <param name="windowName">Already resolved owner name.</param>
-            internal unsafe void Bind(ImDrawListPtr drawList, string windowName)
+            internal unsafe void Bind(FuDrawList drawList, string windowName)
             {
                 bindBuffers(drawList);
                 _windowName = windowName;
@@ -111,7 +111,7 @@ namespace Fu
             /// Copies native ImGui draw-list buffers without converting native strings.
             /// </summary>
             /// <param name="drawList">ImGui drawList ptr handle.</param>
-            private unsafe void bindBuffers(ImDrawListPtr drawList)
+            private unsafe void bindBuffers(FuDrawList drawList)
             {
                 // save cmd buffer
                 _cmdCount = drawList.CmdBuffer.Size;

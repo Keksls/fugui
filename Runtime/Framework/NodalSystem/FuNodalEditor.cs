@@ -236,10 +236,10 @@ namespace Fu.Framework.Nodal
                 float wheel = window.Mouse.Wheel.y;
                 if (Mathf.Abs(wheel) > float.Epsilon)
                 {
-                    // souris en coords écran + relative à la zone
+                    // souris en coords Ã©cran + relative Ã  la zone
                     var mouseWA = GetLocalMousePosition();      // local working area
-                    var mouseScreen = _canvasOrigin + mouseWA;               // écran (si tu en as besoin)
-                    var mouseRel = mouseWA;                               // on reste en repère working area
+                    var mouseScreen = _canvasOrigin + mouseWA;               // Ã©cran (si tu en as besoin)
+                    var mouseRel = mouseWA;                               // on reste en repÃ¨re working area
 
                     var canvasUnderMouse = (mouseRel - _pan) / _zoom;
                     _zoom = Mathf.Clamp(_zoom * (1f + wheel * 0.1f), MinZoom, MaxZoom);
@@ -250,7 +250,7 @@ namespace Fu.Framework.Nodal
                 if (window.Keyboard.KeyCtrl && window.Keyboard.GetKeyDown(FuKeysCode.Space))
                 {
                     var mouseWA = GetLocalMousePosition();
-                    var mouseRel = mouseWA;                               // on reste en repère working area
+                    var mouseRel = mouseWA;                               // on reste en repÃ¨re working area
                     var canvasUnderMouse = (mouseRel - _pan) / _zoom;
                     _zoom = 1.0f;
                     _pan = mouseRel - canvasUnderMouse * _zoom;
@@ -261,7 +261,7 @@ namespace Fu.Framework.Nodal
             if (window.IsHoveredContent && IsMouseHoverCanvas() && window.Mouse.IsDown(FuMouseButton.Center))
             {
                 _isPanning = true;
-                _panMouseStart = GetLocalMousePosition(); // même repère
+                _panMouseStart = GetLocalMousePosition(); // mÃªme repÃ¨re
                 _panStart = _pan;
             }
             if (_isPanning)
@@ -299,7 +299,7 @@ namespace Fu.Framework.Nodal
                 {
                     _marqueeEndWA = GetLocalMousePosition();
 
-                    // Draw rectangle in screen space (convert WA → screen by + origin)
+                    // Draw rectangle in screen space (convert WA â†’ screen by + origin)
                     Vector2 aWA = _marqueeStartWA;
                     Vector2 bWA = _marqueeEndWA;
                     Vector2 minWA = new Vector2(Mathf.Min(aWA.x, bWA.x), Mathf.Min(aWA.y, bWA.y));
@@ -309,9 +309,9 @@ namespace Fu.Framework.Nodal
 
                     uint fillCol = ImGui.ColorConvertFloat4ToU32(new Color(0.2f, 0.6f, 1f, 0.15f));
                     uint borderCol = ImGui.ColorConvertFloat4ToU32(new Color(0.2f, 0.6f, 1f, 0.8f));
-                    var dl = ImGui.GetWindowDrawList();
+                    var dl = Fugui.GetCurrentWindowDrawList();
                     dl.AddRectFilled(minScreen, maxScreen, fillCol, 2f);
-                    dl.AddRect(minScreen, maxScreen, borderCol, 2f, ImDrawFlags.RoundCornersAll, 1.5f);
+                    dl.AddRect(minScreen, maxScreen, borderCol, 2f, FuDrawFlags.RoundCornersAll, 1.5f);
                 }
                 else
                 {
@@ -323,7 +323,7 @@ namespace Fu.Framework.Nodal
             }
 
             // Draw grid
-            var drawList = ImGui.GetWindowDrawList();
+            var drawList = Fugui.GetCurrentWindowDrawList();
             DrawGrid(drawList, _canvasOrigin, _canvasSize, _pan, _zoom);
 
             // Draw edges (under nodes)
@@ -388,14 +388,14 @@ namespace Fu.Framework.Nodal
                 }
             }
 
-            // Sélection / suppression de liens
+            // SÃ©lection / suppression de liens
             if (_hoveredEdgeIndex.HasValue && window.Mouse.IsClicked(FuMouseButton.Left))
             {
                 _selectedEdgeIndex = _hoveredEdgeIndex;
             }
             else if (window.Mouse.IsClicked(FuMouseButton.Left) && !_hoveredEdgeIndex.HasValue)
             {
-                _selectedEdgeIndex = null; // clic vide → désélection
+                _selectedEdgeIndex = null; // clic vide â†’ dÃ©sÃ©lection
             }
 
             // Delete selected edge
@@ -447,7 +447,7 @@ namespace Fu.Framework.Nodal
                 }
             }
 
-            // Fin du lien sur Up (peu importe où on relâche, TryFinishLink checkera la cible)
+            // Fin du lien sur Up (peu importe oÃ¹ on relÃ¢che, TryFinishLink checkera la cible)
             if (_isLinking && _linkFrom.HasValue && window.Mouse.IsUp(FuMouseButton.Left))
             {
                 TryFinishLink();
@@ -473,7 +473,7 @@ namespace Fu.Framework.Nodal
         /// <param name="size"> Size of the canvas in screen coordinates.</param>
         /// <param name="pan"> Current pan offset in screen coordinates.</param>
         /// <param name="zoom"> Current zoom factor (1.0 = 100%).</param>
-        private void DrawGrid(ImDrawListPtr dl, Vector2 origin, Vector2 size, Vector2 pan, float zoom)
+        private void DrawGrid(FuDrawList dl, Vector2 origin, Vector2 size, Vector2 pan, float zoom)
         {
             const float baseStep = 64f;
 
@@ -553,7 +553,7 @@ namespace Fu.Framework.Nodal
         /// <param name="b"> End point.</param>
         /// <param name="thickness"> Line thickness.</param>
         /// <param name="startCol"> Line color as a packed uint.</param>
-        private void DrawBezier(ImDrawListPtr dl, Vector2 a, Vector2 b, float thickness, uint startCol, uint endCol)
+        private void DrawBezier(FuDrawList dl, Vector2 a, Vector2 b, float thickness, uint startCol, uint endCol)
         {
             if (_autoLinkColorFromConvertedType)
             {
@@ -630,7 +630,7 @@ namespace Fu.Framework.Nodal
         /// <param name="thickness">Line thickness.</param>
         /// <param name="col">Line color as a packed uint.</param>
         /// <param name="segmentLength">Length of the small horizontal segments at both ends.</param>
-        private void DrawStraightConnection(ImDrawListPtr dl, Vector2 a, Vector2 b, float thickness, uint colStart, uint colEnd, float segmentLength = 20f)
+        private void DrawStraightConnection(FuDrawList dl, Vector2 a, Vector2 b, float thickness, uint colStart, uint colEnd, float segmentLength = 20f)
         {
             if (_autoLinkColorFromConvertedType)
             {
@@ -722,7 +722,7 @@ namespace Fu.Framework.Nodal
         /// </summary>
         private bool SegmentIntersectsRect(Vector2 p1, Vector2 p2, float xMin, float yMin, float xMax, float yMax)
         {
-            // Liang–Barsky or Cohen–Sutherland algorithm would be optimal,
+            // Liangâ€“Barsky or Cohenâ€“Sutherland algorithm would be optimal,
             // but we can simplify with bounding and line-rect intersection tests.
 
             // 1. Quick reject if both points are outside on the same side
@@ -730,7 +730,7 @@ namespace Fu.Framework.Nodal
                 (p1.y < yMin && p2.y < yMin) || (p1.y > yMax && p2.y > yMax))
                 return false;
 
-            // 2. If any endpoint is inside → visible
+            // 2. If any endpoint is inside â†’ visible
             if (p1.x >= xMin && p1.x <= xMax && p1.y >= yMin && p1.y <= yMax)
                 return true;
             if (p2.x >= xMin && p2.x <= xMax && p2.y >= yMin && p2.y <= yMax)
@@ -788,7 +788,7 @@ namespace Fu.Framework.Nodal
         /// </summary>
         /// <param name="dl"> The ImDrawListPtr to use for drawing.</param>
         /// <param name="node"> The node to draw.</param>
-        private void DrawNode(ImDrawListPtr dl, FuWindow window, FuNode node)
+        private void DrawNode(FuDrawList dl, FuWindow window, FuNode node)
         {
             float z = _zoom;
             float startY = node.EditorData.rectMin.y;
@@ -832,14 +832,14 @@ namespace Fu.Framework.Nodal
                   new Vector2(Snap(rectMax.x + borderThickness), Snap(rectMax.y + borderThickness)),
                   ImGui.GetColorU32(borderColor),
                   Fugui.Themes.WindowRounding * z,
-                  ImDrawFlags.RoundCornersDefault,
+                  FuDrawFlags.RoundCornersDefault,
                   borderThickness * z
               );
 
             // Header
             Color headerColor = node.NodeColor ?? colNodeColor;
             dl.AddRectFilled(rectMin, new Vector2(rectMax.x, rectMin.y + node.EditorData.headerHeight),
-                ImGui.GetColorU32(headerColor), Fugui.Themes.WindowRounding * z, ImDrawFlags.RoundCornersTop);
+                ImGui.GetColorU32(headerColor), Fugui.Themes.WindowRounding * z, FuDrawFlags.RoundCornersTop);
 
             window.Layout.CenterNextItemH(node.Title);
             window.Layout.CenterNextItemV(node.Title, node.EditorData.headerHeight);
@@ -857,7 +857,7 @@ namespace Fu.Framework.Nodal
                                  new Vector2(node.EditorData.leftMaxX, node.EditorData.portsEndY),
                                  ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.ChildBg)));
 
-            // Knobs + labels – positions = GetPortAnchorScreen (même base)
+            // Knobs + labels â€“ positions = GetPortAnchorScreen (mÃªme base)
             Vector2 mouse = _canvasOrigin + GetLocalMousePosition();
             float rBase = Fugui.Themes.NodeKnobRadius * z;
 
@@ -892,7 +892,7 @@ namespace Fu.Framework.Nodal
                 if (over) { ImGui.SetMouseCursor(ImGuiMouseCursor.Hand); _hoveredPort = (node, p); }
             }
 
-            // UI custom bornée
+            // UI custom bornÃ©e
             float uiStartY = node.EditorData.portsEndY + ImGui.GetStyle().WindowPadding.y + 4f * Fugui.Scale;
             Vector2 uiMin = new Vector2(rectMin.x + ImGui.GetStyle().FramePadding.x, uiStartY);
             Vector2 uiMax = new Vector2(rectMax.x - ImGui.GetStyle().FramePadding.x, rectMax.y - ImGui.GetStyle().FramePadding.y);
@@ -987,7 +987,7 @@ namespace Fu.Framework.Nodal
                 }
             }
 
-            // 2) BODY CLICK → selection (no drag)
+            // 2) BODY CLICK â†’ selection (no drag)
             if (hovered && !headerHovered && window.Mouse.IsClicked(FuMouseButton.Left))
             {
                 bool ctrl = window.Keyboard.KeyCtrl;
@@ -995,7 +995,7 @@ namespace Fu.Framework.Nodal
                 SelectNodeInternal(node, additive: shift, toggle: ctrl);
             }
 
-            // 3) LINKING (on ports) — unchanged
+            // 3) LINKING (on ports) â€” unchanged
             if (_hoveredPort.HasValue && window.Mouse.IsDown(FuMouseButton.Left))
             {
                 var (n, p) = _hoveredPort.Value;
@@ -1081,13 +1081,13 @@ namespace Fu.Framework.Nodal
         }
 
         /// <summary>
-        /// Vérifie si un point (mouse) est proche d'une connexion droite segmentée (a->b).
+        /// VÃ©rifie si un point (mouse) est proche d'une connexion droite segmentÃ©e (a->b).
         /// </summary>
         /// <param name="mouse">Position de la souris.</param>
-        /// <param name="a">Point de départ (à gauche).</param>
-        /// <param name="b">Point d'arrivée (à droite).</param>
-        /// <param name="threshold">Distance maximale pour considérer la souris "proche".</param>
-        /// <param name="segmentLength">Longueur des segments horizontaux aux extrémités.</param>
+        /// <param name="a">Point de dÃ©part (Ã  gauche).</param>
+        /// <param name="b">Point d'arrivÃ©e (Ã  droite).</param>
+        /// <param name="threshold">Distance maximale pour considÃ©rer la souris "proche".</param>
+        /// <param name="segmentLength">Longueur des segments horizontaux aux extrÃ©mitÃ©s.</param>
         /// <returns>True si la souris est proche de la connexion.</returns>
         private static bool IsMouseNearStraight(Vector2 mouse, Vector2 a, Vector2 b, float threshold, float segmentLength = 20f)
         {
@@ -1095,13 +1095,13 @@ namespace Fu.Framework.Nodal
             a = new Vector2(Mathf.Floor(a.x) + 0.5f, Mathf.Floor(a.y) + 0.5f);
             b = new Vector2(Mathf.Floor(b.x) + 0.5f, Mathf.Floor(b.y) + 0.5f);
 
-            // Points intermédiaires
+            // Points intermÃ©diaires
             Vector2 aEnd = new Vector2(a.x + segmentLength, a.y);
             Vector2 bStart = new Vector2(b.x - segmentLength, b.y);
 
             float thresholdSq = threshold * threshold;
 
-            // On teste les 3 segments indépendamment
+            // On teste les 3 segments indÃ©pendamment
             if (DistancePointSegmentSq(mouse, a, aEnd) <= thresholdSq)
                 return true;
             if (DistancePointSegmentSq(mouse, bStart, b) <= thresholdSq)
@@ -1195,7 +1195,7 @@ namespace Fu.Framework.Nodal
 
             if (_nodesHeightCache.TryGetValue(node.Id, out var hCache))
             {
-                totalHeight = hCache; // conserve la hauteur UI si déjà calculée
+                totalHeight = hCache; // conserve la hauteur UI si dÃ©jÃ  calculÃ©e
             }
 
             Vector2 posScreen = CanvasToScreen(new Vector2(node.x, node.y));
@@ -1231,7 +1231,7 @@ namespace Fu.Framework.Nodal
         /// </summary>
         private void TryFinishLink()
         {
-            // Si aucun port source n'est défini, on ne peut rien faire
+            // Si aucun port source n'est dÃ©fini, on ne peut rien faire
             if (!_linkFrom.HasValue)
                 return;
 
@@ -1242,7 +1242,7 @@ namespace Fu.Framework.Nodal
             if (fromNode == null || fromPort == null)
                 return;
 
-            // ✅ Si aucun port survolé -> on affiche les nodes compatibles
+            // âœ… Si aucun port survolÃ© -> on affiche les nodes compatibles
             if (!_hoveredPort.HasValue)
             {
                 // On inverse la direction (input -> output et inversement)
@@ -1255,7 +1255,7 @@ namespace Fu.Framework.Nodal
                 return;
             }
 
-            // ✅ Sinon, tentative de connexion normale
+            // âœ… Sinon, tentative de connexion normale
             var (targetNode, targetPort) = _hoveredPort.Value;
             if (targetNode == null || targetPort == null)
                 return;
@@ -1343,7 +1343,7 @@ namespace Fu.Framework.Nodal
         {
             float clamped = Mathf.Clamp(newZoom, MinZoom, MaxZoom);
             // current screen pos of that canvas point:
-            // screen = origin + pan + canvas * zoom  → we keep it stable ⇒ solve pan'
+            // screen = origin + pan + canvas * zoom  â†’ we keep it stable â‡’ solve pan'
             // Choose to anchor under current mouse in working area center (or keep same screen point).
             // Here we keep the same screen point for canvasPoint:
             // pan' = screen - origin - canvas * newZoom
@@ -1454,7 +1454,7 @@ namespace Fu.Framework.Nodal
         /// <param name="size">Requested minimap size in pixels.</param>
         public void DrawMiniMap(Vector2 size)
         {
-            var dl = ImGui.GetWindowDrawList();
+            var dl = Fugui.GetCurrentWindowDrawList();
             Vector2 mmMin = ImGui.GetCursorScreenPos();
             Vector2 mmMax = mmMin + ImGui.GetContentRegionAvail();
 
@@ -1465,7 +1465,7 @@ namespace Fu.Framework.Nodal
             uint viewCol = ImGui.GetColorU32(new Color(0.2f, 0.6f, 1f, 0.9f));
 
             // Background
-            dl.AddRect(mmMin, mmMax, frameCol, 4f, ImDrawFlags.RoundCornersAll, 1f);
+            dl.AddRect(mmMin, mmMax, frameCol, 4f, FuDrawFlags.RoundCornersAll, 1f);
 
             // Early out if empty graph
             if (Graph == null || (Graph.Nodes.Count == 0 && Graph.Edges.Count == 0))
@@ -1514,7 +1514,7 @@ namespace Fu.Framework.Nodal
                 gMax = new Vector2(100f, 100f);
             }
 
-            // --- 2) Canvas → Minimap transform ---
+            // --- 2) Canvas â†’ Minimap transform ---
             const float pad = 6f;
             Vector2 innerMin = mmMin + new Vector2(pad, pad);
             Vector2 innerMax = mmMax - new Vector2(pad, pad);
@@ -1572,7 +1572,7 @@ namespace Fu.Framework.Nodal
             Vector2 viewMaxCanvas = (_canvasSize - _pan) / Mathf.Max(_zoom, 1e-6f);
             Vector2 vA = MM(viewMinCanvas);
             Vector2 vB = MM(viewMaxCanvas);
-            dl.AddRect(vA, vB, viewCol, 2f, ImDrawFlags.RoundCornersAll, 1.5f);
+            dl.AddRect(vA, vB, viewCol, 2f, FuDrawFlags.RoundCornersAll, 1.5f);
 
             // --- 6) Interaction ---
             bool hoveredMini = ImGui.IsWindowHovered(ImGuiHoveredFlags.ChildWindows);

@@ -205,14 +205,14 @@ namespace Fu.Framework
             // draw carret
             float caretSize = carretWidth / 3f;
             Vector2 caretPos = new Vector2(btnMax.x - (carretWidth + caretSize) * 0.5f, btnMin.y);
-            DrawComboboxChrome(ImGui.GetWindowDrawList(), new Rect(btnMin, btnSize), carretWidth, opened, LastItemDisabled);
+            DrawComboboxChrome(Fugui.GetCurrentWindowDrawList(), new Rect(btnMin, btnSize), carretWidth, opened, LastItemDisabled);
             if (opened)
             {
-                Fugui.DrawCarret_Top(ImGui.GetWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+                Fugui.DrawCarret_Top(Fugui.GetCurrentWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
             }
             else
             {
-                Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+                Fugui.DrawCarret_Down(Fugui.GetCurrentWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
             }
             // End the element with the current combobox style
             endElement(style);
@@ -387,14 +387,14 @@ namespace Fu.Framework
             // draw carret
             float caretSize = carretWidth / 3f;
             Vector2 caretPos = new Vector2(btnMax.x - (carretWidth + caretSize) * 0.5f, btnMin.y);
-            DrawComboboxChrome(ImGui.GetWindowDrawList(), new Rect(btnMin, btnSize), carretWidth, opened, LastItemDisabled);
+            DrawComboboxChrome(Fugui.GetCurrentWindowDrawList(), new Rect(btnMin, btnSize), carretWidth, opened, LastItemDisabled);
             if (opened)
             {
-                Fugui.DrawCarret_Top(ImGui.GetWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+                Fugui.DrawCarret_Top(Fugui.GetCurrentWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
             }
             else
             {
-                Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
+                Fugui.DrawCarret_Down(Fugui.GetCurrentWindowDrawList(), caretPos, caretSize, btnSize.y, LastItemDisabled ? style.TextStyle.DisabledText : style.TextStyle.Text);
             }
 
             // draw the popup

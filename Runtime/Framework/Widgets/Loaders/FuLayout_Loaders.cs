@@ -21,7 +21,7 @@ namespace Fu.Framework
         /// <param name="thickness">Arc thickness.</param>
         public void Loader_Arc(float size, float thickness = 3f)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -47,7 +47,7 @@ namespace Fu.Framework
         /// <param name="thickness">Arc thickness.</param>
         public void Loader_DualRing(float size, float thickness = 3f)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -73,7 +73,7 @@ namespace Fu.Framework
         /// <param name="dotCount">Number of dots.</param>
         public void Loader_BreathingDots(Vector2 size, int dotCount = 3)
         {
-            if (!beginLoader(size, out ImDrawListPtr drawList, out Vector2 pos, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(size, out FuDrawList drawList, out Vector2 pos, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -107,7 +107,7 @@ namespace Fu.Framework
         /// <param name="barCount">Number of bars.</param>
         public void Loader_Bars(Vector2 size, int barCount = 5)
         {
-            if (!beginLoader(size, out ImDrawListPtr drawList, out Vector2 pos, out _, out Vector2 scaledSize))
+            if (!beginLoader(size, out FuDrawList drawList, out Vector2 pos, out _, out Vector2 scaledSize))
             {
                 return;
             }
@@ -140,7 +140,7 @@ namespace Fu.Framework
         /// <param name="size">Size of the loader.</param>
         public void Loader_Shimmer(Vector2 size)
         {
-            if (!beginLoader(size, out ImDrawListPtr drawList, out Vector2 pos, out _, out Vector2 scaledSize))
+            if (!beginLoader(size, out FuDrawList drawList, out Vector2 pos, out _, out Vector2 scaledSize))
             {
                 return;
             }
@@ -150,7 +150,7 @@ namespace Fu.Framework
             uint bg = loaderColor(FuColors.FrameBg, 0.72f);
             uint border = loaderColor(FuColors.Border, 0.42f);
             drawList.AddRectFilled(pos, max, bg, rounding);
-            drawList.AddRect(pos, max, border, rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Scale));
+            drawList.AddRect(pos, max, border, rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Scale));
 
             float time = (float)ImGui.GetTime();
             float bandWidth = Mathf.Max(12f * Fugui.Scale, scaledSize.x * 0.34f);
@@ -174,7 +174,7 @@ namespace Fu.Framework
         /// <param name="dotCount">Number of orbiting dots.</param>
         public void Loader_Orbit(float size, int dotCount = 3)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -240,7 +240,7 @@ namespace Fu.Framework
         /// <param name="size">Size of the loader.</param>
         public void Loader_Clocker(float size)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -274,7 +274,7 @@ namespace Fu.Framework
         /// <param name="size">Size of the loader.</param>
         public void Loader_Pulsar(float size)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -312,7 +312,7 @@ namespace Fu.Framework
         /// <param name="size">Size of the loader.</param>
         public void Loader_SquareCircleDance(float size)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -341,7 +341,7 @@ namespace Fu.Framework
         /// <param name="doubleColor">If true, draw the wave with an accent-to-text gradient.</param>
         public void Loader_WavyLine(Vector2 size, float frequency, bool doubleColor = true)
         {
-            if (!beginLoader(size, out ImDrawListPtr drawList, out Vector2 pos, out _, out Vector2 scaledSize))
+            if (!beginLoader(size, out FuDrawList drawList, out Vector2 pos, out _, out Vector2 scaledSize))
             {
                 return;
             }
@@ -378,7 +378,7 @@ namespace Fu.Framework
         /// <param name="size">Size of the loader.</param>
         public void Loader_Squares(float size)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -420,7 +420,7 @@ namespace Fu.Framework
         /// <param name="doubleColor">If true, mix text and accent colors.</param>
         public void Loader_SpikedWheel(Vector2 size, int slides = 10, bool doubleColor = true)
         {
-            if (!beginLoader(size, out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(size, out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -455,7 +455,7 @@ namespace Fu.Framework
         /// <param name="doubleColor">If true, alternate text and accent colors.</param>
         public void Loader_Wheel(float size, bool doubleColor = true)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -487,7 +487,7 @@ namespace Fu.Framework
         /// <param name="doubleColor">If true, alternate text and accent colors.</param>
         public void Loader_EllipseSpinner(float size, int numDots, float dotSize = 2f, bool doubleColor = true)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -525,7 +525,7 @@ namespace Fu.Framework
             Loader_EllipseSpinner(size, numDots, dotSize, doubleColor);
         }
 
-        private bool beginLoader(Vector2 size, out ImDrawListPtr drawList, out Vector2 pos, out Vector2 center, out Vector2 scaledSize)
+        private bool beginLoader(Vector2 size, out FuDrawList drawList, out Vector2 pos, out Vector2 center, out Vector2 scaledSize)
         {
             beginElement(ref _loaderFakeID, noEditID: true);
             if (!_drawElement)
@@ -538,7 +538,7 @@ namespace Fu.Framework
             }
 
             scaledSize = new Vector2(Mathf.Max(4f, size.x), Mathf.Max(4f, size.y)) * Fugui.Scale;
-            drawList = ImGui.GetWindowDrawList();
+            drawList = Fugui.GetCurrentWindowDrawList();
             pos = ImGui.GetCursorScreenPos();
             center = pos + scaledSize * 0.5f;
             return true;
@@ -553,7 +553,7 @@ namespace Fu.Framework
 
         private void drawDotsSpinner(float size, int numDots, float dotSize, bool doubleColor, float speed)
         {
-            if (!beginLoader(new Vector2(size, size), out ImDrawListPtr drawList, out _, out Vector2 center, out Vector2 scaledSize))
+            if (!beginLoader(new Vector2(size, size), out FuDrawList drawList, out _, out Vector2 center, out Vector2 scaledSize))
             {
                 return;
             }
@@ -582,19 +582,19 @@ namespace Fu.Framework
             finishLoader(scaledSize);
         }
 
-        private static void drawArc(ImDrawListPtr drawList, Vector2 center, float radius, float startAngle, float endAngle, uint color, float thickness)
+        private static void drawArc(FuDrawList drawList, Vector2 center, float radius, float startAngle, float endAngle, uint color, float thickness)
         {
             float sweep = Mathf.Abs(endAngle - startAngle);
             int segments = Mathf.Clamp(Mathf.CeilToInt(sweep / LoaderTau * 72f), 8, 96);
             drawList.PathArcTo(center, radius, startAngle, endAngle, segments);
-            drawList.PathStroke(color, ImDrawFlags.None, thickness);
+            drawList.PathStroke(color, FuDrawFlags.None, thickness);
 
             float capRadius = thickness * 0.5f;
             drawList.AddCircleFilled(center + angleToVector(startAngle) * radius, capRadius, color, 16);
             drawList.AddCircleFilled(center + angleToVector(endAngle) * radius, capRadius, color, 16);
         }
 
-        private static void drawEllipse(ImDrawListPtr drawList, Vector2 center, Vector2 radius, uint color, float thickness, int segments)
+        private static void drawEllipse(FuDrawList drawList, Vector2 center, Vector2 radius, uint color, float thickness, int segments)
         {
             segments = Mathf.Clamp(segments, 16, 128);
             Vector2 previous = center + new Vector2(radius.x, 0f);
@@ -607,7 +607,7 @@ namespace Fu.Framework
             }
         }
 
-        private static void drawRoundedLine(ImDrawListPtr drawList, Vector2 start, Vector2 end, uint color, float thickness)
+        private static void drawRoundedLine(FuDrawList drawList, Vector2 start, Vector2 end, uint color, float thickness)
         {
             drawList.AddLine(start, end, color, thickness);
             float radius = thickness * 0.5f;

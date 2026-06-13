@@ -1,4 +1,4 @@
-﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
+// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
 //#define FUDEBUG
 #if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
@@ -43,7 +43,7 @@ namespace Fu
         /// </summary>
         public static FuDrawList GetCurrentWindowDrawList()
         {
-            return new FuDrawList(ImGui.GetWindowDrawList());
+            return ToFuDrawList(ImGui.GetWindowDrawList());
         }
 
         /// <summary>
@@ -51,7 +51,25 @@ namespace Fu
         /// </summary>
         public static FuDrawList GetForegroundDrawList()
         {
-            return new FuDrawList(ImGui.GetForegroundDrawList());
+            return ToFuDrawList(ImGui.GetForegroundDrawList());
+        }
+
+        /// <summary>
+        /// Returns the background Fugui draw list.
+        /// </summary>
+        public static FuDrawList GetBackgroundDrawList()
+        {
+            return ToFuDrawList(ImGui.GetBackgroundDrawList());
+        }
+
+        internal static FuDrawList ToFuDrawList(ImDrawListPtr drawList)
+        {
+            return new FuDrawList(drawList);
+        }
+
+        internal static unsafe FuDrawList ToFuDrawList(ImDrawList* drawList)
+        {
+            return new FuDrawList(drawList);
         }
 
         public static Vector2 GetCursorScreenPos()
@@ -125,6 +143,143 @@ namespace Fu
         }
 
         /// <summary>
+        /// Draws text at an absolute screen position without submitting a layout item.
+        /// </summary>
+        /// <param name="drawList">Target Fugui draw list.</param>
+        /// <param name="pos">Screen-space position.</param>
+        /// <param name="text">Text to draw.</param>
+        /// <param name="color">Packed text color.</param>
+        public static void DrawText(FuDrawList drawList, Vector2 pos, string text, uint color)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            drawList.AddText(pos, color, text);
+        }
+
+        /// <summary>
+        /// Draws text at an absolute screen position without submitting a layout item.
+        /// </summary>
+        /// <param name="drawList">Target Fugui draw list.</param>
+        /// <param name="pos">Screen-space position.</param>
+        /// <param name="text">Text to draw.</param>
+        /// <param name="color">Text color.</param>
+        public static void DrawText(FuDrawList drawList, Vector2 pos, string text, Vector4 color)
+        {
+            DrawText(drawList, pos, text, ImGui.GetColorU32(color));
+        }
+
+        /// <summary>
+        /// Draws text at an absolute screen position without submitting a layout item.
+        /// </summary>
+        /// <param name="drawList">Target Fugui draw list.</param>
+        /// <param name="pos">Screen-space position.</param>
+        /// <param name="text">Text to draw.</param>
+        /// <param name="color">Text color.</param>
+        public static void DrawText(FuDrawList drawList, Vector2 pos, string text, Color color)
+        {
+            DrawText(drawList, pos, text, ImGui.GetColorU32(color));
+        }
+
+        /// <summary>
+        /// Draws text at an absolute screen position with an explicit Fugui font and size without submitting a layout item.
+        /// </summary>
+        /// <param name="drawList">Target Fugui draw list.</param>
+        /// <param name="pos">Screen-space position.</param>
+        /// <param name="text">Text to draw.</param>
+        /// <param name="color">Packed text color.</param>
+        /// <param name="fontName">Configured Fugui font name.</param>
+        /// <param name="fontSize">Unscaled Fugui font size.</param>
+        /// <param name="fontType">Configured Fugui font type.</param>
+        public static void DrawText(FuDrawList drawList, Vector2 pos, string text, uint color, string fontName, float fontSize, FontType fontType = FontType.Regular)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            if (!TryResolveDrawTextFont(fontName, fontSize, fontType, out ImFontPtr font, out float scaledFontSize))
+            {
+                return;
+            }
+
+            drawList.AddText(font, scaledFontSize, pos, color, text);
+        }
+
+        /// <summary>
+        /// Draws text at an absolute screen position with an explicit Fugui font and size without submitting a layout item.
+        /// </summary>
+        /// <param name="drawList">Target Fugui draw list.</param>
+        /// <param name="pos">Screen-space position.</param>
+        /// <param name="text">Text to draw.</param>
+        /// <param name="color">Text color.</param>
+        /// <param name="fontName">Configured Fugui font name.</param>
+        /// <param name="fontSize">Unscaled Fugui font size.</param>
+        /// <param name="fontType">Configured Fugui font type.</param>
+        public static void DrawText(FuDrawList drawList, Vector2 pos, string text, Vector4 color, string fontName, float fontSize, FontType fontType = FontType.Regular)
+        {
+            DrawText(drawList, pos, text, ImGui.GetColorU32(color), fontName, fontSize, fontType);
+        }
+
+        /// <summary>
+        /// Draws text at an absolute screen position with an explicit Fugui font and size without submitting a layout item.
+        /// </summary>
+        /// <param name="drawList">Target Fugui draw list.</param>
+        /// <param name="pos">Screen-space position.</param>
+        /// <param name="text">Text to draw.</param>
+        /// <param name="color">Text color.</param>
+        /// <param name="fontName">Configured Fugui font name.</param>
+        /// <param name="fontSize">Unscaled Fugui font size.</param>
+        /// <param name="fontType">Configured Fugui font type.</param>
+        public static void DrawText(FuDrawList drawList, Vector2 pos, string text, Color color, string fontName, float fontSize, FontType fontType = FontType.Regular)
+        {
+            DrawText(drawList, pos, text, ImGui.GetColorU32(color), fontName, fontSize, fontType);
+        }
+
+        private static bool TryResolveDrawTextFont(string fontName, float fontSize, FontType fontType, out ImFontPtr font, out float scaledFontSize)
+        {
+            font = default;
+            scaledFontSize = 0f;
+
+            if (CurrentContext == null)
+            {
+                Debug.LogError("you are trying to draw text with a Fugui font but there is no current Fugui context.");
+                return false;
+            }
+
+            if (fontSize <= 0f)
+            {
+                fontSize = GetFontSize();
+            }
+
+            int fontSetSize = Mathf.Max(1, Mathf.RoundToInt(fontSize));
+            if (string.IsNullOrEmpty(fontName))
+            {
+                fontName = Settings != null && Settings.FontConfig != null ? Settings.FontConfig.DefaultFontName : null;
+            }
+
+            FontSet fontSet = string.IsNullOrEmpty(fontName)
+                ? CurrentContext.GetFallbackFontSet()
+                : ResolveFontSet(fontName, fontSetSize);
+
+            if (fontSet == null)
+            {
+                return false;
+            }
+
+            if (!fontSet.TryGetFont(fontType, out font))
+            {
+                Debug.LogError($"you are trying to draw text with font '{fontSet.Name}' for {fontSet.Size}px as {fontType}, but this style does not exist.");
+                return false;
+            }
+
+            scaledFontSize = Mathf.Max(1f, fontSize * CurrentContext.FontScale);
+            return true;
+        }
+
+        /// <summary>
         /// Draws a downward-pointing caret.
         /// <param name="drawList">Drawing list to add the caret to.</param>
         /// <param name="pos">Position of the caret.</param>
@@ -132,12 +287,8 @@ namespace Fu
         /// <param name="containerHeight">Height of the container.</param>
         /// <param name="color">Color of the caret.</param>
         /// </summary>
-        public static void DrawCarret_Down(FuDrawList drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
-        {
-            DrawCarret_Down(drawList.Native, pos, carretSize, containerHeight, color);
-        }
 
-        internal static void DrawCarret_Down(ImDrawListPtr drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
+        public static void DrawCarret_Down(FuDrawList drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
         {
             // Add a filled triangle with vertices pointing downwards
             drawList.AddTriangleFilled(
@@ -155,12 +306,8 @@ namespace Fu
         /// <param name="containerHeight">Height of the container.</param>
         /// <param name="color">Color of the caret.</param>
         /// </summary>
-        public static void DrawCarret_Top(FuDrawList drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
-        {
-            DrawCarret_Top(drawList.Native, pos, carretSize, containerHeight, color);
-        }
 
-        internal static void DrawCarret_Top(ImDrawListPtr drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
+        public static void DrawCarret_Top(FuDrawList drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
         {
             // Add a filled triangle with vertices pointing upwards
             drawList.AddTriangleFilled(
@@ -178,12 +325,8 @@ namespace Fu
         /// <param name="containerHeight">Height of the container.</param>
         /// <param name="color">Color of the caret.</param>
         /// </summary>
-        public static void DrawCarret_Right(FuDrawList drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
-        {
-            DrawCarret_Right(drawList.Native, pos, carretSize, containerHeight, color);
-        }
 
-        internal static void DrawCarret_Right(ImDrawListPtr drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
+        public static void DrawCarret_Right(FuDrawList drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
         {
             // Add a filled triangle with vertices pointing to the right
             drawList.AddTriangleFilled(
@@ -201,12 +344,8 @@ namespace Fu
         /// <param name="containerHeight">Height of the container.</param>
         /// <param name="color">Color of the caret.</param>
         /// </summary>
-        public static void DrawCarret_Left(FuDrawList drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
-        {
-            DrawCarret_Left(drawList.Native, pos, carretSize, containerHeight, color);
-        }
 
-        internal static void DrawCarret_Left(ImDrawListPtr drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
+        public static void DrawCarret_Left(FuDrawList drawList, Vector2 pos, float carretSize, float containerHeight, Color color)
         {
             // Add a filled triangle with vertices pointing to the left
             drawList.AddTriangleFilled(
@@ -225,12 +364,8 @@ namespace Fu
         /// <param name="text">Text to display</param>
         /// <param name="backgroundColor">Color of the background</param>
         /// <param name="textColor">Color of the text</param>
-        public static void DrawBubble(FuDrawList drawList, Vector2 pos, float radius, string text, Color backgroundColor, Color textColor)
-        {
-            DrawBubble(drawList.Native, pos, radius, text, backgroundColor, textColor);
-        }
 
-        internal static void DrawBubble(ImDrawListPtr drawList, Vector2 pos, float radius, string text, Color backgroundColor, Color textColor)
+        public static void DrawBubble(FuDrawList drawList, Vector2 pos, float radius, string text, Color backgroundColor, Color textColor)
         {
             drawList.AddCircleFilled(
                 pos,
@@ -259,12 +394,8 @@ namespace Fu
         /// <param name="textColor">Color of the text</param>
         /// <param name="tooltipStyle">Fustyle of the tooltip text</param>
         /// <param name="tooltip">TooltipText</param>
-        public static void DrawBubbleWithTooltip(FuDrawList drawList, Vector2 pos, float radius, string text, Color backgroundColor, Color textColor, FuTextStyle tooltipStyle, string tooltip = "")
-        {
-            DrawBubbleWithTooltip(drawList.Native, pos, radius, text, backgroundColor, textColor, tooltipStyle, tooltip);
-        }
 
-        internal static void DrawBubbleWithTooltip(ImDrawListPtr drawList, Vector2 pos, float radius, string text, Color backgroundColor, Color textColor, FuTextStyle tooltipStyle, string tooltip = "")
+        public static void DrawBubbleWithTooltip(FuDrawList drawList, Vector2 pos, float radius, string text, Color backgroundColor, Color textColor, FuTextStyle tooltipStyle, string tooltip = "")
         {
             drawList.AddCircleFilled(
                 pos,
@@ -308,12 +439,8 @@ namespace Fu
         /// <param name="pos"> Position to draw the check mark</param>
         /// <param name="col"> Color of the check mark</param>
         /// <param name="size"> Size of the check mark</param>
-        public static void DrawCheckMark(FuDrawList drawList, Vector2 pos, Color col, float size)
-        {
-            DrawCheckMark(drawList.Native, pos, col, size);
-        }
 
-        internal static void DrawCheckMark(ImDrawListPtr drawList, Vector2 pos, Color col, float size)
+        public static void DrawCheckMark(FuDrawList drawList, Vector2 pos, Color col, float size)
         {
             float thickness = Mathf.Max(size / 5.0f, 1.0f);
             size -= thickness * 0.5f;
@@ -336,12 +463,8 @@ namespace Fu
         /// <param name="pos">The position of the tiled background.</param>
         /// <param name="size">The size of the tiled background.</param>
         /// <param name="numRows">The number of rows to use for the tiled background. Default value is 2.</param>
-        public static void DrawTilesBackground(FuDrawList drawList, Vector2 pos, Vector2 size, int numRows = 2)
-        {
-            DrawTilesBackground(drawList.Native, pos, size, numRows);
-        }
 
-        internal static void DrawTilesBackground(ImDrawListPtr drawList, Vector2 pos, Vector2 size, int numRows = 2)
+        public static void DrawTilesBackground(FuDrawList drawList, Vector2 pos, Vector2 size, int numRows = 2)
         {
             // Calculate the size of each tile
             float tileSize = size.y / numRows;
@@ -382,12 +505,8 @@ namespace Fu
         /// <param name="rounding">Rect rounding</param>
         /// <param name="drawList">drawList to use to draw the rect</param>
         /// <param name="color">The color of the rect</param>
-        public static unsafe void DrawGradientRect(Vector2 pos, Vector2 size, float gradientStrenght, float rounding, FuDrawList drawList, Vector4 color)
-        {
-            DrawGradientRect(pos, size, gradientStrenght, rounding, drawList.Native, color);
-        }
 
-        internal static unsafe void DrawGradientRect(Vector2 pos, Vector2 size, float gradientStrenght, float rounding, ImDrawListPtr drawList, Vector4 color)
+        public static unsafe void DrawGradientRect(Vector2 pos, Vector2 size, float gradientStrenght, float rounding, FuDrawList drawList, Vector4 color)
         {
             Vector4 bg2f = new Vector4(color.x * gradientStrenght, color.y * gradientStrenght, color.z * gradientStrenght, color.w);
             // draw button frame
@@ -405,12 +524,8 @@ namespace Fu
         /// <param name="thickness">The stroke thickness of the arc.</param>
         /// <param name="angle">Normalized angle between 0 and 1 (0 = none, 1 = full circle).</param>
         /// <param name="color">The color of the arc (ImGui packed color).</param>
-        public static void DrawArc(FuDrawList drawList, Vector2 center, float radius, float thickness, float angle, uint color)
-        {
-            DrawArc(drawList.Native, center, radius, thickness, angle, color);
-        }
 
-        internal static void DrawArc(ImDrawListPtr drawList, Vector2 center, float radius, float thickness, float angle, uint color)
+        public static void DrawArc(FuDrawList drawList, Vector2 center, float radius, float thickness, float angle, uint color)
         {
             if (angle <= 0f) return;
 
@@ -421,7 +536,7 @@ namespace Fu
             if (segments < 4) segments = 4;
 
             drawList.PathArcTo(center, radius, startAngle, endAngle, segments);
-            drawList.PathStroke(color, ImDrawFlags.None, thickness);
+            drawList.PathStroke(color, FuDrawFlags.None, thickness);
         }
 
         /// <summary>
@@ -435,12 +550,8 @@ namespace Fu
         /// <param name="thickness"> Thickness of the line</param>
         /// <param name="colStart"> Color at the start of the line</param>
         /// <param name="colEnd"> Color at the end of the line</param>
-        public static void DrawLineGradient(FuDrawList drawList, Vector2 p0, Vector2 p1, float g0, float g1, float thickness, uint colStart, uint colEnd)
-        {
-            DrawLineGradient(drawList.Native, p0, p1, g0, g1, thickness, colStart, colEnd);
-        }
 
-        internal static void DrawLineGradient(ImDrawListPtr drawList, Vector2 p0, Vector2 p1, float g0, float g1, float thickness, uint colStart, uint colEnd)
+        public static void DrawLineGradient(FuDrawList drawList, Vector2 p0, Vector2 p1, float g0, float g1, float thickness, uint colStart, uint colEnd)
         {
             // Skip if fully transparent
             if (((colStart | colEnd) & 0xFF000000) == 0)
@@ -534,12 +645,8 @@ namespace Fu
         /// <param name="textPos">position of the text</param>
         /// <param name="drawList">drawList that draw the text</param>
         /// <param name="disabled">if true, render the secondary glyph in disabled color</param>
-        public static void DrawDuotoneSecondaryGlyph(string text, Vector2 textPos, FuDrawList drawList, bool disabled)
-        {
-            DrawDuotoneSecondaryGlyph(text, textPos, drawList.Native, disabled);
-        }
 
-        internal static void DrawDuotoneSecondaryGlyph(string text, Vector2 textPos, ImDrawListPtr drawList, bool disabled)
+        public static void DrawDuotoneSecondaryGlyph(string text, Vector2 textPos, FuDrawList drawList, bool disabled)
         {
             // look for duoTone icons within text
             for (int i = 0; i < text.Length; i++)
@@ -670,7 +777,7 @@ namespace Fu
             FuBackdropStyle style = _backdropStack.Count > 0
                 ? _backdropStack.Peek()
                 : FuBackdropStyle.Default;
-            DrawBackdrop(ImGui.GetWindowDrawList(), rect, style.Color, style.BlurRadius, rounding, (ImDrawFlags)flags);
+            DrawBackdropNative(Fugui.GetCurrentWindowDrawList(), rect, style.Color, style.BlurRadius, rounding, (ImDrawFlags)flags);
         }
 
         /// <summary>
@@ -683,7 +790,7 @@ namespace Fu
         /// <param name="flags">Rounded corner flags.</param>
         public static void DrawBackdrop(Rect rect, Color color, float blurRadius = 0f, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.RoundCornersAll)
         {
-            DrawBackdrop(ImGui.GetWindowDrawList(), rect, color, blurRadius, rounding, (ImDrawFlags)flags);
+            DrawBackdropNative(Fugui.GetCurrentWindowDrawList(), rect, color, blurRadius, rounding, (ImDrawFlags)flags);
         }
 
         /// <summary>
@@ -697,10 +804,10 @@ namespace Fu
         /// <param name="flags">Rounded corner flags.</param>
         public static void DrawBackdrop(FuDrawList drawList, Rect rect, Color color, float blurRadius = 0f, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.RoundCornersAll)
         {
-            DrawBackdrop(drawList.Native, rect, color, blurRadius, rounding, (ImDrawFlags)flags);
+            DrawBackdropNative(drawList, rect, color, blurRadius, rounding, (ImDrawFlags)flags);
         }
 
-        internal static void DrawBackdrop(ImDrawListPtr drawList, Rect rect, Color color, float blurRadius = 0f, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
+        internal static void DrawBackdropNative(FuDrawList drawList, Rect rect, Color color, float blurRadius = 0f, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
         {
             Vector2 min = rect.position;
             Vector2 max = rect.position + rect.size;
@@ -723,7 +830,7 @@ namespace Fu
                     return;
                 }
 
-                drawList.AddRectFilled(min, max, colorU32, scaledRounding, flags);
+                drawList.AddRectFilledNative(min, max, colorU32, scaledRounding, flags);
                 return;
             }
 
@@ -731,7 +838,7 @@ namespace Fu
             Vector2 uvMax = new Vector2(scaledBlurRadius, 1f);
             if (scaledRounding > 0f)
             {
-                drawList.AddImageRounded(BackdropTextureID, min, max, uv, uvMax, colorU32, scaledRounding, flags);
+                drawList.AddImageRoundedNative(BackdropTextureID, min, max, uv, uvMax, colorU32, scaledRounding, flags);
                 return;
             }
 
@@ -748,7 +855,7 @@ namespace Fu
         /// <param name="flags">Rounded corner flags.</param>
         public static void DrawThemeBackdrop(Rect rect, FuColors color, float alphaMult = 1f, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.RoundCornersAll)
         {
-            DrawThemeBackdrop(ImGui.GetWindowDrawList(), rect, color, alphaMult, rounding, (ImDrawFlags)flags);
+            DrawThemeBackdropNative(Fugui.GetCurrentWindowDrawList(), rect, color, alphaMult, rounding, (ImDrawFlags)flags);
         }
 
         /// <summary>
@@ -762,15 +869,15 @@ namespace Fu
         /// <param name="flags">Rounded corner flags.</param>
         public static void DrawThemeBackdrop(FuDrawList drawList, Rect rect, FuColors color, float alphaMult = 1f, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.RoundCornersAll)
         {
-            DrawThemeBackdrop(drawList.Native, rect, color, alphaMult, rounding, (ImDrawFlags)flags);
+            DrawThemeBackdropNative(drawList, rect, color, alphaMult, rounding, (ImDrawFlags)flags);
         }
 
-        internal static void DrawThemeBackdrop(ImDrawListPtr drawList, Rect rect, FuColors color, float alphaMult = 1f, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
+        internal static void DrawThemeBackdropNative(FuDrawList drawList, Rect rect, FuColors color, float alphaMult = 1f, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
         {
             Vector4 themeColor = Themes != null
                 ? Themes.GetColor(color, alphaMult)
                 : Vector4.zero;
-            DrawBackdrop(drawList, rect, themeColor, GetThemeBackdropBlur(color), rounding, flags);
+            DrawBackdropNative(drawList, rect, themeColor, GetThemeBackdropBlur(color), rounding, flags);
         }
 
         /// <summary>

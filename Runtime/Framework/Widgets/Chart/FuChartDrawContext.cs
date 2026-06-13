@@ -52,12 +52,7 @@ namespace Fu.Framework
         /// <param name="seriesIndex">Current series index, or -1 for chart-level callbacks.</param>
         /// <param name="disabled">Whether the chart is disabled.</param>
         /// <param name="scale">Current Fugui scale.</param>
-        internal FuChartDrawContext(ImDrawListPtr drawList, Rect chartRect, Rect plotRect, Vector2 min, Vector2 max, Vector2 mouseValue, FuChartHoverState hover, int seriesIndex, bool disabled, float scale)
-            : this(new FuDrawList(drawList), chartRect, plotRect, min, max, mouseValue, hover, seriesIndex, disabled, scale)
-        {
-        }
-
-        private FuChartDrawContext(FuDrawList drawList, Rect chartRect, Rect plotRect, Vector2 min, Vector2 max, Vector2 mouseValue, FuChartHoverState hover, int seriesIndex, bool disabled, float scale)
+        internal FuChartDrawContext(FuDrawList drawList, Rect chartRect, Rect plotRect, Vector2 min, Vector2 max, Vector2 mouseValue, FuChartHoverState hover, int seriesIndex, bool disabled, float scale)
         {
             DrawList = drawList;
             ChartRect = chartRect;

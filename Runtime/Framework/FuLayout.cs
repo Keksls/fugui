@@ -247,17 +247,17 @@ namespace Fu.Framework
             {
                 if (Fugui.IsCurrentItemFocused())
                 {
-                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
+                    Fugui.GetCurrentWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
                 }
                 else if (Fugui.IsCurrentItemHovered())
                 {
                     // ImGui fail on inputText since version 1.88, check on new version
-                    ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
+                    Fugui.GetCurrentWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
                 }
             }
             else if (force)
             {
-                ImGui.GetWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
+                Fugui.GetCurrentWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
             }
         }
 
@@ -267,7 +267,7 @@ namespace Fu.Framework
         /// <param name="rect">rect of the frame (pos + size)</param>
         private void drawBorderFrame(Rect rect, bool rounded = true)
         {
-            ImGui.GetWindowDrawList().AddRect(rect.min, rect.max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), rounded ? ImGui.GetStyle().FrameRounding : 0f);
+            Fugui.GetCurrentWindowDrawList().AddRect(rect.min, rect.max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), rounded ? ImGui.GetStyle().FrameRounding : 0f);
         }
 
         /// <summary>
@@ -279,7 +279,7 @@ namespace Fu.Framework
         /// <param name="hovered">Whether the widget is hovered.</param>
         /// <param name="disabled">Whether the widget is disabled.</param>
         /// <param name="rounding">Frame rounding.</param>
-        private void DrawWidgetFeedback(ImDrawListPtr drawList, Rect rect, bool focused, bool hovered, bool disabled, float rounding)
+        private void DrawWidgetFeedback(FuDrawList drawList, Rect rect, bool focused, bool hovered, bool disabled, float rounding)
         {
             if (disabled)
             {
@@ -305,7 +305,7 @@ namespace Fu.Framework
                 return;
             }
 
-            drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(color), rounding, ImDrawFlags.RoundCornersAll, thickness);
+            drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(color), rounding, FuDrawFlags.RoundCornersAll, thickness);
         }
 
         /// <summary>
@@ -313,7 +313,7 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="drawList">Draw list.</param>
         /// <returns>Previous draw list flags.</returns>
-        private static ImDrawListFlags PushAntiAliasedFill(ImDrawListPtr drawList)
+        private static ImDrawListFlags PushAntiAliasedFill(FuDrawList drawList)
         {
             ImDrawListFlags previousFlags = drawList.Flags;
             drawList.Flags = previousFlags | ImDrawListFlags.AntiAliasedFill;
@@ -325,19 +325,19 @@ namespace Fu.Framework
         /// </summary>
         /// <param name="drawList">Draw list.</param>
         /// <param name="previousFlags">Previous draw list flags.</param>
-        private static void PopAntiAliasedFill(ImDrawListPtr drawList, ImDrawListFlags previousFlags)
+        private static void PopAntiAliasedFill(FuDrawList drawList, ImDrawListFlags previousFlags)
         {
             drawList.Flags = previousFlags;
         }
 
-        private static void AddRectFilledAntiAliased(ImDrawListPtr drawList, Vector2 min, Vector2 max, uint color, float rounding, ImDrawFlags flags = ImDrawFlags.None)
+        private static void AddRectFilledAntiAliased(FuDrawList drawList, Vector2 min, Vector2 max, uint color, float rounding, FuDrawFlags flags = FuDrawFlags.None)
         {
             ImDrawListFlags previousFlags = PushAntiAliasedFill(drawList);
             drawList.AddRectFilled(min, max, color, rounding, flags);
             PopAntiAliasedFill(drawList, previousFlags);
         }
 
-        private static void AddCircleFilledAntiAliased(ImDrawListPtr drawList, Vector2 center, float radius, uint color, int segments = 0)
+        private static void AddCircleFilledAntiAliased(FuDrawList drawList, Vector2 center, float radius, uint color, int segments = 0)
         {
             ImDrawListFlags previousFlags = PushAntiAliasedFill(drawList);
             drawList.AddCircleFilled(center, radius, color, segments);
@@ -353,7 +353,7 @@ namespace Fu.Framework
         /// <param name="color">Fill color.</param>
         /// <param name="rounding">Requested rounding.</param>
         /// <param name="antiAliasFill">Whether to enable anti-aliased fill locally.</param>
-        private void DrawRoundedSegment(ImDrawListPtr drawList, Vector2 min, Vector2 max, Vector4 color, float rounding, bool antiAliasFill = false)
+        private void DrawRoundedSegment(FuDrawList drawList, Vector2 min, Vector2 max, Vector4 color, float rounding, bool antiAliasFill = false)
         {
             if (max.x <= min.x || max.y <= min.y)
             {
@@ -364,11 +364,11 @@ namespace Fu.Framework
             uint packedColor = ImGui.GetColorU32(color);
             if (antiAliasFill)
             {
-                AddRectFilledAntiAliased(drawList, min, max, packedColor, rounding, ImDrawFlags.RoundCornersAll);
+                AddRectFilledAntiAliased(drawList, min, max, packedColor, rounding, FuDrawFlags.RoundCornersAll);
             }
             else
             {
-                drawList.AddRectFilled(min, max, packedColor, rounding, ImDrawFlags.RoundCornersAll);
+                drawList.AddRectFilled(min, max, packedColor, rounding, FuDrawFlags.RoundCornersAll);
             }
         }
 
@@ -379,7 +379,7 @@ namespace Fu.Framework
         /// <param name="center">Icon center.</param>
         /// <param name="radius">Lens radius.</param>
         /// <param name="color">Icon color.</param>
-        private void DrawSearchGlyph(ImDrawListPtr drawList, Vector2 center, float radius, Vector4 color)
+        private void DrawSearchGlyph(FuDrawList drawList, Vector2 center, float radius, Vector4 color)
         {
             float thickness = Mathf.Max(1.2f, 1.4f * Fugui.CurrentContext.Scale);
             uint packed = ImGui.GetColorU32(color);
@@ -395,7 +395,7 @@ namespace Fu.Framework
         /// <param name="caretWidth">Caret zone width.</param>
         /// <param name="opened">Whether popup is open.</param>
         /// <param name="disabled">Whether disabled.</param>
-        private void DrawComboboxChrome(ImDrawListPtr drawList, Rect rect, float caretWidth, bool opened, bool disabled)
+        private void DrawComboboxChrome(FuDrawList drawList, Rect rect, float caretWidth, bool opened, bool disabled)
         {
             float scale = Fugui.CurrentContext.Scale;
             float rounding = ImGui.GetStyle().FrameRounding;
@@ -417,7 +417,7 @@ namespace Fu.Framework
         /// <param name="radius">Icon radius.</param>
         /// <param name="color">Icon color.</param>
         /// <param name="hovered">Whether the icon is hovered.</param>
-        private void DrawClearGlyph(ImDrawListPtr drawList, Vector2 center, float radius, Vector4 color, bool hovered)
+        private void DrawClearGlyph(FuDrawList drawList, Vector2 center, float radius, Vector4 color, bool hovered)
         {
             if (hovered)
             {
@@ -443,7 +443,7 @@ namespace Fu.Framework
         /// <param name="hovered">Whether hovered.</param>
         /// <param name="active">Whether active.</param>
         /// <param name="disabled">Whether disabled.</param>
-        private void DrawValueKnob(ImDrawListPtr drawList, Vector2 center, float radius, Vector4 color, bool hovered, bool active, bool disabled)
+        private void DrawValueKnob(FuDrawList drawList, Vector2 center, float radius, Vector4 color, bool hovered, bool active, bool disabled)
         {
             float scale = Fugui.CurrentContext.Scale;
 
@@ -466,7 +466,7 @@ namespace Fu.Framework
         /// <param name="drawList">Draw list.</param>
         /// <param name="text">Value text.</param>
         /// <param name="anchor">Anchor position.</param>
-        private void DrawValueBubble(ImDrawListPtr drawList, string text, Vector2 anchor)
+        private void DrawValueBubble(FuDrawList drawList, string text, Vector2 anchor)
         {
             if (string.IsNullOrEmpty(text))
             {
@@ -484,8 +484,8 @@ namespace Fu.Framework
             bg.w = Mathf.Max(bg.w, 0.96f);
             Vector4 border = Fugui.Themes.GetColor(FuColors.Highlight);
             border.w = 0.65f;
-            Fugui.DrawBackdrop(drawList, new Rect(pos, size), bg, Fugui.GetThemeBackdropBlur(FuColors.PopupBg), rounding, ImDrawFlags.RoundCornersAll);
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
+            Fugui.DrawBackdrop(drawList, new Rect(pos, size), bg, Fugui.GetThemeBackdropBlur(FuColors.PopupBg), rounding, FuDrawFlags.RoundCornersAll);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
             drawList.AddText(pos + padding, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text)), text);
         }
 
@@ -584,7 +584,7 @@ namespace Fu.Framework
             Vector2 min = ImGui.GetItemRectMin();
             Vector2 max = ImGui.GetItemRectMax();
             min.y = max.y;
-            ImGui.GetWindowDrawList().AddLine(min, max, ImGui.GetColorU32(ImGuiCol.Text), 1.0f);
+            Fugui.GetCurrentWindowDrawList().AddLine(min, max, ImGui.GetColorU32(ImGuiCol.Text), 1.0f);
         }
 
         /// <summary>

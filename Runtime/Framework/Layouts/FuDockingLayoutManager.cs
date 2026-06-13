@@ -1054,7 +1054,7 @@ namespace Fu
             }
             else
             {
-                DrawDockSplitter(ImGui.GetForegroundDrawList(), grabRect, horizontal, hovered, active, visualThickness, scale, mousePos, GetContainerContentRect(container));
+                DrawDockSplitter(Fugui.GetForegroundDrawList(), grabRect, horizontal, hovered, active, visualThickness, scale, mousePos, GetContainerContentRect(container));
             }
         }
 
@@ -1080,7 +1080,7 @@ namespace Fu
             }
 
             Rect clipRect = floatingRoot != null ? floatingRoot.Rect : GetContainerContentRect(container);
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             drawList.PushClipRect(clipRect.position, clipRect.position + clipRect.size, false);
             for (int i = 0; i < splitters.Count; i++)
             {
@@ -1128,7 +1128,7 @@ namespace Fu
         /// <summary>
         /// Draw the dock splitter feedback.
         /// </summary>
-        private void DrawDockSplitter(ImDrawListPtr drawList, Rect grabRect, bool horizontal, bool hovered, bool active, float visualThickness, float scale)
+        private void DrawDockSplitter(FuDrawList drawList, Rect grabRect, bool horizontal, bool hovered, bool active, float visualThickness, float scale)
         {
             DrawDockSplitter(drawList, grabRect, horizontal, hovered, active, visualThickness, scale, grabRect.center, grabRect);
         }
@@ -1136,7 +1136,7 @@ namespace Fu
         /// <summary>
         /// Draw the dock splitter feedback.
         /// </summary>
-        private void DrawDockSplitter(ImDrawListPtr drawList, Rect grabRect, bool horizontal, bool hovered, bool active, float visualThickness, float scale, Vector2 mousePos, Rect clipRect)
+        private void DrawDockSplitter(FuDrawList drawList, Rect grabRect, bool horizontal, bool hovered, bool active, float visualThickness, float scale, Vector2 mousePos, Rect clipRect)
         {
             bool highlighted = hovered || active;
             uint edgeLineColor = Fugui.Themes.GetColorU32(FuColors.Border, highlighted ? active ? 0.88f : 0.62f : 0.35f);
@@ -1176,7 +1176,7 @@ namespace Fu
         /// </summary>
         private void DrawResizeFeedbackHandle(Rect handle, uint color, float rounding, Rect clipRect)
         {
-            ImDrawListPtr foreground = ImGui.GetForegroundDrawList();
+            FuDrawList foreground = Fugui.GetForegroundDrawList();
             foreground.PushClipRect(clipRect.position, clipRect.position + clipRect.size, false);
             foreground.AddRectFilled(handle.position, handle.position + handle.size, color, rounding);
             foreground.PopClipRect();
@@ -1213,7 +1213,7 @@ namespace Fu
             float horizontalHandleLong = Mathf.Min(handleLong, Mathf.Max(handleShort, max.x - min.x));
             float rounding = handleShort * 0.5f;
 
-            ImDrawListPtr drawList = ImGui.GetForegroundDrawList();
+            FuDrawList drawList = Fugui.GetForegroundDrawList();
             drawList.PushClipRect(rect.position, rect.position + rect.size, false);
 
             FloatingDockRootResizeEdge edge = floatingRoot.ResizeEdge;
@@ -1258,7 +1258,7 @@ namespace Fu
         /// <summary>
         /// Draw a compact L-shaped corner resize handle for floating dock roots.
         /// </summary>
-        private void DrawFloatingDockRootCornerResizeHandle(ImDrawListPtr drawList, FloatingDockRootResizeEdge edge, Vector2 min, Vector2 max, uint color, float thickness, float scale)
+        private void DrawFloatingDockRootCornerResizeHandle(FuDrawList drawList, FloatingDockRootResizeEdge edge, Vector2 min, Vector2 max, uint color, float thickness, float scale)
         {
             float length = Mathf.Max(18f, 22f * scale);
             float bar = Mathf.Max(thickness, 4f * scale);
@@ -2425,7 +2425,7 @@ namespace Fu
                 return;
             }
 
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
             uint bg = active
                 ? Fugui.Themes.GetColorU32(FuColors.ButtonActive, 0.42f)
@@ -3105,7 +3105,7 @@ namespace Fu
                 return;
             }
 
-            ImDrawListPtr drawList = ImGui.GetForegroundDrawList();
+            FuDrawList drawList = Fugui.GetForegroundDrawList();
             foreach (KeyValuePair<DockDropZone, Rect> pair in zoneRects)
             {
                 DrawDockZoneButton(drawList, pair.Value, pair.Key, pair.Key == hoveredZone);
@@ -3115,7 +3115,7 @@ namespace Fu
         /// <summary>
         /// Draw one premium docking zone button.
         /// </summary>
-        private void DrawDockZoneButton(ImDrawListPtr drawList, Rect rect, DockDropZone zone, bool hovered)
+        private void DrawDockZoneButton(FuDrawList drawList, Rect rect, DockDropZone zone, bool hovered)
         {
             float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
             float rounding = Mathf.Max(8f, 9f * scale);
@@ -3136,14 +3136,14 @@ namespace Fu
 
             drawList.AddRectFilled(min + new Vector2(0f, 3f * scale), max + new Vector2(0f, 3f * scale), shadow, rounding);
             drawList.AddRectFilled(min, max, bg, rounding);
-            drawList.AddRect(min, max, border, rounding, ImDrawFlags.None, hovered ? Mathf.Max(2f, 2f * scale) : Mathf.Max(1f, 1f * scale));
+            drawList.AddRect(min, max, border, rounding, FuDrawFlags.None, hovered ? Mathf.Max(2f, 2f * scale) : Mathf.Max(1f, 1f * scale));
             DrawDockZoneIcon(drawList, center, rect.size.x, zone, inner, scale);
         }
 
         /// <summary>
         /// Draw a simple symbolic icon for a docking zone.
         /// </summary>
-        private void DrawDockZoneIcon(ImDrawListPtr drawList, Vector2 center, float buttonSize, DockDropZone zone, uint color, float scale)
+        private void DrawDockZoneIcon(FuDrawList drawList, Vector2 center, float buttonSize, DockDropZone zone, uint color, float scale)
         {
             float s = buttonSize * 0.26f;
             float thickness = Mathf.Max(1.6f, 1.8f * scale);
@@ -3163,7 +3163,7 @@ namespace Fu
                     break;
                 default:
                     Rect tabIcon = new Rect(center - new Vector2(s, s * 0.75f), new Vector2(s * 2f, s * 1.5f));
-                    drawList.AddRect(tabIcon.position, tabIcon.position + tabIcon.size, color, 3f * scale, ImDrawFlags.None, thickness);
+                    drawList.AddRect(tabIcon.position, tabIcon.position + tabIcon.size, color, 3f * scale, FuDrawFlags.None, thickness);
                     drawList.AddLine(tabIcon.position + new Vector2(0f, s * 0.42f), tabIcon.position + new Vector2(tabIcon.width, s * 0.42f), color, thickness);
                     break;
             }
@@ -3205,12 +3205,12 @@ namespace Fu
 
         private void DrawDockDragPreview(Rect rect)
         {
-            ImDrawListPtr drawList = ImGui.GetForegroundDrawList();
+            FuDrawList drawList = Fugui.GetForegroundDrawList();
             Vector2 min = rect.position;
             Vector2 max = rect.position + rect.size;
             float thickness = Mathf.Max(2f, 2f * Fugui.Scale);
             drawList.AddRectFilled(min, max, Fugui.Themes.GetColorU32(FuColors.DockingPreview, 0.25f), 0f);
-            drawList.AddRect(min, max, Fugui.Themes.GetColorU32(FuColors.DockingPreview), 0f, ImDrawFlags.None, thickness);
+            drawList.AddRect(min, max, Fugui.Themes.GetColorU32(FuColors.DockingPreview), 0f, FuDrawFlags.None, thickness);
         }
 
         /// <summary>

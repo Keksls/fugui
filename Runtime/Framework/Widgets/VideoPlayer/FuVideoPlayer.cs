@@ -334,7 +334,7 @@ namespace Fu.Framework
             Vector2 size = new Vector2(width, height);
             Vector2 min = ImGui.GetCursorScreenPos();
             Vector2 max = min + size;
-            ImGui.GetWindowDrawList().AddRectFilled(min, max, ImGui.GetColorU32(ImGuiCol.FrameBg));
+            Fugui.GetCurrentWindowDrawList().AddRectFilled(min, max, ImGui.GetColorU32(ImGuiCol.FrameBg));
             if (FuLayout.CurrentDrawerPath.Count > 0)
             {
                 FuLayout.CurrentDrawerPath.Peek().EnboxedText("Video player ready\n\nPlease import file to play", min, size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.None);
@@ -420,7 +420,7 @@ namespace Fu.Framework
                 size = new Vector2(width, height);
                 pos = ImGui.GetCursorScreenPos();
             }
-            var drawList = ImGui.GetWindowDrawList();
+            var drawList = Fugui.GetCurrentWindowDrawList();
 
             // we actualy are playing a video, draw it
             if (Texture != null)
@@ -627,7 +627,7 @@ namespace Fu.Framework
                 frame = (int)Player.frame;
             }
 
-            var drawList = ImGui.GetWindowDrawList();
+            var drawList = Fugui.GetCurrentWindowDrawList();
             Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 size = new Vector2(width <= 0 ? ImGui.GetContentRegionAvail().x : width, height * Fugui.CurrentContext.Scale);
             // draw timelline back and filled

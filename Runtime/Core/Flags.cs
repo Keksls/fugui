@@ -1,4 +1,8 @@
-﻿namespace Fu
+﻿using ImGuiNET;
+using System;
+using System.Text;
+
+namespace Fu
 {
     /// <summary>
     /// Flags for configuring external windows
@@ -335,7 +339,7 @@
     }
 
     /// <summary>
-    /// Fugui draw-list corner and path flags. Values match ImDrawFlags and are converted internally.
+    /// Fugui draw-list corner and path flags. Values match FuDrawFlags and are converted internally.
     /// </summary>
     [System.Flags]
     public enum FuDrawFlags
@@ -354,84 +358,6 @@
         RoundCornersAll = 240,
         RoundCornersDefault = 240,
         RoundCornersMask = 496
-    }
-
-    /// <summary>
-    /// Opaque Fugui draw-list handle. Fugui converts it to the native ImGui draw list internally.
-    /// </summary>
-    public readonly struct FuDrawList
-    {
-        internal readonly ImGuiNET.ImDrawListPtr Native;
-
-        internal FuDrawList(ImGuiNET.ImDrawListPtr native)
-        {
-            Native = native;
-        }
-
-        /// <summary>
-        /// Whether this draw-list handle points to a native draw list.
-        /// </summary>
-        public unsafe bool IsValid => Native.NativePtr != null;
-
-        public void AddRectFilled(UnityEngine.Vector2 min, UnityEngine.Vector2 max, uint color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None)
-        {
-            Native.AddRectFilled(min, max, color, rounding, (ImGuiNET.ImDrawFlags)flags);
-        }
-
-        public void AddRectFilled(UnityEngine.Vector2 min, UnityEngine.Vector2 max, UnityEngine.Vector4 color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None)
-        {
-            AddRectFilled(min, max, ImGuiNET.ImGui.GetColorU32(color), rounding, flags);
-        }
-
-        public void AddRect(UnityEngine.Vector2 min, UnityEngine.Vector2 max, uint color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None, float thickness = 1f)
-        {
-            Native.AddRect(min, max, color, rounding, (ImGuiNET.ImDrawFlags)flags, thickness);
-        }
-
-        public void AddRect(UnityEngine.Vector2 min, UnityEngine.Vector2 max, UnityEngine.Vector4 color, float rounding = 0f, FuDrawFlags flags = FuDrawFlags.None, float thickness = 1f)
-        {
-            AddRect(min, max, ImGuiNET.ImGui.GetColorU32(color), rounding, flags, thickness);
-        }
-
-        public void AddLine(UnityEngine.Vector2 p1, UnityEngine.Vector2 p2, uint color, float thickness = 1f)
-        {
-            Native.AddLine(p1, p2, color, thickness);
-        }
-
-        public void AddLine(UnityEngine.Vector2 p1, UnityEngine.Vector2 p2, UnityEngine.Vector4 color, float thickness = 1f)
-        {
-            AddLine(p1, p2, ImGuiNET.ImGui.GetColorU32(color), thickness);
-        }
-
-        public void AddText(UnityEngine.Vector2 pos, uint color, string text)
-        {
-            Native.AddText(pos, color, text);
-        }
-
-        public void AddText(UnityEngine.Vector2 pos, UnityEngine.Vector4 color, string text)
-        {
-            AddText(pos, ImGuiNET.ImGui.GetColorU32(color), text);
-        }
-
-        public void AddCircleFilled(UnityEngine.Vector2 center, float radius, uint color, int segments = 0)
-        {
-            Native.AddCircleFilled(center, radius, color, segments);
-        }
-
-        public void AddCircleFilled(UnityEngine.Vector2 center, float radius, UnityEngine.Vector4 color, int segments = 0)
-        {
-            AddCircleFilled(center, radius, ImGuiNET.ImGui.GetColorU32(color), segments);
-        }
-
-        public void PushClipRect(UnityEngine.Vector2 min, UnityEngine.Vector2 max, bool intersectWithCurrentClipRect = false)
-        {
-            Native.PushClipRect(min, max, intersectWithCurrentClipRect);
-        }
-
-        public void PopClipRect()
-        {
-            Native.PopClipRect();
-        }
     }
 
     /// <summary>

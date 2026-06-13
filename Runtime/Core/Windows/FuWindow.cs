@@ -1004,7 +1004,7 @@ namespace Fu
         /// </summary>
         private void DrawInvisibleWindowAnchor()
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             Vector2 pos = ImGui.GetWindowPos();
             Vector2 uv = ImGui.GetIO().Fonts.TexUvWhitePixel;
             uint color = 0u;
@@ -1179,7 +1179,7 @@ namespace Fu
                 // draw overlays
                 DrawOverlays();
                 Fugui.Layouts?.DrawDockSplittersForWindow(this);
-                DrawCustomWindowChromeOverlay(ImGui.GetWindowDrawList(), ImGui.GetWindowPos(), ImGui.GetWindowSize());
+                DrawCustomWindowChromeOverlay(Fugui.GetCurrentWindowDrawList(), ImGui.GetWindowPos(), ImGui.GetWindowSize());
 
                 // if external, draw resize grips and resize hover feedback
 
@@ -1433,7 +1433,7 @@ namespace Fu
         /// </summary>
         private void DrawCustomWindowFrame(float customTopHeight, bool customTopBarIsDockTabs)
         {
-            ImDrawListPtr dl = ImGui.GetWindowDrawList();
+            FuDrawList dl = Fugui.GetCurrentWindowDrawList();
             Vector2 pos = ImGui.GetWindowPos();
             Vector2 size = ImGui.GetWindowSize();
             float rounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
@@ -1443,7 +1443,7 @@ namespace Fu
                 Vector2 titleMax = pos + new Vector2(size.x, customTopHeight);
                 uint titleColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.TitleBgActive : FuColors.TitleBg);
                 uint separatorColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.SeparatorActive : FuColors.Separator, HasFocus ? 0.9f : 0.55f);
-                dl.AddRectFilled(pos, titleMax, titleColor, rounding, ImDrawFlags.RoundCornersTop);
+                dl.AddRectFilled(pos, titleMax, titleColor, rounding, FuDrawFlags.RoundCornersTop);
                 dl.AddLine(new Vector2(pos.x, titleMax.y - 1f * Fugui.Scale), new Vector2(pos.x + size.x, titleMax.y - 1f * Fugui.Scale), separatorColor, Mathf.Max(1f, 1f * Fugui.Scale));
                 string title = Fugui.GetUntagedText(WindowName.Name);
                 Vector2 textSize = ImGui.CalcTextSize(title);
@@ -1467,7 +1467,7 @@ namespace Fu
         /// <summary>
         /// Draw border and resize feedback after all window content.
         /// </summary>
-        private void DrawCustomWindowChromeOverlay(ImDrawListPtr dl, Vector2 pos, Vector2 size)
+        private void DrawCustomWindowChromeOverlay(FuDrawList dl, Vector2 pos, Vector2 size)
         {
             Vector2 max = pos + size;
             float rounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
@@ -1477,7 +1477,7 @@ namespace Fu
                 float borderInset = borderSize * 0.5f;
                 Vector2 borderMin = pos + new Vector2(borderInset, borderInset);
                 Vector2 borderMax = max - new Vector2(borderInset, borderInset);
-                dl.AddRect(borderMin, borderMax, Fugui.Themes.GetColorU32(FuColors.Border), rounding, ImDrawFlags.None, borderSize);
+                dl.AddRect(borderMin, borderMax, Fugui.Themes.GetColorU32(FuColors.Border), rounding, FuDrawFlags.None, borderSize);
             }
 
             DrawCustomResizeFeedback(dl, pos, size);
@@ -1486,7 +1486,7 @@ namespace Fu
         /// <summary>
         /// Draw and process the custom close button for non-external windows.
         /// </summary>
-        private void DrawCustomCloseButton(ImDrawListPtr dl, Vector2 windowPos, Rect closeRect)
+        private void DrawCustomCloseButton(FuDrawList dl, Vector2 windowPos, Rect closeRect)
         {
             bool hovered = !BlocksWindowInputs && closeRect.Contains(Mouse.Position);
             bool active = hovered && Mouse.IsPressed(FuMouseButton.Left);
@@ -1525,7 +1525,7 @@ namespace Fu
         /// <summary>
         /// Draw hover/active resize edges for custom floating windows.
         /// </summary>
-        private void DrawCustomResizeFeedback(ImDrawListPtr dl, Vector2 windowPos, Vector2 windowSize)
+        private void DrawCustomResizeFeedback(FuDrawList dl, Vector2 windowPos, Vector2 windowSize)
         {
             FuWindowResizeEdge edge = _customResizeEdge != FuWindowResizeEdge.None
                 ? _customResizeEdge
@@ -1542,7 +1542,7 @@ namespace Fu
                 return;
             }
 
-            ImDrawListPtr drawList = _customResizeLocksWindowInputs ? ImGui.GetForegroundDrawList() : dl;
+            FuDrawList drawList = _customResizeLocksWindowInputs ? Fugui.GetForegroundDrawList() : dl;
             bool clippedToWindow = _customResizeLocksWindowInputs;
             if (clippedToWindow)
             {
@@ -1675,7 +1675,7 @@ namespace Fu
         /// <summary>
         /// Draw a compact L-shaped corner resize handle.
         /// </summary>
-        private void DrawCornerResizeHandle(ImDrawListPtr dl, FuWindowResizeEdge edge, Vector2 min, Vector2 max, uint color, float thickness)
+        private void DrawCornerResizeHandle(FuDrawList dl, FuWindowResizeEdge edge, Vector2 min, Vector2 max, uint color, float thickness)
         {
             float length = Mathf.Max(18f, 22f * Fugui.Scale);
             float bar = Mathf.Max(3.5f, 4f * Fugui.Scale);
@@ -2776,7 +2776,7 @@ namespace Fu
             float fullBtnWidth = btnSize.ScaledSize.x + btnPaddingH;
             float startX = externalWindow.Width - (fullBtnWidth * 3f) - 4f * Fugui.Scale;
 
-            ImDrawListPtr dl = ImGui.GetForegroundDrawList();
+            FuDrawList dl = Fugui.GetForegroundDrawList();
 
             Vector2 mousePos = externalContainer.LocalMousePos;
             bool mouseDown = externalContainer.Mouse.IsDown(FuMouseButton.Left);
@@ -2829,10 +2829,10 @@ namespace Fu
 
             if (!IsMaximized)
             {
-                // MAXIMIZE icon (□)
+                // MAXIMIZE icon (â–¡)
                 Vector2 p1 = btnPos + new Vector2(iconPadding, iconPadding);
                 Vector2 p2 = btnPos + new Vector2(btnSize.ScaledSize.x - iconPadding, btnSize.ScaledSize.y - iconPadding);
-                dl.AddRect(p1, p2, iconColor, iconRounding, ImDrawFlags.None, iconThickness);
+                dl.AddRect(p1, p2, iconColor, iconRounding, FuDrawFlags.None, iconThickness);
             }
             else
             {
@@ -2847,7 +2847,7 @@ namespace Fu
                 Vector2 b2 = btnPos + new Vector2(btnSize.ScaledSize.x - iconPadding - off, btnSize.ScaledSize.y - iconPadding);
 
                 // Draw the back rectangle first
-                dl.AddRect(a1, a2, iconColor, iconRounding, ImDrawFlags.None, iconThickness); // top-right
+                dl.AddRect(a1, a2, iconColor, iconRounding, FuDrawFlags.None, iconThickness); // top-right
 
                 // BACKGROUND RECT (fill) for the top rectangle
                 // This prevents seeing the rear rectangle through the front one.
@@ -2860,10 +2860,10 @@ namespace Fu
                 // Slightly shrink the bottom rectangle to avoid overlapping lines
                 Vector2 b1Bis = b1 - Vector2.one * iconThickness;
                 Vector2 b2Bis = b2 + Vector2.one * iconThickness;
-                dl.AddRect(b1Bis, b2Bis, bgCol, iconRounding, ImDrawFlags.None, iconThickness); // bottom-left
+                dl.AddRect(b1Bis, b2Bis, bgCol, iconRounding, FuDrawFlags.None, iconThickness); // bottom-left
 
                 // Draw the front rectangle
-                dl.AddRect(b1, b2, iconColor, iconRounding, ImDrawFlags.None, iconThickness); // bottom-left
+                dl.AddRect(b1, b2, iconColor, iconRounding, FuDrawFlags.None, iconThickness); // bottom-left
             }
 
             if (hovered && mouseClicked)
@@ -2972,11 +2972,11 @@ namespace Fu
         /// </summary>
         private void DrawDebugOverlayMarkers()
         {
-            ImDrawListPtr dl = ImGui.GetWindowDrawList();
+            FuDrawList dl = Fugui.GetCurrentWindowDrawList();
             // draw working area rect
             Vector2 windowPos = ImGui.GetWindowPos();
             Vector2 pos = windowPos + new Vector2(WorkingAreaPosition.x, WorkingAreaPosition.y);
-            dl.AddRect(pos, pos + WorkingAreaSize, ImGui.ColorConvertFloat4ToU32(Color.red), 1f, ImDrawFlags.None, 2f * Fugui.Scale);
+            dl.AddRect(pos, pos + WorkingAreaSize, ImGui.ColorConvertFloat4ToU32(Color.red), 1f, FuDrawFlags.None, 2f * Fugui.Scale);
 
             // draw mouse rect
             pos = windowPos + new Vector2(WorkingAreaPosition.x + WorkingAreaMousePosition.x, WorkingAreaPosition.y + WorkingAreaMousePosition.y);
@@ -3434,7 +3434,7 @@ namespace Fu
         /// <param name="drawList">Native ImGui draw list.</param>
         /// <param name="windowName">Already resolved owner name.</param>
         /// <returns>Bound cached child draw list.</returns>
-        internal DrawList BindCachedChildDrawList(ImDrawListPtr drawList, string windowName)
+        internal DrawList BindCachedChildDrawList(FuDrawList drawList, string windowName)
         {
             DrawList cachedDrawList;
             if (_cachedChildDrawListPoolCursor < _cachedChildDrawListPool.Count)

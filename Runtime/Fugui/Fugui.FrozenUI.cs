@@ -50,7 +50,7 @@ namespace Fu
                 return false;
             }
 
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             _frozenUIStack.Push(new FuFrozenUIContext(data, true, false, drawList.IdxBuffer.Size, ImGui.GetCursorScreenPos()));
             return true;
         }
@@ -80,7 +80,7 @@ namespace Fu
                 return;
             }
 
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             CaptureFrozenUIData(context.Data, drawList, context.StartIndex, context.StartCursorScreenPos);
             context.Data.DrawFrameCount++;
         }
@@ -200,7 +200,7 @@ namespace Fu
         /// <param name="drawList">Current draw list.</param>
         /// <param name="idxStart">First index emitted by the block.</param>
         /// <param name="startCursorScreenPos">Cursor position before the block drew.</param>
-        private static unsafe void CaptureFrozenUIData(FuFrozenUIData data, ImDrawListPtr drawList, int idxStart, Vector2 startCursorScreenPos)
+        private static unsafe void CaptureFrozenUIData(FuFrozenUIData data, FuDrawList drawList, int idxStart, Vector2 startCursorScreenPos)
         {
             data.Position = ImGui.GetWindowPos();
             data.Size = ImGui.GetWindowSize();
@@ -313,7 +313,7 @@ namespace Fu
         /// <param name="data">Captured frozen UI data.</param>
         private static void ReplayFrozenUIData(FuFrozenUIData data)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             Vector2 offset = ImGui.GetWindowPos() - data.Position;
 
             for (int commandIndex = 0; commandIndex < data.Commands.Count; commandIndex++)

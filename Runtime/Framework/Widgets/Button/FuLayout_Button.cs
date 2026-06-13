@@ -175,7 +175,7 @@ namespace Fu.Framework
             setBaseElementState(text, pos, size, true, false, true, allowWhenBlockedByPopup);
 
             // get current draw list
-            ImDrawListPtr drawList = ImGuiNative.igGetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
             // get colors
             Vector4 bg1f = style.Button;

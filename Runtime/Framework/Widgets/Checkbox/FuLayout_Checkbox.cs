@@ -89,7 +89,7 @@ namespace Fu.Framework
             animationData.Update(isChecked, _animationEnabled);
 
             // get current draw list
-            ImDrawListPtr drawList = ImGuiNative.igGetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
             // get colors
             Vector4 borderColor, bgColor, checkColor;
@@ -150,15 +150,15 @@ namespace Fu.Framework
 
             float rounding = Mathf.Min(Mathf.Max(Fugui.Themes.FrameRounding, 4f * Fugui.Scale), lenght * 0.32f);
             // draw background
-            drawList.AddRectFilled(pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, ImDrawFlags.RoundCornersAll);
+            drawList.AddRectFilled(pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, FuDrawFlags.RoundCornersAll);
             if (isChecked)
             {
-                drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.CurrentContext.Scale));
+                drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(bgColor), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.CurrentContext.Scale));
             }
             else
             {
                 // draw border
-                drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
+                drawList.AddRect(pos, pos + size, ImGui.ColorConvertFloat4ToU32(borderColor), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
             }
             if (_lastItemHovered && !LastItemDisabled)
             {

@@ -72,7 +72,7 @@ namespace Fu.Framework
         internal void ForceCollapsed(bool collapsed) { if (CanCollapse) IsCollapsed = collapsed; }
 
         /// <summary>Draw the card (accent per anchor, header click collapse, body background, AutoResizeY).</summary>
-        internal bool Draw(ImDrawListPtr parentDrawList, int i, float deltaTime, float width)
+        internal bool Draw(FuDrawList parentDrawList, int i, float deltaTime, float width)
         {
             width = Mathf.Max(1f, width);
             Vector2 childTopLeft = ImGui.GetCursorScreenPos();
@@ -87,7 +87,7 @@ namespace Fu.Framework
             bool opened = ImGui.BeginChild("notificationPanel" + i, new Vector2(width, 0f), ImGuiChildFlags.AutoResizeY, childFlags);
             if (opened)
             {
-                var dl = ImGui.GetWindowDrawList();
+                var dl = Fugui.GetCurrentWindowDrawList();
                 Vector2 winPos = ImGui.GetWindowPos();
                 Vector2 winSize = ImGui.GetWindowSize();
                 Vector2 closebtnPos = default;
@@ -133,7 +133,7 @@ namespace Fu.Framework
                     Fugui.PopStyle();
                 }
 
-                // header click→collapse (simple clic)
+                // header clickâ†’collapse (simple clic)
                 Vector2 headerStart = new Vector2(winPos.x, headerStartY);
                 Vector2 headerEnd = new Vector2(winPos.x + winSize.x, ImGui.GetCursorScreenPos().y);
                 Rect headerRect = new Rect(headerStart, headerEnd - headerStart);
@@ -145,7 +145,7 @@ namespace Fu.Framework
                 // SEPARATOR + BODY BG
                 if (!string.IsNullOrEmpty(Title) && !string.IsNullOrEmpty(Message) && !IsCollapsed)
                 {
-                    dl = ImGui.GetWindowDrawList();
+                    dl = Fugui.GetCurrentWindowDrawList();
                     Fugui.MoveY(-8f);
                     Vector2 sepA = new Vector2(winPos.x, ImGui.GetCursorScreenPos().y);
                     Vector2 sepB = new Vector2(winPos.x + winSize.x, ImGui.GetCursorScreenPos().y);
@@ -171,7 +171,7 @@ namespace Fu.Framework
                     if (!usePopupBackdrop)
                     {
                         uint bodyBG = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.PopupBg));
-                        dl.AddRectFilled(bodyTL + new Vector2(Fugui.Scale, 0f), bodyBR + new Vector2(-Fugui.Scale, -Fugui.Scale), bodyBG, Fugui.Themes.ChildRounding, ImDrawFlags.RoundCornersBottom);
+                        dl.AddRectFilled(bodyTL + new Vector2(Fugui.Scale, 0f), bodyBR + new Vector2(-Fugui.Scale, -Fugui.Scale), bodyBG, Fugui.Themes.ChildRounding, FuDrawFlags.RoundCornersBottom);
                     }
 
                     ImGui.SetCursorScreenPos(textTL);
@@ -221,7 +221,7 @@ namespace Fu.Framework
                 Vector2 childMax = new Vector2(childTopLeft.x + width, childTopLeft.y + winSize.y);
 
                 // bord fin
-                dl.AddRect(childMin, childMax, ImGui.GetColorU32(BGColor.ButtonHovered), Fugui.Themes.ChildRounding, ImDrawFlags.None, _borderWidth);
+                dl.AddRect(childMin, childMax, ImGui.GetColorU32(BGColor.ButtonHovered), Fugui.Themes.ChildRounding, FuDrawFlags.None, _borderWidth);
 
                 // lifetime
                 bool toRemove = update(deltaTime, pauseTimer: hoverChild);

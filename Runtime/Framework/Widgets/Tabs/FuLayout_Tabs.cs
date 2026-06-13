@@ -134,7 +134,7 @@ namespace Fu.Framework
 
             ImGui.Dummy(barSize);
 
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             DrawTabBarTrack(drawList, barPos, barSize, flags);
 
             bool selectionChanged = false;
@@ -563,7 +563,7 @@ namespace Fu.Framework
         /// <param name="pos">Position.</param>
         /// <param name="size">Size.</param>
         /// <param name="flags">Tab flags.</param>
-        private static void DrawTabBarTrack(ImDrawListPtr drawList, Vector2 pos, Vector2 size, FuTabsFlags flags)
+        private static void DrawTabBarTrack(FuDrawList drawList, Vector2 pos, Vector2 size, FuTabsFlags flags)
         {
             float rounding = Mathf.Min(Fugui.Themes.TabRounding, size.y * 0.5f);
             float borderSize = Fugui.Themes.TabBorderSize;
@@ -571,7 +571,7 @@ namespace Fu.Framework
             Vector4 border = Fugui.Themes.GetColor(FuColors.Border, 0.70f);
             Vector2 max = pos + size;
 
-            drawList.AddRectFilled(pos, max, ImGui.GetColorU32(bg), rounding, ImDrawFlags.RoundCornersTop);
+            drawList.AddRectFilled(pos, max, ImGui.GetColorU32(bg), rounding, FuDrawFlags.RoundCornersTop);
             if (borderSize > 0f)
             {
                 uint borderColor = ImGui.GetColorU32(border);
@@ -594,7 +594,7 @@ namespace Fu.Framework
         /// <param name="active">Whether active.</param>
         /// <param name="selectedAmount">Animated selected amount.</param>
         /// <param name="flags">Tab flags.</param>
-        private void DrawTabItem(ImDrawListPtr drawList, Vector2 min, Vector2 max, string label, bool selected, bool hovered, bool active, float selectedAmount, FuTabsFlags flags)
+        private void DrawTabItem(FuDrawList drawList, Vector2 min, Vector2 max, string label, bool selected, bool hovered, bool active, float selectedAmount, FuTabsFlags flags)
         {
             float scale = Fugui.CurrentContext.Scale;
             Vector2 size = max - min;
@@ -608,7 +608,7 @@ namespace Fu.Framework
             Vector4 selectedBg = Fugui.Themes.GetColor(FuColors.TabSelected);
             Vector4 fill = Vector4.Lerp(hovered || active ? hover : idle, selectedBg, visualSelectedAmount);
             fill.w = Mathf.Clamp01(fill.w * disabledAlpha);
-            ImDrawFlags roundFlags = visualSelectedAmount > 0.001f ? ImDrawFlags.RoundCornersTop : ImDrawFlags.RoundCornersAll;
+            FuDrawFlags roundFlags = visualSelectedAmount > 0.001f ? FuDrawFlags.RoundCornersTop : FuDrawFlags.RoundCornersAll;
             drawList.AddRectFilled(min, max, ImGui.GetColorU32(fill), rounding, roundFlags);
 
             if (visualSelectedAmount > 0.001f && size.y > 8f * scale)
@@ -629,14 +629,14 @@ namespace Fu.Framework
                     Vector2 center = new Vector2((min.x + max.x) * 0.5f, min.y + Mathf.Max(3f * scale, thickness * 0.5f + scale));
                     Vector2 witnessMin = new Vector2(center.x - length * 0.5f, center.y - thickness * 0.5f);
                     Vector2 witnessMax = new Vector2(center.x + length * 0.5f, center.y + thickness * 0.5f);
-                    drawList.AddRectFilled(witnessMin, witnessMax, ImGui.GetColorU32(witness), thickness * 0.5f, ImDrawFlags.RoundCornersAll);
+                    drawList.AddRectFilled(witnessMin, witnessMax, ImGui.GetColorU32(witness), thickness * 0.5f, FuDrawFlags.RoundCornersAll);
                 }
             }
 
             if (borderSize > 0f && (hovered || active) && visualSelectedAmount <= 0.001f)
             {
                 Vector4 border = Fugui.Themes.GetColor(FuColors.Border, 0.50f * disabledAlpha);
-                drawList.AddRect(min, max, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersAll, borderSize);
+                drawList.AddRect(min, max, ImGui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersAll, borderSize);
             }
 
             Vector4 textColor;
@@ -669,7 +669,7 @@ namespace Fu.Framework
         /// <param name="enabled">Whether the button can scroll.</param>
         /// <param name="flags">Tab flags.</param>
         /// <returns>Scroll delta.</returns>
-        private float DrawTabScrollButton(string id, ImDrawListPtr drawList, Rect rect, bool left, bool enabled, FuTabsFlags flags)
+        private float DrawTabScrollButton(string id, FuDrawList drawList, Rect rect, bool left, bool enabled, FuTabsFlags flags)
         {
             setBaseElementState(id, rect.position, rect.size, enabled && !LastItemDisabled, false, true);
 
@@ -683,10 +683,10 @@ namespace Fu.Framework
                 : hovered ? Fugui.Themes.GetColor(FuColors.ButtonHovered, 0.72f) : Fugui.Themes.GetColor(FuColors.Button, enabled ? 0.35f : 0.14f);
             Vector4 border = Fugui.Themes.GetColor(FuColors.Border, enabled ? 0.55f : 0.22f);
 
-            drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), rounding, ImDrawFlags.RoundCornersAll);
+            drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), rounding, FuDrawFlags.RoundCornersAll);
             if (borderSize > 0f)
             {
-                drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), rounding, ImDrawFlags.RoundCornersAll, borderSize);
+                drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersAll, borderSize);
             }
 
             Vector4 arrowColor = Fugui.Themes.GetColor(enabled ? FuColors.Text : FuColors.TextDisabled, enabled ? 0.82f : 0.42f);

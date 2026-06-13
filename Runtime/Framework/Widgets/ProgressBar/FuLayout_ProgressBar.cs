@@ -102,7 +102,7 @@ namespace Fu.Framework
             float rounding = Mathf.Min(Mathf.Max(Fugui.Themes.FrameRounding, 5f * scale), size.y * 0.5f);
             value = Mathf.Clamp01(value);
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             Vector4 frameColor = Fugui.Themes.GetColor(FuColors.FrameBg);
             Vector4 fillColor = Fugui.Themes.GetColor(FuColors.CheckMark);
             Vector4 borderColor = Fugui.Themes.GetColor(FuColors.Border);
@@ -122,7 +122,7 @@ namespace Fu.Framework
             {
                 DrawRoundedSegment(drawList, cursorPos, cursorPos + filledPartSize, fillColor, rounding, true);
             }
-            drawList.AddRect(cursorPos, cursorPos + size, ImGui.GetColorU32(borderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
+            drawList.AddRect(cursorPos, cursorPos + size, ImGui.GetColorU32(borderColor), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
 
             // Display the text
             Vector2 textPos;
@@ -158,7 +158,7 @@ namespace Fu.Framework
         {
             float scale = Fugui.CurrentContext.Scale;
             float rounding = Mathf.Min(Mathf.Max(Fugui.Themes.FrameRounding, 5f * scale), size.y * 0.5f);
-            var drawList = ImGui.GetWindowDrawList();
+            var drawList = Fugui.GetCurrentWindowDrawList();
             float animationTime = (float)ImGui.GetTime();
             float animationSpeed = .5f;
             float animationPosition = (float)Math.Sin(animationTime * animationSpeed * Math.PI * 2.0f) * 0.5f + 0.5f;

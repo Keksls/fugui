@@ -109,7 +109,7 @@ namespace Fu
             /// </summary>
             /// <param name="drawList">Native ImGui draw list.</param>
             /// <returns>Bound transient draw list.</returns>
-            internal DrawList AddTransientDrawList(ImDrawListPtr drawList)
+            internal DrawList AddTransientDrawList(FuDrawList drawList)
             {
                 DrawList transientDrawList;
                 if (_transientDrawListPoolCursor < _transientDrawListPool.Count)
@@ -149,7 +149,7 @@ namespace Fu
                 Clear();
                 for (int i = 0; i < imDrawData.CmdListsCount; i++)
                 {
-                    AddTransientDrawList(imDrawData.CmdLists[i]);
+                    AddTransientDrawList(Fugui.ToFuDrawList(imDrawData.CmdLists[i]));
                 }
                 FramebufferScale = imDrawData.FramebufferScale;
                 DisplayPos = imDrawData.DisplayPos;

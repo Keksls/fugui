@@ -81,7 +81,7 @@ namespace Fu.Framework
 
             Vector2 pos = ImGui.GetCursorScreenPos();
             Rect rect = new Rect(pos, resolvedSize);
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             drawSurfaceChrome(drawList, rect, accentColor, flags, backgroundAlpha, borderAlpha, accentAlpha, rounding, accentThickness);
 
             ImGui.Dummy(resolvedSize);
@@ -188,19 +188,19 @@ namespace Fu.Framework
             Rect rect = new Rect(pos, size);
             bool clicked = InvisibleInteraction("##" + elementID, size, out bool hovered, out bool active);
 
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             if (selected || hovered || active)
             {
                 Vector4 fill = selected
                     ? Fugui.Themes.GetColor(accentColor, active ? 0.24f : 0.18f)
                     : Fugui.Themes.GetColor(FuColors.FrameBgHovered, active ? 0.46f : 0.36f);
-                drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(fill), 4f * scale, ImDrawFlags.RoundCornersAll);
+                drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(fill), 4f * scale, FuDrawFlags.RoundCornersAll);
             }
 
             if (selected)
             {
                 Vector4 accent = Fugui.Themes.GetColor(accentColor, 0.92f);
-                drawList.AddRectFilled(rect.min + new Vector2(0f, 4f * scale), new Vector2(rect.xMin + 3f * scale, rect.yMax - 4f * scale), ImGui.GetColorU32(accent), 2f * scale, ImDrawFlags.RoundCornersAll);
+                drawList.AddRectFilled(rect.min + new Vector2(0f, 4f * scale), new Vector2(rect.xMin + 3f * scale, rect.yMax - 4f * scale), ImGui.GetColorU32(accent), 2f * scale, FuDrawFlags.RoundCornersAll);
             }
 
             Vector4 textColor = selected
@@ -304,7 +304,7 @@ namespace Fu.Framework
             endElement();
         }
 
-        private void drawSurfaceChrome(ImDrawListPtr drawList, Rect rect, FuColors accentColor, FuSurfaceFlags flags, float backgroundAlpha, float borderAlpha, float accentAlpha, float rounding, float accentThickness)
+        private void drawSurfaceChrome(FuDrawList drawList, Rect rect, FuColors accentColor, FuSurfaceFlags flags, float backgroundAlpha, float borderAlpha, float accentAlpha, float rounding, float accentThickness)
         {
             float scale = Fugui.CurrentContext.Scale;
             float scaledRounding = Mathf.Min(rounding * scale, Mathf.Min(rect.width, rect.height) * 0.5f);
@@ -314,26 +314,26 @@ namespace Fu.Framework
             Vector4 border = Fugui.Themes.GetColor(FuColors.Border, borderAlpha);
             Vector4 accent = Fugui.Themes.GetColor(accentColor, accentAlpha);
 
-            drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), scaledRounding, ImDrawFlags.RoundCornersAll);
+            drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), scaledRounding, FuDrawFlags.RoundCornersAll);
             if (flags.HasFlag(FuSurfaceFlags.Border))
             {
-                drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), scaledRounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
+                drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), scaledRounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
             }
             if (flags.HasFlag(FuSurfaceFlags.AccentLeft))
             {
-                drawList.AddRectFilled(rect.min, new Vector2(rect.xMin + scaledAccent, rect.yMax), ImGui.GetColorU32(accent), scaledRounding, ImDrawFlags.RoundCornersLeft);
+                drawList.AddRectFilled(rect.min, new Vector2(rect.xMin + scaledAccent, rect.yMax), ImGui.GetColorU32(accent), scaledRounding, FuDrawFlags.RoundCornersLeft);
             }
             if (flags.HasFlag(FuSurfaceFlags.AccentTop))
             {
-                drawList.AddRectFilled(rect.min, new Vector2(rect.xMax, rect.yMin + scaledAccent), ImGui.GetColorU32(accent), scaledRounding, ImDrawFlags.RoundCornersTop);
+                drawList.AddRectFilled(rect.min, new Vector2(rect.xMax, rect.yMin + scaledAccent), ImGui.GetColorU32(accent), scaledRounding, FuDrawFlags.RoundCornersTop);
             }
             if (flags.HasFlag(FuSurfaceFlags.AccentRight))
             {
-                drawList.AddRectFilled(new Vector2(rect.xMax - scaledAccent, rect.yMin), rect.max, ImGui.GetColorU32(accent), scaledRounding, ImDrawFlags.RoundCornersRight);
+                drawList.AddRectFilled(new Vector2(rect.xMax - scaledAccent, rect.yMin), rect.max, ImGui.GetColorU32(accent), scaledRounding, FuDrawFlags.RoundCornersRight);
             }
             if (flags.HasFlag(FuSurfaceFlags.AccentBottom))
             {
-                drawList.AddRectFilled(new Vector2(rect.xMin, rect.yMax - scaledAccent), rect.max, ImGui.GetColorU32(accent), scaledRounding, ImDrawFlags.RoundCornersBottom);
+                drawList.AddRectFilled(new Vector2(rect.xMin, rect.yMax - scaledAccent), rect.max, ImGui.GetColorU32(accent), scaledRounding, FuDrawFlags.RoundCornersBottom);
             }
         }
 
@@ -346,12 +346,12 @@ namespace Fu.Framework
         {
             float scale = Fugui.CurrentContext.Scale;
             Rect rect = new Rect(pos, size);
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             Vector4 bg = Fugui.Themes.GetColor(color, 0.18f);
             Vector4 border = Fugui.Themes.GetColor(color, 0.42f);
             Vector4 fg = Fugui.Themes.GetColor(FuColors.Text, 0.90f);
-            drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), rect.height * 0.5f, ImDrawFlags.RoundCornersAll);
-            drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), rect.height * 0.5f, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
+            drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), rect.height * 0.5f, FuDrawFlags.RoundCornersAll);
+            drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), rect.height * 0.5f, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
             Fugui.Push(ImGuiCol.Text, fg);
             EnboxedText(text, rect.position, rect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopColor();

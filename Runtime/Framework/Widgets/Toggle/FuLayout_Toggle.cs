@@ -88,7 +88,7 @@ namespace Fu.Framework
             // draw states
             float height = string.IsNullOrEmpty(currentText) ? 16f * Fugui.CurrentContext.Scale : textSize.y + 4f * Fugui.CurrentContext.Scale;
             bool valueChanged = false;
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             Vector2 size = new Vector2(string.IsNullOrEmpty(currentText) ? height * 2f : height * 2f + textSize.x, height);
             if (!flags.HasFlag(FuToggleFlags.AlignLeft))
             {
@@ -154,7 +154,7 @@ namespace Fu.Framework
             float rounding = size.y * 0.5f;
             DrawRoundedSegment(drawList, pos, pos + size, BGColor, rounding, true);
             // draw border
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(BorderColor), rounding, ImDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(BorderColor), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.Themes.FrameBorderSize));
             // draw knob
             DrawValueKnob(drawList, knobPos + new Vector2(radius, radius), radius, KnobColor, _lastItemHovered, _lastItemActive, LastItemDisabled || noEditable);
             DrawWidgetFeedback(drawList, new Rect(pos, size), _lastItemActive, _lastItemHovered, LastItemDisabled || noEditable, rounding);

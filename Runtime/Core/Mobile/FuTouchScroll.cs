@@ -391,7 +391,7 @@ namespace Fu
                     _activeChildId = 0;
                 }
 
-                //ImGui.GetForegroundDrawList().AddRect(
+                //Fugui.GetForegroundDrawList().AddRect(
                 //    childRect.position,
                 //    childRect.position + childRect.size,
                 //    ImGui.GetColorU32(new Vector4(1f, 0f, 0f, 0.5f)));

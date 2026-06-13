@@ -163,8 +163,8 @@ namespace Fu.Framework
             Vector2 btnMax = ImGui.GetItemRectMax();
             applyCollapsableFrameInset(ref btnMin, ref btnMax, frameInset);
             float height = btnMax.y - btnMin.y;
-            ImGui.GetWindowDrawList().AddLine(new Vector2(btnMin.x, btnMax.y), btnMax, ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.4f)));
-            ImGui.GetWindowDrawList().AddLine(btnMin, new Vector2(btnMax.x, btnMin.y), ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.6f)));
+            Fugui.GetCurrentWindowDrawList().AddLine(new Vector2(btnMin.x, btnMax.y), btnMax, ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.4f)));
+            Fugui.GetCurrentWindowDrawList().AddLine(btnMin, new Vector2(btnMax.x, btnMin.y), ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.6f)));
 
             // Draw custom UI if needed
             float carretWidth = drawCarret ? 24f * Fugui.CurrentContext.Scale : 0f;
@@ -283,7 +283,7 @@ namespace Fu.Framework
             }
 
             // get current draw list
-            ImDrawListPtr drawList = ImGuiNative.igGetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             ImGuiStylePtr imStyle = ImGui.GetStyle();
 
             // get colors
@@ -345,11 +345,11 @@ namespace Fu.Framework
                 }
                 if (opened)
                 {
-                    Fugui.DrawCarret_Down(ImGui.GetWindowDrawList(), new Vector2(framePos.x + carretWidth / 3f, framePos.y + 1f), carretWidth / 3f, frameSize.y, caretColor);
+                    Fugui.DrawCarret_Down(Fugui.GetCurrentWindowDrawList(), new Vector2(framePos.x + carretWidth / 3f, framePos.y + 1f), carretWidth / 3f, frameSize.y, caretColor);
                 }
                 else
                 {
-                    Fugui.DrawCarret_Right(ImGui.GetWindowDrawList(), new Vector2(framePos.x + carretWidth / 3f, framePos.y + 1f), carretWidth / 3f, frameSize.y, caretColor);
+                    Fugui.DrawCarret_Right(Fugui.GetCurrentWindowDrawList(), new Vector2(framePos.x + carretWidth / 3f, framePos.y + 1f), carretWidth / 3f, frameSize.y, caretColor);
                 }
             }
 

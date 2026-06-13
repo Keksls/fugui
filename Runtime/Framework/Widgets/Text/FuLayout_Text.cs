@@ -356,7 +356,7 @@ namespace Fu.Framework
                 size.y = Mathf.Max(4.0f, region_max.y - ImGuiNative.igGetCursorPosY() + size.y);
 
             // draw frame
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             drawList.AddRectFilled(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.FrameBg, 1f), Fugui.Themes.FrameRounding);
             drawList.AddRect(pos, pos + size, ImGuiNative.igGetColorU32_Col(ImGuiCol.Border, 1f), Fugui.Themes.FrameRounding);
 
@@ -732,7 +732,7 @@ namespace Fu.Framework
                 // draw dots
                 size = maxSize + dotsSize;
                 maxSize.y = 0;
-                ImGui.GetWindowDrawList().AddText(pos + maxSize, ImGui.GetColorU32(ImGuiCol.Text), "...");
+                Fugui.GetCurrentWindowDrawList().AddText(pos + maxSize, ImGui.GetColorU32(ImGuiCol.Text), "...");
             }
             else
             {
@@ -804,7 +804,7 @@ namespace Fu.Framework
         {
             text = Fugui.GetUntagedText(text);
             _textChunkStringBuilder.Clear();
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             Vector2 currentPosition = position;
             uint textColor = ImGui.GetColorU32(ImGuiCol.Text);
             bool cancel = false;

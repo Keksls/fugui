@@ -102,7 +102,7 @@ namespace Fu.Framework
             Vector2 panelSize = new Vector2(calendarWidth + panelPadding * 2f, panelPadding * 2f + headerHeight + headerGap + gridHeight + footerGap + footerHeight);
             Vector2 panelPos = ImGui.GetCursorScreenPos();
             Vector2 innerPos = panelPos + new Vector2(panelPadding, panelPadding);
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
             drawList.AddRectFilled(panelPos, panelPos + panelSize, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameBg, 0.92f)), Fugui.Themes.FrameRounding * scale);
             drawList.AddRect(panelPos, panelPos + panelSize, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.9f)), Fugui.Themes.FrameRounding * scale);
@@ -182,7 +182,7 @@ namespace Fu.Framework
 
         private void drawDatePickerGrid(string id, ref DateTime selectedDate, ref DateTime viewDate, DateTime today, Vector2 pos, float daySize, float gap, float weekdayHeight)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             Vector2 cellSize = new Vector2(daySize, daySize);
 
             for (int i = 0; i < _dayStr.Length; i++)
@@ -244,7 +244,7 @@ namespace Fu.Framework
 
         private void drawDatePickerFooter(string id, DateTime today, ref DateTime selectedDate, ref DateTime viewDate, Vector2 pos, float width, float height)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             string selectedText = selectedDate.ToString("d MMM yyyy");
             Vector2 textSize = ImGui.CalcTextSize(selectedText);
             Vector2 textPos = pos + new Vector2(0f, height * 0.5f - textSize.y * 0.5f);
@@ -260,7 +260,7 @@ namespace Fu.Framework
             }
         }
 
-        private static void drawDatePickerDayBackground(ImDrawListPtr drawList, Vector2 pos, Vector2 size, bool selected, bool today, bool hovered)
+        private static void drawDatePickerDayBackground(FuDrawList drawList, Vector2 pos, Vector2 size, bool selected, bool today, bool hovered)
         {
             float rounding = Mathf.Min(8f * Fugui.CurrentContext.Scale, size.y * 0.35f);
             if (selected)
@@ -277,11 +277,11 @@ namespace Fu.Framework
             if (today)
             {
                 Vector2 inset = Vector2.one * (1.5f * Fugui.CurrentContext.Scale);
-                drawList.AddRect(pos + inset, pos + size - inset, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Highlight, 0.95f)), rounding, ImDrawFlags.RoundCornersDefault, 1.4f * Fugui.CurrentContext.Scale);
+                drawList.AddRect(pos + inset, pos + size - inset, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Highlight, 0.95f)), rounding, FuDrawFlags.RoundCornersDefault, 1.4f * Fugui.CurrentContext.Scale);
             }
         }
 
-        private static void drawCenteredText(ImDrawListPtr drawList, string text, Vector2 pos, Vector2 size, uint color)
+        private static void drawCenteredText(FuDrawList drawList, string text, Vector2 pos, Vector2 size, uint color)
         {
             Vector2 textSize = ImGui.CalcTextSize(text);
             Vector2 textPos = pos + new Vector2((size.x - textSize.x) * 0.5f, (size.y - textSize.y) * 0.5f);
@@ -338,7 +338,7 @@ namespace Fu.Framework
 
         private bool drawDatePickerIconButton(string id, Vector2 pos, Vector2 size, ImGuiDir direction)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             ImGui.SetCursorScreenPos(pos);
             bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(8f * Fugui.CurrentContext.Scale, size.y * 0.45f);
@@ -359,7 +359,7 @@ namespace Fu.Framework
 
         private bool drawDatePickerTitleButton(string id, string title, Vector2 pos, Vector2 size)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             ImGui.SetCursorScreenPos(pos);
             bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(10f * Fugui.CurrentContext.Scale, size.y * 0.45f);
@@ -390,7 +390,7 @@ namespace Fu.Framework
 
         private bool drawDatePickerTextButton(string id, string label, Vector2 pos, Vector2 size, bool selected, bool bold)
         {
-            ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             ImGui.SetCursorScreenPos(pos);
             bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(8f * Fugui.CurrentContext.Scale, size.y * 0.45f);
@@ -429,7 +429,7 @@ namespace Fu.Framework
             return clicked;
         }
 
-        private static void drawChevron(ImDrawListPtr drawList, Vector2 pos, Vector2 size, ImGuiDir direction, uint color)
+        private static void drawChevron(FuDrawList drawList, Vector2 pos, Vector2 size, ImGuiDir direction, uint color)
         {
             float scale = Fugui.CurrentContext.Scale;
             Vector2 center = pos + size * 0.5f;

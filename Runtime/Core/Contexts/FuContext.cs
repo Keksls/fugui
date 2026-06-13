@@ -170,6 +170,8 @@ namespace Fu
                 Debug.LogWarning("[Fugui] Render called without PrepareRender being called or returning false. Skipping Render.");
                 return;
             }
+            Fugui.ClearCursorPositionStack("before a new context frame");
+
 
             // count nb push at render begin
             _nbColorPushOnFrameStart = Fugui.NbPushColor;
@@ -208,6 +210,8 @@ namespace Fu
                 {
                     Fugui.PopFont(nbMissingFont);
                 }
+
+                Fugui.ClearCursorPositionStack("after the context frame");
 
                 ImGuiNative.igRender();
             }

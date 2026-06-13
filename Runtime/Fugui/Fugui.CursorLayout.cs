@@ -1,4 +1,4 @@
-﻿// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
+// define it to debug whatever Color or Styles are pushed (avoid stack leak metrics)
 // it's ressourcefull, si comment it when debug is done. Ensure it's commented before build.
 //#define FUDEBUG
 #if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
@@ -7,19 +7,9 @@
 using Fu.Framework;
 using ImGuiNET;
 #if FU_EXTERNALIZATION
-using SDL2;
 #endif
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.RegularExpressions;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
-using UnityEngine.Rendering.Universal;
 
 namespace Fu
 {
@@ -28,6 +18,107 @@ namespace Fu
     /// </summary>
     public static partial class Fugui
     {
+        private enum FuCursorPositionMode
+        {
+            Local,
+            Screen
+        }
+
+        private readonly struct FuCursorPositionScope
+        {
+            public readonly Vector2 Position;
+            public readonly FuCursorPositionMode Mode;
+
+            public FuCursorPositionScope(Vector2 position, FuCursorPositionMode mode)
+            {
+                Position = position;
+                Mode = mode;
+            }
+        }
+
+        private static readonly Stack<FuCursorPositionScope> _cursorPositionStack = new Stack<FuCursorPositionScope>();
+
+        internal static void ClearCursorPositionStack(string reason)
+        {
+            if (_cursorPositionStack.Count == 0)
+            {
+                return;
+            }
+
+            Debug.LogWarning($"Fugui cursor position stack had {_cursorPositionStack.Count} unbalanced PushPos/PushScreenPos call(s); clearing it {reason}.");
+            _cursorPositionStack.Clear();
+        }
+
+
+        /// <summary>
+        /// Pushes the current cursor position and moves it to a local Fugui position.
+        /// </summary>
+        /// <param name="position">Local position in Fugui units.</param>
+        public static void PushPos(Vector2 position)
+        {
+            _cursorPositionStack.Push(new FuCursorPositionScope(ImGui.GetCursorPos(), FuCursorPositionMode.Local));
+            ImGuiNative.igSetCursorPos(position * Scale);
+        }
+
+        /// <summary>
+        /// Pushes the current cursor position and moves it to a local Fugui position.
+        /// </summary>
+        /// <param name="x">Local X position in Fugui units.</param>
+        /// <param name="y">Local Y position in Fugui units.</param>
+        public static void PushPos(float x, float y)
+        {
+            PushPos(new Vector2(x, y));
+        }
+
+        /// <summary>
+        /// Pushes the current cursor position and moves it to an absolute screen position.
+        /// </summary>
+        /// <param name="position">Absolute screen position in pixels.</param>
+        public static void PushScreenPos(Vector2 position)
+        {
+            _cursorPositionStack.Push(new FuCursorPositionScope(ImGui.GetCursorScreenPos(), FuCursorPositionMode.Screen));
+            ImGuiNative.igSetCursorScreenPos(position);
+        }
+
+        /// <summary>
+        /// Pushes the current cursor position and moves it to an absolute screen position.
+        /// </summary>
+        /// <param name="x">Absolute screen X position in pixels.</param>
+        /// <param name="y">Absolute screen Y position in pixels.</param>
+        public static void PushScreenPos(float x, float y)
+        {
+            PushScreenPos(new Vector2(x, y));
+        }
+
+        /// <summary>
+        /// Restores the cursor position saved by PushPos or PushScreenPos.
+        /// </summary>
+        public static void PopPos()
+        {
+            if (_cursorPositionStack.Count == 0)
+            {
+                Debug.LogWarning("Fugui.PopPos called with an empty position stack.");
+                return;
+            }
+
+            FuCursorPositionScope scope = _cursorPositionStack.Pop();
+            if (scope.Mode == FuCursorPositionMode.Screen)
+            {
+                ImGui.SetCursorScreenPos(scope.Position);
+                return;
+            }
+
+            ImGui.SetCursorPos(scope.Position);
+        }
+
+        /// <summary>
+        /// Restores the cursor position saved by PushScreenPos.
+        /// </summary>
+        public static void PopScreenPos()
+        {
+            PopPos();
+        }
+
         /// <summary>
         /// Move the current drawing X position of strenght
         /// </summary>

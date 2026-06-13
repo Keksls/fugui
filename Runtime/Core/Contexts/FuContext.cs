@@ -1,6 +1,7 @@
 #if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR && !FUMOBILE
 #define FUMOBILE
 #endif
+using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -52,7 +53,7 @@ namespace Fu
         public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
 
         internal Dictionary<string, Dictionary<int, FontSet>> Fonts = new Dictionary<string, Dictionary<int, FontSet>>();
-
+        internal FuLayout contextLayout;
         internal FontSet DefaultFont { get; set; }
         internal string FontAtlasCacheKey { get; private set; }
         internal bool UsesSharedFontAtlas => _sharedFontAtlas != null;
@@ -129,6 +130,7 @@ namespace Fu
                 ImGuiNative.igSetCurrentContext(currentContext);
             }
             Started = true;
+            contextLayout = new FuLayout();
         }
 
         /// <summary>
@@ -316,6 +318,7 @@ namespace Fu
             TextureManager.Shutdown();
             FuSharedFontAtlasCache.Release(_sharedFontAtlas);
             _sharedFontAtlas = null;
+            contextLayout.Dispose();
         }
 
         /// /// <summary>

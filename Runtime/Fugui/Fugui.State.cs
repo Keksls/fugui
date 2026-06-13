@@ -96,6 +96,10 @@ namespace Fu
         /// The Fugui Docking Layout Manager instance
         /// </summary>
         public static FuDockingLayoutManager Layouts { get; private set; }
+        /// <summary>
+        /// The Fugui Layout of the current context
+        /// </summary>
+        public static FuLayout ContextLayout => CurrentContext != null ? CurrentContext.contextLayout : null;
 
         /// <summary>
         /// FuGui Controller instance

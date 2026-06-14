@@ -91,8 +91,8 @@ namespace Fu.Framework
                 float y = center.y - (eased - 0.5f) * scaledSize.y * 0.14f;
                 Vector2 dotPos = new Vector2(pos.x + gap * (i + 1f), y);
                 uint color = ImGui.GetColorU32(Vector4.Lerp(
-                    Fugui.Themes.GetColor(FuColors.Text, 0.34f * loaderAlpha()),
-                    Fugui.Themes.GetColor(FuColors.CheckMark, loaderAlpha()),
+                    Fugui.GetColor(FuColors.Text, 0.34f * loaderAlpha()),
+                    Fugui.GetColor(FuColors.CheckMark, loaderAlpha()),
                     eased));
                 drawList.AddCircleFilled(dotPos, dotRadius, color, 24);
             }
@@ -125,8 +125,8 @@ namespace Fu.Framework
                 float x = pos.x + i * (barWidth + gap);
                 float y = pos.y + (scaledSize.y - height) * 0.5f;
                 uint color = ImGui.GetColorU32(Vector4.Lerp(
-                    Fugui.Themes.GetColor(FuColors.Text, 0.28f * loaderAlpha()),
-                    Fugui.Themes.GetColor(FuColors.CheckMark, loaderAlpha()),
+                    Fugui.GetColor(FuColors.Text, 0.28f * loaderAlpha()),
+                    Fugui.GetColor(FuColors.CheckMark, loaderAlpha()),
                     phase));
                 drawList.AddRectFilled(new Vector2(x, y), new Vector2(x + barWidth, y + height), color, rounding);
             }
@@ -195,8 +195,8 @@ namespace Fu.Framework
                 float glow = easeInOut(pulse01(time * 0.85f + offset));
                 Vector2 dotPos = center + angleToVector(angle) * radius;
                 uint color = ImGui.GetColorU32(Vector4.Lerp(
-                    Fugui.Themes.GetColor(FuColors.Text, 0.46f * loaderAlpha()),
-                    Fugui.Themes.GetColor(FuColors.CheckMark, loaderAlpha()),
+                    Fugui.GetColor(FuColors.Text, 0.46f * loaderAlpha()),
+                    Fugui.GetColor(FuColors.CheckMark, loaderAlpha()),
                     glow));
                 drawList.AddCircleFilled(dotPos, dotRadius * Mathf.Lerp(0.82f, 1.18f, glow), color, 24);
             }
@@ -403,8 +403,8 @@ namespace Fu.Framework
                 float s = squareSize * Mathf.Lerp(0.82f, 1.28f, active);
                 Vector2 squareCenter = center + positions[i] * Mathf.Lerp(0.82f, 1.14f, active);
                 uint color = ImGui.GetColorU32(Vector4.Lerp(
-                    Fugui.Themes.GetColor(FuColors.Text, 0.30f * loaderAlpha()),
-                    Fugui.Themes.GetColor(FuColors.CheckMark, loaderAlpha()),
+                    Fugui.GetColor(FuColors.Text, 0.30f * loaderAlpha()),
+                    Fugui.GetColor(FuColors.CheckMark, loaderAlpha()),
                     active));
                 drawList.AddRectFilled(squareCenter - Vector2.one * s * 0.5f, squareCenter + Vector2.one * s * 0.5f, color, radius);
             }
@@ -628,7 +628,7 @@ namespace Fu.Framework
 
         private uint loaderColor(FuColors color, float alpha = 1f)
         {
-            return Fugui.Themes.GetColorU32(color, alpha * loaderAlpha());
+            return Fugui.GetColorU32(color, alpha * loaderAlpha());
         }
 
         private static Vector2 angleToVector(float angle)

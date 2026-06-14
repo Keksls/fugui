@@ -104,8 +104,8 @@ namespace Fu.Framework
             Vector2 innerPos = panelPos + new Vector2(panelPadding, panelPadding);
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
-            drawList.AddRectFilled(panelPos, panelPos + panelSize, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameBg, 0.92f)), Fugui.Themes.FrameRounding * scale);
-            drawList.AddRect(panelPos, panelPos + panelSize, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.9f)), Fugui.Themes.FrameRounding * scale);
+            drawList.AddRectFilled(panelPos, panelPos + panelSize, ImGui.GetColorU32(Fugui.GetColor(FuColors.FrameBg, 0.92f)), Fugui.Themes.FrameRounding * scale);
+            drawList.AddRect(panelPos, panelPos + panelSize, ImGui.GetColorU32(Fugui.GetColor(FuColors.Border, 0.9f)), Fugui.Themes.FrameRounding * scale);
 
             drawDatePickerHeader(text, ref viewDate, innerPos, calendarWidth, navButtonSize, itemGap);
             _datePickerViewDates[text] = new DateTime(viewDate.Year, viewDate.Month, 1);
@@ -188,7 +188,7 @@ namespace Fu.Framework
             for (int i = 0; i < _dayStr.Length; i++)
             {
                 Vector2 weekdayPos = pos + new Vector2(i * (daySize + gap), 0f);
-                drawCenteredText(drawList, _dayStr[i], weekdayPos, new Vector2(daySize, weekdayHeight), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.TextDisabled, 0.82f)));
+                drawCenteredText(drawList, _dayStr[i], weekdayPos, new Vector2(daySize, weekdayHeight), ImGui.GetColorU32(Fugui.GetColor(FuColors.TextDisabled, 0.82f)));
             }
 
             DateTime monthStart = new DateTime(viewDate.Year, viewDate.Month, 1);
@@ -209,11 +209,11 @@ namespace Fu.Framework
                     drawDatePickerDayBackground(drawList, cellPos, cellSize, selected, isToday, hovered);
 
                     Vector4 textColor = LastItemDisabled
-                        ? Fugui.Themes.GetColor(FuColors.TextDisabled, 0.72f)
-                        : Fugui.Themes.GetColor(inCurrentMonth ? FuColors.Text : FuColors.TextDisabled, inCurrentMonth ? 1f : 0.62f);
+                        ? Fugui.GetColor(FuColors.TextDisabled, 0.72f)
+                        : Fugui.GetColor(inCurrentMonth ? FuColors.Text : FuColors.TextDisabled, inCurrentMonth ? 1f : 0.62f);
                     if (selected && !LastItemDisabled)
                     {
-                        textColor = Fugui.Themes.GetColor(FuColors.SelectedText);
+                        textColor = Fugui.GetColor(FuColors.SelectedText);
                     }
 
                     Fugui.Push(ImGuiCol.Text, textColor);
@@ -248,7 +248,7 @@ namespace Fu.Framework
             string selectedText = selectedDate.ToString("d MMM yyyy");
             Vector2 textSize = ImGui.CalcTextSize(selectedText);
             Vector2 textPos = pos + new Vector2(0f, height * 0.5f - textSize.y * 0.5f);
-            drawList.AddText(textPos, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.TextDisabled, 0.86f)), selectedText);
+            drawList.AddText(textPos, ImGui.GetColorU32(Fugui.GetColor(FuColors.TextDisabled, 0.86f)), selectedText);
 
             Vector2 todaySize = new Vector2(62f * Fugui.CurrentContext.Scale, height);
             if (drawDatePickerTextButton(id + "Today", "Today", pos + new Vector2(width - todaySize.x, 0f), todaySize, true, true))
@@ -265,19 +265,19 @@ namespace Fu.Framework
             float rounding = Mathf.Min(8f * Fugui.CurrentContext.Scale, size.y * 0.35f);
             if (selected)
             {
-                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Selected)), rounding);
+                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.Selected)), rounding);
                 return;
             }
 
             if (hovered)
             {
-                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered, 0.72f)), rounding);
+                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.HeaderHovered, 0.72f)), rounding);
             }
 
             if (today)
             {
                 Vector2 inset = Vector2.one * (1.5f * Fugui.CurrentContext.Scale);
-                drawList.AddRect(pos + inset, pos + size - inset, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Highlight, 0.95f)), rounding, FuDrawFlags.RoundCornersDefault, 1.4f * Fugui.CurrentContext.Scale);
+                drawList.AddRect(pos + inset, pos + size - inset, ImGui.GetColorU32(Fugui.GetColor(FuColors.Highlight, 0.95f)), rounding, FuDrawFlags.RoundCornersDefault, 1.4f * Fugui.CurrentContext.Scale);
             }
         }
 
@@ -345,15 +345,15 @@ namespace Fu.Framework
 
             if (active)
             {
-                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderActive, 0.85f)), rounding);
+                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.HeaderActive, 0.85f)), rounding);
             }
             else if (hovered)
             {
-                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered, 0.8f)), rounding);
+                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.HeaderHovered, 0.8f)), rounding);
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
 
-            drawChevron(drawList, pos, size, direction, ImGui.GetColorU32(Fugui.Themes.GetColor(LastItemDisabled ? FuColors.TextDisabled : FuColors.Text, LastItemDisabled ? 0.45f : 0.9f)));
+            drawChevron(drawList, pos, size, direction, ImGui.GetColorU32(Fugui.GetColor(LastItemDisabled ? FuColors.TextDisabled : FuColors.Text, LastItemDisabled ? 0.45f : 0.9f)));
             return clicked;
         }
 
@@ -364,13 +364,13 @@ namespace Fu.Framework
             bool clicked = InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             float rounding = Mathf.Min(10f * Fugui.CurrentContext.Scale, size.y * 0.45f);
             Vector4 bg = active
-                ? Fugui.Themes.GetColor(FuColors.HeaderActive, 0.95f)
+                ? Fugui.GetColor(FuColors.HeaderActive, 0.95f)
                 : hovered
-                    ? Fugui.Themes.GetColor(FuColors.HeaderHovered, 0.82f)
-                    : Fugui.Themes.GetColor(FuColors.Header, 0.48f);
+                    ? Fugui.GetColor(FuColors.HeaderHovered, 0.82f)
+                    : Fugui.GetColor(FuColors.Header, 0.48f);
 
             drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(bg), rounding);
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.55f)), rounding);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.Border, 0.55f)), rounding);
 
             if (hovered)
             {
@@ -380,11 +380,11 @@ namespace Fu.Framework
             Fugui.PushFont(FontType.Bold);
             Vector2 textSize = ImGui.CalcTextSize(title);
             Vector2 textPos = pos + new Vector2((size.x - textSize.x) * 0.5f - 5f * Fugui.CurrentContext.Scale, (size.y - textSize.y) * 0.5f);
-            drawList.AddText(textPos, ImGui.GetColorU32(Fugui.Themes.GetColor(LastItemDisabled ? FuColors.TextDisabled : FuColors.Text, LastItemDisabled ? 0.55f : 0.96f)), title);
+            drawList.AddText(textPos, ImGui.GetColorU32(Fugui.GetColor(LastItemDisabled ? FuColors.TextDisabled : FuColors.Text, LastItemDisabled ? 0.55f : 0.96f)), title);
             Fugui.PopFont();
 
             Vector2 caretPos = pos + new Vector2(size.x - 18f * Fugui.CurrentContext.Scale, 0f);
-            Fugui.DrawCarret_Down(drawList, caretPos, 7f * Fugui.CurrentContext.Scale, size.y, Fugui.Themes.GetColor(LastItemDisabled ? FuColors.TextDisabled : FuColors.Text, 0.72f));
+            Fugui.DrawCarret_Down(drawList, caretPos, 7f * Fugui.CurrentContext.Scale, size.y, Fugui.GetColor(LastItemDisabled ? FuColors.TextDisabled : FuColors.Text, 0.72f));
             return clicked;
         }
 
@@ -397,15 +397,15 @@ namespace Fu.Framework
 
             if (selected)
             {
-                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Selected, LastItemDisabled ? 0.35f : 1f)), rounding);
+                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.Selected, LastItemDisabled ? 0.35f : 1f)), rounding);
             }
             else if (active)
             {
-                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderActive, 0.84f)), rounding);
+                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.HeaderActive, 0.84f)), rounding);
             }
             else if (hovered)
             {
-                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered, 0.76f)), rounding);
+                drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.HeaderHovered, 0.76f)), rounding);
             }
 
             if (hovered)
@@ -418,7 +418,7 @@ namespace Fu.Framework
                 Fugui.PushFont(FontType.Bold);
             }
 
-            uint textColor = ImGui.GetColorU32(selected && !LastItemDisabled ? Fugui.Themes.GetColor(FuColors.SelectedText) : Fugui.Themes.GetColor(LastItemDisabled ? FuColors.TextDisabled : FuColors.Text, LastItemDisabled ? 0.55f : 0.92f));
+            uint textColor = ImGui.GetColorU32(selected && !LastItemDisabled ? Fugui.GetColor(FuColors.SelectedText) : Fugui.GetColor(LastItemDisabled ? FuColors.TextDisabled : FuColors.Text, LastItemDisabled ? 0.55f : 0.92f));
             drawCenteredText(drawList, label, pos, size, textColor);
 
             if (bold || selected)

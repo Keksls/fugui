@@ -111,11 +111,11 @@ namespace FuguiDemo
             {
                 if (deleteHovered)
                 {
-                    Vector4 deleteBg = Fugui.Themes.GetColor(FuColors.BackgroundDanger, 0.22f);
+                    Vector4 deleteBg = Fugui.GetColor(FuColors.BackgroundDanger, 0.22f);
                     drawList.AddRectFilled(deleteRect.min, deleteRect.max, Fugui.GetColorU32(deleteBg), 5f * scale, FuDrawFlags.RoundCornersAll);
                     Fugui.SetMouseCursor(FuMouseCursor.Hand);
                 }
-                Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDanger, deleteHovered ? 1f : 0.50f));
+                Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDanger, deleteHovered ? 1f : 0.50f));
                 layout.EnboxedText(Icons.Close, deleteRect.position, deleteRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
                 Fugui.PopColor();
             }
@@ -141,7 +141,7 @@ namespace FuguiDemo
             float rightLimit = Mathf.Max(textX + 24f * scale, badgeRect.xMin - 8f * scale);
             Vector2 titlePos = new Vector2(textX, pos.y + 3f * scale);
             Vector2 titleSize = new Vector2(rightLimit - textX, 15f * scale);
-            Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.Text, selected ? 1f : 0.95f));
+            Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.Text, selected ? 1f : 0.95f));
             layout.EnboxedText(item.DisplayName, titlePos, titleSize, Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
@@ -150,7 +150,7 @@ namespace FuguiDemo
             {
                 details += " / " + item.DescendantCount + " items";
             }
-            Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, selected ? 0.95f : 0.78f));
+            Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, selected ? 0.95f : 0.78f));
             layout.EnboxedText(details, new Vector2(textX, pos.y + 16f * scale), new Vector2(rightLimit - textX, 13f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
@@ -207,9 +207,9 @@ namespace FuguiDemo
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
             Rect iconRect = new Rect(headerPos + new Vector2(padding + 2f * scale, 8f * scale), new Vector2(22f * scale, 22f * scale));
-            Vector4 iconBg = Fugui.Themes.GetColor(FuColors.Highlight, 0.20f);
+            Vector4 iconBg = Fugui.GetColor(FuColors.Highlight, 0.20f);
             drawList.AddRectFilled(iconRect.min, iconRect.max, Fugui.GetColorU32(iconBg), 6f * scale, FuDrawFlags.RoundCornersAll);
-            Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.HighlightText, 0.95f));
+            Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.HighlightText, 0.95f));
             layout.EnboxedText(Icons.TreeList_solid, iconRect.position, iconRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
@@ -226,11 +226,11 @@ namespace FuguiDemo
             float titleRight = Mathf.Max(titlePos.x, summaryRect.xMin - 10f * scale);
             layout.EnboxedText("Tree Explorer", titlePos, new Vector2(titleRight - titlePos.x, 20f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
 
-            Vector4 summaryBg = Fugui.Themes.GetColor(FuColors.ChildBg, 0.58f);
+            Vector4 summaryBg = Fugui.GetColor(FuColors.ChildBg, 0.58f);
             if (summarySize.x > 1f && summarySize.y > 1f)
             {
                 drawList.AddRectFilled(summaryRect.min, summaryRect.max, Fugui.GetColorU32(summaryBg), summaryRect.height * 0.5f, FuDrawFlags.RoundCornersAll);
-                Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.92f));
+                Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, 0.92f));
                 layout.EnboxedText(summary, summaryRect.position, summaryRect.size, summaryPadding, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
                 Fugui.PopColor();
             }
@@ -298,12 +298,12 @@ namespace FuguiDemo
             bool clicked = layout.InvisibleInteractionAt("##" + id, rect.position, rect.size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft);
 
             Vector4 bg = active ? style.ButtonActive : hovered ? style.ButtonHovered : style.Button;
-            Vector4 border = Fugui.Themes.GetColor(FuColors.Border, hovered ? 0.72f : 0.42f);
+            Vector4 border = Fugui.GetColor(FuColors.Border, hovered ? 0.72f : 0.42f);
             float rounding = Mathf.Min(5f * scale, rect.height * 0.28f);
             drawList.AddRectFilled(rect.min, rect.max, Fugui.GetColorU32(bg), rounding, FuDrawFlags.RoundCornersAll);
             drawList.AddRect(rect.min, rect.max, Fugui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
 
-            Vector4 textColor = Fugui.Themes.GetColor(textColorName, active ? 0.92f : 1f);
+            Vector4 textColor = Fugui.GetColor(textColorName, active ? 0.92f : 1f);
             if (hovered)
             {
                 Fugui.SetMouseCursor(FuMouseCursor.Hand);
@@ -499,13 +499,13 @@ namespace FuguiDemo
             switch (state)
             {
                 case StateType.Success:
-                    return Fugui.Themes.GetColor(FuColors.TextSuccess, alpha);
+                    return Fugui.GetColor(FuColors.TextSuccess, alpha);
                 case StateType.Warning:
-                    return Fugui.Themes.GetColor(FuColors.TextWarning, alpha);
+                    return Fugui.GetColor(FuColors.TextWarning, alpha);
                 case StateType.Danger:
-                    return Fugui.Themes.GetColor(FuColors.TextDanger, alpha);
+                    return Fugui.GetColor(FuColors.TextDanger, alpha);
                 default:
-                    return Fugui.Themes.GetColor(FuColors.TextInfo, alpha);
+                    return Fugui.GetColor(FuColors.TextInfo, alpha);
             }
         }
         #endregion

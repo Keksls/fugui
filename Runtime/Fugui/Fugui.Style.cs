@@ -18,31 +18,6 @@ namespace Fu
     public static partial class Fugui
     {
 #if !FUDEBUG
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void Push(ImGuiCol imCol, Vector4 color)
-        {
-            ImGuiNative.igPushStyleColor_Vec4(imCol, color);
-            NbPushColor++;
-        }
-
-        /// <summary>
-        /// Push a color style to ImGui color stack
-        /// </summary>
-        /// <param name="imCol">ImGui color to push</param>
-        /// <param name="color">colot value</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Push(FuColors imCol, Vector4 color)
-        {
-            if ((int)imCol >= (int)ImGuiCol.COUNT)
-            {
-                Debug.LogError("You are trying to push a color that is not in ImGuiCol enum, use ImGuiCol instead.");
-                return;
-            }
-
-            ImGuiNative.igPushStyleColor_Vec4((ImGuiCol)imCol, color);
-            NbPushColor++;
-        }
-
         /// <summary>
         /// Push a style var to ImGui style var stack
         /// </summary>
@@ -87,24 +62,6 @@ namespace Fu
         {
             ImGuiNative.igPushStyleVar_Float(imVar, value * CurrentContext.Scale);
             NbPushStyle++;
-        }
-
-        /// <summary>
-        /// Pop some colors from ImGui color stack
-        /// </summary>
-        /// <param name="nb">quantity of color to pop</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void PopColor(int nb = 1)
-        {
-            if (nb > NbPushColor)
-            {
-                nb = NbPushColor;
-            }
-            if (NbPushColor > 0)
-            {
-                ImGuiNative.igPopStyleColor(nb);
-                NbPushColor -= nb;
-            }
         }
 
         /// <summary>

@@ -97,54 +97,54 @@ namespace Fu.Framework
             {
                 if (LastItemDisabled)
                 {
-                    borderColor = Fugui.Themes.GetColor(FuColors.Border) * 0.5f;
-                    bgColor = Fugui.Themes.GetColor(FuColors.FrameBg) * 0.5f;
-                    checkColor = Fugui.Themes.GetColor(FuColors.Knob) * 0.5f;
+                    borderColor = Fugui.GetColor(FuColors.Border) * 0.5f;
+                    bgColor = Fugui.GetColor(FuColors.FrameBg) * 0.5f;
+                    checkColor = Fugui.GetColor(FuColors.Knob) * 0.5f;
                 }
                 else if (_lastItemActive)
                 {
-                    borderColor = Fugui.Themes.GetColor(FuColors.Border);
-                    bgColor = Fugui.Themes.GetColor(FuColors.FrameBgActive);
-                    checkColor = Fugui.Themes.GetColor(FuColors.Knob);
+                    borderColor = Fugui.GetColor(FuColors.Border);
+                    bgColor = Fugui.GetColor(FuColors.FrameBgActive);
+                    checkColor = Fugui.GetColor(FuColors.Knob);
                 }
                 else if (_lastItemHovered)
                 {
-                    borderColor = Fugui.Themes.GetColor(FuColors.Border);
-                    bgColor = Fugui.Themes.GetColor(FuColors.FrameBgHovered);
-                    checkColor = Fugui.Themes.GetColor(FuColors.Knob);
+                    borderColor = Fugui.GetColor(FuColors.Border);
+                    bgColor = Fugui.GetColor(FuColors.FrameBgHovered);
+                    checkColor = Fugui.GetColor(FuColors.Knob);
                 }
                 else
                 {
-                    borderColor = Fugui.Themes.GetColor(FuColors.Border);
-                    bgColor = Fugui.Themes.GetColor(FuColors.FrameBg);
-                    checkColor = Fugui.Themes.GetColor(FuColors.Knob);
+                    borderColor = Fugui.GetColor(FuColors.Border);
+                    bgColor = Fugui.GetColor(FuColors.FrameBg);
+                    checkColor = Fugui.GetColor(FuColors.Knob);
                 }
             }
             else
             {
                 if (LastItemDisabled)
                 {
-                    borderColor = Fugui.Themes.GetColor(FuColors.Border) * 0.5f;
-                    bgColor = Fugui.Themes.GetColor(FuColors.CheckMark) * 0.5f;
-                    checkColor = Fugui.Themes.GetColor(FuColors.Knob) * 0.5f;
+                    borderColor = Fugui.GetColor(FuColors.Border) * 0.5f;
+                    bgColor = Fugui.GetColor(FuColors.CheckMark) * 0.5f;
+                    checkColor = Fugui.GetColor(FuColors.Knob) * 0.5f;
                 }
                 else if (_lastItemActive)
                 {
-                    borderColor = Fugui.Themes.GetColor(FuColors.Border);
-                    bgColor = Fugui.Themes.GetColor(FuColors.CheckMark) * 0.8f;
-                    checkColor = Fugui.Themes.GetColor(FuColors.Knob);
+                    borderColor = Fugui.GetColor(FuColors.Border);
+                    bgColor = Fugui.GetColor(FuColors.CheckMark) * 0.8f;
+                    checkColor = Fugui.GetColor(FuColors.Knob);
                 }
                 else if (_lastItemHovered)
                 {
-                    borderColor = Fugui.Themes.GetColor(FuColors.Border);
-                    bgColor = Fugui.Themes.GetColor(FuColors.CheckMark) * 0.9f;
-                    checkColor = Fugui.Themes.GetColor(FuColors.Knob);
+                    borderColor = Fugui.GetColor(FuColors.Border);
+                    bgColor = Fugui.GetColor(FuColors.CheckMark) * 0.9f;
+                    checkColor = Fugui.GetColor(FuColors.Knob);
                 }
                 else
                 {
-                    borderColor = Fugui.Themes.GetColor(FuColors.Border);
-                    bgColor = Fugui.Themes.GetColor(FuColors.CheckMark);
-                    checkColor = Fugui.Themes.GetColor(FuColors.Knob);
+                    borderColor = Fugui.GetColor(FuColors.Border);
+                    bgColor = Fugui.GetColor(FuColors.CheckMark);
+                    checkColor = Fugui.GetColor(FuColors.Knob);
                 }
             }
 

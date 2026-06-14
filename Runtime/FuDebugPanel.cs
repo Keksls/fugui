@@ -1,4 +1,9 @@
 
+using ImGuiNET;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
 namespace Fu
 {
 #if FUDEBUG
@@ -9,7 +14,7 @@ namespace Fu
         private static int _nbPopStyle = 0;
         private static int _nbPopColor = 0;
         private static Stack<pushStyleData> _stylesStack;
-        private static Stack<pushColorData> _colorStack;
+        private static Stack<pushColorData> _debugColorStack;
         private static List<pushStyleData> tooMutchStylePop = new List<pushStyleData>();
         private static List<pushColorData> tooMutchColorPop = new List<pushColorData>();
         private static bool _showStackTraces;
@@ -22,7 +27,7 @@ namespace Fu
             _nbPopStyle = 0;
             _nbPopColor = 0;
             _stylesStack = new Stack<pushStyleData>();
-            _colorStack = new Stack<pushColorData>();
+            _debugColorStack = new Stack<pushColorData>();
             DefaultContext.OnLastRender += DefaultContext_OnLastRender;
         }
 
@@ -38,7 +43,7 @@ namespace Fu
             _nbPopStyle = 0;
             _nbPopColor = 0;
             _stylesStack.Clear();
-            _colorStack.Clear();
+            _debugColorStack.Clear();
             tooMutchStylePop.Clear();
             tooMutchColorPop.Clear();
         }
@@ -51,9 +56,9 @@ namespace Fu
                 styles.Add(_stylesStack.Pop());
             }
             List<pushColorData> colors = new List<pushColorData>();
-            while (_colorStack.Count > 0)
+            while (_debugColorStack.Count > 0)
             {
-                colors.Add(_colorStack.Pop());
+                colors.Add(_debugColorStack.Pop());
             }
             int nbStylesPush = _nbPushStyle;
             int nbStylesPop = _nbPopStyle;
@@ -189,15 +194,39 @@ namespace Fu
 
         public static void Push(FuColors styleColor, Vector4 color)
         {
-            Push((ImGuiCol)styleColor, color);
+            Push((int)styleColor, color);
+        }
+
+        public static void Push(int colorIndex, Vector4 color)
+        {
+            if (!PushColorValue(colorIndex, color))
+            {
+                return;
+            }
+
+            _debugColorStack.Push(new pushColorData()
+            {
+                color = colorIndex,
+                stackTrace = Environment.StackTrace
+            });
+            _nbPushColor++;
+        }
+
+        public static void Push(Enum color, Vector4 value)
+        {
+            Push(ResolveColorIndex(color), value);
         }
 
         internal static void Push(ImGuiCol imCol, Vector4 color)
         {
-            ImGui.PushStyleColor(imCol, color);
-            _colorStack.Push(new pushColorData()
+            if (!PushColorValue((int)imCol, color))
             {
-                color = imCol,
+                return;
+            }
+
+            _debugColorStack.Push(new pushColorData()
+            {
+                color = (int)imCol,
                 stackTrace = Environment.StackTrace
             });
             _nbPushColor++;
@@ -206,17 +235,27 @@ namespace Fu
         {
             for (int i = 0; i < nb; i++)
             {
-                if (_colorStack.Count > 0)
+                if (PopColorValue(out _))
                 {
-                    ImGui.PopStyleColor();
                     _nbPopColor++;
-                    _colorStack.Pop();
+                    if (_debugColorStack.Count > 0)
+                    {
+                        _debugColorStack.Pop();
+                    }
+                    else
+                    {
+                        tooMutchColorPop.Add(new pushColorData()
+                        {
+                            color = (int)ImGuiCol.COUNT,
+                            stackTrace = Environment.StackTrace
+                        });
+                    }
                 }
                 else
                 {
                     tooMutchColorPop.Add(new pushColorData()
                     {
-                        color = ImGuiCol.COUNT,
+                        color = (int)ImGuiCol.COUNT,
                         stackTrace = Environment.StackTrace
                     });
                 }
@@ -288,7 +327,7 @@ namespace Fu
 
     internal struct pushColorData
     {
-        internal ImGuiCol color;
+        internal int color;
         internal string stackTrace;
 
         public override string ToString()

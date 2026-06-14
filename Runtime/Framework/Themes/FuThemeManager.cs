@@ -64,6 +64,26 @@ namespace Fu
         public float NodeKnobMargin { get; private set; }
         #endregion
 
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Fu Theme Manager class.
+        /// </summary>
+        public FuThemeManager()
+        {
+            // we could not bind it using reflection because some element style use others, so we need to set presset within a specific order
+            _uiElementStyleTypes = new List<Type>
+            {
+                typeof(FuTextStyle),
+                typeof(FuButtonStyle),
+                typeof(FuFrameStyle),
+                typeof(FuComboboxStyle),
+                typeof(FuPanelStyle),
+                typeof(FuButtonsGroupStyle),
+                typeof(FuStyle)
+            };
+        }
+        #endregion
+
         #region Methods
         /// <summary>
         /// Update variables with current theme scale
@@ -112,29 +132,7 @@ namespace Fu
             NodeKnobRadius = CurrentTheme.NodeKnobRadius * scale;
             NodeKnobMargin = CurrentTheme.NodeKnobMargin * scale;
         }
-        #endregion
 
-        #region Constructors
-        /// <summary>
-        /// Initializes a new instance of the Fu Theme Manager class.
-        /// </summary>
-        public FuThemeManager()
-        {
-            // we could not bind it using reflection because some element style use others, so we need to set presset within a specific order
-            _uiElementStyleTypes = new List<Type>
-            {
-                typeof(FuTextStyle),
-                typeof(FuButtonStyle),
-                typeof(FuFrameStyle),
-                typeof(FuComboboxStyle),
-                typeof(FuPanelStyle),
-                typeof(FuButtonsGroupStyle),
-                typeof(FuStyle)
-            };
-        }
-        #endregion
-
-        #region Methods
         /// <summary>
         /// Initialize the theme manager and set default theme
         /// </summary>
@@ -263,63 +261,6 @@ namespace Fu
                 return true;
             }
             return false;
-        }
-
-        /// <summary>
-        /// return the color of the current theme that match with the given enum parameter
-        /// </summary>
-        /// <param name="color">color enum to get value of</param>
-        /// <returns>color value as Vector4</returns>
-        public Vector4 GetColor(FuColors color)
-        {
-            return CurrentTheme.Colors[(int)color];
-        }
-
-        /// <summary>
-        /// return the color of the current theme that match with the given enum parameter as U32
-        /// </summary>
-        /// <param name="color"> color enum to get value of</param>
-        /// <returns> color value as U32</returns>
-        public uint GetColorU32(FuColors color)
-        {
-            Vector4 col = CurrentTheme.Colors[(int)color];
-            return ImGuiNET.ImGui.GetColorU32(col);
-        }
-
-        /// <summary>
-        /// return the color of the current theme that match with the given enum parameter
-        /// </summary>
-        /// <param name="color">color enum to get value of</param>
-        /// <param name="alphaMult">alpha multiplicator of the color</param>
-        /// <returns>color value as Vector4</returns>
-        public Vector4 GetColor(FuColors color, float alphaMult)
-        {
-            Vector4 colorV4 = CurrentTheme.Colors[(int)color];
-            colorV4.w *= alphaMult;
-            return colorV4;
-        }
-
-        /// <summary>
-        /// return the color of the current theme that match with the given enum parameter as U32
-        /// </summary>
-        /// <param name="color"> color enum to get value of</param>
-        /// <param name="alphaMult"> alpha multiplicator of the color</param>
-        /// <returns> color value as U32</returns>
-        public uint GetColorU32(FuColors color, float alphaMult)
-        {
-            Vector4 col = CurrentTheme.Colors[(int)color];
-            col.w *= alphaMult;
-            return ImGuiNET.ImGui.GetColorU32(col);
-        }
-
-        /// <summary>
-        /// return the color of the current theme extension that match with the given enum parameter
-        /// </summary>
-        /// <param name="color">color enum to get value of</param>
-        /// <returns>color value as Vector4</returns>
-        public Vector4 GetExtensionColor(int color)
-        {
-            return CurrentTheme.Colors[(int)FuColors.COUNT + color];
         }
 
         /// <summary>

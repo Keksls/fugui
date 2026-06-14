@@ -589,7 +589,7 @@ namespace Fu.Framework
                 return fallback;
             }
 
-            return Fugui.Themes.GetColor(color);
+            return Fugui.GetColor(color);
         }
 
         /// <summary>

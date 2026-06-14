@@ -116,7 +116,7 @@ namespace Fu.Framework
             EnboxedText(title, titlePos, textWidth, Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopFont();
 
-            Fugui.Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.86f));
+            Fugui.Push(ImGuiCol.Text, Fugui.GetColor(FuColors.TextDisabled, 0.86f));
             EnboxedText(body, titlePos + new Vector2(0f, 27f * scale), new Vector2(rect.width - 32f * scale, 34f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Wrap);
             Fugui.PopColor();
 
@@ -192,20 +192,20 @@ namespace Fu.Framework
             if (selected || hovered || active)
             {
                 Vector4 fill = selected
-                    ? Fugui.Themes.GetColor(accentColor, active ? 0.24f : 0.18f)
-                    : Fugui.Themes.GetColor(FuColors.FrameBgHovered, active ? 0.46f : 0.36f);
+                    ? Fugui.GetColor(accentColor, active ? 0.24f : 0.18f)
+                    : Fugui.GetColor(FuColors.FrameBgHovered, active ? 0.46f : 0.36f);
                 drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(fill), 4f * scale, FuDrawFlags.RoundCornersAll);
             }
 
             if (selected)
             {
-                Vector4 accent = Fugui.Themes.GetColor(accentColor, 0.92f);
+                Vector4 accent = Fugui.GetColor(accentColor, 0.92f);
                 drawList.AddRectFilled(rect.min + new Vector2(0f, 4f * scale), new Vector2(rect.xMin + 3f * scale, rect.yMax - 4f * scale), ImGui.GetColorU32(accent), 2f * scale, FuDrawFlags.RoundCornersAll);
             }
 
             Vector4 textColor = selected
-                ? Fugui.Themes.GetColor(FuColors.Text, 1f)
-                : Fugui.Themes.GetColor(FuColors.Text, hovered ? 0.92f : 0.72f);
+                ? Fugui.GetColor(FuColors.Text, 1f)
+                : Fugui.GetColor(FuColors.Text, hovered ? 0.92f : 0.72f);
             Fugui.Push(ImGuiCol.Text, textColor);
             EnboxedText(text, rect.position + new Vector2(10f, 0f) * scale, rect.size - new Vector2(16f, 0f) * scale, Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopColor();
@@ -310,9 +310,9 @@ namespace Fu.Framework
             float scaledRounding = Mathf.Min(rounding * scale, Mathf.Min(rect.width, rect.height) * 0.5f);
             float scaledAccent = Mathf.Max(1f, accentThickness * scale);
 
-            Vector4 bg = Fugui.Themes.GetColor(FuColors.FrameBg, backgroundAlpha);
-            Vector4 border = Fugui.Themes.GetColor(FuColors.Border, borderAlpha);
-            Vector4 accent = Fugui.Themes.GetColor(accentColor, accentAlpha);
+            Vector4 bg = Fugui.GetColor(FuColors.FrameBg, backgroundAlpha);
+            Vector4 border = Fugui.GetColor(FuColors.Border, borderAlpha);
+            Vector4 accent = Fugui.GetColor(accentColor, accentAlpha);
 
             drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), scaledRounding, FuDrawFlags.RoundCornersAll);
             if (flags.HasFlag(FuSurfaceFlags.Border))
@@ -347,9 +347,9 @@ namespace Fu.Framework
             float scale = Fugui.CurrentContext.Scale;
             Rect rect = new Rect(pos, size);
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-            Vector4 bg = Fugui.Themes.GetColor(color, 0.18f);
-            Vector4 border = Fugui.Themes.GetColor(color, 0.42f);
-            Vector4 fg = Fugui.Themes.GetColor(FuColors.Text, 0.90f);
+            Vector4 bg = Fugui.GetColor(color, 0.18f);
+            Vector4 border = Fugui.GetColor(color, 0.42f);
+            Vector4 fg = Fugui.GetColor(FuColors.Text, 0.90f);
             drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), rect.height * 0.5f, FuDrawFlags.RoundCornersAll);
             drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), rect.height * 0.5f, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
             Fugui.Push(ImGuiCol.Text, fg);

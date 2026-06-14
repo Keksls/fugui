@@ -1308,9 +1308,9 @@ namespace Fu
             Vector2 windowSize = new Vector2(Width, Height);
 
             // colors
-            uint normalColor = Fugui.Themes.GetColorU32(FuColors.Highlight, 0.45f);
-            uint hoverColor = Fugui.Themes.GetColorU32(FuColors.HighlightHovered);
-            uint activeColor = Fugui.Themes.GetColorU32(FuColors.HighlightActive);
+            uint normalColor = Fugui.GetColorU32(FuColors.Highlight, 0.45f);
+            uint hoverColor = Fugui.GetColorU32(FuColors.HighlightHovered);
+            uint activeColor = Fugui.GetColorU32(FuColors.HighlightActive);
 
             // thickness
             float normalThickness = 1f * Fugui.Scale;
@@ -1691,7 +1691,7 @@ namespace Fu
 
                 // Clear screen
                 GLMini.glViewport(0, 0, Width, Height);
-                var bgColor = Fugui.Themes.GetColor(FuColors.WindowBg);
+                var bgColor = Fugui.GetColor(FuColors.WindowBg);
                 GLMini.glClearColor(bgColor.x, bgColor.y, bgColor.z, bgColor.w);
                 GLMini.glClear(GLMini.GL_COLOR_BUFFER_BIT);
 

@@ -248,17 +248,17 @@ namespace Fu.Framework
             {
                 if (Fugui.IsCurrentItemFocused())
                 {
-                    Fugui.GetCurrentWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
+                    Fugui.GetCurrentWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.GetColor(FuColors.FrameSelectedFeedback)), ImGui.GetStyle().FrameRounding);
                 }
                 else if (Fugui.IsCurrentItemHovered())
                 {
                     // ImGui fail on inputText since version 1.88, check on new version
-                    Fugui.GetCurrentWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
+                    Fugui.GetCurrentWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
                 }
             }
             else if (force)
             {
-                Fugui.GetCurrentWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
+                Fugui.GetCurrentWindowDrawList().AddRect(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.GetColorU32(Fugui.GetColor(FuColors.FrameHoverFeedback)), ImGui.GetStyle().FrameRounding);
             }
         }
 
@@ -268,7 +268,7 @@ namespace Fu.Framework
         /// <param name="rect">rect of the frame (pos + size)</param>
         private void drawBorderFrame(Rect rect, bool rounded = true)
         {
-            Fugui.GetCurrentWindowDrawList().AddRect(rect.min, rect.max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback)), rounded ? ImGui.GetStyle().FrameRounding : 0f);
+            Fugui.GetCurrentWindowDrawList().AddRect(rect.min, rect.max, ImGui.GetColorU32(Fugui.GetColor(FuColors.FrameSelectedFeedback)), rounded ? ImGui.GetStyle().FrameRounding : 0f);
         }
 
         /// <summary>
@@ -291,13 +291,13 @@ namespace Fu.Framework
             float thickness;
             if (focused)
             {
-                color = Fugui.Themes.GetColor(FuColors.FrameSelectedFeedback);
+                color = Fugui.GetColor(FuColors.FrameSelectedFeedback);
                 color.w = Mathf.Max(color.w, 0.9f);
                 thickness = Mathf.Max(1.5f, 1.5f * Fugui.CurrentContext.Scale);
             }
             else if (hovered)
             {
-                color = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback);
+                color = Fugui.GetColor(FuColors.FrameHoverFeedback);
                 color.w = Mathf.Max(color.w, 0.55f);
                 thickness = Mathf.Max(1f, Fugui.CurrentContext.Scale);
             }
@@ -402,7 +402,7 @@ namespace Fu.Framework
             float rounding = ImGui.GetStyle().FrameRounding;
             Rect caretRect = new Rect(new Vector2(rect.xMax - caretWidth, rect.y), new Vector2(caretWidth, rect.height));
 
-            Vector4 separator = Fugui.Themes.GetColor(FuColors.Border);
+            Vector4 separator = Fugui.GetColor(FuColors.Border);
             separator.w = disabled ? 0.16f : opened ? 0.42f : 0.26f;
             float inset = Mathf.Max(5f, 6f * scale);
             drawList.AddLine(new Vector2(caretRect.xMin, caretRect.yMin + inset), new Vector2(caretRect.xMin, caretRect.yMax - inset), ImGui.GetColorU32(separator), Mathf.Max(1f, scale));
@@ -422,7 +422,7 @@ namespace Fu.Framework
         {
             if (hovered)
             {
-                Vector4 bg = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback);
+                Vector4 bg = Fugui.GetColor(FuColors.FrameHoverFeedback);
                 bg.w = Mathf.Max(bg.w, 0.22f);
                 drawList.AddCircleFilled(center, radius * 1.15f, ImGui.GetColorU32(bg), 24);
             }
@@ -450,12 +450,12 @@ namespace Fu.Framework
 
             if ((hovered || active) && !disabled)
             {
-                Vector4 ring = active ? Fugui.Themes.GetColor(FuColors.HighlightActive) : Fugui.Themes.GetColor(FuColors.HighlightHovered);
+                Vector4 ring = active ? Fugui.GetColor(FuColors.HighlightActive) : Fugui.GetColor(FuColors.HighlightHovered);
                 ring.w = active ? 0.55f : 0.35f;
                 drawList.AddCircle(center, radius + 3f * scale, ImGui.GetColorU32(ring), 32, Mathf.Max(1f, 1.5f * scale));
             }
 
-            Vector4 border = Fugui.Themes.GetColor(FuColors.Border);
+            Vector4 border = Fugui.GetColor(FuColors.Border);
             border.w = disabled ? 0.35f : 0.75f;
             AddCircleFilledAntiAliased(drawList, center, radius + Mathf.Max(1f, scale), ImGui.GetColorU32(border), 32);
             AddCircleFilledAntiAliased(drawList, center, radius, ImGui.GetColorU32(color), 32);
@@ -481,13 +481,13 @@ namespace Fu.Framework
             Vector2 pos = new Vector2(anchor.x - size.x * 0.5f, anchor.y - size.y - 10f * scale);
             float rounding = Mathf.Min(5f * scale, size.y * 0.45f);
 
-            Vector4 bg = Fugui.Themes.GetColor(FuColors.PopupBg);
+            Vector4 bg = Fugui.GetColor(FuColors.PopupBg);
             bg.w = Mathf.Max(bg.w, 0.96f);
-            Vector4 border = Fugui.Themes.GetColor(FuColors.Highlight);
+            Vector4 border = Fugui.GetColor(FuColors.Highlight);
             border.w = 0.65f;
             Fugui.DrawBackdrop(drawList, new Rect(pos, size), bg, Fugui.GetThemeBackdropBlur(FuColors.PopupBg), rounding, FuDrawFlags.RoundCornersAll);
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
-            drawList.AddText(pos + padding, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text)), text);
+            drawList.AddText(pos + padding, ImGui.GetColorU32(Fugui.GetColor(FuColors.Text)), text);
         }
 
         /// <summary>
@@ -528,7 +528,7 @@ namespace Fu.Framework
         private Vector4 GetReadableTextColor(Vector4 background, bool disabled)
         {
             float luminance = background.x * 0.299f + background.y * 0.587f + background.z * 0.114f;
-            Vector4 text = luminance > 0.58f ? new Vector4(0.05f, 0.05f, 0.05f, 1f) : Fugui.Themes.GetColor(FuColors.Text);
+            Vector4 text = luminance > 0.58f ? new Vector4(0.05f, 0.05f, 0.05f, 1f) : Fugui.GetColor(FuColors.Text);
             if (disabled)
             {
                 text.w *= 0.5f;
@@ -1190,7 +1190,7 @@ namespace Fu.Framework
                 {
                     // set padding and font
                     Fugui.PushDefaultFont();
-                    Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
+                    Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 4f));
                     // Display the current tooltip
                     ImGui.BeginTooltip();
                     callback?.Invoke();

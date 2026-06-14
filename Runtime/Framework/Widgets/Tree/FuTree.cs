@@ -473,7 +473,7 @@ namespace Fu.Framework
         ///<param name="level">The tree level.</param>
         private void drawTreeGuides(FuDrawList drawList, Vector2 startPos, Rect itemRect, float indent, int level)
         {
-            Vector4 guideColor = Fugui.Themes.GetColor(FuColors.Border);
+            Vector4 guideColor = Fugui.GetColor(FuColors.Border);
             guideColor.w *= 0.26f;
             uint guideCol = ImGui.GetColorU32(guideColor);
             float scale = Fugui.CurrentContext.Scale;
@@ -525,19 +525,19 @@ namespace Fu.Framework
                 Vector4 rowColor;
                 if (selected)
                 {
-                    rowColor = Fugui.Themes.GetColor(
+                    rowColor = Fugui.GetColor(
                         FuWindow.CurrentDrawingWindow.Mouse.IsDown(0) && rowHovered ? FuColors.HighlightActive : FuColors.Highlight,
                         rowHovered ? 0.28f : 0.20f);
                 }
                 else
                 {
-                    rowColor = Fugui.Themes.GetColor(FuColors.HeaderHovered, FuWindow.CurrentDrawingWindow.Mouse.IsDown(0) ? 0.40f : 0.26f);
+                    rowColor = Fugui.GetColor(FuColors.HeaderHovered, FuWindow.CurrentDrawingWindow.Mouse.IsDown(0) ? 0.40f : 0.26f);
                 }
                 drawList.AddRectFilled(rowRect.min, rowRect.max, ImGui.GetColorU32(rowColor), rounding, FuDrawFlags.RoundCornersAll);
 
                 if (selected)
                 {
-                    Vector4 accent = Fugui.Themes.GetColor(FuColors.Highlight);
+                    Vector4 accent = Fugui.GetColor(FuColors.Highlight);
                     accent.w = Mathf.Max(accent.w, 0.9f);
                     drawList.AddRectFilled(rowRect.min, new Vector2(rowRect.xMin + 3f * scale, rowRect.yMax), ImGui.GetColorU32(accent), rounding, FuDrawFlags.RoundCornersLeft);
 
@@ -589,7 +589,7 @@ namespace Fu.Framework
                 bool open = _isOpen(element);
                 if (hover)
                 {
-                    Vector4 toggleBg = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback, 0.22f);
+                    Vector4 toggleBg = Fugui.GetColor(FuColors.FrameHoverFeedback, 0.22f);
                     drawList.AddCircleFilled(carretRect.center, height * 0.32f, ImGui.GetColorU32(toggleBg), 20);
                 }
 

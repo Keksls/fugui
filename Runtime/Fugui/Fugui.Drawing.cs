@@ -423,7 +423,7 @@ namespace Fu
             if (!string.IsNullOrEmpty(tooltip) && ImGui.IsMouseHoveringRect(tooltipRectMin, tooltipRectMax))
             {
                 tooltipStyle.Push(true);
-                Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector4(8f, 4f));
+                Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 4f));
                 Fugui.PushDefaultFont();
                 ImGui.SetTooltip(tooltip);
                 Fugui.PopFont();
@@ -685,7 +685,7 @@ namespace Fu
             Vector4 currentTextColor = ImGui.GetStyle().Colors[(int)FuColors.Text];
 
             // Get FuGui theme reference text color
-            Vector4 themeTextColor = Fugui.Themes.GetColor(FuColors.Text);
+            Vector4 themeTextColor = Fugui.GetThemeColor(FuColors.Text);
 
             // If ImGui style uses a custom color (i.e., it's different from the theme)
             if (!ColorsAreEqual(currentTextColor, themeTextColor))
@@ -694,7 +694,7 @@ namespace Fu
             }
 
             // Else return duotone from theme (disabled or not)
-            var color = Fugui.Themes.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotonePrimaryColor);
+            var color = Fugui.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotonePrimaryColor);
             return ImGui.GetColorU32(color);
         }
 
@@ -709,7 +709,7 @@ namespace Fu
             Vector4 currentTextColor = ImGui.GetStyle().Colors[(int)FuColors.Text];
 
             // Get FuGui theme base text color
-            Vector4 themeTextColor = Fugui.Themes.GetColor(FuColors.Text);
+            Vector4 themeTextColor = Fugui.GetThemeColor(FuColors.Text);
 
             // If user has pushed a custom text color
             if (!ColorsAreEqual(currentTextColor, themeTextColor))
@@ -726,7 +726,7 @@ namespace Fu
             }
 
             // Fallback to theme duotone or disabled color
-            var color = Fugui.Themes.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotoneSecondaryColor);
+            var color = Fugui.GetColor(disabled ? FuColors.TextDisabled : FuColors.DuotoneSecondaryColor);
             return ImGui.GetColorU32(color);
         }
 
@@ -875,7 +875,7 @@ namespace Fu
         internal static void DrawThemeBackdropNative(FuDrawList drawList, Rect rect, FuColors color, float alphaMult = 1f, float rounding = 0f, ImDrawFlags flags = ImDrawFlags.RoundCornersAll)
         {
             Vector4 themeColor = Themes != null
-                ? Themes.GetColor(color, alphaMult)
+                ? GetColor(color, alphaMult)
                 : Vector4.zero;
             DrawBackdropNative(drawList, rect, themeColor, GetThemeBackdropBlur(color), rounding, flags);
         }
@@ -908,7 +908,7 @@ namespace Fu
         /// </summary>
         internal static Vector4 GetPopupBackdropStyleColor(float alphaMult = 0.98f)
         {
-            return Themes.GetColor(FuColors.PopupBg, ShouldUseThemeBackdrop(FuColors.PopupBg, alphaMult) ? 0f : alphaMult);
+            return GetColor(FuColors.PopupBg, ShouldUseThemeBackdrop(FuColors.PopupBg, alphaMult) ? 0f : alphaMult);
         }
 
         /// <summary>
@@ -945,7 +945,7 @@ namespace Fu
         internal static bool ShouldUseThemeBackdrop(FuColors color, float alphaMult = 1f)
         {
             Vector4 themeColor = Themes != null
-                ? Themes.GetColor(color, alphaMult)
+                ? GetColor(color, alphaMult)
                 : Vector4.zero;
             return ShouldUseBackdrop(themeColor, GetThemeBackdropBlur(color));
         }

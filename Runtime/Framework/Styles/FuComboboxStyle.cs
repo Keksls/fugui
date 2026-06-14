@@ -114,20 +114,20 @@ namespace Fu.Framework
             _highlightStyle = new FuComboboxStyle()
             {
                 ButtonStyle = FuButtonStyle.Highlight,
-                _frame = Fugui.Themes.GetColor(FuColors.Highlight),
-                _frameHovered = Fugui.Themes.GetColor(FuColors.HighlightHovered),
-                _frameActive = Fugui.Themes.GetColor(FuColors.HighlightActive),
-                _frameDisabled = Fugui.Themes.GetColor(FuColors.HighlightDisabled)
+                _frame = Fugui.GetColor(FuColors.Highlight),
+                _frameHovered = Fugui.GetColor(FuColors.HighlightHovered),
+                _frameActive = Fugui.GetColor(FuColors.HighlightActive),
+                _frameDisabled = Fugui.GetColor(FuColors.HighlightDisabled)
             };
 
             // selected style
             _selectedStyle = new FuComboboxStyle()
             {
                 ButtonStyle = FuButtonStyle.Selected,
-                _frame = Fugui.Themes.GetColor(FuColors.Selected),
-                _frameHovered = Fugui.Themes.GetColor(FuColors.SelectedHovered),
-                _frameActive = Fugui.Themes.GetColor(FuColors.SelectedActive),
-                _frameDisabled = Fugui.Themes.GetColor(FuColors.Selected) * 0.5f
+                _frame = Fugui.GetColor(FuColors.Selected),
+                _frameHovered = Fugui.GetColor(FuColors.SelectedHovered),
+                _frameActive = Fugui.GetColor(FuColors.SelectedActive),
+                _frameDisabled = Fugui.GetColor(FuColors.Selected) * 0.5f
             };
         }
         #endregion

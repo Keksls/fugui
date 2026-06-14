@@ -228,11 +228,11 @@ namespace Fu
             Push(ImGuiStyleVar.FramePadding, new Vector2(4f, 4f));
             Push(ImGuiStyleVar.ItemSpacing, new Vector2(4f, 4f));
             Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 4f));
-            Push(ImGuiCol.Header, Fugui.Themes.GetColor(FuColors.HeaderHovered));
-            Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.MainMenuText));
+            Push(ImGuiCol.Header, Fugui.GetColor(FuColors.HeaderHovered));
+            Push(ImGuiCol.Text, Fugui.GetColor(FuColors.MainMenuText));
             bool popupBackdropEnabled = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
-            Push(ImGuiCol.PopupBg, popupBackdropEnabled ? Fugui.GetPopupBackdropStyleColor() : Fugui.Themes.GetColor(FuColors.MenuBarBg));
-            Push(ImGuiCol.Separator, Fugui.Themes.GetColor(FuColors.MainMenuText) * 0.33f);
+            Push(ImGuiCol.PopupBg, popupBackdropEnabled ? Fugui.GetPopupBackdropStyleColor() : Fugui.GetColor(FuColors.MenuBarBg));
+            Push(ImGuiCol.Separator, Fugui.GetColor(FuColors.MainMenuText) * 0.33f);
             // Begin the main menu bar
             if (ImGui.BeginMainMenuBar())
             {

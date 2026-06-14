@@ -103,7 +103,7 @@ namespace Fu.Framework
             {
                 // set mouse cursor
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-                Vector4 hoverColor = Fugui.Themes.GetColor(active ? FuColors.FrameSelectedFeedback : FuColors.FrameHoverFeedback);
+                Vector4 hoverColor = Fugui.GetColor(active ? FuColors.FrameSelectedFeedback : FuColors.FrameHoverFeedback);
                 hoverColor.w = Mathf.Max(hoverColor.w, active ? 0.7f : 0.42f);
                 drawList.AddCircle(CircleCenter, radius + 2f * Fugui.CurrentContext.Scale, ImGui.GetColorU32(hoverColor), 40, Mathf.Max(1f, Fugui.CurrentContext.Scale));
             }

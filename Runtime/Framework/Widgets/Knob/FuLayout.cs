@@ -124,16 +124,16 @@ namespace Fu.Framework
                 if (LastItemDisabled)
                 {
                     return new color_set(
-                        Fugui.Themes.GetColor(FuColors.CheckMark) * 0.5f,
-                        Fugui.Themes.GetColor(FuColors.CheckMark) * 0.5f,
-                        Fugui.Themes.GetColor(FuColors.CheckMark) * 0.5f);
+                        Fugui.GetColor(FuColors.CheckMark) * 0.5f,
+                        Fugui.GetColor(FuColors.CheckMark) * 0.5f,
+                        Fugui.GetColor(FuColors.CheckMark) * 0.5f);
                 }
                 else
                 {
                     return new color_set(
-                        Fugui.Themes.GetColor(FuColors.CheckMark),
-                        Fugui.Themes.GetColor(FuColors.CheckMark),
-                        Fugui.Themes.GetColor(FuColors.CheckMark));
+                        Fugui.GetColor(FuColors.CheckMark),
+                        Fugui.GetColor(FuColors.CheckMark),
+                        Fugui.GetColor(FuColors.CheckMark));
                 }
             }
 
@@ -145,14 +145,14 @@ namespace Fu.Framework
             {
                 if (LastItemDisabled)
                 {
-                    Vector4 active = Fugui.Themes.GetColor(FuColors.FrameBg) * 0.8f;
-                    Vector4 hovered = Fugui.Themes.GetColor(FuColors.FrameBg) * 0.8f;
+                    Vector4 active = Fugui.GetColor(FuColors.FrameBg) * 0.8f;
+                    Vector4 hovered = Fugui.GetColor(FuColors.FrameBg) * 0.8f;
                     return new color_set(active, hovered, hovered);
                 }
                 else
                 {
-                    Vector4 active = Fugui.Themes.GetColor(FuColors.FrameBg) * 0.4f;
-                    Vector4 hovered = Fugui.Themes.GetColor(FuColors.FrameBg) * 0.4f;
+                    Vector4 active = Fugui.GetColor(FuColors.FrameBg) * 0.4f;
+                    Vector4 hovered = Fugui.GetColor(FuColors.FrameBg) * 0.4f;
                     return new color_set(active, hovered, hovered);
                 }
             }
@@ -166,16 +166,16 @@ namespace Fu.Framework
                 if (LastItemDisabled)
                 {
                     return new color_set(
-                        Fugui.Themes.GetColor(FuColors.FrameBg) * 0.5f,
-                        Fugui.Themes.GetColor(FuColors.FrameBg) * 0.5f,
-                        Fugui.Themes.GetColor(FuColors.FrameBg) * 0.5f);
+                        Fugui.GetColor(FuColors.FrameBg) * 0.5f,
+                        Fugui.GetColor(FuColors.FrameBg) * 0.5f,
+                        Fugui.GetColor(FuColors.FrameBg) * 0.5f);
                 }
                 else
                 {
                     return new color_set(
-                        Fugui.Themes.GetColor(FuColors.FrameBg),
-                        Fugui.Themes.GetColor(FuColors.FrameBg),
-                        Fugui.Themes.GetColor(FuColors.FrameBg));
+                        Fugui.GetColor(FuColors.FrameBg),
+                        Fugui.GetColor(FuColors.FrameBg),
+                        Fugui.GetColor(FuColors.FrameBg));
                 }
             }
 

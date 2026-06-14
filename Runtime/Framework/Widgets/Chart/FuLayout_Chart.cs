@@ -442,10 +442,10 @@ namespace Fu.Framework
         private void DrawChartFrame(FuDrawList drawList, Rect chartRect, FuChartOptions options)
         {
             float rounding = ResolveChartRounding(options);
-            drawList.AddRectFilled(chartRect.min, chartRect.max, ResolveChartColor(options.Style.BackgroundColor, Fugui.Themes.GetColor(FuColors.WindowBg), 1f), rounding);
+            drawList.AddRectFilled(chartRect.min, chartRect.max, ResolveChartColor(options.Style.BackgroundColor, Fugui.GetColor(FuColors.WindowBg), 1f), rounding);
             if (options.Flags.HasFlag(FuChartFlags.Frame))
             {
-                drawList.AddRect(chartRect.min, chartRect.max, ResolveChartColor(options.Style.FrameColor, Fugui.Themes.GetColor(FuColors.Border), 1f), rounding);
+                drawList.AddRect(chartRect.min, chartRect.max, ResolveChartColor(options.Style.FrameColor, Fugui.GetColor(FuColors.Border), 1f), rounding);
             }
         }
 
@@ -462,7 +462,7 @@ namespace Fu.Framework
                 return;
             }
 
-            drawList.AddRectFilled(plotRect.min, plotRect.max, ResolveChartColor(options.Style.PlotBackgroundColor, Fugui.Themes.GetColor(FuColors.FrameBg), 0.60f), 0f);
+            drawList.AddRectFilled(plotRect.min, plotRect.max, ResolveChartColor(options.Style.PlotBackgroundColor, Fugui.GetColor(FuColors.FrameBg), 0.60f), 0f);
         }
 
         /// <summary>
@@ -476,7 +476,7 @@ namespace Fu.Framework
             string text = "No chart data";
             Vector2 textSize = ImGui.CalcTextSize(text);
             Vector2 textPos = chartRect.center - textSize * 0.5f;
-            drawList.AddText(textPos, ResolveChartColor(options.Style.TextColor, Fugui.Themes.GetColor(FuColors.TextDisabled), 1f), text);
+            drawList.AddText(textPos, ResolveChartColor(options.Style.TextColor, Fugui.GetColor(FuColors.TextDisabled), 1f), text);
         }
 
         /// <summary>
@@ -488,9 +488,9 @@ namespace Fu.Framework
         /// <param name="options">Chart options.</param>
         private void DrawChartGridAndAxes(FuDrawList drawList, Rect plotRect, FuChartBounds bounds, FuChartOptions options)
         {
-            uint gridColor = ResolveChartColor(options.Style.GridColor, Fugui.Themes.GetColor(FuColors.Border), 0.35f);
-            uint axisColor = ResolveChartColor(options.Style.AxisColor, Fugui.Themes.GetColor(FuColors.Text), 0.65f);
-            uint textColor = ResolveChartColor(options.Style.TextColor, Fugui.Themes.GetColor(FuColors.Text), 0.72f);
+            uint gridColor = ResolveChartColor(options.Style.GridColor, Fugui.GetColor(FuColors.Border), 0.35f);
+            uint axisColor = ResolveChartColor(options.Style.AxisColor, Fugui.GetColor(FuColors.Text), 0.65f);
+            uint textColor = ResolveChartColor(options.Style.TextColor, Fugui.GetColor(FuColors.Text), 0.72f);
 
             DrawChartTicks(drawList, plotRect, bounds, options.XAxis, true, options, gridColor, textColor);
             DrawChartTicks(drawList, plotRect, bounds, options.YAxis, false, options, gridColor, textColor);
@@ -625,7 +625,7 @@ namespace Fu.Framework
             float y = chartRect.yMin + 6f * scale;
             float maxX = chartRect.xMax - 8f * scale;
             float lineHeight = ImGui.GetTextLineHeight();
-            uint textColor = ResolveChartColor(options.Style.TextColor, Fugui.Themes.GetColor(FuColors.Text), 0.85f);
+            uint textColor = ResolveChartColor(options.Style.TextColor, Fugui.GetColor(FuColors.Text), 0.85f);
 
             for (int i = 0; i < series.Count; i++)
             {
@@ -1016,14 +1016,14 @@ namespace Fu.Framework
             Vector2 mouse = ImGui.GetMousePos();
             if (options.Flags.HasFlag(FuChartFlags.Crosshair))
             {
-                uint crosshairColor = ResolveChartColor(options.Style.CrosshairColor, Fugui.Themes.GetColor(FuColors.Text), 0.30f);
+                uint crosshairColor = ResolveChartColor(options.Style.CrosshairColor, Fugui.GetColor(FuColors.Text), 0.30f);
                 drawList.AddLine(new Vector2(mouse.x, context.PlotRect.yMin), new Vector2(mouse.x, context.PlotRect.yMax), crosshairColor, 1f);
                 drawList.AddLine(new Vector2(context.PlotRect.xMin, mouse.y), new Vector2(context.PlotRect.xMax, mouse.y), crosshairColor, 1f);
             }
 
             if (context.Hover.HasPoint)
             {
-                uint pointColor = ResolveChartColor(options.Style.TooltipPointColor, Fugui.Themes.GetColor(FuColors.Text), 1f);
+                uint pointColor = ResolveChartColor(options.Style.TooltipPointColor, Fugui.GetColor(FuColors.Text), 1f);
                 drawList.AddCircleFilled(context.Hover.ScreenPosition, 4f * context.Scale, pointColor, 16);
             }
 

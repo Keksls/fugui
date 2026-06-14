@@ -757,8 +757,8 @@ namespace Fu
             ImGui.SetNextWindowSize(new Vector2(width, height), ImGuiCond.Always);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, Mathf.Max(4f, 5f * scale));
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(padding, padding));
-            ImGui.PushStyleColor(ImGuiCol.WindowBg, Fugui.Themes.GetColor(FuColors.PopupBg, 0.96f));
-            ImGui.PushStyleColor(ImGuiCol.Border, Fugui.Themes.GetColor(FuColors.Border, 0.85f));
+            Fugui.Push(ImGuiCol.WindowBg, Fugui.GetColor(FuColors.PopupBg, 0.96f));
+            Fugui.Push(ImGuiCol.Border, Fugui.GetColor(FuColors.Border, 0.85f));
 
             ImGuiWindowFlags flags =
                 ImGuiWindowFlags.NoDecoration |
@@ -789,7 +789,7 @@ namespace Fu
             }
 
             ImGui.End();
-            ImGui.PopStyleColor(2);
+            Fugui.PopColor(2);
             ImGui.PopStyleVar(2);
         }
 
@@ -803,9 +803,9 @@ namespace Fu
             Vector2 rowMax = rowMin + rowSize;
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             uint rowColor = selected
-                ? Fugui.Themes.GetColorU32(FuColors.HeaderActive, 0.95f)
-                : Fugui.Themes.GetColorU32(FuColors.FrameBg, 0.82f);
-            uint textColor = Fugui.Themes.GetColorU32(selected ? FuColors.HighlightText : FuColors.Text);
+                ? Fugui.GetColorU32(FuColors.HeaderActive, 0.95f)
+                : Fugui.GetColorU32(FuColors.FrameBg, 0.82f);
+            uint textColor = Fugui.GetColorU32(selected ? FuColors.HighlightText : FuColors.Text);
             float rounding = Mathf.Max(3f, 4f * scale);
 
             drawList.AddRectFilled(rowMin, rowMax, rowColor, rounding);
@@ -1015,7 +1015,7 @@ namespace Fu
                 Fugui.GetBackgroundDrawList().AddLine(
                     new Vector2(0f, mainMenuHeight - Context.Scale),
                     new Vector2(_size.x, mainMenuHeight - Context.Scale),
-                    ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.HeaderHovered)));
+                    ImGui.GetColorU32(Fugui.GetColor(FuColors.HeaderHovered)));
             }
 
             float footerHeight = Mathf.Max(0f, _footerHeight * Context.Scale);
@@ -1028,7 +1028,7 @@ namespace Fu
                 Fugui.Push(ImGuiStyleVar.ItemSpacing, Vector2.zero);
                 Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, Vector2.zero);
                 Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
-                Fugui.Push(ImGuiCol.WindowBg, Fugui.Themes.GetColor(FuColors.MenuBarBg));
+                Fugui.Push(ImGuiCol.WindowBg, Fugui.GetColor(FuColors.MenuBarBg));
 
                 ImGui.SetNextWindowPos(new Vector2(0f, _size.y - (_footerHeight * Context.Scale)));
                 ImGui.SetNextWindowSize(new Vector2(_size.x, _footerHeight * Context.Scale));

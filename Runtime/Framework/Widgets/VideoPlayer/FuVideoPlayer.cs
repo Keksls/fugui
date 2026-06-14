@@ -408,7 +408,7 @@ namespace Fu.Framework
                 size = currentContainer.Size;
                 pos = Vector2.zero;
                 // set black window bg
-                ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0f, 0f, 0f, 1f));
+                Fugui.Push(ImGuiCol.WindowBg, new Vector4(0f, 0f, 0f, 1f));
                 ImGui.SetNextWindowSize(size, ImGuiCond.Always);
                 ImGui.SetNextWindowPos(Vector2.zero, ImGuiCond.Always);
                 ImGui.Begin("FuVideoPlayerFullScreen", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoNavFocus);
@@ -604,7 +604,7 @@ namespace Fu.Framework
 
                 // end the full screen window
                 ImGui.End();
-                ImGui.PopStyleColor();
+                Fugui.PopColor();
             }
 
             // return the rect of the video image

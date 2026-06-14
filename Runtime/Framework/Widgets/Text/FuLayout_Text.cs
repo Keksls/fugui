@@ -126,7 +126,7 @@ namespace Fu.Framework
         {
             text = Fugui.GetUntagedText(text);
             int size = 14;
-            Vector4 color = Fugui.Themes.GetColor(FuColors.Text);
+            Vector4 color = Fugui.GetColor(FuColors.Text);
             float startCursorX = ImGui.GetCursorPosX();
             bool bold = false;
             int nbFontPush = 0;
@@ -280,7 +280,7 @@ namespace Fu.Framework
             // reset pop colors (if user forget to close a color tag)
             if (nbColorPush > 0)
             {
-                ImGui.PopStyleColor(nbColorPush);
+                Fugui.PopColor(nbColorPush);
             }
             // reset pop font (if user forget to close a b or size tag)
             while (nbFontPush > 0)

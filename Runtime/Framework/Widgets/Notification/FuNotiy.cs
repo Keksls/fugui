@@ -106,8 +106,8 @@ namespace Fu
                     ImGui.BeginChild("notify_more_chip", chipSize, ImGuiChildFlags.AutoResizeY, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
                     {
                         var chipDL = Fugui.GetCurrentWindowDrawList();
-                        uint bg = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.FrameBg));
-                        uint border = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border));
+                        uint bg = ImGui.GetColorU32(Fugui.GetColor(FuColors.FrameBg));
+                        uint border = ImGui.GetColorU32(Fugui.GetColor(FuColors.Border));
                         chipDL.AddRectFilled(chipPos, chipPos + chipSize, bg, radius);
                         chipDL.AddRect(chipPos, chipPos + chipSize, border, radius);
                         Vector2 pad = new Vector2(10f * container.Context.Scale, 6f * container.Context.Scale);

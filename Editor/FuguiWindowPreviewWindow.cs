@@ -193,6 +193,7 @@ namespace Fu.Editor
             if (_previewCamera != null)
             {
                 CreatePreviewTexture();
+                ApplyPreviewContextTarget();
             }
 
             ForcePreviewWindowToContainer();
@@ -384,6 +385,7 @@ namespace Fu.Editor
                 return false;
             }
 
+            ApplyPreviewContextTarget();
             Fugui.DefaultContext.AutoUpdateMouse = false;
             Fugui.DefaultContext.AutoUpdateKeyboard = false;
             Fugui.DefaultContext.OnPrepareFrame += FeedEditorInput;
@@ -448,6 +450,23 @@ namespace Fu.Editor
             };
             _previewTexture.Create();
             _previewCamera.targetTexture = _previewTexture;
+        }
+
+        private void ApplyPreviewContextTarget()
+        {
+            if (Fugui.DefaultContext == null)
+            {
+                return;
+            }
+
+            Rect previewPixelRect = new Rect(0f, 0f, _previewSize.x, _previewSize.y);
+            Fugui.DefaultContext.SetPixelRect(previewPixelRect);
+            Fugui.DefaultContext.SetTargetTexture(_previewTexture);
+
+            if (_previewCamera != null)
+            {
+                _previewCamera.pixelRect = previewPixelRect;
+            }
         }
 
         private void CreatePreviewWindow()
@@ -530,7 +549,9 @@ namespace Fu.Editor
                 return;
             }
 
+            ForcePreviewWindowToContainer();
             _target.OnUI(window, layout);
+            ForcePreviewWindowToContainer();
         }
 
         private void ForcePreviewWindowToContainer()
@@ -540,13 +561,16 @@ namespace Fu.Editor
                 return;
             }
 
-            Vector2Int size = Fugui.DefaultContainer != null && Fugui.DefaultContainer.Size.x > 0 && Fugui.DefaultContainer.Size.y > 0
-                ? Fugui.DefaultContainer.Size
-                : _previewSize;
+            Vector2Int size = _previewSize;
 
             if (size.x <= 0 || size.y <= 0)
             {
                 return;
+            }
+
+            if (_previewDefinition != null && _previewDefinition.Position != Vector2Int.zero)
+            {
+                _previewDefinition.SetPosition(Vector2Int.zero);
             }
 
             if (_previewDefinition != null && _previewDefinition.Size != size)
@@ -557,10 +581,12 @@ namespace Fu.Editor
             bool changed = _previewWindow.LocalPosition != Vector2Int.zero || _previewWindow.Size != size;
             _previewWindow.LocalPosition = Vector2Int.zero;
             _previewWindow.Size = size;
+            SetFieldValue(_previewWindow, "_ignoreTransformThisFrame", true);
 
             if (changed)
             {
-                _previewWindow.ForceDraw();
+                InvokeNonPublic(_previewWindow, "ClearDrawDataCache");
+                _previewWindow.ForceDraw(2);
             }
         }
 
@@ -639,6 +665,11 @@ namespace Fu.Editor
                 _previewCamera.targetTexture = null;
             }
 
+            if (Fugui.DefaultContext != null && Fugui.DefaultContext.TargetTexture == _previewTexture)
+            {
+                Fugui.DefaultContext.SetTargetTexture(null);
+            }
+
             _previewTexture.Release();
             DestroyImmediate(_previewTexture);
             _previewTexture = null;
@@ -693,12 +724,7 @@ namespace Fu.Editor
                 ? targetType.Name
                 : source.Name;
 
-            if (source.ID == 0)
-            {
-                return new FuWindowName(PreviewFallbackWindowId, displayName, true, -1);
-            }
-
-            return new FuWindowName(source);
+            return new FuWindowName(PreviewFallbackWindowId, displayName + " Preview", true, -1);
         }
 
         private static FuSettings FindPreviewSettings()

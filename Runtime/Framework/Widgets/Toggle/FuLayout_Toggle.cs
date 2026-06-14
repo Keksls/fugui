@@ -92,8 +92,12 @@ namespace Fu.Framework
             Vector2 size = new Vector2(string.IsNullOrEmpty(currentText) ? height * 2f : height * 2f + textSize.x, height);
             if (!flags.HasFlag(FuToggleFlags.AlignLeft))
             {
-                ImGui.Dummy(new Vector2(ImGui.GetContentRegionAvail().x - size.x - 4f * Fugui.CurrentContext.Scale, 0f));
-                ImGui.SameLine();
+                float rightPadding = 4f * Fugui.CurrentContext.Scale;
+                float cursorOffset = ImGui.GetContentRegionAvail().x - size.x - rightPadding;
+                if (cursorOffset > 0f)
+                {
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + cursorOffset);
+                }
             }
             Vector2 pos = ImGui.GetCursorScreenPos();
             Vector2 center = pos + new Vector2(size.x / 2, size.y / 2);

@@ -3,6 +3,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AdaptivePerformance;
 
 namespace Fu.Framework
 {
@@ -239,7 +240,7 @@ namespace Fu.Framework
         /// <param name="force">force drawing over frame</param>
         public void DrawHoverFrame(bool force = false)
         {
-            if(Fugui.IsScrolling) // prevent hover frame to change during scroll (since mouse pos is changing but we are still on the same item)
+            if (Fugui.IsScrolling) // prevent hover frame to change during scroll (since mouse pos is changing but we are still on the same item)
             {
                 return;
             }
@@ -774,7 +775,7 @@ namespace Fu.Framework
         /// <returns>true ifhovered</returns>
         public bool IsItemHovered(Vector2 pos, Vector2 size, bool forcePanelClippingInsidePopup = false, bool allowWhenBlockedByPopup = false) // TODO : Remove this freak once clipping rect stack are handled
         {
-            if(Fugui.IsScrolling) // prevent hover state to change during scroll (since mouse pos is changing but we are still on the same item)
+            if (Fugui.IsScrolling) // prevent hover state to change during scroll (since mouse pos is changing but we are still on the same item)
             {
                 return false;
             }
@@ -949,11 +950,15 @@ namespace Fu.Framework
             }
             else if (availWidth < 0f)
             {
-                availWidth = ImGui.GetContentRegionAvail().x - availWidth * Fugui.Scale;
+                availWidth = ImGui.GetContentRegionAvail().x - availWidth * (scale ? Fugui.Scale : 1f);
             }
             else if (scale)
             {
                 availWidth *= Fugui.Scale;
+            }
+            if (scale)
+            {
+                itemWidth *= Fugui.Scale;
             }
             float offset = availWidth / 2f - itemWidth / 2f;
             if (offset > 0f)
@@ -988,12 +993,18 @@ namespace Fu.Framework
             }
             else if (availHeight < 0f)
             {
-                availHeight = ImGui.GetContentRegionAvail().y - availHeight * Fugui.Scale;
+                availHeight = ImGui.GetContentRegionAvail().y - availHeight * (scale ? Fugui.Scale : 1f);
             }
             else if (scale)
             {
                 availHeight *= Fugui.Scale;
             }
+
+            if (scale)
+            {
+                itemHeight *= Fugui.Scale;
+            }
+
             float offset = availHeight / 2f - itemHeight / 2f;
             if (offset > 0f)
             {

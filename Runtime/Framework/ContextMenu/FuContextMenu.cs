@@ -239,12 +239,12 @@ namespace Fu
             Push(ImGuiStyleVar.PopupBorderSize, popupBorderSize);
             bool popupBackdropEnabled = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
             Push(ImGuiCol.PopupBg, Fugui.GetPopupBackdropStyleColor());
-            Push(ImGuiCol.Border, Fugui.Themes.GetColor(FuColors.Border, 0.70f));
+            Push(ImGuiCol.Border, Fugui.GetColor(FuColors.Border, 0.70f));
             Push(ImGuiCol.BorderShadow, new Vector4(0f, 0f, 0f, 0.22f));
-            Push(ImGuiCol.Header, Fugui.Themes.GetColor(FuColors.Selected, 0.32f));
-            Push(ImGuiCol.HeaderHovered, Fugui.Themes.GetColor(FuColors.SelectedHovered, 0.72f));
-            Push(ImGuiCol.HeaderActive, Fugui.Themes.GetColor(FuColors.SelectedActive, 0.88f));
-            Push(ImGuiCol.Separator, Fugui.Themes.GetColor(FuColors.Separator, 0.58f));
+            Push(ImGuiCol.Header, Fugui.GetColor(FuColors.Selected, 0.32f));
+            Push(ImGuiCol.HeaderHovered, Fugui.GetColor(FuColors.SelectedHovered, 0.72f));
+            Push(ImGuiCol.HeaderActive, Fugui.GetColor(FuColors.SelectedActive, 0.88f));
+            Push(ImGuiCol.Separator, Fugui.GetColor(FuColors.Separator, 0.58f));
             float scale = CurrentContext != null ? CurrentContext.Scale : 1f;
             ImGui.SetNextWindowSizeConstraints(new Vector2(180f * scale, 0f), new Vector2(420f * scale, float.MaxValue), _contextMenuSizeCallback);
             ImGuiWindowFlags popupFlags = ImGuiWindowFlags.NoMove;
@@ -326,7 +326,7 @@ namespace Fu
 
                         bool enabled = (menuItem.Enabled?.Invoke() ?? true) && !IsContextMenuDisabled;
                         if (!enabled)
-                            Push(ImGuiCol.Text, Fugui.Themes.GetColor(FuColors.TextDisabled));
+                            Push(ImGuiCol.Text, Fugui.GetColor(FuColors.TextDisabled));
 
                         // Draw secondary duotone glyph if needed
                         DrawDuotoneSecondaryGlyph(label, ImGui.GetCursorScreenPos(), Fugui.GetCurrentWindowDrawList(), enabled);

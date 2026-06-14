@@ -85,7 +85,7 @@ namespace Fu.Framework
             void drawPicker()
             {
                 // Gradient editor title
-                Fugui.Push(ImGuiStyleVar.FramePadding, new Vector4(4f, 4f));
+                Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(4f, 4f));
                 FramedText("Gradient Editor");
                 Fugui.PopStyle();
 
@@ -244,10 +244,10 @@ namespace Fu.Framework
                     bool active = _selectedColorKeyIndex == i;
 
                     // draw Line
-                    //drawList.AddLine(keyPos - new Vector2(0f, gradientRect.height), keyPos, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Knob)), active ? 3f : 1f);
+                    //drawList.AddLine(keyPos - new Vector2(0f, gradientRect.height), keyPos, ImGui.GetColorU32(Fugui.GetColor(FuColors.Knob)), active ? 3f : 1f);
                     if (active)
                     {
-                        drawList.AddLine(keyPos - new Vector2(0f, gradientRect.height), keyPos, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Knob)), 1f);
+                        drawList.AddLine(keyPos - new Vector2(0f, gradientRect.height), keyPos, ImGui.GetColorU32(Fugui.GetColor(FuColors.Knob)), 1f);
                     }
 
                     // set tooltip
@@ -264,14 +264,14 @@ namespace Fu.Framework
                     }
 
                     // draw carret
-                    Color caretColor = Fugui.Themes.GetColor(FuColors.Knob);
+                    Color caretColor = Fugui.GetColor(FuColors.Knob);
                     if (hovered)
                     {
-                        caretColor = Fugui.Themes.GetColor(FuColors.KnobHovered);
+                        caretColor = Fugui.GetColor(FuColors.KnobHovered);
                     }
                     if (active)
                     {
-                        caretColor = Fugui.Themes.GetColor(FuColors.KnobActive);
+                        caretColor = Fugui.GetColor(FuColors.KnobActive);
                         Fugui.DrawCarret_Top(drawList, colorKeyRect.position, colorKeySize, colorKeySize, caretColor);
                     }
                     else

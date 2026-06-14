@@ -81,7 +81,7 @@ namespace Fu.Framework
                     SendNewPath(currentPath, true);
                 }
             }
-            Fugui.Push(ImGuiCol.Text, hasUndo ? Fugui.Themes.GetColor(FuColors.Text) : Fugui.Themes.GetColor(FuColors.TextDisabled));
+            Fugui.Push(ImGuiCol.Text, hasUndo ? Fugui.GetColor(FuColors.Text) : Fugui.GetColor(FuColors.TextDisabled));
             // draw undo icon
             EnboxedText("<##" + ID, undoRect.position, undoRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.None);
             Fugui.PopColor();
@@ -112,7 +112,7 @@ namespace Fu.Framework
                     SendNewPath(lastPath);
                 }
             }
-            Fugui.Push(ImGuiCol.Text, hasRedo ? Fugui.Themes.GetColor(FuColors.Text) : Fugui.Themes.GetColor(FuColors.TextDisabled));
+            Fugui.Push(ImGuiCol.Text, hasRedo ? Fugui.GetColor(FuColors.Text) : Fugui.GetColor(FuColors.TextDisabled));
             // draw redo icon
             EnboxedText(">##" + ID, redoRect.position, redoRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.None);
             Fugui.PopColor();
@@ -131,7 +131,7 @@ namespace Fu.Framework
                 drawList.AddRectFilled(rootItemsRect.position, rootItemsRect.position + rootItemsRect.size, ImGui.GetColorU32(ImGuiCol.HeaderHovered));
                 // draw down carret
                 float cw = itemCarretSize.x / 3f;
-                Fugui.DrawCarret_Down(drawList, rootItemsRect.position + new Vector2(itemCarretSize.x / 2f - cw / 2f, 0f), cw, itemCarretSize.y, Fugui.Themes.GetColor(FuColors.Text));
+                Fugui.DrawCarret_Down(drawList, rootItemsRect.position + new Vector2(itemCarretSize.x / 2f - cw / 2f, 0f), cw, itemCarretSize.y, Fugui.GetColor(FuColors.Text));
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                 // click on root items
                 if (mouse.IsDown(FuMouseButton.Left))
@@ -162,7 +162,7 @@ namespace Fu.Framework
             {
                 // draw carret right
                 float cw = itemCarretSize.x / 3f;
-                Fugui.DrawCarret_Right(drawList, rootItemsRect.position + new Vector2(itemCarretSize.x / 2f - cw / 2f, 0f), cw, itemCarretSize.y, Fugui.Themes.GetColor(FuColors.Text));
+                Fugui.DrawCarret_Right(drawList, rootItemsRect.position + new Vector2(itemCarretSize.x / 2f - cw / 2f, 0f), cw, itemCarretSize.y, Fugui.GetColor(FuColors.Text));
             }
             // draw rect border
             drawList.AddRect(rootItemsRect.position, rootItemsRect.position + rootItemsRect.size, ImGui.GetColorU32(ImGuiCol.Border));
@@ -204,7 +204,7 @@ namespace Fu.Framework
                 if (isHovered)
                 {
                     // draw bg frame
-                    Fugui.DrawGradientRect(rect.position, rect.size, 0.8f, 0f, drawList, Fugui.Themes.GetColor(FuColors.HeaderHovered));
+                    Fugui.DrawGradientRect(rect.position, rect.size, 0.8f, 0f, drawList, Fugui.GetColor(FuColors.HeaderHovered));
 
                     if (drawCarret)
                     {
@@ -212,7 +212,7 @@ namespace Fu.Framework
                         drawList.AddLine(rect.position + new Vector2(rect.size.x - itemCarretSize.x, 0f), rect.position + new Vector2(rect.size.x - itemCarretSize.x, rect.size.y), ImGui.GetColorU32(ImGuiCol.Border));
                         // draw caret
                         float cw = itemCarretSize.x / 3f;
-                        Fugui.DrawCarret_Down(drawList, caretRect.position + new Vector2(itemCarretSize.x / 2f - cw / 2f, 0f), cw, itemCarretSize.y, Fugui.Themes.GetColor(FuColors.Text));
+                        Fugui.DrawCarret_Down(drawList, caretRect.position + new Vector2(itemCarretSize.x / 2f - cw / 2f, 0f), cw, itemCarretSize.y, Fugui.GetColor(FuColors.Text));
                     }
 
                     ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
@@ -319,7 +319,7 @@ namespace Fu.Framework
                     {
                         // draw caret
                         float cw = itemCarretSize.x / 3f;
-                        Fugui.DrawCarret_Right(drawList, caretRect.position + new Vector2(itemCarretSize.x / 2f - cw / 2f, 0f), cw, itemCarretSize.y, Fugui.Themes.GetColor(FuColors.Text));
+                        Fugui.DrawCarret_Right(drawList, caretRect.position + new Vector2(itemCarretSize.x / 2f - cw / 2f, 0f), cw, itemCarretSize.y, Fugui.GetColor(FuColors.Text));
                     }
                 }
 

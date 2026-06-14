@@ -183,7 +183,7 @@ namespace Fu
                 // beggin modal
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, Fugui.Themes.PopupRounding);
                 bool usePopupBackdrop = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
-                Fugui.Push(ImGuiCol.PopupBg, Fugui.Themes.GetColor(FuColors.PopupBg, usePopupBackdrop ? 0f : 1f));
+                Fugui.Push(ImGuiCol.PopupBg, Fugui.GetColor(FuColors.PopupBg, usePopupBackdrop ? 0f : 1f));
                 ImGuiWindowFlags modalFlags = ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
                 if (usePopupBackdrop)
                 {
@@ -219,17 +219,17 @@ namespace Fu
                         // draw body BG
                         if (!usePopupBackdrop)
                         {
-                            drawList.AddRectFilled(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.PopupBg)));
+                            drawList.AddRectFilled(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.GetColor(FuColors.PopupBg)));
                         }
                         // draw title line
                         if (hasTitleBar)
                         {
-                            drawList.AddLine(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)));
+                            drawList.AddLine(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight), ImGui.GetColorU32(Fugui.GetColor(FuColors.Separator)));
                         }
                         // draw  footer line
                         if (hasFooterBar)
                         {
-                            drawList.AddLine(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)));
+                            drawList.AddLine(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.GetColor(FuColors.Separator)));
                         }
 
                         // draw modal body

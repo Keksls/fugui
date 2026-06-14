@@ -452,10 +452,10 @@ namespace Fu
             _dragButtonHovered = hovered;
 
             Vector4 bg = IsDraging
-                ? Fugui.Themes.GetColor(FuColors.ButtonActive)
+                ? Fugui.GetColor(FuColors.ButtonActive)
                 : hovered
-                    ? Fugui.Themes.GetColor(FuColors.ButtonHovered)
-                    : Fugui.Themes.GetColor(FuColors.Button);
+                    ? Fugui.GetColor(FuColors.ButtonHovered)
+                    : Fugui.GetColor(FuColors.Button);
             bg.w = Mathf.Max(bg.w, hovered || IsDraging ? 0.95f : 0.82f);
 
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
@@ -602,7 +602,7 @@ namespace Fu
                 return;
             }
 
-            Vector4 bg = Fugui.Themes.GetColor(FuColors.WindowBg);
+            Vector4 bg = Fugui.GetColor(FuColors.WindowBg);
             float rounding = 6f * Fugui.Scale;
             FuDrawFlags cornerFlags;
             switch (_dragButtonPosition)
@@ -681,10 +681,10 @@ namespace Fu
                 : Mathf.Clamp(size.y * 0.44f, 18f * scale, 54f * scale);
             Vector2 center = position + size * 0.5f;
             Vector4 highlight = IsDraging
-                ? Fugui.Themes.GetColor(FuColors.HighlightActive)
+                ? Fugui.GetColor(FuColors.HighlightActive)
                 : hovered
-                    ? Fugui.Themes.GetColor(FuColors.HighlightHovered)
-                    : Fugui.Themes.GetColor(FuColors.Highlight);
+                    ? Fugui.GetColor(FuColors.HighlightHovered)
+                    : Fugui.GetColor(FuColors.Highlight);
             highlight.w = hovered || IsDraging ? 1f : 0.82f;
 
             Vector2 min = horizontal
@@ -705,9 +705,9 @@ namespace Fu
         private void DrawDragPreview(FuDrawList drawList, Vector2 unsnappedScreenPos, Rect snappedRect)
         {
             Rect unsnappedRect = getOverlayScreenRect(unsnappedScreenPos);
-            Vector4 snappedFill = Fugui.Themes.GetColor(FuColors.ButtonActive);
-            Vector4 snappedBorder = Fugui.Themes.GetColor(FuColors.TextInfo);
-            Vector4 rawBorder = Fugui.Themes.GetColor(FuColors.TextDisabled);
+            Vector4 snappedFill = Fugui.GetColor(FuColors.ButtonActive);
+            Vector4 snappedBorder = Fugui.GetColor(FuColors.TextInfo);
+            Vector4 rawBorder = Fugui.GetColor(FuColors.TextDisabled);
             snappedFill.w = 0.14f;
             snappedBorder.w = 0.85f;
             rawBorder.w = 0.55f;
@@ -989,9 +989,9 @@ namespace Fu
             Vector4 majorGridColor = _gridColor;
             majorGridColor.w = Mathf.Min(1f, _gridColor.w * 1.8f);
             uint majorColor = ImGui.GetColorU32(majorGridColor);
-            Vector4 fill = Fugui.Themes.GetColor(FuColors.WindowBg);
+            Vector4 fill = Fugui.GetColor(FuColors.WindowBg);
             fill.w = 0.10f;
-            Vector4 snapCell = Fugui.Themes.GetColor(FuColors.TextInfo);
+            Vector4 snapCell = Fugui.GetColor(FuColors.TextInfo);
             snapCell.w = 0.09f;
 
             drawList.AddRectFilled(startPos, endPos, ImGui.GetColorU32(fill));

@@ -106,9 +106,9 @@ namespace Fu.Framework
                     bool selected = selectedIndex == i;
                     if (selected)
                     {
-                        Fugui.Push(ImGuiCol.Header, Fugui.Themes.GetColor(FuColors.Selected));
-                        Fugui.Push(ImGuiCol.HeaderHovered, Fugui.Themes.GetColor(FuColors.SelectedHovered));
-                        Fugui.Push(ImGuiCol.HeaderActive, Fugui.Themes.GetColor(FuColors.SelectedActive));
+                        Fugui.Push(ImGuiCol.Header, Fugui.GetColor(FuColors.Selected));
+                        Fugui.Push(ImGuiCol.HeaderHovered, Fugui.GetColor(FuColors.SelectedHovered));
+                        Fugui.Push(ImGuiCol.HeaderActive, Fugui.GetColor(FuColors.SelectedActive));
                     }
                     if (ImGui.Selectable(displayLabels[i], selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
                     {

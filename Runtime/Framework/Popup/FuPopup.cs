@@ -113,7 +113,7 @@ namespace Fu
             ImGui.SetNextWindowPos(new Vector2(_popupContainer.Size.x / 2f - _popupSize.x / 2f, _popupContainer.Size.y / 2f - _popupSize.y / 2f), ImGuiCond.Always);
             ImGui.SetNextWindowSize(_popupSize, ImGuiCond.Always);
             bool usePopupBackdrop = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
-            Fugui.Push(ImGuiCol.PopupBg, Fugui.Themes.GetColor(FuColors.PopupBg, usePopupBackdrop ? 0f : 1f));
+            Fugui.Push(ImGuiCol.PopupBg, Fugui.GetColor(FuColors.PopupBg, usePopupBackdrop ? 0f : 1f));
             ImGuiWindowFlags popupFlags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoResize;
             if (!_popupAllowMouseInputs)
             {

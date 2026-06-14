@@ -118,10 +118,10 @@ namespace Fu.Framework
                     Fugui.Push(ImGuiStyleVar.FrameRounding, 20f);
 
                     //Non visible zone to capture close click
-                    ImGui.PushStyleColor(ImGuiCol.Button, 0);
-                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0);
-                    ImGui.PushStyleColor(ImGuiCol.ButtonActive, 0);
-                    ImGui.PushStyleColor(ImGuiCol.Text, 0);
+                    Fugui.Push(ImGuiCol.Button, Vector4.zero);
+                    Fugui.Push(ImGuiCol.ButtonHovered, Vector4.zero);
+                    Fugui.Push(ImGuiCol.ButtonActive, Vector4.zero);
+                    Fugui.Push(ImGuiCol.Text, Vector4.zero);
                     if (grid.Button("##close", new Vector2(22, 22), Vector2.zero, Vector2.zero, FuButtonStyle.Default))
                     {
                         Close();
@@ -129,7 +129,7 @@ namespace Fu.Framework
                     closeButtonRect = grid.LastItemRect;
                     closebtnPos = grid.LastItemRect.center;
 
-                    ImGui.PopStyleColor(4);
+                    Fugui.PopColor(4);
                     Fugui.PopStyle();
                 }
 
@@ -149,7 +149,7 @@ namespace Fu.Framework
                     Fugui.MoveY(-8f);
                     Vector2 sepA = new Vector2(winPos.x, ImGui.GetCursorScreenPos().y);
                     Vector2 sepB = new Vector2(winPos.x + winSize.x, ImGui.GetCursorScreenPos().y);
-                    dl.AddLine(sepA, sepB, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border)), 1f);
+                    dl.AddLine(sepA, sepB, ImGui.GetColorU32(Fugui.GetColor(FuColors.Border)), 1f);
 
                     float bodyPad = 6f * Fugui.CurrentContext.Scale;
 
@@ -170,7 +170,7 @@ namespace Fu.Framework
                     Vector2 bodyBR = new Vector2(winPos.x + winSize.x, afterY);
                     if (!usePopupBackdrop)
                     {
-                        uint bodyBG = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.PopupBg));
+                        uint bodyBG = ImGui.GetColorU32(Fugui.GetColor(FuColors.PopupBg));
                         dl.AddRectFilled(bodyTL + new Vector2(Fugui.Scale, 0f), bodyBR + new Vector2(-Fugui.Scale, -Fugui.Scale), bodyBG, Fugui.Themes.ChildRounding, FuDrawFlags.RoundCornersBottom);
                     }
 
@@ -208,7 +208,7 @@ namespace Fu.Framework
                 Vector2 a2 = new Vector2(center.x + half + overshoot, center.y + half + overshoot);
                 Vector2 b1 = new Vector2(center.x - half - overshoot, center.y + half + overshoot);
                 Vector2 b2 = new Vector2(center.x + half + overshoot, center.y - half - overshoot);
-                uint crossColor = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text));
+                uint crossColor = ImGui.GetColorU32(Fugui.GetColor(FuColors.Text));
                 dl.AddLine(a1, a2, crossColor, crossThickness);
                 dl.AddLine(b1, b2, crossColor, crossThickness);
 

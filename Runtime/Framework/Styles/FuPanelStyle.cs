@@ -80,14 +80,14 @@ namespace Fu.Framework
             // default container style
             _defaultContainerStyle = new FuPanelStyle()
             {
-                _bgColor = Fugui.Themes.GetColor(FuColors.WindowBg),
-                _borderColor = Fugui.Themes.GetColor(FuColors.Border)
+                _bgColor = Fugui.GetColor(FuColors.WindowBg),
+                _borderColor = Fugui.GetColor(FuColors.Border)
             };
             // popup container style
             _popupContainerStyle = new FuPanelStyle()
             {
-                _bgColor = Fugui.Themes.GetColor(FuColors.PopupBg),
-                _borderColor = Fugui.Themes.GetColor(FuColors.Border)
+                _bgColor = Fugui.GetColor(FuColors.PopupBg),
+                _borderColor = Fugui.GetColor(FuColors.Border)
             };
             // transparent container style
             _transparentContainerStyle = new FuPanelStyle()

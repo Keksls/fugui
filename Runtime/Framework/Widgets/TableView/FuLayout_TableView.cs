@@ -354,7 +354,7 @@ namespace Fu.Framework
 
             if (selected)
             {
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Selected)));
+                ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(Fugui.GetColor(FuColors.Selected)));
             }
 
             if (flags.HasFlag(FuTableViewFlags.SelectableRows))

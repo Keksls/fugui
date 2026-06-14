@@ -1139,8 +1139,8 @@ namespace Fu
         private void DrawDockSplitter(FuDrawList drawList, Rect grabRect, bool horizontal, bool hovered, bool active, float visualThickness, float scale, Vector2 mousePos, Rect clipRect)
         {
             bool highlighted = hovered || active;
-            uint edgeLineColor = Fugui.Themes.GetColorU32(FuColors.Border, highlighted ? active ? 0.88f : 0.62f : 0.35f);
-            uint handleColor = Fugui.Themes.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
+            uint edgeLineColor = Fugui.GetColorU32(FuColors.Border, highlighted ? active ? 0.88f : 0.62f : 0.35f);
+            uint handleColor = Fugui.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
             float edgeLineThickness = Mathf.Max(1f, 1f * scale);
             float handleShort = Mathf.Max(5f, 5f * scale);
             float handleLong = Mathf.Max(36f, 42f * scale);
@@ -1200,8 +1200,8 @@ namespace Fu
 
             bool active = floatingRoot.ResizeActive;
             float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
-            uint feedbackColor = Fugui.Themes.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
-            uint edgeLineColor = Fugui.Themes.GetColorU32(FuColors.Border, active ? 0.88f : 0.62f);
+            uint feedbackColor = Fugui.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
+            uint edgeLineColor = Fugui.GetColorU32(FuColors.Border, active ? 0.88f : 0.62f);
             float handleThickness = active ? Mathf.Max(2f, 2.5f * scale) : Mathf.Max(1.5f, 2f * scale);
             float edgeLineThickness = Mathf.Max(1f, 1f * scale);
             float inset = handleThickness * 0.5f;
@@ -2428,11 +2428,11 @@ namespace Fu
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
             uint bg = active
-                ? Fugui.Themes.GetColorU32(FuColors.ButtonActive, 0.42f)
+                ? Fugui.GetColorU32(FuColors.ButtonActive, 0.42f)
                 : hovered
-                    ? Fugui.Themes.GetColorU32(FuColors.ButtonHovered, 0.34f)
-                    : Fugui.Themes.GetColorU32(FuColors.Header, 0.18f);
-            uint dotColor = Fugui.Themes.GetColorU32(FuColors.Text, hovered || active ? 0.88f : 0.52f);
+                    ? Fugui.GetColorU32(FuColors.ButtonHovered, 0.34f)
+                    : Fugui.GetColorU32(FuColors.Header, 0.18f);
+            uint dotColor = Fugui.GetColorU32(FuColors.Text, hovered || active ? 0.88f : 0.52f);
             float rounding = Mathf.Max(4f, 5f * scale);
 
             drawList.AddRectFilled(grabRect.position, grabRect.position + grabRect.size, bg, rounding);
@@ -3125,14 +3125,14 @@ namespace Fu
 
             uint shadow = ImGui.GetColorU32(new Vector4(0f, 0f, 0f, hovered ? 0.34f : 0.22f));
             uint bg = hovered
-                ? Fugui.Themes.GetColorU32(FuColors.DockingPreview, 0.92f)
-                : Fugui.Themes.GetColorU32(FuColors.WindowBg, 0.88f);
+                ? Fugui.GetColorU32(FuColors.DockingPreview, 0.92f)
+                : Fugui.GetColorU32(FuColors.WindowBg, 0.88f);
             uint border = hovered
-                ? Fugui.Themes.GetColorU32(FuColors.DockingPreview)
-                : Fugui.Themes.GetColorU32(FuColors.Border, 0.85f);
+                ? Fugui.GetColorU32(FuColors.DockingPreview)
+                : Fugui.GetColorU32(FuColors.Border, 0.85f);
             uint inner = hovered
-                ? Fugui.Themes.GetColorU32(FuColors.Text)
-                : Fugui.Themes.GetColorU32(FuColors.Text, 0.84f);
+                ? Fugui.GetColorU32(FuColors.Text)
+                : Fugui.GetColorU32(FuColors.Text, 0.84f);
 
             drawList.AddRectFilled(min + new Vector2(0f, 3f * scale), max + new Vector2(0f, 3f * scale), shadow, rounding);
             drawList.AddRectFilled(min, max, bg, rounding);
@@ -3209,8 +3209,8 @@ namespace Fu
             Vector2 min = rect.position;
             Vector2 max = rect.position + rect.size;
             float thickness = Mathf.Max(2f, 2f * Fugui.Scale);
-            drawList.AddRectFilled(min, max, Fugui.Themes.GetColorU32(FuColors.DockingPreview, 0.25f), 0f);
-            drawList.AddRect(min, max, Fugui.Themes.GetColorU32(FuColors.DockingPreview), 0f, FuDrawFlags.None, thickness);
+            drawList.AddRectFilled(min, max, Fugui.GetColorU32(FuColors.DockingPreview, 0.25f), 0f);
+            drawList.AddRect(min, max, Fugui.GetColorU32(FuColors.DockingPreview), 0f, FuDrawFlags.None, thickness);
         }
 
         /// <summary>

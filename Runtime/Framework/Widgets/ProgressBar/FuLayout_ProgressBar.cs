@@ -103,9 +103,9 @@ namespace Fu.Framework
             value = Mathf.Clamp01(value);
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-            Vector4 frameColor = Fugui.Themes.GetColor(FuColors.FrameBg);
-            Vector4 fillColor = Fugui.Themes.GetColor(FuColors.CheckMark);
-            Vector4 borderColor = Fugui.Themes.GetColor(FuColors.Border);
+            Vector4 frameColor = Fugui.GetColor(FuColors.FrameBg);
+            Vector4 fillColor = Fugui.GetColor(FuColors.CheckMark);
+            Vector4 borderColor = Fugui.GetColor(FuColors.Border);
             if (LastItemDisabled)
             {
                 frameColor *= 0.5f;
@@ -166,8 +166,8 @@ namespace Fu.Framework
             Vector2 barSize = new Vector2(barFillerWidth * (1.0f - 0.05f * Math.Abs(2.0f * animationPosition - 1.0f)), size.y);
             Vector2 barPos = ImGui.GetCursorScreenPos() + new Vector2(size.x * 0.5f - barFillerWidth * 0.5f + (animationPosition - 0.5f) * (size.x - barFillerWidth), 0.0f);
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
-            Vector4 frameColor = Fugui.Themes.GetColor(FuColors.FrameBg);
-            Vector4 fillColor = Fugui.Themes.GetColor(FuColors.CheckMark);
+            Vector4 frameColor = Fugui.GetColor(FuColors.FrameBg);
+            Vector4 fillColor = Fugui.GetColor(FuColors.CheckMark);
             Vector4 shineColor = Color.white;
             if (LastItemDisabled)
             {

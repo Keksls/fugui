@@ -151,7 +151,7 @@ namespace Fu.Framework
             drawColorPreviewAlphaStrip(drawList, min, size, color, alpha, rounding);
 
             // draw frame
-            drawList.AddRect(min, max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.82f)), rounding, FuDrawFlags.RoundCornersDefault, 1f);
+            drawList.AddRect(min, max, ImGui.GetColorU32(Fugui.GetColor(FuColors.Border, 0.82f)), rounding, FuDrawFlags.RoundCornersDefault, 1f);
             // fake draw the element
             ImGui.Dummy(max - min + Vector2.one * 2f);
             _elementHoverFramedEnabled = true;
@@ -299,7 +299,7 @@ namespace Fu.Framework
             }
 
             Vector2 swatchPos = sliderPos + new Vector2(0f, (alpha ? 88f : 66f) * scale);
-            drawList.AddText(swatchPos, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.TextDisabled, 0.82f)), "Presets");
+            drawList.AddText(swatchPos, ImGui.GetColorU32(Fugui.GetColor(FuColors.TextDisabled, 0.82f)), "Presets");
             Vector2 swatchGridPos = swatchPos + new Vector2(0f, 22f * scale);
             if (drawColorSwatches(id, ref color, alpha, swatchGridPos, controlsWidth))
             {
@@ -372,7 +372,7 @@ namespace Fu.Framework
             AddRectFilledAntiAliased(drawList, pos, max, ImGui.GetColorU32(hueColor), rounding);
             drawRoundedHorizontalGradient(drawList, pos, size, Vector4.one, new Vector4(1f, 1f, 1f, 0f), rounding);
             drawRoundedVerticalGradient(drawList, pos, size, Vector4.zero, new Vector4(0f, 0f, 0f, 1f), rounding);
-            drawList.AddRect(pos, max, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.72f)), rounding);
+            drawList.AddRect(pos, max, ImGui.GetColorU32(Fugui.GetColor(FuColors.Border, 0.72f)), rounding);
 
             ImGui.SetCursorScreenPos(pos);
             InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
@@ -403,7 +403,7 @@ namespace Fu.Framework
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float rounding = getColorPickerFrameRounding(size);
             drawRoundedHueGradient(drawList, pos, size, rounding);
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.72f)), rounding);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.Border, 0.72f)), rounding);
 
             ImGui.SetCursorScreenPos(pos);
             InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
@@ -433,7 +433,7 @@ namespace Fu.Framework
             Vector4 transparent = opaque;
             transparent.w = 0f;
             drawRoundedVerticalGradient(drawList, pos, size, opaque, transparent, rounding);
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.72f)), rounding);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.Border, 0.72f)), rounding);
 
             ImGui.SetCursorScreenPos(pos);
             InvisibleInteraction(id, size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
@@ -464,7 +464,7 @@ namespace Fu.Framework
                 _pickerHexValues[id] = formatColorHex(color, alpha);
             }
 
-            drawList.AddText(pos + new Vector2(0f, 7f * scale), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.TextDisabled, 0.86f)), "HEX");
+            drawList.AddText(pos + new Vector2(0f, 7f * scale), ImGui.GetColorU32(Fugui.GetColor(FuColors.TextDisabled, 0.86f)), "HEX");
 
             Vector2 inputPos = pos + new Vector2(42f * scale, 0f);
             float inputWidth = width - 42f * scale;
@@ -472,9 +472,9 @@ namespace Fu.Framework
             ImGui.SetCursorScreenPos(inputPos);
             ImGui.SetNextItemWidth(inputWidth);
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f * scale, 5f * scale));
-            Fugui.Push(ImGuiCol.FrameBg, Fugui.Themes.GetColor(FuColors.Header, 0.54f));
-            Fugui.Push(ImGuiCol.FrameBgHovered, Fugui.Themes.GetColor(FuColors.HeaderHovered, 0.72f));
-            Fugui.Push(ImGuiCol.FrameBgActive, Fugui.Themes.GetColor(FuColors.HeaderActive, 0.86f));
+            Fugui.Push(ImGuiCol.FrameBg, Fugui.GetColor(FuColors.Header, 0.54f));
+            Fugui.Push(ImGuiCol.FrameBgHovered, Fugui.GetColor(FuColors.HeaderHovered, 0.72f));
+            Fugui.Push(ImGuiCol.FrameBgActive, Fugui.GetColor(FuColors.HeaderActive, 0.86f));
             bool edited = ImGui.InputTextWithHint("##" + hexID, alpha ? "RRGGBBAA" : "RRGGBB", ref hex, alpha ? 9u : 7u, ImGuiInputTextFlags.CharsHexadecimal | ImGuiInputTextFlags.CharsUppercase | ImGuiInputTextFlags.CharsNoBlank);
             bool isActive = Fugui.IsCurrentItemActive();
             Fugui.PopColor(3);
@@ -501,7 +501,7 @@ namespace Fu.Framework
             Vector2 trackSize = new Vector2(trackWidth, 8f * scale);
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
-            drawList.AddText(pos + new Vector2(0f, 1f * scale), ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.TextDisabled, 0.86f)), label);
+            drawList.AddText(pos + new Vector2(0f, 1f * scale), ImGui.GetColorU32(Fugui.GetColor(FuColors.TextDisabled, 0.86f)), label);
             float value = getColorChannel(color, channel);
             Vector4 minColor = color;
             Vector4 maxColor = color;
@@ -527,7 +527,7 @@ namespace Fu.Framework
             string valueText = Mathf.RoundToInt(Mathf.Clamp01(getColorChannel(color, channel)) * 255f).ToString();
             Vector2 valueSize = ImGui.CalcTextSize(valueText);
             Vector2 valuePos = pos + new Vector2(width - valueSize.x, rowHeight * 0.5f - valueSize.y * 0.5f);
-            drawList.AddText(valuePos, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Text, 0.92f)), valueText);
+            drawList.AddText(valuePos, ImGui.GetColorU32(Fugui.GetColor(FuColors.Text, 0.92f)), valueText);
             return edited;
         }
 
@@ -536,7 +536,7 @@ namespace Fu.Framework
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             float rounding = getColorPickerFrameRounding(size);
             drawRoundedHorizontalGradient(drawList, pos, size, minColor, maxColor, rounding);
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.55f)), rounding);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.Border, 0.55f)), rounding);
 
             ImGui.SetCursorScreenPos(pos - new Vector2(0f, 5f * Fugui.CurrentContext.Scale));
             InvisibleInteraction(id, new Vector2(size.x, size.y + 10f * Fugui.CurrentContext.Scale), out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
@@ -594,7 +594,7 @@ namespace Fu.Framework
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(selected ? FuColors.Highlight : FuColors.Border, selected ? 1f : 0.72f)), rounding, FuDrawFlags.RoundCornersDefault, selected ? 2f * Fugui.CurrentContext.Scale : 1f);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(selected ? FuColors.Highlight : FuColors.Border, selected ? 1f : 0.72f)), rounding, FuDrawFlags.RoundCornersDefault, selected ? 2f * Fugui.CurrentContext.Scale : 1f);
             return clicked;
         }
 
@@ -618,8 +618,8 @@ namespace Fu.Framework
             AddRectFilledAntiAliased(drawList, pos, pos + size, ImGui.GetColorU32(preview), rounding);
 
             Vector4 border = hovered
-                ? Fugui.Themes.GetColor(FuColors.Highlight, 0.95f)
-                : Fugui.Themes.GetColor(FuColors.Border, enabled ? 0.74f : 0.42f);
+                ? Fugui.GetColor(FuColors.Highlight, 0.95f)
+                : Fugui.GetColor(FuColors.Border, enabled ? 0.74f : 0.42f);
             drawList.AddRect(pos, pos + size, ImGui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersDefault, hovered ? 1.6f * scale : 1f);
 
             if (hovered)
@@ -641,7 +641,7 @@ namespace Fu.Framework
                 preview.w = 1f;
             }
             AddRectFilledAntiAliased(drawList, pos, pos + size, ImGui.GetColorU32(preview), rounding);
-            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Border, 0.76f)), rounding);
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(Fugui.GetColor(FuColors.Border, 0.76f)), rounding);
         }
 
         private static void drawColorPreviewAlphaStrip(FuDrawList drawList, Vector2 pos, Vector2 size, Vector4 color, bool alpha, float rounding)

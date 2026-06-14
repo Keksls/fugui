@@ -159,8 +159,8 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         Vector2 pos = Fugui.GetCursorScreenPos();
         Vector2 padding = new Vector2(12f, 0f) * scale;
         FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-        Vector4 bg = Fugui.Themes.GetColor(FuColors.TitleBgActive, 0.92f);
-        Vector4 accent = Fugui.Themes.GetColor(FuColors.Highlight, 0.85f);
+        Vector4 bg = Fugui.GetColor(FuColors.TitleBgActive, 0.92f);
+        Vector4 accent = Fugui.GetColor(FuColors.Highlight, 0.85f);
         drawList.AddRectFilled(pos, pos + size, Fugui.GetColorU32(bg), 0f);
         drawList.AddRectFilled(pos, new Vector2(pos.x + 3f * scale, pos.y + size.y), Fugui.GetColorU32(accent), 0f);
 
@@ -171,8 +171,8 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         string count = _sections.Count + " topics";
         Vector2 countSize = Fugui.CalcTextSize(count) + new Vector2(16f, 4f) * scale;
         Rect badge = new Rect(new Vector2(pos.x + size.x - countSize.x - 10f * scale, pos.y + (size.y - countSize.y) * 0.5f), countSize);
-        drawList.AddRectFilled(badge.min, badge.max, Fugui.GetColorU32(Fugui.Themes.GetColor(FuColors.Highlight, 0.16f)), badge.height * 0.5f, FuDrawFlags.RoundCornersAll);
-        Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.HighlightText, 0.92f));
+        drawList.AddRectFilled(badge.min, badge.max, Fugui.GetColorU32(Fugui.GetColor(FuColors.Highlight, 0.16f)), badge.height * 0.5f, FuDrawFlags.RoundCornersAll);
+        Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.HighlightText, 0.92f));
         layout.EnboxedText(count, badge.position, badge.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopColor();
     }
@@ -244,13 +244,13 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         int count = getNavigationSections().Count();
 
         string label = count + " search results";
-        Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.90f));
+        Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, 0.90f));
         layout.EnboxedText(label, rect.position + new Vector2(10f, 0f) * scale, new Vector2(rect.width - 96f * scale, rect.height), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopColor();
 
         Rect clearRect = new Rect(new Vector2(rect.xMax - 78f * scale, rect.yMin + 4f * scale), new Vector2(68f * scale, rect.height - 8f * scale));
         bool clicked = layout.InvisibleInteractionAt("##fugui-docs-clear-search", clearRect.position, clearRect.size, out bool hovered, out _);
-        Vector4 clearBg = Fugui.Themes.GetColor(hovered ? FuColors.ButtonHovered : FuColors.Button, hovered ? 0.72f : 0.42f);
+        Vector4 clearBg = Fugui.GetColor(hovered ? FuColors.ButtonHovered : FuColors.Button, hovered ? 0.72f : 0.42f);
         drawList.AddRectFilled(clearRect.min, clearRect.max, Fugui.GetColorU32(clearBg), clearRect.height * 0.5f, FuDrawFlags.RoundCornersAll);
         layout.EnboxedText("Clear", clearRect.position, clearRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
         if (hovered)
@@ -407,7 +407,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         string subtitle = isSearchActive()
             ? visibleSections + " sections match"
             : getGroupSections(Groups[_selectedGroupIndex]).Count() + " sections in this area";
-        Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.76f));
+        Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, 0.76f));
         layout.EnboxedText(subtitle, rect.position + new Vector2(10f, 27f) * scale, new Vector2(rect.width - 20f * scale, 18f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopColor();
     }
@@ -415,7 +415,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
     private void drawNavGroupLabel(FuLayout layout, string group)
     {
         Fugui.PushFont(12, FontType.Bold);
-        Fugui.Push(FuColors.Text, Fugui.Themes.GetColor(FuColors.TextDisabled, 0.78f));
+        Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, 0.78f));
         layout.Text(group.ToUpperInvariant(), FuTextWrapping.Clip);
         Fugui.PopColor();
         Fugui.PopFont();
@@ -430,7 +430,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         float height = Mathf.Max(Fugui.GetTextLineHeight(), textSize.y) + 4f * scale;
         FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
         Vector2 dot = pos + new Vector2(7f, 9f) * scale;
-        drawList.AddCircleFilled(dot, 3f * scale, Fugui.GetColorU32(Fugui.Themes.GetColor(FuColors.Highlight, 0.84f)), 16);
+        drawList.AddCircleFilled(dot, 3f * scale, Fugui.GetColorU32(Fugui.GetColor(FuColors.Highlight, 0.84f)), 16);
         layout.EnboxedText(text, pos + new Vector2(20f, 0f) * scale, new Vector2(width - 20f * scale, height), Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Wrap);
         Fugui.Dummy(new Vector2(width, height));
     }
@@ -456,14 +456,14 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         Rect rect = new Rect(pos, new Vector2(width, height));
         FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
-        Vector4 bg = Fugui.Themes.GetColor(FuColors.PopupBg, 0.82f);
-        Vector4 border = Fugui.Themes.GetColor(FuColors.Border, 0.48f);
+        Vector4 bg = Fugui.GetColor(FuColors.PopupBg, 0.82f);
+        Vector4 border = Fugui.GetColor(FuColors.Border, 0.48f);
         drawList.AddRectFilled(rect.min, rect.max, Fugui.GetColorU32(bg), 6f * scale, FuDrawFlags.RoundCornersAll);
         drawList.AddRect(rect.min, rect.max, Fugui.GetColorU32(border), 6f * scale, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, scale));
 
         drawList.PushClipRect(rect.min + padding * 0.5f, rect.max - padding * 0.5f, true);
         Vector2 linePos = pos + padding;
-        uint textColor = Fugui.GetColorU32(Fugui.Themes.GetColor(FuColors.TextDisabled, 0.96f));
+        uint textColor = Fugui.GetColorU32(Fugui.GetColor(FuColors.TextDisabled, 0.96f));
         for (int i = 0; i < lines.Length; i++)
         {
             drawList.AddText(linePos + new Vector2(0f, i * lineHeight), textColor, lines[i]);
@@ -980,14 +980,14 @@ layout.TableView(
             "Themes are loaded from StreamingAssets/Fugui/Themes. Fonts are configured through FontConfig and StreamingAssets/Fugui/Fonts/current. Icons use the Fugui icon font and the FuIcons or sample Icons classes.",
             new string[]
             {
-                "Use Fugui.Themes.GetColor(FuColors.X) for theme-aware custom drawing.",
+                "Use Fugui.GetColor(FuColors.X) for theme-aware custom drawing.",
                 "Use FuTextStyle, FuButtonStyle, FuFrameStyle and FuStyle presets for consistent widgets.",
                 "Use Fugui.Push and PopColor or PopStyle around custom rendering.",
                 "Use Fugui.PushFont(size, FontType.Bold) for headings or compact labels.",
                 "Theme manager UI is available through Fugui.DrawThemes and can be shown in a modal."
             },
             "Theme-aware custom color",
-            @"Vector4 accent = Fugui.Themes.GetColor(FuColors.Highlight, 0.8f);
+            @"Vector4 accent = Fugui.GetColor(FuColors.Highlight, 0.8f);
 Fugui.Push(FuColors.Text, accent);
 layout.Text(""Theme-aware text"");
 Fugui.PopColor();",

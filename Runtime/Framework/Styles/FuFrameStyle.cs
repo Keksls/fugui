@@ -79,17 +79,17 @@ namespace Fu.Framework
             // default button style
             _defaultFrameStyle = new FuFrameStyle()
             {
-                Frame = Fugui.Themes.GetColor(FuColors.FrameBg),
-                HoveredFrame = Fugui.Themes.GetColor(FuColors.FrameBgHovered),
-                ActiveFrame = Fugui.Themes.GetColor(FuColors.FrameBgActive),
-                CheckMark = Fugui.Themes.GetColor(FuColors.CheckMark),
-                Border = Fugui.Themes.GetColor(FuColors.Border),
-                Shadow = Fugui.Themes.GetColor(FuColors.BorderShadow),
+                Frame = Fugui.GetColor(FuColors.FrameBg),
+                HoveredFrame = Fugui.GetColor(FuColors.FrameBgHovered),
+                ActiveFrame = Fugui.GetColor(FuColors.FrameBgActive),
+                CheckMark = Fugui.GetColor(FuColors.CheckMark),
+                Border = Fugui.GetColor(FuColors.Border),
+                Shadow = Fugui.GetColor(FuColors.BorderShadow),
 
-                DisabledFrame = Fugui.Themes.GetColor(FuColors.FrameBg) * 0.3f,
-                DisabledCheckMark = Fugui.Themes.GetColor(FuColors.CheckMark) * 0.3f,
-                DisabledBorder = Fugui.Themes.GetColor(FuColors.Border),
-                DisabledShadow = Fugui.Themes.GetColor(FuColors.BorderShadow),
+                DisabledFrame = Fugui.GetColor(FuColors.FrameBg) * 0.3f,
+                DisabledCheckMark = Fugui.GetColor(FuColors.CheckMark) * 0.3f,
+                DisabledBorder = Fugui.GetColor(FuColors.Border),
+                DisabledShadow = Fugui.GetColor(FuColors.BorderShadow),
 
                 TextStyle = FuTextStyle.Default
             };

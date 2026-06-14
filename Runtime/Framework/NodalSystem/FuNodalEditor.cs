@@ -358,16 +358,16 @@ namespace Fu.Framework.Nodal
                 bool selected = (_selectedEdgeIndex == i);
 
                 // start Color
-                uint startCol = selected ? Fugui.Themes.GetColorU32(FuColors.NodeSelectedEdge) :
-                           (hovered ? Fugui.Themes.GetColorU32(FuColors.NodeHoveredEdge) : Fugui.Themes.GetColorU32(FuColors.NodeEdge));
+                uint startCol = selected ? Fugui.GetColorU32(FuColors.NodeSelectedEdge) :
+                           (hovered ? Fugui.GetColorU32(FuColors.NodeHoveredEdge) : Fugui.GetColorU32(FuColors.NodeEdge));
                 var typeData = Graph.Registry.GetType(pFrom.DataType);
                 if (typeData != null && typeData.Color.HasValue)
                 {
                     startCol = ImGui.GetColorU32(typeData.Color.Value);
                 }
                 // end Color
-                uint endCol = selected ? Fugui.Themes.GetColorU32(FuColors.NodeSelectedEdge) :
-                           (hovered ? Fugui.Themes.GetColorU32(FuColors.NodeHoveredEdge) : Fugui.Themes.GetColorU32(FuColors.NodeEdge));
+                uint endCol = selected ? Fugui.GetColorU32(FuColors.NodeSelectedEdge) :
+                           (hovered ? Fugui.GetColorU32(FuColors.NodeHoveredEdge) : Fugui.GetColorU32(FuColors.NodeEdge));
                 var convertedType = to.GetCurrentConvertedType(pTo);
                 var toTypeData = Graph.Registry.GetType(convertedType);
                 if (toTypeData != null && toTypeData.Color.HasValue)
@@ -439,7 +439,7 @@ namespace Fu.Framework.Nodal
                 {
                     Vector2 aPrev = GetPortAnchorScreen(fromNode, fromPort);
                     Vector2 bPrev = _canvasOrigin + GetLocalMousePosition();
-                    uint col = Fugui.Themes.GetColorU32(FuColors.NodeLinkPreview);
+                    uint col = Fugui.GetColorU32(FuColors.NodeLinkPreview);
                     if (_useBezierCurves)
                         DrawBezier(drawList, aPrev, bPrev, 1.5f, col, col);
                     else
@@ -486,8 +486,8 @@ namespace Fu.Framework.Nodal
             float endX = origin.x + size.x;
             float endY = origin.y + size.y;
 
-            uint _colGridMinor = Fugui.Themes.GetColorU32(FuColors.NodeGridMinor);
-            uint _colGridMajor = Fugui.Themes.GetColorU32(FuColors.NodeGridMajor);
+            uint _colGridMinor = Fugui.GetColorU32(FuColors.NodeGridMinor);
+            uint _colGridMajor = Fugui.GetColorU32(FuColors.NodeGridMajor);
 
             // ===== Vertical lines =====
             // Start from the first k whose screen-x is just before the left edge
@@ -795,7 +795,7 @@ namespace Fu.Framework.Nodal
             // utilise node.EditorData.rectMin/node.EditorData.rectMax, pas les valeurs du child.
             ImGui.SetCursorScreenPos(node.EditorData.rectMin);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.zero);
-            ImGui.PushStyleColor(ImGuiCol.ChildBg, 0);
+            Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
             Vector2 size = node.EditorData.rectMax - node.EditorData.rectMin;
             size.y = 0;
             ImGui.BeginChild("##node_" + node.Id, size, ImGuiChildFlags.AutoResizeY,
@@ -809,22 +809,22 @@ namespace Fu.Framework.Nodal
             bool isHovered = IsMouseHoverNode(false, out var hovered) && hovered == node;
 
             // Fond & bord
-            uint bodyCol = ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.WindowBg));
+            uint bodyCol = ImGui.GetColorU32(Fugui.GetColor(FuColors.WindowBg));
             dl.AddRectFilled(rectMin, rectMax, bodyCol, Fugui.Themes.WindowRounding * z);
 
-            Color colNodeColor = Fugui.Themes.GetColor(FuColors.NodeHeader);
-            Color borderColor = Fugui.Themes.GetColor(FuColors.Border);
+            Color colNodeColor = Fugui.GetColor(FuColors.NodeHeader);
+            Color borderColor = Fugui.GetColor(FuColors.Border);
             float borderThickness = 1f;
 
             if (isHovered && !isSelected)
             {
-                borderColor = node.NodeColor ?? Fugui.Themes.GetColor(FuColors.NodeSelectedBorder);
+                borderColor = node.NodeColor ?? Fugui.GetColor(FuColors.NodeSelectedBorder);
                 borderColor *= 0.8f;
                 borderThickness = 1.5f;
             }
             else if (isSelected)
             {
-                borderColor = node.NodeColor ?? Fugui.Themes.GetColor(FuColors.NodeSelectedBorder);
+                borderColor = node.NodeColor ?? Fugui.GetColor(FuColors.NodeSelectedBorder);
                 borderThickness = 2.0f;
             }
             dl.AddRect(
@@ -848,14 +848,14 @@ namespace Fu.Framework.Nodal
             dl.AddLine(
                     new Vector2(rectMin.x, Snap(rectMin.y + node.EditorData.headerHeight)),
                     new Vector2(rectMax.x, Snap(rectMin.y + node.EditorData.headerHeight)),
-                    ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.Separator)), 1.5f
+                    ImGui.GetColorU32(Fugui.GetColor(FuColors.Separator)), 1.5f
                 );
 
             // Fonds ports
             if (node.EditorData.hasIn)
                 dl.AddRectFilled(new Vector2(node.EditorData.leftMinX, node.EditorData.portsStartY),
                                  new Vector2(node.EditorData.leftMaxX, node.EditorData.portsEndY),
-                                 ImGui.GetColorU32(Fugui.Themes.GetColor(FuColors.ChildBg)));
+                                 ImGui.GetColorU32(Fugui.GetColor(FuColors.ChildBg)));
 
             // Knobs + labels â€“ positions = GetPortAnchorScreen (mÃªme base)
             Vector2 mouse = _canvasOrigin + GetLocalMousePosition();
@@ -867,7 +867,7 @@ namespace Fu.Framework.Nodal
 
                 bool over = Vector2.Distance(mouse, c) <= rBase * 1.8f;
                 float r = over ? rBase * 1.5f : rBase;
-                uint col = over ? ImGui.GetColorU32(headerColor) : Fugui.Themes.GetColorU32(FuColors.NodePort);
+                uint col = over ? ImGui.GetColorU32(headerColor) : Fugui.GetColorU32(FuColors.NodePort);
                 var typeData = Graph.Registry.GetType(p.DataType);
                 if (typeData != null && typeData.Color.HasValue)
                 {
@@ -887,7 +887,7 @@ namespace Fu.Framework.Nodal
                 Vector2 labelPos = (p.Direction == FuNodalPortDirection.In)
                     ? (c + new Vector2(10f * z, textDy))
                     : (c + new Vector2(-lbSize.x - 8f * Fugui.Scale, textDy));
-                dl.AddText(labelPos, Fugui.Themes.GetColorU32(FuColors.Text), label);
+                dl.AddText(labelPos, Fugui.GetColorU32(FuColors.Text), label);
 
                 if (over) { ImGui.SetMouseCursor(ImGuiMouseCursor.Hand); _hoveredPort = (node, p); }
             }
@@ -908,7 +908,7 @@ namespace Fu.Framework.Nodal
             ImGui.SetWindowFontScale(1.0f);
             Fugui.EndRawChild();
             ImGui.PopStyleVar();
-            ImGui.PopStyleColor();
+            Fugui.PopColor();
             float endY = ImGui.GetCursorScreenPos().y;
             _nodesHeightCache[node.Id] = endY - startY;
 

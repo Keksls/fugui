@@ -125,8 +125,8 @@ namespace Fu.Framework
             }
 
             bool colValue = flags.HasFlag(FuToggleFlags.SwitchState) ? false : value;
-            Vector4 BGColor = colValue ? Fugui.Themes.GetColor(FuColors.Selected) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg];
-            Vector4 KnobColor = Fugui.Themes.GetColor(FuColors.Knob);
+            Vector4 BGColor = colValue ? Fugui.GetColor(FuColors.Selected) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBg];
+            Vector4 KnobColor = Fugui.GetColor(FuColors.Knob);
 
             if (LastItemDisabled)
             {
@@ -135,19 +135,19 @@ namespace Fu.Framework
             }
             else if (_lastItemActive && !noEditable)
             {
-                KnobColor = Fugui.Themes.GetColor(FuColors.KnobActive);
-                BGColor = colValue ? Fugui.Themes.GetColor(FuColors.SelectedActive) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBgActive];
+                KnobColor = Fugui.GetColor(FuColors.KnobActive);
+                BGColor = colValue ? Fugui.GetColor(FuColors.SelectedActive) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBgActive];
             }
             else if (_lastItemHovered && !noEditable)
             {
-                KnobColor = Fugui.Themes.GetColor(FuColors.KnobHovered);
-                BGColor = colValue ? Fugui.Themes.GetColor(FuColors.SelectedHovered) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBgHovered];
+                KnobColor = Fugui.GetColor(FuColors.KnobHovered);
+                BGColor = colValue ? Fugui.GetColor(FuColors.SelectedHovered) : ImGui.GetStyle().Colors[(int)ImGuiCol.FrameBgHovered];
             }
             Vector4 BorderColor = BGColor * 0.66f;
 
             if (!value && !flags.HasFlag(FuToggleFlags.SwitchState))
             {
-                BorderColor = Fugui.Themes.GetColor(FuColors.Text, LastItemDisabled ? 0.2f : 0.4f);
+                BorderColor = Fugui.GetColor(FuColors.Text, LastItemDisabled ? 0.2f : 0.4f);
             }
 
             // draw background
@@ -163,8 +163,8 @@ namespace Fu.Framework
             if (!string.IsNullOrEmpty(currentText))
             {
                 Vector4 textColor = colValue
-                    ? Fugui.Themes.GetColor(FuColors.SelectedText)
-                    : Fugui.Themes.GetColor(FuColors.Text);
+                    ? Fugui.GetColor(FuColors.SelectedText)
+                    : Fugui.GetColor(FuColors.Text);
                 if (LastItemDisabled)
                 {
                     textColor.w *= 0.5f;

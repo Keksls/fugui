@@ -714,8 +714,8 @@ public class WidgetsWindow : FuWindowBehaviour
         Vector2 min = context.ToScreen(new Vector2(62f, context.Min.y));
         Vector2 max = context.ToScreen(new Vector2(92f, context.Max.y));
         // Custom series draw directly in the plot drawlist and still benefits from chart clipping.
-        context.DrawList.AddRectFilled(new Vector2(min.x, max.y), new Vector2(max.x, min.y), Fugui.Themes.GetColorU32(FuColors.TextInfo, 0.10f));
-        context.DrawList.AddRect(new Vector2(min.x, max.y), new Vector2(max.x, min.y), Fugui.Themes.GetColorU32(FuColors.TextInfo, 0.35f));
+        context.DrawList.AddRectFilled(new Vector2(min.x, max.y), new Vector2(max.x, min.y), Fugui.GetColorU32(FuColors.TextInfo, 0.10f));
+        context.DrawList.AddRect(new Vector2(min.x, max.y), new Vector2(max.x, min.y), Fugui.GetColorU32(FuColors.TextInfo, 0.35f));
     }
 
     /// <summary>
@@ -726,7 +726,7 @@ public class WidgetsWindow : FuWindowBehaviour
     {
         Vector2 left = context.ToScreen(new Vector2(context.Min.x, chartDemoThreshold));
         Vector2 right = context.ToScreen(new Vector2(context.Max.x, chartDemoThreshold));
-        uint color = Fugui.Themes.GetColorU32(FuColors.TextWarning, 0.85f);
+        uint color = Fugui.GetColorU32(FuColors.TextWarning, 0.85f);
         context.DrawList.AddLine(left, right, color, 1.5f * context.Scale);
         context.DrawList.AddText(right + new Vector2(-72f * context.Scale, -18f * context.Scale), color, "Threshold");
     }

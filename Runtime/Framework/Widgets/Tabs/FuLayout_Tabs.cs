@@ -567,8 +567,8 @@ namespace Fu.Framework
         {
             float rounding = Mathf.Min(Fugui.Themes.TabRounding, size.y * 0.5f);
             float borderSize = Fugui.Themes.TabBorderSize;
-            Vector4 bg = Fugui.Themes.GetColor(FuColors.TitleBg);
-            Vector4 border = Fugui.Themes.GetColor(FuColors.Border, 0.70f);
+            Vector4 bg = Fugui.GetColor(FuColors.TitleBg);
+            Vector4 border = Fugui.GetColor(FuColors.Border, 0.70f);
             Vector2 max = pos + size;
 
             drawList.AddRectFilled(pos, max, ImGui.GetColorU32(bg), rounding, FuDrawFlags.RoundCornersTop);
@@ -603,9 +603,9 @@ namespace Fu.Framework
             float disabledAlpha = LastItemDisabled ? 0.45f : 1f;
             float visualSelectedAmount = selected ? Mathf.Max(0.68f, selectedAmount) : selectedAmount;
 
-            Vector4 idle = Fugui.Themes.GetColor(FuColors.Tab);
-            Vector4 hover = active ? Fugui.Themes.GetColor(FuColors.TabHovered, 1f) : Fugui.Themes.GetColor(FuColors.TabHovered, 0.82f);
-            Vector4 selectedBg = Fugui.Themes.GetColor(FuColors.TabSelected);
+            Vector4 idle = Fugui.GetColor(FuColors.Tab);
+            Vector4 hover = active ? Fugui.GetColor(FuColors.TabHovered, 1f) : Fugui.GetColor(FuColors.TabHovered, 0.82f);
+            Vector4 selectedBg = Fugui.GetColor(FuColors.TabSelected);
             Vector4 fill = Vector4.Lerp(hovered || active ? hover : idle, selectedBg, visualSelectedAmount);
             fill.w = Mathf.Clamp01(fill.w * disabledAlpha);
             FuDrawFlags roundFlags = visualSelectedAmount > 0.001f ? FuDrawFlags.RoundCornersTop : FuDrawFlags.RoundCornersAll;
@@ -620,8 +620,8 @@ namespace Fu.Framework
                 if (availableLength >= minDrawableLength)
                 {
                     Vector4 witness = active
-                        ? Fugui.Themes.GetColor(FuColors.HighlightActive)
-                        : hovered ? Fugui.Themes.GetColor(FuColors.HighlightHovered) : Fugui.Themes.GetColor(FuColors.Highlight);
+                        ? Fugui.GetColor(FuColors.HighlightActive)
+                        : hovered ? Fugui.GetColor(FuColors.HighlightHovered) : Fugui.GetColor(FuColors.Highlight);
                     witness.w = Mathf.Clamp01((hovered || active ? 1f : 0.82f) * disabledAlpha * visualSelectedAmount);
 
                     float idealLength = Mathf.Clamp(size.x * 0.34f, 18f * scale, 54f * scale);
@@ -635,22 +635,22 @@ namespace Fu.Framework
 
             if (borderSize > 0f && (hovered || active) && visualSelectedAmount <= 0.001f)
             {
-                Vector4 border = Fugui.Themes.GetColor(FuColors.Border, 0.50f * disabledAlpha);
+                Vector4 border = Fugui.GetColor(FuColors.Border, 0.50f * disabledAlpha);
                 drawList.AddRect(min, max, ImGui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersAll, borderSize);
             }
 
             Vector4 textColor;
             if (LastItemDisabled)
             {
-                textColor = Fugui.Themes.GetColor(FuColors.TextDisabled, 0.82f);
+                textColor = Fugui.GetColor(FuColors.TextDisabled, 0.82f);
             }
             else if (selected)
             {
-                textColor = Fugui.Themes.GetColor(FuColors.SelectedText);
+                textColor = Fugui.GetColor(FuColors.SelectedText);
             }
             else
             {
-                textColor = Fugui.Themes.GetColor(FuColors.Text, hovered ? 0.95f : 0.74f);
+                textColor = Fugui.GetColor(FuColors.Text, hovered ? 0.95f : 0.74f);
             }
 
             Fugui.Push(ImGuiCol.Text, textColor);
@@ -679,9 +679,9 @@ namespace Fu.Framework
             float rounding = Mathf.Min(rect.height * 0.5f, Fugui.Themes.TabRounding);
             float borderSize = Fugui.Themes.TabBorderSize;
             Vector4 bg = active
-                ? Fugui.Themes.GetColor(FuColors.ButtonActive, 0.85f)
-                : hovered ? Fugui.Themes.GetColor(FuColors.ButtonHovered, 0.72f) : Fugui.Themes.GetColor(FuColors.Button, enabled ? 0.35f : 0.14f);
-            Vector4 border = Fugui.Themes.GetColor(FuColors.Border, enabled ? 0.55f : 0.22f);
+                ? Fugui.GetColor(FuColors.ButtonActive, 0.85f)
+                : hovered ? Fugui.GetColor(FuColors.ButtonHovered, 0.72f) : Fugui.GetColor(FuColors.Button, enabled ? 0.35f : 0.14f);
+            Vector4 border = Fugui.GetColor(FuColors.Border, enabled ? 0.55f : 0.22f);
 
             drawList.AddRectFilled(rect.min, rect.max, ImGui.GetColorU32(bg), rounding, FuDrawFlags.RoundCornersAll);
             if (borderSize > 0f)
@@ -689,7 +689,7 @@ namespace Fu.Framework
                 drawList.AddRect(rect.min, rect.max, ImGui.GetColorU32(border), rounding, FuDrawFlags.RoundCornersAll, borderSize);
             }
 
-            Vector4 arrowColor = Fugui.Themes.GetColor(enabled ? FuColors.Text : FuColors.TextDisabled, enabled ? 0.82f : 0.42f);
+            Vector4 arrowColor = Fugui.GetColor(enabled ? FuColors.Text : FuColors.TextDisabled, enabled ? 0.82f : 0.42f);
             float caretSize = Mathf.Max(6f * scale, rect.height * 0.24f);
             Vector2 caretPos = new Vector2(rect.center.x - caretSize * 0.5f, rect.yMin);
             if (left)

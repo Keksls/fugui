@@ -92,10 +92,10 @@ namespace Fu.Framework
             // default collapsable style
             _defaultContainerStyle = new FuCollapsableStyle()
             {
-                _color = Fugui.Themes.GetColor(FuColors.Collapsable),
-                _colorHovered = Fugui.Themes.GetColor(FuColors.CollapsableHovered),
-                _colorActive = Fugui.Themes.GetColor(FuColors.CollapsableActive),
-                _disabledColor = Fugui.Themes.GetColor(FuColors.CollapsableDisabled),
+                _color = Fugui.GetColor(FuColors.Collapsable),
+                _colorHovered = Fugui.GetColor(FuColors.CollapsableHovered),
+                _colorActive = Fugui.GetColor(FuColors.CollapsableActive),
+                _disabledColor = Fugui.GetColor(FuColors.CollapsableDisabled),
                 _text = FuTextStyle.Default,
                 _layout = FuStyle.Content
             };

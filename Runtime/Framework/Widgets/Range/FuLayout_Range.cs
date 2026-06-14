@@ -192,10 +192,10 @@ namespace Fu.Framework
                 bool isLineHovered = rawLineHovered && !suppressHoverFeedback;
 
                 // Calculate colors
-                Vector4 insideLineColor = Fugui.Themes.GetColor(FuColors.CheckMark);
-                Vector4 outsideLineColor = Fugui.Themes.GetColor(FuColors.FrameBg);
-                Vector4 knobColorMin = Fugui.Themes.GetColor(FuColors.Knob);
-                Vector4 knobColorMax = Fugui.Themes.GetColor(FuColors.Knob);
+                Vector4 insideLineColor = Fugui.GetColor(FuColors.CheckMark);
+                Vector4 outsideLineColor = Fugui.GetColor(FuColors.FrameBg);
+                Vector4 knobColorMin = Fugui.GetColor(FuColors.Knob);
+                Vector4 knobColorMax = Fugui.GetColor(FuColors.Knob);
                 if (LastItemDisabled)
                 {
                     insideLineColor *= 0.5f;
@@ -208,24 +208,24 @@ namespace Fu.Framework
                     // min knob
                     if (isDraggingMin)
                     {
-                        knobColorMin = Fugui.Themes.GetColor(FuColors.KnobActive);
-                        insideLineColor = Fugui.Themes.GetColor(FuColors.HighlightActive);
+                        knobColorMin = Fugui.GetColor(FuColors.KnobActive);
+                        insideLineColor = Fugui.GetColor(FuColors.HighlightActive);
                     }
                     else if (isKnobMinHovered)
                     {
-                        knobColorMin = Fugui.Themes.GetColor(FuColors.KnobHovered);
-                        insideLineColor = Fugui.Themes.GetColor(FuColors.HighlightHovered);
+                        knobColorMin = Fugui.GetColor(FuColors.KnobHovered);
+                        insideLineColor = Fugui.GetColor(FuColors.HighlightHovered);
                     }
                     // max knob
                     if (isDraggingMax)
                     {
-                        knobColorMax = Fugui.Themes.GetColor(FuColors.KnobActive);
-                        insideLineColor = Fugui.Themes.GetColor(FuColors.HighlightActive);
+                        knobColorMax = Fugui.GetColor(FuColors.KnobActive);
+                        insideLineColor = Fugui.GetColor(FuColors.HighlightActive);
                     }
                     else if (isKnobMaxHovered)
                     {
-                        knobColorMax = Fugui.Themes.GetColor(FuColors.KnobHovered);
-                        insideLineColor = Fugui.Themes.GetColor(FuColors.HighlightHovered);
+                        knobColorMax = Fugui.GetColor(FuColors.KnobHovered);
+                        insideLineColor = Fugui.GetColor(FuColors.HighlightHovered);
                     }
                 }
 
@@ -238,7 +238,7 @@ namespace Fu.Framework
                 DrawRoundedSegment(drawList, new Vector2(knobPosMin, trackMin.y), new Vector2(knobPosMax, trackMax.y), insideLineColor, trackRounding);
                 if (isLineHovered && !LastItemDisabled)
                 {
-                    Vector4 hoverLine = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback);
+                    Vector4 hoverLine = Fugui.GetColor(FuColors.FrameHoverFeedback);
                     hoverLine.w = Mathf.Max(hoverLine.w, 0.35f);
                     drawList.AddRect(trackMin, trackMax, ImGui.GetColorU32(hoverLine), trackRounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.CurrentContext.Scale));
                     ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);

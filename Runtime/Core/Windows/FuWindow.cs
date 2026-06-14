@@ -818,13 +818,13 @@ namespace Fu
             // set tab color of hovered window
             if (IsHovered)
             {
-                Fugui.Push(ImGuiCol.TabSelected, Fugui.Themes.GetColor(FuColors.HoveredWindowTab));
-                Fugui.Push(ImGuiCol.TabDimmedSelected, Fugui.Themes.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCol.TabSelected, Fugui.GetColor(FuColors.HoveredWindowTab));
+                Fugui.Push(ImGuiCol.TabDimmedSelected, Fugui.GetColor(FuColors.HoveredWindowTab));
             }
             else
             {
-                Fugui.Push(ImGuiCol.TabSelected, Fugui.Themes.GetColor(FuColors.TabSelected));
-                Fugui.Push(ImGuiCol.TabDimmedSelected, Fugui.Themes.GetColor(FuColors.TabDimmedSelected));
+                Fugui.Push(ImGuiCol.TabSelected, Fugui.GetColor(FuColors.TabSelected));
+                Fugui.Push(ImGuiCol.TabDimmedSelected, Fugui.GetColor(FuColors.TabDimmedSelected));
             }
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(6f, 4f));
             int windowStylePushCount = 1;
@@ -1441,8 +1441,8 @@ namespace Fu
             if (customTopHeight > 0f && !customTopBarIsDockTabs && ShouldDrawDefaultCustomTitleBar())
             {
                 Vector2 titleMax = pos + new Vector2(size.x, customTopHeight);
-                uint titleColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.TitleBgActive : FuColors.TitleBg);
-                uint separatorColor = Fugui.Themes.GetColorU32(HasFocus ? FuColors.SeparatorActive : FuColors.Separator, HasFocus ? 0.9f : 0.55f);
+                uint titleColor = Fugui.GetColorU32(HasFocus ? FuColors.TitleBgActive : FuColors.TitleBg);
+                uint separatorColor = Fugui.GetColorU32(HasFocus ? FuColors.SeparatorActive : FuColors.Separator, HasFocus ? 0.9f : 0.55f);
                 dl.AddRectFilled(pos, titleMax, titleColor, rounding, FuDrawFlags.RoundCornersTop);
                 dl.AddLine(new Vector2(pos.x, titleMax.y - 1f * Fugui.Scale), new Vector2(pos.x + size.x, titleMax.y - 1f * Fugui.Scale), separatorColor, Mathf.Max(1f, 1f * Fugui.Scale));
                 string title = Fugui.GetUntagedText(WindowName.Name);
@@ -1454,7 +1454,7 @@ namespace Fu
                 float textClipRight = IsClosable && !IsExternal ? pos.x + closeRect.xMin - 4f * Fugui.Scale : pos.x + size.x - 8f * Fugui.Scale - externalButtonReserve;
 
                 dl.PushClipRect(new Vector2(textX, pos.y), new Vector2(Mathf.Max(textX, textClipRight), pos.y + customTopHeight), true);
-                dl.AddText(new Vector2(textX, textY), Fugui.Themes.GetColorU32(HasFocus ? FuColors.HighlightText : FuColors.Text), title);
+                dl.AddText(new Vector2(textX, textY), Fugui.GetColorU32(HasFocus ? FuColors.HighlightText : FuColors.Text), title);
                 dl.PopClipRect();
 
                 if (IsClosable && !IsExternal)
@@ -1477,7 +1477,7 @@ namespace Fu
                 float borderInset = borderSize * 0.5f;
                 Vector2 borderMin = pos + new Vector2(borderInset, borderInset);
                 Vector2 borderMax = max - new Vector2(borderInset, borderInset);
-                dl.AddRect(borderMin, borderMax, Fugui.Themes.GetColorU32(FuColors.Border), rounding, FuDrawFlags.None, borderSize);
+                dl.AddRect(borderMin, borderMax, Fugui.GetColorU32(FuColors.Border), rounding, FuDrawFlags.None, borderSize);
             }
 
             DrawCustomResizeFeedback(dl, pos, size);
@@ -1499,16 +1499,16 @@ namespace Fu
             if (hovered)
             {
                 uint bg = active
-                    ? Fugui.Themes.GetColorU32(FuColors.BackgroundDanger, 0.92f)
-                    : Fugui.Themes.GetColorU32(FuColors.BackgroundDanger, 0.72f);
+                    ? Fugui.GetColorU32(FuColors.BackgroundDanger, 0.92f)
+                    : Fugui.GetColorU32(FuColors.BackgroundDanger, 0.72f);
                 dl.AddRectFilled(min, max, bg, Mathf.Max(3f, 4f * scale));
             }
 
             float iconHalf = Mathf.Max(4.5f, 5.5f * scale);
             float thickness = hovered ? Mathf.Max(1.35f, 1.55f * scale) : Mathf.Max(1.1f, 1.25f * scale);
             uint iconColor = hovered
-                ? Fugui.Themes.GetColorU32(FuColors.HighlightText)
-                : Fugui.Themes.GetColorU32(FuColors.Text, 0.78f);
+                ? Fugui.GetColorU32(FuColors.HighlightText)
+                : Fugui.GetColorU32(FuColors.Text, 0.78f);
             dl.AddLine(center - new Vector2(iconHalf, iconHalf), center + new Vector2(iconHalf, iconHalf), iconColor, thickness);
             dl.AddLine(center + new Vector2(-iconHalf, iconHalf), center + new Vector2(iconHalf, -iconHalf), iconColor, thickness);
 
@@ -1549,8 +1549,8 @@ namespace Fu
                 drawList.PushClipRect(windowPos, windowPos + windowSize, false);
             }
 
-            uint feedbackColor = Fugui.Themes.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
-            uint edgeLineColor = Fugui.Themes.GetColorU32(FuColors.Border, active ? 0.88f : 0.62f);
+            uint feedbackColor = Fugui.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
+            uint edgeLineColor = Fugui.GetColorU32(FuColors.Border, active ? 0.88f : 0.62f);
             uint handleColor = feedbackColor;
             float handleThickness = active ? Mathf.Max(2f, 2.5f * Fugui.Scale) : Mathf.Max(1.5f, 2f * Fugui.Scale);
             float edgeLineThickness = Mathf.Max(1f, 1f * Fugui.Scale);
@@ -2768,7 +2768,7 @@ namespace Fu
             float btnCenterOffset = (TitleBar_Height - btnSize.ScaledSize.y) * 0.5f;
 
             // Colors
-            uint iconColor = Fugui.Themes.GetColorU32(FuColors.Text);
+            uint iconColor = Fugui.GetColorU32(FuColors.Text);
 
             // -----------------------------
             // PRECALC
@@ -2796,8 +2796,8 @@ namespace Fu
             {
                 uint col = hovered
                     ? (mouseDown
-                        ? Fugui.Themes.GetColorU32(FuColors.ButtonActive)
-                        : Fugui.Themes.GetColorU32(FuColors.ButtonHovered))
+                        ? Fugui.GetColorU32(FuColors.ButtonActive)
+                        : Fugui.GetColorU32(FuColors.ButtonHovered))
                     : 0;
 
                 Vector2 pMin = pos;
@@ -2853,9 +2853,9 @@ namespace Fu
                 // This prevents seeing the rear rectangle through the front one.
                 uint bgCol = hovered
                     ? (mouseDown
-                        ? Fugui.Themes.GetColorU32(FuColors.ButtonActive)
-                        : Fugui.Themes.GetColorU32(FuColors.ButtonHovered))
-                    : Fugui.Themes.GetColorU32(FuColors.WindowBg);
+                        ? Fugui.GetColorU32(FuColors.ButtonActive)
+                        : Fugui.GetColorU32(FuColors.ButtonHovered))
+                    : Fugui.GetColorU32(FuColors.WindowBg);
                 dl.AddRectFilled(b1, b2, bgCol, iconRounding);
                 // Slightly shrink the bottom rectangle to avoid overlapping lines
                 Vector2 b1Bis = b1 - Vector2.one * iconThickness;

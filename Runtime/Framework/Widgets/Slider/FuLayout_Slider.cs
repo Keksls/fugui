@@ -251,9 +251,9 @@ namespace Fu.Framework
                 bool isLineHovered = rawLineHovered && !suppressHoverFeedback;
                 bool isKnobHovered = rawKnobHovered && !suppressHoverFeedback;
 
-                Vector4 leftLineColor = Fugui.Themes.GetColor(FuColors.CheckMark);
-                Vector4 rightLineColor = Fugui.Themes.GetColor(FuColors.FrameBg);
-                Vector4 knobColor = Fugui.Themes.GetColor(FuColors.Knob);
+                Vector4 leftLineColor = Fugui.GetColor(FuColors.CheckMark);
+                Vector4 rightLineColor = Fugui.GetColor(FuColors.FrameBg);
+                Vector4 knobColor = Fugui.GetColor(FuColors.Knob);
 
                 if (LastItemDisabled)
                 {
@@ -263,13 +263,13 @@ namespace Fu.Framework
                 }
                 else if (isDragging)
                 {
-                    knobColor = Fugui.Themes.GetColor(FuColors.KnobActive);
-                    leftLineColor = Fugui.Themes.GetColor(FuColors.HighlightActive);
+                    knobColor = Fugui.GetColor(FuColors.KnobActive);
+                    leftLineColor = Fugui.GetColor(FuColors.HighlightActive);
                 }
                 else if (isKnobHovered)
                 {
-                    knobColor = Fugui.Themes.GetColor(FuColors.KnobHovered);
-                    leftLineColor = Fugui.Themes.GetColor(FuColors.HighlightHovered);
+                    knobColor = Fugui.GetColor(FuColors.KnobHovered);
+                    leftLineColor = Fugui.GetColor(FuColors.HighlightHovered);
                 }
 
                 FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
@@ -281,7 +281,7 @@ namespace Fu.Framework
                 DrawRoundedSegment(drawList, trackMin, new Vector2(knobPos, trackMax.y), leftLineColor, trackRounding);
                 if (isLineHovered && !LastItemDisabled)
                 {
-                    Vector4 hoverLine = Fugui.Themes.GetColor(FuColors.FrameHoverFeedback);
+                    Vector4 hoverLine = Fugui.GetColor(FuColors.FrameHoverFeedback);
                     hoverLine.w = Mathf.Max(hoverLine.w, 0.35f);
                     drawList.AddRect(trackMin, trackMax, ImGui.GetColorU32(hoverLine), trackRounding, FuDrawFlags.RoundCornersAll, Mathf.Max(1f, Fugui.CurrentContext.Scale));
                 }

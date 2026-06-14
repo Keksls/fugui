@@ -118,7 +118,7 @@ namespace Fu.Framework
             Vector4 iconColor = disabled
                 ? style.TextStyle.DisabledText
                 : string.IsNullOrEmpty(search)
-                    ? Fugui.Themes.GetColor(FuColors.TextDisabled)
+                    ? Fugui.GetColor(FuColors.TextDisabled)
                     : style.TextStyle.Text;
             iconColor.w *= string.IsNullOrEmpty(search) ? 0.78f : 0.9f;
             DrawSearchGlyph(drawList, framePos + new Vector2(iconWidth * 0.5f, height * 0.5f), Mathf.Max(4f, height * 0.18f), iconColor);
@@ -132,7 +132,7 @@ namespace Fu.Framework
             ImGui.SetCursorScreenPos(inputPos);
             ImGui.SetNextItemWidth(inputWidth);
             ImGuiInputTextFlags inputFlags = disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None;
-            Vector4 placeholder = Fugui.Themes.GetColor(FuColors.TextDisabled);
+            Vector4 placeholder = Fugui.GetColor(FuColors.TextDisabled);
             placeholder.w *= disabled ? 0.45f : 0.72f;
             Fugui.Push(ImGuiCol.FrameBg, Vector4.zero);
             Fugui.Push(ImGuiCol.FrameBgHovered, Vector4.zero);

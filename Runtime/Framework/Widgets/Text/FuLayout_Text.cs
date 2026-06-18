@@ -830,6 +830,15 @@ namespace Fu.Framework
                     _renderTextChunk();
                     _renderDuotone(text[i]);
                 }
+                else if (wrapping == FuTextWrapping.Wrap && text[i] == '\n')
+                {
+                    _renderTextChunk();
+                    currentPosition.x = position.x;
+                    currentPosition.y += ImGui.GetTextLineHeight();
+                    fullTextHeight += ImGui.GetTextLineHeight();
+                    currentLineSize = Vector2.zero;
+                    continue;
+                }
                 else
                 {
                     _textChunkStringBuilder.Append(text[i]);
@@ -850,7 +859,6 @@ namespace Fu.Framework
                                 case ' ':
                                 case '-':
                                 case '_':
-                                case '\n':
                                     _renderTextChunk();
                                     break;
                             }

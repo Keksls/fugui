@@ -73,14 +73,111 @@ namespace Fu
                     break;
 
                 case FuTextWrapping.Wrap:
-                    textSize = ImGui.CalcTextSize(text, true, maxSize.x == -1f ? ImGui.GetContentRegionAvail().x : maxSize.x);
-                    if (maxSize.y > 0f && textSize.y > maxSize.y)
-                    {
-                        textSize.y = maxSize.y;
-                    }
+                    textSize = CalcTextSizeWrapped(text, maxSize);
                     break;
             }
             return textSize;
+        }
+
+        /// <summary>
+        /// Get text size using Fugui wrapped text rules.
+        /// </summary>
+        /// <param name="text">text to get size of</param>
+        /// <returns>Size of the wrapped text</returns>
+        public static Vector2 CalcTextSizeWrapped(string text)
+        {
+            return CalcTextSizeWrapped(text, Vector2.zero);
+        }
+
+        /// <summary>
+        /// Get text size using Fugui wrapped text rules.
+        /// </summary>
+        /// <param name="text">text to get size of</param>
+        /// <param name="maxSize">maximum size. Keep Vector2.zero to use maximum available region</param>
+        /// <returns>Size of the wrapped text</returns>
+        public static Vector2 CalcTextSizeWrapped(string text, Vector2 maxSize)
+        {
+            text = Fugui.GetUntagedText(text);
+
+            float maxWidth = maxSize.x <= 0f ? ImGui.GetContentRegionAvail().x : maxSize.x;
+            float lineHeight = ImGui.GetTextLineHeight();
+            Vector2 currentLineSize = Vector2.zero;
+            float fullTextHeight = lineHeight;
+            float fullTextWidth = 0f;
+            StringBuilder textChunkStringBuilder = new StringBuilder();
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (Fugui.IsDuoToneChar(text[i]))
+                {
+                    MeasureTextChunk();
+                    MeasureDuotone(text[i]);
+                }
+                else if (text[i] == '\n')
+                {
+                    MeasureTextChunk();
+                    HardBreak();
+                }
+                else
+                {
+                    textChunkStringBuilder.Append(text[i]);
+                    switch (text[i])
+                    {
+                        case ' ':
+                        case '-':
+                        case '_':
+                            MeasureTextChunk();
+                            break;
+                    }
+                }
+            }
+
+            MeasureTextChunk();
+
+            if (maxSize.y > 0f && fullTextHeight > maxSize.y)
+            {
+                fullTextHeight = maxSize.y;
+            }
+
+            return new Vector2(fullTextWidth, fullTextHeight);
+
+            void MeasureTextChunk()
+            {
+                if (textChunkStringBuilder.Length == 0)
+                {
+                    return;
+                }
+
+                string textChunk = textChunkStringBuilder.ToString();
+                textChunkStringBuilder.Clear();
+                MeasureSize(ImGui.CalcTextSize(textChunk));
+            }
+
+            void MeasureDuotone(char icon)
+            {
+                char secondary = (char)(((ushort)icon) + 1);
+                Vector2 primarySize = ImGui.CalcTextSize(icon.ToString());
+                Vector2 secondarySize = ImGui.CalcTextSize(secondary.ToString());
+                MeasureSize(new Vector2(Mathf.Max(primarySize.x, secondarySize.x), Mathf.Max(primarySize.y, secondarySize.y)));
+            }
+
+            void MeasureSize(Vector2 size)
+            {
+                if (maxWidth > 0f && currentLineSize.x + size.x > maxWidth && size.x < maxWidth)
+                {
+                    HardBreak();
+                }
+
+                currentLineSize.x += size.x;
+                fullTextWidth = Mathf.Max(fullTextWidth, currentLineSize.x);
+                currentLineSize.y = Mathf.Max(size.y, currentLineSize.y);
+            }
+
+            void HardBreak()
+            {
+                currentLineSize = Vector2.zero;
+                fullTextHeight += lineHeight;
+            }
         }
 
         static Dictionary<string, string> _niceStrings = new Dictionary<string, string>();

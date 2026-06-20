@@ -328,13 +328,13 @@ namespace Fu
             {
                 // clamp window size
                 Vector2Int size = window.Size;
-                if (size.x < (int)(64f * Fugui.Scale))
+                if (size.x < (int)(Fugui.Themes.WindowMinSize.x))
                 {
-                    size.x = (int)(64f * Fugui.Scale);
+                    size.x = (int)(Fugui.Themes.WindowMinSize.x);
                 }
-                if (size.y < (int)(64f * Fugui.Scale))
+                if (size.y < (int)(Fugui.Themes.WindowMinSize.y))
                 {
-                    size.y = (int)(64f * Fugui.Scale);
+                    size.y = (int)(Fugui.Themes.WindowMinSize.y);
                 }
                 if (size.x > Size.x)
                 {

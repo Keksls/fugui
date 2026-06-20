@@ -229,5 +229,15 @@ namespace Fu
             Debug.LogError($"you are trying to push font '{fontName}' for {size}px but it does not exist.");
             return CurrentContext.GetFallbackFontSet();
         }
+
+        public static Vector2 GetWindowMinSize()
+        {
+            return ImGui.GetStyle().WindowMinSize;
+        }
+
+        public static void SetWindowMinSize(Vector2 minSize)
+        {
+            ImGui.GetStyle().WindowMinSize = minSize;
+        }
     }
 }

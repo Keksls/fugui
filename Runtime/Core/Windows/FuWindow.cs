@@ -2139,7 +2139,7 @@ namespace Fu
             Vector2Int delta = mousePos - _customResizeStartMousePos;
             Vector2Int newPos = _customResizeStartWindowPos;
             Vector2Int newSize = _customResizeStartWindowSize;
-            int minSize = Mathf.Max(64, Mathf.RoundToInt(64f * Fugui.Scale));
+            int minSize = Mathf.Max(8, Mathf.RoundToInt(8f * Fugui.Scale));
 
             switch (_customResizeEdge)
             {

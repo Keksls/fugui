@@ -55,22 +55,29 @@ namespace Fu
                     continue;
                 }
 
+#if FU_EXTERNALIZATION
+                FuExternalWindowContainer externalWindowContainer = null;
+                if (context is FuExternalContext externalContext)
+                {
+                    externalWindowContainer = externalContext.Window?.Window?.Container as FuExternalWindowContainer;
+                    if (externalWindowContainer != null)
+                    {
+                        externalWindowContainer.Update();
+                    }
+                }
+#endif
+
                 ResetWindowInputBlockForFrame();
+                if (!CanRenderContextWithFPSLimit(context))
+                {
+                    RestoreWindowInputsAfterFrame();
+                    continue;
+                }
+
                 if (context.PrepareRender())
                 {
+                    MarkContextRenderedWithFPSLimit(context);
                     HasRenderWindowThisFrame = false;
-
-#if FU_EXTERNALIZATION
-                    FuExternalWindowContainer externalWindowContainer = null;
-                    if (context is FuExternalContext externalContext)
-                    {
-                        externalWindowContainer = externalContext.Window?.Window?.Container as FuExternalWindowContainer;
-                        if (externalWindowContainer != null)
-                        {
-                            externalWindowContainer.Update();
-                        }
-                    }
-#endif
 
                     context.Render();
                     ExecuteAfterCurrentRenderContextCallbacks();
@@ -81,6 +88,10 @@ namespace Fu
                         context.SetScale(_targetScale, _targetFontScale);
                     }
                 }
+                else
+                {
+                    RestoreWindowInputsAfterFrame();
+                }
             }
 
             if (MainContainerEnabled && DefaultContext != null)
@@ -88,31 +99,40 @@ namespace Fu
                 // no one has render for now
                 HasRenderWindowThisFrame = false;
                 ResetWindowInputBlockForFrame();
-                // prepare a new frame for default render
-                DefaultContext.PrepareRender();
-                // execute before default renderer render actions
-                if (DefaultContext.RenderPrepared)
+                if (!CanRenderContextWithFPSLimit(DefaultContext))
                 {
-                    while (_beforeDefaultRenderStack.Count > 0)
-                    {
-                        _beforeDefaultRenderStack.Dequeue()?.Invoke();
-                    }
+                    RestoreWindowInputsAfterFrame();
+                    SetCurrentContext(DefaultContext);
                 }
-
-                // Render default context
-                DefaultContext.Render();
-                ExecuteAfterCurrentRenderContextCallbacks();
-                // execute after default renderer render actions
-                if (DefaultContext.RenderPrepared)
+                else
                 {
-                    while (_afterDefaultRenderStack.Count > 0)
+                    // prepare a new frame for default render
+                    DefaultContext.PrepareRender();
+                    // execute before default renderer render actions
+                    if (DefaultContext.RenderPrepared)
                     {
-                        _afterDefaultRenderStack.Dequeue()?.Invoke();
+                        MarkContextRenderedWithFPSLimit(DefaultContext);
+                        while (_beforeDefaultRenderStack.Count > 0)
+                        {
+                            _beforeDefaultRenderStack.Dequeue()?.Invoke();
+                        }
                     }
-                }
 
-                DefaultContext.EndRender();
-                RestoreWindowInputsAfterFrame();
+                    // Render default context
+                    DefaultContext.Render();
+                    ExecuteAfterCurrentRenderContextCallbacks();
+                    // execute after default renderer render actions
+                    if (DefaultContext.RenderPrepared)
+                    {
+                        while (_afterDefaultRenderStack.Count > 0)
+                        {
+                            _afterDefaultRenderStack.Dequeue()?.Invoke();
+                        }
+                    }
+
+                    DefaultContext.EndRender();
+                    RestoreWindowInputsAfterFrame();
+                }
             }
             else if (DefaultContext != null)
             {

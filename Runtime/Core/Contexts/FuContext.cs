@@ -50,6 +50,7 @@ namespace Fu
 
         internal DrawData DrawData => _drawData;
         public bool RenderPrepared { get; protected set; } = false;
+        internal float LastCappedFrameRenderTime = float.NegativeInfinity;
         public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
 
         internal Dictionary<string, Dictionary<int, FontSet>> Fonts = new Dictionary<string, Dictionary<int, FontSet>>();

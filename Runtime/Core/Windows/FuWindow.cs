@@ -3076,7 +3076,7 @@ namespace Fu
                 case FuWindowState.Manipulating:
                     if (!IsDragging || IsResizing || !HasCachedRenderMesh || _customDraggingUsesGlobalMouseButton)
                     {
-                        mustBeDraw |= IsInterractable && Fugui.Time > _lastRenderTime + _targetDeltaTimeMs;
+                        mustBeDraw |= IsInterractable;
                     }
                     break;
             }

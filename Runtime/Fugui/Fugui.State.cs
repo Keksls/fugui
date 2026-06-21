@@ -269,17 +269,17 @@ namespace Fu
             return fps <= 0 ? float.PositiveInfinity : 1f / fps;
         }
 
-        internal static bool CanRenderContextWithFPSLimit(FuContext context)
+        internal static bool ShouldPublishContextDrawData(FuContext context)
         {
             int targetFPS = GetContextFPSLimit(context);
-            return targetFPS <= 0 || Time >= context.LastCappedFrameRenderTime + GetDeltaTimeForFPS(targetFPS);
+            return targetFPS <= 0 || Time >= context.LastPublishedDrawDataTime + GetDeltaTimeForFPS(targetFPS);
         }
 
-        internal static void MarkContextRenderedWithFPSLimit(FuContext context)
+        internal static void MarkContextDrawDataPublished(FuContext context)
         {
             if (context != null)
             {
-                context.LastCappedFrameRenderTime = Time;
+                context.LastPublishedDrawDataTime = Time;
             }
         }
 

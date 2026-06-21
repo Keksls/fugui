@@ -68,18 +68,16 @@ namespace Fu
 #endif
 
                 ResetWindowInputBlockForFrame();
-                if (!CanRenderContextWithFPSLimit(context))
-                {
-                    RestoreWindowInputsAfterFrame();
-                    continue;
-                }
-
                 if (context.PrepareRender())
                 {
-                    MarkContextRenderedWithFPSLimit(context);
+                    bool publishDrawData = ShouldPublishContextDrawData(context);
+                    if (publishDrawData)
+                    {
+                        MarkContextDrawDataPublished(context);
+                    }
                     HasRenderWindowThisFrame = false;
 
-                    context.Render();
+                    context.Render(publishDrawData);
                     ExecuteAfterCurrentRenderContextCallbacks();
                     context.EndRender();
                     RestoreWindowInputsAfterFrame();
@@ -99,40 +97,36 @@ namespace Fu
                 // no one has render for now
                 HasRenderWindowThisFrame = false;
                 ResetWindowInputBlockForFrame();
-                if (!CanRenderContextWithFPSLimit(DefaultContext))
+                // prepare a new frame for default render
+                DefaultContext.PrepareRender();
+                bool publishDrawData = DefaultContext.RenderPrepared && ShouldPublishContextDrawData(DefaultContext);
+                // execute before default renderer render actions
+                if (DefaultContext.RenderPrepared)
                 {
-                    RestoreWindowInputsAfterFrame();
-                    SetCurrentContext(DefaultContext);
+                    if (publishDrawData)
+                    {
+                        MarkContextDrawDataPublished(DefaultContext);
+                    }
+                    while (_beforeDefaultRenderStack.Count > 0)
+                    {
+                        _beforeDefaultRenderStack.Dequeue()?.Invoke();
+                    }
                 }
-                else
+
+                // Render default context
+                DefaultContext.Render(publishDrawData);
+                ExecuteAfterCurrentRenderContextCallbacks();
+                // execute after default renderer render actions
+                if (DefaultContext.RenderPrepared)
                 {
-                    // prepare a new frame for default render
-                    DefaultContext.PrepareRender();
-                    // execute before default renderer render actions
-                    if (DefaultContext.RenderPrepared)
+                    while (_afterDefaultRenderStack.Count > 0)
                     {
-                        MarkContextRenderedWithFPSLimit(DefaultContext);
-                        while (_beforeDefaultRenderStack.Count > 0)
-                        {
-                            _beforeDefaultRenderStack.Dequeue()?.Invoke();
-                        }
+                        _afterDefaultRenderStack.Dequeue()?.Invoke();
                     }
-
-                    // Render default context
-                    DefaultContext.Render();
-                    ExecuteAfterCurrentRenderContextCallbacks();
-                    // execute after default renderer render actions
-                    if (DefaultContext.RenderPrepared)
-                    {
-                        while (_afterDefaultRenderStack.Count > 0)
-                        {
-                            _afterDefaultRenderStack.Dequeue()?.Invoke();
-                        }
-                    }
-
-                    DefaultContext.EndRender();
-                    RestoreWindowInputsAfterFrame();
                 }
+
+                DefaultContext.EndRender();
+                RestoreWindowInputsAfterFrame();
             }
             else if (DefaultContext != null)
             {

@@ -255,7 +255,7 @@ Groupes principaux:
 
 `ApplyTo(ImGuiIOPtr io)` applique les settings ImGui.
 
-`IdleFPS = 0` conserve le cache idle sans redraw periodique. `ManipulatingFPS = 0` conserve le comportement non plafonne en manipulation. `MaxFPS = 0` desactive le plafond global.
+`IdleFPS = 0` conserve le cache idle sans redraw periodique. `ManipulatingFPS = 0` conserve le comportement non plafonne en manipulation. `MaxFPS = 0` desactive le plafond global. Les plafonds `ManipulatingFPS` et `MaxFPS` limitent la publication des draw-data, pas le pump input/cursor qui reste execute a chaque frame Unity.
 
 ## Fenetres
 

@@ -2016,7 +2016,7 @@ namespace Fu
         /// <summary>
         /// Bring a floating window above the other Fugui windows immediately when possible.
         /// </summary>
-        private void BringFloatingWindowToFront()
+        public void BringFloatingWindowToFront()
         {
             if (IsDocked || Layer == FuLayer.Background)
             {

@@ -28,7 +28,7 @@ Le package fournit un runtime complet: contexte ImGui Unity, renderer URP, gesti
 
 - UI immediate-mode basee sur Dear ImGui, exposee via `Fu.Fugui`, `Fu.Framework.FuLayout` et `Fu.Framework.FuGrid`.
 - Fenetres dockables, closables, multi-instances, externalisables et configurables par `FuWindowDefinition`.
-- Gestion de performance par etat de fenetre: idle FPS configurable, redraw force, manipulation a FPS eleve.
+- Gestion de performance par etat de fenetre: idle FPS configurable, manipulating FPS global, FPS max global, redraw force.
 - Docking layouts persistants en `.fdl`, indexes JSON et outil Unity Editor de creation/edition (`Tools > Fugui > Editor`, onglets `Layouts` et `Window Names`).
 - Themes Fugui en `.fskin`, chargement depuis `StreamingAssets`, theme manager et couleurs extensibles.
 - Widgets haut niveau: texte enrichi, boutons, groupes de boutons, checkbox, toggles, sliders, ranges, drags, knobs, combobox, listbox, color picker, gradient, image, tree, tabs, date/time, progress bar, loaders, video player, path fields.

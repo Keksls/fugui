@@ -252,6 +252,23 @@ namespace Fu
             return Math.Max(0, count + (active ? 1 : -1));
         }
 
+        internal static int ApplyGlobalFPSLimit(int fps, bool zeroMeansUnlimited = false)
+        {
+            int targetFPS = zeroMeansUnlimited && fps <= 0 ? int.MaxValue : Math.Max(0, fps);
+            int maxFPS = Settings != null ? Settings.MaxFPS : 0;
+            if (maxFPS <= 0 || targetFPS <= 0)
+            {
+                return targetFPS;
+            }
+
+            return Math.Min(targetFPS, maxFPS);
+        }
+
+        internal static float GetDeltaTimeForFPS(int fps)
+        {
+            return fps <= 0 ? float.PositiveInfinity : 1f / fps;
+        }
+
         private static void ResetInputOwnershipCounters()
         {
             WindowDraggingCount = 0;

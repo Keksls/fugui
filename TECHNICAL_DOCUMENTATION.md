@@ -243,7 +243,7 @@ public class ManualDriver : MonoBehaviour
 Groupes principaux:
 
 - chemins: `ThemesFolder`, `LayoutsFolder`;
-- fenetres: `EnableExternalizations`, `IdleFPS`, `ExternalWindowFlags`;
+- fenetres: `EnableExternalizations`, `IdleFPS`, `ManipulatingFPS`, `MaxFPS`, `ExternalWindowFlags`;
 - 3D: `Windows3DScale`, `Windows3DSuperSampling`, `Windows3DFontScale`, `UIPanelWidth`;
 - UI: `GlobalScale`, `FontGlobalScale`, animations, icons, materials, cursors;
 - containers: `EnableContainerScaler`, `ContainerReferenceResolution`, `ContainerMatchWidthOrHeight`, min/max scale, font scaling;
@@ -254,6 +254,8 @@ Groupes principaux:
 - notifications: anchor, width, icon size, default duration.
 
 `ApplyTo(ImGuiIOPtr io)` applique les settings ImGui.
+
+`IdleFPS = 0` conserve le cache idle sans redraw periodique. `ManipulatingFPS = 0` conserve le comportement non plafonne en manipulation. `MaxFPS = 0` desactive le plafond global.
 
 ## Fenetres
 

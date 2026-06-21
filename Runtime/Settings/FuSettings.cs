@@ -37,6 +37,18 @@ namespace Fu
         [FuSlider(0, 120)]
         public int IdleFPS = 0;
 
+        [Tooltip("The number of FPS to be used when the UI windows are being manipulated. Set to 0 for uncapped.")]
+        [FuTooltip("The number of FPS to be used when the UI windows are being manipulated. Set to 0 for uncapped.")]
+        [Range(0, 240)]
+        [FuSlider(0, 240)]
+        public int ManipulatingFPS = 0;
+
+        [Tooltip("Global maximum FPS used by Fugui UI and camera windows. Set to 0 to disable the global cap.")]
+        [FuTooltip("Global maximum FPS used by Fugui UI and camera windows. Set to 0 to disable the global cap.")]
+        [Range(0, 240)]
+        [FuSlider(0, 240)]
+        public int MaxFPS = 0;
+
         [Tooltip("The scale of the 3D UI windows (3D world space size).")]
         [FuTooltip("The scale of the 3D UI windows (3D world space size).")]
         [Range(1f, 100f)]

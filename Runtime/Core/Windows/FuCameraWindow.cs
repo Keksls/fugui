@@ -32,7 +32,7 @@ namespace Fu
             }
             set
             {
-                _targetCameraDeltaTimeMs = 1f / value;
+                _targetCameraDeltaTimeMs = Fugui.GetDeltaTimeForFPS(Fugui.ApplyGlobalFPSLimit(value));
             }
         }
         public float CameraDeltaTime { get; internal set; }
@@ -292,24 +292,22 @@ namespace Fu
         }
 
         /// <summary>
-        /// set performance state for this window
-        /// will auto set target FPS
+        /// Refresh this window target FPS.
         /// </summary>
-        /// <param name="state">performance state to set</param>
-        internal override void SetPerformanceState(FuWindowState state)
+        internal override void RefreshPerformanceFPS()
         {
-            base.SetPerformanceState(state);
+            base.RefreshPerformanceFPS();
             if (AutoCameraFPS)
             {
-                switch (state)
+                switch (State)
                 {
                     default:
                     case FuWindowState.Idle:
-                        TargetCameraFPS = IdleCameraFPS;
+                        TargetCameraFPS = Fugui.ApplyGlobalFPSLimit(IdleCameraFPS);
                         break;
 
                     case FuWindowState.Manipulating:
-                        TargetCameraFPS = ManipulatingCameraFPS;
+                        TargetCameraFPS = Fugui.ApplyGlobalFPSLimit(ManipulatingCameraFPS);
                         break;
                 }
             }

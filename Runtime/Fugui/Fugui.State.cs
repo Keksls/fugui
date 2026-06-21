@@ -269,6 +269,56 @@ namespace Fu
             return fps <= 0 ? float.PositiveInfinity : 1f / fps;
         }
 
+        internal static bool CanRenderContextWithFPSLimit(FuContext context)
+        {
+            int targetFPS = GetContextFPSLimit(context);
+            return targetFPS <= 0 || Time >= context.LastCappedFrameRenderTime + GetDeltaTimeForFPS(targetFPS);
+        }
+
+        internal static void MarkContextRenderedWithFPSLimit(FuContext context)
+        {
+            if (context != null)
+            {
+                context.LastCappedFrameRenderTime = Time;
+            }
+        }
+
+        private static int GetContextFPSLimit(FuContext context)
+        {
+            if (Settings == null || context == null)
+            {
+                return 0;
+            }
+
+            int targetFPS = Math.Max(0, Settings.MaxFPS);
+            if (Settings.ManipulatingFPS > 0 && IsContextManipulating(context))
+            {
+                targetFPS = targetFPS > 0
+                    ? Math.Min(targetFPS, Settings.ManipulatingFPS)
+                    : Settings.ManipulatingFPS;
+            }
+
+            return targetFPS;
+        }
+
+        private static bool IsContextManipulating(FuContext context)
+        {
+            if (UIWindows == null)
+            {
+                return false;
+            }
+
+            foreach (FuWindow window in UIWindows.Values)
+            {
+                if (window?.Container?.Context == context && window.State == FuWindowState.Manipulating)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static void ResetInputOwnershipCounters()
         {
             WindowDraggingCount = 0;

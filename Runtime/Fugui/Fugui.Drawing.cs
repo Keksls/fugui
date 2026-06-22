@@ -505,7 +505,6 @@ namespace Fu
         /// <param name="rounding">Rect rounding</param>
         /// <param name="drawList">drawList to use to draw the rect</param>
         /// <param name="color">The color of the rect</param>
-
         public static unsafe void DrawGradientRect(Vector2 pos, Vector2 size, float gradientStrenght, float rounding, FuDrawList drawList, Vector4 color)
         {
             Vector4 bg2f = new Vector4(color.x * gradientStrenght, color.y * gradientStrenght, color.z * gradientStrenght, color.w);
@@ -524,7 +523,6 @@ namespace Fu
         /// <param name="thickness">The stroke thickness of the arc.</param>
         /// <param name="angle">Normalized angle between 0 and 1 (0 = none, 1 = full circle).</param>
         /// <param name="color">The color of the arc (ImGui packed color).</param>
-
         public static void DrawArc(FuDrawList drawList, Vector2 center, float radius, float thickness, float angle, uint color)
         {
             if (angle <= 0f) return;

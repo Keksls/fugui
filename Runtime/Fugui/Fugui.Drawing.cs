@@ -132,6 +132,33 @@ namespace Fu
             ImGui.SetMouseCursor((ImGuiMouseCursor)cursor);
         }
 
+        /// <summary>
+        /// Gets the mouse cursor shape requested by ImGui for the current frame.
+        /// </summary>
+        /// <param name="cursor">The current Fugui cursor shape when visible.</param>
+        /// <param name="visible">Whether ImGui requests the cursor to be visible.</param>
+        /// <returns>True if the current ImGui cursor state is recognized; otherwise false.</returns>
+        public static bool TryGetMouseCursor(out FuMouseCursor cursor, out bool visible)
+        {
+            ImGuiMouseCursor imguiCursor = ImGui.GetMouseCursor();
+            visible = imguiCursor != ImGuiMouseCursor.None;
+
+            if (!visible)
+            {
+                cursor = FuMouseCursor.Arrow;
+                return true;
+            }
+
+            if (imguiCursor < ImGuiMouseCursor.Arrow || imguiCursor >= ImGuiMouseCursor.COUNT)
+            {
+                cursor = FuMouseCursor.Arrow;
+                return false;
+            }
+
+            cursor = (FuMouseCursor)imguiCursor;
+            return true;
+        }
+
         public static uint GetColorU32(Vector4 color)
         {
             return ImGui.GetColorU32(color);

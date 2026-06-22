@@ -252,6 +252,73 @@ namespace Fu
             return Math.Max(0, count + (active ? 1 : -1));
         }
 
+        internal static int ApplyGlobalFPSLimit(int fps, bool zeroMeansUnlimited = false)
+        {
+            int targetFPS = zeroMeansUnlimited && fps <= 0 ? int.MaxValue : Math.Max(0, fps);
+            int maxFPS = Settings != null ? Settings.MaxFPS : 0;
+            if (maxFPS <= 0 || targetFPS <= 0)
+            {
+                return targetFPS;
+            }
+
+            return Math.Min(targetFPS, maxFPS);
+        }
+
+        internal static float GetDeltaTimeForFPS(int fps)
+        {
+            return fps <= 0 ? float.PositiveInfinity : 1f / fps;
+        }
+
+        internal static bool ShouldPublishContextDrawData(FuContext context)
+        {
+            int targetFPS = GetContextFPSLimit(context);
+            return targetFPS <= 0 || Time >= context.LastPublishedDrawDataTime + GetDeltaTimeForFPS(targetFPS);
+        }
+
+        internal static void MarkContextDrawDataPublished(FuContext context)
+        {
+            if (context != null)
+            {
+                context.LastPublishedDrawDataTime = Time;
+            }
+        }
+
+        private static int GetContextFPSLimit(FuContext context)
+        {
+            if (Settings == null || context == null)
+            {
+                return 0;
+            }
+
+            int targetFPS = Math.Max(0, Settings.MaxFPS);
+            if (Settings.ManipulatingFPS > 0 && IsContextManipulating(context))
+            {
+                targetFPS = targetFPS > 0
+                    ? Math.Min(targetFPS, Settings.ManipulatingFPS)
+                    : Settings.ManipulatingFPS;
+            }
+
+            return targetFPS;
+        }
+
+        private static bool IsContextManipulating(FuContext context)
+        {
+            if (UIWindows == null)
+            {
+                return false;
+            }
+
+            foreach (FuWindow window in UIWindows.Values)
+            {
+                if (window?.Container?.Context == context && window.State == FuWindowState.Manipulating)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static void ResetInputOwnershipCounters()
         {
             WindowDraggingCount = 0;

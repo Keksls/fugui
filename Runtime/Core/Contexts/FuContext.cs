@@ -50,6 +50,7 @@ namespace Fu
 
         internal DrawData DrawData => _drawData;
         public bool RenderPrepared { get; protected set; } = false;
+        internal float LastPublishedDrawDataTime = float.NegativeInfinity;
         public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
 
         internal Dictionary<string, Dictionary<int, FontSet>> Fonts = new Dictionary<string, Dictionary<int, FontSet>>();
@@ -163,7 +164,7 @@ namespace Fu
         /// <summary>
         /// Do render this frame. Don't call it, Imgui layout handle it for you
         /// </summary>       
-        internal void Render()
+        internal void Render(bool publishDrawData = true)
         {
             if (!RenderPrepared)
             {
@@ -217,10 +218,13 @@ namespace Fu
             }
             OnPostRender?.Invoke();
 
-            // keep draw data for this context while rendering
-            lock (DrawData)
+            if (publishDrawData)
             {
-                ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData(), ref _drawData);
+                // keep draw data for this context while rendering
+                lock (DrawData)
+                {
+                    ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData(), ref _drawData);
+                }
             }
             //Debug.Log(this.ID + " Rendered with " + _drawData.CmdListsCount + " Draw Lists and " + _drawData.TotalVtxCount + " vertices.");
         }

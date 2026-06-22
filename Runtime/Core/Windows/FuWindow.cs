@@ -76,7 +76,7 @@ namespace Fu
             }
             internal set
             {
-                _targetDeltaTimeMs = 1f / value;
+                _targetDeltaTimeMs = Fugui.GetDeltaTimeForFPS(Fugui.ApplyGlobalFPSLimit(value));
             }
         }
         public float DeltaTime { get; internal set; }
@@ -564,7 +564,7 @@ namespace Fu
             }
             // assume that we are Idle
             State = FuWindowState.Idle;
-            TargetFPS = Fugui.Settings.IdleFPS;
+            TargetFPS = Fugui.ApplyGlobalFPSLimit(Fugui.Settings.IdleFPS);
             // compute last render time
             _lastRenderTime = Fugui.Time;
             IsInitialized = true;
@@ -2016,7 +2016,7 @@ namespace Fu
         /// <summary>
         /// Bring a floating window above the other Fugui windows immediately when possible.
         /// </summary>
-        private void BringFloatingWindowToFront()
+        public void BringFloatingWindowToFront()
         {
             if (IsDocked || Layer == FuLayer.Background)
             {
@@ -3523,6 +3523,7 @@ namespace Fu
                 {
                     SetPerformanceState(FuWindowState.Idle);
                 }
+                RefreshPerformanceFPS();
                 return;
             }
 
@@ -3553,6 +3554,8 @@ namespace Fu
                     SetPerformanceState(FuWindowState.Idle);
                 }
             }
+
+            RefreshPerformanceFPS();
         }
 
         /// <summary>
@@ -3644,6 +3647,21 @@ namespace Fu
             _windowFlags &= ~(FuWindowStyleFlags)flag;
         }
 
+        internal virtual void RefreshPerformanceFPS()
+        {
+            switch (State)
+            {
+                default:
+                case FuWindowState.Idle:
+                    TargetFPS = Fugui.ApplyGlobalFPSLimit(WindowName.IdleFPS == -1 ? Fugui.Settings.IdleFPS : WindowName.IdleFPS);
+                    break;
+
+                case FuWindowState.Manipulating:
+                    TargetFPS = Fugui.ApplyGlobalFPSLimit(Fugui.Settings.ManipulatingFPS, zeroMeansUnlimited: true);
+                    break;
+            }
+        }
+
         /// <summary>
         /// set current internal state
         /// will refresh target FPS and force draw on next frame
@@ -3653,17 +3671,7 @@ namespace Fu
         {
             State = state;
             ForceDraw();
-            switch (State)
-            {
-                default:
-                case FuWindowState.Idle:
-                    TargetFPS = WindowName.IdleFPS == -1 ? Fugui.Settings.IdleFPS : WindowName.IdleFPS;
-                    break;
-
-                case FuWindowState.Manipulating:
-                    TargetFPS = int.MaxValue;
-                    break;
-            }
+            RefreshPerformanceFPS();
         }
     }
 }

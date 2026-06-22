@@ -55,24 +55,29 @@ namespace Fu
                     continue;
                 }
 
+#if FU_EXTERNALIZATION
+                FuExternalWindowContainer externalWindowContainer = null;
+                if (context is FuExternalContext externalContext)
+                {
+                    externalWindowContainer = externalContext.Window?.Window?.Container as FuExternalWindowContainer;
+                    if (externalWindowContainer != null)
+                    {
+                        externalWindowContainer.Update();
+                    }
+                }
+#endif
+
                 ResetWindowInputBlockForFrame();
                 if (context.PrepareRender())
                 {
+                    bool publishDrawData = ShouldPublishContextDrawData(context);
+                    if (publishDrawData)
+                    {
+                        MarkContextDrawDataPublished(context);
+                    }
                     HasRenderWindowThisFrame = false;
 
-#if FU_EXTERNALIZATION
-                    FuExternalWindowContainer externalWindowContainer = null;
-                    if (context is FuExternalContext externalContext)
-                    {
-                        externalWindowContainer = externalContext.Window?.Window?.Container as FuExternalWindowContainer;
-                        if (externalWindowContainer != null)
-                        {
-                            externalWindowContainer.Update();
-                        }
-                    }
-#endif
-
-                    context.Render();
+                    context.Render(publishDrawData);
                     ExecuteAfterCurrentRenderContextCallbacks();
                     context.EndRender();
                     RestoreWindowInputsAfterFrame();
@@ -80,6 +85,10 @@ namespace Fu
                     {
                         context.SetScale(_targetScale, _targetFontScale);
                     }
+                }
+                else
+                {
+                    RestoreWindowInputsAfterFrame();
                 }
             }
 
@@ -90,9 +99,14 @@ namespace Fu
                 ResetWindowInputBlockForFrame();
                 // prepare a new frame for default render
                 DefaultContext.PrepareRender();
+                bool publishDrawData = DefaultContext.RenderPrepared && ShouldPublishContextDrawData(DefaultContext);
                 // execute before default renderer render actions
                 if (DefaultContext.RenderPrepared)
                 {
+                    if (publishDrawData)
+                    {
+                        MarkContextDrawDataPublished(DefaultContext);
+                    }
                     while (_beforeDefaultRenderStack.Count > 0)
                     {
                         _beforeDefaultRenderStack.Dequeue()?.Invoke();
@@ -100,7 +114,7 @@ namespace Fu
                 }
 
                 // Render default context
-                DefaultContext.Render();
+                DefaultContext.Render(publishDrawData);
                 ExecuteAfterCurrentRenderContextCallbacks();
                 // execute after default renderer render actions
                 if (DefaultContext.RenderPrepared)

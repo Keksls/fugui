@@ -273,7 +273,7 @@ namespace Fu
                     if (FuWindow.CurrentDrawingWindow == null)
                         layout.Dispose();
                 }
-                ImGuiNative.igEndPopup();
+                ImGui.EndPopup();
             }
             else
             {
@@ -342,7 +342,7 @@ namespace Fu
                                 if (open)
                                 {
                                     drawContextMenuItems(menuItem.Children, layout, id + 1);
-                                    ImGuiNative.igEndMenu();
+                                    ImGui.EndMenu();
                                 }
                             }
                             else if (!hasLabel && hasImage)
@@ -353,7 +353,7 @@ namespace Fu
                                 if (open)
                                 {
                                     drawContextMenuItems(menuItem.Children, layout, id + 1);
-                                    ImGuiNative.igEndMenu();
+                                    ImGui.EndMenu();
                                 }
                             }
                             else // label only
@@ -361,7 +361,7 @@ namespace Fu
                                 if (beginContextSubmenu(label, enabled))
                                 {
                                     drawContextMenuItems(menuItem.Children, layout, id + 1);
-                                    ImGuiNative.igEndMenu();
+                                    ImGui.EndMenu();
                                 }
                             }
                         }

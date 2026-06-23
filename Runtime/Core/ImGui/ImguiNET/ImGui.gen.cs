@@ -12446,16 +12446,23 @@ namespace ImGuiNET
         {
             ImGuiNative.igDummy(size);
         }
+        private static void ValidateCursorExtentBeforeEnd()
+        {
+            ImGuiNative.igDummy(Vector2.zero);
+        }
         public static void End()
         {
+            ValidateCursorExtentBeforeEnd();
             ImGuiNative.igEnd();
         }
         public static void EndChild()
         {
+            ValidateCursorExtentBeforeEnd();
             ImGuiNative.igEndChild();
         }
         public static void EndCombo()
         {
+            ValidateCursorExtentBeforeEnd();
             ImGuiNative.igEndCombo();
         }
         public static void EndDisabled()
@@ -12480,18 +12487,22 @@ namespace ImGuiNET
         }
         public static void EndListBox()
         {
+            ValidateCursorExtentBeforeEnd();
             ImGuiNative.igEndListBox();
         }
         public static void EndMainMenuBar()
         {
+            ValidateCursorExtentBeforeEnd();
             ImGuiNative.igEndMainMenuBar();
         }
         public static void EndMenu()
         {
+            ValidateCursorExtentBeforeEnd();
             ImGuiNative.igEndMenu();
         }
         public static void EndMenuBar()
         {
+            ValidateCursorExtentBeforeEnd();
             ImGuiNative.igEndMenuBar();
         }
         public static ImGuiMultiSelectIOPtr EndMultiSelect()
@@ -12501,6 +12512,7 @@ namespace ImGuiNET
         }
         public static void EndPopup()
         {
+            ValidateCursorExtentBeforeEnd();
             ImGuiNative.igEndPopup();
         }
         public static void EndTabBar()
@@ -12517,6 +12529,7 @@ namespace ImGuiNET
         }
         public static void EndTooltip()
         {
+            ValidateCursorExtentBeforeEnd();
             ImGuiNative.igEndTooltip();
         }
         public static ImGuiViewportPtr FindViewportByID(uint id)

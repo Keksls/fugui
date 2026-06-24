@@ -58,7 +58,7 @@ namespace Fu
         /// <param name="title">Title and unique popup identifier of the modal.</param>
         /// <param name="body">Body callback drawn inside the modal content area.</param>
         /// <param name="size">Unscaled modal body size. The size is scaled by Fugui before rendering.</param>
-        /// <param name="flags">Modal chrome flags. Use NoTitleBar and NoFooterBar for a fully custom modal surface.</param>
+        /// <param name="flags">Modal chrome flags. Use CustomSurface with NoTitleBar and NoFooterBar for a fully custom modal surface.</param>
         /// <param name="buttons">List of buttons in the modal, each button contains a text and callback.</param>
         public static void ShowModal(string title, Action<FuLayout> body, Vector2 size, FuModalFlags flags, params FuModalButton[] buttons)
         {
@@ -148,6 +148,7 @@ namespace Fu
 
                 bool hasTitleBar = HasModalTitleBar();
                 bool hasFooterBar = HasModalFooterBar();
+                bool customSurface = _currentModalFlags.HasFlag(FuModalFlags.CustomSurface);
 
                 // calculate y padding
                 float yPadding = Fugui.Themes.FramePadding.y * 2f + Fugui.Themes.WindowPadding.y * 2f;
@@ -208,9 +209,9 @@ namespace Fu
                 // beggin modal
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, Fugui.Themes.PopupRounding);
                 bool usePopupBackdrop = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
-                Fugui.Push(ImGuiCol.PopupBg, Fugui.GetColor(FuColors.PopupBg, usePopupBackdrop ? 0f : 1f));
+                Fugui.Push(ImGuiCol.PopupBg, customSurface ? Vector4.zero : Fugui.GetColor(FuColors.PopupBg, usePopupBackdrop ? 0f : 1f));
                 ImGuiWindowFlags modalFlags = ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
-                if (usePopupBackdrop)
+                if (customSurface || usePopupBackdrop)
                 {
                     modalFlags |= ImGuiWindowFlags.NoBackground;
                 }
@@ -229,7 +230,7 @@ namespace Fu
                     Fugui.BeginModalSurfaceDrawing(true);
                     try
                     {
-                        if (usePopupBackdrop)
+                        if (!customSurface && usePopupBackdrop)
                         {
                             Fugui.DrawThemeBackdrop(new Rect(_currentModalPos, modalSize), FuColors.PopupBg, 0.98f, Fugui.Themes.PopupRounding);
                         }
@@ -242,7 +243,7 @@ namespace Fu
 
                         FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
                         // draw body BG
-                        if (!usePopupBackdrop)
+                        if (!customSurface && !usePopupBackdrop)
                         {
                             drawList.AddRectFilled(new Vector2(_currentModalPos.x, _currentModalPos.y + _currentTitleHeight), new Vector2(_currentModalPos.x + modalSize.x, _currentModalPos.y + _currentTitleHeight + _currentBodySize.y), ImGui.GetColorU32(Fugui.GetColor(FuColors.PopupBg)));
                         }

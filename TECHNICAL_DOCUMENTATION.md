@@ -1303,7 +1303,7 @@ window.Internalize();
 
 `FontSizeConfig` decrit une fonte par nom/taille/type, ce qui permet plusieurs fontes distinctes avec la meme taille. `SubFontConfig` decrit chaque fichier TTF et ses ranges de glyphes.
 
-`FuIcons` expose les glyphes Fugui de base. Le sample `Samples/Demo/Scripts/Icons.cs` etend les icones.
+`FuIcons` expose les glyphes Fugui de base. Le sample `Samples~/Demo/Scripts/Icons.cs` etend les icones.
 
 Ranges:
 

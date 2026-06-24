@@ -618,7 +618,7 @@ FuMouseState mouse = Fugui.GetCurrentMouse();
 
 ## Samples
 
-Le dossier `Samples/Demo` contient:
+Le dossier `Samples~/Demo` contient:
 
 - `WidgetsWindow`: showcase des widgets, panels, grids, sliders, drags, loaders, text, combobox, listbox.
 - `CameraWindow`: fenetre camera, overlays, header/footer, raycast dans la vue camera.
@@ -628,12 +628,12 @@ Le dossier `Samples/Demo` contient:
 - `NodalEditorDemo`: graphe nodal, types, nodes variables/math, minimap, save/load JSON.
 - `FuWindowsNames`: registre de noms de fenetres de demo.
 
-Le dossier `Samples/MobileDemo` contient:
+Le dossier `Samples~/MobileDemo` contient:
 
 - `MobileDemoBootstrap`: comportement `FuWindowBehaviour` qui cree une appli mobile de demo type smart home au Play Mode, avec header/footer Fugui, navigation basse, dashboard, rooms/devices filtrables, timeline, panels scrollables, charts, sliders/toggles tactiles, modales et notifications.
 - `FuMobileDemoWindowNames`: registre du nom de fenetre `Mobile Demo`.
 
-Le sample package reference `Samples~/Demo` et `Samples~/MobileDemo` dans `Package.json`; dans ce workspace, les dossiers presents sont `Samples/Demo` et `Samples/MobileDemo`.
+Le sample package reference `Samples~/Demo` et `Samples~/MobileDemo` dans `Package.json`.
 
 ## Depannage
 

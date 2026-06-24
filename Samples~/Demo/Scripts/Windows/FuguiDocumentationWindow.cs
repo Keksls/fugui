@@ -1185,7 +1185,7 @@ public override void OnUI(FuWindow window, FuLayout layout)
                 "Fugui.GetKeyDown, GetKeyPressed and GetKeyUp expose keyboard state.",
                 "FuWindow.Mouse and Keyboard expose window-local input.",
                 "Fu3DWindowBehaviour and Test3DRaycaster demonstrate panel raycasting.",
-                "Samples/MobileDemo shows a mobile shell with safe-area fitting, bottom navigation, charts and touch-oriented sliders."
+                "Samples~/MobileDemo shows a mobile shell with safe-area fitting, bottom navigation, charts and touch-oriented sliders."
             },
             tags: new string[] { "input", "touch", "raycast" }));
 

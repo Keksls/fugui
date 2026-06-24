@@ -194,10 +194,12 @@ namespace Fu
         }
 
         /// <summary>
-        /// Validate the current cursor extent before EndChild performs ImGui's SetCursorPos error check.
+        /// Submit a zero-size item at the child content start before EndChild performs ImGui's SetCursorPos error check.
         /// </summary>
         internal static void ValidateCursorExtentBeforeEndChild()
         {
+            Vector2 safePos = ImGui.GetCursorStartPos();
+            ImGuiNative.igSetCursorPos(safePos);
             ImGuiNative.igDummy(Vector2.zero);
         }
 

@@ -614,14 +614,14 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
             "Start",
             "Package Structure",
             "The package is organized around Runtime, StreamingAssets and Samples.",
-            "Keep these folders together when moving the package. Runtime contains assemblies, framework code, renderer resources and settings. StreamingAssets contains fonts, layouts and themes loaded at runtime. Samples contains the demo scenes and example windows.",
+            "Keep these folders together when moving the package. Runtime contains assemblies, framework code, renderer resources and settings. StreamingAssets contains fonts, layouts and themes loaded at runtime. Samples~ contains the demo scenes and example windows.",
             new string[]
             {
                 "Runtime/Core: contexts, rendering, windows, containers, input, platform glue and file browser.",
-                "Runtime/Framework: layouts, widgets, behaviours, styles, themes, menus, panels and the nodal system.",
+                "Runtime/Framework: layouts, widgets, behaviours, world surfaces, styles, themes, menus, panels and the nodal system.",
                 "Runtime/Resources: FuguiController prefab, shaders, images, cursors and FontConfig.",
                 "StreamingAssets/Fugui: Fonts, Themes, Layouts and their index JSON files.",
-                "Samples/Demo and Samples/MobileDemo: practical integration examples."
+                "Samples~/Demo and Samples~/MobileDemo: practical integration examples."
             },
             tags: new string[] { "folders", "resources", "samples" }));
 
@@ -821,6 +821,37 @@ Fugui.CreateWindow(MyWindowNames.Tools);",
                 "The demo hosts the Fugui Settings window on a 3D panel."
             },
             tags: new string[] { "Fu3DWindowBehaviour", "world-space", "panel" }));
+
+        _sections.Add(new DocSection(
+            "world-surfaces",
+            "Systems",
+            "World Draw Surfaces",
+            "Fugui.World renders generic FuDrawList primitives directly as meshes in Unity world space.",
+            "Use world draw surfaces for lightweight labels, markers, debug panels and diegetic overlays that do not need a full Fugui window or offscreen context. A surface is submitted during Fugui rendering, converted to a dynamic mesh by FuguiWorldRenderFeature, then drawn only by cameras registered with FuguiWorldRenderCamera.",
+            new string[]
+            {
+                "Add FuguiWorldRenderFeature to the active URP renderer and assign Fugui/URP_WorldMesh.",
+                "Add FuguiWorldRenderCamera to each scene Camera that should render world surfaces.",
+                "Create surfaces with Position, Rotation, Scale, Size, Resolution, Pivot and DepthMode.",
+                "Draw only generic FuDrawList primitives; business helpers such as billboards or health bars should live outside the core.",
+                "The sample FuguiWorldRendererDemo shows a camera-following surface and a raycast hit-position surface."
+            },
+            "World surface pattern",
+            @"using (FuguiWorldSurface surface = Fugui.World.Surface(new FuguiWorldSurfaceDesc
+{
+    Position = transform.position,
+    Rotation = transform.rotation,
+    Scale = transform.lossyScale,
+    Size = new Vector2(2f, 0.5f),
+    Resolution = new Vector2Int(512, 128),
+    Pivot = FuguiWorldPivot.Center,
+    DepthMode = FuguiWorldDepthMode.Test
+}))
+{
+    FuDrawList drawList = surface.DrawList;
+    drawList.AddText(new Vector2(16f, 16f), Fugui.GetColorU32(Color.white), ""World label"");
+}",
+            new string[] { "Fugui.World", "FuDrawList", "FuguiWorldRenderFeature", "FuguiWorldRenderCamera" }));
 
         _sections.Add(new DocSection(
             "docking-layouts",

@@ -383,6 +383,28 @@ Specialisation world-space:
 - propose handles editor pour resize;
 - expose `Create3DWindow`, `AttachWindow`, `Close3DWindow`, `SetRuntimeResizable`, `SetContainerScaleConfig`, `Get3DWindowSettings`.
 
+### `Fugui.World`
+
+API de surfaces draw-list rendues directement dans l'espace 3D Unity:
+
+- `Fugui.World.Surface(FuguiWorldSurfaceDesc desc)`;
+- `Fugui.World.Surface(FuguiWorldSurfaceDesc desc, Action<FuDrawList> draw)`;
+- `Fugui.World.RegisterRenderCamera(Camera camera)`;
+- `Fugui.World.UnregisterRenderCamera(Camera camera)`.
+
+Une surface world est immediate-mode et temporaire. Elle doit etre soumise pendant le rendu d'un contexte Fugui, puis `FuguiWorldRenderFeature` copie la draw-list vers un mesh dynamique pour la frame courante.
+
+`FuguiWorldSurfaceDesc` contient uniquement les donnees generiques de rendu:
+
+- `Position`, `Rotation`, `Scale`;
+- `Size` en unites monde;
+- `Resolution` en pixels draw-list;
+- `Pivot`;
+- `DepthMode`;
+- `SortingOrder`.
+
+`FuguiWorldRenderCamera` est un component scene a poser sur chaque camera autorisee a rendre les surfaces world. La render feature ne reference pas directement des cameras de scene depuis l'asset URP.
+
 ## Containers
 
 ### `IFuWindowContainer`
@@ -484,6 +506,32 @@ Shaders:
 - `3DWindowShader.shader`;
 - `Common.hlsl`;
 - `PassesHD.hlsl`.
+
+### `FuguiWorldRenderFeature`
+
+`FuguiWorldRenderFeature` rend les surfaces `Fugui.World` comme meshes 3D dynamiques.
+
+Fonctionnement:
+
+- la feature est ajoutee au renderer URP actif;
+- chaque camera URP appelle `AddRenderPasses`;
+- la passe est enqueue seulement si la camera est enregistree par `FuguiWorldRenderCamera`;
+- les surfaces de la frame courante sont triees par `SortingOrder`, puis par id stable;
+- chaque `FuDrawList` est convertie en mesh avec positions locales 3D, UV, couleur et position de clipping;
+- chaque `ImDrawCmd` devient un submesh dessine avec le shader `Fugui/URP_WorldMesh`;
+- le depth mode choisit le pass shader: no depth, depth test, ou depth test + write.
+
+Compatibilite rendu:
+
+- `RecordRenderGraph` est compile sous `UNITY_6000_4_OR_NEWER`;
+- `Execute` legacy est compile sous `!UNITY_6000_4_OR_NEWER`;
+- le chemin RenderGraph utilise `RasterCommandBuffer`;
+- le chemin legacy utilise `CommandBuffer`.
+
+Shaders:
+
+- `Fugui_URP_WorldMesh.shader`;
+- `WorldCommon.hlsl`.
 
 ## Layouts
 
@@ -1438,6 +1486,9 @@ public override void OnUI(FuWindow window, FuLayout layout)
 - La camera UI est sur le layer attendu par `FuguiRenderFeature`.
 - `FuguiRenderFeature` est dans le renderer URP.
 - Le shader Fugui URP est assigne.
+- Si `Fugui.World` est utilise, `FuguiWorldRenderFeature` est dans le renderer URP.
+- Si `Fugui.World` est utilise, `FuguiWorldRenderCamera` est present sur chaque camera de rendu autorisee.
+- Si `Fugui.World` est utilise, le shader `Fugui/URP_WorldMesh` est assigne.
 - `FontConfig.asset` pointe vers les fonts dans `StreamingAssets`.
 - `StreamingAssets/Fugui/Themes/themes_index.json` existe.
 - `StreamingAssets/Fugui/Layouts/layouts_index.json` existe si les layouts sont utilises.
@@ -1448,6 +1499,6 @@ public override void OnUI(FuWindow window, FuLayout layout)
 ## Notes de maintenance
 
 - Le workspace actuel contient beaucoup de modifications non commitees hors documentation; cette doc ne les annule pas.
-- Les dossiers samples declares dans `Package.json` sont `Samples~/Demo` et `Samples~/MobileDemo`, tandis que les dossiers presents ici sont `Samples/Demo` et `Samples/MobileDemo`.
+- Les dossiers samples declares dans `Package.json` sont `Samples~/Demo` et `Samples~/MobileDemo`.
 - Plusieurs fichiers ImGui/SDL sont des bindings generes ou wrappers natifs; ils doivent etre traites comme dependances bas niveau.
 - Le renderer cible explicitement URP RenderGraph Unity 6, avec fallback `Execute` obsolete pour versions avant `UNITY_6000_4_OR_NEWER`.

@@ -20,7 +20,11 @@ namespace Fu.Framework
         /// <summary>
         /// Hide the modal footer bar and its buttons.
         /// </summary>
-        NoFooterBar = 1 << 1
+        NoFooterBar = 1 << 1,
+        /// <summary>
+        /// Keep modal behavior while letting the body draw the whole visual surface.
+        /// </summary>
+        CustomSurface = 1 << 2
     }
 
     /// <summary>

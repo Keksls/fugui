@@ -2,7 +2,8 @@
     "name": "Fugui.Demo",
     "rootNamespace": "",
     "references": [
-        "GUID:9e80a81481228754181e73eb2cededc3"
+        "GUID:9e80a81481228754181e73eb2cededc3",
+        "GUID:75469ad4d38634e559750d17036d5f7c"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

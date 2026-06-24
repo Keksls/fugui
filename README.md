@@ -35,6 +35,7 @@ Le package fournit un runtime complet: contexte ImGui Unity, renderer URP, gesti
 - Layouts ergonomiques: `FuLayout` pour les widgets libres, `FuGrid` pour formulaires et inspectors responsives, `FuPanel` pour zones scrollables.
 - Fenetres camera avec render texture, MSAA, supersampling, FPS camera idle/manipulation et raycast depuis la vue camera.
 - Panneaux UI 3D en world-space avec resolution fixe ou calculee depuis la taille du panneau, scaling de contexte et resizing runtime.
+- Surfaces Fugui world-space via `Fugui.World.Surface`, rendues en mesh URP depuis une `FuDrawList` generique.
 - Overlays ancrables, deplacables, collapsables, avec points d'ancrage et offsets.
 - Modales, notifications, popup messages et popups custom.
 - Menus contextuels empilables, sous-menus, images et shortcuts.
@@ -56,7 +57,7 @@ Runtime/
     Contexts/                    contextes ImGui Unity/external, textures, fonts
     Inputs/                      clavier, souris, raycasting, etats d'input
     Mobile/                      scroll/touch mobile
-    Rendering/                   render feature URP, draw data, draw lists
+    Rendering/                   render features URP, draw data, draw lists
     StandaloneFileBrowser/       open/save file/folder panels
     UnityConfiguration/          fonts, cursors, configs ScriptableObject
     Windows/                     FuWindow, FuCameraWindow, FuOverlay, definitions
@@ -66,6 +67,7 @@ Runtime/
     Layouts/                     dockspaces et layout manager
     MainMenu/                    barre de menu globale
     NodalSystem/                 graphe nodal, editor, serialization
+    World/                       surfaces draw-list rendues directement en world-space
     Styles/                      styles predefinis
     Themes/                      theme manager et couleurs
     Widgets/                     widgets de haut niveau
@@ -74,7 +76,7 @@ StreamingAssets/Fugui/
   Fonts/                         polices runtime et icones
   Layouts/                       layouts `.fdl` et `layouts_index.json`
   Themes/                        themes `.fskin` et `themes_index.json`
-Samples/Demo/                    scene demo, fenetres, nodal editor, materiaux
+Samples~/Demo/                   scene demo, fenetres, nodal editor, materiaux
 Logo/                            logos Fugui
 ```
 
@@ -90,7 +92,7 @@ Logo/                            logos Fugui
 ### Via dossier local
 
 1. Copie le dossier du package dans `Packages/` ou `Assets/`.
-2. Si le package est dans `Assets/`, garde les dossiers `Runtime`, `StreamingAssets`, `Samples` et `Logo` ensemble.
+2. Si le package est dans `Assets/`, garde les dossiers `Runtime`, `StreamingAssets`, `Samples~` et `Logo` ensemble.
 3. Laisse Unity importer les `.meta`.
 
 ### Dependances
@@ -127,6 +129,14 @@ Dans ton URP Renderer:
 3. Regle `_cameraLayer` pour correspondre au layer de la camera UI. La valeur par defaut est `5` (layer UI Unity).
 
 La render feature execute les draw lists Fugui apres les transparents, rend le contexte principal sur la camera active et les contextes offscreen dans leurs render textures.
+
+Pour les surfaces world-space:
+
+1. Ajoute aussi `FuguiWorldRenderFeature`.
+2. Assigne le shader world (`Runtime/Resources/Shaders/Fugui_URP_WorldMesh.shader`).
+3. Ajoute `FuguiWorldRenderCamera` sur chaque camera de scene qui doit voir les surfaces world Fugui.
+
+`FuguiWorldRenderFeature` ne rend pas sur toutes les cameras par defaut. Elle ne dessine que dans les cameras explicitement enregistrees par `FuguiWorldRenderCamera`.
 
 ### 3. Configurer les assets runtime
 
@@ -291,6 +301,42 @@ Fu3DWindowContainer container = Fugui.Add3DWindow(
     position: new Vector3(0f, 1.5f, 2f),
     rotation: Quaternion.identity
 );
+```
+
+## Surfaces Fugui World
+
+`Fugui.World.Surface` permet de dessiner des primitives `FuDrawList` directement en world-space sans creer une fenetre Fugui complete et sans passer par un contexte offscreen.
+
+Usage typique:
+
+- labels et marqueurs 3D;
+- overlays de debug dans la scene;
+- petits panneaux diegetiques;
+- informations au-dessus d'un objet ou d'un point de raycast.
+
+Configuration requise:
+
+- `FuguiWorldRenderFeature` dans le renderer URP actif;
+- shader `Fugui/URP_WorldMesh`;
+- `FuguiWorldRenderCamera` sur chaque camera qui doit rendre ces surfaces.
+
+Exemple:
+
+```csharp
+using (FuguiWorldSurface surface = Fugui.World.Surface(new FuguiWorldSurfaceDesc
+{
+    Position = transform.position,
+    Rotation = transform.rotation,
+    Scale = transform.lossyScale,
+    Size = new Vector2(2f, 0.5f),
+    Resolution = new Vector2Int(512, 128),
+    Pivot = FuguiWorldPivot.Center,
+    DepthMode = FuguiWorldDepthMode.Test
+}))
+{
+    FuDrawList drawList = surface.DrawList;
+    drawList.AddText(new Vector2(16f, 16f), Fugui.GetColorU32(Color.white), "World label");
+}
 ```
 
 ## Docking layouts

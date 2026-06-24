@@ -41,6 +41,31 @@ namespace Fu
         }
 
         /// <summary>
+        /// Show a modal with a custom title, body, buttons, and fixed unscaled size.
+        /// </summary>
+        /// <param name="title">Title and unique popup identifier of the modal.</param>
+        /// <param name="body">Body callback drawn inside the modal content area.</param>
+        /// <param name="size">Unscaled modal body size. The size is scaled by Fugui before rendering.</param>
+        /// <param name="buttons">List of buttons in the modal, each button contains a text and callback.</param>
+        public static void ShowModal(string title, Action<FuLayout> body, Vector2 size, params FuModalButton[] buttons)
+        {
+            ShowModal(title, body, new FuModalSize(size), FuModalFlags.Default, buttons);
+        }
+
+        /// <summary>
+        /// Show a modal with a custom title, body, fixed unscaled size, buttons, and chrome flags.
+        /// </summary>
+        /// <param name="title">Title and unique popup identifier of the modal.</param>
+        /// <param name="body">Body callback drawn inside the modal content area.</param>
+        /// <param name="size">Unscaled modal body size. The size is scaled by Fugui before rendering.</param>
+        /// <param name="flags">Modal chrome flags. Use NoTitleBar and NoFooterBar for a fully custom modal surface.</param>
+        /// <param name="buttons">List of buttons in the modal, each button contains a text and callback.</param>
+        public static void ShowModal(string title, Action<FuLayout> body, Vector2 size, FuModalFlags flags, params FuModalButton[] buttons)
+        {
+            ShowModal(title, body, new FuModalSize(size), flags, buttons);
+        }
+
+        /// <summary>
         /// Show a modal with a custom title, body, buttons, and chrome flags
         /// </summary>
         /// <param name="title">Title of the modal</param>

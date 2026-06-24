@@ -12448,6 +12448,8 @@ namespace ImGuiNET
         }
         private static void ValidateCursorExtentBeforeEnd()
         {
+            Vector2 safePos = GetCursorStartPos();
+            ImGuiNative.igSetCursorPos(safePos);
             ImGuiNative.igDummy(Vector2.zero);
         }
         public static void End()

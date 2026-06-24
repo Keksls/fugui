@@ -41,7 +41,7 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1757547531}
   m_Enabled: 1
-  serializedVersion: 12
+  serializedVersion: 13
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 1
@@ -93,7 +93,7 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0
-  m_ShadowRadius: 0
+  m_ShapeRadius: 0
   m_ShadowAngle: 0
   m_LightUnit: 1
   m_LuxAtDistance: 1
@@ -818,7 +818,7 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5027617568554309044}
   m_Enabled: 1
-  serializedVersion: 12
+  serializedVersion: 13
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 0.33
@@ -870,7 +870,7 @@ Light:
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ForceVisible: 0
-  m_ShadowRadius: 0
+  m_ShapeRadius: 0
   m_ShadowAngle: 0
   m_LightUnit: 1
   m_LuxAtDistance: 1
@@ -12696,6 +12696,7 @@ GameObject:
   - component: {fileID: 5027617570534833872}
   - component: {fileID: 5027617570534833873}
   - component: {fileID: 2217756087664260400}
+  - component: {fileID: 6080956922055122551}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -12893,6 +12894,18 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &6080956922055122551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5027617570534833870}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e65068b4cc64ad7a7c3588d4d4ab6d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fugui::Fu.FuguiWorldRenderCamera
 --- !u!1 &5027617570552779775
 GameObject:
   m_ObjectHideFlags: 0
@@ -13050,6 +13063,7 @@ GameObject:
   - component: {fileID: 7505416273416394174}
   - component: {fileID: 7860213528544289013}
   - component: {fileID: 7325860304142673871}
+  - component: {fileID: 225596408253285862}
   m_Layer: 0
   m_Name: DemoScene
   m_TagString: Untagged
@@ -13113,6 +13127,9 @@ MonoBehaviour:
     _autoInstantiateWindowOnlayoutSet: 1
     _idleFPS: -1
   _windowFlags: 0
+  _windowStyleFlags: 32
+  _resizableSides: 7
+  _windowLayer: 0
   _externalWindowFlags: 49
   _size: {x: 0, y: 0}
   _position: {x: 0, y: 0}
@@ -13141,6 +13158,9 @@ MonoBehaviour:
     _autoInstantiateWindowOnlayoutSet: 1
     _idleFPS: -1
   _windowFlags: 0
+  _windowStyleFlags: 32
+  _resizableSides: 7
+  _windowLayer: 0
   _externalWindowFlags: 59
   _size: {x: 0, y: 0}
   _position: {x: 0, y: 0}
@@ -13166,6 +13186,9 @@ MonoBehaviour:
     _autoInstantiateWindowOnlayoutSet: 1
     _idleFPS: -1
   _windowFlags: 0
+  _windowStyleFlags: 32
+  _resizableSides: 7
+  _windowLayer: 0
   _externalWindowFlags: 49
   _size: {x: 0, y: 0}
   _position: {x: 0, y: 0}
@@ -13189,6 +13212,9 @@ MonoBehaviour:
     _autoInstantiateWindowOnlayoutSet: 1
     _idleFPS: -1
   _windowFlags: 0
+  _windowStyleFlags: 32
+  _resizableSides: 7
+  _windowLayer: 0
   _externalWindowFlags: 49
   _size: {x: 0, y: 0}
   _position: {x: 0, y: 0}
@@ -13211,6 +13237,9 @@ MonoBehaviour:
     _autoInstantiateWindowOnlayoutSet: 1
     _idleFPS: -1
   _windowFlags: 0
+  _windowStyleFlags: 32
+  _resizableSides: 7
+  _windowLayer: 0
   _externalWindowFlags: 49
   _size: {x: 0, y: 0}
   _position: {x: 0, y: 0}
@@ -13233,6 +13262,9 @@ MonoBehaviour:
     _autoInstantiateWindowOnlayoutSet: 1
     _idleFPS: -1
   _windowFlags: 0
+  _windowStyleFlags: 32
+  _resizableSides: 7
+  _windowLayer: 0
   _externalWindowFlags: 49
   _size: {x: 860, y: 660}
   _position: {x: 0, y: 0}
@@ -13255,6 +13287,9 @@ MonoBehaviour:
     _autoInstantiateWindowOnlayoutSet: 1
     _idleFPS: -1
   _windowFlags: 0
+  _windowStyleFlags: 32
+  _resizableSides: 7
+  _windowLayer: 0
   _externalWindowFlags: 49
   _size: {x: 0, y: 0}
   _position: {x: 0, y: 0}
@@ -13267,6 +13302,27 @@ MonoBehaviour:
   _editorFlags: 6
   _minZoom: 0.5
   _maxZoom: 2
+--- !u!114 &225596408253285862
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5190680658197817161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 367c49f4b07c4a60a7357ee011b5060f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fugui.Demo::FuguiWorldRendererDemo
+  _camera: {fileID: 5027617570534833868}
+  _cameraSurfaceDistance: 1.25
+  _cameraSurfaceOffset: {x: 0, y: -0.35, z: 0}
+  _sceneRaycastMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _sceneRaycastDistance: 200
+  _hitSurfaceOffset: {x: 0, y: 0.12, z: 0}
+  _raycasterID: FuguiWorldRendererDemoMouse
 --- !u!1 &6858132336863804837
 GameObject:
   m_ObjectHideFlags: 0
@@ -13425,12 +13481,15 @@ MonoBehaviour:
   Depth: 0.01
   Curve: 45
   Rounding: 0.06
+  CreateExtrudedPanelMesh: 1
   _windowName:
     _id: 65532
     _name: Fugui Settings
     _autoInstantiateWindowOnlayoutSet: 1
     _idleFPS: -1
   _windowFlags: 64
+  _windowStyleFlags: 32
+  _resizableSides: 7
   _forceCreateAloneOnAwake: 1
   _runtimeResizable: 1
   _renderResolution: {x: 1024, y: 2048}

@@ -12,6 +12,9 @@ namespace Fu.Framework
         /// </summary>
         public FuInputTextFlags Flags = FuInputTextFlags.Default;
 
+        // Requests keyboard focus for the next rendered text input, then resets automatically.
+        public bool RequestFocus;
+
         /// <summary>
         /// Optional character filter. Return true to keep the character, false to reject it.
         /// </summary>

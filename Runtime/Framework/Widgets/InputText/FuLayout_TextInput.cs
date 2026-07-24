@@ -202,6 +202,13 @@ namespace Fu.Framework
             }
 
             ImGui.SetNextItemWidth(width);
+            if (options != null && options.RequestFocus)
+            {
+                // Consume the request so the input does not steal focus again on the next frame.
+                ImGui.SetKeyboardFocusHere();
+                options.RequestFocus = false;
+            }
+
             if (LastItemDisabled)
             {
                 flags |= FuInputTextFlags.ReadOnly;

@@ -104,16 +104,31 @@ namespace Fu.Framework
         Dictionary<string, Stack<IFuElementStyle>> pushedStyles = new Dictionary<string, Stack<IFuElementStyle>>();
 #endif
 
-        // A set of strings representing the dragging sliders.
-        private static HashSet<string> _draggingSliders = new HashSet<string>();
-        // A dictionary that store displaying toggle data.
-        private static Dictionary<string, FuElementAnimationData> _uiElementAnimationDatas = new Dictionary<string, FuElementAnimationData>();
-        // A dictionary of strings representing the current PathFields string value.
-        private static Dictionary<string, string> _pathFieldValues = new Dictionary<string, string>();
-        // A dictionary to store enum values according to the type of the enum
-        private static Dictionary<Type, List<IConvertible>> _enumValues = new Dictionary<Type, List<IConvertible>>();
-        // A dictionary to store enum values as string according to the type of the enum
-        private static Dictionary<Type, List<string>> _enumValuesString = new Dictionary<Type, List<string>>();
+        private const int DraggingSliderCacheCapacity = 32;
+        private const int ElementAnimationCacheCapacity = 4096;
+        private const int PathFieldCacheCapacity = 1024;
+        private const int ScopedElementIdCacheCapacity = 8192;
+        private const int ScopedInteractionIdCacheCapacity = 8192;
+        private const int CompositeElementIdCacheCapacity = 16384;
+        private const int EnumMetadataCacheCapacity = 256;
+        // Interaction and widget state caches have deterministic retention limits.
+        private static readonly FuBoundedCache<string, bool> _draggingSliders =
+            new FuBoundedCache<string, bool>(DraggingSliderCacheCapacity, StringComparer.Ordinal);
+        private static readonly FuBoundedCache<string, FuElementAnimationData> _uiElementAnimationDatas =
+            new FuBoundedCache<string, FuElementAnimationData>(ElementAnimationCacheCapacity, StringComparer.Ordinal);
+        private static readonly FuBoundedCache<string, string> _pathFieldValues =
+            new FuBoundedCache<string, string>(PathFieldCacheCapacity, StringComparer.Ordinal);
+        private static readonly FuBoundedCache<(string ElementId, string WindowId), string> _scopedElementIds =
+            new FuBoundedCache<(string ElementId, string WindowId), string>(ScopedElementIdCacheCapacity);
+        private static readonly FuBoundedCache<(int ContextId, string WindowId, string ElementId), string> _scopedInteractionIds =
+            new FuBoundedCache<(int ContextId, string WindowId, string ElementId), string>(ScopedInteractionIdCacheCapacity);
+        private static readonly FuBoundedCache<(string First, string Second, string Third), string> _compositeElementIds =
+            new FuBoundedCache<(string First, string Second, string Third), string>(CompositeElementIdCacheCapacity);
+        // Bounded type metadata prevents dynamic enum types from accumulating for the whole process.
+        private static readonly FuBoundedCache<Type, List<IConvertible>> _enumValues =
+            new FuBoundedCache<Type, List<IConvertible>>(EnumMetadataCacheCapacity);
+        private static readonly FuBoundedCache<Type, List<string>> _enumValuesString =
+            new FuBoundedCache<Type, List<string>>(EnumMetadataCacheCapacity);
         protected bool _drawElement = true;
         private bool _isDisposed;
 
@@ -141,6 +156,8 @@ namespace Fu.Framework
             }
 
             _isDisposed = true;
+            // Instance-owned widget state must be released with its layout.
+            _knobs.Clear();
             if (CurrentDrawerPath.Count > 0 && ReferenceEquals(CurrentDrawerPath.Peek(), this))
             {
                 CurrentDrawerPath.Pop();
@@ -171,6 +188,24 @@ namespace Fu.Framework
         }
 
         /// <summary>
+        /// Clears bounded widget state shared by every layout in the current Fugui session.
+        /// </summary>
+        internal static void ResetPersistentWidgetCaches()
+        {
+            // Interaction, animation and editable text state must not leak across sessions.
+            _draggingSliders.Clear();
+            _uiElementAnimationDatas.Clear();
+            _pathFieldValues.Clear();
+            _scopedElementIds.Clear();
+            _scopedInteractionIds.Clear();
+            _compositeElementIds.Clear();
+            _enumValues.Clear();
+            _enumValuesString.Clear();
+            _currentHoveredElementId = string.Empty;
+            _currentHoveredStartHoverTime = 0f;
+        }
+
+        /// <summary>
         /// Begins an element in this layout with the specified style.
         /// </summary>
         /// <param name="style">The style to use for this element.</param>
@@ -197,7 +232,7 @@ namespace Fu.Framework
                 style?.Push(!LastItemDisabled);
                 if (!noEditID && FuWindow.CurrentDrawingWindow != null)
                 {
-                    elementID = elementID + "##" + FuWindow.CurrentDrawingWindow.ID;
+                    elementID = GetScopedElementId(elementID, FuWindow.CurrentDrawingWindow.ID);
                 }
                 _lastItemID = elementID;
 
@@ -214,6 +249,45 @@ namespace Fu.Framework
             {
                 endElement(style);
             }
+        }
+
+        /// <summary>
+        /// Gets a window-scoped ImGui element identifier without recomposing it every frame.
+        /// </summary>
+        /// <param name="elementId">Caller-provided element identifier.</param>
+        /// <param name="windowId">Owning window identifier.</param>
+        /// <returns>Stable window-scoped identifier.</returns>
+        private static string GetScopedElementId(string elementId, string windowId)
+        {
+            // ValueTuple lookup avoids allocating a composite key on stable frames.
+            (string ElementId, string WindowId) key = (elementId, windowId);
+            if (!_scopedElementIds.TryGetValue(key, out string scopedId))
+            {
+                scopedId = elementId + "##" + windowId;
+                _scopedElementIds.Set(key, scopedId);
+            }
+
+            return scopedId;
+        }
+
+        /// <summary>
+        /// Gets a stable concatenation used as an ImGui label or identifier.
+        /// </summary>
+        /// <param name="first">First string segment.</param>
+        /// <param name="second">Second string segment.</param>
+        /// <param name="third">Optional third string segment.</param>
+        /// <returns>Cached concatenation of the supplied segments.</returns>
+        internal static string GetCachedCompositeId(string first, string second, string third = null)
+        {
+            // Stable widget IDs avoid allocating the same concatenated string on every frame.
+            (string First, string Second, string Third) key = (first, second, third);
+            if (!_compositeElementIds.TryGetValue(key, out string compositeId))
+            {
+                compositeId = string.Concat(first, second, third);
+                _compositeElementIds.Set(key, compositeId);
+            }
+
+            return compositeId;
         }
 
         /// <summary>
@@ -908,13 +982,36 @@ namespace Fu.Framework
             return clicked;
         }
 
+        /// <summary>
+        /// Gets an interaction identifier scoped to the current context and window.
+        /// </summary>
+        /// <param name="id">Caller-provided interaction identifier.</param>
+        /// <returns>Stable scoped interaction identifier.</returns>
         private static string GetScopedInvisibleInteractionID(string id)
         {
             string windowID = FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.ID : string.Empty;
             int contextID = Fugui.CurrentContext != null ? Fugui.CurrentContext.ID : -1;
-            return contextID.ToString() + "|" + windowID + "|" + id;
+            (int ContextId, string WindowId, string ElementId) key = (contextID, windowID, id);
+            if (!_scopedInteractionIds.TryGetValue(key, out string scopedId))
+            {
+                // Interaction ownership identifiers are composed only on bounded cache misses.
+                scopedId = contextID.ToString() + "|" + windowID + "|" + id;
+                _scopedInteractionIds.Set(key, scopedId);
+            }
+
+            return scopedId;
         }
 
+        /// <summary>
+        /// Updates one mouse-button ownership slot for an invisible interaction.
+        /// </summary>
+        /// <param name="id">Scoped interaction identifier.</param>
+        /// <param name="mouseButton">Mouse button to inspect.</param>
+        /// <param name="enabled">Whether this button participates in the interaction.</param>
+        /// <param name="hovered">Whether the interaction is hovered.</param>
+        /// <param name="active">Combined active state.</param>
+        /// <param name="clicked">Combined click state.</param>
+        /// <param name="clickedButton">Button that produced the click.</param>
         private static void UpdateInvisibleInteractionButton(string id, FuMouseButton mouseButton, bool enabled, bool hovered, ref bool active, ref bool clicked, ref FuMouseButton clickedButton)
         {
             if (!enabled)
@@ -1246,7 +1343,8 @@ namespace Fu.Framework
             }
 
             // check whatever the enum type is already knew
-            if (!_enumValues.ContainsKey(type))
+            if (!_enumValues.TryGetValue(type, out values) ||
+                !_enumValuesString.TryGetValue(type, out strValues))
             {
                 // list to store the enum values
                 values = new List<IConvertible>();
@@ -1258,14 +1356,10 @@ namespace Fu.Framework
                     values.Add(enumValue);
                     strValues.Add(Fugui.AddSpacesBeforeUppercase(enumValue.ToString()));
                 }
-                // store enum values and string into dict
-                _enumValues.Add(type, values);
-                _enumValuesString.Add(type, strValues);
+                // Enum metadata is reusable but remains bounded for dynamic type workloads.
+                _enumValues.Set(type, values);
+                _enumValuesString.Set(type, strValues);
             }
-
-            // set lists values from dict
-            values = _enumValues[type];
-            strValues = _enumValuesString[type];
 
             return true;
         }
@@ -1343,7 +1437,8 @@ namespace Fu.Framework
             bool useInvisibleButton = updateOnClick && size.x > 0f && size.y > 0f;
             if (useInvisibleButton)
             {
-                bool pressed = InvisibleInteractionAt("##FuInteraction_" + uniqueID, pos, size, out bool hovered, out bool active, out FuMouseButton clickedButton, FuButtonFlags.MouseButtonLeft | FuButtonFlags.MouseButtonRight, true, allowWhenBlockedByPopup);
+                string interactionId = GetCachedCompositeId("##FuInteraction_", uniqueID);
+                bool pressed = InvisibleInteractionAt(interactionId, pos, size, out bool hovered, out bool active, out FuMouseButton clickedButton, FuButtonFlags.MouseButtonLeft | FuButtonFlags.MouseButtonRight, true, allowWhenBlockedByPopup);
                 state.Hovered = hovered;
                 state.Active = active;
                 state.JustActivated = state.Hovered && Fugui.GetCurrentMouse().IsDown(FuMouseButton.Left);

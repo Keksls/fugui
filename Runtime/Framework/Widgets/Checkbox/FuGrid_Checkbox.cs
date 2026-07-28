@@ -19,7 +19,7 @@ namespace Fu.Framework
                 return false;
             }
             drawElementLabel(text, FuTextStyle.Default);
-            return base.CheckBox("##" + text, ref isChecked);
+            return base.CheckBox(GetCachedCompositeId("##", text), ref isChecked);
         }
         #endregion
     }

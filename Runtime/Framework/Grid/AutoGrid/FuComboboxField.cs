@@ -52,7 +52,7 @@ namespace Fu.Framework
                     grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
                 }
                 bool updated = false;
-                grid.Combobox(FieldName + "##" + objectID, _displayValues, (index) =>
+                grid.Combobox(FuLayout.GetCachedCompositeId(FieldName, "##", objectID), _displayValues, (index) =>
                 {
                     _fieldInfo.SetValue(objectInstance, Enum.Parse(_fieldInfo.FieldType, _enumValues[index]));
                     updated = true;

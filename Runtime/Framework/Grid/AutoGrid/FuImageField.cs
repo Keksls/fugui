@@ -53,7 +53,7 @@ namespace Fu.Framework
                 {
                     grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
                 }
-                grid.Image(FieldName + "##" + objectID, _texture, _size, _color);
+                grid.Image(FuLayout.GetCachedCompositeId(FieldName, "##", objectID), _texture, _size, _color);
                 return false;
             }
             #endregion

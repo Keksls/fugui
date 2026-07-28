@@ -127,6 +127,9 @@ public class WidgetsWindow : FuWindowBehaviour
     private int chartDemoMaxPoints = 512;
     // layout surfaces
     private int layoutSurfaceDemoNavigationIndex = 0;
+#if FU_CUSTOM_MATERIALS_ENABLED
+    private CustomDrawMaterialDemo _customDrawMaterialDemo;
+#endif
     #endregion
 
     #region Methods
@@ -148,6 +151,7 @@ public class WidgetsWindow : FuWindowBehaviour
             layout.Collapsable("Sliders", drawSliders);
             layout.Collapsable("Basics Widgets", () => { drawBasics(layout); }, 0);
             layout.Collapsable("Layout Surfaces", () => { drawLayoutSurfaces(layout); });
+            layout.Collapsable("Custom DrawList Shaders", () => { drawCustomMaterialShaders(layout); });
             layout.Collapsable("Texts", () => { drawTexts(layout); });
             layout.Collapsable("Buttons", () => { drawButtons(layout); });
             layout.Collapsable("Drags", drawDrags);
@@ -161,6 +165,37 @@ public class WidgetsWindow : FuWindowBehaviour
             layout.Collapsable("Search and Table View", () => { drawSearchAndTableView(layout); });
             layout.Collapsable("Charts", () => { drawCharts(layout); });
         }
+    }
+
+    /// <summary>
+    /// Releases resources created by optional widget showcases.
+    /// </summary>
+    private void OnDestroy()
+    {
+#if FU_CUSTOM_MATERIALS_ENABLED
+        // The demo owns its runtime Unity materials and must release them with the window component.
+        _customDrawMaterialDemo?.Dispose();
+        _customDrawMaterialDemo = null;
+#endif
+    }
+
+    /// <summary>
+    /// Draws the opt-in custom draw-list material showcase or its activation instructions.
+    /// </summary>
+    /// <param name="layout">Layout receiving the showcase.</param>
+    private void drawCustomMaterialShaders(FuLayout layout)
+    {
+#if FU_CUSTOM_MATERIALS_ENABLED
+        // Allocate the showcase only after its collapsable is opened for the first time.
+        _customDrawMaterialDemo ??= new CustomDrawMaterialDemo();
+        _customDrawMaterialDemo.Draw(layout, _enableWidgets);
+#else
+        // Keep the sample visible while documenting why the zero-cost feature is currently compiled out.
+        layout.Callout(
+            "customDrawMaterialsDisabled",
+            "Custom draw materials are compiled out. Add FU_CUSTOM_MATERIALS_ENABLED to the active Scripting Define Symbols, then reopen this section.",
+            FuColors.BackgroundWarning);
+#endif
     }
 
     /// <summary>

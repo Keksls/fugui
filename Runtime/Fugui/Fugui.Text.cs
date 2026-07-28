@@ -180,7 +180,9 @@ namespace Fu
             }
         }
 
-        static Dictionary<string, string> _niceStrings = new Dictionary<string, string>();
+        private const int NormalizedTextCacheCapacity = 1024;
+        private static readonly FuBoundedCache<string, string> _niceStrings =
+            new FuBoundedCache<string, string>(NormalizedTextCacheCapacity, StringComparer.Ordinal);
 
         /// <summary>
         /// Returns the add spaces before uppercase result.
@@ -197,7 +199,7 @@ namespace Fu
             {
                 // Use a regular expression to add spaces before uppercase letters, but ignore the first letter of the string and avoid adding a space if it is preceded by whitespace
                 niceString = AddSpacesBeforeUppercaseDirect(input);
-                _niceStrings.Add(input, niceString);
+                _niceStrings.Set(input, niceString);
             }
             return niceString;
         }
@@ -216,7 +218,8 @@ namespace Fu
             return Regex.Replace(input, @"(?<=[a-z])(?=[A-Z])", " ");
         }
 
-        private static Dictionary<string, string> _untagedStrings = new Dictionary<string, string>();
+        private static readonly FuBoundedCache<string, string> _untagedStrings =
+            new FuBoundedCache<string, string>(NormalizedTextCacheCapacity, StringComparer.Ordinal);
 
         /// <summary>
         /// Get a text without tag "##xxxxxx"
@@ -229,9 +232,19 @@ namespace Fu
             {
                 int tagIndex = input.IndexOf("##", StringComparison.Ordinal);
                 untagedString = tagIndex >= 0 ? input.Substring(0, tagIndex) : input;
-                _untagedStrings.Add(input, untagedString);
+                _untagedStrings.Set(input, untagedString);
             }
             return untagedString;
+        }
+
+        /// <summary>
+        /// Clears text normalization caches owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetTextCaches()
+        {
+            // Session-scoped labels must not keep references to content from a disposed runtime.
+            _niceStrings.Clear();
+            _untagedStrings.Clear();
         }
 
         /// <summary>

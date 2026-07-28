@@ -17,6 +17,11 @@ namespace Fu
         private readonly Dictionary<UTexture, IntPtr> _textureIds = new Dictionary<UTexture, IntPtr>();
         private readonly Dictionary<Sprite, SpriteInfo> _spriteData = new Dictionary<Sprite, SpriteInfo>();
         private int _nextTextureId = 1;
+#if FU_CUSTOM_MATERIALS_ENABLED
+        private Dictionary<IntPtr, FuCustomDrawBinding> _customDrawBindings;
+        private Dictionary<FuCustomDrawBindingKey, IntPtr> _customDrawBindingIds;
+        private int _nextCustomDrawBindingId = -1;
+#endif
 
         private static readonly Dictionary<string, Texture2D> _atlasTexture = new Dictionary<string, Texture2D>();
         private const int FontAtlasCleanupDelayFrames = 4;
@@ -262,6 +267,13 @@ namespace Fu
             _textures.Clear();
             _textureIds.Clear();
             _spriteData.Clear();
+#if FU_CUSTOM_MATERIALS_ENABLED
+            _customDrawBindings?.Clear();
+            _customDrawBindingIds?.Clear();
+            _customDrawBindings = null;
+            _customDrawBindingIds = null;
+            _nextCustomDrawBindingId = -1;
+#endif
 
             string fontAtlasTextureKey = _fontAtlasTextureKey;
             _fontAtlasTextureKey = null;
@@ -308,6 +320,15 @@ namespace Fu
         /// <returns>The result of the operation.</returns>
         public bool TryGetTexture(IntPtr id, out UTexture texture)
         {
+#if FU_CUSTOM_MATERIALS_ENABLED
+            if (id.ToInt64() < 0 &&
+                _customDrawBindings != null &&
+                _customDrawBindings.TryGetValue(id, out FuCustomDrawBinding customBinding))
+            {
+                texture = customBinding.Texture;
+                return texture != null;
+            }
+#endif
             if (!_textures.TryGetValue(id, out texture))
             {
                 return false;
@@ -351,6 +372,105 @@ namespace Fu
 
             return RegisterTexture(texture);
         }
+
+#if FU_CUSTOM_MATERIALS_ENABLED
+        /// <summary>
+        /// Returns a stable custom binding identifier while preserving the texture of an existing draw resource.
+        /// </summary>
+        /// <param name="drawMaterial">Custom material configuration.</param>
+        /// <param name="sourceTextureId">Existing draw resource whose texture must be preserved.</param>
+        /// <returns>Negative identifier understood by Fugui render backends.</returns>
+        internal IntPtr GetCustomDrawBindingId(FuDrawMaterial drawMaterial, IntPtr sourceTextureId)
+        {
+            // Color-only draw commands use white when no sampleable texture is currently active.
+            if (!TryGetTexture(sourceTextureId, out UTexture texture) || texture == null)
+            {
+                texture = Texture2D.whiteTexture;
+            }
+
+            return GetCustomDrawBindingId(drawMaterial, texture);
+        }
+
+        /// <summary>
+        /// Returns a stable custom binding identifier for an explicit texture.
+        /// </summary>
+        /// <param name="drawMaterial">Custom material configuration.</param>
+        /// <param name="texture">Texture sampled by the custom draw command.</param>
+        /// <returns>Negative identifier understood by Fugui render backends.</returns>
+        internal IntPtr GetCustomDrawBindingId(FuDrawMaterial drawMaterial, UTexture texture)
+        {
+            // Material configuration is mandatory while a texture can safely fall back to white.
+            if (drawMaterial == null)
+            {
+                throw new ArgumentNullException(nameof(drawMaterial));
+            }
+
+            if (texture == null)
+            {
+                texture = Texture2D.whiteTexture;
+            }
+
+            FuCustomDrawBindingKey key = new FuCustomDrawBindingKey(drawMaterial, texture);
+            if (_customDrawBindingIds != null &&
+                _customDrawBindingIds.TryGetValue(key, out IntPtr existingId))
+            {
+                // Reuse the identifier to avoid allocations and unnecessary ImGui command splits.
+                return existingId;
+            }
+
+            // Allocate registries only when the opt-in feature is used by a context for the first time.
+            _customDrawBindings ??= new Dictionary<IntPtr, FuCustomDrawBinding>();
+            _customDrawBindingIds ??= new Dictionary<FuCustomDrawBindingKey, IntPtr>();
+            IntPtr bindingId = AllocateCustomDrawBindingId();
+            _customDrawBindings.Add(bindingId, new FuCustomDrawBinding(drawMaterial, texture));
+            _customDrawBindingIds.Add(key, bindingId);
+            return bindingId;
+        }
+
+        /// <summary>
+        /// Attempts to resolve a negative draw resource identifier as a custom material binding.
+        /// </summary>
+        /// <param name="id">Draw resource identifier to resolve.</param>
+        /// <param name="binding">Resolved custom draw binding.</param>
+        /// <returns>True when the identifier references a registered custom binding.</returns>
+        internal bool TryGetCustomDrawBinding(IntPtr id, out FuCustomDrawBinding binding)
+        {
+            // Positive identifiers are reserved for the regular Fugui texture registry.
+            if (id.ToInt64() >= 0)
+            {
+                binding = default;
+                return false;
+            }
+
+            if (_customDrawBindings != null)
+            {
+                return _customDrawBindings.TryGetValue(id, out binding);
+            }
+
+            binding = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Allocates an unused negative identifier without colliding with reserved Fugui commands.
+        /// </summary>
+        /// <returns>New custom draw binding identifier.</returns>
+        private IntPtr AllocateCustomDrawBindingId()
+        {
+            // Descend through negative ids while leaving special Fugui commands untouched.
+            while (_nextCustomDrawBindingId > int.MinValue)
+            {
+                IntPtr candidate = new IntPtr(_nextCustomDrawBindingId--);
+                if (candidate != Fugui.BackdropTextureID &&
+                    (_customDrawBindings == null || !_customDrawBindings.ContainsKey(candidate)))
+                {
+                    return candidate;
+                }
+            }
+
+            throw new InvalidOperationException("Fugui exhausted the custom draw material identifier range.");
+        }
+#endif
 
         /// <summary>
         /// Gets the font atlas texture id.

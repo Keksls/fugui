@@ -10,6 +10,12 @@ namespace Fu.Framework
     /// </summary>
     public partial class FuLayout
     {
+        #region State
+        private const int TableViewStateCacheCapacity = 256;
+        private static readonly FuBoundedCache<string, object> _tableViewStates =
+            new FuBoundedCache<string, object>(TableViewStateCacheCapacity, StringComparer.Ordinal);
+        #endregion
+
         #region Methods
         /// <summary>
         /// Draw a data table view without exposing row selection state.
@@ -60,7 +66,8 @@ namespace Fu.Framework
                 return false;
             }
 
-            List<FuTableViewRow<T>> rows = BuildTableViewRows(items, columns, searchQuery, searchTextGetter);
+            FuTableViewState<T> state = GetTableViewState<T>(tableID);
+            List<FuTableViewRow<T>> rows = BuildTableViewRows(state, items, columns, searchQuery, searchTextGetter);
             Vector2 outerSize = new Vector2(ImGui.GetContentRegionAvail().x, ResolveTableViewHeight(height, flags));
             ImGuiTableFlags tableFlags = BuildImGuiTableFlags(flags);
 
@@ -74,8 +81,8 @@ namespace Fu.Framework
                     ImGui.TableHeadersRow();
                 }
 
-                ApplyTableViewSort(rows, columns, flags);
-                selectionChanged = DrawTableViewRows(tableID, rows, columns, ref selectedIndex, flags);
+                ApplyTableViewSort(state, rows, columns, flags);
+                selectionChanged = DrawTableViewRows(state, rows, columns, ref selectedIndex, flags);
 
                 ImGui.EndTable();
             }
@@ -90,19 +97,23 @@ namespace Fu.Framework
         /// Build the visible row list while keeping source indices stable for selection callbacks.
         /// </summary>
         /// <typeparam name="T">Row item type.</typeparam>
+        /// <param name="state">Reusable state owned by the table identifier.</param>
         /// <param name="items">Source items.</param>
         /// <param name="columns">Column definitions used for default search text.</param>
         /// <param name="searchQuery">Optional search query.</param>
         /// <param name="searchTextGetter">Optional row-level search text.</param>
         /// <returns>Filtered rows with original source indices.</returns>
-        private List<FuTableViewRow<T>> BuildTableViewRows<T>(IList<T> items, IList<FuTableViewColumn<T>> columns, string searchQuery, Func<T, string> searchTextGetter)
+        private List<FuTableViewRow<T>> BuildTableViewRows<T>(FuTableViewState<T> state, IList<T> items, IList<FuTableViewColumn<T>> columns, string searchQuery, Func<T, string> searchTextGetter)
         {
-            List<FuTableViewRow<T>> rows = new List<FuTableViewRow<T>>(items.Count);
+            // Reuse the typed row buffer while rebuilding visibility from live source data.
+            List<FuTableViewRow<T>> rows = state.Rows;
+            rows.Clear();
+            state.PrepareItemCapacity(items.Count);
 
             for (int i = 0; i < items.Count; i++)
             {
                 T item = items[i];
-                if (!PassesTableViewSearch(item, columns, searchQuery, searchTextGetter))
+                if (!PassesTableViewSearch(state, item, columns, searchQuery, searchTextGetter))
                 {
                     continue;
                 }
@@ -117,12 +128,13 @@ namespace Fu.Framework
         /// Check whether a row item matches the active table search query.
         /// </summary>
         /// <typeparam name="T">Row item type.</typeparam>
+        /// <param name="state">Reusable state owned by the table identifier.</param>
         /// <param name="item">Source row item.</param>
         /// <param name="columns">Column definitions used for default search text.</param>
         /// <param name="searchQuery">Optional search query.</param>
         /// <param name="searchTextGetter">Optional row-level search text.</param>
         /// <returns>true if the row should be visible.</returns>
-        private bool PassesTableViewSearch<T>(T item, IList<FuTableViewColumn<T>> columns, string searchQuery, Func<T, string> searchTextGetter)
+        private bool PassesTableViewSearch<T>(FuTableViewState<T> state, T item, IList<FuTableViewColumn<T>> columns, string searchQuery, Func<T, string> searchTextGetter)
         {
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
@@ -134,7 +146,7 @@ namespace Fu.Framework
                 return FuSearchFilter.Passes(searchQuery, searchTextGetter(item));
             }
 
-            string[] values = new string[columns.Count];
+            string[] values = state.GetSearchValues(columns.Count);
             for (int i = 0; i < columns.Count; i++)
             {
                 values[i] = columns[i].GetSearchText(item);
@@ -250,10 +262,11 @@ namespace Fu.Framework
         /// Apply the current ImGui single-column sort to the filtered row list.
         /// </summary>
         /// <typeparam name="T">Row item type.</typeparam>
+        /// <param name="state">Reusable state containing the stable comparison delegate.</param>
         /// <param name="rows">Filtered rows to sort in-place.</param>
         /// <param name="columns">Column definitions used to resolve the active comparer.</param>
         /// <param name="flags">Table view flags used to disable sorting.</param>
-        private unsafe void ApplyTableViewSort<T>(List<FuTableViewRow<T>> rows, IList<FuTableViewColumn<T>> columns, FuTableViewFlags flags)
+        private unsafe void ApplyTableViewSort<T>(FuTableViewState<T> state, List<FuTableViewRow<T>> rows, IList<FuTableViewColumn<T>> columns, FuTableViewFlags flags)
         {
             if (!flags.HasFlag(FuTableViewFlags.Sortable) || rows.Count <= 1)
             {
@@ -274,12 +287,9 @@ namespace Fu.Framework
             }
 
             FuTableViewColumn<T> column = columns[columnIndex];
-            bool descending = spec.SortDirection == ImGuiSortDirection.Descending;
-            rows.Sort((left, right) =>
-            {
-                int result = column.Compare(left.Item, right.Item);
-                return descending ? -result : result;
-            });
+            state.SortColumn = column;
+            state.SortDescending = spec.SortDirection == ImGuiSortDirection.Descending;
+            rows.Sort(state.RowComparison);
 
             if (sortSpecs.SpecsDirty)
             {
@@ -291,13 +301,13 @@ namespace Fu.Framework
         /// Draw all visible rows, optionally using the shared ImGui list clipper.
         /// </summary>
         /// <typeparam name="T">Row item type.</typeparam>
-        /// <param name="tableID">Resolved table ID.</param>
+        /// <param name="state">Reusable state containing stable row identifiers.</param>
         /// <param name="rows">Filtered and sorted rows to draw.</param>
         /// <param name="columns">Column definitions.</param>
         /// <param name="selectedIndex">Selected source item index, or -1.</param>
         /// <param name="flags">Table view behaviour flags.</param>
         /// <returns>true if the selected source index changed this frame.</returns>
-        private bool DrawTableViewRows<T>(string tableID, List<FuTableViewRow<T>> rows, IList<FuTableViewColumn<T>> columns, ref int selectedIndex, FuTableViewFlags flags)
+        private bool DrawTableViewRows<T>(FuTableViewState<T> state, List<FuTableViewRow<T>> rows, IList<FuTableViewColumn<T>> columns, ref int selectedIndex, FuTableViewFlags flags)
         {
             bool selectionChanged = false;
             float rowHeight = ImGui.GetFrameHeight();
@@ -313,22 +323,28 @@ namespace Fu.Framework
             if (flags.HasFlag(FuTableViewFlags.UseClipper))
             {
                 Fugui.ListClipperBegin(rows.Count, rowHeight);
-                while (Fugui.ListClipperStep())
+                try
                 {
-                    int start = Mathf.Clamp(Fugui.ListClipperDisplayStart(), 0, rows.Count);
-                    int end = Mathf.Clamp(Fugui.ListClipperDisplayEnd(), start, rows.Count);
-                    for (int i = start; i < end; i++)
+                    while (Fugui.ListClipperStep())
                     {
-                        selectionChanged |= DrawTableViewRow(tableID, rows[i], columns, ref selectedIndex, flags, rowHeight);
+                        int start = Mathf.Clamp(Fugui.ListClipperDisplayStart(), 0, rows.Count);
+                        int end = Mathf.Clamp(Fugui.ListClipperDisplayEnd(), start, rows.Count);
+                        for (int i = start; i < end; i++)
+                        {
+                            selectionChanged |= DrawTableViewRow(state, rows[i], columns, ref selectedIndex, flags, rowHeight);
+                        }
                     }
                 }
-                Fugui.ListClipperEnd();
+                finally
+                {
+                    Fugui.ListClipperEnd();
+                }
             }
             else
             {
                 for (int i = 0; i < rows.Count; i++)
                 {
-                    selectionChanged |= DrawTableViewRow(tableID, rows[i], columns, ref selectedIndex, flags, rowHeight);
+                    selectionChanged |= DrawTableViewRow(state, rows[i], columns, ref selectedIndex, flags, rowHeight);
                 }
             }
 
@@ -339,14 +355,14 @@ namespace Fu.Framework
         /// Draw one table row and update the single selection when requested.
         /// </summary>
         /// <typeparam name="T">Row item type.</typeparam>
-        /// <param name="tableID">Resolved table ID.</param>
+        /// <param name="state">Reusable state containing stable row identifiers.</param>
         /// <param name="row">Row to draw, including its source index.</param>
         /// <param name="columns">Column definitions.</param>
         /// <param name="selectedIndex">Selected source item index, or -1.</param>
         /// <param name="flags">Table view behaviour flags.</param>
         /// <param name="rowHeight">Stable row height used for selectable hit boxes and clipping.</param>
         /// <returns>true if the selected source index changed this frame.</returns>
-        private bool DrawTableViewRow<T>(string tableID, FuTableViewRow<T> row, IList<FuTableViewColumn<T>> columns, ref int selectedIndex, FuTableViewFlags flags, float rowHeight)
+        private bool DrawTableViewRow<T>(FuTableViewState<T> state, FuTableViewRow<T> row, IList<FuTableViewColumn<T>> columns, ref int selectedIndex, FuTableViewFlags flags, float rowHeight)
         {
             ImGui.TableNextRow(ImGuiTableRowFlags.None, rowHeight);
             bool selectionChanged = false;
@@ -368,7 +384,7 @@ namespace Fu.Framework
                     selectableFlags |= ImGuiSelectableFlags.Disabled;
                 }
 
-                if (ImGui.Selectable("##" + tableID + "_row_" + row.SourceIndex, selected, selectableFlags, new Vector2(0f, rowHeight)))
+                if (ImGui.Selectable(state.RowIds[row.SourceIndex], selected, selectableFlags, new Vector2(0f, rowHeight)))
                 {
                     if (selectedIndex != row.SourceIndex)
                     {
@@ -417,6 +433,34 @@ namespace Fu.Framework
                     break;
             }
         }
+
+        /// <summary>
+        /// Gets or creates reusable typed state for one table view.
+        /// </summary>
+        /// <typeparam name="T">Row item type.</typeparam>
+        /// <param name="tableId">Resolved table identifier.</param>
+        /// <returns>Reusable row, search and sorting buffers.</returns>
+        private static FuTableViewState<T> GetTableViewState<T>(string tableId)
+        {
+            // Reusing an ID with another row type replaces the incompatible bounded entry.
+            if (!_tableViewStates.TryGetValue(tableId, out object cachedState) ||
+                !(cachedState is FuTableViewState<T> state))
+            {
+                state = new FuTableViewState<T>(tableId);
+                _tableViewStates.Set(tableId, state);
+            }
+
+            return state;
+        }
+
+        /// <summary>
+        /// Clears table view buffers owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetTableViewState()
+        {
+            // Typed states retain caller row references and must follow the runtime lifetime.
+            _tableViewStates.Clear();
+        }
         #endregion
 
         #region Nested Types
@@ -434,6 +478,101 @@ namespace Fu.Framework
             {
                 SourceIndex = sourceIndex;
                 Item = item;
+            }
+        }
+
+        private sealed class FuTableViewState<T>
+        {
+            public readonly List<FuTableViewRow<T>> Rows = new List<FuTableViewRow<T>>();
+            public readonly Comparison<FuTableViewRow<T>> RowComparison;
+            public FuTableViewColumn<T> SortColumn;
+            public bool SortDescending;
+            public string[] RowIds = Array.Empty<string>();
+            private readonly string _tableId;
+            private string[] _searchValues = Array.Empty<string>();
+
+            /// <summary>
+            /// Creates reusable table buffers and a stable sort delegate.
+            /// </summary>
+            /// <param name="tableId">Resolved table identifier.</param>
+            public FuTableViewState(string tableId)
+            {
+                // The comparison delegate is allocated once instead of once per sorted frame.
+                _tableId = tableId;
+                RowComparison = CompareRows;
+            }
+
+            /// <summary>
+            /// Prepares row and identifier capacity for the current item count.
+            /// </summary>
+            /// <param name="itemCount">Current source item count.</param>
+            public void PrepareItemCapacity(int itemCount)
+            {
+                // Managed buffers grow geometrically and shed obsolete fourfold spikes.
+                int requiredCapacity = Mathf.NextPowerOfTwo(Mathf.Max(4, itemCount));
+                if (RowIds.Length < itemCount)
+                {
+                    Array.Resize(ref RowIds, requiredCapacity);
+                }
+                else if (RowIds.Length > 16 && requiredCapacity <= RowIds.Length / 4)
+                {
+                    Array.Resize(ref RowIds, Mathf.Max(8, requiredCapacity * 2));
+                }
+
+                int excessiveRowCapacity = itemCount <= int.MaxValue / 4
+                    ? Mathf.Max(32, itemCount * 4)
+                    : int.MaxValue;
+                if (Rows.Capacity < itemCount || Rows.Capacity > excessiveRowCapacity)
+                {
+                    Rows.Capacity = Mathf.Max(8, itemCount);
+                }
+
+                for (int i = 0; i < itemCount; i++)
+                {
+                    if (RowIds[i] == null)
+                    {
+                        RowIds[i] = "##" + _tableId + "_row_" + i;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Gets a reusable search-value array matching the active column count.
+            /// </summary>
+            /// <param name="columnCount">Number of searchable columns.</param>
+            /// <returns>Exact-length search-value buffer.</returns>
+            public string[] GetSearchValues(int columnCount)
+            {
+                // Exact length prevents stale values from participating in the params-based filter.
+                if (_searchValues.Length != columnCount)
+                {
+                    _searchValues = new string[columnCount];
+                }
+
+                return _searchValues;
+            }
+
+            /// <summary>
+            /// Compares two visible rows using the current ImGui sort specification.
+            /// </summary>
+            /// <param name="left">Left row.</param>
+            /// <param name="right">Right row.</param>
+            /// <returns>Sort order for the current column and direction.</returns>
+            private int CompareRows(FuTableViewRow<T> left, FuTableViewRow<T> right)
+            {
+                // Sort fields are updated before List.Sort invokes this stable delegate.
+                if (SortColumn == null)
+                {
+                    return 0;
+                }
+
+                int result = SortColumn.Compare(left.Item, right.Item);
+                if (!SortDescending)
+                {
+                    return result;
+                }
+
+                return result > 0 ? -1 : result < 0 ? 1 : 0;
             }
         }
         #endregion

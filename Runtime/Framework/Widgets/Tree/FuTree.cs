@@ -47,6 +47,8 @@ namespace Fu.Framework
         private Action _onPostRenderAction = null;
         /// <summary>The text style of the caret.</summary>
         private FuTextStyle _carretStyle;
+        /// <summary>Bounded cache of stable caret identifiers keyed like the legacy hash-based IDs.</summary>
+        private readonly FuBoundedCache<int, string> _caretIds = new FuBoundedCache<int, string>(4096);
         #endregion
 
         #region Constructors
@@ -426,11 +428,12 @@ namespace Fu.Framework
             float indent = 18f * Fugui.CurrentContext.Scale;
             // Get the draw list and color.
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-            // Using a layout object and a list clipper, loop through the elements and draw them.
-            using (FuLayout layout = new FuLayout())
+            // Reuse the window-owned layout; creating and disposing a layout here allocated on every frame.
+            FuLayout layout = FuWindow.CurrentDrawingWindow.Layout;
+            int count = _elements.Count;
+            Fugui.ListClipperBegin(Math.Max(1, count), height);
+            try
             {
-                int count = _elements.Count;
-                Fugui.ListClipperBegin(Math.Max(1, count), height);
                 while (Fugui.ListClipperStep())
                 {
                     int start = Fugui.ListClipperDisplayStart();
@@ -444,12 +447,16 @@ namespace Fu.Framework
                         if (level > 0)
                         {
                             drawTreeGuides(drawList, startPos, itemRect, indent, level);
-                            // Indent the cursor.
                             ImGui.Indent(indent * level);
-                            // Draw the element.
-                            drawElement(_elements[i], layout, drawList, itemRect);
-                            // Cancel the indent.
-                            ImGui.Indent(-indent * level);
+                            try
+                            {
+                                // Always restore indentation when custom element drawing fails.
+                                drawElement(_elements[i], layout, drawList, itemRect);
+                            }
+                            finally
+                            {
+                                ImGui.Indent(-indent * level);
+                            }
                         }
                         else
                         {
@@ -457,10 +464,31 @@ namespace Fu.Framework
                         }
                     }
                 }
+            }
+            finally
+            {
                 Fugui.ListClipperEnd();
             }
             // Invoke the post render action if there is any.
             _onPostRenderAction?.Invoke();
+        }
+
+        /// <summary>
+        /// Gets the stable caret interaction identifier for a tree element.
+        /// </summary>
+        /// <param name="element">Tree element owning the caret.</param>
+        /// <returns>Cached caret identifier.</returns>
+        private string getCaretId(T element)
+        {
+            // Preserve the existing hash-based ImGui identity while avoiding per-frame concatenation.
+            int elementHash = element.GetHashCode();
+            if (!_caretIds.TryGetValue(elementHash, out string caretId))
+            {
+                caretId = _id + "##caret" + elementHash;
+                _caretIds.Set(elementHash, caretId);
+            }
+
+            return caretId;
         }
 
         /// <summary>
@@ -567,7 +595,7 @@ namespace Fu.Framework
             {
                 ImGui.Dummy(new Vector2(carretHitWidth, height));
                 Rect carretRect = new Rect(cursorPos, new Vector2(carretHitWidth, height));
-                bool clicked = layout.InvisibleInteractionAt(_id + "##caret" + element.GetHashCode(), carretRect.min, carretRect.size, out bool hover, out bool active, FuButtonFlags.MouseButtonLeft, true);
+                bool clicked = layout.InvisibleInteractionAt(getCaretId(element), carretRect.min, carretRect.size, out bool hover, out bool active, FuButtonFlags.MouseButtonLeft, true);
 
                 // set mouse cursor
                 if (hover)

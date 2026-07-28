@@ -28,6 +28,9 @@ namespace Fu
     /// </summary>
     public static partial class Fugui
     {
+        private static readonly List<KeyValuePair<int, FuContext>> _renderContextSnapshot =
+            new List<KeyValuePair<int, FuContext>>();
+
         /// <summary>
         /// Render each FuGui contexts
         /// </summary>
@@ -50,51 +53,68 @@ namespace Fu
             // clean popup stack to prevent popup to stay on stack if they close unexpectedly
             CleanPopupStack();
 
-            // render any other contexts BEFORE, because 3D containers need to handle input before default to handle HasHovered3DWindowThisFrame
-            foreach (var contextPair in Contexts.ToList())
+            // Reuse one snapshot because context callbacks may mutate the live registry during rendering.
+            _renderContextSnapshot.Clear();
+            foreach (KeyValuePair<int, FuContext> contextPair in Contexts)
             {
-                if (!Contexts.TryGetValue(contextPair.Key, out FuContext context) ||
-                    ReferenceEquals(context, DefaultContext) ||
-                    !context.Started)
+                _renderContextSnapshot.Add(contextPair);
+            }
+
+            try
+            {
+                // Render secondary contexts first so 3D input ownership is resolved before the main context.
+                for (int contextIndex = 0; contextIndex < _renderContextSnapshot.Count; contextIndex++)
                 {
-                    continue;
-                }
+                    KeyValuePair<int, FuContext> contextPair = _renderContextSnapshot[contextIndex];
+                    if (!Contexts.TryGetValue(contextPair.Key, out FuContext context) ||
+                        ReferenceEquals(context, DefaultContext) ||
+                        !context.Started)
+                    {
+                        continue;
+                    }
 
 #if FU_EXTERNALIZATION
-                FuExternalWindowContainer externalWindowContainer = null;
-                if (context is FuExternalContext externalContext)
-                {
-                    externalWindowContainer = externalContext.Window?.Window?.Container as FuExternalWindowContainer;
-                    if (externalWindowContainer != null)
+                    FuExternalWindowContainer externalWindowContainer = null;
+                    if (context is FuExternalContext externalContext)
                     {
-                        externalWindowContainer.Update();
+                        externalWindowContainer = externalContext.Window?.Window?.Container as FuExternalWindowContainer;
+                        if (externalWindowContainer != null)
+                        {
+                            externalWindowContainer.Update();
+                        }
                     }
-                }
 #endif
 
-                ResetWindowInputBlockForFrame();
-                if (context.PrepareRender())
-                {
-                    bool publishDrawData = ShouldPublishContextDrawData(context);
-                    if (publishDrawData)
+                    ResetWindowInputBlockForFrame();
+                    if (context.PrepareRender())
                     {
-                        MarkContextDrawDataPublished(context);
-                    }
-                    HasRenderWindowThisFrame = false;
+                        bool publishDrawData = ShouldPublishContextDrawData(context);
+                        if (publishDrawData)
+                        {
+                            MarkContextDrawDataPublished(context);
+                        }
+                        HasRenderWindowThisFrame = false;
 
-                    context.Render(publishDrawData);
-                    ExecuteAfterCurrentRenderContextCallbacks();
-                    context.EndRender();
-                    RestoreWindowInputsAfterFrame();
-                    if (_targetScale != -1f)
+                        context.Render(publishDrawData);
+                        ExecuteAfterCurrentRenderContextCallbacks();
+                        context.EndRender();
+                        RestoreWindowInputsAfterFrame();
+                        if (_targetScale != -1f)
+                        {
+                            context.SetScale(_targetScale, _targetFontScale);
+                        }
+                    }
+                    else
                     {
-                        context.SetScale(_targetScale, _targetFontScale);
+                        RestoreWindowInputsAfterFrame();
                     }
                 }
-                else
-                {
-                    RestoreWindowInputsAfterFrame();
-                }
+            }
+            finally
+            {
+                // Do not retain context references beyond the frame snapshot lifetime.
+                _renderContextSnapshot.Clear();
+                TrimRenderContextSnapshot();
             }
 
             if (MainContainerEnabled && DefaultContext != null)
@@ -157,6 +177,22 @@ namespace Fu
 
             // prevent rescaling each frames
             _targetScale = -1f;
+        }
+
+        /// <summary>
+        /// Releases snapshot capacity retained by an obsolete context-count spike.
+        /// </summary>
+        private static void TrimRenderContextSnapshot()
+        {
+            // A fourfold contraction avoids churn while bounding the retained managed array.
+            int liveContextCount = Contexts != null ? Contexts.Count : 0;
+            int excessiveCapacityThreshold = liveContextCount <= int.MaxValue / 4
+                ? Math.Max(32, liveContextCount * 4)
+                : int.MaxValue;
+            if (_renderContextSnapshot.Capacity > excessiveCapacityThreshold)
+            {
+                _renderContextSnapshot.Capacity = Math.Max(8, liveContextCount);
+            }
         }
     }
 }

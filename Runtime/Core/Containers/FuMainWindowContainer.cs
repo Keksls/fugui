@@ -92,6 +92,8 @@ namespace Fu
         private Queue<FuWindow> _toRemoveWindows;
         // A queue of windows to be added.
         private Queue<FuWindow> _toAddWindows;
+        private readonly HashSet<string> _pendingRemoveWindowIds = new HashSet<string>();
+        private readonly HashSet<string> _pendingAddWindowIds = new HashSet<string>();
         private readonly List<string> _pendingBringToFrontWindowIds = new List<string>();
         private readonly HashSet<string> _renderedWindowIds = new HashSet<string>();
         private bool _isRenderingWindows;
@@ -189,38 +191,77 @@ namespace Fu
             while (_toRemoveWindows.Count > 0)
             {
                 FuWindow window = _toRemoveWindows.Dequeue();
+                _pendingRemoveWindowIds.Remove(window.ID);
                 window.OnClosed -= UIWindow_OnClose;
                 Windows.Remove(window.ID);
                 if (window.Container == this)
-                    window.Container = null;
+                {
+                    try
+                    {
+                        // The registry close still finalizes even if one removal observer fails.
+                        window.Container = null;
+                    }
+                    catch (Exception exception)
+                    {
+                        Fugui.Fire_OnUIException(exception);
+                    }
+                }
             }
 
             // add windows
             while (_toAddWindows.Count > 0)
             {
                 FuWindow window = _toAddWindows.Dequeue();
-                // store UIWindow variable
-                Windows.Add(window.ID, window);
-                // place window into this container and keep old position
-                if (window.Container != null)
+                _pendingAddWindowIds.Remove(window.ID);
+                if (!window.IsOpened ||
+                    !Fugui.UIWindows.TryGetValue(window.ID, out FuWindow registeredWindow) ||
+                    !ReferenceEquals(window, registeredWindow))
                 {
-                    Vector2Int worldPos = window.WorldPosition;
-                    window.Container = this;
-                    window.LocalPosition = AbsoluteScreenToLocalPosition(worldPos);
+                    continue;
                 }
-                else
+
+                try
                 {
-                    window.Container = this;
-                }
-                window.IsExternal = false;
-                // register window events
-                window.OnClosed += UIWindow_OnClose;
-                window.InitializeOnContainer();
+                    // Commit ownership and initialization as one queued operation.
+                    Windows.Add(window.ID, window);
+                    if (window.Container != null)
+                    {
+                        Vector2Int worldPos = window.WorldPosition;
+                        window.Container = this;
+                        window.LocalPosition = AbsoluteScreenToLocalPosition(worldPos);
+                    }
+                    else
+                    {
+                        window.Container = this;
+                    }
+                    window.IsExternal = false;
+                    window.OnClosed += UIWindow_OnClose;
+                    window.InitializeOnContainer();
 #if FU_EXTERNALIZATION
-                Vector2Int handoffMousePos = AbsoluteScreenToLocalPosition(Fugui.AbsoluteMonitorMousePosition);
-                bool handoffLeftMousePressed = _fuMouseState.IsPressed(FuMouseButton.Left);
-                window.TryBeginPendingInternalizedDrag(handoffMousePos, handoffLeftMousePressed);
+                    Vector2Int handoffMousePos = AbsoluteScreenToLocalPosition(Fugui.AbsoluteMonitorMousePosition);
+                    bool handoffLeftMousePressed = _fuMouseState.IsPressed(FuMouseButton.Left);
+                    window.TryBeginPendingInternalizedDrag(handoffMousePos, handoffLeftMousePressed);
 #endif
+                }
+                catch (Exception exception)
+                {
+                    // A failed initialization cannot remain registered in either the container or Fugui.
+                    window.OnClosed -= UIWindow_OnClose;
+                    Windows.Remove(window.ID);
+                    if (window.Container == this)
+                    {
+                        try
+                        {
+                            window.Container = null;
+                        }
+                        catch (Exception removalException)
+                        {
+                            Fugui.Fire_OnUIException(removalException);
+                        }
+                    }
+                    window.RollbackFailedCreation();
+                    Fugui.Fire_OnUIException(exception);
+                }
             }
         }
 
@@ -969,10 +1010,14 @@ namespace Fu
         /// <returns>true if success (not already in it)</returns>
         public bool TryAddWindow(FuWindow UIWindow)
         {
-            if (Windows.ContainsKey(UIWindow.ID))
+            if (UIWindow == null ||
+                Windows.ContainsKey(UIWindow.ID) ||
+                _pendingAddWindowIds.Contains(UIWindow.ID))
             {
                 return false;
             }
+
+            _pendingAddWindowIds.Add(UIWindow.ID);
             _toAddWindows.Enqueue(UIWindow);
             return true;
         }
@@ -993,12 +1038,50 @@ namespace Fu
         /// <returns>true if success (contained)</returns>
         public bool TryRemoveWindow(string id)
         {
+            if (string.IsNullOrEmpty(id))
+            {
+                return false;
+            }
+
+            if (_pendingAddWindowIds.Contains(id))
+            {
+                // Cancel a queued creation before this container commits its ownership.
+                CancelPendingWindowAdd(id);
+                return false;
+            }
+
             if (!Windows.ContainsKey(id))
             {
                 return false;
             }
+
+            if (_pendingRemoveWindowIds.Contains(id))
+            {
+                return true;
+            }
+
+            _pendingRemoveWindowIds.Add(id);
             _toRemoveWindows.Enqueue(Windows[id]);
             return true;
+        }
+
+        /// <summary>
+        /// Removes a window from the pending-add queue before ownership is committed.
+        /// </summary>
+        /// <param name="windowId">Identifier of the pending window to cancel.</param>
+        private void CancelPendingWindowAdd(string windowId)
+        {
+            int pendingCount = _toAddWindows.Count;
+            for (int i = 0; i < pendingCount; i++)
+            {
+                FuWindow pendingWindow = _toAddWindows.Dequeue();
+                if (pendingWindow == null || pendingWindow.ID != windowId)
+                {
+                    _toAddWindows.Enqueue(pendingWindow);
+                }
+            }
+
+            _pendingAddWindowIds.Remove(windowId);
         }
 
         /// <summary>

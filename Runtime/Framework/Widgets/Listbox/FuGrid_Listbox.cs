@@ -24,7 +24,7 @@ namespace Fu.Framework
             }
             drawElementLabel(text, FuTextStyle.Default);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-            base.ListBox("##" + text, callback, size);
+            base.ListBox(GetCachedCompositeId("##", text), callback, size);
         }
         #endregion
     }

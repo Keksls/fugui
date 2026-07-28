@@ -1,4 +1,5 @@
 using ImGuiNET;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -44,6 +45,7 @@ namespace Fu
         public bool IsHoverBottomBar { get { return _isHoverBottomBar; } }
 
         private static readonly HashSet<int> _currentPressedKeys = new HashSet<int>();
+        private readonly Action<FuWindow> _collectWindowHoverState;
         #endregion
 
         #region Constructors
@@ -52,6 +54,8 @@ namespace Fu
         /// </summary>
         public FuMouseState()
         {
+            // Reuse the same container collector for every input frame.
+            _collectWindowHoverState = CollectWindowHoverState;
             _position = Vector2Int.zero;
             _movement = Vector2.zero;
             _wheel = Vector2.zero;
@@ -167,13 +171,25 @@ namespace Fu
             ButtonStates[2].SetState(btn2State, _position);
 
             // check whatever mouse is hover any overlay
-            container.OnEachWindow((window) =>
+            container.OnEachWindow(_collectWindowHoverState);
+        }
+
+        /// <summary>
+        /// Merges one window's hover flags into the current container input state.
+        /// </summary>
+        /// <param name="window">Window reported by the container.</param>
+        private void CollectWindowHoverState(FuWindow window)
+        {
+            // Container hover flags are accumulated in render order.
+            if (window == null || window.Mouse == null)
             {
-                _isHoverOverlay |= window.Mouse.IsHoverOverlay;
-                _isHoverPupUp |= window.Mouse.IsHoverPopup;
-                _isHoverTopBar |= window.Mouse.IsHoverTopBar;
-                _isHoverBottomBar |= window.Mouse._isHoverBottomBar;
-            });
+                return;
+            }
+
+            _isHoverOverlay |= window.Mouse.IsHoverOverlay;
+            _isHoverPupUp |= window.Mouse.IsHoverPopup;
+            _isHoverTopBar |= window.Mouse.IsHoverTopBar;
+            _isHoverBottomBar |= window.Mouse._isHoverBottomBar;
         }
 
         /// <summary>

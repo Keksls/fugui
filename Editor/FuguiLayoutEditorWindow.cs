@@ -857,26 +857,43 @@ namespace Fu.Editor
             Directory.CreateDirectory(folder);
 
             string previousKey = _selectedLayoutKey;
-            if (!string.IsNullOrEmpty(previousKey) && previousKey != normalizedName)
+            NormalizeLayout(_currentLayout);
+            FuDockingLayoutDefinition stagedLayout = _currentLayout.Clone();
+            stagedLayout.Name = normalizedName;
+            if (!stagedLayout.TryValidate(out string validationError))
             {
-                string oldPath = Path.Combine(folder, previousKey + "." + FuDockingLayoutManager.FUGUI_DOCKING_LAYOUT_EXTENTION);
-                if (File.Exists(oldPath))
-                {
-                    File.Delete(oldPath);
-                }
-
-                _layouts.Remove(previousKey);
+                _status = "Invalid layout: " + validationError;
+                return;
             }
 
+            string filePath = Path.Combine(folder, normalizedName + "." + FuDockingLayoutManager.FUGUI_DOCKING_LAYOUT_EXTENTION);
+            string indexPath = Path.Combine(folder, "layouts_index.json");
+            string[] committedNames = _layouts.Keys
+                .Where(name => name != previousKey)
+                .Append(normalizedName)
+                .Distinct()
+                .OrderBy(name => name)
+                .ToArray();
+            Dictionary<string, string> writes = new Dictionary<string, string>
+            {
+                [filePath] = FuDockingLayoutDefinition.Serialize(stagedLayout),
+                [indexPath] = JsonUtility.ToJson(new FuLayoutIndex { Layouts = committedNames }, true)
+            };
+            List<string> deletes = new List<string>();
+            if (!string.IsNullOrEmpty(previousKey) && previousKey != normalizedName)
+            {
+                deletes.Add(Path.Combine(folder, previousKey + "." + FuDockingLayoutManager.FUGUI_DOCKING_LAYOUT_EXTENTION));
+            }
+            ApplyFileTransaction(writes, deletes);
+
+            if (!string.IsNullOrEmpty(previousKey) && previousKey != normalizedName)
+            {
+                _layouts.Remove(previousKey);
+            }
             _currentLayout.Name = normalizedName;
-            NormalizeLayout(_currentLayout);
             _layouts[normalizedName] = _currentLayout;
             _selectedLayoutKey = normalizedName;
             _layoutName = normalizedName;
-
-            string filePath = Path.Combine(folder, normalizedName + "." + FuDockingLayoutManager.FUGUI_DOCKING_LAYOUT_EXTENTION);
-            File.WriteAllText(filePath, FuDockingLayoutDefinition.Serialize(_currentLayout));
-            SaveLayoutsIndex(folder);
             AssetDatabase.Refresh();
 
             _layoutDirty = false;
@@ -898,13 +915,18 @@ namespace Fu.Editor
 
             string folder = AssetPathToAbsolute(_layoutsFolder);
             string filePath = Path.Combine(folder, _selectedLayoutKey + "." + FuDockingLayoutManager.FUGUI_DOCKING_LAYOUT_EXTENTION);
-            if (File.Exists(filePath))
+            string[] committedNames = _layouts.Keys
+                .Where(name => name != _selectedLayoutKey)
+                .OrderBy(name => name)
+                .ToArray();
+            Dictionary<string, string> writes = new Dictionary<string, string>
             {
-                File.Delete(filePath);
-            }
+                [Path.Combine(folder, "layouts_index.json")] =
+                    JsonUtility.ToJson(new FuLayoutIndex { Layouts = committedNames }, true)
+            };
+            ApplyFileTransaction(writes, new[] { filePath });
 
             _layouts.Remove(_selectedLayoutKey);
-            SaveLayoutsIndex(folder);
             AssetDatabase.Refresh();
 
             _currentLayout = null;
@@ -928,7 +950,12 @@ namespace Fu.Editor
                 Layouts = _layouts.Keys.OrderBy(name => name).ToArray()
             };
 
-            File.WriteAllText(Path.Combine(folder, "layouts_index.json"), JsonUtility.ToJson(index, true));
+            ApplyFileTransaction(
+                new Dictionary<string, string>
+                {
+                    [Path.Combine(folder, "layouts_index.json")] = JsonUtility.ToJson(index, true)
+                },
+                Array.Empty<string>());
         }
 
         private void SplitNode(FuDockingLayoutDefinition node, UIDockSpaceOrientation orientation)
@@ -1040,16 +1067,27 @@ namespace Fu.Editor
             Directory.CreateDirectory(Path.GetDirectoryName(absolutePath));
 
             string className = Path.GetFileNameWithoutExtension(path);
-            File.WriteAllText(absolutePath, GenerateWindowNamesSource(className, _editableWindowNames));
-
-            if (_layoutFilesChangedByWindowNames)
+            Dictionary<string, string> writes = new Dictionary<string, string>
             {
-                SaveAllLayouts();
+                [absolutePath] = GenerateWindowNamesSource(className, _editableWindowNames)
+            };
+            bool savesLayouts = _layoutFilesChangedByWindowNames;
+
+            if (savesLayouts)
+            {
+                string layoutsFolder = AssetPathToAbsolute(_layoutsFolder);
+                Directory.CreateDirectory(layoutsFolder);
+                AddAllLayoutWrites(layoutsFolder, writes);
             }
 
+            ApplyFileTransaction(writes, Array.Empty<string>());
             _windowNamesScriptPath = path;
             _windowNamesDirty = false;
             _layoutFilesChangedByWindowNames = false;
+            if (savesLayouts)
+            {
+                _layoutDirty = false;
+            }
             FuWindowNameProvider.ClearCache();
             AssetDatabase.Refresh();
             _status = "Window names script saved. Unity will recompile the generated symbols.";
@@ -1059,16 +1097,103 @@ namespace Fu.Editor
         {
             string folder = AssetPathToAbsolute(_layoutsFolder);
             Directory.CreateDirectory(folder);
+            Dictionary<string, string> writes = new Dictionary<string, string>();
+            AddAllLayoutWrites(folder, writes);
+            ApplyFileTransaction(writes, Array.Empty<string>());
+            _layoutDirty = false;
+        }
 
+        /// <summary>
+        /// Adds every normalized layout and its index to a pending editor file transaction.
+        /// </summary>
+        /// <param name="folder">Destination layouts folder.</param>
+        /// <param name="writes">Transaction payload to extend.</param>
+        private void AddAllLayoutWrites(string folder, IDictionary<string, string> writes)
+        {
+            // Serialize every layout before ApplyFileTransaction replaces the first destination.
             foreach (KeyValuePair<string, FuDockingLayoutDefinition> pair in _layouts.ToList())
             {
                 NormalizeLayout(pair.Value);
                 string filePath = Path.Combine(folder, pair.Key + "." + FuDockingLayoutManager.FUGUI_DOCKING_LAYOUT_EXTENTION);
-                File.WriteAllText(filePath, FuDockingLayoutDefinition.Serialize(pair.Value));
+                writes[filePath] = FuDockingLayoutDefinition.Serialize(pair.Value);
             }
 
-            SaveLayoutsIndex(folder);
-            _layoutDirty = false;
+            FuLayoutIndex index = new FuLayoutIndex
+            {
+                Layouts = _layouts.Keys.OrderBy(name => name).ToArray()
+            };
+            writes[Path.Combine(folder, "layouts_index.json")] = JsonUtility.ToJson(index, true);
+        }
+
+        /// <summary>
+        /// Applies a group of editor file writes and deletions with rollback on failure.
+        /// </summary>
+        /// <param name="writes">Final file contents keyed by destination path.</param>
+        /// <param name="deletes">Files to delete as part of the same transaction.</param>
+        private static void ApplyFileTransaction(
+            IReadOnlyDictionary<string, string> writes,
+            IEnumerable<string> deletes)
+        {
+            if (writes == null)
+            {
+                throw new ArgumentNullException(nameof(writes));
+            }
+
+            List<string> deletePaths = deletes?
+                .Where(path => !string.IsNullOrEmpty(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
+            HashSet<string> affectedPaths = new HashSet<string>(writes.Keys, StringComparer.OrdinalIgnoreCase);
+            foreach (string deletePath in deletePaths)
+            {
+                affectedPaths.Add(deletePath);
+            }
+
+            Dictionary<string, (bool Existed, string Content)> snapshots =
+                new Dictionary<string, (bool Existed, string Content)>(StringComparer.OrdinalIgnoreCase);
+            foreach (string path in affectedPaths)
+            {
+                bool existed = File.Exists(path);
+                snapshots.Add(path, (existed, existed ? File.ReadAllText(path) : null));
+            }
+
+            try
+            {
+                // Every payload is ready before the first destination is replaced.
+                foreach (KeyValuePair<string, string> write in writes)
+                {
+                    Fugui.WriteAllTextAtomically(write.Key, write.Value);
+                }
+                foreach (string deletePath in deletePaths)
+                {
+                    if (File.Exists(deletePath))
+                    {
+                        File.Delete(deletePath);
+                    }
+                }
+            }
+            catch
+            {
+                foreach (KeyValuePair<string, (bool Existed, string Content)> snapshot in snapshots)
+                {
+                    try
+                    {
+                        if (snapshot.Value.Existed)
+                        {
+                            Fugui.WriteAllTextAtomically(snapshot.Key, snapshot.Value.Content);
+                        }
+                        else if (File.Exists(snapshot.Key))
+                        {
+                            File.Delete(snapshot.Key);
+                        }
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        Debug.LogException(rollbackException);
+                    }
+                }
+                throw;
+            }
         }
 
         private bool CanSaveWindowNames()

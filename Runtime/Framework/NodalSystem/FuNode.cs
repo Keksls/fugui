@@ -166,6 +166,27 @@ namespace Fu.Framework
                 Debug.LogError($"[Nodal] Cannot add a null port to node '{Title}'");
                 return;
             }
+            if (string.IsNullOrWhiteSpace(port.Name))
+            {
+                Debug.LogError($"[Nodal] Cannot add a port without a name to node '{Title}'");
+                return;
+            }
+            if (port.Id <= 0 || Ports.Values.Any(existingPort => existingPort.Id == port.Id))
+            {
+                Debug.LogError($"[Nodal] Port '{port.Name}' has an invalid or duplicate ID on node '{Title}'");
+                return;
+            }
+            if (!System.Enum.IsDefined(typeof(FuNodalPortDirection), port.Direction) ||
+                !System.Enum.IsDefined(typeof(FuNodalMultiplicity), port.Multiplicity))
+            {
+                Debug.LogError($"[Nodal] Port '{port.Name}' has invalid connection metadata on node '{Title}'");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(port.DataType) || port.AllowedTypes == null)
+            {
+                Debug.LogError($"[Nodal] Port '{port.Name}' has invalid type metadata on node '{Title}'");
+                return;
+            }
             if (Ports.ContainsKey(port.Name))
             {
                 Debug.LogWarning($"[Nodal] Port '{port.Name}' already exists in node '{Title}'");
@@ -173,6 +194,7 @@ namespace Fu.Framework
             }
             Ports[port.Name] = port;
             Dirty = true;
+            Graph?.MarkDirty();
         }
 
         /// <summary>
@@ -181,13 +203,17 @@ namespace Fu.Framework
         /// <param name="portName"> The name of the port to be removed from the node.</param>
         public void RemovePort(string portName)
         {
-            if (!Ports.ContainsKey(portName))
+            if (string.IsNullOrWhiteSpace(portName) || !Ports.TryGetValue(portName, out FuNodalPort port))
             {
                 Debug.LogWarning($"[Nodal] Port '{portName}' not found in node '{Title}'");
                 return;
             }
+
+            // Graph connectivity is committed before the node publishes the port removal.
+            Graph?.DisconnectPort(this, port);
             Ports.Remove(portName);
             Dirty = true;
+            Graph?.MarkDirty();
         }
 
         /// <summary>

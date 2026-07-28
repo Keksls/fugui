@@ -1,7 +1,6 @@
 using Fu;
 using ImGuiNET;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -12,8 +11,11 @@ namespace Fu.Framework
     public partial class FuLayout
     {
         #region State
-        private static Dictionary<string, bool> _collapsablesOpenStates = new Dictionary<string, bool>();
-        private static Dictionary<string, string> _collapsablesGroupOpenStates = new Dictionary<string, string>();
+        private const int CollapsableStateCacheCapacity = 1024;
+        private static readonly FuBoundedCache<string, bool> _collapsablesOpenStates =
+            new FuBoundedCache<string, bool>(CollapsableStateCacheCapacity, StringComparer.Ordinal);
+        private static readonly FuBoundedCache<string, string> _collapsablesGroupOpenStates =
+            new FuBoundedCache<string, string>(CollapsableStateCacheCapacity, StringComparer.Ordinal);
         #endregion
 
         #region Methods
@@ -30,13 +32,13 @@ namespace Fu.Framework
 
             if (!string.IsNullOrEmpty(groupID))
             {
-                if (_collapsablesGroupOpenStates.ContainsKey(groupID))
+                if (_collapsablesGroupOpenStates.TryGetValue(groupID, out string previouslyOpenId))
                 {
-                    _collapsablesOpenStates[_collapsablesGroupOpenStates[groupID]] = false;
+                    _collapsablesOpenStates.Set(previouslyOpenId, false);
                 }
-                _collapsablesGroupOpenStates[groupID] = id;
+                _collapsablesGroupOpenStates.Set(groupID, id);
             }
-            _collapsablesOpenStates[id] = true;
+            _collapsablesOpenStates.Set(id, true);
         }
 
         /// <summary>
@@ -49,11 +51,13 @@ namespace Fu.Framework
             {
                 id = id + "##" + FuWindow.CurrentDrawingWindow.ID;
             }
-            if (groupID != null && _collapsablesGroupOpenStates.ContainsKey(groupID) && _collapsablesGroupOpenStates[groupID] == id)
+            if (groupID != null &&
+                _collapsablesGroupOpenStates.TryGetValue(groupID, out string openId) &&
+                openId == id)
             {
                 _collapsablesGroupOpenStates.Remove(groupID);
             }
-            _collapsablesOpenStates[id] = false;
+            _collapsablesOpenStates.Set(id, false);
         }
 
         /// <summary>
@@ -123,12 +127,11 @@ namespace Fu.Framework
             rightPartCustomUIWidth *= Fugui.CurrentContext.Scale;
 
             // register collapsable open state if not already done
-            if (!_collapsablesOpenStates.ContainsKey(text))
+            if (!_collapsablesOpenStates.TryGetValue(text, out bool open))
             {
-                _collapsablesOpenStates.Add(text, defaultOpen);
+                open = defaultOpen;
+                _collapsablesOpenStates.Set(text, open);
             }
-            // get collapsable open state
-            bool open = _collapsablesOpenStates[text];
 
             // Adjust the padding and spacing for the frame and the items within it
             Fugui.Push(ImGuiStyleVar.ItemSpacing, new Vector2(0f, 0f));
@@ -141,13 +144,13 @@ namespace Fu.Framework
                 open = !open;
                 if (open && !string.IsNullOrEmpty(groupID))
                 {
-                    if (_collapsablesGroupOpenStates.ContainsKey(groupID))
+                    if (_collapsablesGroupOpenStates.TryGetValue(groupID, out string previouslyOpenId))
                     {
-                        _collapsablesOpenStates[_collapsablesGroupOpenStates[groupID]] = false;
+                        _collapsablesOpenStates.Set(previouslyOpenId, false);
                     }
-                    _collapsablesGroupOpenStates[groupID] = text;
+                    _collapsablesGroupOpenStates.Set(groupID, text);
                 }
-                _collapsablesOpenStates[text] = open;
+                _collapsablesOpenStates.Set(text, open);
             }
             // Pop the font changes
             Fugui.PopFont();
@@ -388,6 +391,16 @@ namespace Fu.Framework
                 min.x = center;
                 max.x = center;
             }
+        }
+
+        /// <summary>
+        /// Clears collapsable widget state owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetCollapsableState()
+        {
+            // Open states and group ownership must be discarded together.
+            _collapsablesOpenStates.Clear();
+            _collapsablesGroupOpenStates.Clear();
         }
         #endregion
     }

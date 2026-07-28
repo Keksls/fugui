@@ -82,12 +82,12 @@ namespace Fu.Framework
             // set default path
             defaultPath = string.IsNullOrEmpty(defaultPath) ? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) : defaultPath;
 
-            // set path if not exist in dic
-            if (!_pathFieldValues.ContainsKey(text))
+            // Retain editable text in the bounded widget-state cache.
+            if (!_pathFieldValues.TryGetValue(text, out string path))
             {
-                _pathFieldValues.Add(text, defaultPath);
+                path = defaultPath;
+                _pathFieldValues.Set(text, path);
             }
-            string path = _pathFieldValues[text];
 
             // display values
             float cursorPos = ImGui.GetCursorScreenPos().x;
@@ -109,7 +109,7 @@ namespace Fu.Framework
             {
                 flags |= ImGuiInputTextFlags.ReadOnly;
             }
-            if (ImGui.InputText("##" + text, ref path, 2048, flags))
+            if (ImGui.InputText(GetCachedCompositeId("##", text), ref path, 2048, flags))
             {
                 validatePath();
             }
@@ -125,7 +125,7 @@ namespace Fu.Framework
                 // draw button
                 ImGui.SameLine();
                 ImGui.SetCursorScreenPos(new Vector2(cursorPos + width - buttonWidth, ImGui.GetCursorScreenPos().y));
-                if (_customButton("...##" + text, new Vector2(buttonWidth, ImGui.GetItemRectSize().y), Vector2.zero, new Vector2(0f, -4f), FuButtonStyle.Default, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght))
+                if (_customButton(GetCachedCompositeId("...##", text), new Vector2(buttonWidth, ImGui.GetItemRectSize().y), Vector2.zero, new Vector2(0f, -4f), FuButtonStyle.Default, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght))
                 {
                     string[] paths = null;
                     if (onlyFolder)
@@ -170,7 +170,7 @@ namespace Fu.Framework
 
             if (edited)
             {
-                callback?.Invoke(_pathFieldValues[text]);
+                callback?.Invoke(path);
             }
 
             void validatePath()
@@ -178,7 +178,7 @@ namespace Fu.Framework
                 // it must be a directory and it exists
                 if (onlyFolder && Directory.Exists(path))
                 {
-                    _pathFieldValues[text] = path;
+                    _pathFieldValues.Set(text, path);
                     edited = true;
                 }
                 // it must be a file and it exists
@@ -197,7 +197,7 @@ namespace Fu.Framework
                                 // check whatever extention is valid
                                 if (extStr == "*" || extStr == fileExt)
                                 {
-                                    _pathFieldValues[text] = path;
+                                    _pathFieldValues.Set(text, path);
                                     edited = true;
                                     return;
                                 }
@@ -207,7 +207,7 @@ namespace Fu.Framework
                     // we do not need to check extentions
                     else
                     {
-                        _pathFieldValues[text] = path;
+                        _pathFieldValues.Set(text, path);
                         edited = true;
                     }
                 }

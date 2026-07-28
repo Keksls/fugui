@@ -15,9 +15,14 @@ namespace Fu
         internal static long ImDrawCmdSize { get; private set; }
         internal static long ImDrawVertSize { get; private set; }
 
-        private static Dictionary<string, string> _unIconnizedTitleMapping = new Dictionary<string, string>();
-        private static readonly Dictionary<IntPtr, CachedOwnerName> _ownerNameCache = new Dictionary<IntPtr, CachedOwnerName>();
-        private static readonly Dictionary<string, string> _childRootWindowNameCache = new Dictionary<string, string>();
+        private const int OwnerNameCacheCapacity = 4096;
+        private const int ParsedWindowNameCacheCapacity = 2048;
+        private static readonly FuBoundedCache<string, string> _unIconnizedTitleMapping =
+            new FuBoundedCache<string, string>(ParsedWindowNameCacheCapacity, StringComparer.Ordinal);
+        private static readonly FuBoundedCache<IntPtr, CachedOwnerName> _ownerNameCache =
+            new FuBoundedCache<IntPtr, CachedOwnerName>(OwnerNameCacheCapacity);
+        private static readonly FuBoundedCache<string, string> _childRootWindowNameCache =
+            new FuBoundedCache<string, string>(ParsedWindowNameCacheCapacity, StringComparer.Ordinal);
         private static readonly List<ResolvedDrawList> _resolvedDrawLists = new List<ResolvedDrawList>();
         private static readonly Dictionary<FuWindow, int> _lastWindowDrawListIndices = new Dictionary<FuWindow, int>();
         private static readonly HashSet<FuWindow> _rebuiltWindows = new HashSet<FuWindow>();
@@ -264,12 +269,12 @@ namespace Fu
             }
 
             string resolvedName = getWindowName(windows, new NullTerminatedString(nameData));
-            _ownerNameCache[ownerNamePtr] = new CachedOwnerName
+            _ownerNameCache.Set(ownerNamePtr, new CachedOwnerName
             {
                 Length = length,
                 Hash = hash,
                 Name = resolvedName
-            };
+            });
             return resolvedName;
         }
 
@@ -297,7 +302,7 @@ namespace Fu
             }
 
             rootWindowName = name.Substring(0, firstSlashIndex);
-            _childRootWindowNameCache.Add(name, rootWindowName);
+            _childRootWindowNameCache.Set(name, rootWindowName);
             return rootWindowName;
         }
 
@@ -334,7 +339,7 @@ namespace Fu
 
             if (!string.IsNullOrEmpty(csharpeEquivalentTitle))
             {
-                _unIconnizedTitleMapping.Add(name, csharpeEquivalentTitle);
+                _unIconnizedTitleMapping.Set(name, csharpeEquivalentTitle);
                 return csharpeEquivalentTitle;
             }
 

@@ -30,7 +30,7 @@ namespace Fu.Framework
             }
 
             drawElementLabel(label, FuTextStyle.Default);
-            return base.TableView("##" + label, items, columns, ref selectedIndex, searchQuery, searchTextGetter, height, flags);
+            return base.TableView(GetCachedCompositeId("##", label), items, columns, ref selectedIndex, searchQuery, searchTextGetter, height, flags);
         }
         #endregion
     }

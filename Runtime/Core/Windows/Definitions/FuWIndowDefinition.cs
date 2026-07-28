@@ -98,11 +98,25 @@ namespace Fu
         /// <param name="resizableSides">Sides that can resize this window when resize is enabled.</param>
         public FuWindowDefinition(FuWindowName windowName, FuLayer layer, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default, FuWindowResizeSides resizableSides = FuWindowResizeSides.Default)
         {
+            Vector2Int resolvedSize = size.HasValue ? size.Value : new Vector2Int(256, 128);
+            if (string.IsNullOrWhiteSpace(windowName.Name))
+            {
+                throw new ArgumentException("A window definition must have a non-empty name.", nameof(windowName));
+            }
+            if (resolvedSize.x <= 0 || resolvedSize.y <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size), "A window definition size must be strictly positive.");
+            }
+            if (!Enum.IsDefined(typeof(FuLayer), layer))
+            {
+                throw new ArgumentOutOfRangeException(nameof(layer));
+            }
+
             // Assign the specified values to the corresponding fields
             WindowName = windowName;
             UI = ui;
             Position = pos.HasValue ? pos.Value : new Vector2Int(-1, -1);
-            Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
+            Size = resolvedSize;
             WindowStyleFlags = windowStyleFlags;
             ResizableSides = resizableSides;
             Layer = layer;
@@ -130,7 +144,11 @@ namespace Fu
 
             if (!flags.HasFlag(FuWindowFlags.NoAutoRegisterWindowDefinition))
             {
-                Fugui.RegisterWindowDefinition(this);
+                if (!Fugui.RegisterWindowDefinition(this))
+                {
+                    throw new InvalidOperationException(
+                        $"A window definition with ID '{WindowName.ID}' is already registered.");
+                }
             }
         }
         #endregion
@@ -175,6 +193,11 @@ namespace Fu
         /// <returns> The current UIWindowDefinition object.</returns>
         public FuWindowDefinition SetCustomWindowType<T>(Func<FuWindowDefinition, T> uiWindowInstantiationFunc) where T : FuWindow
         {
+            if (uiWindowInstantiationFunc == null)
+            {
+                throw new ArgumentNullException(nameof(uiWindowInstantiationFunc));
+            }
+
             // Set the custom window instantiation function to the specified function that creates an instance of the specified UIWindow subclass
             _uiWindowInstantiationFunc = uiWindowInstantiationFunc;
             return this;
@@ -186,17 +209,44 @@ namespace Fu
         /// <returns>A new instance of the UIWindow class.</returns>
         public bool CreateUIWindow(out FuWindow window)
         {
+            window = null;
+
             // check whatever this winDef already has an instance and we do not want it to be ducplicated
             if (!AllowMultipleWindow && AlreadyHasInstance())
             {
-                window = null;
                 return false;
             }
 
-            // Use the Activator class to create a new instance of the UIWindow class with the current UIWindowDefinition object as the parameter
-            window = _uiWindowInstantiationFunc(this);
-            OnUIWindowCreated?.Invoke(window);
-            return true;
+            if (_uiWindowInstantiationFunc == null)
+            {
+                throw new InvalidOperationException($"Window definition '{WindowName.Name}' has no instantiation function.");
+            }
+
+            FuWindow createdWindow = null;
+            try
+            {
+                // Instantiate and notify only after the factory returned a valid, registered window.
+                createdWindow = _uiWindowInstantiationFunc(this);
+                if (createdWindow == null)
+                {
+                    throw new InvalidOperationException($"Window definition '{WindowName.Name}' returned a null window.");
+                }
+                if (!Fugui.UIWindows.TryGetValue(createdWindow.ID, out FuWindow registeredWindow) ||
+                    !ReferenceEquals(registeredWindow, createdWindow))
+                {
+                    throw new InvalidOperationException($"Window '{createdWindow.ID}' was not registered during its construction.");
+                }
+
+                OnUIWindowCreated?.Invoke(createdWindow);
+                window = createdWindow;
+                return true;
+            }
+            catch
+            {
+                // A failed factory or creation callback must not leave a registered orphan window.
+                createdWindow?.RollbackFailedCreation();
+                throw;
+            }
         }
 
         /// <summary>
@@ -206,9 +256,22 @@ namespace Fu
         /// <returns>A new instance of the specified UIWindow subclass.</returns>
         public bool CreateUIWindow<T>(out T window) where T : FuWindow
         {
-            // Call the CreateUIWindow method to create a new instance of the UIWindow class
-            // and implicitly cast it to the specified UIWindow subclass type
-            return CreateUIWindow(out window);
+            window = null;
+            if (!CreateUIWindow(out FuWindow createdWindow))
+            {
+                return false;
+            }
+
+            if (createdWindow is T typedWindow)
+            {
+                window = typedWindow;
+                return true;
+            }
+
+            // A mismatched custom factory is a configuration error, so close its result before reporting it.
+            createdWindow.RollbackFailedCreation();
+            throw new InvalidOperationException(
+                $"Window definition '{WindowName.Name}' created '{createdWindow.GetType().Name}' instead of '{typeof(T).Name}'.");
         }
 
         /// <summary>
@@ -318,8 +381,14 @@ namespace Fu
         /// <returns>The current UIWindowDefinition object.</returns>
         public FuWindowDefinition SetSize(Vector2Int? size = null)
         {
-            // Assign the specified size or the default value to the Size field
-            Size = size.HasValue ? size.Value : new Vector2Int(256, 128);
+            Vector2Int resolvedSize = size.HasValue ? size.Value : new Vector2Int(256, 128);
+            if (resolvedSize.x <= 0 || resolvedSize.y <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size), "A window definition size must be strictly positive.");
+            }
+
+            // Assign the validated size to the definition.
+            Size = resolvedSize;
             return this;
         }
 

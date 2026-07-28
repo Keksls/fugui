@@ -331,7 +331,7 @@ namespace Fu
                         {
                             using var builder = renderGraph.AddRasterRenderPass<PassData>($"Fugui_Context_{unityContext.ID}", out var passData);
                             builder.AllowGlobalStateModification(true);
-                            builder.SetRenderAttachment(color, 0, AccessFlags.Write);
+                            builder.SetRenderAttachment(color, 0, AccessFlags.ReadWrite);
 
                             if (depth.IsValid())
                             {
@@ -580,8 +580,14 @@ namespace Fu
                 if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
 
                 commandBuffer.BeginSample(_sampleName);
-                RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize);
-                commandBuffer.EndSample(_sampleName);
+                try
+                {
+                    RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize);
+                }
+                finally
+                {
+                    commandBuffer.EndSample(_sampleName);
+                }
             }
 
             /// <summary>
@@ -614,8 +620,14 @@ namespace Fu
                 if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
 
                 commandBuffer.BeginSample(_sampleName);
-                RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
-                commandBuffer.EndSample(_sampleName);
+                try
+                {
+                    RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
+                }
+                finally
+                {
+                    commandBuffer.EndSample(_sampleName);
+                }
             }
 
             /// <summary>
@@ -635,6 +647,7 @@ namespace Fu
                     DrawListMesh fallbackMesh = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
                     fallbackMesh.Update(drawData.DrawLists, drawData.DisplaySize, drawData.FramebufferScale);
                     CreateDrawCommands(fallbackMesh.Mesh, material, commandBuffer, drawData.DrawLists, drawData, fbSize, Vector2.zero);
+                    TrimTransientMeshes(ctxId, 1);
                     return;
                 }
 
@@ -679,6 +692,7 @@ namespace Fu
                         CreateDrawCommands(meshData.Mesh, material, commandBuffer, GetSingleDrawList(drawList), drawData, fbSize, renderOffset);
                     }
                 }
+                TrimTransientMeshes(ctxId, transientMeshIndex);
             }
 
             /// <summary>
@@ -704,6 +718,7 @@ namespace Fu
                     DrawListMesh fallbackMesh = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
                     fallbackMesh.Update(drawData.DrawLists, drawData.DisplaySize, drawData.FramebufferScale);
                     CreateDrawCommands(fallbackMesh.Mesh, material, commandBuffer, drawData.DrawLists, drawData, fbSize, Vector2.zero, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
+                    TrimTransientMeshes(ctxId, 1);
                     return;
                 }
 
@@ -748,6 +763,7 @@ namespace Fu
                         CreateDrawCommands(meshData.Mesh, material, commandBuffer, GetSingleDrawList(drawList), drawData, fbSize, renderOffset, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
                     }
                 }
+                TrimTransientMeshes(ctxId, transientMeshIndex);
             }
 
             /// <summary>
@@ -775,6 +791,36 @@ namespace Fu
                 }
 
                 return meshes[meshIndex];
+            }
+
+            /// <summary>
+            /// Releases transient renderer meshes above the current context working set.
+            /// </summary>
+            /// <param name="ctxId">Context whose transient meshes are being trimmed.</param>
+            /// <param name="activeCount">Number of meshes used by the current draw data.</param>
+            private void TrimTransientMeshes(int ctxId, int activeCount)
+            {
+                // A small reserve absorbs normal popup and overlay fluctuations without retaining old spikes.
+                const int minimumRetainedMeshes = 8;
+                if (!_transientMeshes.TryGetValue(ctxId, out List<DrawListMesh> meshes))
+                {
+                    return;
+                }
+
+                int retainedCount = Mathf.Max(minimumRetainedMeshes, activeCount);
+                for (int i = meshes.Count - 1; i >= retainedCount; i--)
+                {
+                    meshes[i]?.Destroy();
+                    meshes.RemoveAt(i);
+                }
+
+                int excessiveCapacityThreshold = retainedCount <= int.MaxValue / 4
+                    ? Mathf.Max(32, retainedCount * 4)
+                    : int.MaxValue;
+                if (meshes.Capacity > excessiveCapacityThreshold)
+                {
+                    meshes.Capacity = Mathf.Max(8, retainedCount);
+                }
             }
 
             /// <summary>
@@ -850,6 +896,11 @@ namespace Fu
             private void CreateDrawCommands(Mesh _mesh, Material _material, RasterCommandBuffer commandBuffer, IReadOnlyList<DrawList> drawLists, DrawData drawData, Vector2 fbSize, Vector2 renderOffset)
             {
                 IntPtr prevTextureId = IntPtr.Zero;
+#if FU_CUSTOM_MATERIALS_ENABLED
+                Material drawMaterial = _material;
+                int drawPass = 0;
+                FuCustomDrawMaterialState customMaterialState = default;
+#endif
                 Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
                     drawData.DisplayPos.x, drawData.DisplayPos.y);
                 Vector4 clipScale = new Vector4(drawData.FramebufferScale.x, drawData.FramebufferScale.y,
@@ -873,6 +924,17 @@ namespace Fu
                         ImDrawCmd drawCmd = drawList.CmdBuffer[i];
                         if (drawCmd.UserCallback != IntPtr.Zero)
                         {
+#if FU_CUSTOM_MATERIALS_ENABLED
+                            if (customMaterialState.TryHandleCommand(drawCmd))
+                            {
+                                customMaterialState.ResolveOverlay(
+                                    _textureManager,
+                                    _material,
+                                    out drawMaterial,
+                                    out drawPass);
+                                continue;
+                            }
+#endif
                             Debug.Log("unhandled user callback");
                         }
                         else
@@ -919,7 +981,11 @@ namespace Fu
                                 }
                             }
                             commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
+#if FU_CUSTOM_MATERIALS_ENABLED
+                            commandBuffer.DrawMesh(_mesh, meshMatrix, drawMaterial, subOf, drawPass, _materialProperties);
+#else
                             commandBuffer.DrawMesh(_mesh, meshMatrix, _material, subOf, 0, _materialProperties);
+#endif
                         }
                     }
                 }
@@ -945,6 +1011,11 @@ namespace Fu
             private void CreateDrawCommands(Mesh _mesh, Material _material, UnsafeCommandBuffer commandBuffer, IReadOnlyList<DrawList> drawLists, DrawData drawData, Vector2 fbSize, Vector2 renderOffset, TextureHandle target, TextureHandle backdropA, TextureHandle backdropB, int downsample, int blurWidth, int blurHeight)
             {
                 IntPtr prevTextureId = IntPtr.Zero;
+#if FU_CUSTOM_MATERIALS_ENABLED
+                Material drawMaterial = _material;
+                int drawPass = 0;
+                FuCustomDrawMaterialState customMaterialState = default;
+#endif
                 Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
                     drawData.DisplayPos.x, drawData.DisplayPos.y);
                 Vector4 clipScale = new Vector4(drawData.FramebufferScale.x, drawData.FramebufferScale.y,
@@ -965,6 +1036,17 @@ namespace Fu
                         ImDrawCmd drawCmd = drawList.CmdBuffer[i];
                         if (drawCmd.UserCallback != IntPtr.Zero)
                         {
+#if FU_CUSTOM_MATERIALS_ENABLED
+                            if (customMaterialState.TryHandleCommand(drawCmd))
+                            {
+                                customMaterialState.ResolveOverlay(
+                                    _textureManager,
+                                    _material,
+                                    out drawMaterial,
+                                    out drawPass);
+                                continue;
+                            }
+#endif
                             Debug.Log("unhandled user callback");
                         }
                         else
@@ -1017,7 +1099,11 @@ namespace Fu
                                 }
                             }
                             commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
+#if FU_CUSTOM_MATERIALS_ENABLED
+                            commandBuffer.DrawMesh(_mesh, meshMatrix, drawMaterial, subOf, drawPass, _materialProperties);
+#else
                             commandBuffer.DrawMesh(_mesh, meshMatrix, _material, subOf, 0, _materialProperties);
+#endif
                         }
                     }
                 }
@@ -1200,39 +1286,44 @@ namespace Fu
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
             {
                 var commandBuffer = CommandBufferPool.Get("FuguiRenderPass");
-
-                // Render the default context
-                if (_renderMainSurfaceContexts && Fugui.MainContainerEnabled && Fugui.DefaultContext != null)
+                try
                 {
-                    _textureManager = Fugui.DefaultContext.TextureManager;
-                    RenderDrawLists(Fugui.DefaultContext.ID, commandBuffer, Fugui.DefaultContext.DrawData);
-                }
-
-                // Render other contexts if available.
-                foreach (var contextPair in Fugui.Contexts)
-                {
-                    if (!ReferenceEquals(contextPair.Value, Fugui.DefaultContext) && contextPair.Value.Started)
+                    // Render the default context.
+                    if (_renderMainSurfaceContexts && Fugui.MainContainerEnabled && Fugui.DefaultContext != null)
                     {
-                        if (contextPair.Value is FuUnityContext unityContext)
-                        {
-                            if (unityContext.IsOffscreen && !_renderOffscreenContexts)
-                            {
-                                continue;
-                            }
-
-                            if (!unityContext.IsOffscreen && !_renderMainSurfaceContexts)
-                            {
-                                continue;
-                            }
-                        }
-
-                        _textureManager = contextPair.Value.TextureManager;
-                        RenderDrawLists(contextPair.Key, commandBuffer, contextPair.Value.DrawData);
+                        _textureManager = Fugui.DefaultContext.TextureManager;
+                        RenderDrawLists(Fugui.DefaultContext.ID, commandBuffer, Fugui.DefaultContext.DrawData);
                     }
-                }
 
-                context.ExecuteCommandBuffer(commandBuffer);
-                CommandBufferPool.Release(commandBuffer);
+                    // Render other contexts if available.
+                    foreach (var contextPair in Fugui.Contexts)
+                    {
+                        if (!ReferenceEquals(contextPair.Value, Fugui.DefaultContext) && contextPair.Value.Started)
+                        {
+                            if (contextPair.Value is FuUnityContext unityContext)
+                            {
+                                if (unityContext.IsOffscreen && !_renderOffscreenContexts)
+                                {
+                                    continue;
+                                }
+
+                                if (!unityContext.IsOffscreen && !_renderMainSurfaceContexts)
+                                {
+                                    continue;
+                                }
+                            }
+
+                            _textureManager = contextPair.Value.TextureManager;
+                            RenderDrawLists(contextPair.Key, commandBuffer, contextPair.Value.DrawData);
+                        }
+                    }
+
+                    context.ExecuteCommandBuffer(commandBuffer);
+                }
+                finally
+                {
+                    CommandBufferPool.Release(commandBuffer);
+                }
             }
 
             /// <summary>
@@ -1259,8 +1350,14 @@ namespace Fu
                 if (fbOSize.x <= 0f || fbOSize.y <= 0f || drawData.TotalVtxCount == 0) return;
 
                 commandBuffer.BeginSample(_sampleName);
-                RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize);
-                commandBuffer.EndSample(_sampleName);
+                try
+                {
+                    RenderDrawItems(ctxId, commandBuffer, _material, drawData, fbOSize);
+                }
+                finally
+                {
+                    commandBuffer.EndSample(_sampleName);
+                }
             }
 
             /// <summary>
@@ -1280,6 +1377,7 @@ namespace Fu
                     DrawListMesh fallbackMesh = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
                     fallbackMesh.Update(drawData.DrawLists, drawData.DisplaySize, drawData.FramebufferScale);
                     CreateDrawCommands(fallbackMesh.Mesh, material, commandBuffer, drawData.DrawLists, drawData, fbSize, Vector2.zero);
+                    TrimTransientMeshes(ctxId, 1);
                     return;
                 }
 
@@ -1324,6 +1422,7 @@ namespace Fu
                         CreateDrawCommands(meshData.Mesh, material, commandBuffer, GetSingleDrawList(drawList), drawData, fbSize, renderOffset);
                     }
                 }
+                TrimTransientMeshes(ctxId, transientMeshIndex);
             }
 
             /// <summary>
@@ -1335,6 +1434,11 @@ namespace Fu
             private void CreateDrawCommands(Mesh _mesh, Material _material, CommandBuffer commandBuffer, IReadOnlyList<DrawList> drawLists, DrawData drawData, Vector2 fbSize, Vector2 renderOffset)
             {
                 IntPtr prevTextureId = IntPtr.Zero;
+#if FU_CUSTOM_MATERIALS_ENABLED
+                Material drawMaterial = _material;
+                int drawPass = 0;
+                FuCustomDrawMaterialState customMaterialState = default;
+#endif
                 Vector4 clipOffset = new Vector4(drawData.DisplayPos.x, drawData.DisplayPos.y,
                     drawData.DisplayPos.x, drawData.DisplayPos.y);
                 Vector4 clipScale = new Vector4(drawData.FramebufferScale.x, drawData.FramebufferScale.y,
@@ -1358,6 +1462,17 @@ namespace Fu
                         ImDrawCmd drawCmd = drawList.CmdBuffer[i];
                         if (drawCmd.UserCallback != IntPtr.Zero)
                         {
+#if FU_CUSTOM_MATERIALS_ENABLED
+                            if (customMaterialState.TryHandleCommand(drawCmd))
+                            {
+                                customMaterialState.ResolveOverlay(
+                                    _textureManager,
+                                    _material,
+                                    out drawMaterial,
+                                    out drawPass);
+                                continue;
+                            }
+#endif
                             Debug.Log("unhandled user callback");
                         }
                         else
@@ -1404,7 +1519,11 @@ namespace Fu
                                 }
                             }
                             commandBuffer.EnableScissorRect(new Rect(clip.x, fbSize.y - clip.w, clip.z - clip.x, clip.w - clip.y)); // Invert y.
+#if FU_CUSTOM_MATERIALS_ENABLED
+                            commandBuffer.DrawMesh(_mesh, meshMatrix, drawMaterial, subOf, drawPass, _materialProperties);
+#else
                             commandBuffer.DrawMesh(_mesh, meshMatrix, _material, subOf, 0, _materialProperties);
+#endif
                         }
                     }
                 }
@@ -1673,6 +1792,7 @@ namespace Fu
         public int _cameraLayer = 5; // 5 is default unity UI layer
         private Dictionary<Camera, FuguiRenderGraphPass> _passPerCamera = new();
         private readonly List<Camera> _camerasToRelease = new List<Camera>();
+        private int _lastPassResourceCleanupFrame = -1;
         #endregion
 
         #region Methods
@@ -1683,6 +1803,14 @@ namespace Fu
         {
             // Unity may recreate this feature without first destroying the managed instance.
             DisposePasses();
+            if (_shader == null)
+            {
+                _shader = Shader.Find("Fugui/URP_Mesh");
+                if (_shader == null)
+                {
+                    _shader = Resources.Load<Shader>("Shaders/Fugui_URP_Mesh");
+                }
+            }
         }
 
         /// <summary>
@@ -1694,7 +1822,7 @@ namespace Fu
         {
             var camera = renderingData.cameraData.camera;
             ReleaseDestroyedCameraPasses();
-            if (camera == null)
+            if (camera == null || _shader == null)
             {
                 return;
             }
@@ -1711,7 +1839,6 @@ namespace Fu
             }
 
             pass.EnsureRuntimeGeneration();
-            pass.ReleaseInactiveContextResources();
             pass.ConfigureFrame(renderMainSurfaceContexts, renderOffscreenContexts);
             renderer.EnqueuePass(pass);
         }
@@ -1732,6 +1859,8 @@ namespace Fu
         private void ReleaseDestroyedCameraPasses()
         {
             _camerasToRelease.Clear();
+            int currentFrame = Time.frameCount;
+            bool releaseInactiveResources = _lastPassResourceCleanupFrame != currentFrame;
             foreach (KeyValuePair<Camera, FuguiRenderGraphPass> pair in _passPerCamera)
             {
                 if (pair.Key == null)
@@ -1740,8 +1869,12 @@ namespace Fu
                     continue;
                 }
 
-                pair.Value?.EnsureRuntimeGeneration();
-                pair.Value?.ReleaseInactiveContextResources();
+                if (releaseInactiveResources)
+                {
+                    // Context cleanup is shared across cameras and only needs one pass per Unity frame.
+                    pair.Value?.EnsureRuntimeGeneration();
+                    pair.Value?.ReleaseInactiveContextResources();
+                }
             }
 
             for (int i = 0; i < _camerasToRelease.Count; i++)
@@ -1755,6 +1888,10 @@ namespace Fu
             }
 
             _camerasToRelease.Clear();
+            if (releaseInactiveResources)
+            {
+                _lastPassResourceCleanupFrame = currentFrame;
+            }
         }
 
         /// <summary>
@@ -1769,6 +1906,7 @@ namespace Fu
 
             _passPerCamera.Clear();
             _camerasToRelease.Clear();
+            _lastPassResourceCleanupFrame = -1;
         }
 
         /// <summary>

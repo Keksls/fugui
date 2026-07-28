@@ -39,11 +39,11 @@ namespace Fu.Framework
 
             text = Fugui.GetUntagedText(text);
             // get or create animation data
-            if (!_uiElementAnimationDatas.ContainsKey(id))
+            if (!_uiElementAnimationDatas.TryGetValue(id, out FuElementAnimationData animationData))
             {
-                _uiElementAnimationDatas.Add(id, new FuElementAnimationData(!isChecked));
+                animationData = new FuElementAnimationData(!isChecked);
+                _uiElementAnimationDatas.Set(id, animationData);
             }
-            FuElementAnimationData animationData = _uiElementAnimationDatas[id];
 
             // layout states
             float height = 18f * Fugui.CurrentContext.Scale;
@@ -52,7 +52,7 @@ namespace Fu.Framework
             float radius = height * 0.42f;
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             // input stats
-            bool clicked = InvisibleInteractionAt("##FuRadio_" + id, pos, new Vector2(height, height), out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
+            bool clicked = InvisibleInteractionAt(GetCachedCompositeId("##FuRadio_", id), pos, new Vector2(height, height), out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             animationData.Update(isChecked, _animationEnabled);
             // frame colors
             Vector4 BGColor;

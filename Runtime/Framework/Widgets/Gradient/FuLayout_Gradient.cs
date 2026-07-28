@@ -15,6 +15,10 @@ namespace Fu.Framework
         private static int _selectedColorKeyIndex = 0;
         private static FuGradient _currentGradient;
         private static bool _gradientUpdated = false;
+        private static readonly FuBoundedCache<(string Text, int Index, string Suffix), string> _gradientKeyIds =
+            new FuBoundedCache<(string Text, int Index, string Suffix), string>(4096);
+        private static readonly FuGridDefinition _gradientFooterGridDefinition =
+            new FuGridDefinition(2, new float[] { 0.5f, 0.5f });
         #endregion
 
         #region Methods
@@ -28,6 +32,27 @@ namespace Fu.Framework
             _selectedColorKeyIndex = 0;
             _gradientUpdated = false;
             isDraggingColorKey = false;
+            _gradientKeyIds.Clear();
+        }
+
+        /// <summary>
+        /// Gets a stable identifier for one indexed gradient key control.
+        /// </summary>
+        /// <param name="text">Gradient identifier.</param>
+        /// <param name="index">Color-key index.</param>
+        /// <param name="suffix">Control-specific suffix.</param>
+        /// <returns>Cached ImGui identifier.</returns>
+        private static string GetGradientKeyId(string text, int index, string suffix)
+        {
+            // Indexed IDs are composed only on misses and bounded across dynamic gradients.
+            (string Text, int Index, string Suffix) key = (text, index, suffix);
+            if (!_gradientKeyIds.TryGetValue(key, out string id))
+            {
+                id = string.Concat(text, suffix, index.ToString());
+                _gradientKeyIds.Set(key, id);
+            }
+
+            return id;
         }
 
         /// <summary>
@@ -44,7 +69,7 @@ namespace Fu.Framework
         public virtual bool Gradient(string text, ref FuGradient gradient, bool addKeyOnGradientClick = true, bool allowAlpha = true, float relativeMin = 0, float relativeMax = 0, FuGradientColorKey[] defaultGradientValues = null)
         {
             beginElement(ref text);
-            string ppID = text + "gpPp";
+            string ppID = GetCachedCompositeId(text, "gpPp");
             _currentGradient = gradient;
 
             // get gradient data
@@ -73,7 +98,7 @@ namespace Fu.Framework
             drawList.AddRect(gradientRect.min, gradientRect.max, ImGui.GetColorU32(ImGuiCol.Border));
 
             // check whatever the preview is hovered
-            bool clicked = InvisibleInteractionAt(text + "nvsbB", startPos, gradientRect.size, out bool hovered, out _, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
+            bool clicked = InvisibleInteractionAt(GetCachedCompositeId(text, "nvsbB"), startPos, gradientRect.size, out bool hovered, out _, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
             if (hovered)
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
@@ -135,17 +160,18 @@ namespace Fu.Framework
         /// <returns>The result of the operation.</returns>
         private bool _customGradientPicker(string text, bool addKeyOnGradientClick, bool allowAlpha, float relativeMin, float relativeMax, FuGradientColorKey[] defaultGradientValues)
         {
-            text = "##" + text;
+            text = GetCachedCompositeId("##", text);
             bool edited = false;
             float colorKeySize = COLOR_KEY_SIZE * Fugui.CurrentContext.Scale;
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
-            FuLayout layout = new FuLayout();
+            // The current layout already owns the element stack and avoids a per-frame nested layout allocation.
+            FuLayout layout = this;
             // Draw Header
             // TODO : Add Fugui icons and use it to draw buttons glyphs
 
             // Add a new color key
-            if (layout.Button("+##addKey" + text, new FuElementSize(24f, 0f)))
+            if (layout.Button(GetCachedCompositeId("+##addKey", text), new FuElementSize(24f, 0f)))
             {
                 // get selected key
                 if (_currentGradient.GetKey(_selectedColorKeyIndex, out FuGradientColorKey selectedKey))
@@ -172,7 +198,7 @@ namespace Fu.Framework
             layout.SameLine();
 
             // Remove selected color key
-            if (layout.Button("-##remKey" + text, new FuElementSize(24f, 0f)))
+            if (layout.Button(GetCachedCompositeId("-##remKey", text), new FuElementSize(24f, 0f)))
             {
                 _currentGradient.RemoveColorKey(_selectedColorKeyIndex);
                 edited = true;
@@ -188,7 +214,7 @@ namespace Fu.Framework
             ImGui.SetNextItemWidth(64f);
             Fugui.MoveY(2f);
             int keyIndex = _selectedColorKeyIndex + 1;
-            if (ImGui.DragInt("##kNdx" + text, ref keyIndex, 0.1f, 1, _currentGradient.GetKeysCount(), "%d / " + _currentGradient.GetKeysCount()))
+            if (ImGui.DragInt(GetCachedCompositeId("##kNdx", text), ref keyIndex, 0.1f, 1, _currentGradient.GetKeysCount(), "%d / " + _currentGradient.GetKeysCount()))
             {
                 _selectedColorKeyIndex = keyIndex - 1;
             }
@@ -201,7 +227,7 @@ namespace Fu.Framework
                 _currentGradient.SetBlendMode((FuGradientBlendMode)index);
             }, () => _currentGradient.BlendMode, new Vector2(GetAvailableWidth() - 52f * Fugui.CurrentContext.Scale, 0f), Vector2.zero, FuButtonStyle.Default);
             layout.SameLine();
-            layout.Combobox("##GpStng" + text, FuIcons.Fu_Gear_Duotone, () =>
+            layout.Combobox(GetCachedCompositeId("##GpStng", text), FuIcons.Fu_Gear_Duotone, () =>
             {
                 if (ImGui.Selectable("Reset gradient"))
                 {
@@ -256,7 +282,7 @@ namespace Fu.Framework
                     Rect colorKeyRect = new Rect(gradientRect.x + key.Time * gradientRect.width - colorKeySize / 2, gradientRect.yMax + 4, colorKeySize, colorKeySize);
 
                     // get key states
-                    InvisibleInteractionAt(text + "ck" + i, colorKeyRect.min, colorKeyRect.size, out bool hovered, out bool activeInteraction, out FuMouseButton clickedButton, FuButtonFlags.MouseButtonLeft | FuButtonFlags.MouseButtonRight, !LastItemDisabled);
+                    InvisibleInteractionAt(GetGradientKeyId(text, i, "ck"), colorKeyRect.min, colorKeyRect.size, out bool hovered, out bool activeInteraction, out FuMouseButton clickedButton, FuButtonFlags.MouseButtonLeft | FuButtonFlags.MouseButtonRight, !LastItemDisabled);
                     isAnyKeyHovered |= hovered;
                     bool active = _selectedColorKeyIndex == i;
 
@@ -268,7 +294,7 @@ namespace Fu.Framework
                     }
 
                     // set tooltip
-                    SetToolTip(text + "key" + i, string.Format("Time: {0:F2}\nColor: ({1:F2}, {2:F2}, {3:F2})", key.Time, key.Color.r, key.Color.g, key.Color.b), hovered, !LastItemDisabled, FuTextStyle.Default);
+                    SetToolTip(GetGradientKeyId(text, i, "key"), string.Format("Time: {0:F2}\nColor: ({1:F2}, {2:F2}, {3:F2})", key.Time, key.Color.r, key.Color.g, key.Color.b), hovered, !LastItemDisabled, FuTextStyle.Default);
 
                     // start drag on mouse down
                     if (hovered)
@@ -312,7 +338,7 @@ namespace Fu.Framework
             // Handle mouse events
             if (!isDraggingColorKey && addKeyOnGradientClick)
             {
-                bool gradientClicked = InvisibleInteractionAt(text + "gradientArea", startPos, gradientRect.size, out bool gradientHovered, out _, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
+                bool gradientClicked = InvisibleInteractionAt(GetCachedCompositeId(text, "gradientArea"), startPos, gradientRect.size, out bool gradientHovered, out _, FuButtonFlags.MouseButtonLeft, !LastItemDisabled);
                 if (!isAnyKeyHovered && gradientClicked && gradientHovered)
                 {
                     // Add a new color key
@@ -334,7 +360,7 @@ namespace Fu.Framework
             {
                 if (_currentGradient.GetKey(_selectedColorKeyIndex, out FuGradientColorKey key))
                 {
-                    SetToolTip(text + "key" + _selectedColorKeyIndex, string.Format("Time: {0:F2}\nColor: ({1:F2}, {2:F2}, {3:F2})", key.Time, key.Color.r, key.Color.g, key.Color.b), true);
+                    SetToolTip(GetGradientKeyId(text, _selectedColorKeyIndex, "key"), string.Format("Time: {0:F2}\nColor: ({1:F2}, {2:F2}, {3:F2})", key.Time, key.Color.r, key.Color.g, key.Color.b), true);
                     float t = Mathf.Clamp01((mousePos.x - gradientRect.x) / gradientRect.width);
                     _currentGradient.SetKeyTime(_selectedColorKeyIndex, t);
                     edited = true;
@@ -347,7 +373,7 @@ namespace Fu.Framework
                 if (_currentGradient.GetKey(_selectedColorKeyIndex, out FuGradientColorKey key))
                 {
                     layout.Separator();
-                    using (FuGrid grid = new FuGrid(text + "grdPkrFtrGrd", new FuGridDefinition(2, new float[] { 0.5f, 0.5f })))
+                    using (FuGrid grid = new FuGrid(GetCachedCompositeId(text, "grdPkrFtrGrd"), _gradientFooterGridDefinition))
                     {
                         grid.NextColumn();
                         layout.Text("Color");
@@ -356,7 +382,7 @@ namespace Fu.Framework
                         if (allowAlpha)
                         {
                             Vector4 col = key.Color;
-                            if (layout.ColorPicker(text + "cp", ref col))
+                            if (layout.ColorPicker(GetCachedCompositeId(text, "cp"), ref col))
                             {
                                 _currentGradient.SetKeyColor(_selectedColorKeyIndex, col);
                             }
@@ -365,7 +391,7 @@ namespace Fu.Framework
                         else
                         {
                             Vector3 col = (Vector4)key.Color;
-                            if (layout.ColorPicker(text + "cp", ref col))
+                            if (layout.ColorPicker(GetCachedCompositeId(text, "cp"), ref col))
                             {
                                 Vector4 newCol = (Vector4)col;
                                 newCol.w = 1f;
@@ -378,7 +404,7 @@ namespace Fu.Framework
                         if (relativeMin >= relativeMax)
                         {
                             float time = key.Time * 100f;
-                            if (layout.Drag("##drag" + text, ref time, string.Empty, 0f, 100f, 0.01f, "%.1f %%"))
+                            if (layout.Drag(GetCachedCompositeId("##drag", text), ref time, string.Empty, 0f, 100f, 0.01f, "%.1f %%"))
                             {
                                 _currentGradient.SetKeyTime(_selectedColorKeyIndex, time / 100f);
                             }
@@ -386,7 +412,7 @@ namespace Fu.Framework
                         else
                         {
                             float relativeTime = Mathf.Lerp(relativeMin, relativeMax, key.Time);
-                            if (layout.Drag("##drag" + text, ref relativeTime, string.Empty, relativeMin, relativeMax, format: "%.2f"))
+                            if (layout.Drag(GetCachedCompositeId("##drag", text), ref relativeTime, string.Empty, relativeMin, relativeMax, format: "%.2f"))
                             {
                                 float time = (relativeTime - relativeMin) / (relativeMax - relativeMin);
                                 _currentGradient.SetKeyTime(_selectedColorKeyIndex, time);
@@ -401,8 +427,6 @@ namespace Fu.Framework
             {
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             }
-            layout.Dispose();
-
             return edited;
         }
         #endregion

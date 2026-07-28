@@ -38,6 +38,19 @@ public class FuguiWorldRendererDemo : MonoBehaviour
     private bool _raycasterRegistered;
     private bool _hasHit;
     private RaycastHit _hit;
+
+#if FU_CUSTOM_MATERIALS_ENABLED
+    private const string HolographicOverlayShaderResourcePath = "FuguiCustomMaterials/FuguiDemoHolographicGlass";
+    private const string HolographicWorldShaderResourcePath = "FuguiCustomMaterials/FuguiDemoHolographicWorld";
+
+    private static readonly int GlowProperty = Shader.PropertyToID("_Glow");
+    private static readonly int InteractionProperty = Shader.PropertyToID("_Interaction");
+
+    private Material _holographicOverlayMaterial;
+    private Material _holographicWorldMaterial;
+    private FuDrawMaterial _holographicWorldDrawMaterial;
+    private bool _customMaterialLoadAttempted;
+#endif
     #endregion
 
     #region Methods
@@ -57,6 +70,21 @@ public class FuguiWorldRendererDemo : MonoBehaviour
     {
         UnhookContext();
         UnregisterRaycaster();
+    }
+
+    /// <summary>
+    /// Releases the optional custom materials created by the world-space showcase.
+    /// </summary>
+    private void OnDestroy()
+    {
+#if FU_CUSTOM_MATERIALS_ENABLED
+        // FuDrawMaterial leaves ownership to the caller, so the sample destroys both runtime instances.
+        DestroyRuntimeMaterial(_holographicOverlayMaterial);
+        DestroyRuntimeMaterial(_holographicWorldMaterial);
+        _holographicOverlayMaterial = null;
+        _holographicWorldMaterial = null;
+        _holographicWorldDrawMaterial = null;
+#endif
     }
 
     /// <summary>
@@ -242,7 +270,13 @@ _raycaster = new FuRaycaster(
 
         using (FuguiWorldSurface surface = Fugui.World.Surface(desc))
         {
-            DrawPanel(surface.DrawList, new Rect(0f, 0f, 360f, 88f), "Camera follower", "World draw-list surface", new Color(0.08f, 0.15f, 0.20f, 0.82f));
+            DrawPanel(
+                surface.DrawList,
+                new Rect(0f, 0f, 360f, 88f),
+                "Holographic world surface",
+                "PushMaterial / PopMaterial - depth tested",
+                new Color(0.08f, 0.15f, 0.20f, 0.82f),
+                true);
         }
     }
 
@@ -284,7 +318,14 @@ _raycaster = new FuRaycaster(
     /// <param name="title">Title text.</param>
     /// <param name="subtitle">Subtitle text.</param>
     /// <param name="background">Panel background color.</param>
-    private void DrawPanel(FuDrawList drawList, Rect rect, string title, string subtitle, Color background)
+    /// <param name="useCustomBackground">Whether to try the opt-in holographic world material.</param>
+    private void DrawPanel(
+        FuDrawList drawList,
+        Rect rect,
+        string title,
+        string subtitle,
+        Color background,
+        bool useCustomBackground = false)
     {
         uint backgroundColor = Fugui.GetColorU32(background);
         uint borderColor = Fugui.GetColorU32(new Color(1f, 1f, 1f, 0.45f));
@@ -293,11 +334,138 @@ _raycaster = new FuRaycaster(
         Vector2 min = rect.min;
         Vector2 max = rect.max;
 
-        drawList.AddRectFilled(min, max, backgroundColor, 10f, FuDrawFlags.RoundCornersAll);
+        bool customBackgroundDrawn = false;
+#if FU_CUSTOM_MATERIALS_ENABLED
+        // Fall back to the ordinary primitive if the optional Resources shaders are unavailable.
+        customBackgroundDrawn = useCustomBackground && DrawCustomWorldBackground(drawList, min, max);
+#endif
+        if (!customBackgroundDrawn)
+        {
+            drawList.AddRectFilled(min, max, backgroundColor, 10f, FuDrawFlags.RoundCornersAll);
+        }
+
         drawList.AddRect(min, max, borderColor, 10f, FuDrawFlags.RoundCornersAll, 2f);
         drawList.AddText(min + new Vector2(18f, 16f), titleColor, title);
         drawList.AddText(min + new Vector2(18f, 48f), subtitleColor, subtitle);
     }
+
+#if FU_CUSTOM_MATERIALS_ENABLED
+    /// <summary>
+    /// Draws the camera-following panel background with the custom world-space shader.
+    /// </summary>
+    /// <param name="drawList">World draw list receiving the image geometry.</param>
+    /// <param name="min">Minimum panel coordinate in surface pixels.</param>
+    /// <param name="max">Maximum panel coordinate in surface pixels.</param>
+    /// <returns>True when the custom background was emitted.</returns>
+    private bool DrawCustomWorldBackground(FuDrawList drawList, Vector2 min, Vector2 max)
+    {
+        if (!EnsureWorldDrawMaterial())
+        {
+            return false;
+        }
+
+        // Animate a subtle intensity pulse to make the world-space material obvious in the demo scene.
+        float interaction = 0.42f + Mathf.Sin(Time.unscaledTime * 1.8f) * 0.16f;
+        _holographicWorldMaterial.SetFloat(InteractionProperty, interaction);
+
+        drawList.PushMaterial(_holographicWorldDrawMaterial, Texture2D.whiteTexture);
+        try
+        {
+            drawList.AddImageRounded(
+                Texture2D.whiteTexture,
+                min,
+                max,
+                Vector2.zero,
+                Vector2.one,
+                Vector4.one,
+                10f,
+                FuDrawFlags.RoundCornersAll);
+        }
+        finally
+        {
+            // Always restore the standard world material before drawing the border and text.
+            drawList.PopMaterial();
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Lazily creates the overlay and three-pass world materials required by FuDrawMaterial.
+    /// </summary>
+    /// <returns>True when the holographic world material configuration is ready.</returns>
+    private bool EnsureWorldDrawMaterial()
+    {
+        if (_holographicWorldDrawMaterial != null)
+        {
+            return true;
+        }
+
+        if (_customMaterialLoadAttempted)
+        {
+            return false;
+        }
+
+        // Resources keeps this scene component reference-free while ensuring the sample shaders are included.
+        _customMaterialLoadAttempted = true;
+        Shader overlayShader = Resources.Load<Shader>(HolographicOverlayShaderResourcePath);
+        Shader worldShader = Resources.Load<Shader>(HolographicWorldShaderResourcePath);
+        if (overlayShader == null || worldShader == null)
+        {
+            return false;
+        }
+
+        _holographicOverlayMaterial = CreateRuntimeMaterial(overlayShader, "Fugui Demo - Holographic Overlay");
+        _holographicWorldMaterial = CreateRuntimeMaterial(worldShader, "Fugui Demo - Holographic World");
+        _holographicWorldMaterial.SetFloat(GlowProperty, 1.45f);
+        _holographicWorldDrawMaterial = new FuDrawMaterial(
+            _holographicOverlayMaterial,
+            0,
+            _holographicWorldMaterial,
+            0,
+            1,
+            2);
+        return true;
+    }
+
+    /// <summary>
+    /// Creates a hidden runtime material from a demo shader.
+    /// </summary>
+    /// <param name="shader">Shader used by the material.</param>
+    /// <param name="name">Diagnostic material name.</param>
+    /// <returns>The newly created caller-owned material.</returns>
+    private static Material CreateRuntimeMaterial(Shader shader, string name)
+    {
+        // HideAndDontSave keeps temporary demo resources out of the scene and project.
+        return new Material(shader)
+        {
+            name = name,
+            hideFlags = HideFlags.HideAndDontSave,
+        };
+    }
+
+    /// <summary>
+    /// Destroys a caller-owned runtime material using the current Unity lifetime rules.
+    /// </summary>
+    /// <param name="material">Runtime material to destroy.</param>
+    private static void DestroyRuntimeMaterial(Material material)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        // Unity requires delayed destruction in play mode and immediate destruction while editing.
+        if (Application.isPlaying)
+        {
+            Destroy(material);
+        }
+        else
+        {
+            DestroyImmediate(material);
+        }
+    }
+#endif
 
     /// <summary>
     /// Draws a small marker line in the hit point panel.

@@ -33,11 +33,9 @@ namespace Fu.Framework
         public void ListBoxEnum<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter, FuElementSize size) where TEnum : struct, IConvertible
         {
             FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<string> enumSelectables);
-            // call the custom ListBox function, passing in the lists and the itemChange
-            _customListBox(text, enumSelectables, (index) =>
-            {
-                itemChange?.Invoke(enumValues[index]);
-            }, () => { return itemGetter?.Invoke().ToString(); }, size);
+            string selectedItemString = itemGetter != null ? itemGetter.Invoke().ToString() : null;
+            // Map visible enum indices inside the reusable popup state.
+            _customListBox(text, enumSelectables, itemChange, null, selectedItemString, size, null, enumValues);
         }
 
         /// <summary>
@@ -68,11 +66,14 @@ namespace Fu.Framework
         /// <param name="size">The size to use for the dropdown box.</param>
         public void ListBox<T>(string text, List<T> items, Action<T> itemChange, Func<T> itemGetter, FuElementSize size, Func<bool> listUpdated = null)
         {
-            // Display the custom ListBox and call the specified action when the selected item changes
-            _customListBox(text, items, (index) =>
+            // Resolve the current value directly so no wrapper delegates are allocated for this frame.
+            string selectedItemString = null;
+            if (itemGetter != null)
             {
-                itemChange?.Invoke(items[index]);
-            }, () => { return itemGetter?.Invoke()?.ToString(); }, size, listUpdated);
+                T selectedItem = itemGetter.Invoke();
+                selectedItemString = selectedItem is null ? null : selectedItem.ToString();
+            }
+            _customListBox(text, items, null, itemChange, selectedItemString, size, listUpdated);
         }
 
         /// <summary>
@@ -80,32 +81,24 @@ namespace Fu.Framework
         /// </summary>
         ///<param name="text">The label for the ListBox.</param>
         ///<param name="items">The list of custom items to be displayed in the ListBox.</param>
-        ///<param name="itemChange">The action to be performed when an item is selected.</param>
-        /// <param name="itemGetter">A func that return a way to get current stored value for the ListBox. can be null if ListBox il not lined to an object's field</param>
+        ///<param name="indexChange">Optional action receiving a selected index or mapped value.</param>
+        ///<param name="itemChange">Optional action receiving the selected item.</param>
+        /// <param name="selectedItemString">Current external selected value, or null.</param>
         ///<param name="size">The size for the ListBox element.</param>
-        private void _customListBox<T>(string text, List<T> items, Action<int> itemChange, Func<string> itemGetter, FuElementSize size, Func<bool> listUpdated = null)
+        /// <param name="mappedCallbackValues">Optional callback values mapped from visible indices.</param>
+        private void _customListBox<T>(string text, List<T> items, Action<int> indexChange, Action<T> itemChange, string selectedItemString, FuElementSize size, Func<bool> listUpdated = null, IList<int> mappedCallbackValues = null)
         {
-            // get the current selected index
-            int selectedIndex = FuSelectableBuilder.GetSelectedIndex(text, items, itemGetter);
-            List<string> displayLabels = FuSelectableBuilder.GetDisplayLabels(text, items, listUpdated);
-
-            // draw the ListBox
-            ListBox(text, () =>
+            string windowId = FuWindow.CurrentDrawingWindow?.ID;
+            string stateId = GetCachedCompositeId(text, "##FuSelectableListbox_", windowId);
+            int selectedIndex = FuSelectableBuilder.GetSelectedIndex(stateId, items, selectedItemString);
+            if (items.Count > 0)
             {
-                for (int i = 0; i < items.Count; i++)
-                {
-                    if (items[i] != null)
-                    {
-                        if (ImGui.Selectable(displayLabels[i], selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
-                        {
-                            // Update the selected index and invoke the item change action
-                            selectedIndex = i;
-                            FuSelectableBuilder.SetSelectedIndex(text, selectedIndex);
-                            itemChange?.Invoke(i);
-                        }
-                    }
-                }
-            }, size);
+                selectedIndex = Math.Max(0, Math.Min(selectedIndex, items.Count - 1));
+            }
+
+            FuSelectablePopupState<T> state = GetSelectablePopupState<T>(stateId);
+            state.Prepare(this, stateId, items, selectedIndex, indexChange, itemChange, listUpdated, mappedCallbackValues, false);
+            ListBox(text, state.DrawAction, size);
         }
 
         /// <summary>

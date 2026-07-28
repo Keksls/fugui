@@ -1,6 +1,5 @@
 using ImGuiNET;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -33,8 +32,9 @@ namespace Fu.Framework
         private float _beginElementCursorY = 0;
         // Flag to indicate if the grid is responsively resized
         private bool _isResponsivelyResized = false;
-        // A dictionary to store grid descriptions for different types
-        private static Dictionary<Type, FuObjectDescription> _objectsDescriptions = new Dictionary<Type, FuObjectDescription>();
+        // Automatic reflection descriptions are reusable but bounded across dynamic types.
+        private static readonly FuBoundedCache<Type, FuObjectDescription> _objectsDescriptions =
+            new FuBoundedCache<Type, FuObjectDescription>(256);
         protected string _ID;
         private bool disposed = false;
         #endregion
@@ -79,6 +79,15 @@ namespace Fu.Framework
         #endregion
 
         #region Methods
+        /// <summary>
+        /// Clears reflection descriptions retained by automatic grids for the current session.
+        /// </summary>
+        internal static void ResetObjectDescriptionCache()
+        {
+            // Descriptions own field helper instances and must not retain dynamic types indefinitely.
+            _objectsDescriptions.Clear();
+        }
+
         /// <summary>
         /// Switch from current column to the next.
         /// this is automaticaly call, use it only for custom cases
@@ -249,13 +258,14 @@ namespace Fu.Framework
         {
             Type type = typeof(T);
             // type already registered
-            if (!_objectsDescriptions.ContainsKey(type))
+            if (!_objectsDescriptions.TryGetValue(type, out FuObjectDescription description))
             {
-                // register type
-                _objectsDescriptions.Add(type, new FuObjectDescription());
+                // Register the type once within the bounded reflection cache.
+                description = new FuObjectDescription();
+                _objectsDescriptions.Set(type, description);
             }
             // draw object into this grid
-            return _objectsDescriptions[type].DrawObject<T>(objectID, this, objectInstance);
+            return description.DrawObject<T>(objectID, this, objectInstance);
         }
 
         /// <summary>

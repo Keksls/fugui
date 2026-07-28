@@ -42,11 +42,22 @@ namespace Fu
 
             if (_3DWindows.TryGetValue(uiWindow.ID, out Fu3DWindowContainer existingContainer))
             {
-                existingContainer.Set3DWindowSettings(settings);
-                return existingContainer;
+                if (existingContainer != null && !existingContainer.IsClosed)
+                {
+                    existingContainer.Set3DWindowSettings(settings);
+                    return existingContainer;
+                }
+
+                // A failed or externally closed container must not poison subsequent creation attempts.
+                _3DWindows.Remove(uiWindow.ID);
             }
 
             Fu3DWindowContainer container = new Fu3DWindowContainer(uiWindow, settings, position, rotation);
+            if (container.IsClosed)
+            {
+                return null;
+            }
+
             _3DWindows.Add(uiWindow.ID, container);
             ApplyMainContainerCameraState();
             return container;

@@ -49,7 +49,7 @@ namespace Fu.Framework
                 {
                     Color color = (Color)_fieldInfo.GetValue(objectInstance);
                     Vector4 value = new Vector4(color.r, color.g, color.b, color.a);
-                    updated = grid.ColorPicker(FieldName + "##" + objectID, ref value);
+                    updated = grid.ColorPicker(FuLayout.GetCachedCompositeId(FieldName, "##", objectID), ref value);
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, new Color(value.x, value.y, value.z, value.w));
@@ -58,7 +58,7 @@ namespace Fu.Framework
                 else if (alpha)
                 {
                     Vector4 value = (Vector4)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.ColorPicker(FieldName + "##" + objectID, ref value);
+                    updated = grid.ColorPicker(FuLayout.GetCachedCompositeId(FieldName, "##", objectID), ref value);
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, value);
@@ -67,7 +67,7 @@ namespace Fu.Framework
                 else
                 {
                     Vector3 value = (Vector3)_fieldInfo.GetValue(objectInstance);
-                    updated = grid.ColorPicker(FieldName + "##" + objectID, ref value);
+                    updated = grid.ColorPicker(FuLayout.GetCachedCompositeId(FieldName, "##", objectID), ref value);
                     if (updated)
                     {
                         _fieldInfo.SetValue(objectInstance, value);

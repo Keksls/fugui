@@ -25,6 +25,8 @@ namespace Fu
         private static Vector2 _currentModalPos;
         private static float _enlapsed = 0f;
         private static readonly Vector2 _modalMinScreenSpacing = new Vector2(16f, 16f);
+        private static readonly FuGridDefinition _modalBoxGridDefinition =
+            new FuGridDefinition(2, new int[] { 40 });
         private const float _modalMinBodySize = 32f;
         #endregion
 
@@ -271,9 +273,14 @@ namespace Fu
                                 {
                                     float cursorY = ImGui.GetCursorScreenPos().y;
                                     ImGui.Dummy(Vector2.zero);
-                                    using (FuLayout layout = new FuLayout())
+                                    FuLayout layout = AcquireModalLayout(out bool ownsLayout);
+                                    try
                                     {
                                         _modalBody(layout);
+                                    }
+                                    finally
+                                    {
+                                        ReleaseModalLayout(layout, ownsLayout);
                                     }
                                     ImGui.Dummy(Vector2.zero);
                                     // get body height for this frame
@@ -317,11 +324,16 @@ namespace Fu
         private static void DrawTitle(string title)
         {
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
-            using (FuLayout layout = new FuLayout())
+            FuLayout layout = AcquireModalLayout(out bool ownsLayout);
+            try
             {
                 layout.CenterNextItemH(title);
                 layout.CenterNextItemV(title, _currentTitleHeight);
                 layout.Text(title);
+            }
+            finally
+            {
+                ReleaseModalLayout(layout, ownsLayout);
             }
             ImGui.SetCursorScreenPos(new Vector2(cursorPos.x, cursorPos.y + _currentTitleHeight));
         }
@@ -339,7 +351,8 @@ namespace Fu
             float spacing = 8f * Fugui.Scale;
             float footerY = _currentModalPos.y + _currentTitleHeight + _currentBodySize.y;
             float cursorX = _currentModalPos.x + _currentBodySize.x;
-            using (FuLayout layout = new FuLayout())
+            FuLayout layout = AcquireModalLayout(out bool ownsLayout);
+            try
             {
                 // Draw each button
                 foreach (var button in _modalButtons)
@@ -353,8 +366,45 @@ namespace Fu
                     button.Draw(layout);
                 }
             }
+            finally
+            {
+                ReleaseModalLayout(layout, ownsLayout);
+            }
 
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, footerY + _currentFooterheight));
+        }
+
+        /// <summary>
+        /// Acquires the current window layout and only creates a fallback outside a window render.
+        /// </summary>
+        /// <param name="ownsLayout">True when the caller must dispose the fallback layout.</param>
+        /// <returns>Layout used to draw modal content.</returns>
+        private static FuLayout AcquireModalLayout(out bool ownsLayout)
+        {
+            // Normal modal rendering reuses the window-owned layout and performs no managed allocation.
+            FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout;
+            if (layout != null)
+            {
+                ownsLayout = false;
+                return layout;
+            }
+
+            ownsLayout = true;
+            return new FuLayout();
+        }
+
+        /// <summary>
+        /// Releases a modal layout only when it was created as an out-of-window fallback.
+        /// </summary>
+        /// <param name="layout">Layout returned by <see cref="AcquireModalLayout"/>.</param>
+        /// <param name="ownsLayout">Whether the layout is owned by the modal call.</param>
+        private static void ReleaseModalLayout(FuLayout layout, bool ownsLayout)
+        {
+            // Window-owned layouts live with their windows; only the exceptional fallback is disposable here.
+            if (ownsLayout)
+            {
+                layout.Dispose();
+            }
         }
 
         private static bool HasModalTitleBar()
@@ -516,14 +566,15 @@ namespace Fu
             //call the ShowModal method with the title, body, and buttons
             ShowModal(title, (layout) =>
             {
-                using (FuGrid grid = new FuGrid("modal" + title + "infoGrid", new FuGridDefinition(2, new int[] { 40 }), FuGridFlag.NoAutoLabels, outterPadding: 8f))
+                string gridId = FuLayout.GetCachedCompositeId("modal", title, "infoGrid");
+                using (FuGrid grid = new FuGrid(gridId, _modalBoxGridDefinition, FuGridFlag.NoAutoLabels, outterPadding: 8f))
                 {
                     // vertical align image
                     float mh = _currentBodySize.y;
                     float imgH = 32f;
                     float pad = ((mh / 2f) - (imgH / 2f)) / 2f;
                     grid.NextElementYPadding(pad);
-                    grid.Image("modalBoxIcon" + title, icon, new Vector2(imgH, imgH), color);
+                    grid.Image(FuLayout.GetCachedCompositeId("modalBoxIcon", title), icon, new Vector2(imgH, imgH), color);
                     grid.NextColumn();
                     body?.Invoke(layout);
                 }

@@ -39,6 +39,10 @@ namespace Fu
             if (_shader == null)
             {
                 _shader = Shader.Find("Fugui/URP_WorldMesh");
+                if (_shader == null)
+                {
+                    _shader = Resources.Load<Shader>("Shaders/Fugui_URP_WorldMesh");
+                }
             }
 
             // Unity can recreate renderer features while the previous pass still owns GPU resources.
@@ -55,7 +59,9 @@ namespace Fu
         {
             Camera camera = renderingData.cameraData.camera;
             _pass?.EnsureRuntimeGeneration();
-            if (_shader == null || camera == null || !Fugui.World.ShouldRenderCamera(camera) || !Fugui.World.HasCurrentFrameItems())
+            IReadOnlyList<FuguiWorldDrawItem> items = Fugui.World.GetCurrentFrameItems();
+            _pass?.SynchronizeMeshCaches(items);
+            if (_shader == null || camera == null || !Fugui.World.ShouldRenderCamera(camera) || items.Count == 0)
             {
                 return;
             }
@@ -91,6 +97,8 @@ namespace Fu
             private const string SampleName = "Fugui.World.ExecuteDrawCommands";
             private readonly Dictionary<int, FuguiWorldMeshCache> _meshCaches = new Dictionary<int, FuguiWorldMeshCache>();
             private readonly List<FuguiWorldDrawItem> _sortedItems = new List<FuguiWorldDrawItem>();
+            private readonly HashSet<int> _activeSurfaceIds = new HashSet<int>();
+            private readonly List<int> _meshCacheIdsToRelease = new List<int>();
             private MaterialPropertyBlock _properties = new MaterialPropertyBlock();
             private Material _material;
             private Shader _shader;
@@ -98,6 +106,7 @@ namespace Fu
             private int _textureIsAlphaID;
             private int _clipRectID;
             private uint _runtimeGeneration;
+            private int _lastMeshCacheSynchronizationFrame = -1;
             #endregion
 
             #region Constructors
@@ -162,6 +171,56 @@ namespace Fu
             }
 
             /// <summary>
+            /// Releases mesh caches that are not backed by a surface submitted in the current frame.
+            /// </summary>
+            /// <param name="items">World surfaces submitted for the current frame.</param>
+            public void SynchronizeMeshCaches(IReadOnlyList<FuguiWorldDrawItem> items)
+            {
+                // Multiple cameras share the pass, so cache synchronization runs only once per Unity frame.
+                int frame = Time.frameCount;
+                if (_lastMeshCacheSynchronizationFrame == frame)
+                {
+                    return;
+                }
+
+                _activeSurfaceIds.Clear();
+                if (items != null)
+                {
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        FuguiWorldDrawItem item = items[i];
+                        if (item.Frame == frame)
+                        {
+                            _activeSurfaceIds.Add(item.SurfaceId);
+                        }
+                    }
+                }
+
+                _meshCacheIdsToRelease.Clear();
+                foreach (int surfaceId in _meshCaches.Keys)
+                {
+                    if (!_activeSurfaceIds.Contains(surfaceId))
+                    {
+                        _meshCacheIdsToRelease.Add(surfaceId);
+                    }
+                }
+
+                for (int i = 0; i < _meshCacheIdsToRelease.Count; i++)
+                {
+                    int surfaceId = _meshCacheIdsToRelease[i];
+                    if (_meshCaches.TryGetValue(surfaceId, out FuguiWorldMeshCache meshCache))
+                    {
+                        meshCache?.Dispose();
+                        _meshCaches.Remove(surfaceId);
+                    }
+                }
+
+                _activeSurfaceIds.Clear();
+                _meshCacheIdsToRelease.Clear();
+                _lastMeshCacheSynchronizationFrame = frame;
+            }
+
+            /// <summary>
             /// Destroys a generated material using the correct Unity lifetime API.
             /// </summary>
             /// <param name="material">Material to destroy.</param>
@@ -220,9 +279,15 @@ namespace Fu
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
             {
                 CommandBuffer commandBuffer = CommandBufferPool.Get("FuguiWorldRenderPass");
-                RenderWorldItems(commandBuffer, renderingData.cameraData.camera);
-                context.ExecuteCommandBuffer(commandBuffer);
-                CommandBufferPool.Release(commandBuffer);
+                try
+                {
+                    RenderWorldItems(commandBuffer, renderingData.cameraData.camera);
+                    context.ExecuteCommandBuffer(commandBuffer);
+                }
+                finally
+                {
+                    CommandBufferPool.Release(commandBuffer);
+                }
             }
 #endif
 
@@ -245,12 +310,18 @@ namespace Fu
                 }
 
                 commandBuffer.BeginSample(SampleName);
-                BuildSortedItems(items);
-                for (int i = 0; i < _sortedItems.Count; i++)
+                try
                 {
-                    DrawItem(commandBuffer, _sortedItems[i]);
+                    BuildSortedItems(items, camera);
+                    for (int i = 0; i < _sortedItems.Count; i++)
+                    {
+                        DrawItem(commandBuffer, _sortedItems[i]);
+                    }
                 }
-                commandBuffer.EndSample(SampleName);
+                finally
+                {
+                    commandBuffer.EndSample(SampleName);
+                }
             }
 
 #if UNITY_6000_4_OR_NEWER
@@ -273,27 +344,35 @@ namespace Fu
                 }
 
                 commandBuffer.BeginSample(SampleName);
-                BuildSortedItems(items);
-                for (int i = 0; i < _sortedItems.Count; i++)
+                try
                 {
-                    DrawItemRenderGraph(commandBuffer, _sortedItems[i]);
+                    BuildSortedItems(items, camera);
+                    for (int i = 0; i < _sortedItems.Count; i++)
+                    {
+                        DrawItemRenderGraph(commandBuffer, _sortedItems[i]);
+                    }
                 }
-                commandBuffer.EndSample(SampleName);
+                finally
+                {
+                    commandBuffer.EndSample(SampleName);
+                }
             }
 #endif
 
             /// <summary>
-            /// Builds the sorted item list for the current frame.
+            /// Builds the sorted item list for the current frame and camera culling mask.
             /// </summary>
             /// <param name="items">Submitted world items.</param>
-            private void BuildSortedItems(IReadOnlyList<FuguiWorldDrawItem> items)
+            /// <param name="camera">Camera currently rendering the world surfaces.</param>
+            private void BuildSortedItems(IReadOnlyList<FuguiWorldDrawItem> items, Camera camera)
             {
                 _sortedItems.Clear();
                 int frame = Time.frameCount;
                 for (int i = 0; i < items.Count; i++)
                 {
                     FuguiWorldDrawItem item = items[i];
-                    if (item.Frame != frame)
+                    int layerMask = 1 << item.Desc.Layer;
+                    if (item.Frame != frame || (camera.cullingMask & layerMask) == 0)
                     {
                         continue;
                     }
@@ -340,14 +419,41 @@ namespace Fu
                 IntPtr previousTextureId = IntPtr.Zero;
                 bool hasPreviousTexture = false;
                 int passIndex = GetPassIndex(item.Desc.DepthMode);
+#if FU_CUSTOM_MATERIALS_ENABLED
+                Material drawMaterial = _material;
+                int drawPass = passIndex;
+                FuCustomDrawMaterialState customMaterialState = default;
+#endif
 
                 for (int i = 0; i < item.DrawList.CmdCount; i++)
                 {
                     ImDrawCmd command = commands[i];
+#if FU_CUSTOM_MATERIALS_ENABLED
+                    if (command.UserCallback != IntPtr.Zero)
+                    {
+                        if (customMaterialState.TryHandleCommand(command))
+                        {
+                            customMaterialState.ResolveWorld(
+                                item.TextureManager,
+                                item.Desc.DepthMode,
+                                _material,
+                                passIndex,
+                                out drawMaterial,
+                                out drawPass);
+                        }
+                        continue;
+                    }
+
+                    if (command.ElemCount == 0)
+                    {
+                        continue;
+                    }
+#else
                     if (command.UserCallback != IntPtr.Zero || command.ElemCount == 0)
                     {
                         continue;
                     }
+#endif
 
                     if (!hasPreviousTexture || previousTextureId != command.TextureId)
                     {
@@ -357,7 +463,11 @@ namespace Fu
                     }
 
                     _properties.SetVector(_clipRectID, command.ClipRect);
+#if FU_CUSTOM_MATERIALS_ENABLED
+                    commandBuffer.DrawMesh(meshCache.Mesh, matrix, drawMaterial, i, drawPass, _properties);
+#else
                     commandBuffer.DrawMesh(meshCache.Mesh, matrix, _material, i, passIndex, _properties);
+#endif
                 }
             }
 
@@ -386,14 +496,41 @@ namespace Fu
                 IntPtr previousTextureId = IntPtr.Zero;
                 bool hasPreviousTexture = false;
                 int passIndex = GetPassIndex(item.Desc.DepthMode);
+#if FU_CUSTOM_MATERIALS_ENABLED
+                Material drawMaterial = _material;
+                int drawPass = passIndex;
+                FuCustomDrawMaterialState customMaterialState = default;
+#endif
 
                 for (int i = 0; i < item.DrawList.CmdCount; i++)
                 {
                     ImDrawCmd command = commands[i];
+#if FU_CUSTOM_MATERIALS_ENABLED
+                    if (command.UserCallback != IntPtr.Zero)
+                    {
+                        if (customMaterialState.TryHandleCommand(command))
+                        {
+                            customMaterialState.ResolveWorld(
+                                item.TextureManager,
+                                item.Desc.DepthMode,
+                                _material,
+                                passIndex,
+                                out drawMaterial,
+                                out drawPass);
+                        }
+                        continue;
+                    }
+
+                    if (command.ElemCount == 0)
+                    {
+                        continue;
+                    }
+#else
                     if (command.UserCallback != IntPtr.Zero || command.ElemCount == 0)
                     {
                         continue;
                     }
+#endif
 
                     if (!hasPreviousTexture || previousTextureId != command.TextureId)
                     {
@@ -403,7 +540,11 @@ namespace Fu
                     }
 
                     _properties.SetVector(_clipRectID, command.ClipRect);
+#if FU_CUSTOM_MATERIALS_ENABLED
+                    commandBuffer.DrawMesh(meshCache.Mesh, matrix, drawMaterial, i, drawPass, _properties);
+#else
                     commandBuffer.DrawMesh(meshCache.Mesh, matrix, _material, i, passIndex, _properties);
+#endif
                 }
             }
 #endif
@@ -475,6 +616,9 @@ namespace Fu
 
                 _meshCaches.Clear();
                 _sortedItems.Clear();
+                _activeSurfaceIds.Clear();
+                _meshCacheIdsToRelease.Clear();
+                _lastMeshCacheSynchronizationFrame = -1;
                 if (_material != null)
                 {
                     DestroyMaterial(_material);
@@ -527,6 +671,7 @@ namespace Fu
             private int _previousVertexCount = -1;
             private int _previousIndexCount = -1;
             private int _previousSubMeshCount = -1;
+            private int _lastUpdatedFrame = -1;
             #endregion
 
             #region Properties
@@ -564,10 +709,17 @@ namespace Fu
             /// <param name="item">World draw item.</param>
             public void Update(FuguiWorldDrawItem item)
             {
+                if (_lastUpdatedFrame == item.Frame)
+                {
+                    return;
+                }
+
+                // One surface has identical geometry for every camera rendered during the same Unity frame.
                 DrawList drawList = item.DrawList;
                 if (drawList == null || drawList.VtxCount <= 0 || drawList.IdxCount <= 0 || drawList.CmdCount <= 0)
                 {
                     Clear();
+                    _lastUpdatedFrame = item.Frame;
                     return;
                 }
 
@@ -579,6 +731,7 @@ namespace Fu
                 UpdateSubMeshes(drawList);
                 UpdateBounds(item.Desc);
                 _mesh.UploadMeshData(false);
+                _lastUpdatedFrame = item.Frame;
             }
 
             /// <summary>
@@ -614,6 +767,14 @@ namespace Fu
                     if (_vertices.Length < drawList.VtxCount)
                     {
                         _vertices = new FuguiWorldVertex[GetExpandedCapacity(_vertices.Length, drawList.VtxCount)];
+                    }
+                    else if (_vertices.Length > 1024 && drawList.VtxCount <= _vertices.Length / 4)
+                    {
+                        // Release managed vertex arrays retained by an obsolete geometry spike.
+                        int retainedCount = drawList.VtxCount <= int.MaxValue / 2
+                            ? drawList.VtxCount * 2
+                            : drawList.VtxCount;
+                        _vertices = new FuguiWorldVertex[GetExpandedCapacity(0, retainedCount)];
                     }
                 }
 
@@ -664,9 +825,14 @@ namespace Fu
             private void UpdateSubMeshes(DrawList drawList)
             {
                 _subMeshDescriptors.Clear();
-                if (_subMeshDescriptors.Capacity < drawList.CmdCount)
+                int excessiveCapacityThreshold = drawList.CmdCount <= int.MaxValue / 4
+                    ? Mathf.Max(32, drawList.CmdCount * 4)
+                    : int.MaxValue;
+                if (_subMeshDescriptors.Capacity < drawList.CmdCount ||
+                    _subMeshDescriptors.Capacity > excessiveCapacityThreshold)
                 {
-                    _subMeshDescriptors.Capacity = drawList.CmdCount;
+                    // Keep enough room for the live command set without pinning a previous spike.
+                    _subMeshDescriptors.Capacity = Mathf.Max(8, drawList.CmdCount);
                 }
 
                 ImDrawCmd[] commands = drawList.CmdBuffer;

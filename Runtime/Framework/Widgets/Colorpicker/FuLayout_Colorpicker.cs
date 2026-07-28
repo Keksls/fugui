@@ -1,5 +1,4 @@
 using ImGuiNET;
-using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
@@ -11,11 +10,9 @@ namespace Fu.Framework
     public partial class FuLayout
     {
         #region State
-        private static Dictionary<string, Vector4> _pickersColors = new Dictionary<string, Vector4>();
-        private static Dictionary<string, bool> _pickersEditedStates = new Dictionary<string, bool>();
-        private static Dictionary<string, FuColorPickerPopupState> _pickerPopupStates = new Dictionary<string, FuColorPickerPopupState>();
-        private static Dictionary<string, string> _pickerHexValues = new Dictionary<string, string>();
-        private static Dictionary<string, bool> _pickerHexActiveStates = new Dictionary<string, bool>();
+        private const int ColorPickerStateCacheCapacity = 512;
+        private static readonly FuBoundedCache<string, FuColorPickerPopupState> _colorPickerStates =
+            new FuBoundedCache<string, FuColorPickerPopupState>(ColorPickerStateCacheCapacity, System.StringComparer.Ordinal);
         private static readonly Vector4[] _modernColorPickerSwatches = new Vector4[]
         {
             new Vector4(0.96f, 0.26f, 0.21f, 1f),
@@ -117,17 +114,9 @@ namespace Fu.Framework
                 return false;
             }
 
-            // register color so we can ref inside the popup lambda callback
-            if (!_pickersColors.ContainsKey(text))
-            {
-                _pickersColors.Add(text, color);
-            }
-            _pickersColors[text] = color;
-            // register edited states so we can predict Activation / Deractivation states from lambda callback
-            if (!_pickersEditedStates.ContainsKey(text))
-            {
-                _pickersEditedStates.Add(text, false);
-            }
+            // One bounded state entry owns every value used by the picker and its popup callback.
+            FuColorPickerPopupState pickerState = getColorPickerPopupState(text, color);
+            pickerState.Color = color;
 
             float scale = Fugui.CurrentContext.Scale;
             float height = 20f * scale;
@@ -170,27 +159,26 @@ namespace Fu.Framework
 
             endElement(style);
 
-            string popupID = "ColorPicker" + text;
+            string popupID = pickerState.PopupId;
             if (_lastItemClickedButton == FuMouseButton.Left)
             {
-                FuColorPickerPopupState popupState = getColorPickerPopupState(text, color);
-                popupState.OpenColor = clampColor(color);
-                popupState.HasOpenColor = true;
+                pickerState.OpenColor = clampColor(color);
+                pickerState.HasOpenColor = true;
                 Fugui.OpenPopUp(popupID, () =>
                 {
-                    Vector4 col = _pickersColors[text];
+                    Vector4 col = pickerState.Color;
                     if (drawModernColorPickerPopup(text, alpha, ref col))
                     {
-                        if (!_pickersEditedStates[text])
+                        if (!pickerState.Edited)
                         {
-                            _pickersEditedStates[text] = true;
+                            pickerState.Edited = true;
                             _lastItemJustActivated = true;
                         }
-                        _pickersColors[text] = col;
+                        pickerState.Color = col;
                     }
-                    else if (_pickersEditedStates[text] && !Fugui.IsMousePressed(FuMouseButton.Left))
+                    else if (pickerState.Edited && !Fugui.IsMousePressed(FuMouseButton.Left))
                     {
-                        _pickersEditedStates[text] = false;
+                        pickerState.Edited = false;
                         _lastItemJustDeactivated = true;
                     }
                 }, alpha ? new Vector2(326f, 388f) : new Vector2(300f, 358f));
@@ -198,13 +186,12 @@ namespace Fu.Framework
             Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
             Fugui.DrawPopup(popupID);
             Fugui.PopStyle();
-            if (_pickersEditedStates[text])
+            if (pickerState.Edited)
             {
-                color = _pickersColors[text];
+                color = pickerState.Color;
             }
 
-            bool edited = _pickersEditedStates[text];
-            return edited;
+            return pickerState.Edited;
         }
 
         private bool drawModernColorPickerPopup(string id, bool alpha, ref Vector4 color)
@@ -233,16 +220,16 @@ namespace Fu.Framework
             Vector2 resetButtonSize = new Vector2(headerPreviewSize.y, headerPreviewSize.y);
             Vector2 resetButtonPos = contentPos + new Vector2(headerPreviewSize.x + gap, 0f);
             bool canReset = state.HasOpenColor && !colorsClose(color, state.OpenColor);
-            if (drawColorPickerResetSwatch(id + "Reset", resetButtonPos, resetButtonSize, state.OpenColor, alpha, canReset))
+            if (drawColorPickerResetSwatch(state.ResetId, resetButtonPos, resetButtonSize, state.OpenColor, alpha, canReset))
             {
                 color = alpha ? state.OpenColor : new Vector4(state.OpenColor.x, state.OpenColor.y, state.OpenColor.z, 1f);
                 syncColorPickerState(state, color);
-                _pickerHexValues[id] = formatColorHex(color, alpha);
+                updateColorPickerHexValue(state, color, alpha);
                 edited = true;
             }
 
             Vector2 hexPos = resetButtonPos + new Vector2(resetButtonSize.x + gap, 0f);
-            if (drawHexInput(id, ref color, alpha, hexPos, popupWidth - padding * 2f - headerPreviewSize.x - resetButtonSize.x - gap * 2f))
+            if (drawHexInput(state, ref color, alpha, hexPos, popupWidth - padding * 2f - headerPreviewSize.x - resetButtonSize.x - gap * 2f))
             {
                 syncColorPickerState(state, color);
                 edited = true;
@@ -250,14 +237,14 @@ namespace Fu.Framework
 
             Vector2 svPos = contentPos + new Vector2(0f, headerHeight + gap);
             Vector2 svSize = new Vector2(pickerSize, pickerSize);
-            if (drawSaturationValueArea(id + "SV", state, svPos, svSize))
+            if (drawSaturationValueArea(state.SaturationValueId, state, svPos, svSize))
             {
                 color = colorFromPickerState(state, alpha);
                 edited = true;
             }
 
             Vector2 huePos = svPos + new Vector2(pickerSize + gap, 0f);
-            if (drawHueSlider(id + "Hue", state, huePos, new Vector2(barWidth, pickerSize)))
+            if (drawHueSlider(state.HueId, state, huePos, new Vector2(barWidth, pickerSize)))
             {
                 color = colorFromPickerState(state, alpha);
                 edited = true;
@@ -266,7 +253,7 @@ namespace Fu.Framework
             if (alpha)
             {
                 Vector2 alphaPos = huePos + new Vector2(barWidth + gap * 0.8f, 0f);
-                if (drawAlphaSlider(id + "Alpha", state, alphaPos, new Vector2(barWidth, pickerSize)))
+                if (drawAlphaSlider(state.AlphaId, state, alphaPos, new Vector2(barWidth, pickerSize)))
                 {
                     color = colorFromPickerState(state, true);
                     edited = true;
@@ -277,22 +264,22 @@ namespace Fu.Framework
             float controlsWidth = popupWidth - padding * 2f;
             Vector2 sliderPos = controlsPos;
             float sliderWidth = controlsWidth;
-            if (drawColorChannelSlider(id + "R", "R", ref color, 0, sliderPos, sliderWidth))
+            if (drawColorChannelSlider(state.RedId, "R", ref color, 0, sliderPos, sliderWidth))
             {
                 syncColorPickerState(state, color);
                 edited = true;
             }
-            if (drawColorChannelSlider(id + "G", "G", ref color, 1, sliderPos + new Vector2(0f, 24f * scale), sliderWidth))
+            if (drawColorChannelSlider(state.GreenId, "G", ref color, 1, sliderPos + new Vector2(0f, 24f * scale), sliderWidth))
             {
                 syncColorPickerState(state, color);
                 edited = true;
             }
-            if (drawColorChannelSlider(id + "B", "B", ref color, 2, sliderPos + new Vector2(0f, 48f * scale), sliderWidth))
+            if (drawColorChannelSlider(state.BlueId, "B", ref color, 2, sliderPos + new Vector2(0f, 48f * scale), sliderWidth))
             {
                 syncColorPickerState(state, color);
                 edited = true;
             }
-            if (alpha && drawColorChannelSlider(id + "A", "A", ref color, 3, sliderPos + new Vector2(0f, 72f * scale), sliderWidth))
+            if (alpha && drawColorChannelSlider(state.AlphaChannelId, "A", ref color, 3, sliderPos + new Vector2(0f, 72f * scale), sliderWidth))
             {
                 syncColorPickerState(state, color);
                 edited = true;
@@ -301,7 +288,7 @@ namespace Fu.Framework
             Vector2 swatchPos = sliderPos + new Vector2(0f, (alpha ? 88f : 66f) * scale);
             drawList.AddText(swatchPos, ImGui.GetColorU32(Fugui.GetColor(FuColors.TextDisabled, 0.82f)), "Presets");
             Vector2 swatchGridPos = swatchPos + new Vector2(0f, 22f * scale);
-            if (drawColorSwatches(id, ref color, alpha, swatchGridPos, controlsWidth))
+            if (drawColorSwatches(state, ref color, alpha, swatchGridPos, controlsWidth))
             {
                 syncColorPickerState(state, color);
                 edited = true;
@@ -310,9 +297,9 @@ namespace Fu.Framework
             if (edited)
             {
                 state.Color = color;
-                if (!_pickerHexActiveStates.TryGetValue(id, out bool hexActive) || !hexActive)
+                if (!state.HexActive)
                 {
-                    _pickerHexValues[id] = formatColorHex(color, alpha);
+                    updateColorPickerHexValue(state, color, alpha);
                 }
             }
 
@@ -323,10 +310,10 @@ namespace Fu.Framework
 
         private FuColorPickerPopupState getColorPickerPopupState(string id, Vector4 color)
         {
-            if (!_pickerPopupStates.TryGetValue(id, out FuColorPickerPopupState state))
+            if (!_colorPickerStates.TryGetValue(id, out FuColorPickerPopupState state))
             {
-                state = new FuColorPickerPopupState();
-                _pickerPopupStates[id] = state;
+                state = new FuColorPickerPopupState(id);
+                _colorPickerStates.Set(id, state);
             }
 
             if (!state.Initialized || !colorsClose(state.Color, color))
@@ -334,9 +321,9 @@ namespace Fu.Framework
                 syncColorPickerState(state, color);
             }
 
-            if (!_pickerHexValues.ContainsKey(id))
+            if (state.HexValue == null)
             {
-                _pickerHexValues[id] = formatColorHex(color, true);
+                updateColorPickerHexValue(state, color, true);
             }
 
             return state;
@@ -453,37 +440,36 @@ namespace Fu.Framework
             return edited;
         }
 
-        private bool drawHexInput(string id, ref Vector4 color, bool alpha, Vector2 pos, float width)
+        private bool drawHexInput(FuColorPickerPopupState state, ref Vector4 color, bool alpha, Vector2 pos, float width)
         {
             float scale = Fugui.CurrentContext.Scale;
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-            string hexID = id + "HexInput";
-            bool wasActive = _pickerHexActiveStates.TryGetValue(id, out bool activeState) && activeState;
-            if (!_pickerHexValues.ContainsKey(id) || !wasActive)
+            if (state.HexValue == null || !state.HexActive)
             {
-                _pickerHexValues[id] = formatColorHex(color, alpha);
+                updateColorPickerHexValue(state, color, alpha);
             }
 
             drawList.AddText(pos + new Vector2(0f, 7f * scale), ImGui.GetColorU32(Fugui.GetColor(FuColors.TextDisabled, 0.86f)), "HEX");
 
             Vector2 inputPos = pos + new Vector2(42f * scale, 0f);
             float inputWidth = width - 42f * scale;
-            string hex = _pickerHexValues[id];
+            string hex = state.HexValue;
             ImGui.SetCursorScreenPos(inputPos);
             ImGui.SetNextItemWidth(inputWidth);
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(8f * scale, 5f * scale));
             Fugui.Push(ImGuiCol.FrameBg, Fugui.GetColor(FuColors.Header, 0.54f));
             Fugui.Push(ImGuiCol.FrameBgHovered, Fugui.GetColor(FuColors.HeaderHovered, 0.72f));
             Fugui.Push(ImGuiCol.FrameBgActive, Fugui.GetColor(FuColors.HeaderActive, 0.86f));
-            bool edited = ImGui.InputTextWithHint("##" + hexID, alpha ? "RRGGBBAA" : "RRGGBB", ref hex, alpha ? 9u : 7u, ImGuiInputTextFlags.CharsHexadecimal | ImGuiInputTextFlags.CharsUppercase | ImGuiInputTextFlags.CharsNoBlank);
+            bool edited = ImGui.InputTextWithHint(state.HexInputId, alpha ? "RRGGBBAA" : "RRGGBB", ref hex, alpha ? 9u : 7u, ImGuiInputTextFlags.CharsHexadecimal | ImGuiInputTextFlags.CharsUppercase | ImGuiInputTextFlags.CharsNoBlank);
             bool isActive = Fugui.IsCurrentItemActive();
             Fugui.PopColor(3);
             Fugui.PopStyle();
 
-            _pickerHexActiveStates[id] = isActive;
-            _pickerHexValues[id] = hex;
+            state.HexActive = isActive;
+            state.HexValue = hex;
             if (edited && tryParseHexColor(hex, alpha, color.w, out Vector4 parsedColor))
             {
+                state.HasHexColor = false;
                 color = parsedColor;
                 return true;
             }
@@ -558,7 +544,7 @@ namespace Fu.Framework
             return edited;
         }
 
-        private bool drawColorSwatches(string id, ref Vector4 color, bool alpha, Vector2 pos, float width)
+        private bool drawColorSwatches(FuColorPickerPopupState state, ref Vector4 color, bool alpha, Vector2 pos, float width)
         {
             float scale = Fugui.CurrentContext.Scale;
             float size = 18f * scale;
@@ -572,7 +558,7 @@ namespace Fu.Framework
                 {
                     swatchColor.w = 1f;
                 }
-                if (drawColorSwatch(id + "Swatch" + i, swatchColor, swatchPos, new Vector2(size, size), colorsCloseRgb(color, swatchColor)))
+                if (drawColorSwatch(state.SwatchIds[i], swatchColor, swatchPos, new Vector2(size, size), colorsCloseRgb(color, swatchColor)))
                 {
                     color = new Vector4(swatchColor.x, swatchColor.y, swatchColor.z, alpha ? color.w : 1f);
                     edited = true;
@@ -940,6 +926,29 @@ namespace Fu.Framework
             return alpha ? string.Format("{0:X2}{1:X2}{2:X2}{3:X2}", r, g, b, a) : string.Format("{0:X2}{1:X2}{2:X2}", r, g, b);
         }
 
+        /// <summary>
+        /// Updates the cached hexadecimal color only when its source value changed.
+        /// </summary>
+        /// <param name="state">Picker state that owns the cached string.</param>
+        /// <param name="color">Color represented by the string.</param>
+        /// <param name="alpha">Whether the alpha channel is included.</param>
+        private static void updateColorPickerHexValue(FuColorPickerPopupState state, Vector4 color, bool alpha)
+        {
+            // Stable colors reuse the same formatted string instead of allocating it every popup frame.
+            Vector4 normalizedColor = clampColor(color);
+            if (state.HasHexColor &&
+                state.HexIncludesAlpha == alpha &&
+                colorsClose(state.HexColor, normalizedColor))
+            {
+                return;
+            }
+
+            state.HexValue = formatColorHex(normalizedColor, alpha);
+            state.HexColor = normalizedColor;
+            state.HexIncludesAlpha = alpha;
+            state.HasHexColor = true;
+        }
+
         private static bool tryParseHexColor(string hex, bool alpha, float fallbackAlpha, out Vector4 color)
         {
             color = Vector4.zero;
@@ -990,8 +999,28 @@ namespace Fu.Framework
             return true;
         }
 
+        /// <summary>
+        /// Clears color picker state owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetColorPickerState()
+        {
+            // Picker values, popup state and editable strings share one bounded session cache.
+            _colorPickerStates.Clear();
+        }
+
         private class FuColorPickerPopupState
         {
+            public readonly string PopupId;
+            public readonly string ResetId;
+            public readonly string SaturationValueId;
+            public readonly string HueId;
+            public readonly string AlphaId;
+            public readonly string RedId;
+            public readonly string GreenId;
+            public readonly string BlueId;
+            public readonly string AlphaChannelId;
+            public readonly string HexInputId;
+            public readonly string[] SwatchIds;
             public bool Initialized;
             public float Hue;
             public float Saturation;
@@ -1000,6 +1029,36 @@ namespace Fu.Framework
             public Vector4 Color;
             public bool HasOpenColor;
             public Vector4 OpenColor;
+            public bool Edited;
+            public string HexValue;
+            public bool HexActive;
+            public bool HasHexColor;
+            public bool HexIncludesAlpha;
+            public Vector4 HexColor;
+
+            /// <summary>
+            /// Creates persistent picker state and precomposes every stable ImGui identifier.
+            /// </summary>
+            /// <param name="id">Unique color picker identifier.</param>
+            public FuColorPickerPopupState(string id)
+            {
+                // Control identifiers never change during the bounded state lifetime.
+                PopupId = "ColorPicker" + id;
+                ResetId = id + "Reset";
+                SaturationValueId = id + "SV";
+                HueId = id + "Hue";
+                AlphaId = id + "Alpha";
+                RedId = id + "R";
+                GreenId = id + "G";
+                BlueId = id + "B";
+                AlphaChannelId = id + "A";
+                HexInputId = "##" + id + "HexInput";
+                SwatchIds = new string[_modernColorPickerSwatches.Length];
+                for (int i = 0; i < SwatchIds.Length; i++)
+                {
+                    SwatchIds[i] = id + "Swatch" + i;
+                }
+            }
         }
         #endregion
     }

@@ -11,8 +11,10 @@ namespace Fu
     public static partial class Fugui
     {
         #region State
+        private const int FrozenUICacheCapacity = 1024;
         private static readonly Dictionary<string, FuFrozenUIData> _frozenUICache = new Dictionary<string, FuFrozenUIData>();
         private static readonly Stack<FuFrozenUIContext> _frozenUIStack = new Stack<FuFrozenUIContext>();
+        private static readonly List<string> _frozenUICleanupKeys = new List<string>();
         #endregion
 
         #region Methods
@@ -36,6 +38,11 @@ namespace Fu
 
             if (!_frozenUICache.TryGetValue(id, out FuFrozenUIData data))
             {
+                if (_frozenUICache.Count >= FrozenUICacheCapacity)
+                {
+                    EvictLeastRecentlySubmittedFrozenUI();
+                }
+
                 data = new FuFrozenUIData();
                 _frozenUICache[id] = data;
             }
@@ -130,8 +137,10 @@ namespace Fu
         /// </summary>
         public static void ClearFrozenUICache()
         {
+            // Frozen geometry and cleanup scratch data belong to one runtime session.
             _frozenUICache.Clear();
             _frozenUIStack.Clear();
+            _frozenUICleanupKeys.Clear();
         }
 
         /// <summary>
@@ -168,28 +177,43 @@ namespace Fu
             }
 
             int frame = UnityEngine.Time.frameCount;
-            List<string> toRemove = null;
+            _frozenUICleanupKeys.Clear();
             foreach (KeyValuePair<string, FuFrozenUIData> pair in _frozenUICache)
             {
                 FuFrozenUIData data = pair.Value;
                 if (frame - data.LastSubmittedFrame >= data.AutoInvalidateAfterInvisibleFrames)
                 {
-                    if (toRemove == null)
-                    {
-                        toRemove = new List<string>();
-                    }
-                    toRemove.Add(pair.Key);
+                    _frozenUICleanupKeys.Add(pair.Key);
                 }
             }
 
-            if (toRemove == null)
+            for (int i = 0; i < _frozenUICleanupKeys.Count; i++)
             {
-                return;
+                _frozenUICache.Remove(_frozenUICleanupKeys[i]);
+            }
+            _frozenUICleanupKeys.Clear();
+        }
+
+        /// <summary>
+        /// Removes the frozen UI entry that has gone unused for the longest time.
+        /// </summary>
+        private static void EvictLeastRecentlySubmittedFrozenUI()
+        {
+            // A linear scan is allocation-free and runs only when a new key reaches the hard limit.
+            string oldestId = null;
+            int oldestFrame = int.MaxValue;
+            foreach (KeyValuePair<string, FuFrozenUIData> pair in _frozenUICache)
+            {
+                if (pair.Value.LastSubmittedFrame < oldestFrame)
+                {
+                    oldestId = pair.Key;
+                    oldestFrame = pair.Value.LastSubmittedFrame;
+                }
             }
 
-            for (int i = 0; i < toRemove.Count; i++)
+            if (oldestId != null)
             {
-                _frozenUICache.Remove(toRemove[i]);
+                _frozenUICache.Remove(oldestId);
             }
         }
 
@@ -208,6 +232,9 @@ namespace Fu
             data.Commands.Clear();
             bool hasDrawnBounds = false;
             Vector2 drawnContentSize = Vector2.zero;
+#if FU_CUSTOM_MATERIALS_ENABLED
+            FuCustomDrawMaterialState customMaterialState = default;
+#endif
 
             int idxEnd = drawList.IdxBuffer.Size;
             if (idxEnd <= idxStart)
@@ -218,10 +245,23 @@ namespace Fu
             for (int cmdIndex = 0; cmdIndex < drawList.CmdBuffer.Size; cmdIndex++)
             {
                 ImDrawCmd cmd = *drawList.CmdBuffer[cmdIndex].NativePtr;
+#if FU_CUSTOM_MATERIALS_ENABLED
+                if (cmd.UserCallback != IntPtr.Zero)
+                {
+                    customMaterialState.TryHandleCommand(cmd);
+                    continue;
+                }
+
+                if (cmd.ElemCount == 0)
+                {
+                    continue;
+                }
+#else
                 if (cmd.UserCallback != IntPtr.Zero || cmd.ElemCount == 0)
                 {
                     continue;
                 }
+#endif
 
                 int cmdIdxStart = (int)cmd.IdxOffset;
                 int cmdIdxEnd = cmdIdxStart + (int)cmd.ElemCount;
@@ -293,6 +333,9 @@ namespace Fu
                 {
                     ClipRect = cmd.ClipRect,
                     TextureId = cmd.TextureId,
+#if FU_CUSTOM_MATERIALS_ENABLED
+                    MaterialBindingId = customMaterialState.ActiveBindingId,
+#endif
                     Vertices = commandVertices,
                     Indices = indices
                 });
@@ -331,8 +374,18 @@ namespace Fu
                     command.ClipRect.w + offset.y);
 
                 drawList.PushClipRect(new Vector2(clipRect.x, clipRect.y), new Vector2(clipRect.z, clipRect.w));
+#if FU_CUSTOM_MATERIALS_ENABLED
+                bool materialPushed = false;
+#endif
                 try
                 {
+#if FU_CUSTOM_MATERIALS_ENABLED
+                    if (command.MaterialBindingId != IntPtr.Zero)
+                    {
+                        drawList.PushMaterialBinding(command.MaterialBindingId);
+                        materialPushed = true;
+                    }
+#endif
                     drawList.PushTextureID(command.TextureId);
                     try
                     {
@@ -357,6 +410,12 @@ namespace Fu
                 }
                 finally
                 {
+#if FU_CUSTOM_MATERIALS_ENABLED
+                    if (materialPushed)
+                    {
+                        drawList.PopMaterialBinding();
+                    }
+#endif
                     drawList.PopClipRect();
                 }
             }
@@ -404,6 +463,9 @@ namespace Fu
             #region State
             public Vector4 ClipRect;
             public IntPtr TextureId;
+#if FU_CUSTOM_MATERIALS_ENABLED
+            public IntPtr MaterialBindingId;
+#endif
             public ImDrawVert[] Vertices;
             public ushort[] Indices;
             #endregion

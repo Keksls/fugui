@@ -26,6 +26,7 @@ namespace Fu
         private readonly FuMouseState _mouse;
         private readonly FuKeyboardState _keyboard;
         private readonly List<string> _pendingBringToFrontWindowIds = new List<string>();
+        private readonly List<FuWindow> _renderWindowSnapshot = new List<FuWindow>();
 
         private FuWindow _window;
 
@@ -106,9 +107,30 @@ namespace Fu
                 return;
             }
 
-            foreach (FuWindow window in Windows.Values.ToList())
+            // Reuse a snapshot because externalization callbacks can mutate the live registry while drawing.
+            _renderWindowSnapshot.Clear();
+            foreach (FuWindow window in Windows.Values)
             {
-                RenderFuWindow(window);
+                _renderWindowSnapshot.Add(window);
+            }
+            try
+            {
+                for (int i = 0; i < _renderWindowSnapshot.Count; i++)
+                {
+                    FuWindow window = _renderWindowSnapshot[i];
+                    if (window != null &&
+                        Windows.TryGetValue(window.ID, out FuWindow registeredWindow) &&
+                        ReferenceEquals(window, registeredWindow))
+                    {
+                        RenderFuWindow(window);
+                    }
+                }
+            }
+            finally
+            {
+                // Do not retain window references beyond the mutation-safe render pass.
+                _renderWindowSnapshot.Clear();
+                TrimRenderWindowSnapshot();
             }
 
             _context.Window.Render();
@@ -134,6 +156,22 @@ namespace Fu
                 Fugui.RenderNotifications(this);
 
             OnPostRenderWindows?.Invoke();
+        }
+
+        /// <summary>
+        /// Releases snapshot capacity retained by an obsolete external-window count spike.
+        /// </summary>
+        private void TrimRenderWindowSnapshot()
+        {
+            // Stable counts allocate nothing; a fourfold contraction sheds the old backing array.
+            int liveWindowCount = Windows != null ? Windows.Count : 0;
+            int excessiveCapacityThreshold = liveWindowCount <= int.MaxValue / 4
+                ? Math.Max(32, liveWindowCount * 4)
+                : int.MaxValue;
+            if (_renderWindowSnapshot.Capacity > excessiveCapacityThreshold)
+            {
+                _renderWindowSnapshot.Capacity = Math.Max(8, liveWindowCount);
+            }
         }
 
         private void SyncPrimaryWindowToNativeBounds()

@@ -71,6 +71,49 @@ namespace Fu
         }
 
         /// <summary>
+        /// Replaces a text file atomically through a temporary sibling file.
+        /// </summary>
+        /// <param name="filePath">Destination file path.</param>
+        /// <param name="content">Complete text content to persist.</param>
+        public static void WriteAllTextAtomically(string filePath, string content)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                throw new ArgumentException("The destination path cannot be null or empty.", nameof(filePath));
+            }
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            string directory = Path.GetDirectoryName(filePath);
+            string temporaryPath = Path.Combine(
+                directory ?? string.Empty,
+                $".{Path.GetFileName(filePath)}.{Guid.NewGuid():N}.tmp");
+
+            try
+            {
+                // A sibling temporary file keeps the final replacement on the same volume.
+                File.WriteAllText(temporaryPath, content);
+                if (File.Exists(filePath))
+                {
+                    File.Replace(temporaryPath, filePath, null);
+                }
+                else
+                {
+                    File.Move(temporaryPath, filePath);
+                }
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+            }
+        }
+
+        /// <summary>
         /// Convert a string to UTF8 byte array and return the number of bytes written to the array
         /// </summary>
         /// <param name="s"> string to convert</param>

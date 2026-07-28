@@ -25,7 +25,7 @@ namespace Fu.Framework
             }
 
             drawElementLabel(label, FuTextStyle.Default);
-            return base.Chart("##" + label, series, options, out hover);
+            return base.Chart(GetCachedCompositeId("##", label), series, options, out hover);
         }
         #endregion
     }

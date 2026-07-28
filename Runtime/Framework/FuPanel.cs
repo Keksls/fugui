@@ -1,6 +1,5 @@
 using ImGuiNET;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -31,8 +30,11 @@ namespace Fu.Framework
         private string _ID;
         private bool _useClipper = true;
         private FuImGuiStackSnapshot _stackSnapshot;
+        private (string PanelId, string WindowId) _clipperKey;
         internal static FuPanelClipper Clipper = null;
-        private static Dictionary<string, FuPanelClipper> _clippingDict = new Dictionary<string, FuPanelClipper>();
+        private const int PanelClipperCacheCapacity = 1024;
+        private static readonly FuBoundedCache<(string PanelId, string WindowId), FuPanelClipper> _clippingCache =
+            new FuBoundedCache<(string PanelId, string WindowId), FuPanelClipper>(PanelClipperCacheCapacity);
         #endregion
 
         #region Constructors
@@ -155,12 +157,13 @@ namespace Fu.Framework
             IsInsidePanel = _panelCreated;
 
             // set clipping data
-            string clippingID = _ID + FuWindow.CurrentDrawingWindow?.ID;
-            if (!_clippingDict.ContainsKey(clippingID))
+            _clipperKey = (_ID, FuWindow.CurrentDrawingWindow?.ID);
+            if (!_clippingCache.TryGetValue(_clipperKey, out FuPanelClipper panelClipper))
             {
-                _clippingDict.Add(clippingID, new FuPanelClipper());
+                panelClipper = new FuPanelClipper();
+                _clippingCache.Set(_clipperKey, panelClipper);
             }
-            Clipper = _clippingDict[clippingID];
+            Clipper = panelClipper;
             Clipper.NewFrame(_useClipper);
 
             // get and store current panel rect
@@ -204,7 +207,6 @@ namespace Fu.Framework
                             }
                             finally
                             {
-                                _clippingDict[_ID + FuWindow.CurrentDrawingWindow?.ID] = Clipper;
                                 Clipper = null;
                             }
                         }
@@ -213,8 +215,36 @@ namespace Fu.Framework
             }
             else
             {
-                Fugui.EndChild();
+                try
+                {
+                    Fugui.EndChild();
+                }
+                finally
+                {
+                    // A clipped child can be skipped by ImGui but still owns one clipper frame.
+                    try
+                    {
+                        Clipper?.EndFrame();
+                    }
+                    finally
+                    {
+                        Clipper = null;
+                        IsInsidePanel = false;
+                    }
+                }
             }
+        }
+
+        /// <summary>
+        /// Clears reusable panel clippers owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetClipperCache()
+        {
+            // Panel geometry from a disposed session cannot be reused by a new ImGui context.
+            _clippingCache.Clear();
+            Clipper = null;
+            IsInsidePanel = false;
+            CurrentPanelRect = default;
         }
         #endregion
     }

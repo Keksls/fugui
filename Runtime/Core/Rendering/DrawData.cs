@@ -21,6 +21,7 @@ namespace Fu
             public int CmdListsCount;
             private readonly List<DrawList> _transientDrawListPool;
             private int _transientDrawListPoolCursor;
+            private const int MinimumRetainedTransientDrawLists = 8;
             #endregion
 
             #region Constructors
@@ -42,12 +43,36 @@ namespace Fu
             /// </summary>
             public void Clear()
             {
+                // Retain the recent working set and release pinned buffers left by older spikes.
+                TrimTransientDrawListPool(Mathf.Max(MinimumRetainedTransientDrawLists, _transientDrawListPoolCursor));
                 DrawLists.Clear();
                 RenderItems.Clear();
                 _transientDrawListPoolCursor = 0;
                 TotalVtxCount = 0;
                 TotalIdxCount = 0;
                 CmdListsCount = 0;
+            }
+
+            /// <summary>
+            /// Releases transient draw-list copies above the recent frame working set.
+            /// </summary>
+            /// <param name="retainedCount">Number of reusable draw-list copies to retain.</param>
+            private void TrimTransientDrawListPool(int retainedCount)
+            {
+                // Tail removal preserves the hot slots reused from index zero on every frame.
+                for (int i = _transientDrawListPool.Count - 1; i >= retainedCount; i--)
+                {
+                    _transientDrawListPool[i].Dispose();
+                    _transientDrawListPool.RemoveAt(i);
+                }
+
+                int excessiveCapacityThreshold = retainedCount <= int.MaxValue / 4
+                    ? Mathf.Max(32, retainedCount * 4)
+                    : int.MaxValue;
+                if (_transientDrawListPool.Capacity > excessiveCapacityThreshold)
+                {
+                    _transientDrawListPool.Capacity = Mathf.Max(8, retainedCount);
+                }
             }
 
             /// <summary>
@@ -290,10 +315,7 @@ namespace Fu
                 _mesh.SetIndexBufferData(drawList.IdxBuffer, 0, 0, drawList.IdxCount, NoMeshChecks);
 
                 _subMeshDescriptors.Clear();
-                if (_subMeshDescriptors.Capacity < drawList.CmdCount)
-                {
-                    _subMeshDescriptors.Capacity = drawList.CmdCount;
-                }
+                PrepareSubMeshDescriptorCapacity(drawList.CmdCount);
 
                 ImDrawCmd[] commands = drawList.CmdBuffer;
                 for (int i = 0; i < drawList.CmdCount; ++i)
@@ -377,10 +399,7 @@ namespace Fu
                 int vtxOffset = 0;
                 int idxOffset = 0;
                 _subMeshDescriptors.Clear();
-                if (_subMeshDescriptors.Capacity < subMeshCount)
-                {
-                    _subMeshDescriptors.Capacity = subMeshCount;
-                }
+                PrepareSubMeshDescriptorCapacity(subMeshCount);
 
                 for (int n = 0; n < drawLists.Count; ++n)
                 {
@@ -419,6 +438,23 @@ namespace Fu
                 );
 
                 _mesh.UploadMeshData(false);
+            }
+
+            /// <summary>
+            /// Sizes the reusable submesh descriptor list for the current draw workload.
+            /// </summary>
+            /// <param name="requiredCount">Required descriptor count.</param>
+            private void PrepareSubMeshDescriptorCapacity(int requiredCount)
+            {
+                // Stable workloads allocate nothing, while a fourfold contraction releases obsolete spikes.
+                int excessiveCapacityThreshold = requiredCount <= int.MaxValue / 4
+                    ? Mathf.Max(32, requiredCount * 4)
+                    : int.MaxValue;
+                if (_subMeshDescriptors.Capacity < requiredCount ||
+                    _subMeshDescriptors.Capacity > excessiveCapacityThreshold)
+                {
+                    _subMeshDescriptors.Capacity = Mathf.Max(8, requiredCount);
+                }
             }
 
             public void Destroy()

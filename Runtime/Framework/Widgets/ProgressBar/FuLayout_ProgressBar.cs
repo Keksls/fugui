@@ -10,7 +10,30 @@ namespace Fu.Framework
     /// </summary>
     public partial class FuLayout
     {
+        #region State
+        private static readonly string[] _progressPercentageLabels = new string[101];
+        #endregion
+
         #region Methods
+        /// <summary>
+        /// Gets the immutable display label for an integer progress percentage.
+        /// </summary>
+        /// <param name="percentage">Clamped percentage from zero through one hundred.</param>
+        /// <returns>Cached percentage label.</returns>
+        private static string GetProgressPercentageLabel(int percentage)
+        {
+            // Default progress text has only 101 possible values and is allocated once per value.
+            percentage = Mathf.Clamp(percentage, 0, 100);
+            string label = _progressPercentageLabels[percentage];
+            if (label == null)
+            {
+                label = percentage.ToString() + "%";
+                _progressPercentageLabels[percentage] = label;
+            }
+
+            return label;
+        }
+
         /// <summary>
         /// Renders a Idle progress bar with the given text. The progress bar will have the default size and style.
         /// </summary>
@@ -126,7 +149,7 @@ namespace Fu.Framework
 
             // Display the text
             Vector2 textPos;
-            string text = displayText == null ? string.Format("{0}%", (int)(value * 100)) : displayText;
+            string text = displayText == null ? GetProgressPercentageLabel((int)(value * 100)) : displayText;
             Vector2 textSize = ImGui.CalcTextSize(text);
             Vector4 textColor;
             switch (textPosition)

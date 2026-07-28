@@ -16,8 +16,8 @@ namespace Fu.Framework
         #region SmartText State
         private const int SmartTextCacheLimit = 512;
         private const int SmartTextMaxFontSize = 512;
-        private static readonly Dictionary<string, FuSmartTextCacheEntry> _smartTextCache = new Dictionary<string, FuSmartTextCacheEntry>(SmartTextCacheLimit);
-        private static readonly Queue<string> _smartTextCacheOrder = new Queue<string>(SmartTextCacheLimit);
+        private static readonly FuBoundedCache<string, FuSmartTextCacheEntry> _smartTextCache =
+            new FuBoundedCache<string, FuSmartTextCacheEntry>(SmartTextCacheLimit, StringComparer.Ordinal);
         #endregion
 
         #region SmartText Rendering
@@ -220,15 +220,17 @@ namespace Fu.Framework
             }
 
             entry = ParseSmartText(text);
-            if (_smartTextCache.Count >= SmartTextCacheLimit && _smartTextCacheOrder.Count > 0)
-            {
-                string oldestKey = _smartTextCacheOrder.Dequeue();
-                _smartTextCache.Remove(oldestKey);
-            }
-
-            _smartTextCache.Add(text, entry);
-            _smartTextCacheOrder.Enqueue(text);
+            _smartTextCache.Set(text, entry);
             return entry;
+        }
+
+        /// <summary>
+        /// Clears parsed SmartText entries owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetSmartTextCache()
+        {
+            // Parsed segments retain their source strings and belong to one runtime session.
+            _smartTextCache.Clear();
         }
 
         /// <summary>

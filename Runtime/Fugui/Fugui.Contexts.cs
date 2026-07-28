@@ -216,6 +216,8 @@ namespace Fu
 
             // Unregister first so callbacks raised during native cleanup cannot enqueue the same context again.
             Contexts.Remove(contextID);
+            RemoveNotificationContextState(contextID);
+            RemoveSurfaceContextState(contextID);
             RunShutdownStep(() => DisposeListClipper(contextID));
             bool isDefaultContext = ReferenceEquals(context, DefaultContext);
             if (isDefaultContext)

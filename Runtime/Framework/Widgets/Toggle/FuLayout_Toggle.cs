@@ -54,11 +54,11 @@ namespace Fu.Framework
             }
 
             // and and get toggle data struct
-            if (!_uiElementAnimationDatas.ContainsKey(text))
+            if (!_uiElementAnimationDatas.TryGetValue(text, out FuElementAnimationData data))
             {
-                _uiElementAnimationDatas.Add(text, new FuElementAnimationData(!value));
+                data = new FuElementAnimationData(!value);
+                _uiElementAnimationDatas.Set(text, data);
             }
-            FuElementAnimationData data = _uiElementAnimationDatas[text];
             bool noEditable = flags.HasFlag(FuToggleFlags.NoEditable);
 
             // process Text Size

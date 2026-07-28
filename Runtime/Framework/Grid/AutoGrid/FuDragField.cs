@@ -68,6 +68,8 @@ namespace Fu.Framework
             /// <returns>The result of the operation.</returns>
             public override bool Draw(string objectID, FuGrid grid, object objectInstance)
             {
+                // Reuse the stable ImGui identifier instead of rebuilding it for every numeric branch and frame.
+                string fieldId = FuLayout.GetCachedCompositeId(FieldName, "##", objectID);
                 if (Disabled)
                 {
                     grid.DisableNextElement();
@@ -81,7 +83,7 @@ namespace Fu.Framework
                 {
                     case NumericFieldType.Byte:
                         int bval = (byte)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Drag(FieldName + "##" + objectID, getLabel(0), ref bval, (int)Mathf.Max(byte.MinValue, _min), (int)Mathf.Min(byte.MaxValue, _max));
+                        updated = grid.Drag(fieldId, getLabel(0), ref bval, (int)Mathf.Max(byte.MinValue, _min), (int)Mathf.Min(byte.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, (byte)bval);
@@ -90,7 +92,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.Short:
                         int sval = (short)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Drag(FieldName + "##" + objectID, getLabel(0), ref sval, (int)Mathf.Max(short.MinValue, _min), (short)Mathf.Min(byte.MaxValue, _max));
+                        updated = grid.Drag(fieldId, getLabel(0), ref sval, (int)Mathf.Max(short.MinValue, _min), (short)Mathf.Min(byte.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, (short)sval);
@@ -99,7 +101,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.UShort:
                         int usval = (ushort)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Drag(FieldName + "##" + objectID, getLabel(0), ref usval, (int)Mathf.Max(ushort.MinValue, _min), (int)Mathf.Min(ushort.MaxValue, _max));
+                        updated = grid.Drag(fieldId, getLabel(0), ref usval, (int)Mathf.Max(ushort.MinValue, _min), (int)Mathf.Min(ushort.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, (short)usval);
@@ -108,7 +110,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.Int:
                         int ival = (int)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Drag(FieldName + "##" + objectID, getLabel(0), ref ival, (int)Mathf.Max(int.MinValue, _min), (int)Mathf.Min(int.MaxValue, _max));
+                        updated = grid.Drag(fieldId, getLabel(0), ref ival, (int)Mathf.Max(int.MinValue, _min), (int)Mathf.Min(int.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, ival);
@@ -117,7 +119,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.Float:
                         float fval = (float)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Drag(FieldName + "##" + objectID, ref fval, getLabel(0), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                        updated = grid.Drag(fieldId, ref fval, getLabel(0), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, fval);
@@ -126,7 +128,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.Vector2:
                         Vector2 v2val = (Vector2)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Drag(FieldName + "##" + objectID, ref v2val, getLabel(0), getLabel(1), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                        updated = grid.Drag(fieldId, ref v2val, getLabel(0), getLabel(1), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, v2val);
@@ -135,7 +137,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.Vector3:
                         Vector3 v3val = (Vector3)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Drag(FieldName + "##" + objectID, ref v3val, getLabel(0), getLabel(1), getLabel(2), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                        updated = grid.Drag(fieldId, ref v3val, getLabel(0), getLabel(1), getLabel(2), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, v3val);
@@ -144,7 +146,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.Vector4:
                         Vector4 v4val = (Vector4)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Drag(FieldName + "##" + objectID, ref v4val, getLabel(0), getLabel(1), getLabel(2), getLabel(3), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                        updated = grid.Drag(fieldId, ref v4val, getLabel(0), getLabel(1), getLabel(2), getLabel(3), (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, v4val);
@@ -154,7 +156,7 @@ namespace Fu.Framework
                     case NumericFieldType.None:
                     default:
                         grid.SetNextElementToolTipWithLabel("can't draw an object of type " + _fieldInfo.FieldType.ToString() + " using a drag.");
-                        grid.Text(_fieldInfo.FieldType.ToString() + "##" + objectID);
+                        grid.Text(FuLayout.GetCachedCompositeId(_fieldInfo.FieldType.ToString(), "##", objectID));
                         return false;
                 }
                 return updated;

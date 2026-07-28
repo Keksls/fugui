@@ -1,7 +1,6 @@
 #if (UNITY_ANDROID || UNITY_IOS)// && !UNITY_EDITOR && !FUMOBILE
 #define FUMOBILE
 #endif
-using System.Collections.Generic;
 using ImGuiNET;
 using UnityEngine;
 
@@ -43,9 +42,16 @@ namespace Fu
         private static Vector2 _currentChildPos;
         private static Vector2 _currentChildSize;
         private static uint _currentChildId;
-        private static Dictionary<uint, Rect> _childRects = new Dictionary<uint, Rect>();
-        private static Dictionary<uint, FuWindow> _childOwners = new Dictionary<uint, FuWindow>();
+        private const int TouchChildCacheCapacity = 1024;
+        private static readonly FuBoundedCache<uint, FuTouchChildData> _touchChildCache =
+            new FuBoundedCache<uint, FuTouchChildData>(TouchChildCacheCapacity);
         private static FuWindow _currentChildOwner;
+
+        private struct FuTouchChildData
+        {
+            public Rect Rect;
+            public FuWindow Owner;
+        }
         #endregion
 
         /// <summary>
@@ -168,16 +174,11 @@ namespace Fu
             ValidateCursorExtentBeforeEndChild();
             ImGuiNative.igEndChild();
             _currentChildSize = new Vector2(childWidth, ImGui.GetCursorScreenPos().y - _currentChildPos.y);
-            if (_childRects.ContainsKey(_currentChildId))
+            _touchChildCache.Set(_currentChildId, new FuTouchChildData
             {
-                _childRects[_currentChildId] = new Rect(_currentChildPos, _currentChildSize);
-                _childOwners[_currentChildId] = _currentChildOwner;
-            }
-            else
-            {
-                _childRects.Add(_currentChildId, new Rect(_currentChildPos, _currentChildSize));
-                _childOwners.Add(_currentChildId, _currentChildOwner);
-            }
+                Rect = new Rect(_currentChildPos, _currentChildSize),
+                Owner = _currentChildOwner
+            });
             _currentChildOwner = null;
 #else
             EndRawChild();
@@ -250,11 +251,11 @@ namespace Fu
         /// </summary>
         private static void HandleCurrentChildScroll()
         {
-            if (!_childRects.ContainsKey(_currentChildId))
+            if (!_touchChildCache.TryGetValue(_currentChildId, out FuTouchChildData childData))
             {
                 return;
             }
-            if (_currentChildOwner?.BlocksWindowInputs == true)
+            if (childData.Owner?.BlocksWindowInputs == true)
             {
                 CancelTouchScroll();
                 return;
@@ -271,7 +272,7 @@ namespace Fu
             Vector2 mousePosition = DefaultContainer.LocalMousePos;
             Vector2 imguiTouch = new Vector2(mousePosition.x, ImGui.GetIO().DisplaySize.y - mousePosition.y);
 
-            Rect childRect = _childRects[_currentChildId];
+            Rect childRect = childData.Rect;
             Vector2 windowPos = childRect.position;
             Vector2 windowSize = childRect.size;
 
@@ -405,10 +406,12 @@ namespace Fu
         /// </summary>
         private static bool IsCurrentChildFrontMostTouchTarget(Vector2 mousePosition)
         {
-            if (!_childOwners.TryGetValue(_currentChildId, out FuWindow owner) || owner == null)
+            // Owner and rectangle share one bounded entry so they cannot be evicted independently.
+            if (!_touchChildCache.TryGetValue(_currentChildId, out FuTouchChildData childData) || childData.Owner == null)
             {
                 return true;
             }
+            FuWindow owner = childData.Owner;
             if (DefaultContainer == null || DefaultContainer.Windows == null)
             {
                 return true;
@@ -462,8 +465,7 @@ namespace Fu
             _smoothedScrollDelta = Vector2.zero;
             _scrollVelocityY = 0f;
             _inertiaActive = false;
-            _childRects.Clear();
-            _childOwners.Clear();
+            _touchChildCache.Clear();
             _currentChildOwner = null;
         }
     }

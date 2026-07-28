@@ -47,18 +47,81 @@ namespace Fu.Framework
         private const float TabFallbackMaxWidth = 180f;
         private const float TabScrollSpeed = 360f;
         private const float TabWheelScrollStep = 58f;
-
-        private static readonly Dictionary<string, int> _tabSelectedIndices = new Dictionary<string, int>();
-        private static readonly Dictionary<string, float> _tabScrollOffsets = new Dictionary<string, float>();
-        private static readonly Dictionary<string, FuElementAnimationData> _tabSelectionAnimations = new Dictionary<string, FuElementAnimationData>();
-        private static readonly Dictionary<string, Rect[]> _tabHitRects = new Dictionary<string, Rect[]>();
-        private static readonly Dictionary<string, Rect> _tabTrailingRects = new Dictionary<string, Rect>();
+        private const int TabStateCacheCapacity = 512;
+        private static readonly FuBoundedCache<string, FuTabBarState> _tabStates =
+            new FuBoundedCache<string, FuTabBarState>(TabStateCacheCapacity, StringComparer.Ordinal);
+        private static readonly FuBoundedCache<string, List<string>> _enumerableTabItems =
+            new FuBoundedCache<string, List<string>>(TabStateCacheCapacity, StringComparer.Ordinal);
 
         private struct FuTabLayoutData
         {
             public float X;
             public float Width;
             public string DisplayLabel;
+        }
+
+        private sealed class FuTabBarState
+        {
+            public int SelectedIndex;
+            public bool HasSelectedIndex;
+            public float ScrollOffset;
+            public int TabCount;
+            public int LastDrawFrame = -1;
+            public Rect TrailingRect;
+            public FuTabLayoutData[] Layout = Array.Empty<FuTabLayoutData>();
+            public Rect[] HitRects = Array.Empty<Rect>();
+            public FuElementAnimationData[] Animations = Array.Empty<FuElementAnimationData>();
+            public string[] SourceLabels = Array.Empty<string>();
+            public string[] DisplayLabels = Array.Empty<string>();
+            public string[] ItemIds = Array.Empty<string>();
+            public readonly string LeftScrollId;
+            public readonly string RightScrollId;
+
+            /// <summary>
+            /// Creates persistent reusable buffers for one tab bar.
+            /// </summary>
+            /// <param name="elementId">Stable tab bar element identifier.</param>
+            public FuTabBarState(string elementId)
+            {
+                // Scroll control IDs are composed once for the complete cache lifetime.
+                LeftScrollId = elementId + "##left-scroll";
+                RightScrollId = elementId + "##right-scroll";
+            }
+
+            /// <summary>
+            /// Ensures every per-tab buffer can hold the requested tab count.
+            /// </summary>
+            /// <param name="count">Required tab count.</param>
+            public void EnsureCapacity(int count)
+            {
+                // Stable working sets allocate nothing; large obsolete spikes are released after contraction.
+                int requiredCapacity = Mathf.NextPowerOfTwo(Mathf.Max(4, count));
+                if (Layout.Length < count)
+                {
+                    ResizeBuffers(requiredCapacity);
+                    return;
+                }
+
+                if (Layout.Length > 16 && requiredCapacity <= Layout.Length / 4)
+                {
+                    ResizeBuffers(Mathf.Max(8, requiredCapacity * 2));
+                }
+            }
+
+            /// <summary>
+            /// Resizes every parallel tab buffer to the same capacity.
+            /// </summary>
+            /// <param name="capacity">New shared buffer capacity.</param>
+            private void ResizeBuffers(int capacity)
+            {
+                // Parallel arrays must remain aligned because each index describes one tab.
+                Array.Resize(ref Layout, capacity);
+                Array.Resize(ref HitRects, capacity);
+                Array.Resize(ref Animations, capacity);
+                Array.Resize(ref SourceLabels, capacity);
+                Array.Resize(ref DisplayLabels, capacity);
+                Array.Resize(ref ItemIds, capacity);
+            }
         }
         #endregion
 
@@ -85,9 +148,10 @@ namespace Fu.Framework
         /// <param name="flags">Tab bar behaviour flags.</param>
         public void Tabs(string ID, IEnumerable<string> items, Action<int> callback, int forceSelectTabIndex, FuTabsFlags flags)
         {
-            List<string> tabItems = BuildTabItems(items);
+            // Lists already support every layout pass and do not need a per-frame copy.
+            IList<string> tabItems = items as IList<string> ?? BuildTabItems(ID, items);
             int selectedIndex = -1;
-            DrawTabs(ID, tabItems, ref selectedIndex, forceSelectTabIndex, flags);
+            DrawTabs(ID, tabItems, ref selectedIndex, forceSelectTabIndex, flags, false);
 
             if (selectedIndex >= 0 && selectedIndex < tabItems.Count)
             {
@@ -105,7 +169,21 @@ namespace Fu.Framework
         /// <returns>True if the selection changed this frame.</returns>
         public bool Tabs(string ID, IList<string> items, ref int selectedIndex, FuTabsFlags flags = FuTabsFlags.Default)
         {
-            return DrawTabs(ID, items, ref selectedIndex, -1, flags);
+            return DrawTabs(ID, items, ref selectedIndex, -1, flags, false);
+        }
+
+        /// <summary>
+        /// Draws a tab bar whose identifier is already unique across all windows.
+        /// </summary>
+        /// <param name="ID">Globally unique tab bar identifier.</param>
+        /// <param name="items">Tabs to draw.</param>
+        /// <param name="selectedIndex">Selected tab index.</param>
+        /// <param name="flags">Tab bar behaviour flags.</param>
+        /// <returns>True if the selection changed this frame.</returns>
+        internal bool TabsUnique(string ID, IList<string> items, ref int selectedIndex, FuTabsFlags flags = FuTabsFlags.Default)
+        {
+            // Runtime dock node IDs already provide uniqueness and avoid composing a window suffix per frame.
+            return DrawTabs(ID, items, ref selectedIndex, -1, flags, true);
         }
 
         /// <summary>
@@ -116,17 +194,28 @@ namespace Fu.Framework
         /// <param name="selectedIndex">Selected tab index.</param>
         /// <param name="forceSelectTabIndex">Forced selected index, or -1 to use current selection.</param>
         /// <param name="flags">Tab bar behaviour flags.</param>
+        /// <param name="idAlreadyUnique">Whether the identifier must bypass the automatic window suffix.</param>
         /// <returns>True if the selection changed this frame.</returns>
-        private bool DrawTabs(string ID, IList<string> items, ref int selectedIndex, int forceSelectTabIndex, FuTabsFlags flags)
+        private bool DrawTabs(string ID, IList<string> items, ref int selectedIndex, int forceSelectTabIndex, FuTabsFlags flags, bool idAlreadyUnique)
         {
             string elementID = ID;
-            beginElement(ref elementID, null);
+            beginElement(ref elementID, null, idAlreadyUnique);
             if (!_drawElement)
             {
                 return false;
             }
 
             int count = items != null ? items.Count : 0;
+            FuTabBarState state = GetTabBarState(elementID);
+            state.EnsureCapacity(count);
+            int clearedHitRectCount = Mathf.Min(state.HitRects.Length, Mathf.Max(state.TabCount, count));
+            if (clearedHitRectCount > 0)
+            {
+                Array.Clear(state.HitRects, 0, clearedHitRectCount);
+            }
+            state.TabCount = count;
+            state.LastDrawFrame = UnityEngine.Time.frameCount;
+
             Vector2 barPos = ImGui.GetCursorScreenPos();
             float availableWidth = Mathf.Max(1f, ImGui.GetContentRegionAvail().x);
             float barHeight = GetTabBarHeight(flags);
@@ -140,14 +229,15 @@ namespace Fu.Framework
             bool selectionChanged = false;
             if (count <= 0)
             {
+                state.TrailingRect = default;
                 setBaseElementState(elementID, barPos, barSize, false, false);
                 ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, barPos.y + barHeight));
                 endElement();
                 return false;
             }
 
-            int previousSelectedIndex = ResolveSelectedTabIndex(elementID, selectedIndex, -1, count);
-            selectedIndex = ResolveSelectedTabIndex(elementID, selectedIndex, forceSelectTabIndex, count);
+            int previousSelectedIndex = ResolveSelectedTabIndex(state, selectedIndex, -1, count);
+            selectedIndex = ResolveSelectedTabIndex(state, selectedIndex, forceSelectTabIndex, count);
             selectionChanged = previousSelectedIndex != selectedIndex;
 
             float scale = Fugui.CurrentContext.Scale;
@@ -158,9 +248,9 @@ namespace Fu.Framework
                 ? Mathf.Max(44f * scale, barHeight * 1.8f)
                 : 0f;
             float tabsAreaWidth = Mathf.Max(1f, availableWidth - trailingReserveWidth);
-            FuTabLayoutData[] layout = BuildTabsLayout(items, flags, tabsAreaWidth);
-            Rect[] hitRects = new Rect[count];
-            float totalTabsWidth = GetTotalTabsWidth(layout);
+            FuTabLayoutData[] layout = BuildTabsLayout(items, flags, tabsAreaWidth, elementID, state);
+            Rect[] hitRects = state.HitRects;
+            float totalTabsWidth = GetTotalTabsWidth(layout, count);
             bool overflow = totalTabsWidth > tabsAreaWidth;
             float leftControlsWidth = overflow && scrollButtonWidth > 0f ? scrollButtonWidth + Fugui.Themes.TabSpacing : 0f;
             float rightControlsWidth = leftControlsWidth;
@@ -168,7 +258,7 @@ namespace Fu.Framework
             Vector2 tabsClipMin = barPos + new Vector2(leftControlsWidth + inset, inset);
             Vector2 tabsClipMax = barPos + new Vector2(leftControlsWidth + tabsViewportWidth - inset, barHeight);
 
-            float scrollOffset = GetTabScrollOffset(elementID);
+            float scrollOffset = state.ScrollOffset;
             scrollOffset = ClampTabScroll(scrollOffset, totalTabsWidth, tabsViewportWidth);
             scrollOffset = EnsureTabVisible(scrollOffset, tabsViewportWidth, totalTabsWidth, layout[selectedIndex].X, layout[selectedIndex].Width, 16f * scale);
 
@@ -188,8 +278,8 @@ namespace Fu.Framework
                 Rect leftRect = new Rect(barPos + new Vector2(inset, inset), new Vector2(scrollButtonWidth, barHeight - inset * 2f));
                 Rect rightRect = new Rect(barPos + new Vector2(tabsAreaWidth - scrollButtonWidth - inset, inset), new Vector2(scrollButtonWidth, barHeight - inset * 2f));
 
-                scrollOffset += DrawTabScrollButton(elementID + "##left-scroll", drawList, leftRect, true, scrollOffset > 0.5f, flags);
-                scrollOffset += DrawTabScrollButton(elementID + "##right-scroll", drawList, rightRect, false, scrollOffset < totalTabsWidth - tabsViewportWidth - 0.5f, flags);
+                scrollOffset += DrawTabScrollButton(state.LeftScrollId, drawList, leftRect, true, scrollOffset > 0.5f, flags);
+                scrollOffset += DrawTabScrollButton(state.RightScrollId, drawList, rightRect, false, scrollOffset < totalTabsWidth - tabsViewportWidth - 0.5f, flags);
                 scrollOffset = ClampTabScroll(scrollOffset, totalTabsWidth, tabsViewportWidth);
             }
 
@@ -202,13 +292,13 @@ namespace Fu.Framework
                     Vector2 tabMax = tabMin + new Vector2(layout[i].Width, tabsClipMax.y - tabsClipMin.y);
                     if (tabMax.x <= tabsClipMin.x || tabMin.x >= tabsClipMax.x)
                     {
-                        UpdateTabSelectionAnimation(elementID, i, selectedIndex == i);
+                        UpdateTabSelectionAnimation(state, i, selectedIndex == i);
                         continue;
                     }
 
                     Rect hitRect = ClipTabHitRect(tabMin, tabMax, tabsClipMin, tabsClipMax);
                     hitRects[i] = hitRect;
-                    string tabID = elementID + "##tab-" + i + "-" + (items[i] ?? string.Empty);
+                    string tabID = state.ItemIds[i];
                     setBaseElementState(tabID, hitRect.position, hitRect.size, !LastItemDisabled, false, true);
 
                     bool hovered = _lastItemHovered && !LastItemDisabled;
@@ -227,7 +317,7 @@ namespace Fu.Framework
                         ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
                     }
 
-                    float selectedAmount = UpdateTabSelectionAnimation(elementID, i, selected);
+                    float selectedAmount = UpdateTabSelectionAnimation(state, i, selected);
                     DrawTabItem(drawList, tabMin, tabMax, layout[i].DisplayLabel, selected, hovered, active, selectedAmount, flags);
                 }
             }
@@ -236,10 +326,10 @@ namespace Fu.Framework
                 drawList.PopClipRect();
             }
 
-            _tabSelectedIndices[elementID] = selectedIndex;
-            _tabScrollOffsets[elementID] = ClampTabScroll(scrollOffset, totalTabsWidth, tabsViewportWidth);
-            _tabHitRects[elementID] = hitRects;
-            _tabTrailingRects[elementID] = GetTrailingTabBarRect(barPos, availableWidth, tabsAreaWidth, barHeight, inset, tabsClipMin.x, tabsViewportWidth, totalTabsWidth, scrollOffset);
+            state.SelectedIndex = selectedIndex;
+            state.HasSelectedIndex = true;
+            state.ScrollOffset = ClampTabScroll(scrollOffset, totalTabsWidth, tabsViewportWidth);
+            state.TrailingRect = GetTrailingTabBarRect(barPos, availableWidth, tabsAreaWidth, barHeight, inset, tabsClipMin.x, tabsViewportWidth, totalTabsWidth, scrollOffset);
 
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, barPos.y + barHeight));
             endElement();
@@ -256,14 +346,17 @@ namespace Fu.Framework
         internal static bool TryGetLastTabHitIndex(string ID, Vector2 screenPosition, out int tabIndex)
         {
             tabIndex = -1;
-            if (string.IsNullOrEmpty(ID) || !_tabHitRects.TryGetValue(ID, out Rect[] hitRects) || hitRects == null)
+            if (string.IsNullOrEmpty(ID) ||
+                !_tabStates.TryGetValue(ID, out FuTabBarState state) ||
+                state.LastDrawFrame != UnityEngine.Time.frameCount)
             {
                 return false;
             }
 
-            for (int i = 0; i < hitRects.Length; i++)
+            // Only rectangles emitted in the current frame are valid interaction targets.
+            for (int i = 0; i < state.TabCount; i++)
             {
-                Rect hitRect = hitRects[i];
+                Rect hitRect = state.HitRects[i];
                 if (hitRect.width <= 0f || hitRect.height <= 0f)
                 {
                     continue;
@@ -288,12 +381,26 @@ namespace Fu.Framework
         internal static bool TryGetLastTabTrailingRect(string ID, out Rect rect)
         {
             rect = default;
-            if (string.IsNullOrEmpty(ID) || !_tabTrailingRects.TryGetValue(ID, out rect))
+            if (string.IsNullOrEmpty(ID) ||
+                !_tabStates.TryGetValue(ID, out FuTabBarState state) ||
+                state.LastDrawFrame != UnityEngine.Time.frameCount)
             {
                 return false;
             }
 
+            // Trailing-space geometry belongs exclusively to the frame that drew the tab bar.
+            rect = state.TrailingRect;
             return rect.width > 1f && rect.height > 1f;
+        }
+
+        /// <summary>
+        /// Clears all persistent tab state owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetTabCaches()
+        {
+            // Releasing the bounded state cache also releases every reusable per-tab buffer.
+            _tabStates.Clear();
+            _enumerableTabItems.Clear();
         }
 
         /// <summary>
@@ -312,11 +419,21 @@ namespace Fu.Framework
         /// <summary>
         /// Build a stable list from an enumerable, because tab layout needs multiple passes.
         /// </summary>
+        /// <param name="id">Tab bar identifier.</param>
         /// <param name="items">Tab labels.</param>
         /// <returns>Tab labels as a list.</returns>
-        private static List<string> BuildTabItems(IEnumerable<string> items)
+        private static List<string> BuildTabItems(string id, IEnumerable<string> items)
         {
-            List<string> result = new List<string>();
+            string windowId = FuWindow.CurrentDrawingWindow?.ID;
+            string cacheId = GetCachedCompositeId(id, "##FuEnumerableTabs_", windowId);
+            if (!_enumerableTabItems.TryGetValue(cacheId, out List<string> result))
+            {
+                result = new List<string>();
+                _enumerableTabItems.Set(cacheId, result);
+            }
+
+            // The enumerable stays live, but its repeated materialization reuses bounded storage.
+            result.Clear();
             if (items == null)
             {
                 return result;
@@ -326,27 +443,53 @@ namespace Fu.Framework
             {
                 result.Add(item ?? string.Empty);
             }
+
+            int excessiveCapacity = result.Count <= int.MaxValue / 4
+                ? Math.Max(32, result.Count * 4)
+                : int.MaxValue;
+            if (result.Capacity > excessiveCapacity)
+            {
+                result.Capacity = Math.Max(8, result.Count);
+            }
             return result;
+        }
+
+        /// <summary>
+        /// Gets or creates the bounded persistent state of one tab bar.
+        /// </summary>
+        /// <param name="elementId">Stable tab bar element identifier.</param>
+        /// <returns>Reusable tab bar state.</returns>
+        private static FuTabBarState GetTabBarState(string elementId)
+        {
+            // Stable bars reuse their arrays, animations and composed ImGui identifiers.
+            if (!_tabStates.TryGetValue(elementId, out FuTabBarState state))
+            {
+                state = new FuTabBarState(elementId);
+                _tabStates.Set(elementId, state);
+            }
+
+            return state;
         }
 
         /// <summary>
         /// Resolve the selected index from external input, forced input, and Fugui persistent state.
         /// </summary>
-        /// <param name="elementID">Unique element ID.</param>
+        /// <param name="state">Persistent state of the tab bar.</param>
         /// <param name="requestedIndex">Index requested by the caller.</param>
         /// <param name="forcedIndex">Index forced for this frame.</param>
         /// <param name="count">Tab count.</param>
         /// <returns>Clamped selected index.</returns>
-        private static int ResolveSelectedTabIndex(string elementID, int requestedIndex, int forcedIndex, int count)
+        private static int ResolveSelectedTabIndex(FuTabBarState state, int requestedIndex, int forcedIndex, int count)
         {
+            // External and forced selections take precedence over retained widget state.
             int selected = requestedIndex;
             if (forcedIndex >= 0)
             {
                 selected = forcedIndex;
             }
-            else if (selected < 0 && !_tabSelectedIndices.TryGetValue(elementID, out selected))
+            else if (selected < 0)
             {
-                selected = 0;
+                selected = state.HasSelectedIndex ? state.SelectedIndex : 0;
             }
 
             return Mathf.Clamp(selected, 0, count - 1);
@@ -373,9 +516,12 @@ namespace Fu.Framework
         /// <param name="items">Tab labels.</param>
         /// <param name="flags">Tab flags.</param>
         /// <param name="availableWidth">Available bar width.</param>
-        /// <returns>Tab layout data.</returns>
-        private static FuTabLayoutData[] BuildTabsLayout(IList<string> items, FuTabsFlags flags, float availableWidth)
+        /// <param name="elementId">Stable tab bar identifier.</param>
+        /// <param name="state">Reusable state and buffers owned by the tab bar.</param>
+        /// <returns>Reusable tab layout buffer.</returns>
+        private static FuTabLayoutData[] BuildTabsLayout(IList<string> items, FuTabsFlags flags, float availableWidth, string elementId, FuTabBarState state)
         {
+            // Labels, item IDs and layout slots are rebuilt only when their source values change.
             int count = items.Count;
             float scale = Fugui.CurrentContext.Scale;
             float paddingX = Fugui.Themes.TabPadding.x * (flags.HasFlag(FuTabsFlags.Compact) ? 0.75f : 1f);
@@ -384,11 +530,19 @@ namespace Fu.Framework
             float maxWidth = Mathf.Max(minWidth, Fugui.Themes.TabMaxWidth > 0f ? Fugui.Themes.TabMaxWidth : TabFallbackMaxWidth * scale);
             float largestWidth = 0f;
             float totalWidth = 0f;
-            FuTabLayoutData[] layout = new FuTabLayoutData[count];
+            FuTabLayoutData[] layout = state.Layout;
 
             for (int i = 0; i < count; i++)
             {
-                string displayLabel = GetTabDisplayLabel(items[i]);
+                string sourceLabel = items[i] ?? string.Empty;
+                if (!string.Equals(state.SourceLabels[i], sourceLabel, StringComparison.Ordinal))
+                {
+                    state.SourceLabels[i] = sourceLabel;
+                    state.DisplayLabels[i] = GetTabDisplayLabel(sourceLabel);
+                    state.ItemIds[i] = elementId + "##tab-" + i + "-" + sourceLabel;
+                }
+
+                string displayLabel = state.DisplayLabels[i];
                 float textWidth = ImGui.CalcTextSize(displayLabel).x;
                 float width = Mathf.Clamp(textWidth + paddingX * 2f, minWidth, Mathf.Max(minWidth, maxWidth));
                 layout[i].DisplayLabel = displayLabel;
@@ -446,32 +600,18 @@ namespace Fu.Framework
         /// Get the full width occupied by tab items.
         /// </summary>
         /// <param name="layout">Tab layout data.</param>
+        /// <param name="count">Number of valid entries in the reusable layout buffer.</param>
         /// <returns>Total width.</returns>
-        private static float GetTotalTabsWidth(FuTabLayoutData[] layout)
+        private static float GetTotalTabsWidth(FuTabLayoutData[] layout, int count)
         {
-            if (layout == null || layout.Length == 0)
+            // The backing array may be larger than the live tab count.
+            if (layout == null || count <= 0)
             {
                 return 0f;
             }
 
-            FuTabLayoutData lastTab = layout[layout.Length - 1];
+            FuTabLayoutData lastTab = layout[count - 1];
             return lastTab.X + lastTab.Width;
-        }
-
-        /// <summary>
-        /// Read the current horizontal scroll offset of a tab bar.
-        /// </summary>
-        /// <param name="elementID">Unique element ID.</param>
-        /// <returns>Scroll offset.</returns>
-        private static float GetTabScrollOffset(string elementID)
-        {
-            float scrollOffset;
-            if (!_tabScrollOffsets.TryGetValue(elementID, out scrollOffset))
-            {
-                scrollOffset = 0f;
-            }
-
-            return scrollOffset;
         }
 
         /// <summary>
@@ -544,18 +684,18 @@ namespace Fu.Framework
         /// <summary>
         /// Update the selected animation of one tab.
         /// </summary>
-        /// <param name="elementID">Unique element ID.</param>
+        /// <param name="state">Persistent tab bar state.</param>
         /// <param name="index">Tab index.</param>
         /// <param name="selected">Whether the tab is selected.</param>
         /// <returns>Animated selection amount.</returns>
-        private float UpdateTabSelectionAnimation(string elementID, int index, bool selected)
+        private float UpdateTabSelectionAnimation(FuTabBarState state, int index, bool selected)
         {
-            string animationID = elementID + "##tab-animation-" + index;
-            FuElementAnimationData animationData;
-            if (!_tabSelectionAnimations.TryGetValue(animationID, out animationData))
+            // Animation objects are allocated once per tab buffer slot and reused on every frame.
+            FuElementAnimationData animationData = state.Animations[index];
+            if (animationData == null)
             {
                 animationData = new FuElementAnimationData(false);
-                _tabSelectionAnimations.Add(animationID, animationData);
+                state.Animations[index] = animationData;
             }
 
             animationData.Update(selected, _animationEnabled);

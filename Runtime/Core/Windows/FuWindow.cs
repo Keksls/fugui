@@ -301,16 +301,23 @@ namespace Fu
         private bool _inputLockedForThisFrame;
         private readonly List<DrawList> _cachedDrawLists = new List<DrawList>();
         private readonly List<DrawList> _cachedChildDrawListPool = new List<DrawList>();
+        private const int MinimumRetainedCachedChildDrawLists = 8;
         private int _cachedChildDrawListPoolCursor;
         private DrawListMesh _renderMeshData;
         private Vector2Int _renderMeshLocalPosition;
         private bool _debugPanelExpanded;
         private bool _runtimeResourcesDisposed;
+        private bool _isClosing;
+        private bool _isClosed;
         internal bool _releaseFocusNextFrame = false;
 
         // static fields
 
         public static FuWindow CurrentDrawingWindow { get; private set; }
+        private static readonly Action<FuWindow> _collectFrontMostFloatingSurface = CollectFrontMostFloatingSurface;
+        private static IFuWindowContainer _frontMostQueryContainer;
+        private static Vector2Int _frontMostQueryMousePosition;
+        private static FuWindow _frontMostQueryResult;
 
         internal bool BlocksWindowInputs { get { return _inputLockedForThisFrame || _inputLockIDs.Count > 0; } }
         internal IReadOnlyList<DrawList> CachedDrawLists { get { return _cachedDrawLists; } }
@@ -479,6 +486,11 @@ namespace Fu
         /// <param name="windowDefinition">UI Window Definition</param>
         public FuWindow(FuWindowDefinition windowDefinition)
         {
+            if (windowDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(windowDefinition));
+            }
+
             WindowName = windowDefinition.WindowName;
             ID = WindowName.Name + "##" + _windowIndex;
             _windowIndex++;
@@ -486,7 +498,7 @@ namespace Fu
 
             if (!Fugui.TryAddUIWindow(this))
             {
-                return;
+                throw new InvalidOperationException($"A Fugui window with ID '{ID}' is already registered.");
             }
             _ignoreTransformThisFrame = true;
             IsBusy = true;
@@ -2724,27 +2736,44 @@ namespace Fu
                 return null;
             }
 
-            Vector2Int mousePosition = container.LocalMousePos;
-            FuWindow frontMost = null;
-            container.OnEachWindow(window =>
+            // Reuse one cached collector instead of allocating a capture closure for every query.
+            _frontMostQueryContainer = container;
+            _frontMostQueryMousePosition = container.LocalMousePos;
+            _frontMostQueryResult = null;
+            try
             {
-                if (window == null ||
-                    window.Container != container ||
-                    !window.IsOpened ||
-                    !window.IsInitialized ||
-                    !window.IsInterractable ||
-                    window.Layer == FuLayer.Background ||
-                    !(Fugui.Layouts?.ShouldDrawWindow(window) ?? true) ||
-                    !IsFloatingSurface(window) ||
-                    !window.LocalRect.Contains(mousePosition))
-                {
-                    return;
-                }
+                container.OnEachWindow(_collectFrontMostFloatingSurface);
+                return _frontMostQueryResult;
+            }
+            finally
+            {
+                // Static query state must never retain containers or windows after the synchronous enumeration.
+                _frontMostQueryContainer = null;
+                _frontMostQueryResult = null;
+            }
+        }
 
-                frontMost = window;
-            });
+        /// <summary>
+        /// Collects the last eligible floating surface in container render order.
+        /// </summary>
+        /// <param name="window">Window reported by the active container query.</param>
+        private static void CollectFrontMostFloatingSurface(FuWindow window)
+        {
+            // Container iteration is synchronous and ordered from back to front.
+            if (window == null ||
+                window.Container != _frontMostQueryContainer ||
+                !window.IsOpened ||
+                !window.IsInitialized ||
+                !window.IsInterractable ||
+                window.Layer == FuLayer.Background ||
+                !(Fugui.Layouts?.ShouldDrawWindow(window) ?? true) ||
+                !IsFloatingSurface(window) ||
+                !window.LocalRect.Contains(_frontMostQueryMousePosition))
+            {
+                return;
+            }
 
-            return frontMost;
+            _frontMostQueryResult = window;
         }
 
         /// <summary>
@@ -2823,35 +2852,12 @@ namespace Fu
             bool mouseDown = externalContainer.Mouse.IsDown(FuMouseButton.Left);
             bool mouseClicked = externalContainer.Mouse.IsClicked(FuMouseButton.Left);
 
-            // Helper for hit test
-            Func<Vector2, bool> isHovered = (pos) =>
-            {
-                return mousePos.x >= pos.x &&
-                       mousePos.x <= pos.x + btnSize.ScaledSize.x &&
-                       mousePos.y >= pos.y &&
-                       mousePos.y <= pos.y + TitleBar_Height;
-            };
-
-            // Helper to draw background
-            Action<Vector2, bool> drawButtonBG = (pos, hovered) =>
-            {
-                uint col = hovered
-                    ? (mouseDown
-                        ? Fugui.GetColorU32(FuColors.ButtonActive)
-                        : Fugui.GetColorU32(FuColors.ButtonHovered))
-                    : 0;
-
-                Vector2 pMin = pos;
-                Vector2 pMax = new Vector2(pos.x + btnSize.ScaledSize.x, pos.y + btnHeight);
-                dl.AddRectFilled(pMin, pMax, col, Fugui.Themes.FrameRounding);
-            };
-
             // -------------------------------------------------------
             // 1) MINIMIZE BUTTON
             // -------------------------------------------------------
             Vector2 btnPos = new Vector2(startX, btnCenterOffset);
-            bool hovered = isHovered(btnPos);
-            drawButtonBG(btnPos, hovered);
+            bool hovered = IsExternalTitleButtonHovered(btnPos, mousePos, btnSize.ScaledSize.x, TitleBar_Height);
+            DrawExternalTitleButtonBackground(dl, btnPos, btnSize.ScaledSize.x, btnHeight, hovered, mouseDown);
 
             // Icon "-"
             Vector2 lineStart = btnPos + new Vector2(iconPadding, btnSize.ScaledSize.y * 0.65f);
@@ -2865,8 +2871,8 @@ namespace Fu
             // 2) MAXIMIZE / RESTORE BUTTON
             // -------------------------------------------------------
             btnPos = new Vector2(startX + fullBtnWidth, btnCenterOffset);
-            hovered = isHovered(btnPos);
-            drawButtonBG(btnPos, hovered);
+            hovered = IsExternalTitleButtonHovered(btnPos, mousePos, btnSize.ScaledSize.x, TitleBar_Height);
+            DrawExternalTitleButtonBackground(dl, btnPos, btnSize.ScaledSize.x, btnHeight, hovered, mouseDown);
 
             if (!IsMaximized)
             {
@@ -2914,8 +2920,8 @@ namespace Fu
             // 3) CLOSE BUTTON
             // -------------------------------------------------------
             btnPos = new Vector2(startX + fullBtnWidth * 2f, btnCenterOffset);
-            hovered = isHovered(btnPos);
-            drawButtonBG(btnPos, hovered);
+            hovered = IsExternalTitleButtonHovered(btnPos, mousePos, btnSize.ScaledSize.x, TitleBar_Height);
+            DrawExternalTitleButtonBackground(dl, btnPos, btnSize.ScaledSize.x, btnHeight, hovered, mouseDown);
 
             // X icon
             Vector2 pA1 = btnPos + new Vector2(iconPadding, iconPadding);
@@ -2929,6 +2935,53 @@ namespace Fu
 
             if (hovered && mouseClicked)
                 _open = false;
+        }
+
+        /// <summary>
+        /// Tests whether the pointer is inside an external title-bar button.
+        /// </summary>
+        /// <param name="position">Button screen position.</param>
+        /// <param name="mousePosition">Pointer screen position.</param>
+        /// <param name="width">Button width.</param>
+        /// <param name="titleBarHeight">Interactive title-bar height.</param>
+        /// <returns>True when the pointer is inside the button.</returns>
+        private static bool IsExternalTitleButtonHovered(Vector2 position, Vector2 mousePosition, float width, float titleBarHeight)
+        {
+            // Direct bounds checks avoid allocating one capture delegate per external-window frame.
+            return mousePosition.x >= position.x &&
+                   mousePosition.x <= position.x + width &&
+                   mousePosition.y >= position.y &&
+                   mousePosition.y <= position.y + titleBarHeight;
+        }
+
+        /// <summary>
+        /// Draws the interaction background of an external title-bar button.
+        /// </summary>
+        /// <param name="drawList">Destination draw list.</param>
+        /// <param name="position">Button screen position.</param>
+        /// <param name="width">Button width.</param>
+        /// <param name="height">Button height.</param>
+        /// <param name="hovered">Whether the pointer is over the button.</param>
+        /// <param name="pressed">Whether the primary pointer button is held.</param>
+        private static void DrawExternalTitleButtonBackground(
+            FuDrawList drawList,
+            Vector2 position,
+            float width,
+            float height,
+            bool hovered,
+            bool pressed)
+        {
+            // Colors are resolved only for visible hover feedback.
+            uint color = hovered
+                ? pressed
+                    ? Fugui.GetColorU32(FuColors.ButtonActive)
+                    : Fugui.GetColorU32(FuColors.ButtonHovered)
+                : 0;
+            drawList.AddRectFilled(
+                position,
+                new Vector2(position.x + width, position.y + height),
+                color,
+                Fugui.Themes.FrameRounding);
         }
 #endif
 
@@ -3252,9 +3305,19 @@ namespace Fu
         /// <returns>true if success</returns>
         public bool TryAddToContainer(IFuWindowContainer container)
         {
+            if (container == null || _isClosing || _isClosed)
+            {
+                return false;
+            }
+
             IsBusy = true;
             ForceDraw(10);
-            return container.TryAddWindow(this);
+            bool added = container.TryAddWindow(this);
+            if (!added)
+            {
+                IsBusy = false;
+            }
+            return added;
         }
 
         /// <summary>
@@ -3265,7 +3328,22 @@ namespace Fu
         {
             IsBusy = true;
             ForceDraw(10);
-            return Container?.TryRemoveWindow(ID) ?? false;
+            bool removed;
+            if (Container != null)
+            {
+                removed = Container.TryRemoveWindow(ID);
+            }
+            else
+            {
+                // A main-container add is queued before Container is assigned; cancel that reservation explicitly.
+                Fugui.DefaultContainer?.TryRemoveWindow(ID);
+                removed = false;
+            }
+            if (!removed)
+            {
+                IsBusy = false;
+            }
+            return removed;
         }
 
         /// <summary>
@@ -3354,6 +3432,14 @@ namespace Fu
         /// </summary>
         public void Close()
         {
+            if (_isClosing || _isClosed)
+            {
+                return;
+            }
+
+            _isClosing = true;
+            IsOpened = false;
+
             void onRemovedFromContainerDelegate(FuWindow window)
             {
                 window.OnRemovedFromContainer -= onRemovedFromContainerDelegate;
@@ -3362,10 +3448,20 @@ namespace Fu
 
             OnRemovedFromContainer += onRemovedFromContainerDelegate;
 
-            if (!TryRemoveFromContainer())
+            try
             {
+                if (!TryRemoveFromContainer())
+                {
+                    OnRemovedFromContainer -= onRemovedFromContainerDelegate;
+                    FinalizeClose();
+                }
+            }
+            catch
+            {
+                // A container failure must not strand the window in the global registry.
                 OnRemovedFromContainer -= onRemovedFromContainerDelegate;
                 FinalizeClose();
+                throw;
             }
         }
 
@@ -3374,11 +3470,62 @@ namespace Fu
         /// </summary>
         private void FinalizeClose()
         {
-            DisposeRuntimeResources();
-            Fugui.TryRemoveUIWindow(this);
-            Fugui.ForceDrawAllWindows(2);
-            OnClosed?.Invoke(this);
-            Fugui.Fire_OnWindowClosed(this);
+            if (_isClosed)
+            {
+                return;
+            }
+
+            _isClosed = true;
+            _isClosing = false;
+            IsBusy = false;
+            IsOpened = false;
+
+            Exception closeException = null;
+            RunResourceCleanupStep(DisposeRuntimeResources, ref closeException);
+            RunResourceCleanupStep(() => Fugui.TryRemoveUIWindow(this), ref closeException);
+            RunResourceCleanupStep(() => Fugui.ForceDrawAllWindows(2), ref closeException);
+            InvokeWindowEventHandlers(OnClosed, ref closeException);
+            RunResourceCleanupStep(() => Fugui.Fire_OnWindowClosed(this), ref closeException);
+
+            if (closeException != null)
+            {
+                throw new InvalidOperationException($"One or more close operations failed for Fugui window '{ID}'.", closeException);
+            }
+        }
+
+        /// <summary>
+        /// Rolls back a window whose creation failed before it became usable.
+        /// </summary>
+        internal void RollbackFailedCreation()
+        {
+            if (_isClosed)
+            {
+                return;
+            }
+
+            try
+            {
+                // Close uses the normal ownership path when a creation callback already attached a container.
+                Close();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
+            finally
+            {
+                // An asynchronous or faulty container must not keep a failed creation globally visible.
+                if (!_isClosed)
+                {
+                    _isClosed = true;
+                    _isClosing = false;
+                    IsBusy = false;
+                    IsOpened = false;
+                    Exception cleanupException = null;
+                    RunResourceCleanupStep(DisposeRuntimeResources, ref cleanupException);
+                    RunResourceCleanupStep(() => Fugui.TryRemoveUIWindow(this), ref cleanupException);
+                }
+            }
         }
 
         /// <summary>
@@ -3428,6 +3575,33 @@ namespace Fu
                 // Later ownership branches still run even when one branch fails.
                 firstException ??= exception;
                 Debug.LogException(exception);
+            }
+        }
+
+        /// <summary>
+        /// Invokes every window event subscriber even when an earlier subscriber fails.
+        /// </summary>
+        /// <param name="handlers">Window event handlers to invoke.</param>
+        /// <param name="firstException">First exception raised by an event handler.</param>
+        private void InvokeWindowEventHandlers(Action<FuWindow> handlers, ref Exception firstException)
+        {
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (Delegate handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<FuWindow>)handler).Invoke(this);
+                }
+                catch (Exception exception)
+                {
+                    // Closing is a broadcast: one listener cannot prevent the remaining listeners from cleaning up.
+                    firstException ??= exception;
+                    Debug.LogException(exception);
+                }
             }
         }
 
@@ -3529,7 +3703,31 @@ namespace Fu
         /// </summary>
         internal void BeginDrawDataCacheRebuild()
         {
+            // Keep the previous rebuild working set and release pinned buffers left by older spikes.
+            TrimCachedChildDrawListPool(Mathf.Max(MinimumRetainedCachedChildDrawLists, _cachedChildDrawListPoolCursor));
             _cachedChildDrawListPoolCursor = 0;
+        }
+
+        /// <summary>
+        /// Releases cached child draw-list slots above the recent rebuild working set.
+        /// </summary>
+        /// <param name="retainedCount">Number of reusable child draw lists to retain.</param>
+        private void TrimCachedChildDrawListPool(int retainedCount)
+        {
+            // Tail removal keeps the hot prefix used by the next cache rebuild.
+            for (int i = _cachedChildDrawListPool.Count - 1; i >= retainedCount; i--)
+            {
+                _cachedChildDrawListPool[i].Dispose();
+                _cachedChildDrawListPool.RemoveAt(i);
+            }
+
+            int excessiveCapacityThreshold = retainedCount <= int.MaxValue / 4
+                ? Math.Max(32, retainedCount * 4)
+                : int.MaxValue;
+            if (_cachedChildDrawListPool.Capacity > excessiveCapacityThreshold)
+            {
+                _cachedChildDrawListPool.Capacity = Math.Max(8, retainedCount);
+            }
         }
 
         /// <summary>

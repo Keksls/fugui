@@ -10,12 +10,17 @@ namespace Fu.Framework
     public static class FuSelectableBuilder
     {
         #region State
-        private static Dictionary<Type, List<int>> _selectablesValues = new Dictionary<Type, List<int>>();
-        private static Dictionary<Type, List<string>> _selectablesObjects = new Dictionary<Type, List<string>>();
-         // A dictionary of integers representing the combo selected indices.
-        private static Dictionary<string, int> _selectableSelectedIndices = new Dictionary<string, int>();
-        private static Dictionary<string, List<string>> _selectableDisplayLabels = new Dictionary<string, List<string>>();
-        private static Dictionary<string, int> _selectableDisplayLabelsCounts = new Dictionary<string, int>();
+        private const int SelectableEnumCacheCapacity = 256;
+        private static readonly FuBoundedCache<Type, List<int>> _selectablesValues =
+            new FuBoundedCache<Type, List<int>>(SelectableEnumCacheCapacity);
+        private static readonly FuBoundedCache<Type, List<string>> _selectablesObjects =
+            new FuBoundedCache<Type, List<string>>(SelectableEnumCacheCapacity);
+        private const int SelectableStateCacheCapacity = 1024;
+        // A bounded cache of integers representing combo and list selected indices.
+        private static readonly FuBoundedCache<string, int> _selectableSelectedIndices =
+            new FuBoundedCache<string, int>(SelectableStateCacheCapacity, StringComparer.Ordinal);
+        private static readonly FuBoundedCache<string, List<string>> _selectableDisplayLabels =
+            new FuBoundedCache<string, List<string>>(SelectableStateCacheCapacity, StringComparer.Ordinal);
         #endregion
 
         #region Methods
@@ -35,7 +40,8 @@ namespace Fu.Framework
             }
 
             // type not binded, let's bind it
-            if (!_selectablesValues.ContainsKey(type))
+            if (!_selectablesValues.TryGetValue(type, out values) ||
+                !_selectablesObjects.TryGetValue(type, out selectables))
             {
                 values = new List<int>();
                 selectables = new List<string>();
@@ -45,14 +51,10 @@ namespace Fu.Framework
                     values.Add(enumValue.ToInt32(CultureInfo.InvariantCulture));
                     selectables.Add(enumValue.ToString());
                 }
-                // add values to dic
-                _selectablesValues.Add(type, values);
-                _selectablesObjects.Add(type, selectables);
+                // Retain enum metadata with a deterministic upper bound.
+                _selectablesValues.Set(type, values);
+                _selectablesObjects.Set(type, selectables);
             }
-
-            // get values/selectables
-            values = _selectablesValues[type];
-            selectables = _selectablesObjects[type];
         }
 
         /// <summary>
@@ -64,33 +66,43 @@ namespace Fu.Framework
         /// <returns>the index of the selected index</returns>
         public static int GetSelectedIndex<T>(string id, List<T> items, Func<string> itemGetter)
         {
+            return GetSelectedIndex(id, items, itemGetter?.Invoke());
+        }
+
+        /// <summary>
+        /// Gets the selected index from an already resolved external value.
+        /// </summary>
+        /// <typeparam name="T">Selectable item type.</typeparam>
+        /// <param name="id">ID of the selectable list.</param>
+        /// <param name="items">Selectable items.</param>
+        /// <param name="selectedItemString">Current external value, or null.</param>
+        /// <returns>The selected item index.</returns>
+        internal static int GetSelectedIndex<T>(string id, List<T> items, string selectedItemString)
+        {
             // Initialize the selected index for the list
-            if (!_selectableSelectedIndices.ContainsKey(id))
+            if (!_selectableSelectedIndices.TryGetValue(id, out int selectedIndex))
             {
-                _selectableSelectedIndices.Add(id, 0);
+                selectedIndex = 0;
+                _selectableSelectedIndices.Set(id, selectedIndex);
             }
 
             // Set current item as setted by getter
-            if (itemGetter != null)
+            if (!string.IsNullOrEmpty(selectedItemString))
             {
                 int i = 0;
-                string selectedItemString = itemGetter.Invoke();
-                if (!string.IsNullOrEmpty(selectedItemString))
+                foreach (var item in items)
                 {
-                    foreach (var item in items)
+                    if (item.ToString() == selectedItemString)
                     {
-                        if (item.ToString() == selectedItemString)
-                        {
-                            SetSelectedIndex(id, i);
-                            break;
-                        }
-                        i++;
+                        selectedIndex = i;
+                        SetSelectedIndex(id, i);
+                        break;
                     }
+                    i++;
                 }
             }
 
             // get and clamp current selectable index
-            int selectedIndex = _selectableSelectedIndices[id];
             if (selectedIndex >= items.Count && items.Count > 0)
             {
                 selectedIndex = items.Count - 1;
@@ -106,7 +118,8 @@ namespace Fu.Framework
         /// <param name="index">index of the selected item in the list</param>
         public static void SetSelectedIndex(string id, int index)
         {
-            _selectableSelectedIndices[id] = index;
+            // Selection state uses the same bounded lifetime as its owning selectable widget.
+            _selectableSelectedIndices.Set(id, index);
         }
 
         /// <summary>
@@ -123,11 +136,11 @@ namespace Fu.Framework
             if (!_selectableDisplayLabels.TryGetValue(id, out List<string> labels))
             {
                 labels = new List<string>(items.Count);
-                _selectableDisplayLabels.Add(id, labels);
+                _selectableDisplayLabels.Set(id, labels);
                 mustRebuild = true;
             }
 
-            if (!_selectableDisplayLabelsCounts.TryGetValue(id, out int cachedCount) || cachedCount != items.Count)
+            if (labels.Count != items.Count)
             {
                 mustRebuild = true;
             }
@@ -135,18 +148,34 @@ namespace Fu.Framework
             if (mustRebuild)
             {
                 labels.Clear();
-                if (labels.Capacity < items.Count)
+                int desiredCapacity = Math.Max(8, items.Count);
+                int excessiveCapacityThreshold = items.Count <= int.MaxValue / 4
+                    ? Math.Max(32, items.Count * 4)
+                    : int.MaxValue;
+                if (labels.Capacity < items.Count || labels.Capacity > excessiveCapacityThreshold)
                 {
-                    labels.Capacity = items.Count;
+                    // Shrink obsolete spikes while keeping a small reserve for normal list fluctuations.
+                    labels.Capacity = desiredCapacity;
                 }
                 for (int i = 0; i < items.Count; i++)
                 {
                     labels.Add(items[i] != null ? Fugui.AddSpacesBeforeUppercase(items[i].ToString()) : string.Empty);
                 }
-                _selectableDisplayLabelsCounts[id] = items.Count;
             }
 
             return labels;
+        }
+
+        /// <summary>
+        /// Clears selectable widget caches owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetCaches()
+        {
+            // Enum metadata and per-ID state must not retain references across runtime sessions.
+            _selectablesValues.Clear();
+            _selectablesObjects.Clear();
+            _selectableSelectedIndices.Clear();
+            _selectableDisplayLabels.Clear();
         }
         #endregion
     }

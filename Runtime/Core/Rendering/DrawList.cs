@@ -29,6 +29,9 @@ namespace Fu
             private GCHandle _cmdHandle;
             private GCHandle _idxHandle;
             private GCHandle _vtxHandle;
+            private const int MinimumCommandCapacity = 8;
+            private const int MinimumIndexCapacity = 128;
+            private const int MinimumVertexCapacity = 64;
 
             public string WindowName { get { return _windowName; } }
             /// <summary>
@@ -263,19 +266,15 @@ namespace Fu
             /// <param name="count">The requested valid command count.</param>
             private void ensureCmdCapacity(int count)
             {
-                if (count <= 0)
-                {
-                    _cmdBuffer ??= Array.Empty<ImDrawCmd>();
-                    return;
-                }
-
-                if (_cmdBuffer != null && _cmdBuffer.Length >= count)
+                int currentCapacity = _cmdBuffer != null ? _cmdBuffer.Length : 0;
+                if (!shouldResizeBuffer(currentCapacity, count, MinimumCommandCapacity))
                 {
                     return;
                 }
 
                 releaseCmdHandle();
-                _cmdBuffer = new ImDrawCmd[getExpandedCapacity(_cmdBuffer != null ? _cmdBuffer.Length : 0, count)];
+                int capacity = getNextBufferCapacity(currentCapacity, count, MinimumCommandCapacity);
+                _cmdBuffer = capacity > 0 ? new ImDrawCmd[capacity] : Array.Empty<ImDrawCmd>();
             }
 
             /// <summary>
@@ -284,19 +283,15 @@ namespace Fu
             /// <param name="count">The requested valid index count.</param>
             private void ensureIdxCapacity(int count)
             {
-                if (count <= 0)
-                {
-                    _idxBuffer ??= Array.Empty<ushort>();
-                    return;
-                }
-
-                if (_idxBuffer != null && _idxBuffer.Length >= count)
+                int currentCapacity = _idxBuffer != null ? _idxBuffer.Length : 0;
+                if (!shouldResizeBuffer(currentCapacity, count, MinimumIndexCapacity))
                 {
                     return;
                 }
 
                 releaseIdxHandle();
-                _idxBuffer = new ushort[getExpandedCapacity(_idxBuffer != null ? _idxBuffer.Length : 0, count)];
+                int capacity = getNextBufferCapacity(currentCapacity, count, MinimumIndexCapacity);
+                _idxBuffer = capacity > 0 ? new ushort[capacity] : Array.Empty<ushort>();
             }
 
             /// <summary>
@@ -305,19 +300,64 @@ namespace Fu
             /// <param name="count">The requested valid vertex count.</param>
             private void ensureVtxCapacity(int count)
             {
-                if (count <= 0)
-                {
-                    _vtxBuffer ??= Array.Empty<ImDrawVert>();
-                    return;
-                }
-
-                if (_vtxBuffer != null && _vtxBuffer.Length >= count)
+                int currentCapacity = _vtxBuffer != null ? _vtxBuffer.Length : 0;
+                if (!shouldResizeBuffer(currentCapacity, count, MinimumVertexCapacity))
                 {
                     return;
                 }
 
                 releaseVtxHandle();
-                _vtxBuffer = new ImDrawVert[getExpandedCapacity(_vtxBuffer != null ? _vtxBuffer.Length : 0, count)];
+                int capacity = getNextBufferCapacity(currentCapacity, count, MinimumVertexCapacity);
+                _vtxBuffer = capacity > 0 ? new ImDrawVert[capacity] : Array.Empty<ImDrawVert>();
+            }
+
+            /// <summary>
+            /// Returns whether a reusable draw-list buffer must grow or shed an obsolete spike.
+            /// </summary>
+            /// <param name="currentCapacity">Current buffer capacity.</param>
+            /// <param name="requiredCount">Required live element count.</param>
+            /// <param name="minimumCapacity">Small retained working set.</param>
+            /// <returns>True when the backing array must be replaced.</returns>
+            private static bool shouldResizeBuffer(int currentCapacity, int requiredCount, int minimumCapacity)
+            {
+                // Empty buffers stay allocation-free; populated buffers shrink only after a fourfold contraction.
+                if (currentCapacity < requiredCount)
+                {
+                    return true;
+                }
+                if (currentCapacity == 0)
+                {
+                    return false;
+                }
+
+                return currentCapacity > minimumCapacity * 4 &&
+                       requiredCount <= currentCapacity / 4;
+            }
+
+            /// <summary>
+            /// Calculates the next reusable draw-list buffer capacity.
+            /// </summary>
+            /// <param name="currentCapacity">Current buffer capacity.</param>
+            /// <param name="requiredCount">Required live element count.</param>
+            /// <param name="minimumCapacity">Small retained working set.</param>
+            /// <returns>Geometrically sized replacement capacity.</returns>
+            private static int getNextBufferCapacity(int currentCapacity, int requiredCount, int minimumCapacity)
+            {
+                // Growth preserves the current amortized capacity; contraction keeps two frames of headroom.
+                if (currentCapacity < requiredCount)
+                {
+                    return getExpandedCapacity(currentCapacity, requiredCount);
+                }
+
+                if (requiredCount <= 0)
+                {
+                    return minimumCapacity;
+                }
+
+                int retainedCount = requiredCount <= int.MaxValue / 2
+                    ? requiredCount * 2
+                    : requiredCount;
+                return getExpandedCapacity(0, Math.Max(minimumCapacity, retainedCount));
             }
 
             /// <summary>

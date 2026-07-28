@@ -510,6 +510,22 @@ Shaders:
 - `Common.hlsl`;
 - `PassesHD.hlsl`.
 
+### Materiaux custom de draw-list
+
+Compile uniquement sous `FU_CUSTOM_MATERIALS_ENABLED`.
+
+- `FuDrawList.PushMaterial` enregistre une paire immutable `FuDrawMaterial` + texture dans le `TextureManager` du contexte;
+- les bindings utilisent des identifiants negatifs stables, distincts du registre de textures standard et de `BackdropTextureID`;
+- des commandes callback internes delimitent le scope du material, afin que les changements de texture emis par ImGui ne le desactivent pas;
+- `PopMaterial` valide le scope avant de restaurer la ressource precedente;
+- le renderer ne resout un material que sur un marqueur push/pop, pas pour chaque primitive;
+- le scope simple ne produit aucune allocation managee cote rendu; seule une imbrication superieure a un niveau alloue une petite pile;
+- `FrozenUI` capture le binding actif et le rejoue avec chaque commande;
+- le renderer world selectionne les passes configures selon `FuguiWorldDepthMode`;
+- le backend OpenGL externe conserve la texture et retombe sur son shader standard avec un warning unique.
+
+Quand le define est absent, `FuDrawMaterial`, le registre de bindings, les marqueurs et toutes les branches des backends sont exclus a la compilation.
+
 ### `FuguiWorldRenderFeature`
 
 `FuguiWorldRenderFeature` rend les surfaces `Fugui.World` comme meshes 3D dynamiques.

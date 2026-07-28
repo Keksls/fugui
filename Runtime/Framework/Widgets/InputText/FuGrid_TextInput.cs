@@ -24,7 +24,7 @@ namespace Fu.Framework
                 return false;
             }
             drawElementLabel(label, style.TextStyle);
-            label = "##" + label;
+            label = GetCachedCompositeId("##", label);
             return base.TextInput(label, hint, ref text, size, height, style, width, flags);
         }
 
@@ -38,7 +38,7 @@ namespace Fu.Framework
                 return false;
             }
             drawElementLabel(label, style.TextStyle);
-            label = "##" + label;
+            label = GetCachedCompositeId("##", label);
             return base.TextInput(label, hint, ref text, size, height, style, width, options);
         }
         #endregion

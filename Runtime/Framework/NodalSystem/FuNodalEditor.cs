@@ -1,4 +1,5 @@
 using ImGuiNET;
+using Fu;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,6 +57,12 @@ namespace Fu.Framework.Nodal
         // context menu
         private Action<FuContextMenuBuilder> OnDrawContextMenu;
         private Vector2 contextmenuOpenMousePos;
+        private readonly FuBoundedCache<int, float> _nodesHeightCache =
+            new FuBoundedCache<int, float>(4096);
+        private readonly FuBoundedCache<int, string> _nodeChildIds =
+            new FuBoundedCache<int, string>(4096);
+        private readonly FuBoundedCache<int, string> _nodeUiChildIds =
+            new FuBoundedCache<int, string>(4096);
         #endregion
 
         #region Constructors
@@ -778,11 +785,41 @@ namespace Fu.Framework.Nodal
         }
         #endregion
 
-        #region State
-        Dictionary<int, float> _nodesHeightCache = new Dictionary<int, float>();
-        #endregion
-
         #region Methods
+        /// <summary>
+        /// Gets the stable ImGui child identifier for a node.
+        /// </summary>
+        /// <param name="nodeId">Node identifier.</param>
+        /// <returns>Cached child identifier.</returns>
+        private string GetNodeChildId(int nodeId)
+        {
+            // Node labels are retained in a bounded instance cache and only composed on misses.
+            if (!_nodeChildIds.TryGetValue(nodeId, out string childId))
+            {
+                childId = "##node_" + nodeId;
+                _nodeChildIds.Set(nodeId, childId);
+            }
+
+            return childId;
+        }
+
+        /// <summary>
+        /// Gets the stable ImGui child identifier for a node custom-UI area.
+        /// </summary>
+        /// <param name="nodeId">Node identifier.</param>
+        /// <returns>Cached custom-UI child identifier.</returns>
+        private string GetNodeUiChildId(int nodeId)
+        {
+            // The custom child follows the same bounded lifetime as its parent node label.
+            if (!_nodeUiChildIds.TryGetValue(nodeId, out string childId))
+            {
+                childId = "##node_ui_" + nodeId;
+                _nodeUiChildIds.Set(nodeId, childId);
+            }
+
+            return childId;
+        }
+
         /// <summary>
         /// Draw a single node at its position.
         /// </summary>
@@ -798,7 +835,7 @@ namespace Fu.Framework.Nodal
             Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
             Vector2 size = node.EditorData.rectMax - node.EditorData.rectMin;
             size.y = 0;
-            ImGui.BeginChild("##node_" + node.Id, size, ImGuiChildFlags.AutoResizeY,
+            ImGui.BeginChild(GetNodeChildId(node.Id), size, ImGuiChildFlags.AutoResizeY,
                 ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar);
 
             ImGui.SetWindowFontScale(_zoom);
@@ -899,7 +936,7 @@ namespace Fu.Framework.Nodal
             Vector2 uiSize = uiMax - uiMin;
             uiSize.y = 0f;
             ImGui.SetCursorScreenPos(uiMin);
-            ImGui.BeginChild($"##node_ui_{node.Id}", uiSize, ImGuiChildFlags.AutoResizeY,
+            ImGui.BeginChild(GetNodeUiChildId(node.Id), uiSize, ImGuiChildFlags.AutoResizeY,
                 ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
             node.OnDraw(window.Layout);
             window.Layout.Dummy(0f, 2f);
@@ -910,7 +947,7 @@ namespace Fu.Framework.Nodal
             Fugui.PopStyle();
             Fugui.PopColor();
             float endY = ImGui.GetCursorScreenPos().y;
-            _nodesHeightCache[node.Id] = endY - startY;
+            _nodesHeightCache.Set(node.Id, endY - startY);
 
             HandleNodeInputs(node, window, rectMin, rectMax);
         }

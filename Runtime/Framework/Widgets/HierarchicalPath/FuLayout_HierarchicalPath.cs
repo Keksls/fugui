@@ -2,7 +2,6 @@ using Fu;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -13,7 +12,9 @@ namespace Fu.Framework
     public partial class FuLayout
     {
         #region State
-        private static Dictionary<string, List<List<int>>> _hierarchicalPathRedo = new Dictionary<string, List<List<int>>>();
+        private const int HierarchicalPathStateCacheCapacity = 256;
+        private static readonly FuBoundedCache<string, FuHierarchicalPathState> _hierarchicalPathStates =
+            new FuBoundedCache<string, FuHierarchicalPathState>(HierarchicalPathStateCacheCapacity, StringComparer.Ordinal);
         #endregion
 
         #region Methods
@@ -28,6 +29,7 @@ namespace Fu.Framework
         /// <param name="height">height of the path</param>
         public void HierarchicalPath(string ID, List<string> rootItems, List<(string, List<string>)> path, Action<List<int>> onPathUpdated, float width = 0f, float height = 22f)
         {
+            FuHierarchicalPathState state = GetHierarchicalPathState(ID);
             // determinate available width
             if (width == 0f)
             {
@@ -63,7 +65,7 @@ namespace Fu.Framework
             // draw undo button
             Rect undoRect = new Rect(ImGui.GetCursorScreenPos(), new Vector2(height, height));
             bool isUndoHovered = IsItemHovered(undoRect.position, undoRect.size);
-            bool hasUndo = GetCurrentPath().Count > 1;
+            bool hasUndo = path.Count > 1;
             if (isUndoHovered && hasUndo)
             {
                 // draw bg frame
@@ -83,7 +85,7 @@ namespace Fu.Framework
             }
             Fugui.Push(ImGuiCol.Text, hasUndo ? Fugui.GetColor(FuColors.Text) : Fugui.GetColor(FuColors.TextDisabled));
             // draw undo icon
-            EnboxedText("<##" + ID, undoRect.position, undoRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.None);
+            EnboxedText(state.UndoId, undoRect.position, undoRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.None);
             Fugui.PopColor();
             // draw rect border
             drawList.AddRect(undoRect.position, undoRect.position + undoRect.size, ImGui.GetColorU32(ImGuiCol.Border));
@@ -94,7 +96,7 @@ namespace Fu.Framework
             // draw redo button
             Rect redoRect = new Rect(ImGui.GetCursorScreenPos(), new Vector2(height, height));
             bool isRedoHovered = IsItemHovered(redoRect.position, redoRect.size);
-            bool hasRedo = _hierarchicalPathRedo.ContainsKey(ID) && _hierarchicalPathRedo[ID].Count > 0;
+            bool hasRedo = state.RedoHistory.Count > 0;
             if (isRedoHovered && hasRedo)
             {
                 // draw bg frame
@@ -105,16 +107,17 @@ namespace Fu.Framework
                 if (mouse.IsDown(FuMouseButton.Left))
                 {
                     // get last path
-                    List<int> lastPath = _hierarchicalPathRedo[ID].Last();
+                    int lastHistoryIndex = state.RedoHistory.Count - 1;
+                    List<int> lastPath = state.RedoHistory[lastHistoryIndex];
                     // remove it from history
-                    _hierarchicalPathRedo[ID].RemoveAt(_hierarchicalPathRedo[ID].Count - 1);
+                    state.RedoHistory.RemoveAt(lastHistoryIndex);
                     // send new path
                     SendNewPath(lastPath);
                 }
             }
             Fugui.Push(ImGuiCol.Text, hasRedo ? Fugui.GetColor(FuColors.Text) : Fugui.GetColor(FuColors.TextDisabled));
             // draw redo icon
-            EnboxedText(">##" + ID, redoRect.position, redoRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.None);
+            EnboxedText(state.RedoId, redoRect.position, redoRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.None);
             Fugui.PopColor();
             // draw rect border
             drawList.AddRect(redoRect.position, redoRect.position + redoRect.size, ImGui.GetColorU32(ImGuiCol.Border));
@@ -137,7 +140,7 @@ namespace Fu.Framework
                 if (mouse.IsDown(FuMouseButton.Left))
                 {
                     // open popup with root items
-                    Fugui.OpenPopUp(ID + "popup", () =>
+                    Fugui.OpenPopUp(state.PopupId, () =>
                     {
                         // draw children
                         int indx = 0;
@@ -149,7 +152,7 @@ namespace Fu.Framework
                                 // call callback
                                 SendNewPath(new List<int> { indx });
                                 // clear redo
-                                _hierarchicalPathRedo.Remove(ID);
+                                state.RedoHistory.Clear();
                             }
                             indx++;
                         }
@@ -221,7 +224,7 @@ namespace Fu.Framework
                     {
                         int currentIndex = i;
                         // open popup
-                        Fugui.OpenPopUp(ID + "popup", () =>
+                        Fugui.OpenPopUp(state.PopupId, () =>
                         {
                             // draw children
                             int indx = 0;
@@ -265,7 +268,7 @@ namespace Fu.Framework
                                     // call callback
                                     SendNewPath(newPath);
                                     // clear redo
-                                    _hierarchicalPathRedo.Remove(ID);
+                                    state.RedoHistory.Clear();
                                 }
                                 indx++;
                             }
@@ -310,7 +313,7 @@ namespace Fu.Framework
                         // call callback
                         SendNewPath(newPath);
                         // clear redo
-                        _hierarchicalPathRedo.Remove(ID);
+                        state.RedoHistory.Clear();
                     }
                 }
                 else
@@ -338,7 +341,7 @@ namespace Fu.Framework
             ImGui.Dummy(pathRect.size);
 
             // Draw popup
-            Fugui.DrawPopup(ID + "popup", new Vector2(256f, 0f), popupPos);
+            Fugui.DrawPopup(state.PopupId, new Vector2(256f, 0f), popupPos);
 
             /// <summary>
             /// Het the width of a path item
@@ -360,16 +363,12 @@ namespace Fu.Framework
             {
                 if (addToRedo)
                 {
-                    // add to redo
-                    if (!_hierarchicalPathRedo.ContainsKey(ID))
-                    {
-                        _hierarchicalPathRedo.Add(ID, new List<List<int>>());
-                    }
-                    _hierarchicalPathRedo[ID].Add(GetCurrentPath());
+                    // Add to the bounded widget entry and retain at most twenty path snapshots.
+                    state.RedoHistory.Add(GetCurrentPath());
                     // keep only 20 last history
-                    if (_hierarchicalPathRedo[ID].Count > 20)
+                    if (state.RedoHistory.Count > 20)
                     {
-                        _hierarchicalPathRedo[ID].RemoveAt(0);
+                        state.RedoHistory.RemoveAt(0);
                     }
                 }
 
@@ -428,7 +427,53 @@ namespace Fu.Framework
         /// <param name="ID">ID of the hierarchical path top clean</param>
         public void CleanHierarchicalPathHistory(string ID)
         {
-            _hierarchicalPathRedo.Remove(ID);
+            _hierarchicalPathStates.Remove(ID);
+        }
+
+        /// <summary>
+        /// Gets or creates the bounded persistent state of one hierarchical path.
+        /// </summary>
+        /// <param name="id">Stable hierarchical path identifier.</param>
+        /// <returns>Reusable identifiers and redo history.</returns>
+        private static FuHierarchicalPathState GetHierarchicalPathState(string id)
+        {
+            // Stable controls reuse their hidden labels and history container.
+            if (!_hierarchicalPathStates.TryGetValue(id, out FuHierarchicalPathState state))
+            {
+                state = new FuHierarchicalPathState(id);
+                _hierarchicalPathStates.Set(id, state);
+            }
+
+            return state;
+        }
+
+        /// <summary>
+        /// Clears hierarchical path state owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetHierarchicalPathState()
+        {
+            // Release all retained path snapshots and composed identifiers.
+            _hierarchicalPathStates.Clear();
+        }
+
+        private sealed class FuHierarchicalPathState
+        {
+            public readonly string PopupId;
+            public readonly string UndoId;
+            public readonly string RedoId;
+            public readonly List<List<int>> RedoHistory = new List<List<int>>(20);
+
+            /// <summary>
+            /// Creates stable ImGui identifiers for one hierarchical path.
+            /// </summary>
+            /// <param name="id">Unique path identifier.</param>
+            public FuHierarchicalPathState(string id)
+            {
+                // These identifiers remain unchanged for the complete cache entry lifetime.
+                PopupId = id + "popup";
+                UndoId = "<##" + id;
+                RedoId = ">##" + id;
+            }
         }
         #endregion
     }

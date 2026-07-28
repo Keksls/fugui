@@ -339,6 +339,52 @@ using (FuguiWorldSurface surface = Fugui.World.Surface(new FuguiWorldSurfaceDesc
 }
 ```
 
+## Materiaux custom de DrawList
+
+Cette API est entierement compilee sous le scripting define symbol `FU_CUSTOM_MATERIALS_ENABLED`. Sans ce define, les types, les registres et les branches de rendu associes ne sont pas inclus.
+
+Un `FuDrawMaterial` est cree une fois puis reutilise. Le `Material` Unity reste possede par l'appelant:
+
+```csharp
+#if FU_CUSTOM_MATERIALS_ENABLED
+[SerializeField] private Material customButtonMaterial;
+private FuDrawMaterial _buttonDrawMaterial;
+
+private void Awake()
+{
+    _buttonDrawMaterial = new FuDrawMaterial(customButtonMaterial);
+}
+
+private void DrawCustomButton(FuDrawList drawList, Rect rect)
+{
+    drawList.PushMaterial(_buttonDrawMaterial);
+    try
+    {
+        drawList.AddRectFilled(
+            rect.min,
+            rect.max,
+            Fugui.GetColorU32(Color.white),
+            8f);
+    }
+    finally
+    {
+        drawList.PopMaterial();
+    }
+}
+#endif
+```
+
+`PushMaterial(material)` conserve la texture active. `PushMaterial(material, texture)` force une texture pour le scope. Les changements de texture internes a `AddImage` ou `AddText` conservent le materiau custom, les scopes peuvent etre imbriques et les commandes sont preservees par `FrozenUI`.
+
+Contrat du shader overlay:
+
+- layout vertex compatible avec `Runtime/Resources/Shaders/Common.hlsl`;
+- texture recue dans `_Texture`;
+- `_TextureIsAlpha` vaut `1` pour l'atlas de fonts;
+- blending, culling et depth states declares par le shader custom.
+
+Pour `Fugui.World`, le constructeur accepte un material world optionnel et les passes correspondant a `None`, `Test` et `TestAndWrite`. Sans material world, le renderer standard est utilise sur les surfaces world. Les fenetres externes OpenGL conservent la texture mais utilisent leur shader Fugui standard, car elles ne peuvent pas executer un `Material` Unity.
+
 ## Docking layouts
 
 Fugui charge les layouts depuis `Application.streamingAssetsPath + "/" + Fugui.Settings.LayoutsFolder`.

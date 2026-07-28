@@ -30,6 +30,10 @@ namespace Fu
         /// menu items of the main menu
         /// </summary>
         private static readonly Dictionary<string, MainMenuItem> _mainMenuItems = new Dictionary<string, MainMenuItem>();
+        private const int MainMenuWindowLabelCacheCapacity = 1024;
+        private static readonly List<FuWindow> _mainMenuOpenWindows = new List<FuWindow>();
+        private static readonly FuBoundedCache<string, MainMenuWindowLabelEntry> _mainMenuWindowLabels =
+            new FuBoundedCache<string, MainMenuWindowLabelEntry>(MainMenuWindowLabelCacheCapacity, StringComparer.Ordinal);
         #endregion
 
         #region Methods
@@ -289,7 +293,7 @@ namespace Fu
             for (int i = windows.Count - 1; i >= 0; i--)
             {
                 FuWindow window = windows[i];
-                string label = GetUntagedText(window.WindowName.Name) + "##OpenWindow" + window.ID;
+                string label = GetMainMenuWindowLabel(window);
                 string stateLabel = window.IsDocked ? "Docked" : "Floating";
                 bool selected = FuWindow.InputFocusedWindow == window || window.HasFocus;
                 bool itemEnabled = window.IsInterractable && !IsMainMenuDisabled;
@@ -307,10 +311,11 @@ namespace Fu
         /// </summary>
         private static List<FuWindow> GetMainMenuOpenWindows()
         {
-            List<FuWindow> windows = new List<FuWindow>();
+            // One shared buffer is safe because collection and drawing are synchronous.
+            _mainMenuOpenWindows.Clear();
             if (DefaultContainer == null || DefaultContainer.Windows == null)
             {
-                return windows;
+                return _mainMenuOpenWindows;
             }
 
             foreach (FuWindow window in DefaultContainer.Windows.Values)
@@ -324,10 +329,49 @@ namespace Fu
                     continue;
                 }
 
-                windows.Add(window);
+                _mainMenuOpenWindows.Add(window);
             }
 
-            return windows;
+            return _mainMenuOpenWindows;
+        }
+
+        /// <summary>
+        /// Gets the stable ImGui label for one entry in the open-window menu.
+        /// </summary>
+        /// <param name="window">Window represented by the menu entry.</param>
+        /// <returns>Visible title and hidden unique identifier.</returns>
+        private static string GetMainMenuWindowLabel(FuWindow window)
+        {
+            // Recompose only when a window title changes.
+            string title = window.WindowName.Name;
+            if (!_mainMenuWindowLabels.TryGetValue(window.ID, out MainMenuWindowLabelEntry entry) ||
+                !string.Equals(entry.Title, title, StringComparison.Ordinal))
+            {
+                entry = new MainMenuWindowLabelEntry
+                {
+                    Title = title,
+                    Label = GetUntagedText(title) + "##OpenWindow" + window.ID
+                };
+                _mainMenuWindowLabels.Set(window.ID, entry);
+            }
+
+            return entry.Label;
+        }
+
+        /// <summary>
+        /// Clears transient open-window menu data owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetMainMenuRuntimeCache()
+        {
+            // Do not retain window references or composed labels after shutdown.
+            _mainMenuOpenWindows.Clear();
+            _mainMenuWindowLabels.Clear();
+        }
+
+        private sealed class MainMenuWindowLabelEntry
+        {
+            public string Title;
+            public string Label;
         }
 
         /// <summary>

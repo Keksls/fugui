@@ -28,6 +28,39 @@ namespace Fu
 
             return textureManager.GetTextureId(texture);
         }
+#if FU_CUSTOM_MATERIALS_ENABLED
+        /// <summary>
+        /// Resolves the Fugui texture manager that owns the current draw-list resources.
+        /// </summary>
+        /// <returns>Texture manager for the current drawing context.</returns>
+        private static TextureManager ResolveCustomMaterialTextureManager()
+        {
+            // Prefer the window owner because several Fugui contexts can coexist in the same frame.
+            TextureManager textureManager = FuWindow.CurrentDrawingWindow?.Container?.Context?.TextureManager ??
+                                            Fugui.CurrentContext?.TextureManager;
+            if (textureManager == null)
+            {
+                throw new InvalidOperationException("PushMaterial and PopMaterial require an active Fugui drawing context.");
+            }
+
+            return textureManager;
+        }
+
+        /// <summary>
+        /// Returns the draw resource currently active in the native ImGui command header.
+        /// </summary>
+        /// <returns>Current draw resource identifier.</returns>
+        private IntPtr GetCurrentTextureId()
+        {
+            if (NativePtr == null)
+            {
+                throw new InvalidOperationException("Cannot access the active material of an invalid Fugui draw list.");
+            }
+
+            // The command header is authoritative even when ImGui's texture stack is temporarily empty.
+            return _CmdHeader.TextureId;
+        }
+#endif
         internal FuDrawList(ImDrawList* nativePtr) => NativePtr = nativePtr;
         internal FuDrawList(ImDrawListPtr nativePtr) => NativePtr = nativePtr.NativePtr;
         internal FuDrawList(IntPtr nativePtr) => NativePtr = (ImDrawList*)nativePtr;
@@ -889,6 +922,71 @@ namespace Fu
         {
             PushTextureID(ResolveTextureId(texture));
         }
+
+#if FU_CUSTOM_MATERIALS_ENABLED
+        /// <summary>
+        /// Pushes a custom material while preserving the texture currently active on this draw list.
+        /// </summary>
+        /// <param name="material">Custom draw material configuration to activate.</param>
+        public void PushMaterial(FuDrawMaterial material)
+        {
+            // Encode the material and active texture in one draw resource understood by Fugui backends.
+            TextureManager textureManager = ResolveCustomMaterialTextureManager();
+            IntPtr bindingId = textureManager.GetCustomDrawBindingId(material, GetCurrentTextureId());
+            AddCallback(FuCustomDrawMaterialState.PushCallback, bindingId);
+            PushTextureID(bindingId);
+        }
+
+        /// <summary>
+        /// Pushes a custom material with an explicit texture on this draw list.
+        /// </summary>
+        /// <param name="material">Custom draw material configuration to activate.</param>
+        /// <param name="texture">Texture sampled by commands emitted inside the material scope.</param>
+        public void PushMaterial(FuDrawMaterial material, Texture texture)
+        {
+            // Explicit textures let custom shaders sample a caller-selected Unity resource.
+            TextureManager textureManager = ResolveCustomMaterialTextureManager();
+            IntPtr bindingId = textureManager.GetCustomDrawBindingId(material, texture);
+            AddCallback(FuCustomDrawMaterialState.PushCallback, bindingId);
+            PushTextureID(bindingId);
+        }
+
+        /// <summary>
+        /// Pops the current custom material and restores the previous draw resource.
+        /// </summary>
+        public void PopMaterial()
+        {
+            // Fail early on mismatched scopes instead of silently corrupting ImGui's texture stack.
+            TextureManager textureManager = ResolveCustomMaterialTextureManager();
+            IntPtr currentTextureId = GetCurrentTextureId();
+            if (!textureManager.TryGetCustomDrawBinding(currentTextureId, out _))
+            {
+                throw new InvalidOperationException("PopMaterial must match the most recent PushMaterial call.");
+            }
+
+            AddCallback(FuCustomDrawMaterialState.PopCallback, IntPtr.Zero);
+            PopTextureID();
+        }
+
+        /// <summary>
+        /// Replays an already registered custom material binding into this draw list.
+        /// </summary>
+        /// <param name="bindingId">Context-local custom material binding identifier.</param>
+        internal void PushMaterialBinding(IntPtr bindingId)
+        {
+            // Frozen UI reuses the original binding without creating a duplicate registry entry.
+            AddCallback(FuCustomDrawMaterialState.PushCallback, bindingId);
+        }
+
+        /// <summary>
+        /// Ends a custom material binding replayed into this draw list.
+        /// </summary>
+        internal void PopMaterialBinding()
+        {
+            // Emit only the material marker because Frozen UI manages its texture stack separately.
+            AddCallback(FuCustomDrawMaterialState.PopCallback, IntPtr.Zero);
+        }
+#endif
 
         internal void PushTextureID(IntPtr texture_id)
         {

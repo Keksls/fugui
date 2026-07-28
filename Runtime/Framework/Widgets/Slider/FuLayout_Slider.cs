@@ -196,7 +196,7 @@ namespace Fu.Framework
                 ImGui.PushItemWidth(dragWidth);
                 try
                 {
-                    if (ImGui.InputFloat("##" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, LastItemDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
+                    if (ImGui.InputFloat(GetCachedCompositeId("##", text), ref value, 0f, 0f, isInt ? "%.0f" : formatString, LastItemDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
                     {
                         // Clamp the value to the min and max range
                         value = Math.Clamp(value, min, max);
@@ -252,7 +252,7 @@ namespace Fu.Framework
                     new Vector2(knobHitRadius * 2f, knobHitRadius * 2f)
                 );
 
-                bool isDragging = _draggingSliders.Contains(text);
+                bool isDragging = _draggingSliders.TryGetValue(text, out _);
                 bool suppressHoverFeedback = ImGui.IsAnyItemActive() || IsAnyItemActive || IsThereAnyDraggingSlider;
                 bool isLineHovered = rawLineHovered && !suppressHoverFeedback;
                 bool isKnobHovered = rawKnobHovered && !suppressHoverFeedback;
@@ -338,18 +338,18 @@ namespace Fu.Framework
                         shouldStartDrag = true;
                     }
 
-                    if (shouldStartDrag && !_draggingSliders.Contains(text))
+                    if (shouldStartDrag && !_draggingSliders.TryGetValue(text, out _))
                     {
-                        _draggingSliders.Add(text);
+                        _draggingSliders.Set(text, true);
                     }
                 }
 
-                if (_draggingSliders.Contains(text) && !sliderActive)
+                if (_draggingSliders.TryGetValue(text, out _) && !sliderActive)
                 {
                     _draggingSliders.Remove(text);
                 }
 
-                if (_draggingSliders.Contains(text) && sliderActive && !LastItemDisabled)
+                if (_draggingSliders.TryGetValue(text, out _) && sliderActive && !LastItemDisabled)
                 {
                     float mouseX = ImGui.GetMousePos().x;
                     value = min + ((mouseX - x - knobTravelPadding) / knobTravelWidth) * range;

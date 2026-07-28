@@ -14,6 +14,7 @@ namespace Fu
         private readonly List<FuguiWorldSurface> _surfacePool = new List<FuguiWorldSurface>();
         private readonly Stack<DrawList> _drawListPool = new Stack<DrawList>();
         private readonly HashSet<Camera> _renderCameras = new HashSet<Camera>();
+        private const int MinimumRetainedWorldResources = 8;
         private int _surfacePoolCursor;
         private int _lastFrame = -1;
         private int _nextSurfaceId = 1;
@@ -223,6 +224,8 @@ namespace Fu
                 return;
             }
 
+            int previousItemCount = _items.Count;
+            int previousSurfaceCount = _surfacePoolCursor;
             for (int i = 0; i < _items.Count; i++)
             {
                 if (_items[i].DrawList != null)
@@ -232,8 +235,52 @@ namespace Fu
             }
 
             _items.Clear();
+            TrimDrawListPool(Mathf.Max(MinimumRetainedWorldResources, previousItemCount));
+            TrimSurfacePool(Mathf.Max(MinimumRetainedWorldResources, previousSurfaceCount));
             _surfacePoolCursor = 0;
             _lastFrame = frame;
+        }
+
+        /// <summary>
+        /// Releases draw-list copies above the recent frame working set.
+        /// </summary>
+        /// <param name="retainedCount">Number of reusable draw lists to retain.</param>
+        private void TrimDrawListPool(int retainedCount)
+        {
+            // The previous active count avoids churn for stable workloads while shedding old spikes.
+            bool removedDrawLists = false;
+            while (_drawListPool.Count > retainedCount)
+            {
+                _drawListPool.Pop()?.Dispose();
+                removedDrawLists = true;
+            }
+
+            if (removedDrawLists)
+            {
+                _drawListPool.TrimExcess();
+            }
+        }
+
+        /// <summary>
+        /// Releases native world-surface wrappers above the recent frame working set.
+        /// </summary>
+        /// <param name="retainedCount">Number of reusable surfaces to retain.</param>
+        private void TrimSurfacePool(int retainedCount)
+        {
+            // Only the unused tail is removed, preserving stable IDs for the retained working set.
+            for (int i = _surfacePool.Count - 1; i >= retainedCount; i--)
+            {
+                _surfacePool[i].ReleaseNativeResources();
+                _surfacePool.RemoveAt(i);
+            }
+
+            int excessiveCapacityThreshold = retainedCount <= int.MaxValue / 4
+                ? Mathf.Max(32, retainedCount * 4)
+                : int.MaxValue;
+            if (_surfacePool.Capacity > excessiveCapacityThreshold)
+            {
+                _surfacePool.Capacity = Mathf.Max(8, retainedCount);
+            }
         }
 
         /// <summary>

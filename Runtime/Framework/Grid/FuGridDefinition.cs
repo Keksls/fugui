@@ -42,6 +42,8 @@ namespace Fu.Framework
         public static FuGridDefinition DefaultRatio { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return _defaultRatioGrid; } }
 
         static readonly FuGridDefinition _defaultFlexible = new FuGridDefinition(64f);
+        private static readonly FuBoundedCache<(string GridName, int ColumnIndex), string> _columnIds =
+            new FuBoundedCache<(string GridName, int ColumnIndex), string>(8192);
 
         /// <summary>
         /// Create a default Flexible grid. The number of cols will be determinated by the fixed (pixels) columns width and available H width
@@ -124,6 +126,34 @@ namespace Fu.Framework
 
         #region Methods
         /// <summary>
+        /// Clears stable grid-column identifiers owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetRuntimeCaches()
+        {
+            // Grid names can retain window data, so their bounded cache follows the session lifetime.
+            _columnIds.Clear();
+        }
+
+        /// <summary>
+        /// Gets a stable ImGui identifier for one grid column.
+        /// </summary>
+        /// <param name="gridName">Owning grid identifier.</param>
+        /// <param name="columnIndex">Zero-based column index.</param>
+        /// <returns>Cached column identifier.</returns>
+        private static string GetColumnId(string gridName, int columnIndex)
+        {
+            // Column labels are composed only on bounded-cache misses.
+            (string GridName, int ColumnIndex) key = (gridName, columnIndex);
+            if (!_columnIds.TryGetValue(key, out string columnId))
+            {
+                columnId = string.Concat(gridName, "col", columnIndex.ToString());
+                _columnIds.Set(key, columnId);
+            }
+
+            return columnId;
+        }
+
+        /// <summary>
         /// Setup the current table columns according to this grid definition
         /// </summary>
         /// <param name="gridName">Unique name of the grid</param>
@@ -136,53 +166,28 @@ namespace Fu.Framework
         internal bool SetupTable(string gridName, float cellPadding, float outterPadding, bool linesBg, ref bool isResponsivelyResized, float width = -1)
         {
             outterPadding *= Fugui.CurrentContext.Scale;
-            //cellPadding *= Fugui.CurrentContext.Scale;
             isResponsivelyResized = false;
-            // prepare columns width
-            float[] colWidth;
             int nbCols = NbColumns;
             float availWidth = width <= 0f ? ImGui.GetContentRegionAvail().x - (outterPadding * 2f) : width * Fugui.CurrentContext.Scale;
+            bool forceResponsiveColumn = false;
+            bool forceTwoFixedColumns = false;
+            float forcedFirstColumnWidth = 0f;
+            float forcedSecondColumnWidth = 0f;
+
             switch (GridType)
             {
-                // set auto width
-                // we don't set any column width, we let ImGui decide their size
-                // can not be forced to responsive
                 case FuGridType.Auto:
-                    colWidth = null;
                     break;
 
-                // set fixed width
-                // at least one of the columns has a fixed pixels width.
-                // it use Minimum second column size to determinate whatever the first fixed columns need to be erased
                 case FuGridType.FixedWidth:
-                    colWidth = new float[ColumnsWidth.Length];
-                    float currentRemaningWidth = availWidth;
-                    for (int i = 0; i < colWidth.Length; i++)
-                    {
-                        float targetUnscaledWidth = ColumnsWidth[i];
-                        if (targetUnscaledWidth < 0f)
-                        {
-                            targetUnscaledWidth = currentRemaningWidth + (targetUnscaledWidth * Fugui.CurrentContext.Scale) - cellPadding;
-                            colWidth[i] = targetUnscaledWidth;
-                        }
-                        else
-                        {
-                            colWidth[i] = targetUnscaledWidth * Fugui.CurrentContext.Scale;
-                        }
-                        currentRemaningWidth -= (colWidth[i] + cellPadding);
-                    }
                     if (NbColumns == 2 && MinSecondColumnSize > 0 && ColumnsWidth.Length > 0)
                     {
-                        // check if second col width is smaller that min
+                        // Preserve the existing minimum second-column rule without a temporary array.
                         if (availWidth - ColumnsWidth[0] < MinSecondColumnSize)
                         {
-                            colWidth = new float[2];
-                            colWidth[0] = Math.Max(16f, availWidth - (MinSecondColumnSize * Fugui.CurrentContext.Scale));
-                            colWidth[1] = Math.Max(16f, availWidth - colWidth[0]);
-                        }
-                        else if (colWidth.Length == 1)
-                        {
-                            colWidth = new float[2] { colWidth[0], currentRemaningWidth };
+                            forcedFirstColumnWidth = Math.Max(16f, availWidth - (MinSecondColumnSize * Fugui.CurrentContext.Scale));
+                            forcedSecondColumnWidth = Math.Max(16f, availWidth - forcedFirstColumnWidth);
+                            forceTwoFixedColumns = true;
                         }
                     }
 
@@ -190,51 +195,36 @@ namespace Fu.Framework
                     if (availWidth <= responsiveMinWidth)
                     {
                         nbCols = 1;
-                        colWidth = new float[1] { availWidth };
                         isResponsivelyResized = true;
+                        forceResponsiveColumn = true;
                     }
                     break;
 
-                // prepare ratio width
-                // at least one of the columns has a ratio width (between 0 and 1, it's percent of available width).
-                // it use Minimum second column size to determinate whatever the first fixed columns need to be erased
                 case FuGridType.RatioWidth:
-                    colWidth = new float[ColumnsWidth.Length];
-                    for (int i = 0; i < colWidth.Length; i++)
+                    if (NbColumns == 2 && MinSecondColumnSize > 0 && ColumnsWidth.Length == 2)
                     {
-                        colWidth[i] = availWidth * ColumnsWidth[i];
-                    }
-
-                    if (NbColumns == 2 && MinSecondColumnSize > 0 && colWidth.Length == 2)
-                    {
-                        // check if second col width is smaller that min
                         if (availWidth - ColumnsWidth[0] < (MinSecondColumnSize * Fugui.CurrentContext.Scale))
                         {
-                            colWidth[0] = Math.Max(16f, availWidth - (MinSecondColumnSize * Fugui.CurrentContext.Scale));
-                            colWidth[1] = Math.Max(16f, availWidth - colWidth[0]);
+                            forcedFirstColumnWidth = Math.Max(16f, availWidth - (MinSecondColumnSize * Fugui.CurrentContext.Scale));
+                            forcedSecondColumnWidth = Math.Max(16f, availWidth - forcedFirstColumnWidth);
+                            forceTwoFixedColumns = true;
                         }
                     }
 
                     if (availWidth <= (MINIMUM_GRID_WIDTH_BEFORE_FORCE_RESPONSIVE_RESIZE * Fugui.CurrentContext.Scale))
                     {
                         nbCols = 1;
-                        colWidth = new float[1] { availWidth };
                         isResponsivelyResized = true;
+                        forceResponsiveColumn = true;
                     }
                     break;
 
-                // prepare flexible grid layout
-                // this mode derterminate the number of rows, according to a fixed column width
-                // can not be forced to responsive
                 case FuGridType.FlexibleCols:
-                    // get nb of columns
                     nbCols = Mathf.FloorToInt(availWidth / (ColumnWidth + cellPadding * 2f));
                     if (nbCols < 1)
                     {
                         nbCols = 1;
                     }
-                    // set nul width array so we will let imgui decide of the size
-                    colWidth = null;
                     break;
 
                 default:
@@ -263,18 +253,55 @@ namespace Fu.Framework
                 return false;
             }
 
-            // set columns width
+            // Resolve column widths on demand so the hot path never allocates a transient array.
+            float remainingWidth = availWidth;
             for (int i = 0; i < nbCols; i++)
             {
-                // this column width must be forced
-                if (colWidth != null && i < colWidth.Length)
+                bool hasFixedWidth = false;
+                float columnWidth = 0f;
+
+                if (forceResponsiveColumn)
                 {
-                    ImGui.TableSetupColumn(gridName + "col" + i, ImGuiTableColumnFlags.WidthFixed, colWidth[i]);
+                    columnWidth = availWidth;
+                    hasFixedWidth = true;
                 }
-                // this column width must be auto determinated by ImGui
+                else if (forceTwoFixedColumns && i < 2)
+                {
+                    columnWidth = i == 0 ? forcedFirstColumnWidth : forcedSecondColumnWidth;
+                    hasFixedWidth = true;
+                }
+                else if (GridType == FuGridType.FixedWidth && i < ColumnsWidth.Length)
+                {
+                    float targetUnscaledWidth = ColumnsWidth[i];
+                    columnWidth = targetUnscaledWidth < 0f
+                        ? remainingWidth + (targetUnscaledWidth * Fugui.CurrentContext.Scale) - cellPadding
+                        : targetUnscaledWidth * Fugui.CurrentContext.Scale;
+                    remainingWidth -= columnWidth + cellPadding;
+                    hasFixedWidth = true;
+                }
+                else if (GridType == FuGridType.FixedWidth &&
+                         NbColumns == 2 &&
+                         MinSecondColumnSize > 0 &&
+                         ColumnsWidth.Length == 1 &&
+                         i == 1)
+                {
+                    columnWidth = remainingWidth;
+                    hasFixedWidth = true;
+                }
+                else if (GridType == FuGridType.RatioWidth && i < ColumnsWidth.Length)
+                {
+                    columnWidth = availWidth * ColumnsWidth[i];
+                    hasFixedWidth = true;
+                }
+
+                string columnId = GetColumnId(gridName, i);
+                if (hasFixedWidth)
+                {
+                    ImGui.TableSetupColumn(columnId, ImGuiTableColumnFlags.WidthFixed, columnWidth);
+                }
                 else
                 {
-                    ImGui.TableSetupColumn(gridName + "col" + i);
+                    ImGui.TableSetupColumn(columnId);
                 }
             }
             return true;

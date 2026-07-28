@@ -36,7 +36,7 @@ namespace Fu.Framework
                 {
                     grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
                 }
-                grid.Text(FieldName + "##" + objectID);
+                grid.Text(FuLayout.GetCachedCompositeId(FieldName, "##", objectID));
                 object value = _fieldInfo.GetValue(objectInstance);
                 grid.Text(value.ToString());
                 return false;

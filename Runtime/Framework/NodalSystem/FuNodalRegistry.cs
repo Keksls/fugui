@@ -22,8 +22,22 @@ namespace Fu.Framework
         /// <param name="constructor"> A function that constructs and returns an instance of the node type.</param>
         public void RegisterNode(string typeId, Func<FuNode> constructor)
         {
-            if (!_nodesRegistry.ContainsKey(typeId))
-                _nodesRegistry.Add(typeId, constructor);
+            if (string.IsNullOrWhiteSpace(typeId))
+            {
+                throw new ArgumentException("A node type ID cannot be null or empty.", nameof(typeId));
+            }
+            if (constructor == null)
+            {
+                throw new ArgumentNullException(nameof(constructor));
+            }
+            if (_nodesRegistry.ContainsKey(typeId))
+            {
+                return;
+            }
+
+            // Invalidate the derived type cache only after the new registration is committed.
+            _nodesRegistry.Add(typeId, constructor);
+            _nodesTypesCache = null;
         }
 
         /// <summary>
@@ -33,14 +47,25 @@ namespace Fu.Framework
         /// <returns> An instance of the node type if found; otherwise, null.</returns>
         public FuNode CreateNode(string typeId, FuNodalGraph graph)
         {
-            if (_nodesRegistry.ContainsKey(typeId))
+            if (string.IsNullOrWhiteSpace(typeId) || graph == null)
             {
-                FuNode node = _nodesRegistry[typeId].Invoke();
-                node.Graph = graph;
-                node.CreateDefaultPorts();
-                return node;
+                return null;
             }
-            return null;
+            if (!_nodesRegistry.TryGetValue(typeId, out Func<FuNode> constructor))
+            {
+                return null;
+            }
+
+            FuNode node = constructor.Invoke();
+            if (node == null)
+            {
+                throw new InvalidOperationException($"Node constructor '{typeId}' returned null.");
+            }
+
+            // The node remains outside the graph collection until default-port creation succeeds.
+            node.Graph = graph;
+            node.CreateDefaultPorts();
+            return node;
         }
 
         /// <summary>
@@ -130,8 +155,20 @@ namespace Fu.Framework
         /// <param name="type"> The FuNodalType to be registered.</param>
         public void RegisterType(FuNodalType type)
         {
-            if (!_typeRegistry.ContainsKey(type.Name))
-                _typeRegistry.Add(type.Name, type);
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+            if (string.IsNullOrWhiteSpace(type.Name))
+            {
+                throw new ArgumentException("A nodal type must have a non-empty name.", nameof(type));
+            }
+            if (_typeRegistry.ContainsKey(type.Name))
+            {
+                return;
+            }
+
+            _typeRegistry.Add(type.Name, type);
         }
 
         /// <summary>

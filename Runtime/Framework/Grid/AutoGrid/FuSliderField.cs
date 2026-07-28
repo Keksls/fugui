@@ -50,6 +50,8 @@ namespace Fu.Framework
             /// <returns>The result of the operation.</returns>
             public override bool Draw(string objectID, FuGrid grid, object objectInstance)
             {
+                // Reuse the stable ImGui identifier instead of allocating one in every numeric branch.
+                string fieldId = FuLayout.GetCachedCompositeId(FieldName, "##", objectID);
                 if (Disabled)
                 {
                     grid.DisableNextElement();
@@ -63,7 +65,7 @@ namespace Fu.Framework
                 {
                     case NumericFieldType.Byte:
                         int bval = (byte)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Slider(FieldName + "##" + objectID, ref bval, (int)Mathf.Max(byte.MinValue, _min), (int)Mathf.Min(byte.MaxValue, _max));
+                        updated = grid.Slider(fieldId, ref bval, (int)Mathf.Max(byte.MinValue, _min), (int)Mathf.Min(byte.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, (byte)bval);
@@ -72,7 +74,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.Short:
                         int sval = (short)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Slider(FieldName + "##" + objectID, ref sval, (int)Mathf.Max(short.MinValue, _min), (short)Mathf.Min(byte.MaxValue, _max));
+                        updated = grid.Slider(fieldId, ref sval, (int)Mathf.Max(short.MinValue, _min), (short)Mathf.Min(byte.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, (short)sval);
@@ -81,7 +83,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.UShort:
                         int usval = (ushort)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Slider(FieldName + "##" + objectID, ref usval, (int)Mathf.Max(ushort.MinValue, _min), (int)Mathf.Min(ushort.MaxValue, _max));
+                        updated = grid.Slider(fieldId, ref usval, (int)Mathf.Max(ushort.MinValue, _min), (int)Mathf.Min(ushort.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, (short)usval);
@@ -90,7 +92,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.Int:
                         int ival = (int)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Slider(FieldName + "##" + objectID, ref ival, (int)Mathf.Max(int.MinValue, _min), (int)Mathf.Min(int.MaxValue, _max));
+                        updated = grid.Slider(fieldId, ref ival, (int)Mathf.Max(int.MinValue, _min), (int)Mathf.Min(int.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, ival);
@@ -99,7 +101,7 @@ namespace Fu.Framework
 
                     case NumericFieldType.Float:
                         float fval = (float)_fieldInfo.GetValue(objectInstance);
-                        updated = grid.Slider(FieldName + "##" + objectID, ref fval, (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
+                        updated = grid.Slider(fieldId, ref fval, (float)Mathf.Max(float.MinValue, _min), (float)Mathf.Min(float.MaxValue, _max));
                         if (updated)
                         {
                             _fieldInfo.SetValue(objectInstance, fval);

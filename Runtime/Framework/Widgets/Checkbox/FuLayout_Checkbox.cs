@@ -81,11 +81,11 @@ namespace Fu.Framework
             {
                 isChecked = !isChecked;
             }
-            if (!_uiElementAnimationDatas.ContainsKey(text))
+            if (!_uiElementAnimationDatas.TryGetValue(text, out FuElementAnimationData animationData))
             {
-                _uiElementAnimationDatas.Add(text, new FuElementAnimationData(!isChecked));
+                animationData = new FuElementAnimationData(!isChecked);
+                _uiElementAnimationDatas.Set(text, animationData);
             }
-            FuElementAnimationData animationData = _uiElementAnimationDatas[text];
             animationData.Update(isChecked, _animationEnabled);
 
             // get current draw list

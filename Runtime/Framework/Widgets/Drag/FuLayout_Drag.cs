@@ -1,7 +1,6 @@
 using ImGuiNET;
 using System;
 using System.Runtime.CompilerServices;
-using System.Text;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -580,12 +579,6 @@ namespace Fu.Framework
         }
         #endregion
 
-        #region State
-        // Cache for IDs, avoids "##" + text alloc à chaque frame
-
-        [ThreadStatic] private static StringBuilder _idBuilder;
-        #endregion
-
         #region Methods
         /// <summary>
         /// Generates a unique ImGui ID string by appending "##" to the provided text.
@@ -595,10 +588,7 @@ namespace Fu.Framework
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string ImGuiPushID(string text)
         {
-            var sb = _idBuilder ?? (_idBuilder = new StringBuilder(64));
-            sb.Length = 0;
-            sb.Append("##").Append(text);
-            return sb.ToString();
+            return GetCachedCompositeId("##", text);
         }
         #endregion
     }

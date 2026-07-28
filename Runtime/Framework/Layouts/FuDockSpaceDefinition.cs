@@ -21,21 +21,21 @@ namespace Fu
         /// <summary>
         /// The proportion of the dock space relative to its parent
         /// </summary>
-        public float Proportion;
+        public float Proportion = 0.5f;
         /// <summary>
         /// The orientation of the dock space
         /// </summary>
-        public UIDockSpaceOrientation Orientation;
+        public UIDockSpaceOrientation Orientation = UIDockSpaceOrientation.None;
         /// <summary>
         /// A list of child dock spaces
         /// </summary>
         [JsonProperty]
-        public List<FuDockingLayoutDefinition> Children;
+        public List<FuDockingLayoutDefinition> Children = new List<FuDockingLayoutDefinition>();
         /// <summary>
         /// A list of binded windowsdefintion
         /// </summary>
         [JsonProperty]
-        public List<ushort> WindowsDefinition;
+        public List<ushort> WindowsDefinition = new List<ushort>();
         /// <summary>
         /// Whatever this layout auto hide topbars
         /// </summary>
@@ -95,6 +95,15 @@ namespace Fu
         /// <returns> A JSON string representing the dock space definition</returns>
         public static string Serialize(FuDockingLayoutDefinition dockspaceDefinition)
         {
+            if (dockspaceDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(dockspaceDefinition));
+            }
+            if (!dockspaceDefinition.TryValidate(out string validationError))
+            {
+                throw new InvalidOperationException($"Cannot serialize an invalid docking layout: {validationError}");
+            }
+
             return JsonConvert.SerializeObject(dockspaceDefinition);
         }
 
@@ -103,23 +112,33 @@ namespace Fu
         /// </summary>
         public FuDockingLayoutDefinition Clone()
         {
-            FuDockingLayoutDefinition clone = new FuDockingLayoutDefinition(Name, ID, Proportion, Orientation)
+            if (!TryValidate(out string validationError))
             {
-                AutoHideTopBar = AutoHideTopBar,
-                LayoutType = LayoutType,
-                WindowsDefinition = WindowsDefinition != null ? new List<ushort>(WindowsDefinition) : new List<ushort>(),
+                throw new InvalidOperationException($"Cannot clone an invalid docking layout: {validationError}");
+            }
+
+            return CloneNode(this);
+        }
+
+        /// <summary>
+        /// Creates a recursive copy after the complete source tree has been validated.
+        /// </summary>
+        /// <param name="source">Validated source node to copy.</param>
+        /// <returns>Independent copy of the source node tree.</returns>
+        private static FuDockingLayoutDefinition CloneNode(FuDockingLayoutDefinition source)
+        {
+            // Validation guarantees that recursive traversal cannot encounter nulls, sharing or cycles.
+            FuDockingLayoutDefinition clone = new FuDockingLayoutDefinition(source.Name, source.ID, source.Proportion, source.Orientation)
+            {
+                AutoHideTopBar = source.AutoHideTopBar,
+                LayoutType = source.LayoutType,
+                WindowsDefinition = new List<ushort>(source.WindowsDefinition),
                 Children = new List<FuDockingLayoutDefinition>()
             };
 
-            if (Children != null)
+            foreach (FuDockingLayoutDefinition child in source.Children)
             {
-                foreach (FuDockingLayoutDefinition child in Children)
-                {
-                    if (child != null)
-                    {
-                        clone.Children.Add(child.Clone());
-                    }
-                }
+                clone.Children.Add(CloneNode(child));
             }
 
             return clone;
@@ -144,6 +163,11 @@ namespace Fu
                 }
 
                 result = JsonConvert.DeserializeObject<FuDockingLayoutDefinition>(json);
+                if (result != null && !result.TryValidate(out string validationError))
+                {
+                    UnityEngine.Debug.LogWarning($"Invalid Fugui docking layout '{pathFile}': {validationError}");
+                    result = null;
+                }
             }
             catch (Exception ex)
             {
@@ -151,6 +175,103 @@ namespace Fu
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Validates the complete docking tree without mutating it.
+        /// </summary>
+        /// <param name="validationError">Description of the first invalid invariant.</param>
+        /// <returns>True when the layout can be cloned and applied safely.</returns>
+        public bool TryValidate(out string validationError)
+        {
+            // Reference tracking rejects both direct cycles and shared subtrees.
+            HashSet<FuDockingLayoutDefinition> visitedNodes = new HashSet<FuDockingLayoutDefinition>();
+            return TryValidateNode(this, "root", visitedNodes, out validationError);
+        }
+
+        /// <summary>
+        /// Validates one layout node and all of its descendants.
+        /// </summary>
+        /// <param name="node">Node currently being validated.</param>
+        /// <param name="path">Readable path used in validation errors.</param>
+        /// <param name="visitedNodes">Node references already visited in this tree.</param>
+        /// <param name="validationError">Description of the first invalid invariant.</param>
+        /// <returns>True when this complete subtree is structurally valid.</returns>
+        private static bool TryValidateNode(
+            FuDockingLayoutDefinition node,
+            string path,
+            HashSet<FuDockingLayoutDefinition> visitedNodes,
+            out string validationError)
+        {
+            // Validate local shape before descending so consumers never see partially trusted data.
+            if (node == null)
+            {
+                validationError = $"Node '{path}' is null.";
+                return false;
+            }
+            if (!visitedNodes.Add(node))
+            {
+                validationError = $"Node '{path}' is referenced more than once or creates a cycle.";
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(node.Name))
+            {
+                validationError = $"Node '{path}' has no name.";
+                return false;
+            }
+            if (node.Children == null)
+            {
+                validationError = $"Node '{path}' has a null children collection.";
+                return false;
+            }
+            if (node.WindowsDefinition == null)
+            {
+                validationError = $"Node '{path}' has a null window collection.";
+                return false;
+            }
+            if (float.IsNaN(node.Proportion) ||
+                float.IsInfinity(node.Proportion) ||
+                node.Proportion < 0.05f ||
+                node.Proportion > 0.95f)
+            {
+                validationError = $"Node '{path}' has an invalid split proportion ({node.Proportion}).";
+                return false;
+            }
+            if (!Enum.IsDefined(typeof(UIDockSpaceOrientation), node.Orientation))
+            {
+                validationError = $"Node '{path}' has an invalid orientation ({node.Orientation}).";
+                return false;
+            }
+
+            bool isLeaf = node.Children.Count == 0;
+            if (isLeaf && node.Orientation != UIDockSpaceOrientation.None)
+            {
+                validationError = $"Leaf node '{path}' must use the None orientation.";
+                return false;
+            }
+            if (!isLeaf &&
+                (node.Children.Count != 2 || node.Orientation == UIDockSpaceOrientation.None))
+            {
+                validationError = $"Split node '{path}' must have exactly two children and a split orientation.";
+                return false;
+            }
+            if (!isLeaf && node.WindowsDefinition.Count > 0)
+            {
+                validationError = $"Split node '{path}' cannot own windows.";
+                return false;
+            }
+
+            for (int i = 0; i < node.Children.Count; i++)
+            {
+                string childPath = $"{path}/{node.Children[i]?.Name ?? i.ToString()}";
+                if (!TryValidateNode(node.Children[i], childPath, visitedNodes, out validationError))
+                {
+                    return false;
+                }
+            }
+
+            validationError = null;
+            return true;
         }
 
         /// <summary>

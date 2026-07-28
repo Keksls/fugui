@@ -324,6 +324,25 @@ namespace Fu
             _modalSurfaceInputStack.Clear();
 
             ClearFrozenUICache();
+            ResetTextCaches();
+            FuLayout.ResetPersistentWidgetCaches();
+            FuGridDefinition.ResetRuntimeCaches();
+            FuGrid.ResetObjectDescriptionCache();
+            FuLayout.ResetTabCaches();
+            FuSelectableBuilder.ResetCaches();
+            FuLayout.ResetColorPickerState();
+            FuLayout.ResetComboboxState();
+            FuLayout.ResetCollapsableState();
+            FuLayout.ResetDatePickerState();
+            FuLayout.ResetHierarchicalPathState();
+            FuLayout.ResetSmartTextCache();
+            FuLayout.ResetTableViewState();
+            FuSearchFilter.ResetSearchTermCache();
+            FuPanel.ResetClipperCache();
+            ResetMainMenuRuntimeCache();
+            ResetThemeUiRuntimeState();
+            ResetNotificationState();
+            ResetMobileState();
             _backdropStack.Clear();
             _cursorPositionStack.Clear();
             FuLayout.CurrentDrawerPath.Clear();

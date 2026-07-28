@@ -186,7 +186,7 @@ namespace Fu.Framework
             Vector2 size = new Vector2(Mathf.Max(1f, ImGui.GetContentRegionAvail().x), Mathf.Max(1f, height * scale));
             Vector2 pos = ImGui.GetCursorScreenPos();
             Rect rect = new Rect(pos, size);
-            bool clicked = InvisibleInteraction("##" + elementID, size, out bool hovered, out bool active);
+            bool clicked = InvisibleInteraction(GetCachedCompositeId("##", elementID), size, out bool hovered, out bool active);
 
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             if (selected || hovered || active)

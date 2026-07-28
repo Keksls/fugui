@@ -50,6 +50,13 @@ namespace Fu
         private FuRaycaster _raycaster;
         private UnityEngine.Experimental.Rendering.GraphicsFormat _currentTextureFormat;
         private int _currentTextureDepth = 24;
+        private RenderTexture _previousCameraTargetTexture;
+        private Rect _previousCameraPixelRect;
+        private bool _previousCameraAllowMSAA;
+        private bool _previousCameraAllowDynamicResolution;
+        private bool _previousCameraEnabled;
+        private bool _cameraStateCaptured;
+        private bool _hasRenderedCameraFrame;
         #endregion
 
         /// <summary>
@@ -61,86 +68,129 @@ namespace Fu
             AutoCameraFPS = true;
             SuperSampling = windowDefinition.SuperSampling;
             Camera = windowDefinition.Camera;
+            if (Camera == null)
+            {
+                throw new ArgumentException("A camera window requires a valid Unity camera.", nameof(windowDefinition));
+            }
+
             IdleCameraFPS = windowDefinition.IdleCameraFPS;
             ManipulatingCameraFPS = windowDefinition.ManipuatingCameraFPS;
+            CaptureCameraState();
 
-            // Handle MSAA settings
-            if (windowDefinition.MSAASamples != MSAASamples.None)
+            try
             {
-                // set MSAA on camera
-                Camera.allowMSAA = true;
+                // The window temporarily configures the borrowed camera for an explicit offscreen render target.
+                Camera.allowMSAA = windowDefinition.MSAASamples != MSAASamples.None;
                 Camera.allowDynamicResolution = false;
-                // set default MSAA friendly texture format
-                _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32;
-                _currentTextureDepth = 24;
-            }
-            else
-            {
-                // disable MSAA on camera
-                Camera.allowMSAA = false;
-                Camera.allowDynamicResolution = false;
-                // set default non MSAA friendly texture format
-                _currentTextureFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_SFloat;
-                _currentTextureDepth = 0;
-            }
+                _currentTextureFormat = Camera.allowMSAA
+                    ? UnityEngine.Experimental.Rendering.GraphicsFormat.B10G11R11_UFloatPack32
+                    : UnityEngine.Experimental.Rendering.GraphicsFormat.R16G16B16A16_SFloat;
+                _currentTextureDepth = Camera.allowMSAA ? 24 : 0;
 
-            // disable MSAA on current pipeline to avoid flickering
-            // MSAA is no needed for URP asset, assuming we must use Fugui CameraWindow to draw camera render.
-            // MSAA is so handled by the render texture itself and powered by the camera allowMSAA property
-            // Also, native fugui SuperSampling will do a better job than MSAA in most cases
-            if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urpAsset)
-            {
-                urpAsset.msaaSampleCount = 1;
-            }
+                // Create the render target without mutating the project-wide URP asset.
+                _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
 
-            // create the render texture
-            _rTexture = new RenderTexture(Mathf.Max(Size.x, 1), Mathf.Max(Size.y, 1), _currentTextureDepth, _currentTextureFormat);
-
-            _rTexture.antiAliasing = (int)windowDefinition.MSAASamples;
+                _rTexture.antiAliasing = (int)windowDefinition.MSAASamples;
 #if UNITY_6000_4_OR_NEWER
-            _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
-#else
-            bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>()?.enableRenderCompatibilityMode ?? false;
-            if (isRenderGraphEnabled)
                 _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
-            else
-                _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+#else
+                bool isRenderGraphEnabled = !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>()?.enableRenderCompatibilityMode ?? false;
+                if (isRenderGraphEnabled)
+                    _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D16_UNorm;
+                else
+                    _rTexture.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
 #endif
-            _rTexture.useDynamicScale = true;
-            _rTexture.Create();
+                _rTexture.useDynamicScale = false;
+                if (!_rTexture.Create())
+                {
+                    throw new InvalidOperationException($"Unable to create the render texture for camera window '{ID}'.");
+                }
 
-            Camera.targetTexture = _rTexture;
-            OnResize += ImGuiCameraWindow_OnResize;
-            OnResized += ImGuiCameraWindow_OnResize;
-            OnDock += ImGuiCameraWindow_OnDock;
-            OnUnDock += ImGuiCameraWindow_OnDock;
-            ImGuiCameraWindow_OnResize(this);
-            _windowFlags |= FuWindowStyleFlags.NoScrollbar;
-            _windowFlags |= FuWindowStyleFlags.NoScrollWithMouse;
-            NeedToUpdateCamera = true;
-            _lastCameraRenderTime = float.MinValue;
-            IsInterractable = true;
-            Camera.enabled = false;
+                Camera.targetTexture = _rTexture;
+                OnResize += ImGuiCameraWindow_OnResize;
+                OnResized += ImGuiCameraWindow_OnResize;
+                OnDock += ImGuiCameraWindow_OnDock;
+                OnUnDock += ImGuiCameraWindow_OnDock;
+                ImGuiCameraWindow_OnResize(this);
+                _windowFlags |= FuWindowStyleFlags.NoScrollbar;
+                _windowFlags |= FuWindowStyleFlags.NoScrollWithMouse;
+                NeedToUpdateCamera = true;
+                _lastCameraRenderTime = 0f;
+                IsInterractable = true;
+                Camera.enabled = false;
 
-            UI = (window, layout) =>
+                UI = (window, layout) =>
+                {
+                    Vector2 cursorPos = ImGui.GetCursorScreenPos();
+                    ImGui.Image(Container.Context.TextureManager.GetTextureId(_rTexture), WorkingAreaSize);
+                    ImGui.SetCursorScreenPos(cursorPos);
+                    windowDefinition.UI?.Invoke(this, Layout);
+                };
+
+                // Register camera input only after every GPU resource has initialized successfully.
+                _raycaster = new FuRaycaster(ID, GetCameraRay,
+                    () => Container != null && !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Left),
+                    () => Container != null && !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Right),
+                    () => false,
+                    () => Container == null || InputsLocked ? 0f : Container.Mouse.Wheel.y,
+                    () => Container != null && !InputsLocked && LocalRect.Contains(Container.Mouse.Position));
+                FuRaycasting.RegisterRaycaster(_raycaster);
+            }
+            catch
             {
-                Vector2 cursorPos = ImGui.GetCursorScreenPos();
-                ImGui.Image(Container.Context.TextureManager.GetTextureId(_rTexture), WorkingAreaSize);
-                ImGui.SetCursorScreenPos(cursorPos);
-                windowDefinition.UI?.Invoke(this, Layout);
-            };
-
-            // register raycaster
-            _raycaster = new FuRaycaster(ID, GetCameraRay,
-                () => Container != null && !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Left),
-                () => Container != null && !InputsLocked && Container.Mouse.IsPressed(FuMouseButton.Right),
-                () => false,
-                () => Container == null || InputsLocked ? 0f : Container.Mouse.Wheel.y,
-                () => Container != null && !InputsLocked && LocalRect.Contains(Container.Mouse.Position));
-            FuRaycasting.RegisterRaycaster(_raycaster);
+                // A partially constructed window must not retain the camera lease or native render target.
+                ReleaseOwnedResources();
+                throw;
+            }
         }
 
         #region Methods
+        /// <summary>
+        /// Captures the state of the borrowed Unity camera before the window configures it.
+        /// </summary>
+        private void CaptureCameraState()
+        {
+            _previousCameraTargetTexture = Camera.targetTexture;
+            _previousCameraPixelRect = Camera.pixelRect;
+            _previousCameraAllowMSAA = Camera.allowMSAA;
+            _previousCameraAllowDynamicResolution = Camera.allowDynamicResolution;
+            _previousCameraEnabled = Camera.enabled;
+            _cameraStateCaptured = true;
+        }
+
+        /// <summary>
+        /// Restores the borrowed Unity camera to the state it had before this window acquired it.
+        /// </summary>
+        private void RestoreCameraState()
+        {
+            if (!_cameraStateCaptured)
+            {
+                return;
+            }
+
+            try
+            {
+                if (Camera != null)
+                {
+                    // Preserve a target assigned externally while the window was alive.
+                    if (ReferenceEquals(Camera.targetTexture, _rTexture))
+                    {
+                        Camera.targetTexture = _previousCameraTargetTexture;
+                    }
+
+                    Camera.pixelRect = _previousCameraPixelRect;
+                    Camera.allowMSAA = _previousCameraAllowMSAA;
+                    Camera.allowDynamicResolution = _previousCameraAllowDynamicResolution;
+                    Camera.enabled = _previousCameraEnabled;
+                }
+            }
+            finally
+            {
+                _cameraStateCaptured = false;
+                _previousCameraTargetTexture = null;
+            }
+        }
+
         /// <summary>
         /// Releases the raycaster and render target owned by this camera window.
         /// </summary>
@@ -154,10 +204,7 @@ namespace Fu
             OnUnDock -= ImGuiCameraWindow_OnDock;
             _raycaster = null;
 
-            if (Camera != null && ReferenceEquals(Camera.targetTexture, _rTexture))
-            {
-                Camera.targetTexture = null;
-            }
+            RestoreCameraState();
 
             if (_rTexture != null)
             {
@@ -224,44 +271,69 @@ namespace Fu
 
             ImGui.SetCursorScreenPos(GetDebugPanelPosition(panelSize, true, yOffset));
 
-            Fugui.Push(ImGuiStyleVar.ChildRounding, 5f * Fugui.Scale);
-            Fugui.Push(ImGuiStyleVar.ChildBorderSize, 1f);
-            Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 6f) * Fugui.Scale);
-            Fugui.Push(ImGuiCol.ChildBg, new Vector4(.055f, .065f, .085f, .88f));
-            Fugui.Push(ImGuiCol.Border, new Vector4(.2f, .55f, 1f, .55f));
-            if (ImGui.BeginChild(ID + "cs", panelSize, ImGuiChildFlags.Borders | ImGuiChildFlags.AlwaysUseWindowPadding, ImGuiWindowFlags.NoSavedSettings))
+            FuImGuiStackSnapshot stackSnapshot = Fugui.CaptureImGuiStackSnapshot();
+            try
             {
-                ImGui.Text("Camera debug");
-                ImGui.Separator();
-                // super sampling
-                if (ImGui.RadioButton("x0.5", _superSampling == 0.5f))
+                Fugui.Push(ImGuiStyleVar.ChildRounding, 5f * Fugui.Scale);
+                Fugui.Push(ImGuiStyleVar.ChildBorderSize, 1f);
+                Fugui.Push(ImGuiStyleVar.WindowPadding, new Vector2(8f, 6f) * Fugui.Scale);
+                Fugui.Push(ImGuiCol.ChildBg, new Vector4(.055f, .065f, .085f, .88f));
+                Fugui.Push(ImGuiCol.Border, new Vector4(.2f, .55f, 1f, .55f));
+
+                bool childBegan = false;
+                try
                 {
-                    SuperSampling = 0.5f;
+                    bool childVisible = ImGui.BeginChild(ID + "cs", panelSize, ImGuiChildFlags.Borders | ImGuiChildFlags.AlwaysUseWindowPadding, ImGuiWindowFlags.NoSavedSettings);
+                    childBegan = true;
+                    if (childVisible)
+                    {
+                        ImGui.Text("Camera debug");
+                        ImGui.Separator();
+                        // Super sampling controls update the render target on the next window frame.
+                        if (ImGui.RadioButton("x0.5", _superSampling == 0.5f))
+                        {
+                            SuperSampling = 0.5f;
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.RadioButton("x1", _superSampling == 1f))
+                        {
+                            SuperSampling = 1f;
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.RadioButton("x1.5", _superSampling == 1.5f))
+                        {
+                            SuperSampling = 1.5f;
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.RadioButton("x2", _superSampling == 2f))
+                        {
+                            SuperSampling = 2f;
+                        }
+
+                        DrawDebugLine("State", State.ToString());
+                        DrawDebugLine("FPS", (int)CurrentCameraFPS + " (" + (CameraDeltaTime * 1000f).ToString("f2") + " ms)");
+                        DrawDebugLine("Target", TargetCameraFPS + " (" + ((int)(_targetCameraDeltaTimeMs * 1000)).ToString() + " ms)");
+                    }
                 }
-                ImGui.SameLine();
-                if (ImGui.RadioButton("x1", _superSampling == 1f))
+                finally
                 {
-                    SuperSampling = 1f;
+                    if (childBegan)
+                    {
+                        Fugui.EndRawChild();
+                    }
                 }
-                ImGui.SameLine();
-                if (ImGui.RadioButton("x1.5", _superSampling == 1.5f))
-                {
-                    SuperSampling = 1.5f;
-                }
-                ImGui.SameLine();
-                if (ImGui.RadioButton("x2", _superSampling == 2f))
-                {
-                    SuperSampling = 2f;
-                }
-                // states
-                DrawDebugLine("State", State.ToString());
-                DrawDebugLine("FPS", (int)CurrentCameraFPS + " (" + (CameraDeltaTime * 1000f).ToString("f2") + " ms)");
-                DrawDebugLine("Target", TargetCameraFPS + " (" + ((int)(_targetCameraDeltaTimeMs * 1000)).ToString() + " ms)");
             }
-            Fugui.EndRawChild();
-            Fugui.PopColor(2);
-            Fugui.PopStyle(3);
-            ImGui.SetCursorScreenPos(previousCursorPos);
+            finally
+            {
+                try
+                {
+                    Fugui.RestoreImGuiStackSnapshot(stackSnapshot);
+                }
+                finally
+                {
+                    ImGui.SetCursorScreenPos(previousCursorPos);
+                }
+            }
         }
 
         /// <summary>
@@ -294,29 +366,41 @@ namespace Fu
                 return;
             }
 
-            NeedToUpdateCamera = false;
-            // resize render texture
-            if (WorkingAreaSize.x <= 10 || WorkingAreaSize.y <= 10 || _superSampling <= 0.1f)
+            // Keep the resize request pending while the window has no drawable working area.
+            if (Camera == null || _rTexture == null ||
+                WorkingAreaSize.x <= 10 || WorkingAreaSize.y <= 10 || _superSampling <= 0.1f)
             {
                 return;
             }
 
-            int targetWidth = Mathf.Max(1, Mathf.RoundToInt(WorkingAreaSize.x * _superSampling));
-            int targetHeight = Mathf.Max(1, Mathf.RoundToInt(WorkingAreaSize.y * _superSampling));
+            int maxTextureSize = Mathf.Max(1, SystemInfo.maxTextureSize);
+            int targetWidth = Mathf.Clamp(Mathf.RoundToInt(WorkingAreaSize.x * _superSampling), 1, maxTextureSize);
+            int targetHeight = Mathf.Clamp(Mathf.RoundToInt(WorkingAreaSize.y * _superSampling), 1, maxTextureSize);
             bool textureSizeChanged = _rTexture.width != targetWidth || _rTexture.height != targetHeight || !_rTexture.IsCreated();
             if (textureSizeChanged)
             {
+                int previousWidth = _rTexture.width;
+                int previousHeight = _rTexture.height;
                 _rTexture.Release();
                 _rTexture.width = targetWidth;
                 _rTexture.height = targetHeight;
-                _rTexture.Create();
+                if (!_rTexture.Create())
+                {
+                    // Restore the previous allocation so a failed resize does not blank a working camera window.
+                    _rTexture.width = previousWidth;
+                    _rTexture.height = previousHeight;
+                    _rTexture.Create();
+                    Debug.LogError($"Unable to resize camera window '{ID}' render texture to {targetWidth}x{targetHeight}.");
+                    return;
+                }
             }
+
             Camera.targetTexture = _rTexture;
-            // resize cam target
+            // Match camera projection helpers to the actual render target size.
             Camera.pixelRect = new Rect(0, 0, targetWidth, targetHeight);
 
+            NeedToUpdateCamera = false;
             ForceRenderCamera();
-            updateCameraRender();
         }
 
         /// <summary>
@@ -324,12 +408,27 @@ namespace Fu
         /// </summary>
         private void updateCameraRender()
         {
-            // did the camera must be enabled for a frame
+            if (Camera == null || _rTexture == null || !_rTexture.IsCreated())
+            {
+                return;
+            }
+
+            // Render manually only when the camera cadence elapsed or an explicit refresh was requested.
             if ((Fugui.Time > _lastCameraRenderTime + _targetCameraDeltaTimeMs) || _forceCameraRender)
             {
                 Camera.Render();
-                CameraDeltaTime = Fugui.Time - _lastCameraRenderTime;
-                CurrentCameraFPS = 1f / CameraDeltaTime;
+                if (_hasRenderedCameraFrame)
+                {
+                    CameraDeltaTime = Mathf.Max(0f, Fugui.Time - _lastCameraRenderTime);
+                    CurrentCameraFPS = CameraDeltaTime > Mathf.Epsilon ? 1f / CameraDeltaTime : 0f;
+                }
+                else
+                {
+                    CameraDeltaTime = 0f;
+                    CurrentCameraFPS = 0f;
+                    _hasRenderedCameraFrame = true;
+                }
+
                 _lastCameraRenderTime = Fugui.Time;
             }
             _forceCameraRender = false;

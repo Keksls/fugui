@@ -20,7 +20,7 @@ namespace Fu.Framework
                 return false;
             }
             drawElementLabel(text, style.TextStyle);
-            return base.RadioButton("##" + text, isChecked, style);
+            return base.RadioButton(GetCachedCompositeId("##", text), isChecked, style);
         }
         #endregion
     }

@@ -37,7 +37,7 @@ namespace Fu.Framework
                     grid.SetNextElementToolTipWithLabel(FieldName + " : " + ToolTipText, ToolTipText);
                 }
                 bool isChecked = (bool)_fieldInfo.GetValue(objectInstance);
-                bool updated = grid.Toggle(FieldName + "##" + objectID, ref isChecked);
+                bool updated = grid.Toggle(FuLayout.GetCachedCompositeId(FieldName, "##", objectID), ref isChecked);
                 if (updated)
                 {
                     _fieldInfo.SetValue(objectInstance, isChecked);

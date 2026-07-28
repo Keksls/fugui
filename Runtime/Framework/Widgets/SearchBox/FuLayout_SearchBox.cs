@@ -141,7 +141,7 @@ namespace Fu.Framework
             Fugui.Push(ImGuiStyleVar.FrameBorderSize, 0f);
             float inputPaddingY = Mathf.Max(0f, (height - ImGui.GetTextLineHeight()) * 0.5f) / Mathf.Max(0.001f, scale);
             Fugui.Push(ImGuiStyleVar.FramePadding, new Vector2(0f, inputPaddingY));
-            edited = ImGui.InputTextWithHint("##" + elementID + "_input", hint, ref search, SEARCH_BOX_BUFFER_SIZE, inputFlags);
+            edited = ImGui.InputTextWithHint(GetCachedCompositeId("##", elementID, "_input"), hint, ref search, SEARCH_BOX_BUFFER_SIZE, inputFlags);
             bool focused = Fugui.IsCurrentItemActive() || Fugui.IsCurrentItemFocused();
             Fugui.PopStyle(2);
             Fugui.PopColor(4);
@@ -149,7 +149,7 @@ namespace Fu.Framework
             if (canClear)
             {
                 ImGui.SetCursorScreenPos(clearRect.position);
-                bool clearClicked = InvisibleInteraction("##" + elementID + "_clear", clearRect.size, out clearHovered, out _);
+                bool clearClicked = InvisibleInteraction(GetCachedCompositeId("##", elementID, "_clear"), clearRect.size, out clearHovered, out _);
                 DrawClearGlyph(drawList, clearRect.position + clearRect.size * 0.5f, height * 0.28f, iconColor, clearHovered);
                 if (clearClicked)
                 {

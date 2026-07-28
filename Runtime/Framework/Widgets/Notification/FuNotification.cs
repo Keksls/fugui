@@ -28,6 +28,15 @@ namespace Fu.Framework
         private float _borderWidth => 1.5f * Fugui.CurrentContext.Scale;
 
         private float _initialDuration;
+        private int _drawIndex = -1;
+        private int _gridIconSize = int.MinValue;
+        private FuGridDefinition _gridDefinition;
+        private string _panelId;
+        private string _gridId;
+        private string _iconId;
+        private int _cachedHeaderQuantity = int.MinValue;
+        private string _cachedHeaderSource;
+        private string _cachedHeaderText;
         #endregion
 
         #region Constructors
@@ -71,9 +80,51 @@ namespace Fu.Framework
         /// <summary>Force collapsed state if collapsible.</summary>
         internal void ForceCollapsed(bool collapsed) { if (CanCollapse) IsCollapsed = collapsed; }
 
+        /// <summary>
+        /// Prepares stable ImGui identifiers and the grid definition for the current draw slot.
+        /// </summary>
+        /// <param name="index">Current notification index.</param>
+        private void PrepareDrawState(int index)
+        {
+            if (_drawIndex != index)
+            {
+                // Notification indices only change when the collection is reordered.
+                _drawIndex = index;
+                _panelId = "notificationPanel" + index;
+                _gridId = "notificationGrid" + index;
+                _iconId = "notificationIcon" + index;
+            }
+
+            int iconSize = (int)Fugui.Settings.NotifyIconSize;
+            if (_gridIconSize != iconSize)
+            {
+                // Width arrays are rebuilt only when the configured icon size actually changes.
+                _gridIconSize = iconSize;
+                _gridDefinition = new FuGridDefinition(3, new int[] { iconSize, -36 });
+            }
+        }
+
+        /// <summary>
+        /// Gets the cached notification header text for the current title and quantity.
+        /// </summary>
+        /// <returns>Header text displayed in the notification grid.</returns>
+        private string GetHeaderText()
+        {
+            string source = string.IsNullOrEmpty(Title) ? Message : Title;
+            if (_cachedHeaderQuantity != Quantity || _cachedHeaderSource != source)
+            {
+                _cachedHeaderQuantity = Quantity;
+                _cachedHeaderSource = source;
+                _cachedHeaderText = Quantity > 1 ? "(" + Quantity + ") " + source : source;
+            }
+
+            return _cachedHeaderText;
+        }
+
         /// <summary>Draw the card (accent per anchor, header click collapse, body background, AutoResizeY).</summary>
         internal bool Draw(FuDrawList parentDrawList, int i, float deltaTime, float width)
         {
+            PrepareDrawState(i);
             width = Mathf.Max(1f, width);
             Vector2 childTopLeft = ImGui.GetCursorScreenPos();
             bool usePopupBackdrop = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
@@ -84,7 +135,7 @@ namespace Fu.Framework
             }
 
             // child with AutoResizeY (pas AlwaysAutoResize)
-            bool opened = ImGui.BeginChild("notificationPanel" + i, new Vector2(width, 0f), ImGuiChildFlags.AutoResizeY, childFlags);
+            bool opened = ImGui.BeginChild(_panelId, new Vector2(width, 0f), ImGuiChildFlags.AutoResizeY, childFlags);
             if (opened)
             {
                 var dl = Fugui.GetCurrentWindowDrawList();
@@ -100,18 +151,18 @@ namespace Fu.Framework
                 // HEADER
                 ImGuiNative.igSpacing();
                 float headerStartY = ImGui.GetCursorScreenPos().y;
-                using (FuGrid grid = new FuGrid("notificationGrid" + i, new FuGridDefinition(3, new int[] { (int)(Fugui.Settings.NotifyIconSize), -36 }), FuGridFlag.NoAutoLabels, outterPadding: 6f))
+                using (FuGrid grid = new FuGrid(_gridId, _gridDefinition, FuGridFlag.NoAutoLabels, outterPadding: 6f))
                 {
-                    grid.Image("notificationIcon" + i, Icon, new Vector2(Fugui.Settings.NotifyIconSize, Fugui.Settings.NotifyIconSize), TextColor.Text);
+                    grid.Image(_iconId, Icon, new Vector2(Fugui.Settings.NotifyIconSize, Fugui.Settings.NotifyIconSize), TextColor.Text);
 
                     if (string.IsNullOrEmpty(Title))
                     {
-                        grid.Text((Quantity > 1 ? "(" + Quantity + ") " : "") + Message, TextColor, FuTextWrapping.Wrap);
+                        grid.Text(GetHeaderText(), TextColor, FuTextWrapping.Wrap);
                     }
                     else
                     {
                         Fugui.PushFont(Fugui.CurrentContext.DefaultFont.Size, FontType.Bold);
-                        grid.Text((Quantity > 1 ? "(" + Quantity + ") " : "") + Title, TextColor, FuTextWrapping.Clip);
+                        grid.Text(GetHeaderText(), TextColor, FuTextWrapping.Clip);
                         Fugui.PopFont();
                     }
 

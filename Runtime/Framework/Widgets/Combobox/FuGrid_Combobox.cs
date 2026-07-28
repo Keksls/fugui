@@ -29,7 +29,7 @@ namespace Fu.Framework
             }
             drawElementLabel(text, style.TextStyle);
             ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().x);
-            base.Combobox("##" + text, selectedItemText, callback, size, popupSize, style, popupPosition);
+            base.Combobox(GetCachedCompositeId("##", text), selectedItemText, callback, size, popupSize, style, popupPosition);
         }
         #endregion
     }

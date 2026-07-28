@@ -82,13 +82,17 @@ namespace Fu
         private const int ResizeHandleArcSegments = 14;
         private const float RuntimeResizeMinSize = 0.0001f;
         private const int MaxPooledRenderTexturesPerKey = 4;
+        private const int MaxPooledRenderTextures = 16;
         private static readonly Dictionary<string, Stack<RenderTexture>> _renderTexturePool = new Dictionary<string, Stack<RenderTexture>>();
+        private static int _pooledRenderTextureCount;
         private Vector2 _lastPanelMeshSize = new Vector2(-1f, -1f);
         private float _lastPanelMeshScale = -1f;
         private float _lastPanelRound = -1f;
         private float _lastPanelDepth = -1f;
         private float _lastPanelCurve = -1f;
         private bool _lastCreateExtrudedPanelMesh;
+        private FuWindowStyleFlags _windowFlagsAddedByContainer;
+        private bool _previousWindowIs3D;
         #endregion
 
         #region Constructors
@@ -100,6 +104,11 @@ namespace Fu
         /// <param name="rotation">world 3D rotation of this container</param>
         public Fu3DWindowContainer(FuWindow window, Fu3DWindowSettings settings, Vector3? position = null, Quaternion? rotation = null)
         {
+            if (window == null)
+            {
+                throw new ArgumentNullException(nameof(window));
+            }
+
             settings.Sanitize();
             _3DContextindex++;
             ID = "3DContext_" + _3DContextindex;
@@ -109,65 +118,81 @@ namespace Fu
             applyResolutionSettings(settings, true);
             _windows3DScale = getLegacyScaleFromSettings(settings);
 
-            // remove the window from it's old container if has one
-            window.TryRemoveFromContainer();
-            // add the window to this container
-            if (!TryAddWindow(window))
+            try
             {
-                Debug.Log("Fail to create 3D container.");
-                Close();
-                return;
+                _size = settings.Resolution;
+
+                // Acquire fallible GPU and native resources before transferring the window from its current container.
+                RenderTexture = createRenderTexture(_size);
+                if (RenderTexture == null || !RenderTexture.IsCreated())
+                {
+                    throw new InvalidOperationException($"Unable to create the render texture for 3D window '{window.ID}'.");
+                }
+
+                if (Fugui.Settings == null || Fugui.Settings.UIMaterial == null)
+                {
+                    throw new InvalidOperationException("A 3D window requires a configured Fugui UI material.");
+                }
+
+                _uiMaterial = GameObject.Instantiate(Fugui.Settings.UIMaterial);
+                if (_uiMaterial == null)
+                {
+                    throw new InvalidOperationException($"Unable to instantiate the UI material for 3D window '{window.ID}'.");
+                }
+                _uiMaterial.SetTexture("_MainTex", RenderTexture);
+
+                Rect rect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
+                _fuguiContext = Fugui.CreateUnityContext(rect, settings.ContextScale, settings.FontScale);
+                if (_fuguiContext == null)
+                {
+                    throw new InvalidOperationException($"Unable to create the Fugui context for 3D window '{window.ID}'.");
+                }
+
+                _fuguiContext.OnRender += RenderFuWindows;
+                _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
+                _fuguiContext.OnFramePrepared += _fuguiContext_OnFramePrepared;
+                _fuguiContext.AutoUpdateMouse = false;
+                _fuguiContext.AutoUpdateKeyboard = window.IsInterractable && !window.InputsLocked;
+                _fuguiContext.SetTargetTexture(RenderTexture);
+                _fuguiContext.SetContainerScaleConfig(settings.ContainerScaleConfig, _size);
+
+                _mouseState = new FuMouseState();
+                _keyboardState = new FuKeyboardState(_fuguiContext.IO);
+
+                // Transfer the window only after every independent allocation has succeeded.
+                window.TryRemoveFromContainer();
+                if (!TryAddWindow(window))
+                {
+                    throw new InvalidOperationException($"Unable to attach window '{window.ID}' to 3D container '{ID}'.");
+                }
+
+                Window.Size = settings.Resolution;
+                _size = Window.Size;
+                createPanel();
+
+                Fugui.Themes.OnThemeSet += ThemeManager_OnThemeSet;
+                SetPosition(position.HasValue ? position.Value : Vector3.zero);
+                SetRotation(rotation.HasValue ? rotation.Value : Quaternion.identity);
+
+                window.InitializeOnContainer();
             }
-
-            // resize the window
-            Window.Size = settings.Resolution;
-            Window.Is3DWindow = true;
-            _size = window.Size;
-
-            // Create RenderTexture
-            RenderTexture = createRenderTexture(_size);
-
-            if (!RenderTexture.IsCreated())
+            catch (Exception initializationException)
             {
-                Debug.LogError("RenderTexture failed to create.");
-                Close();
-                return;
+                try
+                {
+                    // Roll back every resource acquired by a partially constructed container.
+                    Close();
+                }
+                catch (Exception cleanupException)
+                {
+                    throw new AggregateException(
+                        $"3D container '{ID}' failed to initialize and its rollback also failed.",
+                        initializationException,
+                        cleanupException);
+                }
+
+                throw;
             }
-
-            // create ui material
-            _uiMaterial = GameObject.Instantiate(Fugui.Settings.UIMaterial);
-            _uiMaterial.SetTexture("_MainTex", RenderTexture);
-
-            // create the fugui 3d context
-            Rect rect = new Rect(Vector2.zero, new Vector2(_size.x, _size.y));
-            _fuguiContext = Fugui.CreateUnityContext(rect, settings.ContextScale, settings.FontScale);
-            _fuguiContext.OnRender += RenderFuWindows;
-            _fuguiContext.OnPrepareFrame += context_OnPrepareFrame;
-            _fuguiContext.OnFramePrepared += _fuguiContext_OnFramePrepared;
-            _fuguiContext.AutoUpdateMouse = false;
-            _fuguiContext.AutoUpdateKeyboard = Window.IsInterractable && !Window.InputsLocked;
-            _fuguiContext.SetTargetTexture(RenderTexture);
-            _fuguiContext.SetContainerScaleConfig(settings.ContainerScaleConfig, _size);
-
-            // create panel game object
-            createPanel();
-
-            // instantiate inputs states
-            _mouseState = new FuMouseState();
-            _keyboardState = new FuKeyboardState(_fuguiContext.IO);
-
-            // apply the theme to this context
-            Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
-
-            // register on theme change
-            Fugui.Themes.OnThemeSet += ThemeManager_OnThemeSet;
-
-            // set default position
-            SetPosition(position.HasValue ? position.Value : Vector3.zero);
-            SetRotation(rotation.HasValue ? rotation.Value : Quaternion.identity);
-
-            // initialize the window
-            window.InitializeOnContainer();
         }
 
         /// <summary>
@@ -291,6 +316,11 @@ namespace Fu
                 return;
 
             settings.Sanitize();
+            if (HasSame3DWindowSettings(settings))
+            {
+                return;
+            }
+
             bool createExtrudedPanelMeshChanged = _createExtrudedPanelMesh != settings.CreateExtrudedPanelMesh;
             bool panelDepthChanged = settings.CreateExtrudedPanelMesh && Mathf.Abs(_panelDepth - settings.PanelDepth) > 0.0001f;
             bool panelCurveChanged = Mathf.Abs(_panelCurve - settings.PanelCurve) > 0.0001f;
@@ -309,6 +339,51 @@ namespace Fu
                 createPanel();
                 updateResizeHandleTransforms();
             }
+        }
+
+        /// <summary>
+        /// Returns whether sanitized settings already match the active 3D container state.
+        /// </summary>
+        /// <param name="settings">Sanitized settings to compare.</param>
+        /// <returns>True when applying the settings would not change the container.</returns>
+        private bool HasSame3DWindowSettings(Fu3DWindowSettings settings)
+        {
+            // Behaviours submit their serialized settings every frame, so reject no-op applications early.
+            return _useExplicitResolution &&
+                   _scaleResolutionWithPanel == settings.ScaleResolutionWithPanel &&
+                   _matchResolutionToPanelAspect == settings.MatchResolutionToPanelAspect &&
+                   (_referenceLocalSize - settings.ReferencePanelSize).sqrMagnitude <= 0.00000001f &&
+                   _referenceResolution == settings.ReferenceResolution &&
+                   _minResolution == settings.MinResolution &&
+                   _maxResolution == settings.MaxResolution &&
+                   (_localSize - settings.PanelSize).sqrMagnitude <= 0.00000001f &&
+                   _explicitResolution == settings.Resolution &&
+                   Mathf.Abs(_panelDepth - settings.PanelDepth) <= 0.0001f &&
+                   Mathf.Abs(_panelCurve - settings.PanelCurve) <= 0.0001f &&
+                   Mathf.Abs(_panelRounding - settings.PanelRounding) <= 0.0001f &&
+                   _createExtrudedPanelMesh == settings.CreateExtrudedPanelMesh &&
+                   Mathf.Abs(_windows3DScale - getLegacyScaleFromSettings(settings)) <= 0.0001f &&
+                   AreScaleConfigsEqual(_fuguiContext.ContainerScaleConfig, settings.ContainerScaleConfig);
+        }
+
+        /// <summary>
+        /// Compares two sanitized container scale configurations.
+        /// </summary>
+        /// <param name="left">Active scale configuration.</param>
+        /// <param name="right">Requested scale configuration.</param>
+        /// <returns>True when both configurations produce the same scaling behavior.</returns>
+        private static bool AreScaleConfigsEqual(FuContainerScaleConfig left, FuContainerScaleConfig right)
+        {
+            return left.Enabled == right.Enabled &&
+                   left.ReferenceResolution == right.ReferenceResolution &&
+                   Mathf.Abs(left.MatchWidthOrHeight - right.MatchWidthOrHeight) <= 0.0001f &&
+                   Mathf.Abs(left.MinScale - right.MinScale) <= 0.0001f &&
+                   Mathf.Abs(left.MaxScale - right.MaxScale) <= 0.0001f &&
+                   Mathf.Abs(left.BaseScale - right.BaseScale) <= 0.0001f &&
+                   Mathf.Abs(left.BaseFontScale - right.BaseFontScale) <= 0.0001f &&
+                   left.ScaleFont == right.ScaleFont &&
+                   left.UseDpiScale == right.UseDpiScale &&
+                   Mathf.Abs(left.ReferenceDpi - right.ReferenceDpi) <= 0.0001f;
         }
 
         /// <summary>
@@ -430,6 +505,13 @@ namespace Fu
                     while (pooledTextures.Count > 0)
                     {
                         RenderTexture pooledTexture = pooledTextures.Pop();
+                        _pooledRenderTextureCount = Mathf.Max(0, _pooledRenderTextureCount - 1);
+                        if (pooledTextures.Count == 0)
+                        {
+                            // Empty size buckets are removed so the key cache is bounded by retained textures.
+                            _renderTexturePool.Remove(key);
+                        }
+
                         if (pooledTexture == null)
                         {
                             continue;
@@ -437,7 +519,12 @@ namespace Fu
 
                         if (!pooledTexture.IsCreated())
                         {
-                            pooledTexture.Create();
+                            if (!pooledTexture.Create())
+                            {
+                                // A failed pooled allocation cannot be allowed to poison future acquisitions.
+                                DestroyOwnedObject(pooledTexture);
+                                continue;
+                            }
                         }
 
                         return pooledTexture;
@@ -479,9 +566,13 @@ namespace Fu
                 return;
             }
 
+            bool wasCreated = renderTexture.IsCreated();
             int aaSamples = normalizeAntiAliasing(renderTexture.antiAliasing);
             Vector2Int size = new Vector2Int(renderTexture.width, renderTexture.height);
-            if (Fugui.Settings != null && Fugui.Settings.Pool3DWindowRenderTextures)
+            if (wasCreated &&
+                Fugui.Settings != null &&
+                Fugui.Settings.Pool3DWindowRenderTextures &&
+                _pooledRenderTextureCount < MaxPooledRenderTextures)
             {
                 string key = getRenderTexturePoolKey(size, aaSamples);
                 if (!_renderTexturePool.TryGetValue(key, out Stack<RenderTexture> pooledTextures))
@@ -494,6 +585,7 @@ namespace Fu
                 {
                     renderTexture.Release();
                     pooledTextures.Push(renderTexture);
+                    _pooledRenderTextureCount++;
                     return;
                 }
             }
@@ -524,6 +616,7 @@ namespace Fu
             }
 
             _renderTexturePool.Clear();
+            _pooledRenderTextureCount = 0;
             _3DContextindex = 0;
         }
 
@@ -710,14 +803,20 @@ namespace Fu
                                   RenderTexture.height != size.y ||
                                   !RenderTexture.IsCreated();
 
-            _size = size;
-
             if (textureInvalid)
             {
-                RenderTexture oldTexture = RenderTexture;
-                RenderTexture = createRenderTexture(_size);
-                _uiMaterial?.SetTexture("_MainTex", RenderTexture);
+                RenderTexture replacementTexture = createRenderTexture(size);
+                if (replacementTexture == null || !replacementTexture.IsCreated())
+                {
+                    // Keep the last valid target bound when allocating the replacement fails.
+                    ReleaseRenderTexture(replacementTexture);
+                    Debug.LogError($"Unable to resize 3D window '{ID}' render texture to {size.x}x{size.y}.");
+                    return;
+                }
 
+                RenderTexture oldTexture = RenderTexture;
+                RenderTexture = replacementTexture;
+                _uiMaterial?.SetTexture("_MainTex", RenderTexture);
                 if (_fuguiContext != null)
                 {
                     _fuguiContext.SetTargetTexture(RenderTexture);
@@ -729,6 +828,7 @@ namespace Fu
                 }
             }
 
+            _size = size;
             if (_fuguiContext != null)
             {
                 _fuguiContext.SetPixelRect(new Rect(Vector2.zero, new Vector2(_size.x, _size.y)));
@@ -2211,8 +2311,19 @@ namespace Fu
                 Window.LocalPosition = Vector2Int.zero;
                 Window.Container = this;
                 Window.LocalPosition = Vector2Int.zero;
-                Window.AddWindowFlag(FuWindowStyleFlags.NoMove);
-                Window.AddWindowFlag(FuWindowStyleFlags.NoResize);
+                _previousWindowIs3D = Window.Is3DWindow;
+                Window.Is3DWindow = true;
+                _windowFlagsAddedByContainer = FuWindowStyleFlags.None;
+                if (!Window._windowFlags.HasFlag(FuWindowStyleFlags.NoMove))
+                {
+                    _windowFlagsAddedByContainer |= FuWindowStyleFlags.NoMove;
+                    Window.AddWindowFlag(FuWindowStyleFlags.NoMove);
+                }
+                if (!Window._windowFlags.HasFlag(FuWindowStyleFlags.NoResize))
+                {
+                    _windowFlagsAddedByContainer |= FuWindowStyleFlags.NoResize;
+                    Window.AddWindowFlag(FuWindowStyleFlags.NoResize);
+                }
                 return true;
             }
             return false;
@@ -2275,9 +2386,9 @@ namespace Fu
                 Window.OnClosed -= Window_OnClosed;
                 Window.OnResized -= Window_OnResized;
                 Window.Container = null;
-                Window.RemoveWindowFlag(FuWindowStyleFlags.NoMove);
-                Window.RemoveWindowFlag(FuWindowStyleFlags.NoResize);
-                Window.Is3DWindow = false;
+                Window.RemoveWindowFlag(_windowFlagsAddedByContainer);
+                Window.Is3DWindow = _previousWindowIs3D;
+                _windowFlagsAddedByContainer = FuWindowStyleFlags.None;
                 Window = null;
             }
             if (_fuguiContext != null)

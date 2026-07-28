@@ -35,6 +35,11 @@ namespace Fu
         /// <returns>True if the window definition was successfully registered, false otherwise.</returns>
         public static bool RegisterWindowDefinition(FuWindowDefinition windowDefinition)
         {
+            if (windowDefinition == null)
+            {
+                return false;
+            }
+
             // Check if a window definition with the same ID already exists
             if (UIWindowsDefinitions.ContainsKey(windowDefinition.WindowName))
             {
@@ -52,6 +57,11 @@ namespace Fu
         /// <returns>True if the window definition was successfully unregistered, false otherwise.</returns>
         public static bool UnregisterWindowDefinition(FuWindowDefinition windowDefinition)
         {
+            if (windowDefinition == null)
+            {
+                return false;
+            }
+
             // Check if a window definition with the same ID already exists
             return UIWindowsDefinitions.Remove(windowDefinition.WindowName);
         }
@@ -83,26 +93,38 @@ namespace Fu
         {
             ForceDrawAllWindows();
 
-            List<FuWindow> windows = UIWindows.Values.ToList();
+            List<FuWindow> windows = UIWindows.Values.Distinct().ToList();
             if (windows.Count == 0)
             {
                 callback?.Invoke();
                 return;
             }
 
+            HashSet<FuWindow> remainingWindows = new HashSet<FuWindow>(windows);
+            bool callbackInvoked = false;
             foreach (FuWindow window in windows)
             {
                 void onWindowClosed(FuWindow closedWindow)
                 {
                     closedWindow.OnClosed -= onWindowClosed;
-                    if (UIWindows.Count == 0)
+                    remainingWindows.Remove(closedWindow);
+                    if (!callbackInvoked && remainingWindows.Count == 0)
                     {
+                        callbackInvoked = true;
                         callback?.Invoke();
                     }
                 }
 
                 window.OnClosed += onWindowClosed;
-                window.Close();
+                try
+                {
+                    // Every window must receive its close request even if another window reports a cleanup failure.
+                    window.Close();
+                }
+                catch (Exception exception)
+                {
+                    Fire_OnUIException(exception);
+                }
             }
         }
 
@@ -155,6 +177,14 @@ namespace Fu
         public static List<(FuWindowName, FuWindow)> CreateWindows(List<FuWindowName> windowsToGet, bool autoAddToMainContainer = true)
         {
             List<(FuWindowName, FuWindow)> windows = new List<(FuWindowName, FuWindow)>();
+            if (windowsToGet == null)
+            {
+                throw new ArgumentNullException(nameof(windowsToGet));
+            }
+            if (autoAddToMainContainer && DefaultContainer == null)
+            {
+                throw new InvalidOperationException("Cannot create windows in the main container before it is initialized.");
+            }
 
             foreach (FuWindowName windowName in windowsToGet)
             {
@@ -163,20 +193,34 @@ namespace Fu
                     continue;
                 }
 
-                if (!windowDefinition.CreateUIWindow(out FuWindow window))
+                FuWindow window = null;
+                try
                 {
-                    continue;
-                }
+                    if (!windowDefinition.CreateUIWindow(out window))
+                    {
+                        continue;
+                    }
 
-                if (autoAddToMainContainer)
+                    if (autoAddToMainContainer)
+                    {
+                        window.Size = GetScaledMainContainerWindowSize(windowDefinition);
+
+                        if (!window.TryAddToContainer(DefaultContainer))
+                        {
+                            window.RollbackFailedCreation();
+                            continue;
+                        }
+                    }
+
+                    window.ForceDraw();
+                    windows.Add((windowDefinition.WindowName, window));
+                }
+                catch
                 {
-                    window.Size = GetScaledMainContainerWindowSize(windowDefinition);
-
-                    window.TryAddToContainer(DefaultContainer);
+                    // The successful windows before this one remain valid; only the failed unit is rolled back.
+                    window?.RollbackFailedCreation();
+                    throw;
                 }
-
-                window.ForceDraw();
-                windows.Add((windowDefinition.WindowName, window));
             }
 
             return windows;
@@ -192,6 +236,14 @@ namespace Fu
         {
             List<(FuWindowName, FuWindow)> windows = new List<(FuWindowName, FuWindow)>();
             List<FuWindowDefinition> windowDefinitions = new List<FuWindowDefinition>();
+            if (windowsToGet == null)
+            {
+                throw new ArgumentNullException(nameof(windowsToGet));
+            }
+            if (autoAddToMainContainer && DefaultContainer == null)
+            {
+                throw new InvalidOperationException("Cannot create windows in the main container before it is initialized.");
+            }
 
             foreach (FuWindowName windowName in windowsToGet)
             {
@@ -203,7 +255,14 @@ namespace Fu
 
             if (windowDefinitions.Count == 0)
             {
-                callback?.Invoke(windows);
+                try
+                {
+                    callback?.Invoke(windows);
+                }
+                catch (Exception exception)
+                {
+                    Fire_OnUIException(exception);
+                }
                 return;
             }
 
@@ -214,43 +273,89 @@ namespace Fu
                 pendingWindows--;
                 if (pendingWindows <= 0)
                 {
-                    callback?.Invoke(windows);
+                    try
+                    {
+                        callback?.Invoke(windows);
+                    }
+                    catch (Exception exception)
+                    {
+                        // Completion observers do not own the windows that were successfully committed.
+                        Fire_OnUIException(exception);
+                    }
                 }
             }
 
             foreach (FuWindowDefinition windowDefinition in windowDefinitions)
             {
-                if (!windowDefinition.CreateUIWindow(out FuWindow window))
-                {
-                    completeOne();
-                    continue;
-                }
-
-                if (!autoAddToMainContainer)
-                {
-                    window.ForceDraw();
-                    windows.Add((windowDefinition.WindowName, window));
-                    completeOne();
-                    continue;
-                }
-
+                FuWindow window = null;
                 Action<FuWindow> onWindowInitialized = null;
-                onWindowInitialized = (initializedWindow) =>
+                Action<FuWindow> onWindowClosedBeforeInitialization = null;
+                try
                 {
-                    initializedWindow.OnInitialized -= onWindowInitialized;
-                    initializedWindow.ForceDraw();
-                    windows.Add((windowDefinition.WindowName, initializedWindow));
-                    completeOne();
-                };
+                    if (!windowDefinition.CreateUIWindow(out window))
+                    {
+                        completeOne();
+                        continue;
+                    }
 
-                window.OnInitialized += onWindowInitialized;
-                window.Size = GetScaledMainContainerWindowSize(windowDefinition);
+                    if (!autoAddToMainContainer)
+                    {
+                        window.ForceDraw();
+                        windows.Add((windowDefinition.WindowName, window));
+                        completeOne();
+                        continue;
+                    }
 
-                if (!window.TryAddToContainer(DefaultContainer))
+                    onWindowInitialized = (initializedWindow) =>
+                    {
+                        initializedWindow.OnInitialized -= onWindowInitialized;
+                        initializedWindow.OnClosed -= onWindowClosedBeforeInitialization;
+                        try
+                        {
+                            initializedWindow.ForceDraw();
+                            windows.Add((windowDefinition.WindowName, initializedWindow));
+                        }
+                        catch (Exception exception)
+                        {
+                            // Initialization is part of creation; a failed completion is rolled back as one unit.
+                            initializedWindow.RollbackFailedCreation();
+                            Fire_OnUIException(exception);
+                        }
+                        finally
+                        {
+                            completeOne();
+                        }
+                    };
+                    onWindowClosedBeforeInitialization = (closedWindow) =>
+                    {
+                        closedWindow.OnInitialized -= onWindowInitialized;
+                        closedWindow.OnClosed -= onWindowClosedBeforeInitialization;
+                        // A container-side initialization rollback completes this requested unit as a failure.
+                        completeOne();
+                    };
+
+                    window.OnInitialized += onWindowInitialized;
+                    window.OnClosed += onWindowClosedBeforeInitialization;
+                    window.Size = GetScaledMainContainerWindowSize(windowDefinition);
+
+                    if (!window.TryAddToContainer(DefaultContainer))
+                    {
+                        window.OnInitialized -= onWindowInitialized;
+                        window.OnClosed -= onWindowClosedBeforeInitialization;
+                        window.RollbackFailedCreation();
+                        completeOne();
+                    }
+                }
+                catch (Exception exception)
                 {
-                    window.OnInitialized -= onWindowInitialized;
-                    window.ForceDraw();
-                    windows.Add((windowDefinition.WindowName, window));
+                    // Async batches report the failure and continue so their completion callback cannot hang.
+                    if (window != null)
+                    {
+                        window.OnInitialized -= onWindowInitialized;
+                        window.OnClosed -= onWindowClosedBeforeInitialization;
+                    }
+                    window?.RollbackFailedCreation();
+                    Fire_OnUIException(exception);
                     completeOne();
                 }
             }
@@ -280,10 +385,14 @@ namespace Fu
         /// <returns>true if success</returns>
         internal static bool TryAddUIWindow(FuWindow window)
         {
+            if (window == null || string.IsNullOrEmpty(window.ID))
+            {
+                return false;
+            }
+
             // check whatever a window is already open with the same ID
             if (UIWindows.ContainsKey(window.ID))
             {
-                window.TryRemoveFromContainer();
                 return false;
             }
 
@@ -299,7 +408,7 @@ namespace Fu
         /// <returns>true if success</returns>
         internal static bool TryRemoveUIWindow(FuWindow window)
         {
-            return UIWindows.Remove(window.ID);
+            return window != null && !string.IsNullOrEmpty(window.ID) && UIWindows.Remove(window.ID);
         }
 
         /// <summary>

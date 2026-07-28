@@ -57,6 +57,7 @@ namespace Fu
     /// </summary>
     public static partial class Fugui
     {
+        private const int MinimumRetainedSurfaceCapacity = 16;
         private static readonly Dictionary<int, List<FuSurface>> _currentSurfacesByContext = new Dictionary<int, List<FuSurface>>();
         private static readonly Dictionary<int, List<FuSurface>> _lastSurfacesByContext = new Dictionary<int, List<FuSurface>>();
         private static readonly Dictionary<int, int> _surfaceOrderByContext = new Dictionary<int, int>();
@@ -75,20 +76,49 @@ namespace Fu
 
             if (!_currentSurfacesByContext.TryGetValue(contextID, out List<FuSurface> current))
             {
-                current = new List<FuSurface>();
+                current = new List<FuSurface>(MinimumRetainedSurfaceCapacity);
                 _currentSurfacesByContext.Add(contextID, current);
             }
 
             if (!_lastSurfacesByContext.TryGetValue(contextID, out List<FuSurface> last))
             {
-                last = new List<FuSurface>();
+                last = new List<FuSurface>(MinimumRetainedSurfaceCapacity);
                 _lastSurfacesByContext.Add(contextID, last);
             }
 
             last.Clear();
             last.AddRange(current);
+            TrimSurfaceBuffer(last);
+            TrimSurfaceBuffer(current);
             current.Clear();
             _surfaceOrderByContext[contextID] = 0;
+        }
+
+        /// <summary>
+        /// Releases obsolete surface-list capacity after a fourfold working-set contraction.
+        /// </summary>
+        /// <param name="surfaces">Reusable surface buffer.</param>
+        private static void TrimSurfaceBuffer(List<FuSurface> surfaces)
+        {
+            // Stable surface counts allocate nothing while exceptional spikes cannot become permanent.
+            int retainedCapacity = Math.Max(MinimumRetainedSurfaceCapacity, surfaces.Count * 2);
+            if (surfaces.Capacity > MinimumRetainedSurfaceCapacity * 4 &&
+                surfaces.Capacity > retainedCapacity * 2)
+            {
+                surfaces.Capacity = retainedCapacity;
+            }
+        }
+
+        /// <summary>
+        /// Removes retained input-surface buffers for one destroyed context.
+        /// </summary>
+        /// <param name="contextId">Destroyed Fugui context identifier.</param>
+        internal static void RemoveSurfaceContextState(int contextId)
+        {
+            // Current, previous and ordering state share the context lifetime.
+            _currentSurfacesByContext.Remove(contextId);
+            _lastSurfacesByContext.Remove(contextId);
+            _surfaceOrderByContext.Remove(contextId);
         }
 
         /// <summary>
@@ -131,7 +161,7 @@ namespace Fu
 
             if (!_currentSurfacesByContext.TryGetValue(contextID, out List<FuSurface> current))
             {
-                current = new List<FuSurface>();
+                current = new List<FuSurface>(MinimumRetainedSurfaceCapacity);
                 _currentSurfacesByContext.Add(contextID, current);
             }
 

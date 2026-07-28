@@ -1,5 +1,4 @@
 using ImGuiNET;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu.Framework
@@ -10,7 +9,8 @@ namespace Fu.Framework
         public partial class FuLayout
         {
             #region State
-            internal Dictionary<string, knob> _knobs = new Dictionary<string, knob>();
+            internal readonly FuBoundedCache<string, knob> _knobs =
+                new FuBoundedCache<string, knob>(1024, System.StringComparer.Ordinal);
             #endregion
 
             #region Methods
@@ -97,11 +97,11 @@ namespace Fu.Framework
                         try
                         {
                             // Draw knob
-                            if (!_knobs.ContainsKey(label))
+                            if (!_knobs.TryGetValue(label, out knob k))
                             {
-                                _knobs.Add(label, new knob(width * 0.5f));
+                                k = new knob(width * 0.5f);
+                                _knobs.Set(label, k);
                             }
-                            knob k = _knobs[label];
 
                             FuFrameStyle.Default.Push(!LastItemDisabled);
                             try

@@ -49,8 +49,20 @@ namespace Fu
         private readonly Dictionary<uint, FuDockingLayoutDefinition> _nodesById = new Dictionary<uint, FuDockingLayoutDefinition>();
         private readonly Dictionary<uint, FuDockingLayoutDefinition> _nodeParents = new Dictionary<uint, FuDockingLayoutDefinition>();
         private readonly List<FloatingDockRoot> _floatingDockRoots = new List<FloatingDockRoot>();
+        private readonly List<FloatingDockRoot> _floatingDockRootSnapshot = new List<FloatingDockRoot>();
         private readonly List<DockSplitterDrawData> _mainDockSplitters = new List<DockSplitterDrawData>();
         private readonly List<DockSplitterDrawData> _floatingDockSplitters = new List<DockSplitterDrawData>();
+        private readonly List<uint> _emptyDockNodeIds = new List<uint>();
+        private readonly List<FuWindow> _containerWindows = new List<FuWindow>();
+        private readonly Action<FuWindow> _collectContainerWindow;
+        private readonly List<string> _dockTabLabels = new List<string>();
+        private const int DockTabLabelCacheCapacity = 1024;
+        private const int DockTabBarIdCacheCapacity = 512;
+        private readonly FuBoundedCache<string, DockTabLabelCacheEntry> _dockTabLabelCache =
+            new FuBoundedCache<string, DockTabLabelCacheEntry>(DockTabLabelCacheCapacity, StringComparer.Ordinal);
+        private readonly FuBoundedCache<uint, string> _dockTabBarIdCache =
+            new FuBoundedCache<uint, string>(DockTabBarIdCacheCapacity);
+        private readonly DockZoneRect[] _dockZoneRects = new DockZoneRect[5];
         private uint _nextRuntimeDockNodeId = 1u;
         private string _pendingTabDragWindowId;
         private uint _pendingTabDragNodeId;
@@ -79,6 +91,8 @@ namespace Fu
         /// </summary>
         public FuDockingLayoutManager()
         {
+            // Cache the collector delegate once so container snapshots do not allocate closures per frame.
+            _collectContainerWindow = CollectContainerWindow;
             Layouts = new Dictionary<string, FuDockingLayoutDefinition>();
 
             if (Fugui.Settings == null)
@@ -210,12 +224,13 @@ namespace Fu
         /// <param name="getOnlyAutoInstantiated">Whatever you only want windows in this layout that will auto instantiated by layout</param>
         public void SetLayout(string layoutName, bool getOnlyAutoInstantiated = true)
         {
-            if (!Layouts.ContainsKey(layoutName))
+            if (string.IsNullOrWhiteSpace(layoutName) ||
+                !Layouts.TryGetValue(layoutName, out FuDockingLayoutDefinition layout))
             {
                 return;
             }
 
-            SetLayout(Layouts[layoutName], getOnlyAutoInstantiated);
+            SetLayout(layout, getOnlyAutoInstantiated);
         }
 
         /// <summary>
@@ -225,12 +240,13 @@ namespace Fu
         /// <param name="getOnlyAutoInstantiated">Whatever you only want windows in this layout that will auto instantiated by layout</param>
         public void SetLayout(FuDockingLayoutDefinition layout, bool getOnlyAutoInstantiated = true)
         {
-            if (layout == null)
+            if (!TryValidateLayoutRequest(layout, getOnlyAutoInstantiated, out string validationError))
             {
-                Debug.LogWarning("[Fugui] Cannot set a null docking layout.");
+                Debug.LogWarning($"[Fugui] Cannot set docking layout: {validationError}");
                 return;
             }
 
+            // Clone only after cycle-safe validation so the caller-owned definition remains immutable.
             FuDockingLayoutDefinition layoutInstance = layout.Clone();
             if (IsDockingDisabled())
             {
@@ -248,6 +264,7 @@ namespace Fu
         /// <param name="getOnlyAutoInstantiated">Whatever you only want windows in this layout that will auto instantiated by layout</param>
         private void setLayoutInstance(FuDockingLayoutDefinition layout, bool getOnlyAutoInstantiated)
         {
+            // Structural checks run before runtime dependencies so malformed recursion is always rejected first.
             if (layout == null)
             {
                 Debug.LogWarning("[Fugui] Cannot set a null docking layout.");
@@ -265,14 +282,27 @@ namespace Fu
             Fugui.ShowPopupMessage("Setting Layout...");
             IsSettingLayout = true;
 
-            // break the current docking nodes data before removing windows
-            breakDockingLayout();
-
-            // close only windows owned by the regular docking layout.
-            closeLayoutWindowsAsync(() =>
+            try
             {
-                createDynamicLayout(layout, getOnlyAutoInstantiated);
-            });
+                // Close only windows owned by the regular docking layout.
+                closeLayoutWindowsAsync(() =>
+                {
+                    try
+                    {
+                        // Commit the new docking topology only after every previous layout window has closed.
+                        breakDockingLayout();
+                        createDynamicLayout(layout, getOnlyAutoInstantiated);
+                    }
+                    catch (Exception exception)
+                    {
+                        failSettingLayout(exception);
+                    }
+                });
+            }
+            catch (Exception exception)
+            {
+                failSettingLayout(exception);
+            }
         }
 
         /// <summary>
@@ -298,12 +328,118 @@ namespace Fu
             Fugui.ShowPopupMessage("Setting Layout...");
             IsSettingLayout = true;
 
-            breakDockingLayout();
-
-            closeLayoutWindowsAsync(() =>
+            try
             {
-                createFloatingLayoutWindows(layout, getOnlyAutoInstantiated);
-            });
+                closeLayoutWindowsAsync(() =>
+                {
+                    try
+                    {
+                        // The docking state is cleared only when the window-close phase has committed.
+                        breakDockingLayout();
+                        createFloatingLayoutWindows(layout, getOnlyAutoInstantiated);
+                    }
+                    catch (Exception exception)
+                    {
+                        failSettingLayout(exception);
+                    }
+                });
+            }
+            catch (Exception exception)
+            {
+                failSettingLayout(exception);
+            }
+        }
+
+        /// <summary>
+        /// Validates a layout and every window dependency before any current state is mutated.
+        /// </summary>
+        /// <param name="layout">Layout requested by the caller.</param>
+        /// <param name="getOnlyAutoInstantiated">Whether only auto-instantiated windows are required.</param>
+        /// <param name="validationError">Description of the first failed precondition.</param>
+        /// <returns>True when the request can enter the asynchronous apply phase.</returns>
+        private bool TryValidateLayoutRequest(
+            FuDockingLayoutDefinition layout,
+            bool getOnlyAutoInstantiated,
+            out string validationError)
+        {
+            if (layout == null)
+            {
+                validationError = "the layout is null.";
+                return false;
+            }
+            if (!layout.TryValidate(out validationError))
+            {
+                return false;
+            }
+            if (Fugui.DefaultContainer == null)
+            {
+                validationError = "the main window container is not initialized.";
+                return false;
+            }
+
+            Dictionary<ushort, FuWindowName> knownWindowNames = FuWindowNameProvider.GetAllWindowNames();
+            Dictionary<FuWindowName, int> requiredWindowCounts = new Dictionary<FuWindowName, int>();
+            foreach (ushort windowId in GetLayoutWindowDefinitionIds(layout))
+            {
+                if (!knownWindowNames.TryGetValue(windowId, out FuWindowName windowName))
+                {
+                    validationError = $"window definition ID '{windowId}' is unknown.";
+                    return false;
+                }
+                if (getOnlyAutoInstantiated && !windowName.AutoInstantiateWindowOnlayoutSet)
+                {
+                    continue;
+                }
+
+                requiredWindowCounts.TryGetValue(windowName, out int requiredCount);
+                requiredWindowCounts[windowName] = requiredCount + 1;
+            }
+
+            foreach (KeyValuePair<FuWindowName, int> requiredWindow in requiredWindowCounts)
+            {
+                if (!Fugui.UIWindowsDefinitions.TryGetValue(requiredWindow.Key, out FuWindowDefinition windowDefinition))
+                {
+                    validationError = $"window definition '{requiredWindow.Key.Name}' is not registered.";
+                    return false;
+                }
+                if (requiredWindow.Value > 1 && !windowDefinition.AllowMultipleWindow)
+                {
+                    validationError =
+                        $"layout requests {requiredWindow.Value} instances of single-instance window '{requiredWindow.Key.Name}'.";
+                    return false;
+                }
+                if (!windowDefinition.AllowMultipleWindow &&
+                    Fugui.UIWindows.Values.Any(window => window.Is3DWindow && window.WindowName.Equals(requiredWindow.Key)))
+                {
+                    validationError = $"window '{requiredWindow.Key.Name}' is already owned by a 3D container.";
+                    return false;
+                }
+            }
+
+            validationError = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Enumerates every window definition identifier stored in a validated layout tree.
+        /// </summary>
+        /// <param name="layout">Validated layout node to enumerate.</param>
+        /// <returns>Window definition identifiers in tree order.</returns>
+        private IEnumerable<ushort> GetLayoutWindowDefinitionIds(FuDockingLayoutDefinition layout)
+        {
+            // The layout has already been cycle-checked, so a simple depth-first traversal is safe.
+            foreach (ushort windowId in layout.WindowsDefinition)
+            {
+                yield return windowId;
+            }
+
+            foreach (FuDockingLayoutDefinition child in layout.Children)
+            {
+                foreach (ushort windowId in GetLayoutWindowDefinitionIds(child))
+                {
+                    yield return windowId;
+                }
+            }
         }
 
         /// <summary>
@@ -362,6 +498,7 @@ namespace Fu
 
             List<FuWindow> windows = Fugui.UIWindows.Values
                 .Where(window => !window.Is3DWindow)
+                .Distinct()
                 .ToList();
 
             if (windows.Count == 0)
@@ -370,21 +507,32 @@ namespace Fu
                 return;
             }
 
+            HashSet<FuWindow> remainingWindows = new HashSet<FuWindow>(windows);
+            bool callbackInvoked = false;
             foreach (FuWindow window in windows)
             {
                 void onWindowClosed(FuWindow closedWindow)
                 {
                     closedWindow.OnClosed -= onWindowClosed;
+                    remainingWindows.Remove(closedWindow);
 
-                    bool hasLayoutWindows = Fugui.UIWindows.Values.Any(openWindow => !openWindow.Is3DWindow);
-                    if (!hasLayoutWindows)
+                    if (!callbackInvoked && remainingWindows.Count == 0)
                     {
+                        callbackInvoked = true;
                         callback?.Invoke();
                     }
                 }
 
                 window.OnClosed += onWindowClosed;
-                window.Close();
+                try
+                {
+                    // Continue the close phase even when a window reports a cleanup failure.
+                    window.Close();
+                }
+                catch (Exception exception)
+                {
+                    Fugui.Fire_OnUIException(exception);
+                }
             }
         }
 
@@ -400,15 +548,34 @@ namespace Fu
             // create needed UIWindows asyncronously and invoke callback whenever every UIWIndows created and ready to be used
             Fugui.CreateWindowsAsync(windowsToGet, (windows) =>
             {
-                Fugui.ExecuteAfterRenderWindows(() =>
+                try
                 {
-                    PrepareCustomLayout(dockSpaceDefinition);
-                    createDocking(windows, dockSpaceDefinition);
-                    selectFirstTabOnEachDockSpaces(dockSpaceDefinition);
-                    CurrentLayout = dockSpaceDefinition;
-                    Fugui.ForceDrawAllWindows(2);
-                    endSettingLayout();
-                });
+                    Fugui.ExecuteAfterRenderWindows(() =>
+                    {
+                        try
+                        {
+                            PrepareCustomLayout(dockSpaceDefinition);
+                            Dictionary<FuWindowName, Queue<FuWindow>> availableWindows = windows
+                                .GroupBy(window => window.Item1)
+                                .ToDictionary(
+                                    group => group.Key,
+                                    group => new Queue<FuWindow>(group.Select(window => window.Item2)));
+                            createDocking(availableWindows, dockSpaceDefinition);
+                            selectFirstTabOnEachDockSpaces(dockSpaceDefinition);
+                            CurrentLayout = dockSpaceDefinition;
+                            Fugui.ForceDrawAllWindows(2);
+                            endSettingLayout();
+                        }
+                        catch (Exception exception)
+                        {
+                            failSettingLayout(exception);
+                        }
+                    });
+                }
+                catch (Exception exception)
+                {
+                    failSettingLayout(exception);
+                }
             });
         }
 
@@ -423,21 +590,37 @@ namespace Fu
 
             Fugui.CreateWindowsAsync(windowsToGet, (windows) =>
             {
-                Fugui.ExecuteAfterRenderWindows(() =>
+                try
                 {
-                    CurrentLayout = null;
-                    Fugui.ForceDrawAllWindows(2);
-                    endSettingLayout();
-                });
+                    Fugui.ExecuteAfterRenderWindows(() =>
+                    {
+                        try
+                        {
+                            CurrentLayout = null;
+                            Fugui.ForceDrawAllWindows(2);
+                            endSettingLayout();
+                        }
+                        catch (Exception exception)
+                        {
+                            failSettingLayout(exception);
+                        }
+                    });
+                }
+                catch (Exception exception)
+                {
+                    failSettingLayout(exception);
+                }
             });
         }
 
         /// <summary>
         /// Method that creates a dock layout based on a UIDockSpaceDefinition object, recursively creating child dock spaces and setting their orientation and proportion.
         /// </summary>
-        /// <param name="windows">The windows created</param>
+        /// <param name="availableWindows">Created windows that have not yet been assigned to a layout occurrence.</param>
         /// <param name="layout">The UIDockSpaceDefinition object representing the layout to create</param>
-        private void createDocking(List<(FuWindowName, FuWindow)> windows, FuDockingLayoutDefinition layout)
+        private void createDocking(
+            Dictionary<FuWindowName, Queue<FuWindow>> availableWindows,
+            FuDockingLayoutDefinition layout)
         {
             if (IsDockingDisabled())
             {
@@ -453,11 +636,13 @@ namespace Fu
                         continue;
                     }
 
-                    var ids = windows.Where(w => w.Item1.Equals(windowName)).Select(w => w.Item2.ID);
-                    foreach (string id in ids)
+                    if (availableWindows.TryGetValue(windowName, out Queue<FuWindow> matchingWindows) &&
+                        matchingWindows.Count > 0)
                     {
-                        FuWindow window = Fugui.UIWindows.TryGetValue(id, out FuWindow registeredWindow) ? registeredWindow : null;
-                        if (window != null)
+                        FuWindow window = matchingWindows.Dequeue();
+                        if (window != null &&
+                            Fugui.UIWindows.TryGetValue(window.ID, out FuWindow registeredWindow) &&
+                            ReferenceEquals(window, registeredWindow))
                         {
                             RegisterWindowToDockNode(window, layout);
                         }
@@ -467,27 +652,22 @@ namespace Fu
 
             foreach (FuDockingLayoutDefinition child in layout.Children)
             {
-                createDocking(windows, child);
+                createDocking(availableWindows, child);
             }
         }
 
         /// <summary>
         /// Get and force focus to select each first tab on each dock spaces (first window of each nodes)
         /// </summary>
-        /// <param name="windows">windows to check</param>
         /// <param name="layout">applyed layout</param>
         private void selectFirstTabOnEachDockSpaces(FuDockingLayoutDefinition layout)
         {
             if (layout.WindowsDefinition.Count > 0 && _nodeWindowIds.TryGetValue(layout.ID, out List<string> nodeWindows) && nodeWindows.Count > 0)
             {
                 _nodeSelectedIndices[layout.ID] = 0;
-                if (FuWindowNameProvider.GetAllWindowNames().TryGetValue(layout.WindowsDefinition[0], out FuWindowName windowName))
+                if (Fugui.UIWindows.TryGetValue(nodeWindows[0], out FuWindow firstWindow))
                 {
-                    var instances = Fugui.GetWindowInstances(windowName);
-                    if (instances.Count > 0)
-                    {
-                        instances[0].ForceFocusOnNextFrame();
-                    }
+                    firstWindow.ForceFocusOnNextFrame();
                 }
             }
             foreach (FuDockingLayoutDefinition child in layout.Children)
@@ -539,8 +719,26 @@ namespace Fu
         private void endSettingLayout()
         {
             IsSettingLayout = false;
-            OnDockLayoutSet?.Invoke();
+            try
+            {
+                OnDockLayoutSet?.Invoke();
+            }
+            finally
+            {
+                Fugui.ClosePopupMessage();
+            }
+        }
+
+        /// <summary>
+        /// Leaves the layout transaction in a usable state after an asynchronous failure.
+        /// </summary>
+        /// <param name="exception">Failure raised during layout application.</param>
+        private void failSettingLayout(Exception exception)
+        {
+            // Always release the busy state and popup before forwarding the asynchronous failure.
+            IsSettingLayout = false;
             Fugui.ClosePopupMessage();
+            Fugui.Fire_OnUIException(exception);
         }
 
         /// <summary>
@@ -594,6 +792,12 @@ namespace Fu
             _nodesById.Clear();
             _nodeParents.Clear();
             _floatingDockRoots.Clear();
+            _floatingDockRootSnapshot.Clear();
+            _emptyDockNodeIds.Clear();
+            _containerWindows.Clear();
+            _dockTabLabels.Clear();
+            _dockTabLabelCache.Clear();
+            _dockTabBarIdCache.Clear();
             _activeResizeNodeId = 0u;
             ClearDockDragState();
             ClearFloatingRootDragState();
@@ -889,25 +1093,37 @@ namespace Fu
             {
                 UpdateCustomLayoutRecursive(CurrentLayout, contentRect, container, true);
             }
-            foreach (FloatingDockRoot floatingRoot in _floatingDockRoots.ToList())
+            // Process a reusable snapshot because docking a root can reorder or remove the live entry.
+            _floatingDockRootSnapshot.Clear();
+            _floatingDockRootSnapshot.AddRange(_floatingDockRoots);
+            try
             {
-                if (!_floatingDockRoots.Contains(floatingRoot))
+                for (int floatingRootIndex = 0; floatingRootIndex < _floatingDockRootSnapshot.Count; floatingRootIndex++)
                 {
-                    continue;
-                }
+                    FloatingDockRoot floatingRoot = _floatingDockRootSnapshot[floatingRootIndex];
+                    if (!_floatingDockRoots.Contains(floatingRoot))
+                    {
+                        continue;
+                    }
 
-                if (floatingRoot.Container != container)
-                {
-                    continue;
-                }
+                    if (floatingRoot.Container != container)
+                    {
+                        continue;
+                    }
 
-                ProcessFloatingDockRoot(floatingRoot, container);
-                if (!_floatingDockRoots.Contains(floatingRoot))
-                {
-                    continue;
-                }
+                    ProcessFloatingDockRoot(floatingRoot, container);
+                    if (!_floatingDockRoots.Contains(floatingRoot))
+                    {
+                        continue;
+                    }
 
-                UpdateCustomLayoutRecursive(floatingRoot.Layout, GetFloatingDockRootContentRect(floatingRoot), container, false, floatingRoot);
+                    UpdateCustomLayoutRecursive(floatingRoot.Layout, GetFloatingDockRootContentRect(floatingRoot), container, false, floatingRoot);
+                }
+            }
+            finally
+            {
+                // Do not retain roots beyond the mutation-safe iteration window.
+                _floatingDockRootSnapshot.Clear();
             }
         }
 
@@ -1673,15 +1889,23 @@ namespace Fu
 
         private List<FuWindow> GetContainerWindows(IFuWindowContainer container)
         {
-            List<FuWindow> windows = new List<FuWindow>();
-            container?.OnEachWindow(window =>
+            // Reuse one ordered buffer and one cached delegate for every docking query in the frame.
+            _containerWindows.Clear();
+            container?.OnEachWindow(_collectContainerWindow);
+            return _containerWindows;
+        }
+
+        /// <summary>
+        /// Adds one valid container window to the reusable docking query buffer.
+        /// </summary>
+        /// <param name="window">Window reported by the container.</param>
+        private void CollectContainerWindow(FuWindow window)
+        {
+            // Null slots from single-window containers are intentionally ignored.
+            if (window != null)
             {
-                if (window != null)
-                {
-                    windows.Add(window);
-                }
-            });
-            return windows;
+                _containerWindows.Add(window);
+            }
         }
 
         private Rect GetContainerContentRect(IFuWindowContainer container)
@@ -1792,7 +2016,8 @@ namespace Fu
         private void CleanupClosedWindows()
         {
             bool needsPrune = false;
-            foreach (KeyValuePair<uint, List<string>> pair in _nodeWindowIds.ToList())
+            _emptyDockNodeIds.Clear();
+            foreach (KeyValuePair<uint, List<string>> pair in _nodeWindowIds)
             {
                 List<string> windows = pair.Value;
                 for (int i = windows.Count - 1; i >= 0; i--)
@@ -1810,15 +2035,23 @@ namespace Fu
 
                 if (windows.Count == 0)
                 {
-                    _nodeWindowIds.Remove(pair.Key);
-                    _nodeSelectedIndices.Remove(pair.Key);
-                    needsPrune = true;
+                    // Dictionary keys are removed after enumeration without allocating a snapshot.
+                    _emptyDockNodeIds.Add(pair.Key);
                     continue;
                 }
 
                 int selected = _nodeSelectedIndices.TryGetValue(pair.Key, out int selectedIndex) ? selectedIndex : 0;
                 _nodeSelectedIndices[pair.Key] = Mathf.Clamp(selected, 0, windows.Count - 1);
             }
+
+            for (int i = 0; i < _emptyDockNodeIds.Count; i++)
+            {
+                uint nodeId = _emptyDockNodeIds[i];
+                _nodeWindowIds.Remove(nodeId);
+                _nodeSelectedIndices.Remove(nodeId);
+                needsPrune = true;
+            }
+            _emptyDockNodeIds.Clear();
 
             if (needsPrune)
             {
@@ -2284,26 +2517,27 @@ namespace Fu
 
             FloatingDockRoot floatingRoot = FindFloatingDockRootForNode(nodeId);
 
-            List<string> labels = new List<string>();
+            // Reuse labels and cache stable composed strings for each live window.
+            _dockTabLabels.Clear();
             for (int i = 0; i < windowIds.Count; i++)
             {
                 string windowId = windowIds[i];
                 if (Fugui.UIWindows.TryGetValue(windowId, out FuWindow tabWindow))
                 {
-                    labels.Add(tabWindow.WindowName.Name + "##" + tabWindow.ID);
+                    _dockTabLabels.Add(GetDockTabLabel(tabWindow));
                 }
                 else
                 {
-                    labels.Add("Missing##" + windowId);
+                    _dockTabLabels.Add(GetMissingDockTabLabel(windowId));
                 }
             }
 
             int selected = _nodeSelectedIndices.TryGetValue(nodeId, out int selectedIndex) ? selectedIndex : 0;
-            selected = Mathf.Clamp(selected, 0, labels.Count - 1);
-            string tabBarId = "customDockTabs" + nodeId;
+            selected = Mathf.Clamp(selected, 0, _dockTabLabels.Count - 1);
+            string tabBarId = GetDockTabBarId(nodeId);
             FuTabsFlags tabFlags = FuTabsFlags.Compact;
             tabFlags |= floatingRoot != null ? FuTabsFlags.ReserveTrailingSpace : FuTabsFlags.Stretch;
-            if (layout.Tabs(tabBarId, labels, ref selected, tabFlags))
+            if (layout.TabsUnique(tabBarId, _dockTabLabels, ref selected, tabFlags))
             {
                 _nodeSelectedIndices[nodeId] = selected;
                 Fugui.ForceDrawAllWindows(2);
@@ -2326,6 +2560,70 @@ namespace Fu
                 return;
             }
             ProcessDockedTabDrag(window, nodeId, windowIds);
+        }
+
+        /// <summary>
+        /// Gets the stable ImGui label used by a docked window tab.
+        /// </summary>
+        /// <param name="window">Window represented by the tab.</param>
+        /// <returns>Display label containing the window-specific ImGui suffix.</returns>
+        private string GetDockTabLabel(FuWindow window)
+        {
+            // Rebuild only when the mutable window name changes; stable frames reuse the same string.
+            string windowName = window.WindowName.Name ?? string.Empty;
+            if (_dockTabLabelCache.TryGetValue(window.ID, out DockTabLabelCacheEntry cached) &&
+                string.Equals(cached.WindowName, windowName, StringComparison.Ordinal))
+            {
+                return cached.Label;
+            }
+
+            string label = windowName + "##" + window.ID;
+            _dockTabLabelCache.Set(window.ID, new DockTabLabelCacheEntry
+            {
+                WindowName = windowName,
+                Label = label
+            });
+            return label;
+        }
+
+        /// <summary>
+        /// Gets the stable ImGui label used by an unresolved docked window identifier.
+        /// </summary>
+        /// <param name="windowId">Unresolved window identifier.</param>
+        /// <returns>Cached missing-window label.</returns>
+        private string GetMissingDockTabLabel(string windowId)
+        {
+            // A null source name distinguishes missing entries from live windows with an empty title.
+            if (_dockTabLabelCache.TryGetValue(windowId, out DockTabLabelCacheEntry cached) &&
+                cached.WindowName == null)
+            {
+                return cached.Label;
+            }
+
+            string label = "Missing##" + windowId;
+            _dockTabLabelCache.Set(windowId, new DockTabLabelCacheEntry
+            {
+                WindowName = null,
+                Label = label
+            });
+            return label;
+        }
+
+        /// <summary>
+        /// Gets the stable ImGui identifier used by a runtime dock node tab bar.
+        /// </summary>
+        /// <param name="nodeId">Runtime dock node identifier.</param>
+        /// <returns>Stable tab bar identifier.</returns>
+        private string GetDockTabBarId(uint nodeId)
+        {
+            // Node IDs are stable while the layout is alive, so composition happens only on a cache miss.
+            if (!_dockTabBarIdCache.TryGetValue(nodeId, out string tabBarId))
+            {
+                tabBarId = "customDockTabs" + nodeId;
+                _dockTabBarIdCache.Set(nodeId, tabBarId);
+            }
+
+            return tabBarId;
         }
 
         /// <summary>
@@ -2353,7 +2651,7 @@ namespace Fu
                 return false;
             }
 
-            string tabBarId = "customDockTabs" + nodeId;
+            string tabBarId = GetDockTabBarId(nodeId);
             if (!FuLayout.TryGetLastTabHitIndex(tabBarId, mousePos, out int hitTabIndex))
             {
                 return false;
@@ -2485,7 +2783,7 @@ namespace Fu
                 return;
             }
 
-            string tabBarId = "customDockTabs" + nodeId;
+            string tabBarId = GetDockTabBarId(nodeId);
 
             if (mouse.IsDown(FuMouseButton.Left) && FuLayout.TryGetLastTabHitIndex(tabBarId, mousePos, out int hitTabIndex))
             {
@@ -2962,12 +3260,12 @@ namespace Fu
             }
 
             DockDropZone hoveredZone = DockDropZone.None;
-            Dictionary<DockDropZone, Rect> zoneRects = GetDockZoneButtonRects(surface.Rect);
-            foreach (KeyValuePair<DockDropZone, Rect> pair in zoneRects)
+            DockZoneRect[] zoneRects = BuildDockZoneButtonRects(surface.Rect);
+            for (int i = 0; i < zoneRects.Length; i++)
             {
-                if (pair.Value.Contains(mousePos))
+                if (zoneRects[i].Rect.Contains(mousePos))
                 {
-                    hoveredZone = pair.Key;
+                    hoveredZone = zoneRects[i].Zone;
                     break;
                 }
             }
@@ -3086,21 +3384,22 @@ namespace Fu
         /// <summary>
         /// Build the visible dock zone button rectangles for a target surface.
         /// </summary>
-        private Dictionary<DockDropZone, Rect> GetDockZoneButtonRects(Rect surfaceRect)
+        /// <param name="surfaceRect">Dock surface that owns the zone buttons.</param>
+        /// <returns>Reusable fixed-size zone rectangle buffer.</returns>
+        private DockZoneRect[] BuildDockZoneButtonRects(Rect surfaceRect)
         {
+            // All five zones are overwritten on every call, so the fixed buffer never exposes stale data.
             float scale = Fugui.CurrentContext != null ? Fugui.CurrentContext.Scale : Fugui.Scale;
             float buttonSize = Mathf.Clamp(38f * scale, 32f, 48f);
             float edgeInset = Mathf.Max(18f * scale, buttonSize * 0.65f);
             Vector2 center = surfaceRect.center;
 
-            return new Dictionary<DockDropZone, Rect>
-            {
-                { DockDropZone.Center, CenteredRect(center, buttonSize) },
-                { DockDropZone.Left, CenteredRect(new Vector2(surfaceRect.xMin + edgeInset, center.y), buttonSize) },
-                { DockDropZone.Right, CenteredRect(new Vector2(surfaceRect.xMax - edgeInset, center.y), buttonSize) },
-                { DockDropZone.Top, CenteredRect(new Vector2(center.x, surfaceRect.yMin + edgeInset), buttonSize) },
-                { DockDropZone.Bottom, CenteredRect(new Vector2(center.x, surfaceRect.yMax - edgeInset), buttonSize) }
-            };
+            _dockZoneRects[0] = new DockZoneRect { Zone = DockDropZone.Center, Rect = CenteredRect(center, buttonSize) };
+            _dockZoneRects[1] = new DockZoneRect { Zone = DockDropZone.Left, Rect = CenteredRect(new Vector2(surfaceRect.xMin + edgeInset, center.y), buttonSize) };
+            _dockZoneRects[2] = new DockZoneRect { Zone = DockDropZone.Right, Rect = CenteredRect(new Vector2(surfaceRect.xMax - edgeInset, center.y), buttonSize) };
+            _dockZoneRects[3] = new DockZoneRect { Zone = DockDropZone.Top, Rect = CenteredRect(new Vector2(center.x, surfaceRect.yMin + edgeInset), buttonSize) };
+            _dockZoneRects[4] = new DockZoneRect { Zone = DockDropZone.Bottom, Rect = CenteredRect(new Vector2(center.x, surfaceRect.yMax - edgeInset), buttonSize) };
+            return _dockZoneRects;
         }
 
         /// <summary>
@@ -3114,17 +3413,21 @@ namespace Fu
         /// <summary>
         /// Draw the explicit docking zone buttons.
         /// </summary>
-        private void DrawDockZoneButtons(Dictionary<DockDropZone, Rect> zoneRects, DockDropZone hoveredZone)
+        /// <param name="zoneRects">Fixed zone rectangle buffer.</param>
+        /// <param name="hoveredZone">Zone currently under the pointer.</param>
+        private void DrawDockZoneButtons(DockZoneRect[] zoneRects, DockDropZone hoveredZone)
         {
-            if (zoneRects == null || zoneRects.Count == 0)
+            // The caller supplies the manager-owned fixed buffer, which is safe for immediate drawing.
+            if (zoneRects == null || zoneRects.Length == 0)
             {
                 return;
             }
 
             FuDrawList drawList = Fugui.GetForegroundDrawList();
-            foreach (KeyValuePair<DockDropZone, Rect> pair in zoneRects)
+            for (int i = 0; i < zoneRects.Length; i++)
             {
-                DrawDockZoneButton(drawList, pair.Value, pair.Key, pair.Key == hoveredZone);
+                DockZoneRect zoneRect = zoneRects[i];
+                DrawDockZoneButton(drawList, zoneRect.Rect, zoneRect.Zone, zoneRect.Zone == hoveredZone);
             }
         }
 
@@ -3334,16 +3637,44 @@ namespace Fu
         /// <param name="layoutName"> layout name to delete</param>
         private void confirmDeleteSelectedLayoutFile(string folderPath, string layoutName, Action callback)
         {
+            string layoutPath = null;
+            bool layoutExisted = false;
+            string previousLayoutContent = null;
+
             try
             {
-                File.Delete(Path.Combine(folderPath, layoutName + "." + FUGUI_DOCKING_LAYOUT_EXTENTION));
-                Layouts.Remove(layoutName);
-                saveLayoutIndex(folderPath);
+                layoutPath = Path.Combine(folderPath, layoutName + "." + FUGUI_DOCKING_LAYOUT_EXTENTION);
+                layoutExisted = File.Exists(layoutPath);
+                previousLayoutContent = layoutExisted ? File.ReadAllText(layoutPath) : null;
+                Dictionary<string, FuDockingLayoutDefinition> committedLayouts =
+                    new Dictionary<string, FuDockingLayoutDefinition>(Layouts);
+                committedLayouts.Remove(layoutName);
+
+                // Remove the file first, then publish the matching index and in-memory registry.
+                if (layoutExisted)
+                {
+                    File.Delete(layoutPath);
+                }
+                Fugui.WriteAllTextAtomically(
+                    Path.Combine(folderPath, "layouts_index.json"),
+                    SerializeLayoutIndex(committedLayouts.Keys));
+                Layouts = committedLayouts;
                 OnDockLayoutReloaded?.Invoke();
                 Fugui.Notify("Layout deleted", type: StateType.Success, duration: 2f);
             }
             catch (Exception ex)
             {
+                if (layoutExisted && !string.IsNullOrEmpty(layoutPath) && !File.Exists(layoutPath))
+                {
+                    try
+                    {
+                        Fugui.WriteAllTextAtomically(layoutPath, previousLayoutContent);
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        Fugui.Fire_OnUIException(rollbackException);
+                    }
+                }
                 Debug.LogWarning(ex.GetBaseException().Message);
                 Fugui.Notify("Error", ex.GetBaseException().Message, StateType.Danger);
             }
@@ -3358,6 +3689,29 @@ namespace Fu
         /// </summary>
         public void SaveLayoutFile(string folderPath, FuDockingLayoutDefinition dockingLayout, bool notify = true)
         {
+            if (string.IsNullOrWhiteSpace(folderPath))
+            {
+                throw new ArgumentException("The layout folder path cannot be null or empty.", nameof(folderPath));
+            }
+            if (dockingLayout == null)
+            {
+                throw new ArgumentNullException(nameof(dockingLayout));
+            }
+            if (string.IsNullOrWhiteSpace(dockingLayout.Name) ||
+                dockingLayout.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+                !string.Equals(Path.GetFileName(dockingLayout.Name), dockingLayout.Name, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The layout name is not a valid file name.", nameof(dockingLayout));
+            }
+            if (!dockingLayout.TryValidate(out string validationError))
+            {
+                throw new ArgumentException($"Cannot save an invalid docking layout: {validationError}", nameof(dockingLayout));
+            }
+
+            // Clone and serialize before touching either disk or the registered layout collection.
+            FuDockingLayoutDefinition committedLayout = dockingLayout.Clone();
+            string serializedLayout = FuDockingLayoutDefinition.Serialize(committedLayout);
+
             // create folder if not exists
             if (!Directory.Exists(folderPath))
             {
@@ -3376,10 +3730,48 @@ namespace Fu
             }
 
             string fileName = Path.Combine(folderPath, dockingLayout.Name) + "." + FUGUI_DOCKING_LAYOUT_EXTENTION;
-            File.WriteAllText(fileName, FuDockingLayoutDefinition.Serialize(dockingLayout));
+            string indexPath = Path.Combine(folderPath, "layouts_index.json");
+            bool previousLayoutExisted = File.Exists(fileName);
+            string previousLayoutContent = previousLayoutExisted ? File.ReadAllText(fileName) : null;
+            Dictionary<string, FuDockingLayoutDefinition> committedLayouts =
+                new Dictionary<string, FuDockingLayoutDefinition>(Layouts)
+                {
+                    [committedLayout.Name] = committedLayout
+                };
+            string serializedIndex = SerializeLayoutIndex(committedLayouts.Keys);
+            bool layoutFileCommitted = false;
 
-            Layouts[dockingLayout.Name] = dockingLayout.Clone();
-            saveLayoutIndex(folderPath);
+            try
+            {
+                // The in-memory registry is published only after both files have been replaced successfully.
+                Fugui.WriteAllTextAtomically(fileName, serializedLayout);
+                layoutFileCommitted = true;
+                Fugui.WriteAllTextAtomically(indexPath, serializedIndex);
+                Layouts = committedLayouts;
+            }
+            catch
+            {
+                if (layoutFileCommitted)
+                {
+                    try
+                    {
+                        if (previousLayoutExisted)
+                        {
+                            Fugui.WriteAllTextAtomically(fileName, previousLayoutContent);
+                        }
+                        else if (File.Exists(fileName))
+                        {
+                            File.Delete(fileName);
+                        }
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        Fugui.Fire_OnUIException(rollbackException);
+                    }
+                }
+                throw;
+            }
+
             OnDockLayoutReloaded?.Invoke();
 
             if (notify)
@@ -3394,14 +3786,24 @@ namespace Fu
         /// <param name="folderPath">Folder that contains Fugui layout files.</param>
         private void saveLayoutIndex(string folderPath)
         {
+            string indexPath = Path.Combine(folderPath, "layouts_index.json");
+            Fugui.WriteAllTextAtomically(indexPath, SerializeLayoutIndex(Layouts.Keys));
+        }
+
+        /// <summary>
+        /// Serializes a deterministic layout index from a set of layout names.
+        /// </summary>
+        /// <param name="layoutNames">Layout names to include in the index.</param>
+        /// <returns>Formatted JSON layout index.</returns>
+        private static string SerializeLayoutIndex(IEnumerable<string> layoutNames)
+        {
             FuLayoutIndex index = new FuLayoutIndex
             {
-                Layouts = Layouts.Keys.OrderBy(layoutName => layoutName).ToArray()
+                Layouts = layoutNames.OrderBy(layoutName => layoutName).ToArray()
             };
-
-            string indexPath = Path.Combine(folderPath, "layouts_index.json");
-            File.WriteAllText(indexPath, JsonUtility.ToJson(index, true));
+            return JsonUtility.ToJson(index, true);
         }
+
 
         /// <summary>
         /// Generate current layout synchronously
@@ -3618,6 +4020,18 @@ namespace Fu
             public Vector2 MousePosition;
             public Rect ClipRect;
             public FloatingDockRoot OwningFloatingRoot;
+        }
+
+        private struct DockTabLabelCacheEntry
+        {
+            public string WindowName;
+            public string Label;
+        }
+
+        private struct DockZoneRect
+        {
+            public DockDropZone Zone;
+            public Rect Rect;
         }
 
         private struct DockDropTarget

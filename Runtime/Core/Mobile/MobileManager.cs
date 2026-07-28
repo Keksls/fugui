@@ -12,7 +12,8 @@ namespace Fu
     public partial class Fugui
     {
         #region State
-        private static List<Vector2> mobileTouches = new List<Vector2>();
+        private const int MobileTouchRetainedCapacity = 16;
+        private static readonly List<Vector2> mobileTouches = new List<Vector2>(MobileTouchRetainedCapacity);
         #endregion
 
         /// <summary>
@@ -37,6 +38,20 @@ namespace Fu
         }
 
         /// <summary>
+        /// Clears mobile input and touch-scroll caches owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetMobileState()
+        {
+            // Touch samples and child ownership cannot cross runtime sessions.
+            mobileTouches.Clear();
+            if (mobileTouches.Capacity > MobileTouchRetainedCapacity)
+            {
+                mobileTouches.Capacity = MobileTouchRetainedCapacity;
+            }
+            ResetTouchState();
+        }
+
+        /// <summary>
         /// Runs the handle mobile touches workflow.
         /// </summary>
         private static void handleMobileTouches()
@@ -57,6 +72,12 @@ namespace Fu
                 mobileTouches.Add(new Vector2(touch.position.x, touch.position.y));
             }
 #endif
+            // A malformed or synthetic touch spike must not retain a large array indefinitely.
+            if (mobileTouches.Count <= MobileTouchRetainedCapacity &&
+                mobileTouches.Capacity > MobileTouchRetainedCapacity * 4)
+            {
+                mobileTouches.Capacity = MobileTouchRetainedCapacity;
+            }
 #endif
         }
     }

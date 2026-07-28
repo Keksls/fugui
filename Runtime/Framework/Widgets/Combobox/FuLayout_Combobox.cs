@@ -12,10 +12,42 @@ namespace Fu.Framework
     {
         #region State
         public const float COMBOBOX_POPUP_MAXIMUM_HEIGHT = 320f;
-        private static HashSet<string> _comboboxPopupCloseOnClickRelease = new HashSet<string>();
+        private static readonly FuBoundedCache<string, bool> _comboboxPopupCloseOnClickRelease =
+            new FuBoundedCache<string, bool>(256);
+        private static readonly FuBoundedCache<string, object> _selectablePopupStates =
+            new FuBoundedCache<string, object>(1024, StringComparer.Ordinal);
         #endregion
 
         #region Methods
+        /// <summary>
+        /// Clears transient combobox interaction state when the Fugui session is reset.
+        /// </summary>
+        internal static void ResetComboboxState()
+        {
+            // Popup release state belongs to the current ImGui session.
+            _comboboxPopupCloseOnClickRelease.Clear();
+            _selectablePopupStates.Clear();
+        }
+
+        /// <summary>
+        /// Gets reusable typed popup state for a combobox or listbox.
+        /// </summary>
+        /// <typeparam name="T">Selectable item type.</typeparam>
+        /// <param name="stateId">Window-scoped state identifier.</param>
+        /// <returns>Reusable popup renderer.</returns>
+        private static FuSelectablePopupState<T> GetSelectablePopupState<T>(string stateId)
+        {
+            // Reusing an identifier with another item type replaces the incompatible bounded entry.
+            if (!_selectablePopupStates.TryGetValue(stateId, out object cachedState) ||
+                !(cachedState is FuSelectablePopupState<T> state))
+            {
+                state = new FuSelectablePopupState<T>();
+                _selectablePopupStates.Set(stateId, state);
+            }
+
+            return state;
+        }
+
         /// <summary>
         /// Displays a combobox with all the enum values of type TEnum. The selected item can be changed by the user, and the change will be reported through the itemChange action.
         /// </summary>
@@ -39,11 +71,9 @@ namespace Fu.Framework
         public void ComboboxEnum<TEnum>(string text, Action<int> itemChange, Func<TEnum> itemGetter, FuElementSize size, Vector2 popupSize, FuButtonStyle style, FuComboboxPopupPosition popupPosition = FuComboboxPopupPosition.BottomLeftAlign) where TEnum : struct, IConvertible
         {
             FuSelectableBuilder.BuildFromEnum<TEnum>(out List<int> enumValues, out List<string> enumSelectables);
-            // call the custom combobox function, passing in the lists and the itemChange
-            _customCombobox(text, enumSelectables, (index) =>
-            {
-                itemChange?.Invoke(enumValues[index]);
-            }, () => { return itemGetter?.Invoke().ToString(); }, size, popupSize, style, popupPosition);
+            string selectedItemString = itemGetter != null ? itemGetter.Invoke().ToString() : null;
+            // Map the visual enum index inside the reusable popup state without a capturing delegate.
+            _customCombobox(text, enumSelectables, itemChange, selectedItemString, size, popupSize, style, popupPosition, null, enumValues);
         }
 
         /// <summary>
@@ -74,8 +104,14 @@ namespace Fu.Framework
         /// If you keep it as null, values will be reprocess each frames (better accuratie, but can lead on slowing down on large lists)</param>
         public void Combobox<T>(string text, List<T> items, Action<int> itemChange, Func<T> itemGetter, FuElementSize size, Vector2 popupSize, FuButtonStyle style, FuComboboxPopupPosition popupPosition = FuComboboxPopupPosition.BottomLeftAlign, Func<bool> listUpdated = null)
         {
-            // Display the custom combobox and call the specified action when the selected item changes
-            _customCombobox(text, items, itemChange, () => { return itemGetter?.Invoke()?.ToString(); }, size, popupSize, style, popupPosition, listUpdated);
+            // Resolve the current value directly so no wrapper delegate is created for this frame.
+            string selectedItemString = null;
+            if (itemGetter != null)
+            {
+                T selectedItem = itemGetter.Invoke();
+                selectedItemString = selectedItem is null ? null : selectedItem.ToString();
+            }
+            _customCombobox(text, items, itemChange, selectedItemString, size, popupSize, style, popupPosition, listUpdated);
         }
 
         /// <summary>
@@ -84,9 +120,10 @@ namespace Fu.Framework
         ///<param name="text">The label for the combobox.</param>
         ///<param name="items">The list of custom items to be displayed in the combobox.</param>
         ///<param name="itemChange">The action to be performed when an item is selected.</param>
-        /// <param name="itemGetter">A func that return a way to get current stored value for the combobox. can be null if combobox il not linked to an object's field</param>
+        /// <param name="selectedItemString">Current external selected value, or null.</param>
         ///<param name="style">The style for the combobox element.</param>
-        private void _customCombobox<T>(string text, List<T> items, Action<int> itemChange, Func<string> itemGetter, FuElementSize size, Vector2 popupSize, FuButtonStyle style, FuComboboxPopupPosition popupPosition, Func<bool> listUpdated = null)
+        /// <param name="mappedCallbackValues">Optional callback values mapped from visible indices.</param>
+        private void _customCombobox<T>(string text, List<T> items, Action<int> itemChange, string selectedItemString, FuElementSize size, Vector2 popupSize, FuButtonStyle style, FuComboboxPopupPosition popupPosition, Func<bool> listUpdated = null, IList<int> mappedCallbackValues = null)
         {
             // return if item must no be draw
             if (!_drawElement)
@@ -94,35 +131,17 @@ namespace Fu.Framework
                 return;
             }
 
-            // get the current selected index
-            int selectedIndex = FuSelectableBuilder.GetSelectedIndex(text, items, itemGetter);
-
-            // draw the combobox
-            Combobox(text, items.Count > 0 ? items[selectedIndex].ToString() : "No Items", () =>
+            string windowId = FuWindow.CurrentDrawingWindow?.ID;
+            string stateId = GetCachedCompositeId(text, "##FuSelectableCombobox_", windowId);
+            int selectedIndex = FuSelectableBuilder.GetSelectedIndex(stateId, items, selectedItemString);
+            if (items.Count > 0)
             {
-                List<string> displayLabels = FuSelectableBuilder.GetDisplayLabels(text, items, listUpdated);
-                for (int i = 0; i < items.Count; i++)
-                {
-                    bool selected = selectedIndex == i;
-                    if (selected)
-                    {
-                        Fugui.Push(ImGuiCol.Header, Fugui.GetColor(FuColors.Selected));
-                        Fugui.Push(ImGuiCol.HeaderHovered, Fugui.GetColor(FuColors.SelectedHovered));
-                        Fugui.Push(ImGuiCol.HeaderActive, Fugui.GetColor(FuColors.SelectedActive));
-                    }
-                    if (ImGui.Selectable(displayLabels[i], selectedIndex == i, LastItemDisabled ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
-                    {
-                        // Update the selected index and invoke the item change action
-                        selectedIndex = i;
-                        FuSelectableBuilder.SetSelectedIndex(text, selectedIndex);
-                        itemChange?.Invoke(i);
-                    }
-                    if (selected)
-                    {
-                        Fugui.PopColor(3);
-                    }
-                }
-            }, size, popupSize, style, popupPosition);
+                selectedIndex = Mathf.Clamp(selectedIndex, 0, items.Count - 1);
+            }
+
+            FuSelectablePopupState<T> state = GetSelectablePopupState<T>(stateId);
+            state.Prepare(this, stateId, items, selectedIndex, itemChange, null, listUpdated, mappedCallbackValues, true);
+            Combobox(text, items.Count > 0 ? items[selectedIndex].ToString() : "No Items", state.DrawAction, size, popupSize, style, popupPosition);
         }
 
         /// <summary>
@@ -158,15 +177,15 @@ namespace Fu.Framework
             }
 
             // draw combobox button
-            string popupID = text + "pu";
+            string popupID = GetCachedCompositeId(text, "pu");
             float carretWidth = 16f * Fugui.CurrentContext.Scale;
             bool openedBeforeClick = Fugui.IsPopupOpen(popupID);
             bool closePopupThisFrame = false;
-            bool clicked = _customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth);
+            bool clicked = _customButton(GetCachedCompositeId(selectedItemText, "##", text), size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth);
             if (openedBeforeClick && LastItemJustActivated)
             {
                 Fugui.ClosePopup(popupID);
-                _comboboxPopupCloseOnClickRelease.Add(popupID);
+                _comboboxPopupCloseOnClickRelease.Set(popupID, true);
                 closePopupThisFrame = true;
             }
             if (clicked)
@@ -196,7 +215,7 @@ namespace Fu.Framework
                     isComboBoxPopup: true);
                 }
             }
-            else if (_comboboxPopupCloseOnClickRelease.Contains(popupID) && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
+            else if (_comboboxPopupCloseOnClickRelease.TryGetValue(popupID, out _) && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
             {
                 _comboboxPopupCloseOnClickRelease.Remove(popupID);
             }
@@ -346,15 +365,15 @@ namespace Fu.Framework
         private void _internalCombobox(string text, string selectedItemText, Action callback, FuElementSize size, Vector2 popupSize, FuButtonStyle style, FuComboboxPopupPosition popupPosition = FuComboboxPopupPosition.BottomLeftAlign)
         {
             // draw combobox button
-            string popupID = text + "pu";
+            string popupID = GetCachedCompositeId(text, "pu");
             float carretWidth = 16f * Fugui.CurrentContext.Scale;
             bool openedBeforeClick = Fugui.IsPopupOpen(popupID);
             bool closePopupThisFrame = false;
-            bool clicked = _customButton(selectedItemText + "##" + text, size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth);
+            bool clicked = _customButton(GetCachedCompositeId(selectedItemText, "##", text), size.BrutSize, Fugui.Themes.FramePadding, Vector2.zero, style, Fugui.Themes.CurrentTheme.ButtonsGradientStrenght, true, 0f, carretWidth);
             if (openedBeforeClick && LastItemJustActivated)
             {
                 Fugui.ClosePopup(popupID);
-                _comboboxPopupCloseOnClickRelease.Add(popupID);
+                _comboboxPopupCloseOnClickRelease.Set(popupID, true);
                 closePopupThisFrame = true;
             }
             if (clicked)
@@ -384,7 +403,7 @@ namespace Fu.Framework
                     isComboBoxPopup: true);
                 }
             }
-            else if (_comboboxPopupCloseOnClickRelease.Contains(popupID) && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
+            else if (_comboboxPopupCloseOnClickRelease.TryGetValue(popupID, out _) && Fugui.GetCurrentMouse().IsUp(FuMouseButton.Left))
             {
                 _comboboxPopupCloseOnClickRelease.Remove(popupID);
             }

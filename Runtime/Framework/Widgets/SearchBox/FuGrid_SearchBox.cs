@@ -23,7 +23,7 @@ namespace Fu.Framework
             }
 
             drawElementLabel(label, style.TextStyle);
-            return base.SearchBox("##" + label, ref search, hint, width, style);
+            return base.SearchBox(GetCachedCompositeId("##", label), ref search, hint, width, style);
         }
         #endregion
     }

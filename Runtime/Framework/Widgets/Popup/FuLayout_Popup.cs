@@ -2,7 +2,6 @@ using Fu.Framework;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Fu
@@ -319,13 +318,13 @@ namespace Fu
         /// </summary>
         public static void CleanPopupStack()
         {
-            List<string> popupIDs = _registeredPopups.Keys.ToList();
+            // Popup removal is deferred until the current context finishes, so direct iteration is safe.
             int lastFrameCount = UnityEngine.Time.frameCount - 1;
-            foreach (string popupID in popupIDs)
+            foreach (KeyValuePair<string, FuPopupData> popup in _registeredPopups)
             {
-                if (_registeredPopups[popupID].LastFrameRender < lastFrameCount)
+                if (popup.Value.LastFrameRender < lastFrameCount)
                 {
-                    _closePopup(popupID);
+                    _closePopup(popup.Key);
                 }
             }
         }

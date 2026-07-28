@@ -177,6 +177,28 @@ namespace Fu
             localPosition.y = Mathf.Clamp(localPosition.y, 0f, Mathf.Max(0f, container.Size.y - _panelSize.y));
             return localPosition;
         }
+
+        /// <summary>
+        /// Removes notification geometry owned by one destroyed context.
+        /// </summary>
+        /// <param name="contextId">Destroyed Fugui context identifier.</param>
+        internal static void RemoveNotificationContextState(int contextId)
+        {
+            // Context-local hit rectangles must have the same lifetime as their context.
+            _notifyPanelRectsByContext.Remove(contextId);
+        }
+
+        /// <summary>
+        /// Clears notification state owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetNotificationState()
+        {
+            // Notifications and their context geometry never cross runtime sessions.
+            _notifications.Clear();
+            _notifyPanelRectsByContext.Clear();
+            _notifyPanelOpen = true;
+            _hasSpawn = false;
+        }
         #endregion
     }
 }

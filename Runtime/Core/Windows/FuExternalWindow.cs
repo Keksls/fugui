@@ -394,6 +394,10 @@ namespace Fu
                 _textureUploadFailures.Clear();
                 _textureUploadWarnings.Clear();
                 _staleTextureIds.Clear();
+#if FU_CUSTOM_MATERIALS_ENABLED
+                _unsupportedCustomMaterialWarnings?.Clear();
+                _unsupportedCustomMaterialWarnings = null;
+#endif
 
                 // Also delete fallback textures
                 uint fallbackWhiteTexture = _fallbackWhiteTex;
@@ -558,6 +562,9 @@ namespace Fu
         private readonly HashSet<IntPtr> _textureUploadFailures = new HashSet<IntPtr>();
         private readonly HashSet<IntPtr> _textureUploadWarnings = new HashSet<IntPtr>();
         private readonly HashSet<IntPtr> _staleTextureIds = new HashSet<IntPtr>();
+#if FU_CUSTOM_MATERIALS_ENABLED
+        private HashSet<IntPtr> _unsupportedCustomMaterialWarnings;
+#endif
 
         // ===== Runtime structures =====
         private sealed class PBOPair
@@ -946,7 +953,17 @@ namespace Fu
         /// </summary>
         public uint GetRegisteredTexture(IntPtr unityId)
         {
-            if (!Window.Container.Context.TextureManager.TryGetTexture(unityId, out Texture tex) || tex == null)
+            TextureManager textureManager = Window.Container.Context.TextureManager;
+#if FU_CUSTOM_MATERIALS_ENABLED
+            if (unityId.ToInt64() < 0 &&
+                textureManager.TryGetCustomDrawBinding(unityId, out FuCustomDrawBinding customBinding) &&
+                customBinding.Texture != null)
+            {
+                // External fallback rendering shares the normal GL mirror of the binding texture.
+                unityId = textureManager.GetTextureId(customBinding.Texture);
+            }
+#endif
+            if (!textureManager.TryGetTexture(unityId, out Texture tex) || tex == null)
                 return _fallbackWhiteTex;
 
             // Texture2D (readable): direct NativeArray â†’ PBO upload (no stalls)
@@ -1005,6 +1022,36 @@ namespace Fu
             // Unsupported types â†’ fallback
             return _fallbackWhiteTex;
         }
+
+#if FU_CUSTOM_MATERIALS_ENABLED
+        /// <summary>
+        /// Reports once when an external OpenGL window falls back from a Unity-only custom material.
+        /// </summary>
+        /// <param name="drawResourceId">Draw resource identifier to inspect.</param>
+        private void ReportUnsupportedCustomMaterial(IntPtr drawResourceId)
+        {
+            if (drawResourceId.ToInt64() >= 0 ||
+                (_unsupportedCustomMaterialWarnings != null &&
+                 _unsupportedCustomMaterialWarnings.Contains(drawResourceId)))
+            {
+                return;
+            }
+
+            TextureManager textureManager = Window?.Container?.Context?.TextureManager;
+            if (textureManager == null ||
+                !textureManager.TryGetCustomDrawBinding(drawResourceId, out _))
+            {
+                return;
+            }
+
+            // External contexts keep the requested texture but cannot execute a Unity Material.
+            _unsupportedCustomMaterialWarnings ??= new HashSet<IntPtr>();
+            _unsupportedCustomMaterialWarnings.Add(drawResourceId);
+            Debug.LogWarning(
+                $"Custom Fugui draw material {drawResourceId} is not supported by external OpenGL windows. " +
+                "The command will use the standard external Fugui shader.");
+        }
+#endif
 
         /// <summary>
         /// Invalidates pending GPU readbacks and disposes every persistent CPU copy they produced.
@@ -2100,9 +2147,25 @@ namespace Fu
                     ImDrawCmd cmd = cmdList.CmdBuffer[commandIndex];
                     if (cmd.UserCallback != IntPtr.Zero)
                     {
+#if FU_CUSTOM_MATERIALS_ENABLED
+                        if (cmd.UserCallback == FuCustomDrawMaterialState.PushCallback)
+                        {
+                            // External GL keeps drawing with its standard shader and reports the fallback once.
+                            ReportUnsupportedCustomMaterial((IntPtr)cmd.UserCallbackData);
+                            continue;
+                        }
+
+                        if (cmd.UserCallback == FuCustomDrawMaterialState.PopCallback)
+                        {
+                            continue;
+                        }
+#endif
                         Debug.Log("unhandled user callback");
                         continue;
                     }
+#if FU_CUSTOM_MATERIALS_ENABLED
+                    ReportUnsupportedCustomMaterial(cmd.TextureId);
+#endif
 
                     Vector4 clipRect = cmd.ClipRect;
                     if (hasRenderOffset)

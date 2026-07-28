@@ -149,6 +149,70 @@ namespace Fu
         }
 
         /// <summary>
+        /// Releases world-rendering resources tied to one Fugui context.
+        /// </summary>
+        /// <param name="context">Context whose native and copied draw data must be released.</param>
+        internal void ReleaseContextResources(FuContext context)
+        {
+            if (context == null)
+            {
+                return;
+            }
+
+            // LateUpdate context destruction happens after rendering, so current-frame copies can return to the pool.
+            for (int i = _items.Count - 1; i >= 0; i--)
+            {
+                FuguiWorldDrawItem item = _items[i];
+                if (!ReferenceEquals(item.TextureManager, context.TextureManager))
+                {
+                    continue;
+                }
+
+                if (item.DrawList != null)
+                {
+                    _drawListPool.Push(item.DrawList);
+                }
+
+                _items.RemoveAt(i);
+            }
+
+            for (int i = 0; i < _surfacePool.Count; i++)
+            {
+                _surfacePool[i].ReleaseNativeResources(context);
+            }
+        }
+
+        /// <summary>
+        /// Releases all native and pinned world-rendering resources owned by the current Fugui session.
+        /// </summary>
+        internal void ShutdownSessionResources()
+        {
+            // Current items have not yet been returned to the managed pool.
+            for (int i = 0; i < _items.Count; i++)
+            {
+                _items[i].DrawList?.Dispose();
+            }
+
+            _items.Clear();
+
+            while (_drawListPool.Count > 0)
+            {
+                _drawListPool.Pop()?.Dispose();
+            }
+
+            for (int i = 0; i < _surfacePool.Count; i++)
+            {
+                _surfacePool[i].ReleaseNativeResources();
+            }
+
+            _surfacePool.Clear();
+            _renderCameras.Clear();
+            _surfacePoolCursor = 0;
+            _lastFrame = -1;
+            _nextSurfaceId = 1;
+        }
+
+        /// <summary>
         /// Clears old frame data and makes reusable objects available again.
         /// </summary>
         private void BeginFrameIfNeeded()

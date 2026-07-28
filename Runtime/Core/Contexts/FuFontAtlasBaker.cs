@@ -1,6 +1,5 @@
 using ImGuiNET;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu
@@ -26,20 +25,33 @@ namespace Fu
 
             IntPtr previousContext = ImGuiNative.igGetCurrentContext();
             IntPtr context = IntPtr.Zero;
-            List<byte[]> loadedFontBuffers = new List<byte[]>();
 
             try
             {
                 context = ImGui.CreateContext();
+                if (context == IntPtr.Zero)
+                {
+                    error = "Unable to create the temporary ImGui font-build context.";
+                    return false;
+                }
+
                 ImGuiNative.igSetCurrentContext(context);
 
                 ImGuiIOPtr io = ImGui.GetIO();
-                FuFontLoader.LoadFonts(io, fontConfig, Mathf.Max(0.0001f, fontScale), streamingAssetsPath, null, out _, loadedFontBuffers);
-
-                if (!io.Fonts.Build())
+                using (FuFontLoadResources fontResources = FuFontLoader.LoadFonts(
+                    io,
+                    fontConfig,
+                    Mathf.Max(0.0001f, fontScale),
+                    streamingAssetsPath,
+                    null,
+                    out _))
                 {
-                    error = $"ImGui failed to build the font atlas for scale {fontScale:0.###}.";
-                    return false;
+                    // Temporary glyph ranges are owned by the build scope.
+                    if (!io.Fonts.Build())
+                    {
+                        error = $"ImGui failed to build the font atlas for scale {fontScale:0.###}.";
+                        return false;
+                    }
                 }
 
                 texture = FuFontAtlasCache.CreateTextureFromAtlas(io.Fonts, $"Fugui Font Atlas {fontScale:0.###}");
@@ -65,10 +77,8 @@ namespace Fu
                     ImGui.DestroyContext(context);
                 }
 
-                if (previousContext != IntPtr.Zero)
-                {
-                    ImGuiNative.igSetCurrentContext(previousContext);
-                }
+                // Always restore the exact previous native state, including an explicitly null context.
+                ImGuiNative.igSetCurrentContext(previousContext);
             }
         }
     }

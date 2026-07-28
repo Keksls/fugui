@@ -338,7 +338,7 @@ namespace Fu.Editor
                     "FuguiController prefab",
                     controllers.Length == 1
                         ? "A FuController is present in the current scene."
-                        : $"{controllers.Length} FuController instances are present. That can be intentional, but most projects should keep only one main controller.",
+                        : $"{controllers.Length} FuController instances are present. Fugui supports one active runtime owner; additional controllers will be rejected.",
                     controllers.Length == 1 ? CheckState.Ok : CheckState.Warning,
                     true,
                     ConfigureControllers));

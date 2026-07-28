@@ -207,7 +207,7 @@ namespace Fu
                 }
                 //ImGui.SetNextWindowFocus();
                 // beggin modal
-                ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, Fugui.Themes.PopupRounding);
+                Fugui.PushUnscaled(ImGuiStyleVar.WindowRounding, Fugui.Themes.PopupRounding);
                 bool usePopupBackdrop = Fugui.ShouldUseThemeBackdrop(FuColors.PopupBg, 0.98f);
                 Fugui.Push(ImGuiCol.PopupBg, customSurface ? Vector4.zero : Fugui.GetColor(FuColors.PopupBg, usePopupBackdrop ? 0f : 1f));
                 ImGuiWindowFlags modalFlags = ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
@@ -304,7 +304,7 @@ namespace Fu
                     }
                 }
                 Fugui.PopColor();
-                ImGui.PopStyleVar();
+                Fugui.PopStyle();
                 // animate the modal
                 AnimateModal();
             }

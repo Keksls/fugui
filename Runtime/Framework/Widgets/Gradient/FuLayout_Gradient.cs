@@ -14,11 +14,22 @@ namespace Fu.Framework
         private static bool isDraggingColorKey = false;
         private static int _selectedColorKeyIndex = 0;
         private static FuGradient _currentGradient;
-        private static FuGradient _updatedGradient;
         private static bool _gradientUpdated = false;
         #endregion
 
         #region Methods
+        /// <summary>
+        /// Clears gradient-editor references and interaction state owned by the current Fugui session.
+        /// </summary>
+        internal static void ResetGradientEditorState()
+        {
+            // The gradient itself is caller-owned; Fugui only releases its static session reference.
+            _currentGradient = null;
+            _selectedColorKeyIndex = 0;
+            _gradientUpdated = false;
+            isDraggingColorKey = false;
+        }
+
         /// <summary>
         /// Draw a gradient picker
         /// </summary>
@@ -92,8 +103,14 @@ namespace Fu.Framework
                 Spacing();
                 SameLine();
                 BeginGroup();
-                _gradientUpdated = _customGradientPicker(text, addKeyOnGradientClick, allowAlpha, relativeMin, relativeMax, defaultGradientValues);
-                EndGroup();
+                try
+                {
+                    _gradientUpdated = _customGradientPicker(text, addKeyOnGradientClick, allowAlpha, relativeMin, relativeMax, defaultGradientValues);
+                }
+                finally
+                {
+                    EndGroup();
+                }
                 SameLine();
                 Spacing();
             }

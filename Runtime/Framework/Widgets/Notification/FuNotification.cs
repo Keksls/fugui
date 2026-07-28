@@ -161,8 +161,14 @@ namespace Fu.Framework
                     Fugui.MoveXUnscaled(bodyPad);
                     float wrapWidth = Mathf.Max(1f, ImGui.GetContentRegionAvail().x - bodyPad * 2.0f);
                     ImGui.PushTextWrapPos(ImGui.GetCursorPos().x + wrapWidth);
-                    ImGui.TextWrapped(Message);
-                    ImGui.PopTextWrapPos();
+                    try
+                    {
+                        ImGui.TextWrapped(Message);
+                    }
+                    finally
+                    {
+                        ImGui.PopTextWrapPos();
+                    }
                     ImGui.Dummy(new Vector2(0f, bodyPad));
                     float afterY = ImGui.GetCursorScreenPos().y;
 
@@ -179,8 +185,14 @@ namespace Fu.Framework
 
                     Fugui.MoveXUnscaled(bodyPad);
                     ImGui.PushTextWrapPos(ImGui.GetCursorPos().x + wrapWidth);
-                    ImGui.TextWrapped(Message);
-                    ImGui.PopTextWrapPos();
+                    try
+                    {
+                        ImGui.TextWrapped(Message);
+                    }
+                    finally
+                    {
+                        ImGui.PopTextWrapPos();
+                    }
                     ImGui.Dummy(new Vector2(0f, bodyPad));
                 }
 

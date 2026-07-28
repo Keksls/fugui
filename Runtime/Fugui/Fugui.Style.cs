@@ -84,6 +84,40 @@ namespace Fu
 #endif
 
         /// <summary>
+        /// Pushes an unscaled native ImGui style variable while keeping Fugui stack accounting synchronized.
+        /// </summary>
+        /// <param name="imVar">Native ImGui style variable.</param>
+        /// <param name="value">Unscaled value already expressed in the current ImGui coordinate space.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void PushUnscaled(ImGuiStyleVar imVar, Vector2 value)
+        {
+            // Some callers already provide scaled native coordinates, so this path deliberately bypasses scaling.
+#if FUDEBUG
+            Push(imVar, value);
+#else
+            ImGuiNative.igPushStyleVar_Vec2(imVar, value);
+            NbPushStyle++;
+#endif
+        }
+
+        /// <summary>
+        /// Pushes an unscaled native ImGui style variable while keeping Fugui stack accounting synchronized.
+        /// </summary>
+        /// <param name="imVar">Native ImGui style variable.</param>
+        /// <param name="value">Unscaled value already expressed in the current ImGui coordinate space.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void PushUnscaled(ImGuiStyleVar imVar, float value)
+        {
+            // Some callers already provide scaled native coordinates, so this path deliberately bypasses scaling.
+#if FUDEBUG
+            Push(imVar, value);
+#else
+            ImGuiNative.igPushStyleVar_Float(imVar, value);
+            NbPushStyle++;
+#endif
+        }
+
+        /// <summary>
         /// Push the current font
         /// </summary>
         /// <param name="size">size of the font</param>

@@ -58,67 +58,102 @@ namespace Fu
             bool edited = ImGui.ColorPicker4(id, ref color, misc_flags | ImGuiColorEditFlags.NoSidePreview | ImGuiColorEditFlags.NoSmallPreview);
             ImGui.SameLine();
             ImGui.BeginGroup(); // Lock X position
-
-            // current color
-            ImGui.Spacing();
-            ImGui.SameLine();
-            ImGui.BeginGroup();
-            ImGui.Text("Current");
-            ImGui.ColorButton("##current" + id, color, ImGuiColorEditFlags.NoPicker | ImGuiColorEditFlags.AlphaPreviewHalf, new Vector2(60, 40) * CurrentContext.Scale);
-            ImGui.EndGroup();
-
-            // preview color
-            ImGui.SameLine();
-            ImGui.Spacing();
-            ImGui.SameLine();
-            ImGui.BeginGroup();
-            ImGui.Text("Previous");
-            if (ImGui.ColorButton("##previous" + id, _colorpickerBackupColor, ImGuiColorEditFlags.NoPicker | ImGuiColorEditFlags.AlphaPreviewHalf, new Vector2(60, 40) * CurrentContext.Scale))
+            try
             {
-                color = _colorpickerBackupColor;
-                edited = true;
-            }
-            ImGui.EndGroup();
-
-            // palette
-            ImGui.Separator();
-            ImGui.Text("Palette");
-            InitPalette();
-            ImGui.Spacing();
-            ImGui.BeginGroup();
-            ImGuiColorEditFlags palette_button_flags = ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoPicker | ImGuiColorEditFlags.NoTooltip;
-            for (int n = 0; n < _colorpickerPalette.Length; n++)
-            {
-                ImGui.PushID(n);
-                if ((n % 8) != 0)
-                    ImGui.SameLine(0.0f, ImGui.GetStyle().ItemSpacing.y);
-                if (ImGui.ColorButton("##cpBtnPlt" + n, _colorpickerPalette[n], palette_button_flags, new Vector2(20, 20) * CurrentContext.Scale))
+                // current color
+                ImGui.Spacing();
+                ImGui.SameLine();
+                ImGui.BeginGroup();
+                try
                 {
-                    color = new Vector4(_colorpickerPalette[n].x, _colorpickerPalette[n].y, _colorpickerPalette[n].z, color.w); // Preserve alpha!
-                    edited = true;
+                    ImGui.Text("Current");
+                    ImGui.ColorButton("##current" + id, color, ImGuiColorEditFlags.NoPicker | ImGuiColorEditFlags.AlphaPreviewHalf, new Vector2(60, 40) * CurrentContext.Scale);
                 }
-                // Allow user to drop colors into each palette entry. Note that ColorButton() is already a
-                // drag source by default, unless specifying the ImGuiColorEditFlags_NoDragDrop flag.
-                if (ImGui.BeginDragDropTarget())
+                finally
                 {
-                    unsafe
+                    ImGui.EndGroup();
+                }
+
+                // preview color
+                ImGui.SameLine();
+                ImGui.Spacing();
+                ImGui.SameLine();
+                ImGui.BeginGroup();
+                try
+                {
+                    ImGui.Text("Previous");
+                    if (ImGui.ColorButton("##previous" + id, _colorpickerBackupColor, ImGuiColorEditFlags.NoPicker | ImGuiColorEditFlags.AlphaPreviewHalf, new Vector2(60, 40) * CurrentContext.Scale))
                     {
-                        ImGuiPayloadPtr payload = null;
-                        if ((payload = ImGui.AcceptDragDropPayload(IMGUI_PAYLOAD_TYPE_COLOR_3F)).NativePtr != null)
+                        color = _colorpickerBackupColor;
+                        edited = true;
+                    }
+                }
+                finally
+                {
+                    ImGui.EndGroup();
+                }
+
+                // palette
+                ImGui.Separator();
+                ImGui.Text("Palette");
+                InitPalette();
+                ImGui.Spacing();
+                ImGui.BeginGroup();
+                try
+                {
+                    ImGuiColorEditFlags palette_button_flags = ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoPicker | ImGuiColorEditFlags.NoTooltip;
+                    for (int n = 0; n < _colorpickerPalette.Length; n++)
+                    {
+                        ImGui.PushID(n);
+                        try
                         {
-                            _colorpickerPalette[n] = Marshal.PtrToStructure<Vector3>(payload.Data);
+                            if ((n % 8) != 0)
+                                ImGui.SameLine(0.0f, ImGui.GetStyle().ItemSpacing.y);
+                            if (ImGui.ColorButton("##cpBtnPlt" + n, _colorpickerPalette[n], palette_button_flags, new Vector2(20, 20) * CurrentContext.Scale))
+                            {
+                                color = new Vector4(_colorpickerPalette[n].x, _colorpickerPalette[n].y, _colorpickerPalette[n].z, color.w); // Preserve alpha!
+                                edited = true;
+                            }
+                            // Allow user to drop colors into each palette entry. Note that ColorButton() is already a
+                            // drag source by default, unless specifying the ImGuiColorEditFlags_NoDragDrop flag.
+                            if (ImGui.BeginDragDropTarget())
+                            {
+                                try
+                                {
+                                    unsafe
+                                    {
+                                        ImGuiPayloadPtr payload = null;
+                                        if ((payload = ImGui.AcceptDragDropPayload(IMGUI_PAYLOAD_TYPE_COLOR_3F)).NativePtr != null)
+                                        {
+                                            _colorpickerPalette[n] = Marshal.PtrToStructure<Vector3>(payload.Data);
+                                        }
+                                        if ((payload = ImGui.AcceptDragDropPayload(IMGUI_PAYLOAD_TYPE_COLOR_4F)).NativePtr != null)
+                                        {
+                                            _colorpickerPalette[n] = Marshal.PtrToStructure<Vector4>(payload.Data);
+                                        }
+                                    }
+                                }
+                                finally
+                                {
+                                    ImGui.EndDragDropTarget();
+                                }
+                            }
                         }
-                        if ((payload = ImGui.AcceptDragDropPayload(IMGUI_PAYLOAD_TYPE_COLOR_4F)).NativePtr != null)
+                        finally
                         {
-                            _colorpickerPalette[n] = Marshal.PtrToStructure<Vector4>(payload.Data);
+                            ImGui.PopID();
                         }
                     }
-                    ImGui.EndDragDropTarget();
                 }
-                ImGui.PopID();
+                finally
+                {
+                    ImGui.EndGroup();
+                }
             }
-            ImGui.EndGroup();
-            ImGui.EndGroup();
+            finally
+            {
+                ImGui.EndGroup();
+            }
             return edited;
         }
         #endregion

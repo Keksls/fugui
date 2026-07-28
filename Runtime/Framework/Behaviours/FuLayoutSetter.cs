@@ -31,17 +31,29 @@ namespace Fu.Framework
         /// </summary>
         private void FuguiAwake()
         {
+            if (!isActiveAndEnabled)
+            {
+                return;
+            }
+
             // register DockingLayoutManager events
             Fugui.Layouts.OnDockLayoutReloaded += DockingLayoutManager_OnDockLayoutReloaded;
             // register on render event of the main container's context to draw ImGui Demo Window
             Fugui.DefaultContainer.Context.OnRender += MainContainerContext_OnRender;
+            // defer session setup until every scene behaviour has registered its window definitions
+            Fugui.ExecuteInMainThread(InitializeSession);
         }
 
         /// <summary>
-        /// Runs the start workflow.
+        /// Initializes menus, layout and theme for the current Fugui runtime session.
         /// </summary>
-        private void Start()
+        private void InitializeSession()
         {
+            if (!isActiveAndEnabled || !Fugui.IsInitialized)
+            {
+                return;
+            }
+
             // register the main menu items
             registerMainMenuItems();
 

@@ -154,7 +154,7 @@ namespace Fu.Framework
             {
                 rowPadding = Fugui.Themes.CellPadding.y;
             }
-            ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
+            Fugui.PushUnscaled(ImGuiStyleVar.CellPadding, new Vector2(cellPadding, rowPadding));
             _gridCreated = _currentGridDef.SetupTable(_ID, cellPadding, outterPadding, linesBg, ref _isResponsivelyResized, width);
         }
 
@@ -234,7 +234,7 @@ namespace Fu.Framework
             {
                 ImGuiNative.igEndTable();
             }
-            ImGui.PopStyleVar();
+            Fugui.PopStyle();
             disposed = true;
         }
 

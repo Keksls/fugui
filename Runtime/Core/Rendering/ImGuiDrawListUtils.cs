@@ -37,6 +37,21 @@ namespace Fu
 
         #region Methods
         /// <summary>
+        /// Clears native-pointer and window-reference caches owned by the current Fugui session.
+        /// </summary>
+        internal static void ShutdownSessionResources()
+        {
+            // Native addresses and window instances are invalid once their ImGui contexts are destroyed.
+            _unIconnizedTitleMapping.Clear();
+            _ownerNameCache.Clear();
+            _childRootWindowNameCache.Clear();
+            _resolvedDrawLists.Clear();
+            _lastWindowDrawListIndices.Clear();
+            _rebuiltWindows.Clear();
+            _orderedDrawLists.Clear();
+        }
+
+        /// <summary>
         /// Gets the draw cmd.
         /// </summary>
         /// <param name="windows">The windows value.</param>

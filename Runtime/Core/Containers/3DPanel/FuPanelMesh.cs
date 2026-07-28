@@ -299,7 +299,7 @@ namespace Fu
             {
                 if (_panelMaterial != null)
                 {
-                    Destroy(_panelMaterial);
+                    destroyOwnedObject(_panelMaterial);
                     _panelMaterial = null;
                     _panelSourceMaterial = null;
                 }
@@ -312,7 +312,7 @@ namespace Fu
             {
                 if (_panelMaterial != null)
                 {
-                    Destroy(_panelMaterial);
+                    destroyOwnedObject(_panelMaterial);
                 }
 
                 _panelSourceMaterial = PanelMaterial;

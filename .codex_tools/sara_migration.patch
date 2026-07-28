@@ -1,0 +1,1225 @@
+﻿diff --git a/original/Assets/Scripts/Engine/Camera/CockpitCameraLook.cs b/modified/Assets/Scripts/Engine/Camera/CockpitCameraLook.cs
+index 3f9ea79..97592ed 100644
+--- a/original/Assets/Scripts/Engine/Camera/CockpitCameraLook.cs
++++ b/modified/Assets/Scripts/Engine/Camera/CockpitCameraLook.cs
+@@ -410,7 +410,7 @@ public class CockpitCameraLook : MonoBehaviour
+         if (Fugui.CurrentContext.RenderPrepared)
+             return false;
+ 
+-        return Fugui.IsAnyItemActive() || Fugui.IsAnyItemHovered() || FuLayout.IsAnyItemActive;
++        return Fugui.GetWantCapturePointer(MainWindow.HudWindow) || FuLayout.IsAnyItemActive;
+     }
+ 
+     /// <summary>
+diff --git a/original/Assets/Scripts/UI/Shortcuts/ShortcutSettingsWidget.cs b/modified/Assets/Scripts/UI/Shortcuts/ShortcutSettingsWidget.cs
+index e3cdc01..227f959 100644
+--- a/original/Assets/Scripts/UI/Shortcuts/ShortcutSettingsWidget.cs
++++ b/modified/Assets/Scripts/UI/Shortcuts/ShortcutSettingsWidget.cs
+@@ -164,7 +164,7 @@ namespace Assets.Scripts.UI.Shortcuts
+                 panelRect.width - PanelPadding * 2f * scale,
+                 panelRect.height - (HeaderHeight + FooterHeight + PanelPadding * 2f) * scale);
+ 
+-            Fugui.PushClipRect(rowsRect.min, rowsRect.max, true);
++            drawList.PushClipRect(rowsRect.min, rowsRect.max, true);
+ 
+             for (int i = 0; i < actions.Length; i++)
+             {
+@@ -173,7 +173,7 @@ namespace Assets.Scripts.UI.Shortcuts
+                 DrawShortcutRow(drawList, rowRect, theme, action);
+             }
+ 
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+         }
+ 
+         /// <summary>
+diff --git a/original/Assets/Scripts/UI/Windows/Common/AdminPanelWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/AdminPanelWidget.cs
+index abc8b3f..d598c9e 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/AdminPanelWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/AdminPanelWidget.cs
+@@ -1,5 +1,6 @@
+ using Fu;
+ using Fu.Framework;
++using NetSquare.Client;
+ 
+ using Saravr.Network.Common;
+ using System;
+@@ -110,7 +111,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             }
+             else if (interactable && bodyRect.Contains(Fugui.GetCurrentMouse().Position))
+             {
+-                float wheel = Fugui.GetIO().MouseWheel;
++                float wheel = Fugui.GetCurrentMouse().Wheel.y;
+                 if (Mathf.Abs(wheel) > 0.001f)
+                     _scrollY = Mathf.Clamp(_scrollY - wheel * 34f * scale, 0f, maxScroll);
+             }
+@@ -118,12 +119,12 @@ namespace Assets.Scripts.UI.Windows.Common
+             _scrollY = Mathf.Clamp(_scrollY, 0f, maxScroll);
+ 
+             float y = bodyRect.y + 8f * scale - _scrollY;
+-            Fugui.PushClipRect(bodyRect.min, bodyRect.max, true);
++            drawList.PushClipRect(bodyRect.min, bodyRect.max, true);
+ 
+             if (!adminSession)
+             {
+                 DrawUnavailable(drawList, bodyRect, theme, alpha);
+-                Fugui.PopClipRect();
++                drawList.PopClipRect();
+                 return;
+             }
+ 
+@@ -136,7 +137,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             y = DrawSection(drawList, bodyRect, bodyRect.x, y, bodyRect.width, "O B S E R V E R S", theme, alpha);
+             DrawObserversList(drawList, bodyRect, bodyRect.x, y, bodyRect.width, theme, alpha, interactable);
+ 
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+         }
+ 
+         /// <summary>
+@@ -236,8 +237,46 @@ namespace Assets.Scripts.UI.Windows.Common
+             bool selected = _selectedSeat == seat;
+             SeatDragPayload currentPayload = Fugui.IsDraggingPayload(SeatDragPayloadId) ? Fugui.GetDragDropPayload<SeatDragPayload>() : null;
+             bool dragging = currentPayload != null && currentPayload.Seat == seat;
+-            bool hovered = interactable && rect.Contains(Fugui.GetCurrentMouse().Position);
+-            bool active = hovered && Fugui.GetCurrentMouse().IsPressed(FuMouseButton.Left);
++            FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout;
++            bool clicked = false;
++            bool hovered = false;
++            bool active = false;
++
++            if (layout != null)
++            {
++                // Keep a native Fugui item for drag-and-drop while restoring the custom layout cursor.
++                Fugui.PushScreenPos(rect.min);
++                clicked = layout.InvisibleInteraction(
++                    "##adminSeat" + seat,
++                    rect.size,
++                    out hovered,
++                    out active,
++                    FuButtonFlags.MouseButtonLeft,
++                    interactable);
++
++                if (interactable)
++                {
++                    Fugui.BeginDragDropSource(
++                        SeatDragPayloadId,
++                        FuDragDropFlags.None,
++                        () => DrawSeatPayloadPreview(layout, seat),
++                        new SeatDragPayload { Seat = seat });
++
++                    Fugui.BeginDragDropTarget<SeatDragPayload>(
++                        SeatDragPayloadId,
++                        payload =>
++                        {
++                            if (payload != null && Seats.IsValidSeat(payload.Seat) && payload.Seat != seat)
++                            {
++                                _selectedSeat = seat;
++                                SwapSeats(payload.Seat, seat);
++                            }
++                        });
++                }
++
++                Fugui.PopScreenPos();
++            }
++
+             Color background = selected ? theme.PillBackgroundActive : active ? theme.PillBackgroundActive : hovered ? theme.PillBackgroundHover : theme.PillBackground;
+             Color border = selected ? theme.Accent : occupied ? theme.AccentGlow : theme.DockBorder;
+             float scale = Fugui.Scale;
+@@ -262,50 +301,26 @@ namespace Assets.Scripts.UI.Windows.Common
+             DrawTextCentered(drawList, roleRect, occupied ? GetRoleLabel(user.Role) : string.Empty, ColorU32(occupied ? theme.TextDim : theme.TextFaint, alpha));
+             PopFont(false);
+ 
+-            Fugui.SetCursorScreenPos(rect.min);
+-            Fugui.InvisibleButton("##adminSeat" + seat, rect.size);
+-            if (interactable)
+-            {
+-                Fugui.BeginDragDropSource(
+-                    SeatDragPayloadId,
+-                    ImGuiDragDropFlags.None,
+-                    () => DrawSeatPayloadPreview(seat),
+-                    new SeatDragPayload { Seat = seat });
+-
+-                Fugui.BeginDragDropTarget<SeatDragPayload>(
+-                    SeatDragPayloadId,
+-                    payload =>
+-                    {
+-                        if (payload != null && Seats.IsValidSeat(payload.Seat) && payload.Seat != seat)
+-                        {
+-                            _selectedSeat = seat;
+-                            SwapSeats(payload.Seat, seat);
+-                        }
+-                    });
+-            }
+-
+             if (hovered)
+             {
+                 hoveredSeat = seat;
+                 Fugui.SetMouseCursor(FuMouseCursor.Hand);
+-                if (Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Left))
+-                {
++                if (clicked)
+                     _selectedSeat = seat;
+-                }
+             }
+         }
+ 
+         /// <summary>
+         /// Draws the Fugui drag payload preview.
+         /// </summary>
+-        private static void DrawSeatPayloadPreview(SeatType seat)
++        private static void DrawSeatPayloadPreview(FuLayout layout, SeatType seat)
+         {
+             SaraUser user = GetSeatUser(seat, out uint clientId);
+             string label = clientId != 0 && user != null
+                 ? GetSeatLabel(seat) + ": " + GetUserName(user)
+                 : GetSeatLabel(seat) + ": Empty";
+ 
+-            Fugui.TextUnformatted(label);
++            layout.Text(label);
+         }
+ 
+         /// <summary>
+@@ -790,7 +805,7 @@ namespace Assets.Scripts.UI.Windows.Common
+         }
+ 
+         /// <summary>
+-        /// Converts a color to an ImGui packed color.
++        /// Converts a color to a packed Fugui color.
+         /// </summary>
+         private static uint ColorU32(Color color)
+         {
+@@ -798,7 +813,7 @@ namespace Assets.Scripts.UI.Windows.Common
+         }
+ 
+         /// <summary>
+-        /// Converts a color and opacity to an ImGui packed color.
++        /// Converts a color and opacity to a packed Fugui color.
+         /// </summary>
+         private static uint ColorU32(Color color, float opacity)
+         {
+diff --git a/original/Assets/Scripts/UI/Windows/Common/CodeWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/CodeWidget.cs
+index 999acb2..e6655bd 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/CodeWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/CodeWidget.cs
+@@ -56,7 +56,7 @@ public class CodeWidget
+             return new Rect();
+ 
+         Vector2 containerSize = new Vector2(window.Container.Size.x, window.Container.Size.y);
+-        return DrawCodePanel(Fugui.GetCurrentWindowDrawList(), Fugui.GetWindowPos(), containerSize, drawBackground);
++        return DrawCodePanel(Fugui.GetCurrentWindowDrawList(), window.LocalPosition, containerSize, drawBackground);
+     }
+ 
+     /// <summary>
+@@ -112,12 +112,12 @@ public class CodeWidget
+             Mathf.Max(1f, panelRect.width - padding * 2f),
+             Mathf.Max(1f, panelRect.yMax - headerRect.yMax - padding - (compactLayout ? 10f : 14f) * scale));
+ 
+-        Fugui.PushClipRect(panelRect.min, panelRect.max, true);
++        drawList.PushClipRect(panelRect.min, panelRect.max, true);
+         SynchronizeServerVersionStatus();
+         HandleKeyboardInput();
+         DrawHeader(drawList, headerRect, mobileLayout, compactLayout, scale, theme);
+         DrawBody(drawList, contentRect, compactLayout, scale, theme);
+-        Fugui.PopClipRect();
++        drawList.PopClipRect();
+     }
+ 
+     /// <summary>
+@@ -288,7 +288,7 @@ public class CodeWidget
+     /// <summary>
+     /// Draws the connection lifecycle feedback that replaces code entry while the server is unavailable.
+     /// </summary>
+-    /// <param name="drawList">The active ImGui draw list.</param>
++    /// <param name="drawList">The active Fugui draw list.</param>
+     /// <param name="rect">The available body rectangle.</param>
+     /// <param name="compactLayout">Whether compact spacing is active.</param>
+     /// <param name="scale">The current UI scale.</param>
+@@ -357,7 +357,7 @@ public class CodeWidget
+     /// <summary>
+     /// Draws the retry action for recoverable connection failures.
+     /// </summary>
+-    /// <param name="drawList">The active ImGui draw list.</param>
++    /// <param name="drawList">The active Fugui draw list.</param>
+     /// <param name="rect">The action rectangle.</param>
+     /// <param name="scale">The current UI scale.</param>
+     /// <param name="theme">The active timeline theme.</param>
+@@ -788,12 +788,16 @@ public class CodeWidget
+     /// </summary>
+     private static bool DrawInvisibleHitBox(Rect rect, string id, bool enabled, out bool hovered, out bool active)
+     {
+-        Fugui.SetCursorScreenPos(rect.min);
+-        Fugui.InvisibleButton("##" + id, rect.size);
++        FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout;
++        if (layout == null)
++        {
++            hovered = false;
++            active = false;
++            return false;
++        }
+ 
+-        hovered = enabled && Fugui.IsItemHovered();
+-        active = enabled && Fugui.IsItemActive();
+-        return enabled && Fugui.IsItemClicked(ImGuiMouseButton.Left);
++        // Register the absolute custom-drawn rectangle in Fugui's interaction system.
++        return layout.InvisibleInteractionAt("##" + id, rect.min, rect.size, out hovered, out active, FuButtonFlags.MouseButtonLeft, enabled);
+     }
+ 
+     /// <summary>
+@@ -1157,7 +1161,7 @@ public class CodeWidget
+     /// <summary>
+     /// Draws a bounded number of centered text lines with word wrapping.
+     /// </summary>
+-    /// <param name="drawList">The active ImGui draw list.</param>
++    /// <param name="drawList">The active Fugui draw list.</param>
+     /// <param name="rect">The available text rectangle.</param>
+     /// <param name="text">The text to wrap and draw.</param>
+     /// <param name="color">The packed text color.</param>
+diff --git a/original/Assets/Scripts/UI/Windows/Common/LoadingWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/LoadingWidget.cs
+index 0fadd17..da69694 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/LoadingWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/LoadingWidget.cs
+@@ -125,13 +125,13 @@ public class LoadingWidget
+             return new Rect();
+ 
+         Vector2 containerSize = new Vector2(window.Container.Size.x, window.Container.Size.y);
+-        return DrawLoadingPanel(Fugui.GetCurrentWindowDrawList(), Fugui.GetWindowPos(), containerSize, drawBackground);
++        return DrawLoadingPanel(Fugui.GetCurrentWindowDrawList(), window.LocalPosition, containerSize, drawBackground);
+     }
+ 
+     /// <summary>
+     /// Draws the loading panel centered in the provided container.
+     /// </summary>
+-    /// <param name="drawList">ImGui draw list receiving the panel geometry.</param>
++    /// <param name="drawList">Fugui draw list receiving the panel geometry.</param>
+     /// <param name="origin">Screen-space origin for the container.</param>
+     /// <param name="containerSize">Screen-space size for the container.</param>
+     /// <param name="drawBackground">Whether to draw the full-container loading background.</param>
+@@ -189,11 +189,11 @@ public class LoadingWidget
+         Rect progressRect = new Rect(contentRect.x, contentRect.y, contentRect.width, Mathf.Min(progressHeight, contentRect.height));
+         Rect infoRect = new Rect(contentRect.x, progressRect.yMax + gap, contentRect.width, Mathf.Max(0f, contentRect.yMax - progressRect.yMax - gap));
+ 
+-        Fugui.PushClipRect(panelRect.min, panelRect.max, true);
++        drawList.PushClipRect(panelRect.min, panelRect.max, true);
+         DrawHeader(drawList, headerRect, mobileLayout, compactLayout, scale, theme);
+         DrawProgressSection(drawList, progressRect, compactLayout, scale, theme);
+         DrawFlightInfoList(drawList, infoRect, compactLayout, scale, theme);
+-        Fugui.PopClipRect();
++        drawList.PopClipRect();
+     }
+ 
+     /// <summary>
+@@ -889,7 +889,7 @@ public class LoadingWidget
+         }
+         else
+         {
+-            drawList.AddText(iconPos, Fugui.Themes.GetColorU32(disabled ? FuColors.TextDisabled : FuColors.Text), icon);
++            drawList.AddText(iconPos, Fugui.GetColorU32(disabled ? FuColors.TextDisabled : FuColors.Text), icon);
+         }
+     }
+ 
+diff --git a/original/Assets/Scripts/UI/Windows/Common/NetworkSettingsWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/NetworkSettingsWidget.cs
+index 2643c91..d0a585e 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/NetworkSettingsWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/NetworkSettingsWidget.cs
+@@ -219,7 +219,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             }
+             else if (interactable && bodyRect.Contains(Fugui.GetCurrentMouse().Position))
+             {
+-                float wheel = Fugui.GetIO().MouseWheel;
++                float wheel = Fugui.GetCurrentMouse().Wheel.y;
+                 if (Mathf.Abs(wheel) > 0.001f)
+                     _scrollY = Mathf.Clamp(_scrollY - wheel * 34f * scale, 0f, maxScroll);
+             }
+@@ -235,7 +235,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             bool observerAllowedToSpeak = IsObserverAllowedToSpeak();
+             float y = bodyRect.y + 8f * scale - _scrollY;
+ 
+-            Fugui.PushClipRect(bodyRect.min, bodyRect.max, true);
++            drawList.PushClipRect(bodyRect.min, bodyRect.max, true);
+ 
+             y = DrawSection(drawList, bodyRect, bodyRect.x, y, bodyRect.width, "V O I C E", theme, alpha);
+             if (observerMutedByAdmin)
+@@ -253,7 +253,7 @@ namespace Assets.Scripts.UI.Windows.Common
+ 
+             DrawInputMenuLayer(drawList);
+ 
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+         }
+ 
+         /// <summary>
+@@ -631,7 +631,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             drawList.AddRectFilled(menuRect.min, menuRect.max, ColorU32(request.Theme.MenuBackground, menuAlpha), request.Theme.MediumRadius * scale);
+             drawList.AddRect(menuRect.min, menuRect.max, ColorU32(request.Theme.DockBorder, menuAlpha), request.Theme.MediumRadius * scale);
+ 
+-            Fugui.PushClipRect(menuRect.min, menuRect.max, true);
++            drawList.PushClipRect(menuRect.min, menuRect.max, true);
+             for (int i = 0; i < request.Options.Count; i++)
+             {
+                 DeviceOption option = request.Options[i];
+@@ -642,7 +642,7 @@ namespace Assets.Scripts.UI.Windows.Common
+                     DropdownOptionHeight * scale);
+                 DrawInputMenuOption(drawList, optionRect, option, request, menuAlpha);
+             }
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+ 
+             if (!_inputMenuOpenedThisFrame
+                 && _inputMenuOpen
+@@ -1070,7 +1070,7 @@ namespace Assets.Scripts.UI.Windows.Common
+         }
+ 
+         /// <summary>
+-        /// Converts a color to an ImGui packed color.
++        /// Converts a color to a packed Fugui color.
+         /// </summary>
+         private static uint ColorU32(Color color)
+         {
+@@ -1078,7 +1078,7 @@ namespace Assets.Scripts.UI.Windows.Common
+         }
+ 
+         /// <summary>
+-        /// Converts a color and opacity to an ImGui packed color.
++        /// Converts a color and opacity to a packed Fugui color.
+         /// </summary>
+         private static uint ColorU32(Color color, float opacity)
+         {
+diff --git a/original/Assets/Scripts/UI/Windows/Common/RemoteNameKeyboardWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/RemoteNameKeyboardWidget.cs
+index 6e130ba..2591f7a 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/RemoteNameKeyboardWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/RemoteNameKeyboardWidget.cs
+@@ -149,9 +149,9 @@ public class RemoteNameKeyboardWidget
+             Mathf.Max(1f, panelRect.width - padding * 2f),
+             Mathf.Max(1f, panelRect.height - padding * 2f));
+ 
+-        Fugui.PushClipRect(panelRect.min, panelRect.max, true);
++        drawList.PushClipRect(panelRect.min, panelRect.max, true);
+         DrawRows(drawList, contentRect, compact, scale, theme);
+-        Fugui.PopClipRect();
++        drawList.PopClipRect();
+     }
+ 
+     /// <summary>
+@@ -309,11 +309,16 @@ public class RemoteNameKeyboardWidget
+     /// </summary>
+     private static bool DrawInvisibleButton(Rect rect, string id, bool enabled, out bool hovered, out bool active)
+     {
+-        Fugui.SetCursorScreenPos(rect.min);
+-        Fugui.InvisibleButton("##" + id, rect.size);
+-        hovered = enabled && Fugui.IsItemHovered();
+-        active = enabled && Fugui.IsItemActive();
+-        return enabled && Fugui.IsItemClicked(ImGuiMouseButton.Left);
++        FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout;
++        if (layout == null)
++        {
++            hovered = false;
++            active = false;
++            return false;
++        }
++
++        // Register the absolute custom-drawn rectangle in Fugui's interaction system.
++        return layout.InvisibleInteractionAt("##" + id, rect.min, rect.size, out hovered, out active, FuButtonFlags.MouseButtonLeft, enabled);
+     }
+ 
+ 
+diff --git a/original/Assets/Scripts/UI/Windows/Common/RemoteNameWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/RemoteNameWidget.cs
+index befb1b4..e20e767 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/RemoteNameWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/RemoteNameWidget.cs
+@@ -23,10 +23,18 @@ public class RemoteNameWidget
+     private string _statusMessage = "Confirm your display name";
+     private bool _sending;
+     private bool _hasError;
+-    private bool _focusRequested;
++    private readonly FuTextInputOptions _nameInputOptions = new FuTextInputOptions();
+     private System.Action _forceDraw;
+     private System.Action _submitted;
+ 
++    /// <summary>
++    /// Initializes the high-level Fugui text input callbacks.
++    /// </summary>
++    public RemoteNameWidget()
++    {
++        _nameInputOptions.Submitted = _ => SubmitName();
++    }
++
+     public TimelineWidgetTheme Theme
+     {
+         get { return _theme != null ? _theme : TimelineWidgetTheme.LoadDefault(); }
+@@ -71,7 +79,7 @@ public class RemoteNameWidget
+         _statusMessage = "Confirm your display name";
+         _sending = false;
+         _hasError = false;
+-        _focusRequested = true;
++        _nameInputOptions.RequestFocus = true;
+     }
+ 
+     /// <summary>
+@@ -132,7 +140,7 @@ public class RemoteNameWidget
+             return new Rect();
+ 
+         Vector2 containerSize = new Vector2(window.Container.Size.x, window.Container.Size.y);
+-        return DrawNamePanel(Fugui.GetCurrentWindowDrawList(), Fugui.GetWindowPos(), containerSize, drawBackground);
++        return DrawNamePanel(Fugui.GetCurrentWindowDrawList(), window.LocalPosition, containerSize, drawBackground);
+     }
+ 
+     /// <summary>
+@@ -202,10 +210,10 @@ public class RemoteNameWidget
+             Mathf.Max(1f, panelRect.width - padding * 2f),
+             Mathf.Max(1f, panelRect.height - headerRect.height - padding - 18f * scale));
+ 
+-        Fugui.PushClipRect(panelRect.min, panelRect.max, true);
++        drawList.PushClipRect(panelRect.min, panelRect.max, true);
+         DrawHeader(drawList, headerRect, scale, theme);
+         DrawBody(drawList, contentRect, scale, theme);
+-        Fugui.PopClipRect();
++        drawList.PopClipRect();
+     }
+ 
+     /// <summary>
+@@ -279,28 +287,38 @@ public class RemoteNameWidget
+             return;
+         }
+ 
+-        Fugui.SetCursorScreenPos(inputRect.min + new Vector2(0f, (inputRect.height - 24f * scale) * 0.5f));
+-        Fugui.SetNextItemWidth(inputRect.width);
++        FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout;
++        if (layout == null)
++            return;
+ 
+-        Fugui.PushStyleColor(ImGuiCol.FrameBg, Vector4.zero);
+-        Fugui.PushStyleColor(ImGuiCol.FrameBgHovered, Vector4.zero);
+-        Fugui.PushStyleColor(ImGuiCol.FrameBgActive, Vector4.zero);
+-        Fugui.PushStyleColor(ImGuiCol.Text, new Vector4(theme.Text.r, theme.Text.g, theme.Text.b, theme.Text.a));
+-        Fugui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(0f, 4f * scale));
+-        PushFont(16, false);
+-        if (_focusRequested)
++        Fugui.SetCursorScreenPos(inputRect.min + new Vector2(0f, (inputRect.height - 24f * scale) * 0.5f));
++        FuTextStyle textStyle = new FuTextStyle(theme.Text, theme.Text, theme.TextFaint);
++        FuFrameStyle inputStyle = new FuFrameStyle
+         {
+-            Fugui.SetKeyboardFocusHere();
+-            _focusRequested = false;
+-        }
++            Frame = Color.clear,
++            HoveredFrame = Color.clear,
++            ActiveFrame = Color.clear,
++            CheckMark = theme.Accent,
++            Border = Color.clear,
++            Shadow = Color.clear,
++            DisabledFrame = Color.clear,
++            DisabledCheckMark = theme.TextFaint,
++            DisabledBorder = Color.clear,
++            DisabledShadow = Color.clear,
++            TextStyle = textStyle
++        };
+ 
+-        bool submitted = Fugui.InputText("##remoteName", ref _name, MaxNameLength + 1, ImGuiInputTextFlags.EnterReturnsTrue);
++        PushFont(16, false);
++        layout.TextInput(
++            "##remoteName",
++            string.Empty,
++            ref _name,
++            MaxNameLength + 1u,
++            0f,
++            inputStyle,
++            inputRect.width / scale,
++            _nameInputOptions);
+         PopFont();
+-        Fugui.PopStyleVar();
+-        Fugui.PopStyleColor(4);
+-
+-        if (submitted)
+-            SubmitName();
+     }
+ 
+     /// <summary>
+@@ -493,12 +511,16 @@ public class RemoteNameWidget
+     /// </summary>
+     private static bool DrawInvisibleHitBox(Rect rect, string id, bool enabled, out bool hovered, out bool active)
+     {
+-        Fugui.SetCursorScreenPos(rect.min);
+-        Fugui.InvisibleButton("##" + id, rect.size);
++        FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout;
++        if (layout == null)
++        {
++            hovered = false;
++            active = false;
++            return false;
++        }
+ 
+-        hovered = enabled && Fugui.IsItemHovered();
+-        active = enabled && Fugui.IsItemActive();
+-        return enabled && Fugui.IsItemClicked(ImGuiMouseButton.Left);
++        // Register the absolute custom-drawn rectangle in Fugui's interaction system.
++        return layout.InvisibleInteractionAt("##" + id, rect.min, rect.size, out hovered, out active, FuButtonFlags.MouseButtonLeft, enabled);
+     }
+ 
+     /// <summary>
+diff --git a/original/Assets/Scripts/UI/Windows/Common/SeatSelectionWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/SeatSelectionWidget.cs
+index 8717a36..ed6dd37 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/SeatSelectionWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/SeatSelectionWidget.cs
+@@ -1,6 +1,7 @@
+ using Assets.Scripts.UI.Windows.Common;
+ using Fu;
+ using Fu.Framework;
++using NetSquare.Client;
+ 
+ using Saravr.Network.Common;
+ using System;
+@@ -86,7 +87,7 @@ public class SeatSelectionWidget
+             return new Rect();
+ 
+         Vector2 containerSize = new Vector2(window.Container.Size.x, window.Container.Size.y);
+-        return DrawSeatPanel(Fugui.GetCurrentWindowDrawList(), Fugui.GetWindowPos(), containerSize, drawBackground);
++        return DrawSeatPanel(Fugui.GetCurrentWindowDrawList(), window.LocalPosition, containerSize, drawBackground);
+     }
+ 
+     /// <summary>
+@@ -142,10 +143,10 @@ public class SeatSelectionWidget
+             Mathf.Max(1f, panelRect.width - padding * 2f),
+             Mathf.Max(1f, panelRect.yMax - headerRect.yMax - padding - (compactLayout ? 10f : 14f) * scale));
+ 
+-        Fugui.PushClipRect(panelRect.min, panelRect.max, true);
++        drawList.PushClipRect(panelRect.min, panelRect.max, true);
+         DrawHeader(drawList, headerRect, mobileLayout, compactLayout, scale, theme);
+         DrawSeatButtons(drawList, contentRect, compactLayout, scale, theme);
+-        Fugui.PopClipRect();
++        drawList.PopClipRect();
+     }
+ 
+     /// <summary>
+@@ -390,11 +391,16 @@ public class SeatSelectionWidget
+     /// </summary>
+     private static bool DrawInvisibleButton(Rect rect, string id, bool enabled, out bool hovered, out bool active)
+     {
+-        Fugui.SetCursorScreenPos(rect.min);
+-        Fugui.InvisibleButton("##" + id, rect.size);
+-        hovered = enabled && Fugui.IsItemHovered();
+-        active = enabled && Fugui.IsItemActive();
+-        return enabled && Fugui.IsItemClicked(ImGuiMouseButton.Left);
++        FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout;
++        if (layout == null)
++        {
++            hovered = false;
++            active = false;
++            return false;
++        }
++
++        // Register the absolute custom-drawn rectangle in Fugui's interaction system.
++        return layout.InvisibleInteractionAt("##" + id, rect.min, rect.size, out hovered, out active, FuButtonFlags.MouseButtonLeft, enabled);
+     }
+ 
+     /// <summary>
+diff --git a/original/Assets/Scripts/UI/Windows/Common/SettingsWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/SettingsWidget.cs
+index f3f6bba..a4fe79a 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/SettingsWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/SettingsWidget.cs
+@@ -171,7 +171,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             }
+             else if (interactable && bodyRect.Contains(Fugui.GetCurrentMouse().Position))
+             {
+-                float wheel = Fugui.GetIO().MouseWheel;
++                float wheel = Fugui.GetCurrentMouse().Wheel.y;
+                 if (Mathf.Abs(wheel) > 0.001f)
+                     _scrollY = Mathf.Clamp(_scrollY - wheel * 34f * scale, 0f, maxScroll);
+             }
+@@ -184,7 +184,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             bool rowsInteractable = interactable && !IsPerformanceMenuBlockingInput() && !IsWeatherPresetMenuBlockingInput();
+             bool sharedRowsInteractable = rowsInteractable && CanEditSharedSettings();
+ 
+-            Fugui.PushClipRect(bodyRect.min, bodyRect.max, true);
++            drawList.PushClipRect(bodyRect.min, bodyRect.max, true);
+ 
+             y = DrawSection(drawList, bodyRect, bodyRect.x, y, contentWidth, "D I S P L A Y", theme, alpha);
+             y = DrawToggleRow(drawList, bodyRect, bodyRect.x, y, contentWidth, "Flight Path", "3D trajectory ribbon in the world", GetFlightPathEnabled(), ref _flightPathToggleAmount, theme, alpha, sharedRowsInteractable && Sara.FlightPath != null, SetFlightPathEnabled);
+@@ -225,7 +225,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             DrawPerformanceMenuLayer(drawList);
+             DrawWeatherPresetMenuLayer(drawList);
+ 
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+             DrawScrollbar(drawList, bodyRect, contentHeight, maxScroll, theme, alpha, interactable);
+         }
+ 
+@@ -704,7 +704,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             float rounding = railRect.height * 0.5f;
+             drawList.AddRectFilled(railRect.min, railRect.max, ColorU32(theme.SettingsSliderNight, alpha), rounding);
+ 
+-            Fugui.PushClipRect(railRect.min, railRect.max, true);
++            drawList.PushClipRect(railRect.min, railRect.max, true);
+             const int SegmentCount = 84;
+             for (int i = 0; i < SegmentCount; i++)
+             {
+@@ -722,7 +722,7 @@ namespace Assets.Scripts.UI.Windows.Common
+                     railRect.height);
+                 drawList.AddRectFilled(segmentRect.min, segmentRect.max, ColorU32(color, alpha), 0f);
+             }
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+         }
+ 
+         /// <summary>
+@@ -877,7 +877,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             drawList.AddRectFilled(menuRect.min, menuRect.max, ColorU32(menuBackground, menuAlpha), theme.MediumRadius * scale);
+             drawList.AddRect(menuRect.min, menuRect.max, ColorU32(theme.DockBorder, menuAlpha), theme.MediumRadius * scale);
+ 
+-            Fugui.PushClipRect(menuRect.min, menuRect.max, true);
++            drawList.PushClipRect(menuRect.min, menuRect.max, true);
+             for (int i = 0; i < profiles.Count; i++)
+             {
+                 SaraPerformanceProfile profile = profiles[i];
+@@ -914,7 +914,7 @@ namespace Assets.Scripts.UI.Windows.Common
+                     }
+                 }
+             }
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+ 
+             if (!_performanceMenuOpenedThisFrame
+                 && _performanceMenuOpen
+@@ -1248,7 +1248,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             drawList.AddRectFilled(menuRect.min, menuRect.max, ColorU32(menuBackground, menuAlpha), theme.MediumRadius * scale);
+             drawList.AddRect(menuRect.min, menuRect.max, ColorU32(theme.DockBorder, menuAlpha), theme.MediumRadius * scale);
+ 
+-            Fugui.PushClipRect(menuRect.min, menuRect.max, true);
++            drawList.PushClipRect(menuRect.min, menuRect.max, true);
+             for (int i = 0; i < presets.Count; i++)
+             {
+                 Rect optionRect = new Rect(
+@@ -1283,7 +1283,7 @@ namespace Assets.Scripts.UI.Windows.Common
+                     }
+                 }
+             }
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+ 
+             if (!_weatherPresetMenuOpenedThisFrame
+                 && _weatherPresetMenuOpen
+diff --git a/original/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs
+index 587d7a7..8ec3dcb 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs
+@@ -527,10 +527,10 @@ namespace Assets.Scripts.UI.Windows.Common
+ 
+             Vector2 clipMin = new Vector2(rect.x, rect.y - theme.DockPaddingTop * scale);
+             Vector2 clipMax = new Vector2(rect.xMax, rect.yMax + theme.DockPaddingBottom * scale);
+-            Fugui.PushClipRect(clipMin, clipMax, true);
++            drawList.PushClipRect(clipMin, clipMax, true);
+             DrawPhaseRow(phasesRect);
+             DrawScrubber(scrubberRect);
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+         }
+ 
+ 
+@@ -625,7 +625,7 @@ namespace Assets.Scripts.UI.Windows.Common
+         /// </summary>
+         private static FuDrawFlags GetPhaseProgressRoundingFlags(float progress)
+         {
+-            // Avoid per-phase clip rects so ImGui can keep phase geometry in the same draw command.
++            // Avoid per-phase clip rects so Fugui can keep phase geometry in the same draw command.
+             return progress >= 0.999f ? FuDrawFlags.RoundCornersAll : FuDrawFlags.RoundCornersLeft;
+         }
+ 
+@@ -1364,7 +1364,7 @@ namespace Assets.Scripts.UI.Windows.Common
+             drawList.AddRectFilled(menuRect.min, menuRect.max, ColorU32(theme.MenuBackground, t), rounding);
+             drawList.AddRect(menuRect.min, menuRect.max, ColorU32(theme.DockBorder, t), rounding);
+ 
+-            Fugui.PushClipRect(menuRect.min, menuRect.max, true);
++            drawList.PushClipRect(menuRect.min, menuRect.max, true);
+             for (int i = 0; i < PlaybackSpeeds.Length; i++)
+             {
+                 Rect optionRect = new Rect(menuRect.x + 5f * scale, menuRect.y + 5f * scale + i * optionHeight, menuRect.width - 10f * scale, optionHeight);
+@@ -1391,7 +1391,7 @@ namespace Assets.Scripts.UI.Windows.Common
+                     }
+                 }
+             }
+-            Fugui.PopClipRect();
++            drawList.PopClipRect();
+ 
+             if (!_speedMenuOpenedThisFrame && _speedMenuOpen && Fugui.GetCurrentMouse().IsClicked(FuMouseButton.Left) && !IsHovered(menuRect) && !IsHovered(anchorRect))
+                 _speedMenuOpen = false;
+@@ -1411,16 +1411,11 @@ namespace Assets.Scripts.UI.Windows.Common
+             FuWindow window = FuWindow.CurrentDrawingWindow;
+             if (window != null)
+             {
+-                Rect worldRect = window.WorldRect;
+-                if (worldRect.width > 1f && worldRect.height > 1f)
+-                    return worldRect;
++                Rect localRect = window.LocalRect;
++                if (localRect.width > 1f && localRect.height > 1f)
++                    return localRect;
+             }
+ 
+-            Vector2 windowPos = Fugui.GetWindowPos();
+-            Vector2 windowSize = Fugui.GetWindowSize();
+-            if (windowSize.x > 1f && windowSize.y > 1f)
+-                return new Rect(windowPos, windowSize);
+-
+             return fallbackBounds;
+         }
+ 
+@@ -2243,12 +2238,15 @@ namespace Assets.Scripts.UI.Windows.Common
+         /// </summary>
+         private static void DrawTextCenteredScaled(FuDrawList drawList, Rect rect, string text, uint color, float scale)
+         {
+-            ImFontPtr font = Fugui.GetFont();
+-            float currentFontSize = Mathf.Max(1f, Fugui.GetFontSize());
+-            float targetFontSize = currentFontSize * Mathf.Clamp(scale, 0.1f, 1f);
+-            Vector2 textSize = Fugui.CalcTextSize(text) * (targetFontSize / currentFontSize);
++            int currentFontSize = Mathf.Max(1, Fugui.GetFontSize());
++            int targetFontSize = Mathf.Max(1, Mathf.RoundToInt(currentFontSize * Mathf.Clamp(scale, 0.1f, 1f)));
++
++            // Resolve the scaled font through Fugui so external code never handles native font pointers.
++            Fugui.PushFont(targetFontSize);
++            Vector2 textSize = Fugui.CalcTextSize(text);
+             Vector2 textPos = new Vector2(rect.x + (rect.width - textSize.x) * 0.5f, rect.y + (rect.height - textSize.y) * 0.5f);
+-            drawList.AddText(font, targetFontSize, textPos, color, text);
++            drawList.AddText(textPos, color, text);
++            Fugui.PopFont();
+         }
+ 
+         /// <summary>
+diff --git a/original/Assets/Scripts/UI/Windows/Common/VRBeltWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/VRBeltWidget.cs
+index c9b8131..44a4324 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/VRBeltWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/VRBeltWidget.cs
+@@ -196,7 +196,7 @@ namespace Assets.Scripts.UI.Windows.Common
+         {
+             float inset = 10f * scale;
+             Rect iconRect = new Rect(rect.x + inset, rect.y + inset, Mathf.Max(1f, rect.width - inset * 2f), Mathf.Max(1f, rect.height - inset * 2f));
+-            drawList.AddImage(icon.GetNativeTexturePtr(), iconRect.min, iconRect.max);
++            drawList.AddImage(icon, iconRect.min, iconRect.max);
+         }
+ 
+         /// <summary>
+@@ -228,7 +228,7 @@ namespace Assets.Scripts.UI.Windows.Common
+         }
+ 
+         /// <summary>
+-        /// Converts a color to an ImGui packed color.
++        /// Converts a color to a packed Fugui color.
+         /// </summary>
+         private static uint ColorU32(Color color)
+         {
+@@ -236,7 +236,7 @@ namespace Assets.Scripts.UI.Windows.Common
+         }
+ 
+         /// <summary>
+-        /// Converts a color and opacity to an ImGui packed color.
++        /// Converts a color and opacity to a packed Fugui color.
+         /// </summary>
+         private static uint ColorU32(Color color, float opacity)
+         {
+diff --git a/original/Assets/Scripts/UI/Windows/Flat/FlightParametersDebugWindow.cs b/modified/Assets/Scripts/UI/Windows/Flat/FlightParametersDebugWindow.cs
+index f13bbb9..f6867ab 100644
+--- a/original/Assets/Scripts/UI/Windows/Flat/FlightParametersDebugWindow.cs
++++ b/modified/Assets/Scripts/UI/Windows/Flat/FlightParametersDebugWindow.cs
+@@ -527,7 +527,7 @@ public sealed class FlightParametersDebugWindow : FuWindowBehaviour
+         if (Fugui.BeginChild(
+             "flightParameterDetails",
+             Vector2.zero,
+-            ImGuiChildFlags.Borders,
++            FuChildFlags.Borders,
+             FuWindowStyleFlags.HorizontalScrollbar))
+         {
+             if (_selectedParameterIndex < 0 || _selectedParameterIndex >= _parameters.Count)
+@@ -544,10 +544,10 @@ public sealed class FlightParametersDebugWindow : FuWindowBehaviour
+                 string description = GetParameterDescription(parameter);
+                 if (!string.IsNullOrWhiteSpace(description))
+                 {
+-                    Fugui.TextWrapped(description);
++                    layout.Text(description, FuTextWrapping.Wrap);
+                 }
+ 
+-                Fugui.TextWrapped(GetParameterDetails(parameter));
++                layout.Text(GetParameterDetails(parameter), FuTextWrapping.Wrap);
+             }
+         }
+ 
+diff --git a/original/Assets/Scripts/UI/Windows/Flat/MainWindow.cs b/modified/Assets/Scripts/UI/Windows/Flat/MainWindow.cs
+index 16debe8..b6d4bde 100644
+--- a/original/Assets/Scripts/UI/Windows/Flat/MainWindow.cs
++++ b/modified/Assets/Scripts/UI/Windows/Flat/MainWindow.cs
+@@ -11,7 +11,7 @@ using UnityEngine;
+ /// <summary>
+ /// Coordinates main window behavior in the Unity scene.
+ /// </summary>
+-public class MainWindow : MonoBehaviour
++public class MainWindow : FuWindowBehaviour
+ {
+     /// <summary>
+     /// Lists the supported glass icon kind values.
+@@ -49,6 +49,10 @@ public class MainWindow : MonoBehaviour
+     private bool _seatMenuOpen;
+     private bool _seatMenuOpenedThisFrame;
+     private object _timelineTestEventsSource;
++    private bool _windowDefinitionRegistered;
++
++    // Fullscreen HUD window ignored by non-UI pointer arbitration.
++    public static FuWindow HudWindow { get; private set; }
+ 
+     #region Lifecycle
+     /// <summary>
+@@ -56,7 +60,7 @@ public class MainWindow : MonoBehaviour
+     /// </summary>
+     private void OnEnable()
+     {
+-        Sara.Loader.OnLoadingComplete += handleLoadingComplete;
++        Sara.Loader.OnLoadingComplete += HandleLoadingComplete;
+     }
+ 
+     /// <summary>
+@@ -65,25 +69,78 @@ public class MainWindow : MonoBehaviour
+     private void OnDisable()
+     {
+         FlatRaycaster.Current?.EndPointing();
+-        Fugui.DefaultContext.OnRender -= OnUI;
+-        Sara.Loader.OnLoadingComplete -= handleLoadingComplete;
++        Sara.Loader.OnLoadingComplete -= HandleLoadingComplete;
++
++        if (ReferenceEquals(HudWindow, _fuWindow))
++            HudWindow = null;
++
++        _fuWindow?.Close();
+     }
+ 
+     /// <summary>
+-    /// Runs the handle loading complete logic.
++    /// Registers and creates the fullscreen Fugui HUD after loading completes.
+     /// </summary>
+-    private void handleLoadingComplete()
++    private void HandleLoadingComplete()
+     {
+-        Fugui.DefaultContext.OnRender += OnUI;
++        if (!_windowDefinitionRegistered)
++        {
++            _windowName = FuWindowsNames.Main;
++            _windowLayer = FuLayer.Hud;
++            _windowFlags = FuWindowFlags.NoExternalization
++                | FuWindowFlags.NoDocking
++                | FuWindowFlags.NoClosable
++                | FuWindowFlags.NoMouseInputFocus
++                | FuWindowFlags.NoKeyboardInputFocus;
++            _windowStyleFlags = FuWindowStyleFlags.NoDecoration
++                | FuWindowStyleFlags.NoMove
++                | FuWindowStyleFlags.NoResize
++                | FuWindowStyleFlags.NoScrollbar
++                | FuWindowStyleFlags.NoScrollWithMouse
++                | FuWindowStyleFlags.NoBackground
++                | FuWindowStyleFlags.NoSavedSettings
++                | FuWindowStyleFlags.NoBringToFrontOnFocus
++                | FuWindowStyleFlags.NoFocusOnAppearing;
++            _position = Vector2Int.zero;
++            _size = Fugui.DefaultContainer.Size;
++
++            base.FuguiAwake();
++            _windowDefinitionRegistered = true;
++        }
++
++        if (_fuWindow == null || !_fuWindow.IsOpened)
++            Fugui.CreateWindowAsync(_windowName, null);
++    }
++
++    /// <summary>
++    /// Keeps the animated HUD rendering and input state current every frame.
++    /// </summary>
++    private void Update()
++    {
++        if (_fuWindow == null)
++            return;
++
++        _fuWindow.IsInterractable = !Sara.IsVR && Sara.IsReady;
++        _fuWindow.ForceDraw();
+     }
+ 
+     #endregion
+ 
+     #region Window Rendering
+     /// <summary>
+-    /// Handles the UI callback.
++    /// Configures the created fullscreen HUD window.
+     /// </summary>
+-    public void OnUI()
++    public override void OnWindowCreated(FuWindow window)
++    {
++        HudWindow = window;
++        window.IsInterractable = !Sara.IsVR && Sara.IsReady;
++        ResizeFullscreen(window);
++        window.ForceDraw();
++    }
++
++    /// <summary>
++    /// Draws the fullscreen HUD through the Fugui window lifecycle.
++    /// </summary>
++    public override void OnUI(FuWindow window, FuLayout layout)
+     {
+         if (Sara.IsVR || !Sara.IsReady)
+         {
+@@ -91,6 +148,7 @@ public class MainWindow : MonoBehaviour
+             return;
+         }
+ 
++        ResizeFullscreen(window);
+         TimelineWidgetTheme theme = ResolveTimelineTheme();
+         _timelineWidget.SetTheme(theme);
+         _timelineWidget.ShortcutTooltipProvider = SaraShortcutSettings.GetTooltip;
+@@ -102,12 +160,7 @@ public class MainWindow : MonoBehaviour
+         bool modalInputBlocked = IsFlatModalInputBlocked();
+         HandleFlatShortcuts(modalInputBlocked);
+ 
+-        Vector2 size = Fugui.DefaultContainer.Size;
+-        Fugui.SetNextWindowSize(size, ImGuiCond.Always);
+-        Fugui.SetNextWindowPos(Vector2.zero, ImGuiCond.Always);
+-        Fugui.PushStyleColor(ImGuiCol.WindowBg, Vector4.zero);
+-        Fugui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.zero);
+-        Fugui.Begin("hiden", FuWindowStyleFlags.NoTitleBar | FuWindowStyleFlags.NoResize | FuWindowStyleFlags.NoMove | FuWindowStyleFlags.NoScrollbar | FuWindowStyleFlags.NoScrollWithMouse);
++        Vector2 size = window.Size;
+ 
+         if (modalInputBlocked)
+             BlockFlatModalInput();
+@@ -127,9 +180,21 @@ public class MainWindow : MonoBehaviour
+         _timelineWidget.DrawScreenSeekGestures(size, !modalInputBlocked);
+         _shortcutSettingsWidget.Draw(size, theme);
+ 
+-        Fugui.End();
+-        Fugui.PopStyleVar();
+-        Fugui.PopStyleColor();
++    }
++
++    /// <summary>
++    /// Keeps the HUD aligned with the current main container.
++    /// </summary>
++    private static void ResizeFullscreen(FuWindow window)
++    {
++        if (window == null || window.Container == null)
++            return;
++
++        if (window.Size != window.Container.Size)
++            window.Size = window.Container.Size;
++
++        if (window.LocalPosition != Vector2Int.zero)
++            window.LocalPosition = Vector2Int.zero;
+     }
+ 
+     #endregion
+@@ -140,7 +205,7 @@ public class MainWindow : MonoBehaviour
+     /// </summary>
+     private void HandleFlatShortcuts(bool inputBlocked)
+     {
+-        if (inputBlocked || !IsDesktopShortcutRuntime() || Fugui.GetIO().WantTextInput)
++        if (inputBlocked || !IsDesktopShortcutRuntime() || Fugui.GetWantCaptureInputs(true))
+         {
+             FlatRaycaster.Current?.EndPointing();
+             return;
+diff --git a/original/Assets/Scripts/UI/Windows/XR/AdminWindowXR.cs b/modified/Assets/Scripts/UI/Windows/XR/AdminWindowXR.cs
+index 48a124e..b0b2da9 100644
+--- a/original/Assets/Scripts/UI/Windows/XR/AdminWindowXR.cs
++++ b/modified/Assets/Scripts/UI/Windows/XR/AdminWindowXR.cs
+@@ -35,7 +35,7 @@ public class AdminWindowXR : EditorPlacedXRWindowBehaviour
+     public override void OnUI(FuWindow window, FuLayout layout)
+     {
+         _adminPanelWidget.SetTheme(ResolveTimelineTheme());
+-        Rect panelRect = new Rect(Fugui.GetWindowPos(), Fugui.GetWindowSize());
++        Rect panelRect = window.LocalRect;
+         if (_adminPanelWidget.Draw(panelRect, 1f))
+             gameObject.SetActive(false);
+     }
+diff --git a/original/Assets/Scripts/UI/Windows/XR/NetworkVoiceWindowXR.cs b/modified/Assets/Scripts/UI/Windows/XR/NetworkVoiceWindowXR.cs
+index cc39ace..2a95733 100644
+--- a/original/Assets/Scripts/UI/Windows/XR/NetworkVoiceWindowXR.cs
++++ b/modified/Assets/Scripts/UI/Windows/XR/NetworkVoiceWindowXR.cs
+@@ -35,7 +35,7 @@ public class NetworkVoiceWindowXR : EditorPlacedXRWindowBehaviour
+     public override void OnUI(FuWindow window, FuLayout layout)
+     {
+         _networkSettingsWidget.SetTheme(ResolveTimelineTheme());
+-        Rect panelRect = new Rect(Fugui.GetWindowPos(), Fugui.GetWindowSize());
++        Rect panelRect = window.LocalRect;
+         if (_networkSettingsWidget.Draw(panelRect, 1f))
+             gameObject.SetActive(false);
+     }
+diff --git a/original/Assets/Scripts/UI/Windows/XR/SettingsWindowXR.cs b/modified/Assets/Scripts/UI/Windows/XR/SettingsWindowXR.cs
+index 5da2f2f..f95c740 100644
+--- a/original/Assets/Scripts/UI/Windows/XR/SettingsWindowXR.cs
++++ b/modified/Assets/Scripts/UI/Windows/XR/SettingsWindowXR.cs
+@@ -4,6 +4,7 @@ using Fu.Framework;
+ 
+ using Saravr.Core.Performance;
+ using Saravr.Network.Common;
++using System.Collections.Generic;
+ using UnityEngine;
+ using UnityEngine.Rendering.Universal;
+ using UnityEngine.XR;
+@@ -25,6 +26,12 @@ public class SettingsWindowXR : Fu3DWindowBehaviour
+         SaraXrRenderPriority.Balanced,
+         SaraXrRenderPriority.Cockpit
+     };
++    private static readonly List<string> XrRenderPriorityLabels = new List<string>
++    {
++        GetRenderPriorityLabel(SaraXrRenderPriority.QualityGround),
++        GetRenderPriorityLabel(SaraXrRenderPriority.Balanced),
++        GetRenderPriorityLabel(SaraXrRenderPriority.Cockpit)
++    };
+ 
+     [SerializeField]
+     private TimelineWidgetTheme timelineTheme;
+@@ -139,7 +146,7 @@ public class SettingsWindowXR : Fu3DWindowBehaviour
+         settingsWidget.SetTheme(theme);
+         adminPanelWidget.SetTheme(theme);
+ 
+-        Rect panelRect = new Rect(Fugui.GetWindowPos(), Fugui.GetWindowSize());
++        Rect panelRect = window.LocalRect;
+         DrawPanelBackground(panelRect, theme);
+ 
+         if (showAdminTab && IsAdminPanelAvailable())
+@@ -163,7 +170,7 @@ public class SettingsWindowXR : Fu3DWindowBehaviour
+         }
+ 
+         if (ShowXrRenderDebugControls)
+-            DrawXrRenderControls();
++            DrawXrRenderControls(layout);
+     }
+ 
+     /// <summary>
+@@ -320,33 +327,32 @@ public class SettingsWindowXR : Fu3DWindowBehaviour
+     /// <summary>
+     /// Draws the XR render controls UI.
+     /// </summary>
+-    private void DrawXrRenderControls()
++    private void DrawXrRenderControls(FuLayout layout)
+     {
+         float scale = Fugui.Scale > 0f ? Fugui.Scale : 1f;
+         float width = Mathf.Max(220f * scale, Fugui.GetContentRegionAvail().x);
++        FuElementSize sliderSize = new FuElementSize(width / scale, 4f);
+ 
+-        Fugui.Spacing();
+-        Fugui.Separator();
+-        Fugui.Spacing();
++        layout.Spacing();
++        layout.Separator();
++        layout.Spacing();
+         Fugui.PushFont(FontType.Bold);
+-        Fugui.Text("XR Rendering");
++        layout.Text("XR Rendering");
+         Fugui.PopFont();
+ 
+-        DrawXrRenderPriorityControl(width);
++        DrawXrRenderPriorityControl(layout);
+ 
+         UniversalRenderPipelineAsset urpAsset = UniversalRenderPipeline.asset;
+         if (urpAsset != null)
+         {
+             float renderScale = urpAsset.renderScale;
+-            Fugui.Text("URP render scale  " + renderScale.ToString("F2"));
+-            Fugui.SetNextItemWidth(width);
+-            if (Fugui.SliderFloat("##XRUrpRenderScale", ref renderScale, 0.5f, 2f, "%.2f"))
++            layout.Text("URP render scale  " + renderScale.ToString("F2"));
++            if (layout.Slider("##XRUrpRenderScale", ref renderScale, 0.5f, 2f, sliderSize, 0.01f, format: "%.2f"))
+                 urpAsset.renderScale = Mathf.Clamp(renderScale, 0.5f, 2f);
+ 
+             int msaaIndex = GetMsaaIndex(GetDisplayMsaaFromUrp(urpAsset.msaaSampleCount));
+-            Fugui.Text("MSAA  x" + MsaaValues[msaaIndex]);
+-            Fugui.SetNextItemWidth(width);
+-            if (Fugui.SliderInt("##XRMsaa", ref msaaIndex, 0, MsaaValues.Length - 1, "x" + MsaaValues[msaaIndex]))
++            layout.Text("MSAA  x" + MsaaValues[msaaIndex]);
++            if (layout.Slider("##XRMsaa", ref msaaIndex, 0, MsaaValues.Length - 1, sliderSize, format: "x%.0f"))
+             {
+                 int msaa = MsaaValues[Mathf.Clamp(msaaIndex, 0, MsaaValues.Length - 1)];
+                 ApplyMsaa(urpAsset, msaa);
+@@ -354,55 +360,57 @@ public class SettingsWindowXR : Fu3DWindowBehaviour
+         }
+         else
+         {
+-            Fugui.TextDisabled("URP asset unavailable");
++            DrawDisabledText(layout, "URP asset unavailable");
+         }
+ 
+         float eyeScale = XRSettings.eyeTextureResolutionScale;
+-        Fugui.Text("XR eye scale  " + eyeScale.ToString("F2"));
+-        Fugui.SetNextItemWidth(width);
+-        if (Fugui.SliderFloat("##XREyeScale", ref eyeScale, 0.5f, 2f, "%.2f"))
++        layout.Text("XR eye scale  " + eyeScale.ToString("F2"));
++        if (layout.Slider("##XREyeScale", ref eyeScale, 0.5f, 2f, sliderSize, 0.01f, format: "%.2f"))
+             XRSettings.eyeTextureResolutionScale = Mathf.Clamp(eyeScale, 0.5f, 2f);
+ 
+-        Fugui.TextDisabled("Eye " + XRSettings.eyeTextureWidth + " x " + XRSettings.eyeTextureHeight);
++        DrawDisabledText(layout, "Eye " + XRSettings.eyeTextureWidth + " x " + XRSettings.eyeTextureHeight);
+     }
+ 
+     /// <summary>
+     /// Draws the XR render priority control UI.
+     /// </summary>
+-    private static void DrawXrRenderPriorityControl(float width)
++    private static void DrawXrRenderPriorityControl(FuLayout layout)
+     {
+         SaraUnityQualitySettings settings = GetCurrentUnityQualitySettings();
+         if (settings == null || !settings.ApplyXrRenderPriority)
+         {
+-            Fugui.TextDisabled("Render priority unavailable");
++            DrawDisabledText(layout, "Render priority unavailable");
+             return;
+         }
+ 
+         SaraXrRenderPriority currentPriority = settings.XrRenderPriority;
+         SaraXrRenderPrioritySettings currentPreset = settings.GetXrRenderPrioritySettings(currentPriority);
+-        Fugui.Text("Render priority");
+-        Fugui.SetNextItemWidth(width);
+-        if (Fugui.BeginCombo("##XRRenderPriority", GetRenderPriorityLabel(currentPriority)))
+-        {
+-            for (int i = 0; i < XrRenderPriorities.Length; i++)
++        layout.Text("Render priority");
++        layout.Combobox(
++            "##XRRenderPriority",
++            XrRenderPriorityLabels,
++            index =>
+             {
+-                SaraXrRenderPriority priority = XrRenderPriorities[i];
+-                bool selected = priority == currentPriority;
+-                if (Fugui.Selectable(GetRenderPriorityLabel(priority) + "##xrRenderPriority" + i, selected))
++                if (index >= 0 && index < XrRenderPriorities.Length)
+                 {
++                    SaraXrRenderPriority priority = XrRenderPriorities[index];
+                     SaraPerformanceProfileApplier.ApplyXrRenderPriority(settings, priority);
+                 }
+-
+-                if (selected)
+-                    Fugui.SetItemDefaultFocus();
+-            }
+-
+-            Fugui.EndCombo();
+-        }
++            },
++            () => GetRenderPriorityLabel(settings.XrRenderPriority));
+ 
+         currentPreset = settings.GetXrRenderPrioritySettings(settings.XrRenderPriority);
+         if (currentPreset != null)
+-            Fugui.TextDisabled("Preset  MSAA x" + currentPreset.MSAA + " / RS " + currentPreset.RenderScale.ToString("F2"));
++            DrawDisabledText(layout, "Preset  MSAA x" + currentPreset.MSAA + " / RS " + currentPreset.RenderScale.ToString("F2"));
++    }
++
++    /// <summary>
++    /// Draws informational text using Fugui's disabled element state.
++    /// </summary>
++    private static void DrawDisabledText(FuLayout layout, string text)
++    {
++        layout.DisableNextElement();
++        layout.Text(text);
+     }
+ 
+ 
+diff --git a/original/Assets/Scripts/UI/Windows/XR/VRBelt3DWindow.cs b/modified/Assets/Scripts/UI/Windows/XR/VRBelt3DWindow.cs
+index 682aef7..dbc842b 100644
+--- a/original/Assets/Scripts/UI/Windows/XR/VRBelt3DWindow.cs
++++ b/modified/Assets/Scripts/UI/Windows/XR/VRBelt3DWindow.cs
+@@ -79,7 +79,7 @@ public class VRBelt3DWindow : EditorPlacedXRWindowBehaviour
+ 
+         _beltWidget.SetTheme(ResolveTimelineTheme());
+         _beltWidget.Draw(
+-            new Rect(Fugui.GetWindowPos(), Fugui.GetWindowSize()),
++            window.LocalRect,
+             activePanel,
+             visibleButtons,
+             ShowPanel);

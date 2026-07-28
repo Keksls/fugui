@@ -10,7 +10,7 @@ namespace Fu.Framework
     /// <summary>
     /// Represents the Fu Video Player type.
     /// </summary>
-    public class FuVideoPlayer
+    public class FuVideoPlayer : System.IDisposable
     {
         #region State
         // public properties
@@ -39,6 +39,8 @@ namespace Fu.Framework
         private float _lastFrameMousePosTime = 0f;
         private System.Action _executeOncePrepared;
         private bool _isPreparing = false;
+        private bool _isDisposed;
+        private FuContext _fullScreenContext;
         #endregion
 
         #region Constructors
@@ -52,6 +54,12 @@ namespace Fu.Framework
             ID = id;
             Fugui.ExecuteInMainThread(() =>
             {
+                if (_isDisposed)
+                {
+                    return;
+                }
+
+                // The hidden GameObject is the single owner of the Unity VideoPlayer component.
                 _playerGameObject = new GameObject("FuVideoPlayer");
                 Player = _playerGameObject.AddComponent<VideoPlayer>();
                 Player.playOnAwake = false;
@@ -66,8 +74,14 @@ namespace Fu.Framework
         /// <param name="source">videoPlayer just prepared</param>
         private void _player_prepareCompleted(VideoPlayer source)
         {
+            if (_isDisposed || source == null)
+            {
+                return;
+            }
+
             // player is ready, let's create texture
-            Texture = new RenderTexture((int)Player.width, (int)Player.height, 24, RenderTextureFormat.RGB111110Float, 0);
+            ReleaseTexture();
+            Texture = new RenderTexture(Mathf.Max((int)source.width, 1), Mathf.Max((int)source.height, 1), 24, RenderTextureFormat.RGB111110Float, 0);
 
             // get the first FuCameraWindowDefinition to get the current SRP MSAA sample count
             FuCameraWindowDefinition camDef = Fugui.UIWindowsDefinitions.FirstOrDefault(wd => wd.Value is FuCameraWindowDefinition).Value as FuCameraWindowDefinition;
@@ -92,7 +106,7 @@ namespace Fu.Framework
 #endif
             Texture.useDynamicScale = true;
             Texture.Create();
-            Player.targetTexture = Texture;
+            source.targetTexture = Texture;
             _executeOncePrepared?.Invoke();
             _executeOncePrepared = null;
             if (_autoPlay)
@@ -125,12 +139,13 @@ namespace Fu.Framework
 
             Fugui.ExecuteInMainThread(() =>
             {
-                // release texture
-                if (Texture != null)
+                if (_isDisposed || Player == null)
                 {
-                    Texture.Release();
-                    Texture = null;
+                    return;
                 }
+
+                _isPreparing = true;
+                ReleaseTexture();
                 // set new file to read and wait for player end prepare
                 Player.renderMode = VideoRenderMode.RenderTexture;
                 Player.url = path;
@@ -152,13 +167,13 @@ namespace Fu.Framework
 
             Fugui.ExecuteInMainThread(() =>
             {
-                _isPreparing = true;
-                // release texture
-                if (Texture != null)
+                if (_isDisposed || Player == null)
                 {
-                    Texture.Release();
-                    Texture = null;
+                    return;
                 }
+
+                _isPreparing = true;
+                ReleaseTexture();
                 // set new file to read and wait for player end prepare
                 Player.renderMode = VideoRenderMode.RenderTexture;
                 Player.clip = clip;
@@ -179,6 +194,11 @@ namespace Fu.Framework
             }
             Fugui.ExecuteInMainThread(() =>
             {
+                if (_isDisposed || Player == null)
+                {
+                    return;
+                }
+
                 Player.isLooping = looping;
             });
         }
@@ -195,6 +215,11 @@ namespace Fu.Framework
             }
             Fugui.ExecuteInMainThread(() =>
             {
+                if (_isDisposed)
+                {
+                    return;
+                }
+
                 _autoPlay = autoPlay;
             });
         }
@@ -210,6 +235,11 @@ namespace Fu.Framework
             }
             Fugui.ExecuteInMainThread(() =>
             {
+                if (_isDisposed || Player == null)
+                {
+                    return;
+                }
+
                 Player.Play();
             });
         }
@@ -225,6 +255,11 @@ namespace Fu.Framework
             }
             Fugui.ExecuteInMainThread(() =>
             {
+                if (_isDisposed || Player == null)
+                {
+                    return;
+                }
+
                 Player.Pause();
             });
         }
@@ -240,6 +275,11 @@ namespace Fu.Framework
             }
             Fugui.ExecuteInMainThread(() =>
             {
+                if (_isDisposed || Player == null)
+                {
+                    return;
+                }
+
                 Player.Stop();
             });
         }
@@ -256,6 +296,11 @@ namespace Fu.Framework
             }
             Fugui.ExecuteInMainThread(() =>
             {
+                if (_isDisposed || Player == null)
+                {
+                    return;
+                }
+
                 Player.frame = frame;
                 IsBuffering = true;
             });
@@ -275,13 +320,131 @@ namespace Fu.Framework
         /// </summary>
         internal void Kill()
         {
-            Fugui.ExecuteInMainThread(() =>
+            // Fugui invokes this from its main-thread UI/session lifecycle.
+            Dispose();
+        }
+
+        /// <summary>
+        /// Releases the VideoPlayer GameObject, render target and event subscriptions owned by this instance.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_isDisposed)
             {
+                return;
+            }
+
+            // Dispose synchronously so session shutdown cannot discard a queued cleanup action.
+            _isDisposed = true;
+            _executeOncePrepared = null;
+            _isPreparing = false;
+            System.Exception cleanupException = null;
+
+            RunCleanupStep(() =>
+            {
+                if (_fullScreenContext != null)
+                {
+                    _fullScreenContext.OnLastRender -= fullScreen_draw_event;
+                }
+            }, ref cleanupException);
+            _fullScreenContext = null;
+
+            RunCleanupStep(() =>
+            {
+                if (Player == null)
+                {
+                    return;
+                }
+
+                Player.prepareCompleted -= _player_prepareCompleted;
                 Player.Stop();
-                Texture.Release();
-                Object.Destroy(Texture);
-                Object.Destroy(Player);
-            });
+            }, ref cleanupException);
+
+            RunCleanupStep(ReleaseTexture, ref cleanupException);
+            RunCleanupStep(() =>
+            {
+                if (_playerGameObject != null)
+                {
+                    DestroyOwnedObject(_playerGameObject);
+                }
+            }, ref cleanupException);
+
+            _playerGameObject = null;
+            Player = null;
+
+            if (cleanupException != null)
+            {
+                throw new System.InvalidOperationException($"One or more resources failed to release for video player '{ID}'.", cleanupException);
+            }
+        }
+
+        /// <summary>
+        /// Executes one video-player cleanup operation while preserving the first failure.
+        /// </summary>
+        /// <param name="cleanupStep">Cleanup operation to execute.</param>
+        /// <param name="firstException">First exception raised by a cleanup operation.</param>
+        private static void RunCleanupStep(System.Action cleanupStep, ref System.Exception firstException)
+        {
+            try
+            {
+                cleanupStep?.Invoke();
+            }
+            catch (System.Exception exception)
+            {
+                // Cleanup continues so a VideoPlayer failure cannot retain the GameObject or render texture.
+                firstException ??= exception;
+                Debug.LogException(exception);
+            }
+        }
+
+        /// <summary>
+        /// Releases and destroys the render texture currently owned by this video player.
+        /// </summary>
+        private void ReleaseTexture()
+        {
+            RenderTexture ownedTexture = Texture;
+            Texture = null;
+            if (ownedTexture == null)
+            {
+                return;
+            }
+
+            if (Player != null && ReferenceEquals(Player.targetTexture, ownedTexture))
+            {
+                Player.targetTexture = null;
+            }
+
+            try
+            {
+                ownedTexture.Release();
+            }
+            finally
+            {
+                // Unity object ownership ends even if releasing the native render surface reports an error.
+                DestroyOwnedObject(ownedTexture);
+            }
+        }
+
+        /// <summary>
+        /// Destroys one runtime-created Unity object in play mode or Edit Mode.
+        /// </summary>
+        /// <param name="target">Object owned by the video player.</param>
+        private static void DestroyOwnedObject(Object target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            // Edit-mode previews have no guaranteed future frame for delayed destruction.
+            if (Application.isPlaying)
+            {
+                Object.Destroy(target);
+            }
+            else
+            {
+                Object.DestroyImmediate(target);
+            }
         }
 
         /// <summary>
@@ -351,7 +514,7 @@ namespace Fu.Framework
         {
             Fugui.ExecuteInMainThread(() =>
             {
-                if (_isFullScreen == fullScreen)
+                if (_isDisposed || _isFullScreen == fullScreen)
                 {
                     return;
                 }
@@ -360,12 +523,20 @@ namespace Fu.Framework
                 // enter full screen
                 if (_isFullScreen)
                 {
-                    (FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.DefaultContainer).Context.OnLastRender += fullScreen_draw_event;
+                    _fullScreenContext = (FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.DefaultContainer)?.Context;
+                    if (_fullScreenContext != null)
+                    {
+                        _fullScreenContext.OnLastRender += fullScreen_draw_event;
+                    }
                 }
                 // exit full screen
                 else
                 {
-                    (FuWindow.CurrentDrawingWindow != null ? FuWindow.CurrentDrawingWindow.Container : Fugui.DefaultContainer).Context.OnLastRender -= fullScreen_draw_event;
+                    if (_fullScreenContext != null)
+                    {
+                        _fullScreenContext.OnLastRender -= fullScreen_draw_event;
+                        _fullScreenContext = null;
+                    }
                 }
             });
         }

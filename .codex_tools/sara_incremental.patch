@@ -1,0 +1,49 @@
+﻿diff --git a/original/Assets/Scripts/UI/Windows/Common/RemoteNameKeyboardWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/RemoteNameKeyboardWidget.cs
+index 2591f7a..c3e60fc 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/RemoteNameKeyboardWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/RemoteNameKeyboardWidget.cs
+@@ -1,5 +1,6 @@
+ using Assets.Scripts.UI.Windows.Common;
+ using Fu;
++using Fu.Framework;
+ 
+ using System;
+ using UnityEngine;
+diff --git a/original/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs b/modified/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs
+index 8ec3dcb..6f9a611 100644
+--- a/original/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs
++++ b/modified/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs
+@@ -527,6 +527,7 @@ namespace Assets.Scripts.UI.Windows.Common
+ 
+             Vector2 clipMin = new Vector2(rect.x, rect.y - theme.DockPaddingTop * scale);
+             Vector2 clipMax = new Vector2(rect.xMax, rect.yMax + theme.DockPaddingBottom * scale);
++            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
+             drawList.PushClipRect(clipMin, clipMax, true);
+             DrawPhaseRow(phasesRect);
+             DrawScrubber(scrubberRect);
+diff --git a/original/Assets/Scripts/UI/Windows/XR/TimelineHeaderWindowXR.cs b/modified/Assets/Scripts/UI/Windows/XR/TimelineHeaderWindowXR.cs
+index d0a4399..85d6d4d 100644
+--- a/original/Assets/Scripts/UI/Windows/XR/TimelineHeaderWindowXR.cs
++++ b/modified/Assets/Scripts/UI/Windows/XR/TimelineHeaderWindowXR.cs
+@@ -99,7 +99,7 @@ public class TimelineHeaderWindowXR : Fu3DWindowBehaviour
+ 
+     #region Window callbacks
+     /// <summary>
+-    /// Applies non-interfering ImGui flags to the VR timeline header window.
++    /// Applies non-interfering Fugui flags to the VR timeline header window.
+     /// </summary>
+     public override void OnWindowCreated(FuWindow window)
+     {
+diff --git a/original/Assets/Scripts/UI/Windows/XR/TimelineWindowXR.cs b/modified/Assets/Scripts/UI/Windows/XR/TimelineWindowXR.cs
+index 26fc766..5a185bf 100644
+--- a/original/Assets/Scripts/UI/Windows/XR/TimelineWindowXR.cs
++++ b/modified/Assets/Scripts/UI/Windows/XR/TimelineWindowXR.cs
+@@ -272,7 +272,7 @@ public class TimelineWindowXR : Fu3DWindowBehaviour
+ 
+     #region Window callbacks
+     /// <summary>
+-    /// Applies non-interfering ImGui flags to the VR timeline window.
++    /// Applies non-interfering Fugui flags to the VR timeline window.
+     /// </summary>
+     /// <param name="window">Created Fu 3D window.</param>
+     public override void OnWindowCreated(FuWindow window)

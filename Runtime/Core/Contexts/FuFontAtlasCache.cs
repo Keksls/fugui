@@ -55,11 +55,20 @@ namespace Fu
                 name = $"Fugui Font Atlas {FormatScale(fontScale)}"
             };
 
-            if (!ImageConversion.LoadImage(texture, bytes, false))
+            try
             {
-                UnityEngine.Object.Destroy(texture);
-                Debug.LogWarning($"[FontAtlasCache] Failed to decode baked font atlas: {atlasPath}");
-                return false;
+                // Ownership transfers to the caller only after decoding succeeds.
+                if (!ImageConversion.LoadImage(texture, bytes, false))
+                {
+                    DestroyOwnedTexture(texture);
+                    Debug.LogWarning($"[FontAtlasCache] Failed to decode baked font atlas: {atlasPath}");
+                    return false;
+                }
+            }
+            catch
+            {
+                DestroyOwnedTexture(texture);
+                throw;
             }
 
             texture.filterMode = FilterMode.Point;
@@ -226,19 +235,50 @@ namespace Fu
                 name = textureName
             };
 
-            NativeArray<byte> srcData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(pixels, width * height * bytesPerPixel, Allocator.None);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref srcData, AtomicSafetyHandle.GetTempMemoryHandle());
-#endif
-            NativeArray<byte> dstData = atlas.GetRawTextureData<byte>();
-            int stride = width * bytesPerPixel;
-            for (int y = 0; y < height; ++y)
+            try
             {
-                NativeArray<byte>.Copy(srcData, y * stride, dstData, (height - y - 1) * stride, stride);
+                // The created texture remains locally owned until every source row has been uploaded successfully.
+                NativeArray<byte> srcData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(pixels, width * height * bytesPerPixel, Allocator.None);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref srcData, AtomicSafetyHandle.GetTempMemoryHandle());
+#endif
+                NativeArray<byte> dstData = atlas.GetRawTextureData<byte>();
+                int stride = width * bytesPerPixel;
+                for (int y = 0; y < height; ++y)
+                {
+                    NativeArray<byte>.Copy(srcData, y * stride, dstData, (height - y - 1) * stride, stride);
+                }
+
+                atlas.Apply();
+                return atlas;
+            }
+            catch
+            {
+                DestroyOwnedTexture(atlas);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Destroys one font-atlas texture that has not been transferred to a caller or texture manager.
+        /// </summary>
+        /// <param name="texture">Locally owned font-atlas texture.</param>
+        private static void DestroyOwnedTexture(Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return;
             }
 
-            atlas.Apply();
-            return atlas;
+            // Atlas baking and previews can run outside play mode.
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(texture);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
         }
 
         internal static byte[] ReadStreamingAssetBytes(string path, bool logErrors)
@@ -411,17 +451,30 @@ namespace Fu
             public ImFontAtlasPtr Atlas;
             public Dictionary<string, Dictionary<int, FontSet>> Fonts = new Dictionary<string, Dictionary<int, FontSet>>();
             public FontSet DefaultFont;
-            public List<byte[]> FontBuffers = new List<byte[]>();
             public int RefCount;
         }
 
+        /// <summary>
+        /// Returns whether native font-atlas sharing is enabled for a configuration.
+        /// </summary>
+        /// <param name="fontConfig">Font configuration to inspect.</param>
+        /// <returns>True when contexts should share native atlases.</returns>
         internal static bool IsEnabled(FontConfig fontConfig)
         {
+            // A missing configuration cannot participate in the shared cache.
             return fontConfig != null && fontConfig.UseSharedFontAtlas;
         }
 
+        /// <summary>
+        /// Acquires a reference to a completed shared atlas, building it when necessary.
+        /// </summary>
+        /// <param name="fontConfig">Font configuration to load.</param>
+        /// <param name="fontScale">Requested font scale.</param>
+        /// <param name="streamingAssetsPath">Root path used to resolve font files.</param>
+        /// <returns>Acquired cache entry, or null when sharing or atlas construction is unavailable.</returns>
         internal static Entry GetOrCreate(FontConfig fontConfig, float fontScale, string streamingAssetsPath)
         {
+            // Only completed entries enter the cache, so callers never borrow a half-built atlas.
             if (!IsEnabled(fontConfig))
             {
                 return null;
@@ -429,12 +482,15 @@ namespace Fu
 
             fontScale = FuFontAtlasCache.QuantizeFontScale(fontConfig, fontScale);
             string key = GetKey(fontConfig, fontScale, streamingAssetsPath);
-            if (_entries.TryGetValue(key, out Entry existing) && existing != null)
+            if (_entries.TryGetValue(key, out Entry existing) &&
+                existing != null &&
+                existing.Atlas.NativePtr != null)
             {
                 existing.RefCount++;
                 return existing;
             }
 
+            _entries.Remove(key);
             Entry entry = BuildEntry(fontConfig, fontScale, streamingAssetsPath, key);
             if (entry == null)
             {
@@ -446,8 +502,13 @@ namespace Fu
             return entry;
         }
 
+        /// <summary>
+        /// Releases one context reference to a shared native atlas.
+        /// </summary>
+        /// <param name="entry">Previously acquired cache entry.</param>
         internal static void Release(Entry entry)
         {
+            // Atlases remain cached until session shutdown to avoid repeated native rebuilds.
             if (entry == null)
             {
                 return;
@@ -456,21 +517,97 @@ namespace Fu
             entry.RefCount = Mathf.Max(0, entry.RefCount - 1);
         }
 
+        /// <summary>
+        /// Builds one shared atlas ahead of use without retaining a context reference.
+        /// </summary>
+        /// <param name="fontConfig">Font configuration to load.</param>
+        /// <param name="fontScale">Requested font scale.</param>
+        /// <param name="streamingAssetsPath">Root path used to resolve font files.</param>
         internal static void Prewarm(FontConfig fontConfig, float fontScale, string streamingAssetsPath)
         {
+            // The cache owns the built atlas; prewarming does not represent a live context borrower.
             Entry entry = GetOrCreate(fontConfig, fontScale, streamingAssetsPath);
             Release(entry);
         }
 
+        /// <summary>
+        /// Destroys every native atlas owned by the current Fugui session.
+        /// </summary>
+        internal static void Shutdown()
+        {
+            // Contexts borrow these atlases; session shutdown runs only after all contexts have been destroyed.
+            Exception firstException = null;
+            foreach (Entry entry in _entries.Values)
+            {
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                if (entry.RefCount != 0)
+                {
+                    Debug.LogWarning($"[FontAtlasCache] Destroying atlas '{entry.Key}' with {entry.RefCount} outstanding reference(s).");
+                }
+
+                try
+                {
+                    if (entry.Atlas.NativePtr != null)
+                    {
+                        entry.Atlas.Destroy();
+                    }
+                }
+                catch (Exception exception)
+                {
+                    // Continue so one failed native destruction cannot retain later atlas allocations.
+                    firstException ??= exception;
+                }
+                finally
+                {
+                    entry.Atlas = default;
+                    entry.Fonts.Clear();
+                    entry.DefaultFont = null;
+                    entry.RefCount = 0;
+                }
+            }
+
+            _entries.Clear();
+            if (firstException != null)
+            {
+                throw new InvalidOperationException("One or more shared native font atlases failed to destroy.", firstException);
+            }
+        }
+
+        /// <summary>
+        /// Builds one independently owned native atlas for a shared cache entry.
+        /// </summary>
+        /// <param name="fontConfig">Font configuration to load.</param>
+        /// <param name="fontScale">Quantized font scale.</param>
+        /// <param name="streamingAssetsPath">Root path used to resolve fonts.</param>
+        /// <param name="key">Stable cache key for this atlas.</param>
+        /// <returns>Completed cache entry, or null when atlas build failed.</returns>
         private static Entry BuildEntry(FontConfig fontConfig, float fontScale, string streamingAssetsPath, string key)
         {
+            // A temporary context performs the build but never owns the externally allocated atlas.
             IntPtr previousContext = ImGuiNative.igGetCurrentContext();
             IntPtr buildContext = IntPtr.Zero;
             ImFontAtlasPtr atlas = new ImFontAtlasPtr(ImGuiNative.ImFontAtlas_ImFontAtlas());
+            Entry result = null;
 
             try
             {
+                if (atlas.NativePtr == null)
+                {
+                    Debug.LogError("[FontAtlasCache] Unable to allocate a native shared font atlas.");
+                    return null;
+                }
+
                 buildContext = ImGui.CreateContext(atlas);
+                if (buildContext == IntPtr.Zero)
+                {
+                    Debug.LogError("[FontAtlasCache] Unable to create the temporary ImGui font-build context.");
+                    return null;
+                }
+
                 ImGuiNative.igSetCurrentContext(buildContext);
 
                 Entry entry = new Entry
@@ -481,29 +618,27 @@ namespace Fu
                 };
 
                 ImGuiIOPtr io = ImGui.GetIO();
-                FuFontLoader.LoadFonts(
+                using (FuFontLoadResources fontResources = FuFontLoader.LoadFonts(
                     io,
                     fontConfig,
                     fontScale,
                     streamingAssetsPath,
                     entry.Fonts,
-                    out entry.DefaultFont,
-                    entry.FontBuffers);
-
-                if (!io.Fonts.Build())
+                    out entry.DefaultFont))
                 {
-                    Debug.LogError($"[FontAtlasCache] Failed to build shared font atlas for scale {fontScale:0.###}.");
-                    atlas.Destroy();
-                    return null;
+                    // The shared atlas takes permanent ownership of font data; glyph ranges are build-scoped.
+                    if (!io.Fonts.Build())
+                    {
+                        Debug.LogError($"[FontAtlasCache] Failed to build shared font atlas for scale {fontScale:0.###}.");
+                        return null;
+                    }
                 }
 
-                return entry;
+                result = entry;
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                atlas.Destroy();
-                return null;
             }
             finally
             {
@@ -514,11 +649,25 @@ namespace Fu
                 }
 
                 ImGuiNative.igSetCurrentContext(previousContext);
+                if (result == null && atlas.NativePtr != null)
+                {
+                    atlas.Destroy();
+                }
             }
+
+            return result;
         }
 
+        /// <summary>
+        /// Returns the stable shared-atlas cache key for a configuration and scale.
+        /// </summary>
+        /// <param name="fontConfig">Font configuration.</param>
+        /// <param name="fontScale">Quantized font scale.</param>
+        /// <param name="streamingAssetsPath">Root font path.</param>
+        /// <returns>Atlas cache key.</returns>
         private static string GetKey(FontConfig fontConfig, float fontScale, string streamingAssetsPath)
         {
+            // Shared native and baked Unity atlases use the same content-derived identity.
             return FuFontAtlasCache.GetAtlasCacheKey(fontConfig, fontScale, streamingAssetsPath);
         }
     }

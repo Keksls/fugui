@@ -665,15 +665,6 @@ namespace Fu
         {
             ImGuiNative.ImDrawList_ChannelsSplit((ImDrawList*)(NativePtr), count);
         }
-        public FuDrawList CloneOutput()
-        {
-            ImDrawList* ret = ImGuiNative.ImDrawList_CloneOutput((ImDrawList*)(NativePtr));
-            return new FuDrawList(ret);
-        }
-        public void Destroy()
-        {
-            ImGuiNative.ImDrawList_destroy((ImDrawList*)(NativePtr));
-        }
         public Vector2 GetClipRectMax()
         {
             Vector2 __retval;

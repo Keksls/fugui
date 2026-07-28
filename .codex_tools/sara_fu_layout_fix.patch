@@ -1,0 +1,40 @@
+diff --git a/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs b/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs
+--- a/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs
++++ b/Assets/Scripts/UI/Windows/Common/TimelineWidget.cs
+@@ -60,7 +60,6 @@ namespace Assets.Scripts.UI.Windows.Common
+ 
+         private static readonly float[] PlaybackSpeeds = { 0.5f, 1.0f, 2.0f, 4.0f, 8.0f };
+         private static readonly string[] PlaybackSpeedLabels = { "0.5x", "1x", "2x", "4x", "8x" };
+-        private static readonly FuLayout ShortcutTooltipLayout = new FuLayout();
+ 
+         private readonly List<TimelineEvent> _events = new List<TimelineEvent>();
+         private TimelineWidgetTheme _theme;
+@@ -2092,7 +2091,7 @@ namespace Assets.Scripts.UI.Windows.Common
+         private static void DrawShortcutTooltip(string id, string tooltip)
+         {
+             if (!string.IsNullOrEmpty(tooltip))
+-                ShortcutTooltipLayout.SetToolTip(id + "Shortcut", tooltip, true);
++                FuWindow.CurrentDrawingWindow?.Layout?.SetToolTip(id + "Shortcut", tooltip, true);
+         }
+ 
+         /// <summary>
+diff --git a/Assets/Scripts/UI/Windows/Flat/MainWindow.cs b/Assets/Scripts/UI/Windows/Flat/MainWindow.cs
+--- a/Assets/Scripts/UI/Windows/Flat/MainWindow.cs
++++ b/Assets/Scripts/UI/Windows/Flat/MainWindow.cs
+@@ -34,7 +34,6 @@ public class MainWindow : FuWindowBehaviour
+     private readonly NetworkSettingsWidget _networkSettingsWidget = new NetworkSettingsWidget();
+     private readonly AdminPanelWidget _adminPanelWidget = new AdminPanelWidget();
+     private readonly ShortcutSettingsWidget _shortcutSettingsWidget = new ShortcutSettingsWidget();
+-    private static readonly FuLayout ShortcutTooltipLayout = new FuLayout();
+     private bool _timelineRetracted;
+     private float _timelineOpenAmount = 1f;
+     private bool _settingsOpen;
+@@ -788,7 +787,7 @@ public class MainWindow : FuWindowBehaviour
+         {
+             Fugui.SetMouseCursor(FuMouseCursor.Hand);
+             if (!string.IsNullOrEmpty(tooltip))
+-                ShortcutTooltipLayout.SetToolTip(id + "Shortcut", tooltip, true);
++                FuWindow.CurrentDrawingWindow?.Layout?.SetToolTip(id + "Shortcut", tooltip, true);
+         }
+ 
+         return clicked;

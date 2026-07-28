@@ -160,9 +160,15 @@ namespace Fu.Framework
             uint shine = loaderColor(FuColors.Text, 0.13f);
 
             drawList.PushClipRect(pos, max, true);
-            drawList.AddRectFilledMultiColor(new Vector2(x, pos.y), new Vector2(mid, max.y), clear, shine, shine, clear);
-            drawList.AddRectFilledMultiColor(new Vector2(mid, pos.y), new Vector2(x + bandWidth, max.y), shine, clear, clear, shine);
-            drawList.PopClipRect();
+            try
+            {
+                drawList.AddRectFilledMultiColor(new Vector2(x, pos.y), new Vector2(mid, max.y), clear, shine, shine, clear);
+                drawList.AddRectFilledMultiColor(new Vector2(mid, pos.y), new Vector2(x + bandWidth, max.y), shine, clear, clear, shine);
+            }
+            finally
+            {
+                drawList.PopClipRect();
+            }
 
             finishLoader(scaledSize);
         }

@@ -48,12 +48,18 @@ namespace Fu.Framework
                 Spacing();
                 SameLine();
                 BeginGroup();
-                _datetimeUpdated = DateTimePicker(text, ref _currentDateTimeValue);
-                if (_datetimeUpdated)
+                try
                 {
-                    Fugui.ClosePopup(ppID);
+                    _datetimeUpdated = DateTimePicker(text, ref _currentDateTimeValue);
+                    if (_datetimeUpdated)
+                    {
+                        Fugui.ClosePopup(ppID);
+                    }
                 }
-                EndGroup();
+                finally
+                {
+                    EndGroup();
+                }
                 SameLine();
                 Spacing();
                 Spacing();

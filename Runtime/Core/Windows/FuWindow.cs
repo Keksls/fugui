@@ -305,10 +305,7 @@ namespace Fu
         private DrawListMesh _renderMeshData;
         private Vector2Int _renderMeshLocalPosition;
         private bool _debugPanelExpanded;
-        // var to count how many push are at frame start, so we can pop missing push
-        private static int _nbColorPushOnFrameStart = 0;
-        private static int _nbStylePushOnFrameStart = 0;
-        private static int _nbFontPushOnFrameStart = 0;
+        private bool _runtimeResourcesDisposed;
         internal bool _releaseFocusNextFrame = false;
 
         // static fields
@@ -878,7 +875,7 @@ namespace Fu
 
             if (externalBefore)
             {
-                ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, IsDocked ? 0f : Fugui.Themes.WindowRounding);
+                Fugui.PushUnscaled(ImGuiStyleVar.WindowRounding, IsDocked ? 0f : Fugui.Themes.WindowRounding);
                 nativeWantDrawWindow = ImGui.Begin(ID, nativeWindowFlags);
             }
             else if (IsClosable)
@@ -890,76 +887,25 @@ namespace Fu
                 nativeWantDrawWindow = ImGui.Begin(ID, nativeWindowFlags);
             }
 
-            if (nativeWantDrawWindow)
+            try
             {
-                DrawInvisibleWindowAnchor();
+                DrawNativeWindowContent(
+                    nativeWantDrawWindow,
+                    useWindowBackdrop,
+                    preventUpdatingMouse,
+                    preventUpdatingKeyboard,
+                    ref newFrameSize,
+                    ref newFramePos);
             }
-
-            ApplyNativeWindowLayerOrder(false);
-
-            // whatever window is hovered
-            processHoverState();
-
-            // update mouse buttons states
-            if (!preventUpdatingMouse)
+            finally
             {
-                Mouse.UpdateState(this);
-                if (BlocksWindowInputs || Fugui.WindowInputsBlockedThisFrame)
-                {
-                    Mouse.SuppressWindowInputs();
-                }
-            }
-            UpdateHoveredContentState();
-            // update keyboard state
-            if (!preventUpdatingKeyboard)
-                Keyboard.UpdateState();
-            ProcessCustomWindowManipulation(ref newFrameSize, ref newFramePos);
-            FocusCurrentImGuiWindowIfRequested();
-
-            // draw the window body
-            if (nativeWantDrawWindow)
-            {
-                if (useWindowBackdrop)
-                {
-                    float backdropRounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
-                    Fugui.DrawCurrentWindowThemeBackdrop(FuColors.WindowBg, 1f, backdropRounding);
-                }
-
-                TryDrawUI();
-                TryBeginCustomBodyDragAfterContent();
-
-                if (Is3DWindow)
-                {
-                    newFrameSize = Size;
-                }
-                else
-                {
-                    var size = ImGui.GetWindowSize();
-                    newFrameSize = new Vector2Int((int)size.x, (int)size.y);
-                }
-                // get pos of this window
-                var pos = ImGui.GetWindowPos();
-                newFramePos = new Vector2Int((int)pos.x, (int)pos.y);
-                HasFocus = ImGuiNative.igIsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) != 0;
-
-                // draw debug data
-                DrawDebugPanel();
+                // Every successful ImGui.Begin call requires a matching End, including collapsed windows and callback failures.
                 ImGui.End();
-                Fugui.PopStyle(windowStylePushCount);
-                IsVisible = true;
             }
-            else
-            {
-                ImGui.End();
-                Fugui.PopStyle(windowStylePushCount);
-                IsVisible = false;
-                IsHovered = false;
-                IsHoveredContent = false;
-                HasFocus = false;
-            }
+            Fugui.PopStyle(windowStylePushCount);
             if (externalBefore)
             {
-                ImGui.PopStyleVar();
+                Fugui.PopStyle();
             }
 
             // hovered state just changed, handle fire onHover events
@@ -997,6 +943,85 @@ namespace Fu
                 OnInitialized?.Invoke(this);
             }
             Layout.Dispose();
+        }
+
+        /// <summary>
+        /// Draws the native ImGui window content after Begin has successfully entered the window scope.
+        /// </summary>
+        /// <param name="nativeWantDrawWindow">Whether ImGui wants to submit the window contents.</param>
+        /// <param name="useWindowBackdrop">Whether Fugui must draw the themed backdrop.</param>
+        /// <param name="preventUpdatingMouse">Whether mouse state updates are disabled for this draw.</param>
+        /// <param name="preventUpdatingKeyboard">Whether keyboard state updates are disabled for this draw.</param>
+        /// <param name="newFrameSize">Rendered window size.</param>
+        /// <param name="newFramePos">Rendered window position.</param>
+        private void DrawNativeWindowContent(
+            bool nativeWantDrawWindow,
+            bool useWindowBackdrop,
+            bool preventUpdatingMouse,
+            bool preventUpdatingKeyboard,
+            ref Vector2Int newFrameSize,
+            ref Vector2Int newFramePos)
+        {
+            // Keep all native window work inside the Begin/End protection owned by DrawWindowBody.
+            if (nativeWantDrawWindow)
+            {
+                DrawInvisibleWindowAnchor();
+            }
+
+            ApplyNativeWindowLayerOrder(false);
+            processHoverState();
+
+            if (!preventUpdatingMouse)
+            {
+                Mouse.UpdateState(this);
+                if (BlocksWindowInputs || Fugui.WindowInputsBlockedThisFrame)
+                {
+                    Mouse.SuppressWindowInputs();
+                }
+            }
+            UpdateHoveredContentState();
+
+            if (!preventUpdatingKeyboard)
+            {
+                Keyboard.UpdateState();
+            }
+            ProcessCustomWindowManipulation(ref newFrameSize, ref newFramePos);
+            FocusCurrentImGuiWindowIfRequested();
+
+            if (!nativeWantDrawWindow)
+            {
+                IsVisible = false;
+                IsHovered = false;
+                IsHoveredContent = false;
+                HasFocus = false;
+                return;
+            }
+
+            if (useWindowBackdrop)
+            {
+                float backdropRounding = IsDocked ? 0f : Fugui.Themes.WindowRounding;
+                Fugui.DrawCurrentWindowThemeBackdrop(FuColors.WindowBg, 1f, backdropRounding);
+            }
+
+            TryDrawUI();
+            TryBeginCustomBodyDragAfterContent();
+
+            if (Is3DWindow)
+            {
+                newFrameSize = Size;
+            }
+            else
+            {
+                Vector2 size = ImGui.GetWindowSize();
+                newFrameSize = new Vector2Int((int)size.x, (int)size.y);
+            }
+
+            Vector2 pos = ImGui.GetWindowPos();
+            newFramePos = new Vector2Int((int)pos.x, (int)pos.y);
+            HasFocus = ImGuiNative.igIsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) != 0;
+
+            DrawDebugPanel();
+            IsVisible = true;
         }
 
         /// <summary>
@@ -1090,6 +1115,33 @@ namespace Fu
         /// </summary>
         private void TryDrawUI()
         {
+            FuImGuiStackSnapshot stackSnapshot = Fugui.CaptureImGuiStackSnapshot();
+            try
+            {
+                DrawUIContent();
+            }
+            finally
+            {
+                // The callback boundary owns every Fugui stack entry created while drawing this window.
+                try
+                {
+                    Fugui.RestoreImGuiStackSnapshot(stackSnapshot);
+                }
+                finally
+                {
+                    if (CurrentDrawingWindow == this)
+                    {
+                        CurrentDrawingWindow = null;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Draws the window content inside the stack-protected callback boundary.
+        /// </summary>
+        private void DrawUIContent()
+        {
             float customTopHeight = GetCustomTopChromeHeight();
             bool customTopBarIsDockTabs = IsDocked && Fugui.Layouts != null && Fugui.Layouts.HasDockedTabBar(this);
             float headerContentHeight = GetHeaderContentHeight();
@@ -1122,11 +1174,6 @@ namespace Fu
                     ImGui.SetCursorScreenPos(screenCursorPos + new Vector2(0f, headerContentHeight));
                 }
 
-                // count nb push at render begin
-                _nbColorPushOnFrameStart = Fugui.NbPushColor;
-                _nbStylePushOnFrameStart = Fugui.NbPushStyle;
-                _nbFontPushOnFrameStart = Fugui.NbPushFont;
-
                 // draw user UI callback
                 FuStyle.Default.Push(true);
                 if (Fugui.WindowInputsBlockedThisFrame)
@@ -1155,23 +1202,6 @@ namespace Fu
                     ImGui.SetCursorScreenPos(footerPos);
                     FooterUI.Invoke(this, new Vector2(_workingAreaSize.x, FooterHeight));
                     ImGui.SetCursorScreenPos(footerPos + new Vector2(0f, FooterHeight));
-                }
-
-                // pop missing push
-                int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
-                if (nbMissingColor > 0)
-                {
-                    Fugui.PopColor(nbMissingColor);
-                }
-                int nbMissingStyle = Fugui.NbPushStyle - _nbStylePushOnFrameStart;
-                if (nbMissingStyle > 0)
-                {
-                    Fugui.PopStyle(nbMissingStyle);
-                }
-                int nbMissingFont = Fugui.NbPushFont - _nbFontPushOnFrameStart;
-                if (nbMissingFont > 0)
-                {
-                    Fugui.PopFont(nbMissingFont);
                 }
 
                 // save whatever ImGui want capture Keyboard
@@ -1454,8 +1484,14 @@ namespace Fu
                 float textClipRight = IsClosable && !IsExternal ? pos.x + closeRect.xMin - 4f * Fugui.Scale : pos.x + size.x - 8f * Fugui.Scale - externalButtonReserve;
 
                 dl.PushClipRect(new Vector2(textX, pos.y), new Vector2(Mathf.Max(textX, textClipRight), pos.y + customTopHeight), true);
-                dl.AddText(new Vector2(textX, textY), Fugui.GetColorU32(HasFocus ? FuColors.HighlightText : FuColors.Text), title);
-                dl.PopClipRect();
+                try
+                {
+                    dl.AddText(new Vector2(textX, textY), Fugui.GetColorU32(HasFocus ? FuColors.HighlightText : FuColors.Text), title);
+                }
+                finally
+                {
+                    dl.PopClipRect();
+                }
 
                 if (IsClosable && !IsExternal)
                 {
@@ -1549,70 +1585,75 @@ namespace Fu
                 drawList.PushClipRect(windowPos, windowPos + windowSize, false);
             }
 
-            uint feedbackColor = Fugui.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
-            uint edgeLineColor = Fugui.GetColorU32(FuColors.Border, active ? 0.88f : 0.62f);
-            uint handleColor = feedbackColor;
-            float handleThickness = active ? Mathf.Max(2f, 2.5f * Fugui.Scale) : Mathf.Max(1.5f, 2f * Fugui.Scale);
-            float edgeLineThickness = Mathf.Max(1f, 1f * Fugui.Scale);
-            float inset = handleThickness * 0.5f;
-            Vector2 min = windowPos + new Vector2(inset, inset);
-            Vector2 max = windowPos + windowSize - new Vector2(inset, inset);
-            float centerX = Mathf.Clamp(windowPos.x + Mouse.Position.x, min.x, max.x);
-            float centerY = Mathf.Clamp(windowPos.y + Mouse.Position.y, min.y, max.y);
-            float handleShort = Mathf.Max(5f, 5f * Fugui.Scale);
-            float handleLong = Mathf.Max(36f, 42f * Fugui.Scale);
-            float verticalHandleLong = Mathf.Min(handleLong, Mathf.Max(handleShort, max.y - min.y));
-            float horizontalHandleLong = Mathf.Min(handleLong, Mathf.Max(handleShort, max.x - min.x));
-            float rounding = handleShort * 0.5f;
+            try
+            {
+                uint feedbackColor = Fugui.GetColorU32(active ? FuColors.HighlightActive : FuColors.HighlightHovered, active ? 1f : 0.9f);
+                uint edgeLineColor = Fugui.GetColorU32(FuColors.Border, active ? 0.88f : 0.62f);
+                uint handleColor = feedbackColor;
+                float handleThickness = active ? Mathf.Max(2f, 2.5f * Fugui.Scale) : Mathf.Max(1.5f, 2f * Fugui.Scale);
+                float edgeLineThickness = Mathf.Max(1f, 1f * Fugui.Scale);
+                float inset = handleThickness * 0.5f;
+                Vector2 min = windowPos + new Vector2(inset, inset);
+                Vector2 max = windowPos + windowSize - new Vector2(inset, inset);
+                float centerX = Mathf.Clamp(windowPos.x + Mouse.Position.x, min.x, max.x);
+                float centerY = Mathf.Clamp(windowPos.y + Mouse.Position.y, min.y, max.y);
+                float handleShort = Mathf.Max(5f, 5f * Fugui.Scale);
+                float handleLong = Mathf.Max(36f, 42f * Fugui.Scale);
+                float verticalHandleLong = Mathf.Min(handleLong, Mathf.Max(handleShort, max.y - min.y));
+                float horizontalHandleLong = Mathf.Min(handleLong, Mathf.Max(handleShort, max.x - min.x));
+                float rounding = handleShort * 0.5f;
 
-            if (IsLeftResizeEdge(edge))
-            {
-                drawList.AddLine(min, new Vector2(min.x, max.y), edgeLineColor, edgeLineThickness);
-                if (edge == FuWindowResizeEdge.Left)
+                if (IsLeftResizeEdge(edge))
                 {
-                    float clampedY = Mathf.Clamp(centerY, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
-                    Rect handle = new Rect(new Vector2(min.x - handleShort * 0.5f + inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
-                    drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
+                    drawList.AddLine(min, new Vector2(min.x, max.y), edgeLineColor, edgeLineThickness);
+                    if (edge == FuWindowResizeEdge.Left)
+                    {
+                        float clampedY = Mathf.Clamp(centerY, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
+                        Rect handle = new Rect(new Vector2(min.x - handleShort * 0.5f + inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
+                        drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
+                    }
+                }
+                if (IsRightResizeEdge(edge))
+                {
+                    drawList.AddLine(new Vector2(max.x, min.y), max, edgeLineColor, edgeLineThickness);
+                    if (edge == FuWindowResizeEdge.Right)
+                    {
+                        float clampedY = Mathf.Clamp(centerY, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
+                        Rect handle = new Rect(new Vector2(max.x - handleShort * 0.5f - inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
+                        drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
+                    }
+                }
+                if (IsTopResizeEdge(edge))
+                {
+                    drawList.AddLine(min, new Vector2(max.x, min.y), edgeLineColor, edgeLineThickness);
+                    if (edge == FuWindowResizeEdge.Top)
+                    {
+                        float clampedX = Mathf.Clamp(centerX, min.x + horizontalHandleLong * 0.5f, max.x - horizontalHandleLong * 0.5f);
+                        Rect handle = new Rect(new Vector2(clampedX - horizontalHandleLong * 0.5f, min.y - handleShort * 0.5f + inset), new Vector2(horizontalHandleLong, handleShort));
+                        drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
+                    }
+                }
+                if (IsBottomResizeEdge(edge))
+                {
+                    drawList.AddLine(new Vector2(min.x, max.y), max, edgeLineColor, edgeLineThickness);
+                    if (edge == FuWindowResizeEdge.Bottom)
+                    {
+                        float clampedX = Mathf.Clamp(centerX, min.x + horizontalHandleLong * 0.5f, max.x - horizontalHandleLong * 0.5f);
+                        Rect handle = new Rect(new Vector2(clampedX - horizontalHandleLong * 0.5f, max.y - handleShort * 0.5f - inset), new Vector2(horizontalHandleLong, handleShort));
+                        drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
+                    }
+                }
+                if (IsCornerResizeEdge(edge))
+                {
+                    DrawCornerResizeHandle(drawList, edge, min, max, handleColor, handleThickness);
                 }
             }
-            if (IsRightResizeEdge(edge))
+            finally
             {
-                drawList.AddLine(new Vector2(max.x, min.y), max, edgeLineColor, edgeLineThickness);
-                if (edge == FuWindowResizeEdge.Right)
+                if (clippedToWindow)
                 {
-                    float clampedY = Mathf.Clamp(centerY, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
-                    Rect handle = new Rect(new Vector2(max.x - handleShort * 0.5f - inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
-                    drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
+                    drawList.PopClipRect();
                 }
-            }
-            if (IsTopResizeEdge(edge))
-            {
-                drawList.AddLine(min, new Vector2(max.x, min.y), edgeLineColor, edgeLineThickness);
-                if (edge == FuWindowResizeEdge.Top)
-                {
-                    float clampedX = Mathf.Clamp(centerX, min.x + horizontalHandleLong * 0.5f, max.x - horizontalHandleLong * 0.5f);
-                    Rect handle = new Rect(new Vector2(clampedX - horizontalHandleLong * 0.5f, min.y - handleShort * 0.5f + inset), new Vector2(horizontalHandleLong, handleShort));
-                    drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
-                }
-            }
-            if (IsBottomResizeEdge(edge))
-            {
-                drawList.AddLine(new Vector2(min.x, max.y), max, edgeLineColor, edgeLineThickness);
-                if (edge == FuWindowResizeEdge.Bottom)
-                {
-                    float clampedX = Mathf.Clamp(centerX, min.x + horizontalHandleLong * 0.5f, max.x - horizontalHandleLong * 0.5f);
-                    Rect handle = new Rect(new Vector2(clampedX - horizontalHandleLong * 0.5f, max.y - handleShort * 0.5f - inset), new Vector2(horizontalHandleLong, handleShort));
-                    drawList.AddRectFilled(handle.position, handle.position + handle.size, handleColor, rounding);
-                }
-            }
-            if (IsCornerResizeEdge(edge))
-            {
-                DrawCornerResizeHandle(drawList, edge, min, max, handleColor, handleThickness);
-            }
-
-            if (clippedToWindow)
-            {
-                drawList.PopClipRect();
             }
 
             switch (edge)
@@ -3333,8 +3374,7 @@ namespace Fu
         /// </summary>
         private void FinalizeClose()
         {
-            ReleaseInputFocus();
-            ClearDrawDataCache();
+            DisposeRuntimeResources();
             Fugui.TryRemoveUIWindow(this);
             Fugui.ForceDrawAllWindows(2);
             OnClosed?.Invoke(this);
@@ -3342,15 +3382,79 @@ namespace Fu
         }
 
         /// <summary>
+        /// Releases all native and GPU resources owned by this window.
+        /// </summary>
+        internal void DisposeRuntimeResources()
+        {
+            if (_runtimeResourcesDisposed)
+            {
+                return;
+            }
+
+            // Session shutdown bypasses normal close events, so ownership must not depend on an event callback.
+            _runtimeResourcesDisposed = true;
+            Exception cleanupException = null;
+            RunResourceCleanupStep(ReleaseInputFocus, ref cleanupException);
+            RunResourceCleanupStep(() => ReleaseDrawDataCache(false), ref cleanupException);
+            RunResourceCleanupStep(ReleaseOwnedResources, ref cleanupException);
+
+            if (cleanupException != null)
+            {
+                throw new InvalidOperationException($"One or more resources failed to release for Fugui window '{ID}'.", cleanupException);
+            }
+        }
+
+        /// <summary>
+        /// Releases resources owned by a specialized window implementation.
+        /// </summary>
+        protected virtual void ReleaseOwnedResources()
+        {
+            // Base windows own only the draw-data resources released by DisposeRuntimeResources.
+        }
+
+        /// <summary>
+        /// Executes one window cleanup operation while preserving the first failure.
+        /// </summary>
+        /// <param name="cleanupStep">Cleanup operation to execute.</param>
+        /// <param name="firstException">First exception raised by a cleanup operation.</param>
+        private static void RunResourceCleanupStep(Action cleanupStep, ref Exception firstException)
+        {
+            try
+            {
+                cleanupStep?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                // Later ownership branches still run even when one branch fails.
+                firstException ??= exception;
+                Debug.LogException(exception);
+            }
+        }
+
+        /// <summary>
         /// Clears cached draw lists owned by this window.
         /// </summary>
         internal void ClearDrawDataCache()
         {
+            ReleaseDrawDataCache(true);
+        }
+
+        /// <summary>
+        /// Releases cached draw lists and optionally recreates the root list for future rendering.
+        /// </summary>
+        /// <param name="recreateRootDrawList">Whether the live window needs a fresh root draw list.</param>
+        private void ReleaseDrawDataCache(bool recreateRootDrawList)
+        {
             DrawList?.Dispose();
-            DrawList = new DrawList();
+            DrawList = recreateRootDrawList ? new DrawList() : null;
 
             ReleaseCachedChildDrawLists();
-            ChildrenDrawLists ??= new Dictionary<string, DrawList>();
+            if (recreateRootDrawList)
+            {
+                ChildrenDrawLists ??= new Dictionary<string, DrawList>();
+            }
+
+            ChildrenDrawLists?.Clear();
             _cachedDrawLists.Clear();
             _renderMeshData?.Destroy();
             _renderMeshData = null;

@@ -176,16 +176,22 @@ namespace Fu.Framework
             }
 
             chartOptions.BeforePlotDraw?.Invoke(context);
-            if (chartOptions.Flags.HasFlag(FuChartFlags.ClipPlot))
+            bool clipPlot = chartOptions.Flags.HasFlag(FuChartFlags.ClipPlot);
+            if (clipPlot)
             {
                 drawList.PushClipRect(plotRect.min, plotRect.max, true);
             }
 
-            DrawChartSeries(drawList, series, context, chartOptions);
-
-            if (chartOptions.Flags.HasFlag(FuChartFlags.ClipPlot))
+            try
             {
-                drawList.PopClipRect();
+                DrawChartSeries(drawList, series, context, chartOptions);
+            }
+            finally
+            {
+                if (clipPlot)
+                {
+                    drawList.PopClipRect();
+                }
             }
 
             chartOptions.AfterPlotDraw?.Invoke(context);

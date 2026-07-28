@@ -107,6 +107,8 @@ namespace Fu
             SDL_SetHint(SDL_HINT_WINDOWS_HANDLE_MOUSE_ACTIVATION, "1");
             if (!Fugui.EnsureSDLVideo())
             {
+                // A failed native bootstrap still closes the already-created Fugui context.
+                CleanUp();
                 return;
             }
 
@@ -157,6 +159,7 @@ namespace Fu
             if (SdlWindow == IntPtr.Zero)
             {
                 Debug.LogError("SDL_CreateWindow failed: " + SDL_GetError());
+                CleanUp();
                 return;
             }
             SdlWindowId = SDL_GetWindowID(SdlWindow);
@@ -199,7 +202,7 @@ namespace Fu
             if (_glContext == IntPtr.Zero)
             {
                 Debug.LogError("SDL_GL_CreateContext failed: " + SDL_GetError());
-                SDL_DestroyWindow(SdlWindow);
+                CleanUp();
                 return;
             }
 
@@ -340,6 +343,31 @@ namespace Fu
         }
 
         /// <summary>
+        /// Closes the native window immediately and releases its GL and SDL resources.
+        /// </summary>
+        /// <param name="onClosed">Callback invoked after native resources are released.</param>
+        internal void CloseImmediately(Action onClosed)
+        {
+            if (_isClosed)
+            {
+                onClosed?.Invoke();
+                return;
+            }
+
+            OnClosed = onClosed;
+            _shouldClose = true;
+            _isRunning = false;
+
+            // Native GL objects must be deleted while their own SDL context is current.
+            if (SdlWindow != IntPtr.Zero && _glContext != IntPtr.Zero)
+            {
+                SDL_GL_MakeCurrent(SdlWindow, _glContext);
+            }
+
+            CleanUp();
+        }
+
+        /// <summary>
         /// Cleanup GL and SDL resources
         /// </summary>
         private void CleanUp()
@@ -356,52 +384,147 @@ namespace Fu
 
             try
             {
-                // Delete GL textures we created via our registry
-                foreach (var kv in _registeredTextures)
+                // Readback callbacks can complete after close, so invalidate them before releasing GL objects.
+                RunCleanupStep(DisposeReadbackStates);
+                foreach (PBOPair pair in _gpu.Values)
                 {
-                    uint id = kv.Value;
-                    if (id != 0) glDeleteTexture(id);
+                    RunCleanupStep(() => DestroyPBOPair(pair));
                 }
-                _registeredTextures.Clear();
+                _gpu.Clear();
+                _textureUploadFailures.Clear();
+                _textureUploadWarnings.Clear();
+                _staleTextureIds.Clear();
 
                 // Also delete fallback textures
-                if (_fallbackWhiteTex != 0) { glDeleteTexture(_fallbackWhiteTex); _fallbackWhiteTex = 0; }
-                if (_fallbackTexturePlaceholderTex != 0) { glDeleteTexture(_fallbackTexturePlaceholderTex); _fallbackTexturePlaceholderTex = 0; }
+                uint fallbackWhiteTexture = _fallbackWhiteTex;
+                _fallbackWhiteTex = 0;
+                RunCleanupStep(() =>
+                {
+                    if (fallbackWhiteTexture != 0)
+                    {
+                        glDeleteTexture(fallbackWhiteTexture);
+                    }
+                });
+
+                uint fallbackPlaceholderTexture = _fallbackTexturePlaceholderTex;
+                _fallbackTexturePlaceholderTex = 0;
+                RunCleanupStep(() =>
+                {
+                    if (fallbackPlaceholderTexture != 0)
+                    {
+                        glDeleteTexture(fallbackPlaceholderTexture);
+                    }
+                });
 
                 // GL objects
-                if (_shaderProgram != 0) { GLMini.glUseProgram(0); glDeleteProgram(_shaderProgram); _shaderProgram = 0; }
-                if (_vbo != 0) { glDeleteBuffer(_vbo); _vbo = 0; }
-                if (_ebo != 0) { glDeleteBuffer(_ebo); _ebo = 0; }
-                if (_vao != 0) { glDeleteVertexArray(_vao); _vao = 0; }
+                uint shaderProgram = _shaderProgram;
+                _shaderProgram = 0;
+                RunCleanupStep(() =>
+                {
+                    if (shaderProgram != 0)
+                    {
+                        GLMini.glUseProgram(0);
+                        glDeleteProgram(shaderProgram);
+                    }
+                });
+
+                uint vertexBuffer = _vbo;
+                _vbo = 0;
+                RunCleanupStep(() =>
+                {
+                    if (vertexBuffer != 0)
+                    {
+                        glDeleteBuffer(vertexBuffer);
+                    }
+                });
+
+                uint indexBuffer = _ebo;
+                _ebo = 0;
+                RunCleanupStep(() =>
+                {
+                    if (indexBuffer != 0)
+                    {
+                        glDeleteBuffer(indexBuffer);
+                    }
+                });
+
+                uint vertexArray = _vao;
+                _vao = 0;
+                RunCleanupStep(() =>
+                {
+                    if (vertexArray != 0)
+                    {
+                        glDeleteVertexArray(vertexArray);
+                    }
+                });
 
                 // Unbind current before destroying the context
-                if (SdlWindow != IntPtr.Zero)
-                    SDL_GL_MakeCurrent(SdlWindow, IntPtr.Zero);
-
-                if (_glContext != IntPtr.Zero)
+                IntPtr nativeWindow = SdlWindow;
+                IntPtr glContext = _glContext;
+                SdlWindow = IntPtr.Zero;
+                _glContext = IntPtr.Zero;
+                RunCleanupStep(() =>
                 {
-                    SDL_GL_DeleteContext(_glContext);
-                    _glContext = IntPtr.Zero;
-                }
+                    if (nativeWindow != IntPtr.Zero)
+                    {
+                        SDL_GL_MakeCurrent(nativeWindow, IntPtr.Zero);
+                    }
+                });
 
-                if (SdlWindow != IntPtr.Zero)
+                RunCleanupStep(() =>
                 {
-                    SDL_DestroyWindow(SdlWindow);
-                    SdlWindow = IntPtr.Zero;
-                }
+                    if (glContext != IntPtr.Zero)
+                    {
+                        SDL_GL_DeleteContext(glContext);
+                    }
+                });
 
-                Fugui.RemoveExternalWindow(Window, ContextID);
+                RunCleanupStep(() =>
+                {
+                    if (nativeWindow != IntPtr.Zero)
+                    {
+                        SDL_DestroyWindow(nativeWindow);
+                    }
+                });
+
+                RunCleanupStep(() => Fugui.RemoveExternalWindow(Window, ContextID));
 
                 // unregister from SDL event rooter
-                Fugui.SDLEventRooter.UnregisterWindow(SdlWindowId);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("Error during external window cleanup: " + e);
+                RunCleanupStep(() => Fugui.SDLEventRooter.UnregisterWindow(SdlWindowId));
             }
             finally
             {
-                OnClosed?.Invoke();
+                Action onClosed = OnClosed;
+                OnClosed = null;
+                try
+                {
+                    onClosed?.Invoke();
+                }
+                finally
+                {
+                    // A closed native window must not retain its managed window or upload scratch buffers.
+                    Window = null;
+                    _offsetVertexBuffer = null;
+                    _vbCapacity = 0;
+                    _ibCapacity = 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Executes one external-window cleanup action without preventing later resources from being released.
+        /// </summary>
+        /// <param name="cleanupStep">Cleanup action to execute.</param>
+        private static void RunCleanupStep(Action cleanupStep)
+        {
+            try
+            {
+                cleanupStep?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                // Native teardown is best-effort, but every owned handle must still be visited.
+                Debug.LogError("Error during external window cleanup: " + exception);
             }
         }
 
@@ -429,13 +552,12 @@ namespace Fu
         private uint _fallbackWhiteTex = 0;
         // Visible placeholder used when an image texture cannot be copied into the external GL context
         private uint _fallbackTexturePlaceholderTex = 0;
-        // Keep for compatibility with rest of the pipeline
-        private readonly Dictionary<IntPtr, uint> _registeredTextures = new Dictionary<IntPtr, uint>();
         // Per-unityId state
         private readonly Dictionary<IntPtr, PBOPair> _gpu = new Dictionary<IntPtr, PBOPair>();
         private readonly Dictionary<IntPtr, ReadbackState> _rb = new Dictionary<IntPtr, ReadbackState>();
         private readonly HashSet<IntPtr> _textureUploadFailures = new HashSet<IntPtr>();
         private readonly HashSet<IntPtr> _textureUploadWarnings = new HashSet<IntPtr>();
+        private readonly HashSet<IntPtr> _staleTextureIds = new HashSet<IntPtr>();
 
         // ===== Runtime structures =====
         private sealed class PBOPair
@@ -454,6 +576,7 @@ namespace Fu
             public bool requested = false;
             public Queue<NativeArray<byte>> ready = new Queue<NativeArray<byte>>(); // frames awaiting upload
             public int w, h;
+            public int generation;
         }
 
         /// <summary>
@@ -545,34 +668,74 @@ namespace Fu
                 if (gpu.w == w && gpu.h == h) return gpu;
 
                 // Size changed â†’ recreate (simple path)
-                gpu = null;
+                DestroyPBOPair(gpu);
                 _gpu.Remove(unityId);
             }
 
             var pair = new PBOPair { w = w, h = h };
-
-            // GL texture
-            GLMini.glGenTextures(1, out pair.glTex);
-            GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, pair.glTex);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MIN_FILTER, (int)GLMini.GL_LINEAR);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MAG_FILTER, (int)GLMini.GL_LINEAR);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
-            GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
-            GLMini.glPixelStorei(GLMini.GL_UNPACK_ALIGNMENT, 1);
-            GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA, w, h, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, IntPtr.Zero);
-
-            // Double PBO
-            GLMini.glGenBuffers(2, out pair.pbo[0]);
-            for (int i = 0; i < 2; i++)
+            try
             {
-                GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, pair.pbo[i]);
-                GLMini.glBufferData(GLMini.GL_PIXEL_UNPACK_BUFFER, (IntPtr)pair.byteSize, IntPtr.Zero, GLMini.GL_STREAM_DRAW);
-            }
-            GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, 0);
+                // Ownership transfers to the cache only after the texture and both PBOs are complete.
 
-            _gpu[unityId] = pair;
-            _registeredTextures[unityId] = pair.glTex; // we own this GL texture (will be deleted in cleanup)
-            return pair;
+                // GL texture
+                GLMini.glGenTextures(1, out pair.glTex);
+                GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, pair.glTex);
+                GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MIN_FILTER, (int)GLMini.GL_LINEAR);
+                GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_MAG_FILTER, (int)GLMini.GL_LINEAR);
+                GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_S, (int)GLMini.GL_CLAMP_TO_EDGE);
+                GLMini.glTexParameteri(GLMini.GL_TEXTURE_2D, GLMini.GL_TEXTURE_WRAP_T, (int)GLMini.GL_CLAMP_TO_EDGE);
+                GLMini.glPixelStorei(GLMini.GL_UNPACK_ALIGNMENT, 1);
+                GLMini.glTexImage2D(GLMini.GL_TEXTURE_2D, 0, (int)GLMini.GL_RGBA, w, h, 0, GLMini.GL_RGBA, GLMini.GL_UNSIGNED_BYTE, IntPtr.Zero);
+
+                // Double PBO
+                GLMini.glGenBuffers(2, out pair.pbo[0]);
+                for (int i = 0; i < 2; i++)
+                {
+                    GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, pair.pbo[i]);
+                    GLMini.glBufferData(GLMini.GL_PIXEL_UNPACK_BUFFER, (IntPtr)pair.byteSize, IntPtr.Zero, GLMini.GL_STREAM_DRAW);
+                }
+                GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, 0);
+
+                _gpu[unityId] = pair;
+                return pair;
+            }
+            catch
+            {
+                GLMini.glBindBuffer(GLMini.GL_PIXEL_UNPACK_BUFFER, 0);
+                GLMini.glBindTexture(GLMini.GL_TEXTURE_2D, 0);
+                DestroyPBOPair(pair);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Destroys one external GL texture and its optional pixel-unpack buffers.
+        /// </summary>
+        /// <param name="pair">GL resources owned by this external window.</param>
+        private static void DestroyPBOPair(PBOPair pair)
+        {
+            if (pair == null)
+            {
+                return;
+            }
+
+            // Texture2D entries use only glTex, while RenderTexture entries also own two PBOs.
+            if (pair.glTex != 0)
+            {
+                glDeleteTexture(pair.glTex);
+                pair.glTex = 0;
+            }
+
+            for (int i = 0; i < pair.pbo.Length; i++)
+            {
+                if (pair.pbo[i] == 0)
+                {
+                    continue;
+                }
+
+                glDeleteBuffer(pair.pbo[i]);
+                pair.pbo[i] = 0;
+            }
         }
 
         /// <summary>
@@ -712,7 +875,8 @@ namespace Fu
             // Handle size change
             if (state.w != rt.width || state.h != rt.height)
             {
-                // Drop old pending frames
+                // Invalidate the callback still targeting the previous dimensions.
+                state.generation++;
                 while (state.ready.Count > 0)
                 {
                     var na = state.ready.Dequeue();
@@ -726,13 +890,25 @@ namespace Fu
             if (!state.requested)
             {
                 // RT must be RGBA32-like; if not, Graphics.Blit into an intermediate ARGB32 RT upstream.
+                int requestGeneration = state.generation;
                 state.request = AsyncGPUReadback.Request(rt, 0, TextureFormat.RGBA32, req =>
                 {
-                    if (req.hasError) return;
+                    if (_isClosed || requestGeneration != state.generation || req.hasError)
+                    {
+                        return;
+                    }
+
                     var data = req.GetData<byte>(); // NativeArray<byte>
-                                                    // Keep a copy-owned NativeArray we must dispose after upload
+                    // Keep a copy-owned NativeArray we must dispose after upload.
                     var copy = new NativeArray<byte>(data.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                     copy.CopyFrom(data);
+
+                    if (_isClosed || requestGeneration != state.generation)
+                    {
+                        copy.Dispose();
+                        return;
+                    }
+
                     state.ready.Enqueue(copy);
                 });
                 state.requested = true;
@@ -813,7 +989,6 @@ namespace Fu
 
                     // Store it as if it were a PBOPair, but minimal
                     _gpu[unityId] = new PBOPair { glTex = texId, w = t2d.width, h = t2d.height };
-                    _registeredTextures[unityId] = texId;
                 }
 
                 return _gpu[unityId].glTex;
@@ -829,6 +1004,98 @@ namespace Fu
 
             // Unsupported types â†’ fallback
             return _fallbackWhiteTex;
+        }
+
+        /// <summary>
+        /// Invalidates pending GPU readbacks and disposes every persistent CPU copy they produced.
+        /// </summary>
+        private void DisposeReadbackStates()
+        {
+            foreach (ReadbackState state in _rb.Values)
+            {
+                DisposeReadbackState(state);
+            }
+
+            _rb.Clear();
+        }
+
+        /// <summary>
+        /// Invalidates one readback state and releases all persistent frames queued by it.
+        /// </summary>
+        /// <param name="state">Readback state owned by this external window.</param>
+        private static void DisposeReadbackState(ReadbackState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            // Incrementing the generation makes any in-flight callback discard its result.
+            state.generation++;
+            state.requested = false;
+            while (state.ready.Count > 0)
+            {
+                NativeArray<byte> frame = state.ready.Dequeue();
+                if (frame.IsCreated)
+                {
+                    frame.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Releases GL and readback resources for Unity texture ids no longer registered by their context.
+        /// </summary>
+        private void ReleaseStaleTextureResources()
+        {
+            TextureManager textureManager = Window?.Container?.Context?.TextureManager;
+            if (textureManager == null)
+            {
+                return;
+            }
+
+            // External GL mirrors are owned only while their source Unity texture remains registered.
+            _staleTextureIds.Clear();
+            CollectStaleTextureIds(_gpu.Keys, textureManager);
+            CollectStaleTextureIds(_rb.Keys, textureManager);
+            CollectStaleTextureIds(_textureUploadFailures, textureManager);
+            CollectStaleTextureIds(_textureUploadWarnings, textureManager);
+
+            foreach (IntPtr textureId in _staleTextureIds)
+            {
+                if (_gpu.TryGetValue(textureId, out PBOPair pair))
+                {
+                    DestroyPBOPair(pair);
+                    _gpu.Remove(textureId);
+                }
+
+                if (_rb.TryGetValue(textureId, out ReadbackState state))
+                {
+                    DisposeReadbackState(state);
+                    _rb.Remove(textureId);
+                }
+
+                _textureUploadFailures.Remove(textureId);
+                _textureUploadWarnings.Remove(textureId);
+            }
+
+            _staleTextureIds.Clear();
+        }
+
+        /// <summary>
+        /// Collects source texture ids that no longer resolve through the owning texture manager.
+        /// </summary>
+        /// <param name="textureIds">Texture ids mirrored by the external window.</param>
+        /// <param name="textureManager">Manager that owns the source Unity textures.</param>
+        private void CollectStaleTextureIds(IEnumerable<IntPtr> textureIds, TextureManager textureManager)
+        {
+            foreach (IntPtr textureId in textureIds)
+            {
+                if (!textureManager.TryGetTexture(textureId, out _))
+                {
+                    _staleTextureIds.Add(textureId);
+                }
+            }
         }
 
         /// <summary>
@@ -1683,6 +1950,7 @@ namespace Fu
         private unsafe void RenderFrame()
         {
             Window.ForceDraw(10);
+            ReleaseStaleTextureResources();
             lock (Window.Container.Context.DrawData)
             {
                 var drawData = Window.Container.Context.DrawData;

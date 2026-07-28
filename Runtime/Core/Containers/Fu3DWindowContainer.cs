@@ -130,6 +130,7 @@ namespace Fu
             if (!RenderTexture.IsCreated())
             {
                 Debug.LogError("RenderTexture failed to create.");
+                Close();
                 return;
             }
 
@@ -498,7 +499,54 @@ namespace Fu
             }
 
             renderTexture.Release();
-            UnityEngine.Object.Destroy(renderTexture);
+            DestroyOwnedObject(renderTexture);
+        }
+
+        /// <summary>
+        /// Destroys every render texture retained by the shared 3D-window pool.
+        /// </summary>
+        internal static void ShutdownSharedResources()
+        {
+            // Pooled targets are session-owned and cannot be retained across controller lifetimes.
+            foreach (Stack<RenderTexture> pooledTextures in _renderTexturePool.Values)
+            {
+                while (pooledTextures.Count > 0)
+                {
+                    RenderTexture renderTexture = pooledTextures.Pop();
+                    if (renderTexture == null)
+                    {
+                        continue;
+                    }
+
+                    renderTexture.Release();
+                    DestroyOwnedObject(renderTexture);
+                }
+            }
+
+            _renderTexturePool.Clear();
+            _3DContextindex = 0;
+        }
+
+        /// <summary>
+        /// Destroys one runtime-created Unity object in play mode or Edit Mode.
+        /// </summary>
+        /// <param name="target">Object owned by the 3D container subsystem.</param>
+        private static void DestroyOwnedObject(UnityEngine.Object target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            // Edit-mode previews do not execute a future frame that could flush Object.Destroy.
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(target);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(target);
+            }
         }
 
         /// <summary>
@@ -2237,13 +2285,18 @@ namespace Fu
                 _fuguiContext.OnRender -= RenderFuWindows;
                 _fuguiContext.OnPrepareFrame -= context_OnPrepareFrame;
                 _fuguiContext.OnFramePrepared -= _fuguiContext_OnFramePrepared;
+                _fuguiContext.SetTargetTexture(null);
                 Fugui.DestroyContext(_fuguiContext);
                 _fuguiContext = null;
             }
-            Fugui.Themes.OnThemeSet -= ThemeManager_OnThemeSet;
+            if (Fugui.Themes != null)
+            {
+                Fugui.Themes.OnThemeSet -= ThemeManager_OnThemeSet;
+            }
+
             if (_panelGameObject != null)
             {
-                UnityEngine.Object.Destroy(_panelGameObject);
+                DestroyOwnedObject(_panelGameObject);
                 _panelGameObject = null;
             }
             _panelMesh = null;
@@ -2255,7 +2308,7 @@ namespace Fu
                 {
                     if (_resizeHandleMeshes[i] != null)
                     {
-                        UnityEngine.Object.Destroy(_resizeHandleMeshes[i]);
+                        DestroyOwnedObject(_resizeHandleMeshes[i]);
                         _resizeHandleMeshes[i] = null;
                     }
                 }
@@ -2263,9 +2316,17 @@ namespace Fu
             }
             if (_resizeHandleMaterial != null)
             {
-                UnityEngine.Object.Destroy(_resizeHandleMaterial);
+                DestroyOwnedObject(_resizeHandleMaterial);
                 _resizeHandleMaterial = null;
             }
+
+            if (_uiMaterial != null)
+            {
+                _uiMaterial.SetTexture("_MainTex", null);
+                DestroyOwnedObject(_uiMaterial);
+                _uiMaterial = null;
+            }
+
             if (RenderTexture != null)
             {
                 ReleaseRenderTexture(RenderTexture);

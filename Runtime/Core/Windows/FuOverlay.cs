@@ -126,10 +126,6 @@ namespace Fu
         private Vector2Int _defaultAnchorOffset;
         // the style of the overlay panel
         private FuStyle _overlayStyle;
-        // var to count how many push are at frame start, so we can pop missing push
-        private static int _nbColorPushOnFrameStart = 0;
-        private static int _nbStylePushOnFrameStart = 0;
-        private static int _nbFontPushOnFrameStart = 0;
         // whatever the overlay need to be drawn
         private bool _isVisible = true;
         private bool _isDraging = false;
@@ -335,15 +331,27 @@ namespace Fu
         /// </summary>
         internal void Draw()
         {
+            FuImGuiStackSnapshot stackSnapshot = Fugui.CaptureImGuiStackSnapshot();
+            try
+            {
+                DrawContent();
+            }
+            finally
+            {
+                // Overlay callbacks cannot leak managed ImGui stack entries into the owning window.
+                Fugui.RestoreImGuiStackSnapshot(stackSnapshot);
+            }
+        }
+
+        /// <summary>
+        /// Draws the overlay content inside the stack-protected callback boundary.
+        /// </summary>
+        private void DrawContent()
+        {
             if (!_isVisible)
             {
                 return;
             }
-
-            // count nb push at render begin
-            _nbColorPushOnFrameStart = Fugui.NbPushColor;
-            _nbStylePushOnFrameStart = Fugui.NbPushStyle;
-            _nbFontPushOnFrameStart = Fugui.NbPushFont;
 
             // stop dragging if mouse release
             if (!Fugui.CurrentContext.IO.MouseDown[0])
@@ -397,15 +405,32 @@ namespace Fu
                 Fugui.Push(ImGuiCol.Border, Vector4.zero);
                 Fugui.Push(ImGuiCol.BorderShadow, Vector4.zero);
                 Layout = new FuLayout();
-                OnPreRender?.Invoke();
-                bool childVisible = ImGui.BeginChild(ID, Size, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
-                if (childVisible)
+                try
                 {
-                    UI?.Invoke(this, Layout);
-                    OnPostRender?.Invoke();
+                    OnPreRender?.Invoke();
+                    bool childBegan = false;
+                    try
+                    {
+                        bool childVisible = ImGui.BeginChild(ID, Size, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+                        childBegan = true;
+                        if (childVisible)
+                        {
+                            UI?.Invoke(this, Layout);
+                            OnPostRender?.Invoke();
+                        }
+                    }
+                    finally
+                    {
+                        if (childBegan)
+                        {
+                            Fugui.EndRawChild();
+                        }
+                    }
                 }
-                Fugui.EndRawChild();
-                Layout.Dispose();
+                finally
+                {
+                    Layout.Dispose();
+                }
                 Fugui.PopColor(3);
                 _overlayStyle.Pop();
             }
@@ -416,22 +441,6 @@ namespace Fu
             }
             Fugui.PopStyle(2);
 
-            // pop missing push
-            int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
-            if (nbMissingColor > 0)
-            {
-                Fugui.PopColor(nbMissingColor);
-            }
-            int nbMissingStyle = Fugui.NbPushStyle - _nbStylePushOnFrameStart;
-            if (nbMissingStyle > 0)
-            {
-                Fugui.PopStyle(nbMissingStyle);
-            }
-            int nbMissingFont = Fugui.NbPushFont - _nbFontPushOnFrameStart;
-            if (nbMissingFont > 0)
-            {
-                Fugui.PopFont(nbMissingFont);
-            }
         }
 
         /// <summary>

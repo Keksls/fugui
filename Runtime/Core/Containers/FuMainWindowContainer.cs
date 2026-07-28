@@ -755,42 +755,59 @@ namespace Fu
 
             ImGui.SetNextWindowPos(overlayPos, ImGuiCond.Always, new Vector2(0.5f, 0f));
             ImGui.SetNextWindowSize(new Vector2(width, height), ImGuiCond.Always);
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, Mathf.Max(4f, 5f * scale));
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(padding, padding));
-            Fugui.Push(ImGuiCol.WindowBg, Fugui.GetColor(FuColors.PopupBg, 0.96f));
-            Fugui.Push(ImGuiCol.Border, Fugui.GetColor(FuColors.Border, 0.85f));
-
-            ImGuiWindowFlags flags =
-                ImGuiWindowFlags.NoDecoration |
-                ImGuiWindowFlags.NoMove |
-                ImGuiWindowFlags.NoSavedSettings |
-                ImGuiWindowFlags.NoFocusOnAppearing |
-                ImGuiWindowFlags.NoBringToFrontOnFocus |
-                ImGuiWindowFlags.NoNav |
-                ImGuiWindowFlags.NoDocking |
-                ImGuiWindowFlags.NoMouseInputs;
-
-            if (ImGui.Begin("FuguiFloatingWindowSwitcher", flags))
+            FuImGuiStackSnapshot stackSnapshot = Fugui.CaptureImGuiStackSnapshot();
+            try
             {
-                for (int i = 0; i < _floatingWindowSwitchOrder.Count; i++)
-                {
-                    if (!Windows.TryGetValue(_floatingWindowSwitchOrder[i], out FuWindow window))
-                    {
-                        continue;
-                    }
+                Fugui.PushUnscaled(ImGuiStyleVar.WindowRounding, Mathf.Max(4f, 5f * scale));
+                Fugui.PushUnscaled(ImGuiStyleVar.WindowPadding, new Vector2(padding, padding));
+                Fugui.Push(ImGuiCol.WindowBg, Fugui.GetColor(FuColors.PopupBg, 0.96f));
+                Fugui.Push(ImGuiCol.Border, Fugui.GetColor(FuColors.Border, 0.85f));
 
-                    bool selected = i == _floatingWindowSwitchIndex;
-                    DrawFloatingWindowSwitcherRow(window, selected, rowHeight, scale);
-                    if (selected)
+                ImGuiWindowFlags flags =
+                    ImGuiWindowFlags.NoDecoration |
+                    ImGuiWindowFlags.NoMove |
+                    ImGuiWindowFlags.NoSavedSettings |
+                    ImGuiWindowFlags.NoFocusOnAppearing |
+                    ImGuiWindowFlags.NoBringToFrontOnFocus |
+                    ImGuiWindowFlags.NoNav |
+                    ImGuiWindowFlags.NoDocking |
+                    ImGuiWindowFlags.NoMouseInputs;
+
+                bool windowBegan = false;
+                try
+                {
+                    bool windowVisible = ImGui.Begin("FuguiFloatingWindowSwitcher", flags);
+                    windowBegan = true;
+                    if (windowVisible)
                     {
-                        ImGui.SetScrollHereY(0.5f);
+                        for (int i = 0; i < _floatingWindowSwitchOrder.Count; i++)
+                        {
+                            if (!Windows.TryGetValue(_floatingWindowSwitchOrder[i], out FuWindow window))
+                            {
+                                continue;
+                            }
+
+                            bool selected = i == _floatingWindowSwitchIndex;
+                            DrawFloatingWindowSwitcherRow(window, selected, rowHeight, scale);
+                            if (selected)
+                            {
+                                ImGui.SetScrollHereY(0.5f);
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (windowBegan)
+                    {
+                        ImGui.End();
                     }
                 }
             }
-
-            ImGui.End();
-            Fugui.PopColor(2);
-            ImGui.PopStyleVar(2);
+            finally
+            {
+                Fugui.RestoreImGuiStackSnapshot(stackSnapshot);
+            }
         }
 
         /// <summary>
@@ -814,8 +831,14 @@ namespace Fu
             Vector2 textSize = ImGui.CalcTextSize(label);
             Vector2 textPos = rowMin + new Vector2(Mathf.Max(10f, 10f * scale), (rowHeight - textSize.y) * 0.5f);
             drawList.PushClipRect(rowMin, rowMax, true);
-            drawList.AddText(textPos, textColor, label);
-            drawList.PopClipRect();
+            try
+            {
+                drawList.AddText(textPos, textColor, label);
+            }
+            finally
+            {
+                drawList.PopClipRect();
+            }
 
             ImGui.Dummy(rowSize);
             ImGui.Dummy(new Vector2(1f, Mathf.Max(2f, 2f * scale)));
@@ -1023,26 +1046,42 @@ namespace Fu
 
             if (_footerHeight > 0f)
             {
-                Fugui.Push(ImGuiStyleVar.WindowRounding, 0.0f);
-                Fugui.Push(ImGuiStyleVar.WindowBorderSize, 0.0f);
-                Fugui.Push(ImGuiStyleVar.ItemSpacing, Vector2.zero);
-                Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, Vector2.zero);
-                Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
-                Fugui.Push(ImGuiCol.WindowBg, Fugui.GetColor(FuColors.MenuBarBg));
-
-                ImGui.SetNextWindowPos(new Vector2(0f, _size.y - (_footerHeight * Context.Scale)));
-                ImGui.SetNextWindowSize(new Vector2(_size.x, _footerHeight * Context.Scale));
-                ImGui.SetNextWindowViewport(viewPortID);
-
-                if (ImGui.Begin("FuguiFooter", window_flags))
+                FuImGuiStackSnapshot stackSnapshot = Fugui.CaptureImGuiStackSnapshot();
+                try
                 {
-                    _footerUI?.Invoke();
+                    Fugui.Push(ImGuiStyleVar.WindowRounding, 0.0f);
+                    Fugui.Push(ImGuiStyleVar.WindowBorderSize, 0.0f);
+                    Fugui.Push(ImGuiStyleVar.ItemSpacing, Vector2.zero);
+                    Fugui.Push(ImGuiStyleVar.ItemInnerSpacing, Vector2.zero);
+                    Fugui.Push(ImGuiStyleVar.WindowPadding, Vector2.zero);
+                    Fugui.Push(ImGuiCol.WindowBg, Fugui.GetColor(FuColors.MenuBarBg));
+
+                    ImGui.SetNextWindowPos(new Vector2(0f, _size.y - (_footerHeight * Context.Scale)));
+                    ImGui.SetNextWindowSize(new Vector2(_size.x, _footerHeight * Context.Scale));
+                    ImGui.SetNextWindowViewport(viewPortID);
+
+                    bool windowBegan = false;
+                    try
+                    {
+                        bool windowVisible = ImGui.Begin("FuguiFooter", window_flags);
+                        windowBegan = true;
+                        if (windowVisible)
+                        {
+                            _footerUI?.Invoke();
+                        }
+                    }
+                    finally
+                    {
+                        if (windowBegan)
+                        {
+                            ImGui.End();
+                        }
+                    }
                 }
-
-                ImGui.End();
-
-                Fugui.PopColor();
-                Fugui.PopStyle(5);
+                finally
+                {
+                    Fugui.RestoreImGuiStackSnapshot(stackSnapshot);
+                }
             }
         }
     }

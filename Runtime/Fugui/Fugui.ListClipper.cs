@@ -114,5 +114,36 @@ namespace Fu
             var _clipper = _clippers[ctxId];
             return _clipper.DisplayEnd;
         }
+
+        /// <summary>
+        /// Destroys every native list clipper owned by the current Fugui session.
+        /// </summary>
+        private static unsafe void DisposeListClippers()
+        {
+            int[] contextIDs = _clippers.Keys.ToArray();
+            foreach (int contextID in contextIDs)
+            {
+                DisposeListClipper(contextID);
+            }
+        }
+
+        /// <summary>
+        /// Destroys the native list clipper owned by one Fugui context.
+        /// </summary>
+        /// <param name="contextID">Identifier of the context whose clipper must be released.</param>
+        private static unsafe void DisposeListClipper(int contextID)
+        {
+            if (!_clippers.TryGetValue(contextID, out ImGuiListClipperPtr clipper))
+            {
+                return;
+            }
+
+            if (clipper.NativePtr != null)
+            {
+                ImGuiNative.ImGuiListClipper_destroy(clipper.NativePtr);
+            }
+
+            _clippers.Remove(contextID);
+        }
     }
 }

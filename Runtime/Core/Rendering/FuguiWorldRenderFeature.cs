@@ -41,6 +41,8 @@ namespace Fu
                 _shader = Shader.Find("Fugui/URP_WorldMesh");
             }
 
+            // Unity can recreate renderer features while the previous pass still owns GPU resources.
+            _pass?.Dispose();
             _pass = new FuguiWorldRenderPass(_shader, PassEvent);
         }
 
@@ -52,6 +54,7 @@ namespace Fu
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
             Camera camera = renderingData.cameraData.camera;
+            _pass?.EnsureRuntimeGeneration();
             if (_shader == null || camera == null || !Fugui.World.ShouldRenderCamera(camera) || !Fugui.World.HasCurrentFrameItems())
             {
                 return;
@@ -64,6 +67,18 @@ namespace Fu
 
             _pass.ConfigureShader(_shader, PassEvent);
             renderer.EnqueuePass(_pass);
+        }
+
+        /// <summary>
+        /// Releases all materials and dynamic meshes owned by this renderer feature.
+        /// </summary>
+        /// <param name="disposing">Whether managed state is also being disposed.</param>
+        protected override void Dispose(bool disposing)
+        {
+            // Render-pass resources belong to the renderer feature, not to individual Fugui sessions.
+            _pass?.Dispose();
+            _pass = null;
+            base.Dispose(disposing);
         }
         #endregion
 
@@ -82,6 +97,7 @@ namespace Fu
             private int _textureID;
             private int _textureIsAlphaID;
             private int _clipRectID;
+            private uint _runtimeGeneration;
             #endregion
 
             #region Constructors
@@ -95,6 +111,7 @@ namespace Fu
                 _textureID = Shader.PropertyToID("_Texture");
                 _textureIsAlphaID = Shader.PropertyToID("_TextureIsAlpha");
                 _clipRectID = Shader.PropertyToID("_ClipRect");
+                _runtimeGeneration = Fugui.RuntimeGeneration;
                 ConfigureShader(shader, passEvent);
             }
             #endregion
@@ -127,6 +144,21 @@ namespace Fu
                         hideFlags = HideFlags.HideAndDontSave & ~HideFlags.DontUnloadUnusedAsset
                     };
                 }
+            }
+
+            /// <summary>
+            /// Discards surface caches retained by the renderer feature when a new Fugui session starts.
+            /// </summary>
+            public void EnsureRuntimeGeneration()
+            {
+                if (_runtimeGeneration == Fugui.RuntimeGeneration)
+                {
+                    return;
+                }
+
+                // Surface IDs restart per session and must never alias an older session's mesh.
+                Dispose();
+                _runtimeGeneration = Fugui.RuntimeGeneration;
             }
 
             /// <summary>
@@ -325,7 +357,7 @@ namespace Fu
                     }
 
                     _properties.SetVector(_clipRectID, command.ClipRect);
-                commandBuffer.DrawMesh(meshCache.Mesh, matrix, _material, i, passIndex, _properties);
+                    commandBuffer.DrawMesh(meshCache.Mesh, matrix, _material, i, passIndex, _properties);
                 }
             }
 
@@ -429,6 +461,28 @@ namespace Fu
                 meshCache = new FuguiWorldMeshCache($"FuguiWorldMesh_{surfaceId}");
                 _meshCaches.Add(surfaceId, meshCache);
                 return meshCache;
+            }
+
+            /// <summary>
+            /// Releases the material and every dynamic mesh owned by this pass.
+            /// </summary>
+            public void Dispose()
+            {
+                foreach (FuguiWorldMeshCache meshCache in _meshCaches.Values)
+                {
+                    meshCache?.Dispose();
+                }
+
+                _meshCaches.Clear();
+                _sortedItems.Clear();
+                if (_material != null)
+                {
+                    DestroyMaterial(_material);
+                    _material = null;
+                }
+
+                _shader = null;
+                _properties.Clear();
             }
             #endregion
 
@@ -660,6 +714,27 @@ namespace Fu
                 }
 
                 return capacity;
+            }
+
+            /// <summary>
+            /// Destroys the dynamic Unity mesh owned by this cache.
+            /// </summary>
+            public void Dispose()
+            {
+                if (_mesh == null)
+                {
+                    return;
+                }
+
+                // Renderer features are also recreated in Edit Mode, where delayed destruction is unavailable.
+                if (Application.isPlaying)
+                {
+                    UnityEngine.Object.Destroy(_mesh);
+                }
+                else
+                {
+                    UnityEngine.Object.DestroyImmediate(_mesh);
+                }
             }
             #endregion
         }

@@ -115,6 +115,7 @@ namespace Fu.Framework
         // A dictionary to store enum values as string according to the type of the enum
         private static Dictionary<Type, List<string>> _enumValuesString = new Dictionary<Type, List<string>>();
         protected bool _drawElement = true;
+        private bool _isDisposed;
 
         public static bool IsThereAnyDraggingSlider => _draggingSliders.Count > 0;
 
@@ -134,7 +135,29 @@ namespace Fu.Framework
         /// </summary>
         public virtual void Dispose()
         {
-            CurrentDrawerPath.Pop();
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
+            if (CurrentDrawerPath.Count > 0 && ReferenceEquals(CurrentDrawerPath.Peek(), this))
+            {
+                CurrentDrawerPath.Pop();
+            }
+            else if (CurrentDrawerPath.Count > 0)
+            {
+                // Contexts may be destroyed out of creation order, so remove this exact layout without disturbing the others.
+                FuLayout[] layouts = CurrentDrawerPath.ToArray();
+                CurrentDrawerPath.Clear();
+                for (int i = layouts.Length - 1; i >= 0; i--)
+                {
+                    if (!ReferenceEquals(layouts[i], this))
+                    {
+                        CurrentDrawerPath.Push(layouts[i]);
+                    }
+                }
+            }
 #if PUSH_POP_DEBUG
             if (pushedStyles.Count > 0)
             {

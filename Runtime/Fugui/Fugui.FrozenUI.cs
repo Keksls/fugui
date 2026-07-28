@@ -331,23 +331,34 @@ namespace Fu
                     command.ClipRect.w + offset.y);
 
                 drawList.PushClipRect(new Vector2(clipRect.x, clipRect.y), new Vector2(clipRect.z, clipRect.w));
-                drawList.PushTextureID(command.TextureId);
-                drawList.PrimReserve(command.Indices.Length, command.Vertices.Length);
-
-                uint vtxBase = drawList._VtxCurrentIdx;
-                for (int index = 0; index < command.Indices.Length; index++)
+                try
                 {
-                    drawList.PrimWriteIdx((ushort)(vtxBase + command.Indices[index]));
-                }
+                    drawList.PushTextureID(command.TextureId);
+                    try
+                    {
+                        drawList.PrimReserve(command.Indices.Length, command.Vertices.Length);
 
-                for (int vertexIndex = 0; vertexIndex < command.Vertices.Length; vertexIndex++)
+                        uint vtxBase = drawList._VtxCurrentIdx;
+                        for (int index = 0; index < command.Indices.Length; index++)
+                        {
+                            drawList.PrimWriteIdx((ushort)(vtxBase + command.Indices[index]));
+                        }
+
+                        for (int vertexIndex = 0; vertexIndex < command.Vertices.Length; vertexIndex++)
+                        {
+                            ImDrawVert vertex = command.Vertices[vertexIndex];
+                            drawList.PrimWriteVtx(vertex.pos + offset, vertex.uv, vertex.col);
+                        }
+                    }
+                    finally
+                    {
+                        drawList.PopTextureID();
+                    }
+                }
+                finally
                 {
-                    ImDrawVert vertex = command.Vertices[vertexIndex];
-                    drawList.PrimWriteVtx(vertex.pos + offset, vertex.uv, vertex.col);
+                    drawList.PopClipRect();
                 }
-
-                drawList.PopTextureID();
-                drawList.PopClipRect();
             }
         }
         #endregion

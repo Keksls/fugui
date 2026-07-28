@@ -47,6 +47,8 @@ namespace Fu.Framework
             if (!enabled)
                 return;
 
+            _fuWindow = null;
+
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
             FuWindowDefinition windowDefinition = new FuWindowDefinition(_windowName, _windowLayer, OnUI, GetInitialPosition(), GetInitialSize(), _windowFlags, _externalWindowFlags, _windowStyleFlags, _resizableSides);
             // call the OnWindowDefinitionCreated method to allow further customization

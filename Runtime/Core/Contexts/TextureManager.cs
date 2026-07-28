@@ -1,11 +1,8 @@
-//#define FUGUI_USE_TEXTUREARRAY
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-#if !FUGUI_USE_TEXTUREARRAY
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-#endif
 using UnityEngine;
 using UTexture = UnityEngine.Texture;
 
@@ -19,97 +16,9 @@ namespace Fu
         private readonly Dictionary<IntPtr, UTexture> _textures = new Dictionary<IntPtr, UTexture>();
         private readonly Dictionary<UTexture, IntPtr> _textureIds = new Dictionary<UTexture, IntPtr>();
         private readonly Dictionary<Sprite, SpriteInfo> _spriteData = new Dictionary<Sprite, SpriteInfo>();
-        private ImFontAtlasPtr _fontAtlas;
         private int _nextTextureId = 1;
 
-#if FUGUI_USE_TEXTUREARRAY
-        private static Dictionary<float, Texture2DArray> _atlasTexture = new Dictionary<float, Texture2DArray>();
-        internal unsafe void InitializeFontAtlas(ImGuiIOPtr io)
-        {
-            // dol not create texture if already exists (context will share). raw textures are very heavy
-            if (_atlasTexture.ContainsKey(FuGui.CurrentContext.FontScale))
-            {
-                return;
-            }
-            _fontAtlas = io.Fonts;
-            _fontAtlas.GetTexDataAsRGBA32(out byte* pixels, out int width, out int height, out int bytesPerPixel);
-            // Create a new Texture2DArray with the maximum size and RGBA32 format
-            Texture2DArray texture = createTextureArray(pixels, width, height, bytesPerPixel, SystemInfo.maxTextureSize, SystemInfo.maxTextureSize);
-            _atlasTexture.Add(FuGui.CurrentContext.FontScale, texture);
-        }
-
-        private unsafe Texture2DArray createTextureArray(byte* pixels, int width, int height, int bytesPerPixel, int maxWidth = 4096, int maxHeight = 4096)
-        {
-            maxWidth = Mathf.Min(maxWidth, width);
-            maxHeight = Mathf.Min(maxHeight, height);
-            int numTextures = Mathf.CeilToInt(width * height * bytesPerPixel / (float)(maxWidth * maxHeight * bytesPerPixel));
-            Texture2DArray textureArray = new Texture2DArray(maxWidth, maxHeight, numTextures, TextureFormat.RGBA32, true);
-
-            for (int i = 0; i < numTextures; i++)
-            {
-                int subWidth = Mathf.Min(maxWidth, width - (maxWidth * i));
-                int subHeight = Mathf.Min(maxHeight, height - (maxHeight * i));
-                int lenght = subWidth * subHeight * bytesPerPixel;
-                Color32[] colorArray = new Color32[subWidth * subHeight];
-
-                fixed (Color32* colorPointer = colorArray)
-                {
-                    byte* colorPtr = (byte*)colorPointer;
-                    Buffer.MemoryCopy(pixels, colorPtr, (long)lenght, (long)lenght);
-                }
-
-                //GCHandle handle = GCHandle.Alloc(colorArray, GCHandleType.Pinned);
-                //byte* pixelsDataPtr = (byte*)handle.AddrOfPinnedObject();
-
-                //Debug.Log((pixels == null).ToString() + " " + (pixelsDataPtr == null).ToString());
-                //for (int ind = 0; ind < subWidth * subHeight; ind++)
-                //    {
-                //        Debug.Log((pixels == null).ToString() + " " + ind);
-                //        colorArray[ind] = new Color32(*pixels++, *pixels++, *pixels++, *pixels++);
-                //        //Debug.Log((*pixelsDataPtr).ToString() + " " + (*pixels).ToString());
-                //        //*pixelsDataPtr = *pixels;
-                //        //pixelsDataPtr += ind;
-                //        //pixels += ind;
-                //    }
-                //Buffer.MemoryCopy(pixels, pixelsDataPtr, lenght, lenght);
-
-                //Texture2D subTexture = new Texture2D(subWidth, subHeight, TextureFormat.RGBA32, false, false)
-                //{
-                //    filterMode = FilterMode.Point
-                //};
-
-                //                    // create native byte array to store pixels data
-                //                    NativeArray<byte> srcData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(pixels, lenght, Allocator.None);
-                //#if ENABLE_UNITY_COLLECTIONS_CHECKS
-                //                    NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref srcData, AtomicSafetyHandle.GetTempMemoryHandle());
-                //#endif
-                //                    // Invert y while copying the atlas texture.
-                //                    NativeArray<byte> dstData = subTexture.GetRawTextureData<byte>();
-                //                    int stride = subWidth * bytesPerPixel;
-                //                    for (int y = 0; y < subHeight; ++y)
-                //                    {
-                //                        NativeArray<byte>.Copy(srcData, y * stride, dstData, (subHeight - y - 1) * stride, stride);
-                //                    }
-                //                    // apply sub texture data
-                //                    subTexture.Apply();
-
-                //Texture2D subTexture = new Texture2D(subWidth, subHeight, TextureFormat.RGBA32, false);
-                //subTexture.LoadRawTextureData((IntPtr)pixels, lenght);
-                //Debug.Log("lenght : " + lenght + " " + subWidth + " " + subHeight + " " + width + " " + height);
-                //subTexture.Apply();
-
-                // set color data to texture array
-                textureArray.SetPixels32(/*subTexture.GetPixels()*/colorArray, i);
-
-                // increment pixels pointer
-                pixels += lenght;
-            }
-
-            textureArray.Apply();
-            return textureArray;
-        }
-#else
-        private static Dictionary<string, Texture2D> _atlasTexture = new Dictionary<string, Texture2D>();
+        private static readonly Dictionary<string, Texture2D> _atlasTexture = new Dictionary<string, Texture2D>();
         private const int FontAtlasCleanupDelayFrames = 4;
         private string _fontAtlasTextureKey;
 
@@ -120,6 +29,7 @@ namespace Fu
         private struct PendingFontAtlasCleanup
         {
             #region State
+            public string Key;
             public Texture2D Atlas;
             public int EarliestFrame;
             #endregion
@@ -154,21 +64,23 @@ namespace Fu
                     UnregisterTextureFromAllManagers(atlas);
                 }
 
-                _fontAtlas = io.Fonts;
-                FontConfig fontConfig = Fugui.Settings?.FontConfig;
-                if (!FuFontAtlasCache.TryLoadBakedTexture(fontConfig, fontScale, out atlas))
+                if (!TryRestorePendingFontAtlas(fontAtlasTextureKey, out atlas))
                 {
-                    bool useAlpha8 = fontConfig != null && fontConfig.UseAlpha8FontAtlasTexture;
-                    atlas = FuFontAtlasCache.CreateTextureFromAtlas(_fontAtlas, $"Fugui Font Atlas {fontScale:0.###}", useAlpha8);
-                }
+                    FontConfig fontConfig = Fugui.Settings?.FontConfig;
+                    if (!FuFontAtlasCache.TryLoadBakedTexture(fontConfig, fontScale, out atlas))
+                    {
+                        bool useAlpha8 = fontConfig != null && fontConfig.UseAlpha8FontAtlasTexture;
+                        atlas = FuFontAtlasCache.CreateTextureFromAtlas(io.Fonts, $"Fugui Font Atlas {fontScale:0.###}", useAlpha8);
+                    }
 
-                if (atlas == null)
-                {
-                    Debug.LogError("[FontAtlasCache] Unable to create or load the font atlas texture.");
-                    return;
-                }
+                    if (atlas == null)
+                    {
+                        Debug.LogError("[FontAtlasCache] Unable to create or load the font atlas texture.");
+                        return;
+                    }
 
-                _atlasTexture[fontAtlasTextureKey] = atlas;
+                    _atlasTexture[fontAtlasTextureKey] = atlas;
+                }
             }
 
             // register atlas texture
@@ -177,18 +89,23 @@ namespace Fu
         }
 
         /// <summary>
-        /// Clear font atlas from font manager
+        /// Releases this manager's reference to its current shared GPU font atlas.
         /// </summary>
-        /// <param name="oldScale">scale to remove from texture manager</param>
-        public void ClearFontAtlas(float oldScale)
+        internal void ClearFontAtlas()
         {
+            // The static atlas texture is destroyed only after the last context releases its key.
             string fontAtlasTextureKey = _fontAtlasTextureKey;
             _fontAtlasTextureKey = null;
             ReleaseFontAtlasTexture(fontAtlasTextureKey);
         }
 
+        /// <summary>
+        /// Releases a shared GPU atlas when no live texture manager references its cache key.
+        /// </summary>
+        /// <param name="fontAtlasTextureKey">Atlas cache key to release.</param>
         private static void ReleaseFontAtlasTexture(string fontAtlasTextureKey)
         {
+            // Delayed destruction lets already-submitted render commands finish using the texture.
             if (string.IsNullOrEmpty(fontAtlasTextureKey) || !_atlasTexture.ContainsKey(fontAtlasTextureKey))
             {
                 return;
@@ -205,14 +122,15 @@ namespace Fu
 
             Texture2D atlas = _atlasTexture[fontAtlasTextureKey];
             _atlasTexture.Remove(fontAtlasTextureKey);
-            ScheduleFontAtlasCleanup(atlas);
+            ScheduleFontAtlasCleanup(fontAtlasTextureKey, atlas);
         }
 
         /// <summary>
         /// Runs the schedule font atlas cleanup workflow.
         /// </summary>
+        /// <param name="fontAtlasTextureKey">Content key that can reclaim the atlas before destruction.</param>
         /// <param name="atlas">The atlas value.</param>
-        private static void ScheduleFontAtlasCleanup(Texture2D atlas)
+        private static void ScheduleFontAtlasCleanup(string fontAtlasTextureKey, Texture2D atlas)
         {
             if (ReferenceEquals(atlas, null) || atlas == null)
             {
@@ -225,6 +143,7 @@ namespace Fu
                 PendingFontAtlasCleanup pending = _pendingFontAtlasCleanups[i];
                 if (ReferenceEquals(pending.Atlas, atlas))
                 {
+                    pending.Key = fontAtlasTextureKey;
                     pending.EarliestFrame = Mathf.Max(pending.EarliestFrame, earliestFrame);
                     _pendingFontAtlasCleanups[i] = pending;
                     return;
@@ -233,9 +152,42 @@ namespace Fu
 
             _pendingFontAtlasCleanups.Add(new PendingFontAtlasCleanup
             {
+                Key = fontAtlasTextureKey,
                 Atlas = atlas,
                 EarliestFrame = earliestFrame
             });
+        }
+
+        /// <summary>
+        /// Reclaims a delayed atlas when its content key becomes active again before destruction.
+        /// </summary>
+        /// <param name="fontAtlasTextureKey">Atlas cache key requested by a context.</param>
+        /// <param name="atlas">Reclaimed Unity atlas texture.</param>
+        /// <returns>True when a pending texture was restored.</returns>
+        private static bool TryRestorePendingFontAtlas(string fontAtlasTextureKey, out Texture2D atlas)
+        {
+            // Scale oscillation should reuse the submitted GPU texture instead of reallocating it.
+            atlas = null;
+            for (int i = _pendingFontAtlasCleanups.Count - 1; i >= 0; i--)
+            {
+                PendingFontAtlasCleanup pending = _pendingFontAtlasCleanups[i];
+                if (!string.Equals(pending.Key, fontAtlasTextureKey, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _pendingFontAtlasCleanups.RemoveAt(i);
+                if (pending.Atlas == null)
+                {
+                    continue;
+                }
+
+                atlas = pending.Atlas;
+                _atlasTexture[fontAtlasTextureKey] = atlas;
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -264,11 +216,43 @@ namespace Fu
                 }
 
                 UnregisterTextureFromAllManagers(pending.Atlas);
-                UnityEngine.Object.Destroy(pending.Atlas);
+                DestroyOwnedTexture(pending.Atlas);
                 _pendingFontAtlasCleanups.RemoveAt(i);
             }
         }
-#endif
+        /// <summary>
+        /// Immediately destroys all shared atlas textures owned by the current Fugui session.
+        /// </summary>
+        internal static void ShutdownSharedResources()
+        {
+            // Session shutdown cannot depend on a future frame to flush delayed GPU cleanup.
+            HashSet<Texture2D> atlases = new HashSet<Texture2D>();
+            foreach (Texture2D atlas in _atlasTexture.Values)
+            {
+                if (!ReferenceEquals(atlas, null))
+                {
+                    atlases.Add(atlas);
+                }
+            }
+
+            for (int i = 0; i < _pendingFontAtlasCleanups.Count; i++)
+            {
+                Texture2D atlas = _pendingFontAtlasCleanups[i].Atlas;
+                if (!ReferenceEquals(atlas, null))
+                {
+                    atlases.Add(atlas);
+                }
+            }
+
+            _atlasTexture.Clear();
+            _pendingFontAtlasCleanups.Clear();
+
+            foreach (Texture2D atlas in atlases)
+            {
+                UnregisterTextureFromAllManagers(atlas);
+                DestroyOwnedTexture(atlas);
+            }
+        }
 
         /// <summary>
         /// Runs the shutdown workflow.
@@ -297,6 +281,8 @@ namespace Fu
         /// <param name="io">The io value.</param>
         internal void PrepareFrame(ImGuiIOPtr io)
         {
+            // Delayed atlas destruction advances even when the current font scale remains stable.
+            FlushPendingFontAtlasCleanups();
             string fontAtlasTextureKey = GetCurrentFontAtlasTextureKey();
             if (_fontAtlasTextureKey != fontAtlasTextureKey ||
                 !_atlasTexture.TryGetValue(fontAtlasTextureKey, out Texture2D atlas) ||
@@ -383,11 +369,6 @@ namespace Fu
         internal bool IsFontAtlasTexture(UTexture texture)
         {
             if (ReferenceEquals(texture, null) || texture == null)
-            {
-                return false;
-            }
-
-            if (_atlasTexture == null)
             {
                 return false;
             }
@@ -496,6 +477,28 @@ namespace Fu
             {
                 _textures.Remove(textureId);
                 _textureIds.Remove(texture);
+            }
+        }
+
+        /// <summary>
+        /// Destroys a runtime-created Unity texture with the API appropriate for the current mode.
+        /// </summary>
+        /// <param name="texture">Texture owned by Fugui.</param>
+        private static void DestroyOwnedTexture(UTexture texture)
+        {
+            if (ReferenceEquals(texture, null) || texture == null)
+            {
+                return;
+            }
+
+            // Editor previews require immediate destruction because no play-mode frame will flush Destroy.
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(texture);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
             }
         }
     }

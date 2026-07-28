@@ -810,20 +810,42 @@ namespace Fu.Framework
         {
             if (_grabHandle != null)
             {
-                Destroy(_grabHandle);
+                DestroyOwnedObject(_grabHandle);
                 _grabHandle = null;
             }
 
             if (_grabHandleMesh != null)
             {
-                Destroy(_grabHandleMesh);
+                DestroyOwnedObject(_grabHandleMesh);
                 _grabHandleMesh = null;
             }
 
             if (_grabHandleMaterial != null)
             {
-                Destroy(_grabHandleMaterial);
+                DestroyOwnedObject(_grabHandleMaterial);
                 _grabHandleMaterial = null;
+            }
+        }
+
+        /// <summary>
+        /// Destroys one runtime object owned by this manipulator in play mode or Edit Mode.
+        /// </summary>
+        /// <param name="target">Runtime object to destroy.</param>
+        private static void DestroyOwnedObject(UnityEngine.Object target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            // Edit-mode component teardown cannot rely on a later frame.
+            if (Application.isPlaying)
+            {
+                Destroy(target);
+            }
+            else
+            {
+                DestroyImmediate(target);
             }
         }
 

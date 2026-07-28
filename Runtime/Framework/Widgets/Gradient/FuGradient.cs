@@ -7,7 +7,7 @@ using UnityEngine;
 /// Represents the Fu Gradient type.
 /// </summary>
 [Serializable]
-public class FuGradient
+public class FuGradient : IDisposable
 {
     #region State
     /// <summary>
@@ -321,7 +321,12 @@ public class FuGradient
     ///<returns>The gradient texture.</returns>
     public Texture2D GetGradientTexture(bool vertical = false)
     {
-        // Return the corresponding texture based on the provided orientation
+        // Disposed GPU textures are recreated lazily when the gradient is used again.
+        if (_horizontalTexture == null || _verticalTexture == null)
+        {
+            UpdateGradientTextures();
+        }
+
         return vertical ? _verticalTexture : _horizontalTexture;
     }
 
@@ -395,6 +400,50 @@ public class FuGradient
         _keys = new List<FuGradientColorKey>();
         _keys.AddRange(newKeys);
         UpdateGradientTextures();
+    }
+
+    /// <summary>
+    /// Releases the two generated Unity textures owned by this gradient.
+    /// </summary>
+    public void Dispose()
+    {
+        // Gradient data remains usable and will recreate its textures on the next update.
+        Texture2D horizontalTexture = _horizontalTexture;
+        Texture2D verticalTexture = _verticalTexture;
+        _horizontalTexture = null;
+        _verticalTexture = null;
+        _textureColors = null;
+
+        try
+        {
+            DestroyOwnedTexture(horizontalTexture);
+        }
+        finally
+        {
+            DestroyOwnedTexture(verticalTexture);
+        }
+    }
+
+    /// <summary>
+    /// Destroys one generated gradient texture in play mode or Edit Mode.
+    /// </summary>
+    /// <param name="texture">Texture owned by this gradient.</param>
+    private static void DestroyOwnedTexture(Texture2D texture)
+    {
+        if (texture == null)
+        {
+            return;
+        }
+
+        // Serialized gradients are also previewed outside play mode.
+        if (Application.isPlaying)
+        {
+            UnityEngine.Object.Destroy(texture);
+        }
+        else
+        {
+            UnityEngine.Object.DestroyImmediate(texture);
+        }
     }
 
     /// <summary>

@@ -194,41 +194,47 @@ namespace Fu.Framework
             }
 
             drawList.PushClipRect(tabsClipMin, tabsClipMax, true);
-            for (int i = 0; i < count; i++)
+            try
             {
-                Vector2 tabMin = new Vector2(tabsClipMin.x + layout[i].X - scrollOffset, tabsClipMin.y);
-                Vector2 tabMax = tabMin + new Vector2(layout[i].Width, tabsClipMax.y - tabsClipMin.y);
-                if (tabMax.x <= tabsClipMin.x || tabMin.x >= tabsClipMax.x)
+                for (int i = 0; i < count; i++)
                 {
-                    UpdateTabSelectionAnimation(elementID, i, selectedIndex == i);
-                    continue;
+                    Vector2 tabMin = new Vector2(tabsClipMin.x + layout[i].X - scrollOffset, tabsClipMin.y);
+                    Vector2 tabMax = tabMin + new Vector2(layout[i].Width, tabsClipMax.y - tabsClipMin.y);
+                    if (tabMax.x <= tabsClipMin.x || tabMin.x >= tabsClipMax.x)
+                    {
+                        UpdateTabSelectionAnimation(elementID, i, selectedIndex == i);
+                        continue;
+                    }
+
+                    Rect hitRect = ClipTabHitRect(tabMin, tabMax, tabsClipMin, tabsClipMax);
+                    hitRects[i] = hitRect;
+                    string tabID = elementID + "##tab-" + i + "-" + (items[i] ?? string.Empty);
+                    setBaseElementState(tabID, hitRect.position, hitRect.size, !LastItemDisabled, false, true);
+
+                    bool hovered = _lastItemHovered && !LastItemDisabled;
+                    bool active = _lastItemActive && !LastItemDisabled;
+                    bool selected = selectedIndex == i;
+                    if (_lastItemUpdate && !selected && !LastItemDisabled)
+                    {
+                        selectedIndex = i;
+                        selected = true;
+                        selectionChanged = true;
+                        scrollOffset = EnsureTabVisible(scrollOffset, tabsViewportWidth, totalTabsWidth, layout[i].X, layout[i].Width, 16f * scale);
+                    }
+
+                    if (hovered)
+                    {
+                        ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
+                    }
+
+                    float selectedAmount = UpdateTabSelectionAnimation(elementID, i, selected);
+                    DrawTabItem(drawList, tabMin, tabMax, layout[i].DisplayLabel, selected, hovered, active, selectedAmount, flags);
                 }
-
-                Rect hitRect = ClipTabHitRect(tabMin, tabMax, tabsClipMin, tabsClipMax);
-                hitRects[i] = hitRect;
-                string tabID = elementID + "##tab-" + i + "-" + (items[i] ?? string.Empty);
-                setBaseElementState(tabID, hitRect.position, hitRect.size, !LastItemDisabled, false, true);
-
-                bool hovered = _lastItemHovered && !LastItemDisabled;
-                bool active = _lastItemActive && !LastItemDisabled;
-                bool selected = selectedIndex == i;
-                if (_lastItemUpdate && !selected && !LastItemDisabled)
-                {
-                    selectedIndex = i;
-                    selected = true;
-                    selectionChanged = true;
-                    scrollOffset = EnsureTabVisible(scrollOffset, tabsViewportWidth, totalTabsWidth, layout[i].X, layout[i].Width, 16f * scale);
-                }
-
-                if (hovered)
-                {
-                    ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-                }
-
-                float selectedAmount = UpdateTabSelectionAnimation(elementID, i, selected);
-                DrawTabItem(drawList, tabMin, tabMax, layout[i].DisplayLabel, selected, hovered, active, selectedAmount, flags);
             }
-            drawList.PopClipRect();
+            finally
+            {
+                drawList.PopClipRect();
+            }
 
             _tabSelectedIndices[elementID] = selectedIndex;
             _tabScrollOffsets[elementID] = ClampTabScroll(scrollOffset, totalTabsWidth, tabsViewportWidth);

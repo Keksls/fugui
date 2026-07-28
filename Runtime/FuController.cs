@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu
@@ -23,26 +22,94 @@ namespace Fu
         private bool _keepControllerBetweenScenes = true;
         [SerializeField]
         private FuguiUpdateMode _updateMode = FuguiUpdateMode.Update;
+        private bool _ownsFugui;
+        private bool _uiExceptionSubscribed;
+        private bool _hasStarted;
         #endregion
 
         /// <summary>
-        /// Runs the awake workflow.
+        /// Initializes the unique Fugui runtime session before scene behaviours begin using it.
         /// </summary>
-        void Awake()
+        private void Awake()
         {
-            if (_keepControllerBetweenScenes)
-                DontDestroyOnLoad(gameObject);
+            InitializeRuntimeSession();
+        }
 
-            // prepare FuGui before start using it
-            Fugui.Initialize(_settings, this, _uiCamera, EnableMainContainer);
+        /// <summary>
+        /// Recreates the Fugui runtime session when an already-started controller is re-enabled.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (!_hasStarted || _ownsFugui)
+            {
+                return;
+            }
 
-            // log errors to Unity console
+            if (InitializeRuntimeSession())
+            {
+                CompleteRuntimeSessionInitialization();
+            }
+        }
+
+        /// <summary>
+        /// Completes scene registration after every enabled behaviour has received its Unity Awake callback.
+        /// </summary>
+        private void Start()
+        {
+            _hasStarted = true;
+            if (_ownsFugui)
+            {
+                CompleteRuntimeSessionInitialization();
+            }
+        }
+
+        /// <summary>
+        /// Creates the Fugui runtime session and subscribes controller-owned callbacks.
+        /// </summary>
+        /// <returns>True when this controller owns the initialized session.</returns>
+        private bool InitializeRuntimeSession()
+        {
+            _ownsFugui = Fugui.Initialize(_settings, this, _uiCamera, EnableMainContainer);
+            if (!_ownsFugui)
+            {
+                enabled = false;
+                return false;
+            }
+
             if (_logErrors)
             {
                 Fugui.OnUIException += FuGui_OnUIException;
+                _uiExceptionSubscribed = true;
             }
 
-            // awake all FuWindowBehaviour instances
+            if (_keepControllerBetweenScenes)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Registers scene behaviours and applies the startup fallback for an empty layout collection.
+        /// </summary>
+        private static void CompleteRuntimeSessionInitialization()
+        {
+            // Unity has completed scene Awake callbacks before Start, so Fugui registrations see initialized behaviours.
+            NotifyFuguiBehaviours();
+
+            // if no layouts and settings is set so, display Fugui settings to avoid 'softLocked scene'
+            if (Fugui.MainContainerEnabled && Fugui.Layouts.CurrentLayout == null && Fugui.Layouts.Layouts.Count == 0 && Fugui.Settings.DisplaySettingsIfNoLayout)
+            {
+                Fugui.CreateWindow(FuSystemWindowsNames.FuguiSettings);
+            }
+        }
+
+        /// <summary>
+        /// Notifies scene behaviours that a new Fugui runtime session is ready.
+        /// </summary>
+        private static void NotifyFuguiBehaviours()
+        {
 #if UNITY_6000_4_OR_NEWER
             foreach (var mono in GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include))
             {
@@ -54,18 +121,6 @@ namespace Fu
                 mono.SendMessage("FuguiAwake", SendMessageOptions.DontRequireReceiver);
             }
 #endif
-        }
-
-        /// <summary>
-        /// Runs the start workflow.
-        /// </summary>
-        private void Start()
-        {
-            // if no layouts and settings is set so, display Fugui settings to avoid 'softLocked scene'
-            if (Fugui.MainContainerEnabled && Fugui.Layouts.CurrentLayout == null && Fugui.Layouts.Layouts.Count == 0 && Fugui.Settings.DisplaySettingsIfNoLayout)
-            {
-                Fugui.CreateWindow(FuSystemWindowsNames.FuguiSettings);
-            }
         }
 
         /// <summary>
@@ -93,6 +148,11 @@ namespace Fu
         /// </summary>
         public void FuUpdate()
         {
+            if (!_ownsFugui || !Fugui.IsOwnedBy(this))
+            {
+                return;
+            }
+
             // Update Input Manager
             FuRaycasting.Update();
 
@@ -108,54 +168,31 @@ namespace Fu
         /// </summary>
         private void LateUpdate()
         {
+            if (!_ownsFugui || !Fugui.IsOwnedBy(this))
+            {
+                return;
+            }
+
             if (_updateMode == FuguiUpdateMode.LateUpdate)
             {
                 FuUpdate();
             }
 
-            // destroy contexts
-            while (Fugui.ToDeleteContexts.Count > 0)
-            {
-                int contextID = Fugui.ToDeleteContexts.Dequeue();
-                if (Fugui.ContextExists(contextID))
-                {
-                    FuContext context = Fugui.GetContext(contextID);
-
-#if FU_EXTERNALIZATION
-                    if (context is FuExternalContext externalContext)
-                    {
-                        // remove external window from dictionary
-                        List<string> externalWindowIds = new List<string>();
-                        foreach (KeyValuePair<string, FuExternalWindowContainer> pair in Fugui.ExternalWindows)
-                        {
-                            if (pair.Value != null && pair.Value.Context == externalContext)
-                            {
-                                externalWindowIds.Add(pair.Key);
-                            }
-                        }
-                        foreach (string windowId in externalWindowIds)
-                        {
-                            Fugui.ExternalWindows.Remove(windowId);
-                        }
-                        Fugui.RestoreExternalWindowUpdateLoop();
-                    }
-#endif
-                    if (context.RenderPrepared)
-                    {
-                        context.EndRender();
-                    }
-                    context.Destroy();
-
-                    Fugui.Contexts.Remove(context.ID);
-                    Fugui.SetCurrentContext(Fugui.DefaultContext);
-                }
-            }
+            Fugui.ProcessPendingContextDestructions();
         }
 
         /// <summary>
-        /// Handles the Disable event.
+        /// Releases the Fugui runtime session when its owning controller becomes inactive.
         /// </summary>
         private void OnDisable()
+        {
+            Dispose();
+        }
+
+        /// <summary>
+        /// Ensures the Fugui runtime session is released when its owning controller is destroyed.
+        /// </summary>
+        private void OnDestroy()
         {
             Dispose();
         }
@@ -169,11 +206,20 @@ namespace Fu
         }
 
         /// <summary>
-        /// Disposes the external windows and stops the render thread.
+        /// Disposes the Fugui runtime session when this controller owns it.
         /// </summary>
         public void Dispose()
         {
-            Fugui.Dispose();
+            if (_uiExceptionSubscribed)
+            {
+                Fugui.OnUIException -= FuGui_OnUIException;
+                _uiExceptionSubscribed = false;
+            }
+
+            if (Fugui.Dispose(this))
+            {
+                _ownsFugui = false;
+            }
         }
     }
 

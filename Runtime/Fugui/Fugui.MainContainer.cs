@@ -171,7 +171,7 @@ namespace Fu
             UniversalAdditionalCameraData additionalCameraData = camera.GetComponent<UniversalAdditionalCameraData>();
             if (additionalCameraData != null)
             {
-                UnityEngine.Object.Destroy(additionalCameraData);
+                DestroyMainContainerOwnedObject(additionalCameraData);
             }
         }
 
@@ -214,14 +214,44 @@ namespace Fu
         /// </summary>
         private static void ReleaseOffscreenDriverTexture()
         {
-            if (_offscreenDriverTexture == null)
+            RenderTexture ownedTexture = _offscreenDriverTexture;
+            _offscreenDriverTexture = null;
+            if (ownedTexture == null)
             {
                 return;
             }
 
-            _offscreenDriverTexture.Release();
-            UnityEngine.Object.Destroy(_offscreenDriverTexture);
-            _offscreenDriverTexture = null;
+            try
+            {
+                ownedTexture.Release();
+            }
+            finally
+            {
+                // Unity object ownership ends even if releasing the native render surface reports an error.
+                DestroyMainContainerOwnedObject(ownedTexture);
+            }
+        }
+
+        /// <summary>
+        /// Destroys one runtime object owned by main-container camera integration.
+        /// </summary>
+        /// <param name="target">Runtime object to destroy.</param>
+        private static void DestroyMainContainerOwnedObject(UnityEngine.Object target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            // Editor previews do not guarantee a later frame for delayed destruction.
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(target);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(target);
+            }
         }
     }
 }

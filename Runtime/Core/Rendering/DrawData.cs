@@ -155,6 +155,21 @@ namespace Fu
                 DisplayPos = imDrawData.DisplayPos;
                 DisplaySize = imDrawData.DisplaySize;
             }
+
+            /// <summary>
+            /// Releases every pinned transient draw-list buffer owned by this context.
+            /// </summary>
+            internal void Dispose()
+            {
+                // Window draw lists are owned by their FuWindow; only the transient pool belongs here.
+                for (int i = 0; i < _transientDrawListPool.Count; i++)
+                {
+                    _transientDrawListPool[i].Dispose();
+                }
+
+                _transientDrawListPool.Clear();
+                Clear();
+            }
             #endregion
         }
 

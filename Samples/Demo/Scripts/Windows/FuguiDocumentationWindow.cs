@@ -655,8 +655,8 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
                 "Keep StreamingAssets/Fugui/Themes and Layouts with their index JSON files."
             },
             "Minimal controller flow",
-            @"// FuController.Awake does the heavy lifting:
-Fugui.Initialize(settings, controller, uiCamera);
+            @"// FuController.OnEnable opens the uniquely owned runtime session:
+bool ownsSession = Fugui.Initialize(settings, controller, uiCamera);
 
 // Each FuWindowBehaviour in the scene is then registered:
 behaviour.FuguiAwake();

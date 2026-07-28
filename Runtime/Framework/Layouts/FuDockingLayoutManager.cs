@@ -1082,21 +1082,27 @@ namespace Fu
             Rect clipRect = floatingRoot != null ? floatingRoot.Rect : GetContainerContentRect(container);
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
             drawList.PushClipRect(clipRect.position, clipRect.position + clipRect.size, false);
-            for (int i = 0; i < splitters.Count; i++)
+            try
             {
-                DockSplitterDrawData splitter = splitters[i];
-                if (splitter.OwningFloatingRoot != floatingRoot)
+                for (int i = 0; i < splitters.Count; i++)
                 {
-                    continue;
-                }
+                    DockSplitterDrawData splitter = splitters[i];
+                    if (splitter.OwningFloatingRoot != floatingRoot)
+                    {
+                        continue;
+                    }
 
-                DrawDockSplitter(drawList, splitter.GrabRect, splitter.Horizontal, splitter.Hovered, splitter.Active, splitter.VisualThickness, splitter.Scale, splitter.MousePosition, splitter.ClipRect);
+                    DrawDockSplitter(drawList, splitter.GrabRect, splitter.Horizontal, splitter.Hovered, splitter.Active, splitter.VisualThickness, splitter.Scale, splitter.MousePosition, splitter.ClipRect);
+                }
+                if (floatingRoot != null)
+                {
+                    DrawFloatingDockRootResizeFeedback(floatingRoot, container.LocalMousePos);
+                }
             }
-            if (floatingRoot != null)
+            finally
             {
-                DrawFloatingDockRootResizeFeedback(floatingRoot, container.LocalMousePos);
+                drawList.PopClipRect();
             }
-            drawList.PopClipRect();
         }
 
         /// <summary>
@@ -1178,8 +1184,14 @@ namespace Fu
         {
             FuDrawList foreground = Fugui.GetForegroundDrawList();
             foreground.PushClipRect(clipRect.position, clipRect.position + clipRect.size, false);
-            foreground.AddRectFilled(handle.position, handle.position + handle.size, color, rounding);
-            foreground.PopClipRect();
+            try
+            {
+                foreground.AddRectFilled(handle.position, handle.position + handle.size, color, rounding);
+            }
+            finally
+            {
+                foreground.PopClipRect();
+            }
         }
 
         /// <summary>
@@ -1215,44 +1227,48 @@ namespace Fu
 
             FuDrawList drawList = Fugui.GetForegroundDrawList();
             drawList.PushClipRect(rect.position, rect.position + rect.size, false);
-
-            FloatingDockRootResizeEdge edge = floatingRoot.ResizeEdge;
-            if (edge == FloatingDockRootResizeEdge.Left || edge == FloatingDockRootResizeEdge.BottomLeft)
+            try
             {
-                drawList.AddLine(min, new Vector2(min.x, max.y), edgeLineColor, edgeLineThickness);
-                if (edge == FloatingDockRootResizeEdge.Left)
+                FloatingDockRootResizeEdge edge = floatingRoot.ResizeEdge;
+                if (edge == FloatingDockRootResizeEdge.Left || edge == FloatingDockRootResizeEdge.BottomLeft)
                 {
-                    float clampedY = Mathf.Clamp(mousePos.y, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
-                    Rect handle = new Rect(new Vector2(min.x - handleShort * 0.5f + inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
-                    drawList.AddRectFilled(handle.position, handle.position + handle.size, feedbackColor, rounding);
+                    drawList.AddLine(min, new Vector2(min.x, max.y), edgeLineColor, edgeLineThickness);
+                    if (edge == FloatingDockRootResizeEdge.Left)
+                    {
+                        float clampedY = Mathf.Clamp(mousePos.y, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
+                        Rect handle = new Rect(new Vector2(min.x - handleShort * 0.5f + inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
+                        drawList.AddRectFilled(handle.position, handle.position + handle.size, feedbackColor, rounding);
+                    }
+                }
+                if (edge == FloatingDockRootResizeEdge.Right || edge == FloatingDockRootResizeEdge.BottomRight)
+                {
+                    drawList.AddLine(new Vector2(max.x, min.y), max, edgeLineColor, edgeLineThickness);
+                    if (edge == FloatingDockRootResizeEdge.Right)
+                    {
+                        float clampedY = Mathf.Clamp(mousePos.y, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
+                        Rect handle = new Rect(new Vector2(max.x - handleShort * 0.5f - inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
+                        drawList.AddRectFilled(handle.position, handle.position + handle.size, feedbackColor, rounding);
+                    }
+                }
+                if (edge == FloatingDockRootResizeEdge.Bottom || edge == FloatingDockRootResizeEdge.BottomLeft || edge == FloatingDockRootResizeEdge.BottomRight)
+                {
+                    drawList.AddLine(new Vector2(min.x, max.y), max, edgeLineColor, edgeLineThickness);
+                    if (edge == FloatingDockRootResizeEdge.Bottom)
+                    {
+                        float clampedX = Mathf.Clamp(mousePos.x, min.x + horizontalHandleLong * 0.5f, max.x - horizontalHandleLong * 0.5f);
+                        Rect handle = new Rect(new Vector2(clampedX - horizontalHandleLong * 0.5f, max.y - handleShort * 0.5f - inset), new Vector2(horizontalHandleLong, handleShort));
+                        drawList.AddRectFilled(handle.position, handle.position + handle.size, feedbackColor, rounding);
+                    }
+                }
+                if (edge == FloatingDockRootResizeEdge.BottomLeft || edge == FloatingDockRootResizeEdge.BottomRight)
+                {
+                    DrawFloatingDockRootCornerResizeHandle(drawList, edge, min, max, feedbackColor, handleThickness, scale);
                 }
             }
-            if (edge == FloatingDockRootResizeEdge.Right || edge == FloatingDockRootResizeEdge.BottomRight)
+            finally
             {
-                drawList.AddLine(new Vector2(max.x, min.y), max, edgeLineColor, edgeLineThickness);
-                if (edge == FloatingDockRootResizeEdge.Right)
-                {
-                    float clampedY = Mathf.Clamp(mousePos.y, min.y + verticalHandleLong * 0.5f, max.y - verticalHandleLong * 0.5f);
-                    Rect handle = new Rect(new Vector2(max.x - handleShort * 0.5f - inset, clampedY - verticalHandleLong * 0.5f), new Vector2(handleShort, verticalHandleLong));
-                    drawList.AddRectFilled(handle.position, handle.position + handle.size, feedbackColor, rounding);
-                }
+                drawList.PopClipRect();
             }
-            if (edge == FloatingDockRootResizeEdge.Bottom || edge == FloatingDockRootResizeEdge.BottomLeft || edge == FloatingDockRootResizeEdge.BottomRight)
-            {
-                drawList.AddLine(new Vector2(min.x, max.y), max, edgeLineColor, edgeLineThickness);
-                if (edge == FloatingDockRootResizeEdge.Bottom)
-                {
-                    float clampedX = Mathf.Clamp(mousePos.x, min.x + horizontalHandleLong * 0.5f, max.x - horizontalHandleLong * 0.5f);
-                    Rect handle = new Rect(new Vector2(clampedX - horizontalHandleLong * 0.5f, max.y - handleShort * 0.5f - inset), new Vector2(horizontalHandleLong, handleShort));
-                    drawList.AddRectFilled(handle.position, handle.position + handle.size, feedbackColor, rounding);
-                }
-            }
-            if (edge == FloatingDockRootResizeEdge.BottomLeft || edge == FloatingDockRootResizeEdge.BottomRight)
-            {
-                DrawFloatingDockRootCornerResizeHandle(drawList, edge, min, max, feedbackColor, handleThickness, scale);
-            }
-
-            drawList.PopClipRect();
         }
 
         /// <summary>

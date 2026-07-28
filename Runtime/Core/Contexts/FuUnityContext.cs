@@ -67,13 +67,41 @@ namespace Fu
         /// </summary>
         internal override void Destroy()
         {
+            if (IsDestroyed)
+            {
+                return;
+            }
+
             FuContext previousContext = Fugui.CurrentContext;
             Fugui.SetCurrentContext(this);
-            base.Destroy();
-            SetPlatform(null, IO, PlatformIO);
-            ImGui.DestroyContext(ImGuiContext);
-            ImGuiContext = IntPtr.Zero;
-            RestorePreviousContext(previousContext);
+
+            try
+            {
+                base.Destroy();
+            }
+            finally
+            {
+                try
+                {
+                    // Platform callbacks borrow this context's IO and must be detached before native destruction.
+                    SetPlatform(null, IO, PlatformIO);
+                }
+                finally
+                {
+                    try
+                    {
+                        if (ImGuiContext != IntPtr.Zero)
+                        {
+                            ImGui.DestroyContext(ImGuiContext);
+                        }
+                    }
+                    finally
+                    {
+                        ImGuiContext = IntPtr.Zero;
+                        RestorePreviousContext(previousContext);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -183,8 +211,14 @@ namespace Fu
 
             if (!ApplySharedFontAtlas())
             {
-                LoadFonts();
-                IO.Fonts.Build();
+                using (FuFontLoadResources fontResources = LoadFonts())
+                {
+                    // Glyph ranges only need to remain alive until the atlas build completes.
+                    if (!IO.Fonts.Build())
+                    {
+                        throw new InvalidOperationException($"ImGui failed to build the font atlas for context {ID}.");
+                    }
+                }
             }
             // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
             TextureManager.InitializeFontAtlas(IO);
@@ -235,26 +269,46 @@ namespace Fu
             fontScale = QuantizeFontScale(fontScale);
             // store old scale
             float oldScale = Scale;
-            float oldFontScale = FontScale;
+            bool fontScaleChanged = Mathf.Abs(FontScale - fontScale) >= 0.0001f;
 
-            if (Mathf.Abs(Scale - scale) < 0.0001f && Mathf.Abs(FontScale - fontScale) < 0.0001f)
+            if (Mathf.Abs(Scale - scale) < 0.0001f && !fontScaleChanged)
             {
                 return;
             }
 
-            // set scale
-            Scale = scale;
-            FontScale = fontScale;
-
-            // update font scale
-            TextureManager.ClearFontAtlas(oldFontScale);
-            if (!SwitchSharedFontAtlas(fontScale))
+            if (fontScaleChanged && UsesSharedFontAtlas)
             {
-                LoadFonts();
-                IO.Fonts.Build();
+                // Acquire and apply the replacement before releasing any resource used by the current scale.
+                if (!SwitchSharedFontAtlas(fontScale))
+                {
+                    throw new InvalidOperationException($"Unable to acquire the shared font atlas for scale {fontScale:0.###}.");
+                }
+
+                TextureManager.ClearFontAtlas();
             }
-            // font atlas will be copied into GPU and keeped into unit Texture2D used for render pass
-            TextureManager.InitializeFontAtlas(IO);
+            else if (fontScaleChanged)
+            {
+                FontScale = fontScale;
+                using (FuFontLoadResources fontResources = LoadFonts())
+                {
+                    // Glyph ranges only need to remain alive until the atlas build completes.
+                    if (!IO.Fonts.Build())
+                    {
+                        throw new InvalidOperationException($"ImGui failed to rebuild the font atlas for context {ID}.");
+                    }
+                }
+
+                // Keep the previous GPU atlas alive until its native replacement has built successfully.
+                TextureManager.ClearFontAtlas();
+            }
+
+            Scale = scale;
+            if (fontScaleChanged)
+            {
+                // A changed native atlas receives a matching shared Unity texture exactly once.
+                TextureManager.InitializeFontAtlas(IO);
+            }
+
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
 
             // scale windows sizes for windows NOT docked, visible and in this context

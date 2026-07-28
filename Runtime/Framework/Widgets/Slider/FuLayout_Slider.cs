@@ -194,19 +194,25 @@ namespace Fu.Framework
             {
                 string formatString = format != null ? format : getStringFormat(value);
                 ImGui.PushItemWidth(dragWidth);
-                if (ImGui.InputFloat("##" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, LastItemDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
+                try
                 {
-                    // Clamp the value to the min and max range
-                    value = Math.Clamp(value, min, max);
-                    if (isInt)
+                    if (ImGui.InputFloat("##" + text, ref value, 0f, 0f, isInt ? "%.0f" : formatString, LastItemDisabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
                     {
-                        value = (int)value;
+                        // Clamp the value to the min and max range
+                        value = Math.Clamp(value, min, max);
+                        if (isInt)
+                        {
+                            value = (int)value;
+                        }
                     }
+                    displayToolTip();
+                    _elementHoverFramedEnabled = true;
+                    DrawHoverFrame();
                 }
-                ImGui.PopItemWidth();
-                displayToolTip();
-                _elementHoverFramedEnabled = true;
-                DrawHoverFrame();
+                finally
+                {
+                    ImGui.PopItemWidth();
+                }
             }
 
             // function that draw the slider

@@ -1,4 +1,3 @@
-using ImGuiNET;
 using System;
 using UnityEngine;
 
@@ -17,10 +16,6 @@ namespace Fu
             public ushort StartGlyph = '\uE000';
             public ushort EndGlyph = '\uF8FF';
             public ushort[] CustomGlyphRanges;
-            [HideInInspector]
-            public IntPtr GlyphRangePtr;
-            [HideInInspector]
-            internal ImFontConfigPtr FontConfigPtr;
             public float SizeOffset = 0f;
             public Vector2 GlyphOffset = Vector2.zero;
             #endregion

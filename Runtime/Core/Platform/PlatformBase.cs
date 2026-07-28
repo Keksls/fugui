@@ -18,6 +18,7 @@ namespace Fu
         internal ImGuiMouseCursor _lastCursor = ImGuiMouseCursor.COUNT;
         protected Rect DisplayRect { get; private set; }
         private readonly HashSet<IntPtr> _managedAllocations = new HashSet<IntPtr>();
+        private Texture2D _ownedCursorTexture;
         #endregion
 
         #region Constructors
@@ -110,7 +111,16 @@ namespace Fu
         /// <param name="pio"> The ImGuiPlatformIOPtr instance. </param>
         internal virtual void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr pio)
         {
+            // The platform owns only cursor textures generated from configured source assets.
+            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+            ReplaceOwnedCursorTexture(null);
             SetBackendPlatformName(io, null);
+            foreach (IntPtr allocation in _managedAllocations)
+            {
+                Marshal.FreeHGlobal(allocation);
+            }
+
+            _managedAllocations.Clear();
             _callbacks.Unset(pio);
         }
 
@@ -150,7 +160,8 @@ namespace Fu
             if (Fugui.Settings.CursorShapes != null && Fugui.Settings.CursorShapes[cursor].Texture != null)
             {
                 var shape = Fugui.Settings.CursorShapes[cursor];
-                Texture2D texture = shape.Texture;
+                Texture2D sourceTexture = shape.Texture;
+                Texture2D texture = sourceTexture;
 
                 // Vérification des contraintes Unity
                 if (!texture.isReadable || texture.mipmapCount > 1 || texture.format != TextureFormat.RGBA32)
@@ -161,7 +172,18 @@ namespace Fu
                 // Redimensionnement si nécessaire
                 if (texture.width != Fugui.Settings.TargetCursorSize || texture.height != Fugui.Settings.TargetCursorSize)
                 {
-                    texture = ResizeCursorTexture(texture, Fugui.Settings.TargetCursorSize, Fugui.Settings.TargetCursorSize);
+                    Texture2D textureBeforeResize = texture;
+                    try
+                    {
+                        texture = ResizeCursorTexture(textureBeforeResize, Fugui.Settings.TargetCursorSize, Fugui.Settings.TargetCursorSize);
+                    }
+                    finally
+                    {
+                        if (!ReferenceEquals(textureBeforeResize, sourceTexture))
+                        {
+                            DestroyOwnedTexture(textureBeforeResize);
+                        }
+                    }
                 }
 
                 // Hotspot ajusté proportionnellement
@@ -171,6 +193,13 @@ namespace Fu
                 );
 
                 Cursor.SetCursor(texture, hotspot, CursorMode.Auto);
+                ReplaceOwnedCursorTexture(ReferenceEquals(texture, sourceTexture) ? null : texture);
+            }
+            else
+            {
+                // Returning to Unity's default cursor ends ownership of the previous generated texture.
+                Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+                ReplaceOwnedCursorTexture(null);
             }
         }
 
@@ -184,17 +213,29 @@ namespace Fu
         private Texture2D ResizeCursorTexture(Texture2D source, int targetWidth, int targetHeight)
         {
             RenderTexture rt = RenderTexture.GetTemporary(targetWidth, targetHeight);
-            Graphics.Blit(source, rt);
-            RenderTexture.active = rt;
+            RenderTexture previousActive = RenderTexture.active;
+            Texture2D result = null;
+            try
+            {
+                // Temporary render targets and global active state are restored even if readback fails.
+                Graphics.Blit(source, rt);
+                RenderTexture.active = rt;
 
-            Texture2D result = new Texture2D(targetWidth, targetHeight, TextureFormat.RGBA32, false);
-            result.ReadPixels(new Rect(0, 0, targetWidth, targetHeight), 0, 0);
-            result.Apply();
-
-            RenderTexture.ReleaseTemporary(rt);
-            RenderTexture.active = null;
-
-            return result;
+                result = new Texture2D(targetWidth, targetHeight, TextureFormat.RGBA32, false);
+                result.ReadPixels(new Rect(0, 0, targetWidth, targetHeight), 0, 0);
+                result.Apply();
+                return result;
+            }
+            catch
+            {
+                DestroyOwnedTexture(result);
+                throw;
+            }
+            finally
+            {
+                RenderTexture.active = previousActive;
+                RenderTexture.ReleaseTemporary(rt);
+            }
         }
 
         /// <summary>
@@ -205,9 +246,56 @@ namespace Fu
         private Texture2D RebuildCursorTexture(Texture2D source)
         {
             Texture2D rebuilt = new Texture2D(source.width, source.height, TextureFormat.RGBA32, false);
-            Graphics.CopyTexture(source, rebuilt);
-            rebuilt.Apply();
-            return rebuilt;
+            try
+            {
+                // Ownership transfers to UpdateCursor only after the rebuilt texture is complete.
+                Graphics.CopyTexture(source, rebuilt);
+                rebuilt.Apply();
+                return rebuilt;
+            }
+            catch
+            {
+                DestroyOwnedTexture(rebuilt);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Replaces and destroys the generated cursor texture owned by this platform.
+        /// </summary>
+        /// <param name="texture">New generated texture, or null when a configured source asset is used directly.</param>
+        private void ReplaceOwnedCursorTexture(Texture2D texture)
+        {
+            if (ReferenceEquals(_ownedCursorTexture, texture))
+            {
+                return;
+            }
+
+            Texture2D previousTexture = _ownedCursorTexture;
+            _ownedCursorTexture = texture;
+            DestroyOwnedTexture(previousTexture);
+        }
+
+        /// <summary>
+        /// Destroys a cursor texture generated at runtime.
+        /// </summary>
+        /// <param name="texture">Generated cursor texture.</param>
+        private static void DestroyOwnedTexture(Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return;
+            }
+
+            // Editor previews do not have a play-mode frame to flush delayed destruction.
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(texture);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
         }
 
         /// <summary>
@@ -221,7 +309,9 @@ namespace Fu
             {
                 if (_managedAllocations.Contains((IntPtr)io.NativePtr->BackendPlatformName))
                 {
-                    Marshal.FreeHGlobal(new IntPtr(io.NativePtr->BackendPlatformName));
+                    IntPtr allocation = new IntPtr(io.NativePtr->BackendPlatformName);
+                    Marshal.FreeHGlobal(allocation);
+                    _managedAllocations.Remove(allocation);
                 }
                 io.NativePtr->BackendPlatformName = (byte*)0;
             }
@@ -229,12 +319,19 @@ namespace Fu
             {
                 int byteCount = Encoding.UTF8.GetByteCount(name);
                 byte* nativeName = (byte*)Marshal.AllocHGlobal(byteCount + 1);
-                int offset = Fugui.GetUtf8(name, nativeName, byteCount);
-
-                nativeName[offset] = 0;
-
-                io.NativePtr->BackendPlatformName = nativeName;
-                _managedAllocations.Add((IntPtr)nativeName);
+                try
+                {
+                    // ImGui borrows this UTF-8 buffer for the full backend lifetime.
+                    int offset = Fugui.GetUtf8(name, nativeName, byteCount);
+                    nativeName[offset] = 0;
+                    io.NativePtr->BackendPlatformName = nativeName;
+                    _managedAllocations.Add((IntPtr)nativeName);
+                }
+                catch
+                {
+                    Marshal.FreeHGlobal((IntPtr)nativeName);
+                    throw;
+                }
             }
         }
         #endregion

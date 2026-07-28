@@ -114,7 +114,6 @@ namespace Fu
             OnResized += ImGuiCameraWindow_OnResize;
             OnDock += ImGuiCameraWindow_OnDock;
             OnUnDock += ImGuiCameraWindow_OnDock;
-            OnClosed += UICameraWindow_OnClosed;
             ImGuiCameraWindow_OnResize(this);
             _windowFlags |= FuWindowStyleFlags.NoScrollbar;
             _windowFlags |= FuWindowStyleFlags.NoScrollWithMouse;
@@ -143,17 +142,62 @@ namespace Fu
 
         #region Methods
         /// <summary>
-        /// Runs the uicamera window on closed workflow.
+        /// Releases the raycaster and render target owned by this camera window.
         /// </summary>
-        /// <param name="window">The window value.</param>
-        private void UICameraWindow_OnClosed(FuWindow window)
+        protected override void ReleaseOwnedResources()
         {
-            FuRaycasting.UnRegisterRaycaster(window.ID);
-            window.OnResize -= ImGuiCameraWindow_OnResize;
-            window.OnResized -= ImGuiCameraWindow_OnResize;
-            window.OnDock -= ImGuiCameraWindow_OnDock;
-            window.OnUnDock -= ImGuiCameraWindow_OnDock;
-            window.OnClosed -= UICameraWindow_OnClosed;
+            // Detach callbacks before releasing the camera target they can resize.
+            FuRaycasting.UnRegisterRaycaster(ID);
+            OnResize -= ImGuiCameraWindow_OnResize;
+            OnResized -= ImGuiCameraWindow_OnResize;
+            OnDock -= ImGuiCameraWindow_OnDock;
+            OnUnDock -= ImGuiCameraWindow_OnDock;
+            _raycaster = null;
+
+            if (Camera != null && ReferenceEquals(Camera.targetTexture, _rTexture))
+            {
+                Camera.targetTexture = null;
+            }
+
+            if (_rTexture != null)
+            {
+                RenderTexture ownedTexture = _rTexture;
+                _rTexture = null;
+                try
+                {
+                    ownedTexture.Release();
+                }
+                finally
+                {
+                    // Unity object ownership ends even if releasing the native render surface reports an error.
+                    DestroyOwnedRenderTexture(ownedTexture);
+                }
+            }
+
+            UI = null;
+            base.ReleaseOwnedResources();
+        }
+
+        /// <summary>
+        /// Destroys a render texture owned by this window in play mode or Edit Mode.
+        /// </summary>
+        /// <param name="renderTexture">Render texture to destroy.</param>
+        private static void DestroyOwnedRenderTexture(RenderTexture renderTexture)
+        {
+            if (renderTexture == null)
+            {
+                return;
+            }
+
+            // Edit-mode windows need immediate destruction because no later frame flush is guaranteed.
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(renderTexture);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(renderTexture);
+            }
         }
 
         /// <summary>

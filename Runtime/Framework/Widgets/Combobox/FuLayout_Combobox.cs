@@ -183,8 +183,14 @@ namespace Fu.Framework
                         Fugui.MoveY(4f);
                         Fugui.MoveX(6f);
                         BeginGroup();
-                        callback?.Invoke();
-                        EndGroup();
+                        try
+                        {
+                            callback?.Invoke();
+                        }
+                        finally
+                        {
+                            EndGroup();
+                        }
                         ImGui.Dummy(new Vector2(0f, 4f * Fugui.CurrentContext.Scale));
                     },
                     isComboBoxPopup: true);
@@ -365,8 +371,14 @@ namespace Fu.Framework
                         Fugui.MoveY(4f);
                         Fugui.MoveX(6f);
                         BeginGroup();
-                        callback?.Invoke();
-                        EndGroup();
+                        try
+                        {
+                            callback?.Invoke();
+                        }
+                        finally
+                        {
+                            EndGroup();
+                        }
                         ImGui.Dummy(new Vector2(0f, 4f * Fugui.CurrentContext.Scale));
                     },
                     isComboBoxPopup: true);

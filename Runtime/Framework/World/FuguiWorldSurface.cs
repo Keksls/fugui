@@ -12,6 +12,7 @@ namespace Fu
         #region State
         private readonly FuguiWorld _owner;
         private ImDrawList* _nativeDrawList;
+        private FuContext _nativeOwnerContext;
         private FuDrawList _drawList;
         private FuContext _context;
         private FuguiWorldSurfaceDesc _desc;
@@ -67,17 +68,25 @@ namespace Fu
         /// <param name="desc">Surface description.</param>
         internal void Begin(FuContext context, FuguiWorldSurfaceDesc desc)
         {
-            _context = context;
             _desc = desc.Sanitized();
-            EnsureNativeDrawList();
+            EnsureNativeDrawList(context);
+            _context = context;
 
             _drawList = new FuDrawList(_nativeDrawList);
             _drawList._ResetForNewFrame();
 
             // A world surface owns a full local clip rect and starts with the active font atlas texture.
             _drawList.PushClipRect(Vector2.zero, new Vector2(_desc.Resolution.x, _desc.Resolution.y), false);
-            _drawList.PushTextureID(context.TextureManager.GetFontAtlasTextureId());
-            _isOpen = true;
+            try
+            {
+                _drawList.PushTextureID(context.TextureManager.GetFontAtlasTextureId());
+                _isOpen = true;
+            }
+            catch
+            {
+                _drawList.PopClipRect();
+                throw;
+            }
         }
 
         /// <summary>
@@ -91,22 +100,58 @@ namespace Fu
             }
 
             _isOpen = false;
-            _drawList.PopTextureID();
-            _drawList.PopClipRect();
-            _owner.EndSurface(this);
+            try
+            {
+                _drawList.PopTextureID();
+            }
+            finally
+            {
+                try
+                {
+                    _drawList.PopClipRect();
+                }
+                finally
+                {
+                    _owner.EndSurface(this);
+                }
+            }
         }
 
         /// <summary>
         /// Ensures that this wrapper owns a native ImGui draw list.
         /// </summary>
-        private void EnsureNativeDrawList()
+        private void EnsureNativeDrawList(FuContext context)
         {
-            if (_nativeDrawList != null)
+            if (_nativeDrawList != null && ReferenceEquals(_nativeOwnerContext, context))
             {
                 return;
             }
 
+            // ImDrawList keeps a pointer to its creating context's shared draw-list data.
+            ReleaseNativeResources();
             _nativeDrawList = ImGuiNative.ImDrawList_ImDrawList(ImGui.GetDrawListSharedData());
+            _nativeOwnerContext = context;
+        }
+
+        /// <summary>
+        /// Releases the native draw list when its owning ImGui context is about to be destroyed.
+        /// </summary>
+        /// <param name="context">Optional context filter; null releases any native owner.</param>
+        internal void ReleaseNativeResources(FuContext context = null)
+        {
+            if (_nativeDrawList == null ||
+                (context != null && !ReferenceEquals(_nativeOwnerContext, context)))
+            {
+                return;
+            }
+
+            // The wrapper owns the ImDrawList allocated by ImDrawList_ImDrawList.
+            ImGuiNative.ImDrawList_destroy(_nativeDrawList);
+            _nativeDrawList = null;
+            _nativeOwnerContext = null;
+            _context = null;
+            _drawList = default;
+            _isOpen = false;
         }
         #endregion
     }

@@ -95,21 +95,32 @@ namespace Fu.Framework
             float oldVal = value;
 
             if (disabled)
+            {
                 ImGui.BeginDisabled();
+            }
 
-            // Avoid string concat; prebuild static IDs
-            string id = ImGuiPushID(text);
+            bool edited;
+            float displayedValue;
+            try
+            {
+                // Avoid string concat; prebuild static IDs
+                string id = ImGuiPushID(text);
 
-            // Inline GetStringFormat replacement (zero alloc)
-            bool autoFormat = string.IsNullOrEmpty(format);
-            string fmt = autoFormat ? GetCachedFormat(value) : format;
-            float displayedValue = autoFormat && isDisplayZero(value) ? 0f : value;
+                // Inline GetStringFormat replacement (zero alloc)
+                bool autoFormat = string.IsNullOrEmpty(format);
+                string fmt = autoFormat ? GetCachedFormat(value) : format;
+                displayedValue = autoFormat && isDisplayZero(value) ? 0f : value;
 
-            bool edited = ImGui.DragFloat(id, ref displayedValue, speed, min, max, fmt,
-                disabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
-
-            if (disabled)
-                ImGui.EndDisabled();
+                edited = ImGui.DragFloat(id, ref displayedValue, speed, min, max, fmt,
+                    disabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp);
+            }
+            finally
+            {
+                if (disabled)
+                {
+                    ImGui.EndDisabled();
+                }
+            }
 
             bool valueChanged = !disabled && edited && displayedValue != oldVal;
 

@@ -137,26 +137,32 @@ namespace Fu.Framework
             bool drawDrag(string text, string id, ref float value, float min, float max, bool isInt)
             {
                 ImGui.PushItemWidth(dragWidth);
-                bool updated = false;
-                ImGui.Text(text);
-                ImGui.SameLine();
-                string formatString = format != null ? format : getStringFormat(value);
-                if (ImGui.DragFloat(id, ref value, step, min, max, isInt ? "%.0f" : formatString, LastItemDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp))
+                try
                 {
-                    updated = true;
-                    // Clamp the value to the min and max range
-                    value = Math.Clamp(value, min, max);
-                    if (isInt)
+                    bool updated = false;
+                    ImGui.Text(text);
+                    ImGui.SameLine();
+                    string formatString = format != null ? format : getStringFormat(value);
+                    if (ImGui.DragFloat(id, ref value, step, min, max, isInt ? "%.0f" : formatString, LastItemDisabled ? ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp))
                     {
-                        value = (int)value;
+                        updated = true;
+                        // Clamp the value to the min and max range
+                        value = Math.Clamp(value, min, max);
+                        if (isInt)
+                        {
+                            value = (int)value;
+                        }
                     }
+                    displayToolTip();
+                    _elementHoverFramedEnabled = true;
+                    DrawHoverFrame();
+                    _elementHoverFramedEnabled = false;
+                    return updated;
                 }
-                ImGui.PopItemWidth();
-                displayToolTip();
-                _elementHoverFramedEnabled = true;
-                DrawHoverFrame();
-                _elementHoverFramedEnabled = false;
-                return updated;
+                finally
+                {
+                    ImGui.PopItemWidth();
+                }
             }
 
             // function that draw the slider

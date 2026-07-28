@@ -186,9 +186,22 @@ namespace Fu
             io.AddKeyEvent(ImGuiKey.ModSuper, (mods & SDL.SDL_Keymod.KMOD_GUI) != 0);
         }
 
+        /// <summary>
+        /// Releases the base ImGui backend allocations and marks the SDL platform inactive.
+        /// </summary>
+        /// <param name="io">ImGui IO owned by the external context.</param>
+        /// <param name="platformIO">ImGui platform IO owned by the external context.</param>
         internal override void Shutdown(ImGuiIOPtr io, ImGuiPlatformIOPtr platformIO)
         {
-            _initialized = false;
+            try
+            {
+                // PlatformBase owns BackendPlatformName and callback registrations created by Initialize.
+                base.Shutdown(io, platformIO);
+            }
+            finally
+            {
+                _initialized = false;
+            }
         }
 
         private static ImGuiKey SDLKeyToImGuiKey(SDL.SDL_Scancode sc)

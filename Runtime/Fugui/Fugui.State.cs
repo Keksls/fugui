@@ -18,10 +18,26 @@ namespace Fu
     /// </summary>
     public static partial class Fugui
     {
+        private enum FuguiLifecycleState
+        {
+            Inactive,
+            Initializing,
+            Initialized,
+            Disposing
+        }
+
         /// <summary>
         /// The current Context Fugui is drawing on
         /// </summary>
         public static FuContext CurrentContext { get; internal set; }
+        /// <summary>
+        /// Whether Fugui currently owns a fully initialized runtime session.
+        /// </summary>
+        public static bool IsInitialized => _lifecycleState == FuguiLifecycleState.Initialized;
+        /// <summary>
+        /// Monotonic identifier used by persistent Unity renderer features to reject caches from older sessions.
+        /// </summary>
+        internal static uint RuntimeGeneration { get; private set; }
         /// <summary>
         /// The current scale of the UI (based on current context scale)
         /// </summary>
@@ -65,11 +81,11 @@ namespace Fu
         /// <summary>
         /// The static dictionary of UI windows
         /// </summary>
-        public static Dictionary<string, FuWindow> UIWindows { get; internal set; }
+        public static Dictionary<string, FuWindow> UIWindows { get; internal set; } = new Dictionary<string, FuWindow>();
         /// <summary>
         /// The static dictionary of UI window definitions
         /// </summary>
-        public static Dictionary<FuWindowName, FuWindowDefinition> UIWindowsDefinitions { get; internal set; }
+        public static Dictionary<FuWindowName, FuWindowDefinition> UIWindowsDefinitions { get; internal set; } = new Dictionary<FuWindowName, FuWindowDefinition>();
         /// <summary>
         /// A boolean value indicating whether a window has been render this frame
         /// </summary>
@@ -191,7 +207,7 @@ namespace Fu
         private static readonly Vector2[] _inputSnapshotMouseDragMaxDistanceAbs = new Vector2[WindowInputBlockMouseButtonCount];
         private static readonly float[] _inputSnapshotMouseDragMaxDistanceSqr = new float[WindowInputBlockMouseButtonCount];
         // The dictionary of 3D windows
-        private static Dictionary<string, Fu3DWindowContainer> _3DWindows;
+        private static Dictionary<string, Fu3DWindowContainer> _3DWindows = new Dictionary<string, Fu3DWindowContainer>();
         // dictionary of external windows
 #if FU_EXTERNALIZATION
         internal static Dictionary<string, FuExternalWindowContainer> ExternalWindows = new Dictionary<string, FuExternalWindowContainer>();
@@ -225,6 +241,7 @@ namespace Fu
         private static RenderTexture _offscreenDriverTexture;
         private static float _targetScale = -1f;
         private static float _targetFontScale = -1f;
+        private static FuguiLifecycleState _lifecycleState = FuguiLifecycleState.Inactive;
 
         /// <summary>
         /// Event invoken whenever an exception happend within the UI render loop
@@ -419,14 +436,5 @@ namespace Fu
         }
         #endregion
 
-        #region Constructors
-        /// <summary>
-        /// Initializes a new instance of the Fugui class.
-        /// </summary>
-        static Fugui()
-        {
-            Initialize(null, null, null);
-        }
-        #endregion
     }
 }

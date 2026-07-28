@@ -33,6 +33,11 @@ namespace Fu
         /// </summary>
         public static void Render()
         {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
             Fugui.HasHovered3DWindowThisFrame = false;
 
 #if FU_EXTERNALIZATION
@@ -49,7 +54,7 @@ namespace Fu
             foreach (var contextPair in Contexts.ToList())
             {
                 if (!Contexts.TryGetValue(contextPair.Key, out FuContext context) ||
-                    contextPair.Key == 0 ||
+                    ReferenceEquals(context, DefaultContext) ||
                     !context.Started)
                 {
                     continue;

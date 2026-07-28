@@ -134,11 +134,15 @@ namespace Fu.Framework
         /// <returns>The result of the operation.</returns>
         public FuWindowDefinition EnsureWindowDefinitionRegistered()
         {
-            if (_windowDefinition != null)
+            if (_windowDefinition != null &&
+                Fugui.UIWindowsDefinitions != null &&
+                Fugui.UIWindowsDefinitions.TryGetValue(_windowName, out FuWindowDefinition registeredDefinition) &&
+                object.ReferenceEquals(_windowDefinition, registeredDefinition))
             {
                 return _windowDefinition;
             }
 
+            _windowDefinition = null;
             if (Fugui.UIWindowsDefinitions != null &&
                 Fugui.UIWindowsDefinitions.TryGetValue(_windowName, out FuWindowDefinition existingDefinition))
             {

@@ -87,32 +87,54 @@ namespace Fu.Framework
             {
                 var speed = _speed == 0 ? (v_max - v_min) / 250.0f : _speed;
                 ImGui.PushID(label);
-                var width = size == 0 ? ImGui.GetTextLineHeight() * 4.0f : size * ImGui.GetIO().FontGlobalScale;
-                ImGui.PushItemWidth(width);
-                ImGui.BeginGroup();
-
-                // Draw knob
-                if (!_knobs.ContainsKey(label))
+                try
                 {
-                    _knobs.Add(label, new knob(width * 0.5f));
+                    var width = size == 0 ? ImGui.GetTextLineHeight() * 4.0f : size * ImGui.GetIO().FontGlobalScale;
+                    ImGui.PushItemWidth(width);
+                    try
+                    {
+                        ImGui.BeginGroup();
+                        try
+                        {
+                            // Draw knob
+                            if (!_knobs.ContainsKey(label))
+                            {
+                                _knobs.Add(label, new knob(width * 0.5f));
+                            }
+                            knob k = _knobs[label];
+
+                            FuFrameStyle.Default.Push(!LastItemDisabled);
+                            try
+                            {
+                                k.Draw(this, label, ref p_value, v_min, v_max, speed, format, flags, LastItemDisabled);
+                            }
+                            finally
+                            {
+                                FuFrameStyle.Default.Pop();
+                            }
+
+                            // Draw tooltip
+                            if (flags.HasFlag(FuKnobFlags.ValueTooltip) && (k.is_hovered || k.is_active))
+                            {
+                                ImGui.SetTooltip(p_value.ToString("f2"));
+                            }
+
+                            return k;
+                        }
+                        finally
+                        {
+                            ImGui.EndGroup();
+                        }
+                    }
+                    finally
+                    {
+                        ImGui.PopItemWidth();
+                    }
                 }
-                knob k = _knobs[label];
-
-                FuFrameStyle.Default.Push(!LastItemDisabled);
-                k.Draw(this, label, ref p_value, v_min, v_max, speed, format, flags, LastItemDisabled);
-                FuFrameStyle.Default.Pop();
-
-                // Draw tooltip
-                if (flags.HasFlag(FuKnobFlags.ValueTooltip) && (k.is_hovered || k.is_active))
+                finally
                 {
-                    ImGui.SetTooltip(p_value.ToString("f2"));
+                    ImGui.PopID();
                 }
-
-                ImGui.EndGroup();
-                ImGui.PopItemWidth();
-                ImGui.PopID();
-
-                return k;
             }
 
             /// <summary>

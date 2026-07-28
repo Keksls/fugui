@@ -63,21 +63,24 @@ Fugui est compose de quatre couches.
 
 ### Initialisation
 
-`FuController.Awake()`:
+`FuController.OnEnable()`:
 
-1. appelle `Fugui.Initialize(_settings, this, _uiCamera)`;
+1. tente de devenir l'unique proprietaire runtime via `Fugui.Initialize(_settings, this, _uiCamera)`;
 2. attache `Fugui.OnUIException` au log Unity si `_logErrors` est actif;
 3. parcourt les `MonoBehaviour` de la scene, actifs ou inactifs, et leur envoie `FuguiAwake`.
 
+Un second `FuController` est refuse tant que le premier proprietaire conserve sa session.
+
 `Fugui.Initialize`:
 
-1. initialise les dictionnaires de fenetres et definitions;
-2. cree les managers de themes/layouts;
-3. initialise le handler d'assert ImGui;
-4. cree `DefaultContext` via `CreateUnityContext`;
-5. cree `DefaultContainer`;
-6. applique la config de scale;
-7. enregistre la fenetre systeme `FuguiSettings`.
+1. valide toutes les dependances avant de muter l'etat global;
+2. initialise les dictionnaires de fenetres et definitions;
+3. cree les managers de themes/layouts;
+4. initialise le handler d'assert ImGui;
+5. cree `DefaultContext` via `CreateUnityContext`;
+6. cree `DefaultContainer`;
+7. applique la config de scale;
+8. enregistre la fenetre systeme `FuguiSettings`.
 
 ### Update
 
@@ -97,7 +100,7 @@ Fugui.Render();
 
 ### Nettoyage
 
-`FuController.Dispose()` appelle `Fugui.Dispose()`, ferme les contextes et, sous `FU_EXTERNALIZATION`, quitte SDL.
+`FuController.OnDisable()` appelle `FuController.Dispose()`. Seul le controleur proprietaire peut fermer la session. Les contextes, clippers natifs, containers 3D et fenetres externes sont detruits immediatement avant la remise a zero de l'etat runtime. Sous `FU_EXTERNALIZATION`, SDL est quitte apres la fermeture des contextes externes.
 
 ## API globale `Fugui`
 

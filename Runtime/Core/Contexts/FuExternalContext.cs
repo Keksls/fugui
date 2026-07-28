@@ -43,8 +43,14 @@ namespace Fu
             // Load fonts and atlas
             if (!ApplySharedFontAtlas())
             {
-                LoadFonts();
-                IO.Fonts.Build();
+                using (FuFontLoadResources fontResources = LoadFonts())
+                {
+                    // Glyph ranges only need to remain alive until the atlas build completes.
+                    if (!IO.Fonts.Build())
+                    {
+                        throw new InvalidOperationException($"ImGui failed to build the font atlas for external context {ID}.");
+                    }
+                }
             }
             TextureManager.InitializeFontAtlas(IO);
 
@@ -89,25 +95,72 @@ namespace Fu
             return true;
         }
 
+        /// <summary>
+        /// Closes the native window and synchronously destroys this external context.
+        /// </summary>
         internal override void Destroy()
         {
-            _window?.Close(() =>
+            if (IsDestroyed)
             {
-                FuContext previousContext = Fugui.CurrentContext;
-                Fugui.SetCurrentContext(this);
-                _platform?.Shutdown(IO, PlatformIO);
-                _platform = null;
-                base.Destroy();
+                return;
+            }
 
-                ImGui.DestroyContext(ImGuiContext);
-                ImGuiContext = IntPtr.Zero;
-                _window = null;
-                RestorePreviousContext(previousContext);
-            });
+            // Session shutdown cannot wait for a later external-window render tick.
+            if (_window == null)
+            {
+                DestroyContextResources();
+                return;
+            }
+
+            _window.CloseImmediately(DestroyContextResources);
         }
 
+        /// <summary>
+        /// Releases the platform, atlas and native ImGui resources owned by this context.
+        /// </summary>
+        private void DestroyContextResources()
+        {
+            FuContext previousContext = Fugui.CurrentContext;
+            Fugui.SetCurrentContext(this);
+
+            try
+            {
+                try
+                {
+                    // SDL platform callbacks borrow this context's IO and must be removed first.
+                    _platform?.Shutdown(IO, PlatformIO);
+                }
+                finally
+                {
+                    _platform = null;
+                    base.Destroy();
+                }
+            }
+            finally
+            {
+                try
+                {
+                    if (ImGuiContext != IntPtr.Zero)
+                    {
+                        ImGui.DestroyContext(ImGuiContext);
+                    }
+                }
+                finally
+                {
+                    ImGuiContext = IntPtr.Zero;
+                    _window = null;
+                    RestorePreviousContext(previousContext);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Restores a still-registered context after this external context has been destroyed.
+        /// </summary>
+        /// <param name="previousContext">Context that was current before native resource cleanup.</param>
         private void RestorePreviousContext(FuContext previousContext)
         {
+            // Prefer the previous context, then the default context, and otherwise clear native ImGui state.
             if (previousContext != null && previousContext != this && Fugui.ContextExists(previousContext.ID))
             {
                 Fugui.SetCurrentContext(previousContext);
@@ -126,23 +179,46 @@ namespace Fu
         public override void SetScale(float scale, float fontScale)
         {
             fontScale = QuantizeFontScale(fontScale);
-            float oldFontScale = FontScale;
+            bool fontScaleChanged = Mathf.Abs(FontScale - fontScale) >= 0.0001f;
 
-            if (Mathf.Abs(Scale - scale) < 0.0001f && Mathf.Abs(FontScale - fontScale) < 0.0001f)
+            if (Mathf.Abs(Scale - scale) < 0.0001f && !fontScaleChanged)
             {
                 return;
             }
 
-            Scale = scale;
-            FontScale = fontScale;
-
-            TextureManager.ClearFontAtlas(oldFontScale);
-            if (!SwitchSharedFontAtlas(fontScale))
+            if (fontScaleChanged && UsesSharedFontAtlas)
             {
-                LoadFonts();
-                IO.Fonts.Build();
+                // Acquire and apply the replacement before releasing any resource used by the current scale.
+                if (!SwitchSharedFontAtlas(fontScale))
+                {
+                    throw new InvalidOperationException($"Unable to acquire the shared font atlas for scale {fontScale:0.###}.");
+                }
+
+                TextureManager.ClearFontAtlas();
             }
-            TextureManager.InitializeFontAtlas(IO);
+            else if (fontScaleChanged)
+            {
+                FontScale = fontScale;
+                using (FuFontLoadResources fontResources = LoadFonts())
+                {
+                    // Glyph ranges only need to remain alive until the atlas build completes.
+                    if (!IO.Fonts.Build())
+                    {
+                        throw new InvalidOperationException($"ImGui failed to rebuild the font atlas for external context {ID}.");
+                    }
+                }
+
+                // Keep the previous GPU atlas alive until its native replacement has built successfully.
+                TextureManager.ClearFontAtlas();
+            }
+
+            Scale = scale;
+            if (fontScaleChanged)
+            {
+                // A changed native atlas receives a matching shared Unity texture exactly once.
+                TextureManager.InitializeFontAtlas(IO);
+            }
+
             Fugui.Themes.SetTheme(Fugui.Themes.CurrentTheme);
         }
     }

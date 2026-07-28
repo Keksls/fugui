@@ -276,6 +276,7 @@ namespace Fu
                 stackTrace = Environment.StackTrace
             });
             _nbPushStyle++;
+            NbPushStyle++;
         }
         public static void Push(FuStyleVar styleVar, float value)
         {
@@ -291,6 +292,7 @@ namespace Fu
                 stackTrace = Environment.StackTrace
             });
             _nbPushStyle++;
+            NbPushStyle++;
         }
         public static void PopStyle(int nb = 1)
         {
@@ -301,6 +303,7 @@ namespace Fu
                     ImGui.PopStyleVar();
                     _nbPopStyle++;
                     _stylesStack.Pop();
+                    NbPushStyle--;
                 }
                 else
                 {

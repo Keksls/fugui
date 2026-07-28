@@ -34,8 +34,42 @@ namespace Fu.Framework
         {
             if (_videoPlayers.ContainsKey(ID))
             {
-                _videoPlayers[ID].Kill();
-                _videoPlayers.Remove(ID);
+                try
+                {
+                    _videoPlayers[ID].Kill();
+                }
+                finally
+                {
+                    // A fully visited but failed teardown must not leave a disposed player registered.
+                    _videoPlayers.Remove(ID);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Releases every video player owned by the current Fugui session.
+        /// </summary>
+        internal static void DisposeVideoPlayers()
+        {
+            // Video players are stored statically, so session disposal must explicitly end their ownership.
+            System.Exception firstException = null;
+            foreach (FuVideoPlayer videoPlayer in _videoPlayers.Values)
+            {
+                try
+                {
+                    videoPlayer?.Dispose();
+                }
+                catch (System.Exception exception)
+                {
+                    // Continue so one failing player cannot retain every later native video resource.
+                    firstException ??= exception;
+                }
+            }
+
+            _videoPlayers.Clear();
+            if (firstException != null)
+            {
+                throw new System.InvalidOperationException("One or more Fugui video players failed to dispose.", firstException);
             }
         }
         #endregion

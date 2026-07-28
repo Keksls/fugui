@@ -58,13 +58,12 @@ namespace Fu
         internal FontSet DefaultFont { get; set; }
         internal string FontAtlasCacheKey { get; private set; }
         internal bool UsesSharedFontAtlas => _sharedFontAtlas != null;
+        protected bool IsDestroyed => _isDestroyed;
+        private IntPtr _iniFilenameAllocation;
+        private bool _isDestroyed;
 
         private Vector2Int _lastContainerScaleSize = new Vector2Int(-1, -1);
         private FuSharedFontAtlasCache.Entry _sharedFontAtlas;
-        // var to count how many push are at frame start, so we can pop missing push
-        private static int _nbColorPushOnFrameStart = 0;
-        private static int _nbStylePushOnFrameStart = 0;
-        private static int _nbFontPushOnFrameStart = 0;
         // the payload of draggDrop operation
         internal object _dragDropPayload = null;
         // Whatever fugui is currently dragging a payload (using Drag Drop)
@@ -110,28 +109,87 @@ namespace Fu
         /// <param name="index"></param>
         protected void initialize(Action onInitialize)
         {
-            _sharedFontAtlas = AcquireSharedFontAtlas(FontScale);
-            ImGuiContext = _sharedFontAtlas != null
-                ? ImGui.CreateContext(_sharedFontAtlas.Atlas)
-                : ImGui.CreateContext();
-            FuContext lastDFContext = Fugui.CurrentContext;
-            IntPtr currentContext = ImGuiNative.igGetCurrentContext();
-            Fugui.SetCurrentContext(this);
-            ImGuiNative.igSetCurrentContext(ImGuiContext);
-            IO = ImGui.GetIO();
-            PlatformIO = ImGui.GetPlatformIO();
-            onInitialize?.Invoke();
-            sub_initialize();
-            if (lastDFContext != null)
+            FuContext previousFuguiContext = Fugui.CurrentContext;
+            IntPtr previousNativeContext = ImGuiNative.igGetCurrentContext();
+
+            try
             {
-                Fugui.SetCurrentContext(lastDFContext);
+                // Context creation is transactional: every acquired native resource is released on failure.
+                _sharedFontAtlas = AcquireSharedFontAtlas(FontScale);
+                ImGuiContext = _sharedFontAtlas != null
+                    ? ImGui.CreateContext(_sharedFontAtlas.Atlas)
+                    : ImGui.CreateContext();
+                Fugui.SetCurrentContext(this);
+                IO = ImGui.GetIO();
+                PlatformIO = ImGui.GetPlatformIO();
+                onInitialize?.Invoke();
+                sub_initialize();
+                contextLayout = new FuLayout();
+                Started = true;
             }
-            else
+            catch (Exception initializationException)
             {
-                ImGuiNative.igSetCurrentContext(currentContext);
+                try
+                {
+                    CleanupFailedInitialization();
+                }
+                catch (Exception cleanupException)
+                {
+                    // Preserve both failures so an incomplete rollback never hides the initialization cause.
+                    throw new AggregateException(
+                        $"Fugui context {ID} failed to initialize and its rollback also failed.",
+                        initializationException,
+                        cleanupException);
+                }
+
+                throw;
             }
-            Started = true;
-            contextLayout = new FuLayout();
+            finally
+            {
+                RestoreContextAfterInitialization(previousFuguiContext, previousNativeContext);
+            }
+        }
+
+        /// <summary>
+        /// Releases native resources acquired before context initialization failed.
+        /// </summary>
+        private void CleanupFailedInitialization()
+        {
+            if (ImGuiContext != IntPtr.Zero)
+            {
+                // The derived context owns its platform and native window, so it performs the complete rollback.
+                Fugui.SetCurrentContext(this);
+                Destroy();
+                return;
+            }
+
+            FuSharedFontAtlasCache.Release(_sharedFontAtlas);
+            _sharedFontAtlas = null;
+        }
+
+        /// <summary>
+        /// Restores the previous context, or activates the first successfully initialized Fugui context.
+        /// </summary>
+        /// <param name="previousFuguiContext">Previous managed Fugui context.</param>
+        /// <param name="previousNativeContext">Previous native ImGui context.</param>
+        private void RestoreContextAfterInitialization(FuContext previousFuguiContext, IntPtr previousNativeContext)
+        {
+            if (previousFuguiContext != null)
+            {
+                Fugui.SetCurrentContext(previousFuguiContext);
+                return;
+            }
+
+            if (Started && ImGuiContext != IntPtr.Zero)
+            {
+                // The first successfully created Fugui context becomes the active runtime context.
+                Fugui.SetCurrentContext(this);
+                return;
+            }
+
+            // A native caller may have had a context that is not represented by Fugui.
+            Fugui.SetCurrentContext(null);
+            ImGuiNative.igSetCurrentContext(previousNativeContext);
         }
 
         /// <summary>
@@ -147,13 +205,25 @@ namespace Fu
         protected unsafe void SetDefaultImGuiIniFilePath(string iniPath)
         {
             var io = ImGuiNative.igGetIO();
+            ReleaseIniFilenameAllocation();
+
             if (iniPath != null)
             {
                 int byteCount = Encoding.UTF8.GetByteCount(iniPath);
                 byte* nativeName = (byte*)Marshal.AllocHGlobal(byteCount + 1);
-                int offset = Fugui.GetUtf8(iniPath, nativeName, byteCount);
-                nativeName[offset] = 0x0;
-                io->IniFilename = nativeName;
+                try
+                {
+                    // ImGui borrows this UTF-8 buffer until the context replaces or releases it.
+                    int offset = Fugui.GetUtf8(iniPath, nativeName, byteCount);
+                    nativeName[offset] = 0x0;
+                    io->IniFilename = nativeName;
+                    _iniFilenameAllocation = (IntPtr)nativeName;
+                }
+                catch
+                {
+                    Marshal.FreeHGlobal((IntPtr)nativeName);
+                    throw;
+                }
             }
             else
             {
@@ -174,20 +244,21 @@ namespace Fu
             Fugui.ClearCursorPositionStack("before a new context frame");
 
 
-            // count nb push at render begin
-            _nbColorPushOnFrameStart = Fugui.NbPushColor;
-            _nbStylePushOnFrameStart = Fugui.NbPushStyle;
-            _nbFontPushOnFrameStart = Fugui.NbPushFont;
+            FuImGuiStackSnapshot stackSnapshot = Fugui.CaptureImGuiStackSnapshot();
             try
             {
                 // prepare for mobile
                 Fugui.BeginMobileFrame();
-
-                OnRender?.Invoke();
-                OnLastRender?.Invoke();
-
-                // end mobile render
-                Fugui.EndMobileFrame();
+                try
+                {
+                    OnRender?.Invoke();
+                    OnLastRender?.Invoke();
+                }
+                finally
+                {
+                    // Mobile frame teardown must run even when a rendering callback fails.
+                    Fugui.EndMobileFrame();
+                }
             }
             catch (Exception ex)
             {
@@ -195,26 +266,21 @@ namespace Fu
             }
             finally
             {
-                // pop missing push
-                int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
-                if (nbMissingColor > 0)
+                try
                 {
-                    Fugui.PopColor(nbMissingColor);
+                    Fugui.RestoreImGuiStackSnapshot(stackSnapshot);
                 }
-                int nbMissingStyle = Fugui.NbPushStyle - _nbStylePushOnFrameStart;
-                if (nbMissingStyle > 0)
+                finally
                 {
-                    Fugui.PopStyle(nbMissingStyle);
+                    try
+                    {
+                        Fugui.ClearCursorPositionStack("after the context frame");
+                    }
+                    finally
+                    {
+                        ImGuiNative.igRender();
+                    }
                 }
-                int nbMissingFont = Fugui.NbPushFont - _nbFontPushOnFrameStart;
-                if (nbMissingFont > 0)
-                {
-                    Fugui.PopFont(nbMissingFont);
-                }
-
-                Fugui.ClearCursorPositionStack("after the context frame");
-
-                ImGuiNative.igRender();
             }
             OnPostRender?.Invoke();
 
@@ -322,14 +388,56 @@ namespace Fu
         /// </summary>
         internal virtual void Destroy()
         {
+            if (_isDestroyed)
+            {
+                return;
+            }
+
+            // Mark first so callbacks raised during cleanup cannot enter ownership teardown twice.
+            _isDestroyed = true;
+            Started = false;
+            RenderPrepared = false;
+            Exception cleanupException = null;
             _isDraggingPayload = false;
-            TextureManager.Shutdown();
-            FuSharedFontAtlasCache.Release(_sharedFontAtlas);
+
+            // Every ownership branch is independent so one cleanup failure cannot leak the remaining resources.
+            RunCleanupStep(TextureManager.Shutdown, ref cleanupException);
+            RunCleanupStep(() => FuSharedFontAtlasCache.Release(_sharedFontAtlas), ref cleanupException);
+            RunCleanupStep(ReleaseIniFilenameAllocation, ref cleanupException);
+            RunCleanupStep(_drawData.Dispose, ref cleanupException);
+            RunCleanupStep(() => contextLayout?.Dispose(), ref cleanupException);
+
             _sharedFontAtlas = null;
-            contextLayout.Dispose();
+            contextLayout = null;
+            Fonts.Clear();
+            DefaultFont = null;
+
+            if (cleanupException != null)
+            {
+                throw new InvalidOperationException($"One or more resources failed to release for Fugui context {ID}.", cleanupException);
+            }
         }
 
-        /// /// <summary>
+        /// <summary>
+        /// Executes one context cleanup action while preserving the first failure for the caller.
+        /// </summary>
+        /// <param name="cleanupStep">Cleanup operation to execute.</param>
+        /// <param name="firstException">First exception raised by a cleanup operation.</param>
+        protected static void RunCleanupStep(Action cleanupStep, ref Exception firstException)
+        {
+            try
+            {
+                cleanupStep?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                // Cleanup continues; the caller rethrows after all owned resources have been visited.
+                firstException ??= exception;
+                Debug.LogException(exception);
+            }
+        }
+
+        /// <summary>
         /// Set this context as current. Don't call it, Fugui layout handle it for you
         /// </summary>
         public unsafe void SetAsCurrent()
@@ -400,20 +508,20 @@ namespace Fu
         /// <summary>
         /// Load fonts for this context according to FontConfig into FuGui.Settings.FontConfig
         /// </summary>
-        protected void LoadFonts()
+        private protected FuFontLoadResources LoadFonts()
         {
-            FuFontLoader.LoadFonts(
+            FuFontLoadResources resources = FuFontLoader.LoadFonts(
                 IO,
                 Fugui.Settings?.FontConfig,
                 FontScale,
                 Application.streamingAssetsPath,
                 Fonts,
-                out FontSet defaultFont,
-                _loadedFontBuffers);
+                out FontSet defaultFont);
 
             DefaultFont = defaultFont;
             FontAtlasCacheKey = FuFontAtlasCache.GetAtlasCacheKey(Fugui.Settings?.FontConfig, FontScale, Application.streamingAssetsPath);
             RebuildFontRuntimeData();
+            return resources;
         }
 
         /// <summary>
@@ -475,8 +583,14 @@ namespace Fu
             return FuFontAtlasCache.QuantizeFontScale(Fugui.Settings?.FontConfig, fontScale);
         }
 
+        /// <summary>
+        /// Acquires the shared native atlas matching the active font configuration and scale.
+        /// </summary>
+        /// <param name="fontScale">Requested font scale.</param>
+        /// <returns>Owned cache reference for this context, or null when sharing is disabled.</returns>
         private static FuSharedFontAtlasCache.Entry AcquireSharedFontAtlas(float fontScale)
         {
+            // The cache reference is released exactly once by context destruction or atlas replacement.
             FontConfig fontConfig = Fugui.Settings?.FontConfig;
             if (!FuSharedFontAtlasCache.IsEnabled(fontConfig))
             {
@@ -486,8 +600,36 @@ namespace Fu
             return FuSharedFontAtlasCache.GetOrCreate(fontConfig, fontScale, Application.streamingAssetsPath);
         }
 
+        /// <summary>
+        /// Releases the unmanaged UTF-8 ini filename owned by this context.
+        /// </summary>
+        private unsafe void ReleaseIniFilenameAllocation()
+        {
+            if (_iniFilenameAllocation == IntPtr.Zero)
+            {
+                return;
+            }
+
+            // ImGui borrows IniFilename and never frees caller-owned memory.
+            if (IO.NativePtr != null && IO.NativePtr->IniFilename == (byte*)_iniFilenameAllocation)
+            {
+                IO.NativePtr->IniFilename = null;
+            }
+
+            Marshal.FreeHGlobal(_iniFilenameAllocation);
+            _iniFilenameAllocation = IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Attempts to resolve a loaded font set by name and size.
+        /// </summary>
+        /// <param name="fontName">Configured font name.</param>
+        /// <param name="size">Configured font size.</param>
+        /// <param name="fontSet">Resolved font set.</param>
+        /// <returns>True when the requested font set exists.</returns>
         internal bool TryGetFontSet(string fontName, int size, out FontSet fontSet)
         {
+            // Font registries are context-local even when their native atlas is shared.
             fontSet = null;
             if (Fonts.TryGetValue(fontName, out var sizeDict))
             {
@@ -496,8 +638,12 @@ namespace Fu
             return fontSet != null;
         }
 
+        /// <summary>
+        /// Rebuilds managed font-style fallbacks after an atlas has been loaded or replaced.
+        /// </summary>
         private void RebuildFontRuntimeData()
         {
+            // Native ImFont pointers remain stable for the lifetime of their owning atlas.
             foreach (var sizeDict in Fonts.Values)
             {
                 foreach (var fontSet in sizeDict.Values)
@@ -512,9 +658,14 @@ namespace Fu
             }
         }
 
+        /// <summary>
+        /// Returns the configured default font or the first set containing a native font.
+        /// </summary>
+        /// <returns>A usable font set, or null when the atlas contains no configured fonts.</returns>
         internal FontSet GetFallbackFontSet()
         {
-            if (DefaultFont != null)
+            // Never return an empty registry entry created for a failed font load.
+            if (DefaultFont != null && DefaultFont.HasAnyNativeFont())
             {
                 return DefaultFont;
             }
@@ -523,7 +674,7 @@ namespace Fu
             {
                 foreach (var fontSet in sizeDict.Values)
                 {
-                    if (fontSet != null)
+                    if (fontSet != null && fontSet.HasAnyNativeFont())
                     {
                         return fontSet;
                     }
@@ -532,10 +683,6 @@ namespace Fu
 
             return null;
         }
-        #region State
-        private readonly List<byte[]> _loadedFontBuffers = new List<byte[]>();
-        #endregion
-
         #region Methods
         /// <summary>
         /// Must be placed just after an UI element so this one can be dragged

@@ -377,10 +377,9 @@ namespace Fu.Editor
             CreatePreviewObjects(feature);
             CreatePreviewTexture();
 
-            Fugui.Initialize(settings, _previewController, _previewCamera, true);
-            if (Fugui.DefaultContext == null)
+            if (!Fugui.Initialize(settings, _previewController, _previewCamera, true))
             {
-                SetStatus("Fugui did not create a preview context. Check settings, camera and font setup.", MessageType.Error);
+                SetStatus("Fugui preview initialization was rejected or failed. Check the active controller, settings, camera and font setup.", MessageType.Error);
                 CleanupPreviewRuntime();
                 return false;
             }
@@ -636,7 +635,7 @@ namespace Fu.Editor
             _initialized = false;
             _initializedTarget = null;
 
-            DestroyPreviewContexts();
+            _previewController?.Dispose();
 
             ReleasePreviewTexture();
 
@@ -770,42 +769,6 @@ namespace Fu.Editor
             return settings;
         }
 
-        private static void DestroyPreviewContexts()
-        {
-            if (Fugui.Contexts == null || Fugui.Contexts.Count == 0)
-            {
-                return;
-            }
-
-            FuContext[] contexts = Fugui.Contexts.Values.Where(context => context != null).ToArray();
-
-            foreach (FuContext context in contexts)
-            {
-                try
-                {
-                    context.Stop();
-                    InvokeNonPublic(context, "Destroy");
-                }
-                catch (Exception exception)
-                {
-                    Debug.LogWarning("[Fugui Preview] Context cleanup failed: " + exception.Message);
-                }
-            }
-
-            Fugui.Contexts.Clear();
-            Fugui.UIWindows?.Clear();
-            Fugui.UIWindowsDefinitions?.Clear();
-            Fugui.SetCurrentContext(null);
-            ClearQueuedContextDeletes();
-            SetStaticProperty("DefaultContext", null);
-            SetStaticProperty("DefaultContainer", null);
-            SetStaticProperty("Settings", null);
-            SetStaticProperty("Themes", null);
-            SetStaticProperty("Layouts", null);
-            SetStaticField("Controller", null);
-            SetStaticField("_contextID", 0);
-        }
-
         private static FuguiRenderFeature FindActiveRenderFeature()
         {
             ScriptableRendererData rendererData = GetDefaultRendererData();
@@ -899,25 +862,6 @@ namespace Fu.Editor
 
             MethodInfo method = FindMethod(instance.GetType(), methodName);
             method?.Invoke(instance, null);
-        }
-
-        private static void ClearQueuedContextDeletes()
-        {
-            PropertyInfo property = typeof(Fugui).GetProperty("ToDeleteContexts", BindingFlags.Static | BindingFlags.NonPublic);
-            object queue = property?.GetValue(null);
-            queue?.GetType().GetMethod("Clear", BindingFlags.Instance | BindingFlags.Public)?.Invoke(queue, null);
-        }
-
-        private static void SetStaticProperty(string propertyName, object value)
-        {
-            PropertyInfo property = typeof(Fugui).GetProperty(propertyName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            property?.SetValue(null, value);
-        }
-
-        private static void SetStaticField(string fieldName, object value)
-        {
-            FieldInfo field = typeof(Fugui).GetField(fieldName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            field?.SetValue(null, value);
         }
 
         private static FieldInfo FindField(Type type, string fieldName)

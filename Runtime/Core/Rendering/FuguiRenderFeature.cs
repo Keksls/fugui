@@ -43,11 +43,13 @@ namespace Fu
             private Dictionary<int, int> _prevIndexCounts;
             private Dictionary<int, List<SubMeshDescriptor>> _subMeshDescriptors;
             private readonly List<DrawList> _singleDrawList;
+            private readonly HashSet<int> _contextIdsToRelease = new HashSet<int>();
             private TextureManager _textureManager;
             private MaterialPropertyBlock _materialProperties;
             private MaterialPropertyBlock _backdropProperties;
             private bool _renderMainSurfaceContexts;
             private bool _renderOffscreenContexts;
+            private uint _runtimeGeneration;
             private static readonly Vector4 FullBlitScaleBias = new Vector4(1f, 1f, 0f, 0f);
             private const int BackdropCopyPass = 0;
             private const int BackdropBlurPass = 1;
@@ -92,6 +94,7 @@ namespace Fu
                 _targetHandles = new Dictionary<int, RTHandle>();
                 _transientMeshes = new Dictionary<int, List<DrawListMesh>>();
                 _singleDrawList = new List<DrawList>(1);
+                _runtimeGeneration = Fugui.RuntimeGeneration;
 
                 renderPassEvent = passEvent;
 
@@ -112,6 +115,21 @@ namespace Fu
             {
                 _renderMainSurfaceContexts = renderMainSurfaceContexts;
                 _renderOffscreenContexts = renderOffscreenContexts;
+            }
+
+            /// <summary>
+            /// Discards caches retained by the renderer feature when a new Fugui session starts.
+            /// </summary>
+            public void EnsureRuntimeGeneration()
+            {
+                if (_runtimeGeneration == Fugui.RuntimeGeneration)
+                {
+                    return;
+                }
+
+                // Context IDs restart per session, so ID-keyed resources cannot cross this boundary.
+                Dispose();
+                _runtimeGeneration = Fugui.RuntimeGeneration;
             }
 
             /// <summary>
@@ -1193,7 +1211,7 @@ namespace Fu
                 // Render other contexts if available.
                 foreach (var contextPair in Fugui.Contexts)
                 {
-                    if (contextPair.Key != 0 && contextPair.Value.Started)
+                    if (!ReferenceEquals(contextPair.Value, Fugui.DefaultContext) && contextPair.Value.Started)
                     {
                         if (contextPair.Value is FuUnityContext unityContext)
                         {
@@ -1504,6 +1522,133 @@ namespace Fu
                 return handle;
             }
 
+            /// <summary>
+            /// Releases cached GPU resources whose Fugui context no longer exists.
+            /// </summary>
+            public void ReleaseInactiveContextResources()
+            {
+                _contextIdsToRelease.Clear();
+                CollectInactiveContextIds(_materials.Keys);
+                CollectInactiveContextIds(_targetHandles.Keys);
+                CollectInactiveContextIds(_transientMeshes.Keys);
+
+                foreach (int contextId in _contextIdsToRelease)
+                {
+                    ReleaseContextResources(contextId);
+                }
+
+                _contextIdsToRelease.Clear();
+            }
+
+            /// <summary>
+            /// Releases every material, render-target handle and transient mesh owned by this pass.
+            /// </summary>
+            public void Dispose()
+            {
+                _contextIdsToRelease.Clear();
+                foreach (int contextId in _materials.Keys)
+                {
+                    _contextIdsToRelease.Add(contextId);
+                }
+
+                foreach (int contextId in _targetHandles.Keys)
+                {
+                    _contextIdsToRelease.Add(contextId);
+                }
+
+                foreach (int contextId in _transientMeshes.Keys)
+                {
+                    _contextIdsToRelease.Add(contextId);
+                }
+
+                foreach (int contextId in _contextIdsToRelease)
+                {
+                    ReleaseContextResources(contextId);
+                }
+
+                _contextIdsToRelease.Clear();
+                if (_backdropMaterial != null)
+                {
+                    DestroyOwnedMaterial(_backdropMaterial);
+                    _backdropMaterial = null;
+                }
+
+                _singleDrawList.Clear();
+                _textureManager = null;
+            }
+
+            /// <summary>
+            /// Collects cached context ids that are no longer registered by Fugui.
+            /// </summary>
+            /// <param name="contextIds">Cached context ids to inspect.</param>
+            private void CollectInactiveContextIds(IEnumerable<int> contextIds)
+            {
+                foreach (int contextId in contextIds)
+                {
+                    if (!Fugui.Contexts.ContainsKey(contextId))
+                    {
+                        _contextIdsToRelease.Add(contextId);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Releases all render resources owned for one Fugui context.
+            /// </summary>
+            /// <param name="contextId">Context identifier whose resources must be released.</param>
+            private void ReleaseContextResources(int contextId)
+            {
+                if (_materials.TryGetValue(contextId, out Material material))
+                {
+                    DestroyOwnedMaterial(material);
+                    _materials.Remove(contextId);
+                }
+
+                if (_targetHandles.TryGetValue(contextId, out RTHandle targetHandle))
+                {
+                    targetHandle?.Release();
+                    _targetHandles.Remove(contextId);
+                }
+
+                if (_transientMeshes.TryGetValue(contextId, out List<DrawListMesh> meshes))
+                {
+                    for (int i = 0; i < meshes.Count; i++)
+                    {
+                        meshes[i]?.Destroy();
+                    }
+
+                    meshes.Clear();
+                    _transientMeshes.Remove(contextId);
+                }
+
+                _prevSubMeshCounts.Remove(contextId);
+                _prevVertexCounts.Remove(contextId);
+                _prevIndexCounts.Remove(contextId);
+                _subMeshDescriptors.Remove(contextId);
+            }
+
+            /// <summary>
+            /// Destroys one runtime-created material with the lifetime API required by the current mode.
+            /// </summary>
+            /// <param name="material">Material owned by this render pass.</param>
+            private static void DestroyOwnedMaterial(Material material)
+            {
+                if (material == null)
+                {
+                    return;
+                }
+
+                // Renderer features are rebuilt in Edit Mode, where delayed destruction never runs.
+                if (Application.isPlaying)
+                {
+                    UnityEngine.Object.Destroy(material);
+                }
+                else
+                {
+                    UnityEngine.Object.DestroyImmediate(material);
+                }
+            }
+
             #region Nested Types
             /// <summary>
             /// Data structure to hold the render pass data for the Fugui Render Graph Pass.
@@ -1527,6 +1672,7 @@ namespace Fu
         public Shader _shader;
         public int _cameraLayer = 5; // 5 is default unity UI layer
         private Dictionary<Camera, FuguiRenderGraphPass> _passPerCamera = new();
+        private readonly List<Camera> _camerasToRelease = new List<Camera>();
         #endregion
 
         #region Methods
@@ -1535,6 +1681,8 @@ namespace Fu
         /// </summary>
         public override void Create()
         {
+            // Unity may recreate this feature without first destroying the managed instance.
+            DisposePasses();
         }
 
         /// <summary>
@@ -1545,6 +1693,12 @@ namespace Fu
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
             var camera = renderingData.cameraData.camera;
+            ReleaseDestroyedCameraPasses();
+            if (camera == null)
+            {
+                return;
+            }
+
             bool renderMainSurfaceContexts = camera.gameObject.layer == _cameraLayer && Fugui.MainContainerEnabled;
             bool renderOffscreenContexts = renderMainSurfaceContexts || (!Fugui.MainContainerEnabled && IsOffscreenDriverCamera(renderingData));
 
@@ -1556,8 +1710,65 @@ namespace Fu
                 _passPerCamera[camera] = pass;
             }
 
+            pass.EnsureRuntimeGeneration();
+            pass.ReleaseInactiveContextResources();
             pass.ConfigureFrame(renderMainSurfaceContexts, renderOffscreenContexts);
             renderer.EnqueuePass(pass);
+        }
+
+        /// <summary>
+        /// Releases every camera pass owned by this renderer feature.
+        /// </summary>
+        /// <param name="disposing">Whether managed state is also being disposed.</param>
+        protected override void Dispose(bool disposing)
+        {
+            DisposePasses();
+            base.Dispose(disposing);
+        }
+
+        /// <summary>
+        /// Releases passes whose Unity camera has been destroyed.
+        /// </summary>
+        private void ReleaseDestroyedCameraPasses()
+        {
+            _camerasToRelease.Clear();
+            foreach (KeyValuePair<Camera, FuguiRenderGraphPass> pair in _passPerCamera)
+            {
+                if (pair.Key == null)
+                {
+                    _camerasToRelease.Add(pair.Key);
+                    continue;
+                }
+
+                pair.Value?.EnsureRuntimeGeneration();
+                pair.Value?.ReleaseInactiveContextResources();
+            }
+
+            for (int i = 0; i < _camerasToRelease.Count; i++)
+            {
+                Camera camera = _camerasToRelease[i];
+                if (_passPerCamera.TryGetValue(camera, out FuguiRenderGraphPass pass))
+                {
+                    pass?.Dispose();
+                    _passPerCamera.Remove(camera);
+                }
+            }
+
+            _camerasToRelease.Clear();
+        }
+
+        /// <summary>
+        /// Releases all camera passes and their GPU resources.
+        /// </summary>
+        private void DisposePasses()
+        {
+            foreach (FuguiRenderGraphPass pass in _passPerCamera.Values)
+            {
+                pass?.Dispose();
+            }
+
+            _passPerCamera.Clear();
+            _camerasToRelease.Clear();
         }
 
         /// <summary>

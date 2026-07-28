@@ -166,8 +166,11 @@ namespace Fu
             }
 
             // 1) Create the external Fugui context
-            FuExternalContext context = new FuExternalContext(_contextID++, Settings.GlobalScale, Settings.FontGlobalScale, null, uiWindow);
-            Contexts.Add(context.ID, context);
+            FuExternalContext context = CreateExternalContext(uiWindow, Settings.GlobalScale, Settings.FontGlobalScale);
+            if (context == null)
+            {
+                return;
+            }
 
             // 2) Create the external container bound to this context
             var container = new FuExternalWindowContainer(uiWindow, context);

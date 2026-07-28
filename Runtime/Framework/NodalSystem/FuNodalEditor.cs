@@ -794,7 +794,7 @@ namespace Fu.Framework.Nodal
             float startY = node.EditorData.rectMin.y;
             // utilise node.EditorData.rectMin/node.EditorData.rectMax, pas les valeurs du child.
             ImGui.SetCursorScreenPos(node.EditorData.rectMin);
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.zero);
+            Fugui.PushUnscaled(ImGuiStyleVar.WindowPadding, Vector2.zero);
             Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
             Vector2 size = node.EditorData.rectMax - node.EditorData.rectMin;
             size.y = 0;
@@ -907,7 +907,7 @@ namespace Fu.Framework.Nodal
 
             ImGui.SetWindowFontScale(1.0f);
             Fugui.EndRawChild();
-            ImGui.PopStyleVar();
+            Fugui.PopStyle();
             Fugui.PopColor();
             float endY = ImGui.GetCursorScreenPos().y;
             _nodesHeightCache[node.Id] = endY - startY;

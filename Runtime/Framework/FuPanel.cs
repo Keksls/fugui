@@ -30,10 +30,7 @@ namespace Fu.Framework
         private bool _panelBegan = false;
         private string _ID;
         private bool _useClipper = true;
-        // var to count how many push are at frame start, so we can pop missing push
-        private static int _nbColorPushOnFrameStart = 0;
-        private static int _nbStylePushOnFrameStart = 0;
-        private static int _nbFontPushOnFrameStart = 0;
+        private FuImGuiStackSnapshot _stackSnapshot;
         internal static FuPanelClipper Clipper = null;
         private static Dictionary<string, FuPanelClipper> _clippingDict = new Dictionary<string, FuPanelClipper>();
         #endregion
@@ -152,10 +149,7 @@ namespace Fu.Framework
             }
             else
             {
-                // count nb push at render begin
-                _nbColorPushOnFrameStart = Fugui.NbPushColor;
-                _nbStylePushOnFrameStart = Fugui.NbPushStyle;
-                _nbFontPushOnFrameStart = Fugui.NbPushFont;
+                _stackSnapshot = Fugui.CaptureImGuiStackSnapshot();
             }
             // assume we now are inside a panel
             IsInsidePanel = _panelCreated;
@@ -185,29 +179,37 @@ namespace Fu.Framework
 
             if (_panelCreated)
             {
-                // pop missing push
-                int nbMissingColor = Fugui.NbPushColor - _nbColorPushOnFrameStart;
-                if (nbMissingColor > 0)
+                try
                 {
-                    Fugui.PopColor(nbMissingColor);
+                    Fugui.RestoreImGuiStackSnapshot(_stackSnapshot);
                 }
-                int nbMissingStyle = Fugui.NbPushStyle - _nbStylePushOnFrameStart;
-                if (nbMissingStyle > 0)
+                finally
                 {
-                    Fugui.PopStyle(nbMissingStyle);
+                    try
+                    {
+                        Fugui.EndChild();
+                    }
+                    finally
+                    {
+                        IsInsidePanel = false;
+                        try
+                        {
+                            _currentStyle.Pop();
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                Clipper.EndFrame();
+                            }
+                            finally
+                            {
+                                _clippingDict[_ID + FuWindow.CurrentDrawingWindow?.ID] = Clipper;
+                                Clipper = null;
+                            }
+                        }
+                    }
                 }
-                int nbMissingFont = Fugui.NbPushFont - _nbFontPushOnFrameStart;
-                if (nbMissingFont > 0)
-                {
-                    Fugui.PopFont(nbMissingFont);
-                }
-
-                Fugui.EndChild();
-                IsInsidePanel = false;
-                _currentStyle.Pop();
-                Clipper.EndFrame();
-                _clippingDict[_ID + FuWindow.CurrentDrawingWindow?.ID] = Clipper;
-                Clipper = null;
             }
             else
             {

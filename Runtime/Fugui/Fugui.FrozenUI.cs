@@ -29,36 +29,83 @@ namespace Fu
         {
             if (string.IsNullOrEmpty(id))
             {
-                _frozenUIStack.Push(new FuFrozenUIContext(null, false, false, 0, Vector2.zero));
+                _frozenUIStack.Push(new FuFrozenUIContext(null, false, false, default, 0, Vector2.zero, Vector2.zero, Vector2.zero, true));
                 return true;
             }
 
             nbFrameBeforeCache = Mathf.Max(1, nbFrameBeforeCache);
             autoInvalidateAfterInvisibleFrames = Mathf.Max(1, autoInvalidateAfterInvisibleFrames);
-
-            if (!_frozenUICache.TryGetValue(id, out FuFrozenUIData data))
-            {
-                if (_frozenUICache.Count >= FrozenUICacheCapacity)
-                {
-                    EvictLeastRecentlySubmittedFrozenUI();
-                }
-
-                data = new FuFrozenUIData();
-                _frozenUICache[id] = data;
-            }
-
-            data.LastSubmittedFrame = UnityEngine.Time.frameCount;
-            data.AutoInvalidateAfterInvisibleFrames = autoInvalidateAfterInvisibleFrames;
+            FuFrozenUIData data = GetOrCreateFrozenUIData(id, autoInvalidateAfterInvisibleFrames, true);
+            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
+            Vector2 windowPosition = ImGui.GetWindowPos();
 
             if (data.DrawFrameCount >= nbFrameBeforeCache)
             {
-                ReplayFrozenUIData(data);
-                _frozenUIStack.Push(new FuFrozenUIContext(data, false, true, 0, Vector2.zero));
+                ReplayFrozenUIData(data, drawList, windowPosition);
+                _frozenUIStack.Push(new FuFrozenUIContext(data, false, true, drawList, 0, Vector2.zero, windowPosition, Vector2.zero, true));
                 return false;
             }
 
-            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-            _frozenUIStack.Push(new FuFrozenUIContext(data, true, false, drawList.IdxBuffer.Size, ImGui.GetCursorScreenPos()));
+            _frozenUIStack.Push(new FuFrozenUIContext(
+                data,
+                true,
+                false,
+                drawList,
+                drawList.IdxBuffer.Size,
+                ImGui.GetCursorScreenPos(),
+                windowPosition,
+                ImGui.GetWindowSize(),
+                true));
+            return true;
+        }
+
+        /// <summary>
+        /// Begins a frozen block that captures an explicit raw draw list in screen space.
+        /// </summary>
+        /// <param name="id">Unique frozen UI block ID.</param>
+        /// <param name="drawList">Raw draw list that receives both live and replayed geometry.</param>
+        /// <param name="nbFrameBeforeCache">Number of live frames to draw before replaying the cache.</param>
+        /// <param name="autoInvalidateAfterInvisibleFrames">Number of invisible frames before the cache is removed.</param>
+        /// <returns>True when the caller must draw the live block, false when cached geometry was replayed.</returns>
+        public static bool BeginFrozenUI(string id, FuDrawList drawList, int nbFrameBeforeCache = 3, int autoInvalidateAfterInvisibleFrames = 1)
+        {
+            return BeginFrozenUI(id, drawList, Vector2.zero, nbFrameBeforeCache, autoInvalidateAfterInvisibleFrames);
+        }
+
+        /// <summary>
+        /// Begins a frozen block that captures an explicit raw draw list relative to a caller-defined origin.
+        /// </summary>
+        /// <param name="id">Unique frozen UI block ID.</param>
+        /// <param name="drawList">Raw draw list that receives both live and replayed geometry.</param>
+        /// <param name="origin">Current screen-space origin used to offset replayed geometry.</param>
+        /// <param name="nbFrameBeforeCache">Number of live frames to draw before replaying the cache.</param>
+        /// <param name="autoInvalidateAfterInvisibleFrames">Number of invisible frames before the cache is removed.</param>
+        /// <returns>True when the caller must draw the live block, false when cached geometry was replayed.</returns>
+        public static bool BeginFrozenUI(string id, FuDrawList drawList, Vector2 origin, int nbFrameBeforeCache = 3, int autoInvalidateAfterInvisibleFrames = 1)
+        {
+            if (!drawList.IsValid)
+            {
+                throw new ArgumentException("Frozen raw UI requires a valid draw list.", nameof(drawList));
+            }
+
+            if (string.IsNullOrEmpty(id))
+            {
+                _frozenUIStack.Push(new FuFrozenUIContext(null, false, false, drawList, 0, Vector2.zero, origin, Vector2.zero, false));
+                return true;
+            }
+
+            nbFrameBeforeCache = Mathf.Max(1, nbFrameBeforeCache);
+            autoInvalidateAfterInvisibleFrames = Mathf.Max(1, autoInvalidateAfterInvisibleFrames);
+            FuFrozenUIData data = GetOrCreateFrozenUIData(id, autoInvalidateAfterInvisibleFrames, false);
+
+            if (data.DrawFrameCount >= nbFrameBeforeCache)
+            {
+                ReplayFrozenUIData(data, drawList, origin);
+                _frozenUIStack.Push(new FuFrozenUIContext(data, false, true, drawList, 0, Vector2.zero, origin, Vector2.zero, false));
+                return false;
+            }
+
+            _frozenUIStack.Push(new FuFrozenUIContext(data, true, false, drawList, drawList.IdxBuffer.Size, origin, origin, Vector2.zero, false));
             return true;
         }
 
@@ -75,7 +122,7 @@ namespace Fu
             FuFrozenUIContext context = _frozenUIStack.Pop();
             if (context.Replayed)
             {
-                if (context.Data.ContentSize.x > 0f || context.Data.ContentSize.y > 0f)
+                if (context.UsesWindowLayout && (context.Data.ContentSize.x > 0f || context.Data.ContentSize.y > 0f))
                 {
                     ImGui.Dummy(context.Data.ContentSize);
                 }
@@ -87,8 +134,14 @@ namespace Fu
                 return;
             }
 
-            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-            CaptureFrozenUIData(context.Data, drawList, context.StartIndex, context.StartCursorScreenPos);
+            CaptureFrozenUIData(
+                context.Data,
+                context.DrawList,
+                context.StartIndex,
+                context.StartCursorScreenPos,
+                context.CaptureOrigin,
+                context.CaptureSize,
+                context.UsesWindowLayout);
             context.Data.DrawFrameCount++;
         }
 
@@ -105,6 +158,49 @@ namespace Fu
             try
             {
                 bool shouldDraw = BeginFrozenUI(id, nbFrameBeforeCache, autoInvalidateAfterInvisibleFrames);
+                isBegun = true;
+                if (shouldDraw)
+                {
+                    callback?.Invoke();
+                }
+            }
+            finally
+            {
+                if (isBegun)
+                {
+                    EndFrozenUI();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Draws a callback inside a frozen block targeting an explicit raw draw list.
+        /// </summary>
+        /// <param name="id">Unique frozen UI block ID.</param>
+        /// <param name="drawList">Raw draw list that receives both live and replayed geometry.</param>
+        /// <param name="callback">UI callback to draw while the block is warming up.</param>
+        /// <param name="nbFrameBeforeCache">Number of live frames to draw before replaying the cache.</param>
+        /// <param name="autoInvalidateAfterInvisibleFrames">Number of invisible frames before the cache is removed.</param>
+        public static void FrozenUI(string id, FuDrawList drawList, Action callback, int nbFrameBeforeCache = 3, int autoInvalidateAfterInvisibleFrames = 1)
+        {
+            FrozenUI(id, drawList, Vector2.zero, callback, nbFrameBeforeCache, autoInvalidateAfterInvisibleFrames);
+        }
+
+        /// <summary>
+        /// Draws a callback inside a frozen block targeting an explicit raw draw list and origin.
+        /// </summary>
+        /// <param name="id">Unique frozen UI block ID.</param>
+        /// <param name="drawList">Raw draw list that receives both live and replayed geometry.</param>
+        /// <param name="origin">Current screen-space origin used to offset replayed geometry.</param>
+        /// <param name="callback">UI callback to draw while the block is warming up.</param>
+        /// <param name="nbFrameBeforeCache">Number of live frames to draw before replaying the cache.</param>
+        /// <param name="autoInvalidateAfterInvisibleFrames">Number of invisible frames before the cache is removed.</param>
+        public static void FrozenUI(string id, FuDrawList drawList, Vector2 origin, Action callback, int nbFrameBeforeCache = 3, int autoInvalidateAfterInvisibleFrames = 1)
+        {
+            bool isBegun = false;
+            try
+            {
+                bool shouldDraw = BeginFrozenUI(id, drawList, origin, nbFrameBeforeCache, autoInvalidateAfterInvisibleFrames);
                 isBegun = true;
                 if (shouldDraw)
                 {
@@ -218,19 +314,65 @@ namespace Fu
         }
 
         /// <summary>
+        /// Returns a cache entry configured for the requested frozen target kind.
+        /// </summary>
+        /// <param name="id">Unique frozen UI block ID.</param>
+        /// <param name="autoInvalidateAfterInvisibleFrames">Number of invisible frames before eviction.</param>
+        /// <param name="usesWindowLayout">Whether the entry belongs to a regular ImGui window layout.</param>
+        /// <returns>Prepared frozen UI cache entry.</returns>
+        private static FuFrozenUIData GetOrCreateFrozenUIData(string id, int autoInvalidateAfterInvisibleFrames, bool usesWindowLayout)
+        {
+            if (!_frozenUICache.TryGetValue(id, out FuFrozenUIData data))
+            {
+                if (_frozenUICache.Count >= FrozenUICacheCapacity)
+                {
+                    EvictLeastRecentlySubmittedFrozenUI();
+                }
+
+                data = new FuFrozenUIData
+                {
+                    UsesWindowLayout = usesWindowLayout
+                };
+                _frozenUICache[id] = data;
+            }
+            else if (data.UsesWindowLayout != usesWindowLayout)
+            {
+                // One ID cannot safely alternate between window-relative and raw screen-space geometry.
+                data.Commands.Clear();
+                data.DrawFrameCount = 0;
+                data.UsesWindowLayout = usesWindowLayout;
+            }
+
+            data.LastSubmittedFrame = UnityEngine.Time.frameCount;
+            data.AutoInvalidateAfterInvisibleFrames = autoInvalidateAfterInvisibleFrames;
+            return data;
+        }
+
+        /// <summary>
         /// Capture draw commands emitted by a frozen UI block.
         /// </summary>
         /// <param name="data">Frozen UI data to update.</param>
         /// <param name="drawList">Current draw list.</param>
         /// <param name="idxStart">First index emitted by the block.</param>
-        /// <param name="startCursorScreenPos">Cursor position before the block drew.</param>
-        private static unsafe void CaptureFrozenUIData(FuFrozenUIData data, FuDrawList drawList, int idxStart, Vector2 startCursorScreenPos)
+        /// <param name="startCursorScreenPos">Cursor or raw origin position before the block drew.</param>
+        /// <param name="captureOrigin">Screen-space origin used to make captured vertices relative.</param>
+        /// <param name="captureSize">Window size for layout-aware blocks.</param>
+        /// <param name="usesWindowLayout">Whether ImGui cursor layout must be preserved.</param>
+        private static unsafe void CaptureFrozenUIData(
+            FuFrozenUIData data,
+            FuDrawList drawList,
+            int idxStart,
+            Vector2 startCursorScreenPos,
+            Vector2 captureOrigin,
+            Vector2 captureSize,
+            bool usesWindowLayout)
         {
-            data.Position = ImGui.GetWindowPos();
-            data.Size = ImGui.GetWindowSize();
-            data.ContentSize = ImGui.GetCursorScreenPos() - startCursorScreenPos;
+            data.Position = captureOrigin;
+            data.Size = captureSize;
+            data.ContentSize = usesWindowLayout ? ImGui.GetCursorScreenPos() - startCursorScreenPos : Vector2.zero;
             data.Commands.Clear();
             bool hasDrawnBounds = false;
+            Vector2 drawnContentMin = Vector2.zero;
             Vector2 drawnContentSize = Vector2.zero;
 #if FU_CUSTOM_MATERIALS_ENABLED
             FuCustomDrawMaterialState customMaterialState = default;
@@ -319,11 +461,14 @@ namespace Fu
                     Vector2 relativePosition = commandVertices[vertexIndex].pos - startCursorScreenPos;
                     if (!hasDrawnBounds)
                     {
+                        drawnContentMin = relativePosition;
                         drawnContentSize = relativePosition;
                         hasDrawnBounds = true;
                     }
                     else
                     {
+                        drawnContentMin.x = Mathf.Min(drawnContentMin.x, relativePosition.x);
+                        drawnContentMin.y = Mathf.Min(drawnContentMin.y, relativePosition.y);
                         drawnContentSize.x = Mathf.Max(drawnContentSize.x, relativePosition.x);
                         drawnContentSize.y = Mathf.Max(drawnContentSize.y, relativePosition.y);
                     }
@@ -343,6 +488,13 @@ namespace Fu
 
             if (hasDrawnBounds)
             {
+                if (!usesWindowLayout)
+                {
+                    data.Size = new Vector2(
+                        Mathf.Max(0f, drawnContentSize.x - drawnContentMin.x),
+                        Mathf.Max(0f, drawnContentSize.y - drawnContentMin.y));
+                }
+
                 data.ContentSize = new Vector2(
                     Mathf.Max(data.ContentSize.x, drawnContentSize.x),
                     Mathf.Max(data.ContentSize.y, drawnContentSize.y));
@@ -354,10 +506,11 @@ namespace Fu
         /// Replay captured draw commands for a frozen UI block.
         /// </summary>
         /// <param name="data">Captured frozen UI data.</param>
-        private static void ReplayFrozenUIData(FuFrozenUIData data)
+        /// <param name="drawList">Target draw list that receives replayed geometry.</param>
+        /// <param name="currentOrigin">Current screen-space origin for the target block.</param>
+        private static void ReplayFrozenUIData(FuFrozenUIData data, FuDrawList drawList, Vector2 currentOrigin)
         {
-            FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-            Vector2 offset = ImGui.GetWindowPos() - data.Position;
+            Vector2 offset = currentOrigin - data.Position;
 
             for (int commandIndex = 0; commandIndex < data.Commands.Count; commandIndex++)
             {
@@ -432,6 +585,7 @@ namespace Fu
             public int DrawFrameCount;
             public int LastSubmittedFrame;
             public int AutoInvalidateAfterInvisibleFrames = 1;
+            public bool UsesWindowLayout;
             public readonly List<FuFrozenUICommand> Commands = new List<FuFrozenUICommand>();
             #endregion
         }
@@ -442,18 +596,35 @@ namespace Fu
             public readonly FuFrozenUIData Data;
             public readonly bool Capturing;
             public readonly bool Replayed;
+            public readonly FuDrawList DrawList;
             public readonly int StartIndex;
             public readonly Vector2 StartCursorScreenPos;
+            public readonly Vector2 CaptureOrigin;
+            public readonly Vector2 CaptureSize;
+            public readonly bool UsesWindowLayout;
             #endregion
 
             #region Constructors
-            public FuFrozenUIContext(FuFrozenUIData data, bool capturing, bool replayed, int startIndex, Vector2 startCursorScreenPos)
+            public FuFrozenUIContext(
+                FuFrozenUIData data,
+                bool capturing,
+                bool replayed,
+                FuDrawList drawList,
+                int startIndex,
+                Vector2 startCursorScreenPos,
+                Vector2 captureOrigin,
+                Vector2 captureSize,
+                bool usesWindowLayout)
             {
                 Data = data;
                 Capturing = capturing;
                 Replayed = replayed;
+                DrawList = drawList;
                 StartIndex = startIndex;
                 StartCursorScreenPos = startCursorScreenPos;
+                CaptureOrigin = captureOrigin;
+                CaptureSize = captureSize;
+                UsesWindowLayout = usesWindowLayout;
             }
             #endregion
         }

@@ -33,6 +33,7 @@ namespace Fu
         {
             Camera = camera;
             PixelRect = camera != null ? camera.pixelRect : new Rect(0f, 0f, 1f, 1f);
+            RenderingMode = Fugui.Settings != null ? Fugui.Settings.RenderingMode : FuRenderingMode.Standard;
             initialize(onInitialize);
         }
 
@@ -48,6 +49,7 @@ namespace Fu
         {
             Camera = null;
             PixelRect = pixelRect;
+            RenderingMode = Fugui.Settings != null ? Fugui.Settings.RenderingMode : FuRenderingMode.Standard;
             initialize(onInitialize);
         }
         #endregion

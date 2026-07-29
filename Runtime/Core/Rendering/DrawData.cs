@@ -21,7 +21,11 @@ namespace Fu
             public int CmdListsCount;
             private readonly List<DrawList> _transientDrawListPool;
             private int _transientDrawListPoolCursor;
+            private DrawListMesh _drawListOnlyMesh;
             private const int MinimumRetainedTransientDrawLists = 8;
+
+            internal bool IsDrawListOnly { get; private set; }
+            internal DrawListMesh DrawListOnlyMesh { get { return _drawListOnlyMesh; } }
             #endregion
 
             #region Constructors
@@ -48,6 +52,7 @@ namespace Fu
                 DrawLists.Clear();
                 RenderItems.Clear();
                 _transientDrawListPoolCursor = 0;
+                IsDrawListOnly = false;
                 TotalVtxCount = 0;
                 TotalIdxCount = 0;
                 CmdListsCount = 0;
@@ -136,6 +141,47 @@ namespace Fu
             /// <returns>Bound transient draw list.</returns>
             internal DrawList AddTransientDrawList(FuDrawList drawList)
             {
+                DrawList transientDrawList = BindTransientDrawList(drawList);
+                AddTransientDrawList(transientDrawList);
+                return transientDrawList;
+            }
+
+            /// <summary>
+            /// Binds native ImGui draw data to the optimized raw draw-list cache.
+            /// </summary>
+            /// <param name="imDrawData">Native draw data produced by the current context.</param>
+            /// <param name="contextId">Context identifier used to name the persistent mesh.</param>
+            internal void BindDrawListOnly(ImDrawDataPtr imDrawData, int contextId)
+            {
+                Clear();
+                IsDrawListOnly = true;
+
+                for (int i = 0; i < imDrawData.CmdListsCount; i++)
+                {
+                    DrawList drawList = BindTransientDrawList(Fugui.ToFuDrawList(imDrawData.CmdLists[i]));
+                    AddDrawListCounters(drawList);
+                }
+
+                FramebufferScale = imDrawData.FramebufferScale;
+                DisplayPos = imDrawData.DisplayPos;
+                DisplaySize = imDrawData.DisplaySize;
+
+                if (_drawListOnlyMesh == null)
+                {
+                    _drawListOnlyMesh = new DrawListMesh("FuguiDrawListOnlyMesh_" + contextId);
+                }
+
+                // Upload once while publishing; render passes only reuse this persistent GPU mesh.
+                _drawListOnlyMesh.Update(DrawLists, DisplaySize, FramebufferScale);
+            }
+
+            /// <summary>
+            /// Reuses one retained transient slot and copies a native ImGui draw list into it.
+            /// </summary>
+            /// <param name="drawList">Native draw list to retain after the ImGui frame ends.</param>
+            /// <returns>Retained draw-list copy.</returns>
+            private DrawList BindTransientDrawList(FuDrawList drawList)
+            {
                 DrawList transientDrawList;
                 if (_transientDrawListPoolCursor < _transientDrawListPool.Count)
                 {
@@ -149,7 +195,6 @@ namespace Fu
 
                 _transientDrawListPoolCursor++;
                 transientDrawList.Bind(drawList);
-                AddTransientDrawList(transientDrawList);
                 return transientDrawList;
             }
 
@@ -193,6 +238,8 @@ namespace Fu
                 }
 
                 _transientDrawListPool.Clear();
+                _drawListOnlyMesh?.Destroy();
+                _drawListOnlyMesh = null;
                 Clear();
             }
             #endregion

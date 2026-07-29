@@ -418,7 +418,7 @@ namespace Fu.Framework
         {
             if (column.DrawCell != null)
             {
-                column.DrawCell(item, this);
+                column.DrawCell(item);
                 return;
             }
 

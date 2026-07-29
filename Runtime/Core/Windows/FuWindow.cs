@@ -47,7 +47,7 @@ namespace Fu
         // properties
         public FuWindowName WindowName { get; private set; }
         public string ID { get; private set; }
-        public Action<FuWindow, FuLayout> UI { get; set; }
+        public Action<FuWindow> UI { get; set; }
         public Action<FuWindow, Vector2> HeaderUI { get; set; }
         public bool HeaderOverridesWindowDecorations { get; set; }
         public Action<FuWindow, Vector2> FooterUI { get; set; }
@@ -112,8 +112,6 @@ namespace Fu
                 }
             }
         }
-        public FuLayout Layout { get; internal set; }
-
         // states flags
         public bool HasFocus
         {
@@ -820,7 +818,8 @@ namespace Fu
         /// <param name="newFramePos"></param>
         public virtual unsafe void DrawWindowBody(bool preventUpdatingMouse, bool preventUpdatingKeyboard, ref Vector2Int newFrameSize, ref Vector2Int newFramePos)
         {
-            Layout = new FuLayout();
+            // Every root surface reuses the session layout with clean transient widget state.
+            Fugui.Layout.ResetSurfaceState();
             // invoke pre draw event
             OnPreDraw?.Invoke(this);
 
@@ -954,7 +953,6 @@ namespace Fu
                 _sendReadyNextFrame = false;
                 OnInitialized?.Invoke(this);
             }
-            Layout.Dispose();
         }
 
         /// <summary>
@@ -1196,11 +1194,11 @@ namespace Fu
 #if FU_EXTERNALIZATION
                 if (IsExternal && Fugui.Settings.DrawDebugPanel)
                 {
-                    ((FuExternalContext)Container.Context).Window.DrawDebug(Layout);
+                    ((FuExternalContext)Container.Context).Window.DrawDebug();
                 }
 #endif
 
-                UI?.Invoke(this, Layout);
+                UI?.Invoke(this);
                 FuStyle.Content.Pop();
 
                 // invoke body draw event 
@@ -1431,7 +1429,7 @@ namespace Fu
             ImGui.SetCursorScreenPos(baseCursorPos);
             if (customTopBarIsDockTabs && Fugui.Layouts != null)
             {
-                Fugui.Layouts.DrawDockedTabs(this, Layout);
+                Fugui.Layouts.DrawDockedTabs(this);
             }
             else if (HeaderOverridesWindowDecorations && HeaderUI != null)
             {

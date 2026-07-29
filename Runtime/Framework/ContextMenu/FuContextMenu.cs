@@ -259,19 +259,13 @@ namespace Fu
                 IsContextMenuOpen = true;
                 Fugui.DrawCurrentPopupThemeBackdrop(0.98f, popupRounding, popupBorderSize);
                 // draw the items
-                FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout ?? new FuLayout();
                 try
                 {
-                    drawContextMenuItems(_currentContextMenuItems, layout, 0);
+                    drawContextMenuItems(_currentContextMenuItems, 0);
                 }
                 catch (Exception e)
                 {
                     OnUIException?.Invoke(e);
-                }
-                finally
-                {
-                    if (FuWindow.CurrentDrawingWindow == null)
-                        layout.Dispose();
                 }
                 ImGui.EndPopup();
             }
@@ -304,7 +298,7 @@ namespace Fu
         /// Draw each items recursively
         /// </summary>
         /// <param name="items">list of items to draw</param>
-        private static void drawContextMenuItems(List<FuContextMenuItem> items, FuLayout layout, int id)
+        private static void drawContextMenuItems(List<FuContextMenuItem> items, int id)
         {
             // draw each items
             foreach (FuContextMenuItem menuItem in items)
@@ -336,12 +330,12 @@ namespace Fu
                         {
                             if (hasImage && hasLabel)
                             {
-                                layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, false);
+                                Fugui.Layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, false);
                                 ImGui.SameLine();
                                 bool open = beginContextSubmenu(label, enabled);
                                 if (open)
                                 {
-                                    drawContextMenuItems(menuItem.Children, layout, id + 1);
+                                    drawContextMenuItems(menuItem.Children, id + 1);
                                     ImGui.EndMenu();
                                 }
                             }
@@ -349,10 +343,10 @@ namespace Fu
                             {
                                 ImGui.SetCursorPosX((ImGui.GetContentRegionAvail().x - imageSize.x) * 0.5f);
                                 bool open = beginContextSubmenu("##imgmenu" + id, enabled);
-                                layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, false);
+                                Fugui.Layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, false);
                                 if (open)
                                 {
-                                    drawContextMenuItems(menuItem.Children, layout, id + 1);
+                                    drawContextMenuItems(menuItem.Children, id + 1);
                                     ImGui.EndMenu();
                                 }
                             }
@@ -360,7 +354,7 @@ namespace Fu
                             {
                                 if (beginContextSubmenu(label, enabled))
                                 {
-                                    drawContextMenuItems(menuItem.Children, layout, id + 1);
+                                    drawContextMenuItems(menuItem.Children, id + 1);
                                     ImGui.EndMenu();
                                 }
                             }
@@ -370,7 +364,7 @@ namespace Fu
                         {
                             if (hasImage && hasLabel)
                             {
-                                bool clicked = layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, true);
+                                bool clicked = Fugui.Layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, true);
                                 ImGui.SameLine();
                                 clicked |= ImGui.MenuItem(label, menuItem.Shortcut, false, enabled);
                                 if (clicked)
@@ -381,8 +375,8 @@ namespace Fu
                             }
                             else if (!hasLabel && hasImage)
                             {
-                                layout.CenterNextItemH(imageSize.x);
-                                if (layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, true))
+                                Fugui.Layout.CenterNextItemH(imageSize.x);
+                                if (Fugui.Layout.Image("imgBtnCm" + id, menuItem.Image, imageSize, false, true))
                                 {
                                     menuItem.ClickAction?.Invoke();
                                     CloseContextMenu();

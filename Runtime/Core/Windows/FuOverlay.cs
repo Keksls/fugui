@@ -13,7 +13,6 @@ namespace Fu
         #region State
         // ID of the Overlay
         public string ID { get; private set; }
-        public FuLayout Layout { get; private set; }
         // unscaled private size of  the Overlay
 
         private Vector2Int _size;
@@ -49,7 +48,7 @@ namespace Fu
             }
         }
         // Custom UI display function for the overlay
-        public Action<FuOverlay, FuLayout> UI { get; private set; }
+        public Action<FuOverlay> UI { get; private set; }
         // Whenever the Overlay will render just right now
 
         public event Action OnPreRender;
@@ -139,7 +138,7 @@ namespace Fu
         /// <param name="size">size of this overlay</param>
         /// <param name="ui">UI of this overlay</param>
         /// <param name="flags">Overlay comportement flags</param>
-        public FuOverlay(string id, Vector2Int size, Action<FuOverlay, FuLayout> ui, FuOverlayFlags flags = FuOverlayFlags.Default, FuOverlayDragPosition dragButtonPosition = FuOverlayDragPosition.Auto)
+        public FuOverlay(string id, Vector2Int size, Action<FuOverlay> ui, FuOverlayFlags flags = FuOverlayFlags.Default, FuOverlayDragPosition dragButtonPosition = FuOverlayDragPosition.Auto)
         {
             // Set the ID of the window
             ID = id;
@@ -404,32 +403,26 @@ namespace Fu
                 Fugui.Push(ImGuiCol.ChildBg, Vector4.zero);
                 Fugui.Push(ImGuiCol.Border, Vector4.zero);
                 Fugui.Push(ImGuiCol.BorderShadow, Vector4.zero);
-                Layout = new FuLayout();
+                // Overlays share the session layout but start with independent transient widget state.
+                Fugui.Layout.ResetSurfaceState();
+                OnPreRender?.Invoke();
+                bool childBegan = false;
                 try
                 {
-                    OnPreRender?.Invoke();
-                    bool childBegan = false;
-                    try
+                    bool childVisible = ImGui.BeginChild(ID, Size, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+                    childBegan = true;
+                    if (childVisible)
                     {
-                        bool childVisible = ImGui.BeginChild(ID, Size, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
-                        childBegan = true;
-                        if (childVisible)
-                        {
-                            UI?.Invoke(this, Layout);
-                            OnPostRender?.Invoke();
-                        }
-                    }
-                    finally
-                    {
-                        if (childBegan)
-                        {
-                            Fugui.EndRawChild();
-                        }
+                        UI?.Invoke(this);
+                        OnPostRender?.Invoke();
                     }
                 }
                 finally
                 {
-                    Layout.Dispose();
+                    if (childBegan)
+                    {
+                        Fugui.EndRawChild();
+                    }
                 }
                 Fugui.PopColor(3);
                 _overlayStyle.Pop();

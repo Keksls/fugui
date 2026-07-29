@@ -48,14 +48,14 @@ namespace Fu.Framework
             /// <param name="format">The format value.</param>
             /// <param name="flags">The flags value.</param>
             /// <param name="disabled">The disabled value.</param>
-            public void Draw(FuLayout layout, string _label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobFlags flags, bool disabled)
+            public void Draw(string _label, ref float p_value, float v_min, float v_max, float speed, string format, FuKnobFlags flags, bool disabled)
             {
                 t = (p_value - v_min) / (v_max - v_min);
                 var screen_pos = ImGui.GetCursorScreenPos();
                 float oldValue = p_value;
 
                 // Handle dragging
-                layout.InvisibleInteraction(_label, new Vector2(radius * 2.0f, radius * 2.0f), out bool knobHovered, out bool knobActive, FuButtonFlags.MouseButtonLeft, !disabled);
+                FuLayout.CurrentDrawerPath.Peek().InvisibleInteraction(_label, new Vector2(radius * 2.0f, radius * 2.0f), out bool knobHovered, out bool knobActive, FuButtonFlags.MouseButtonLeft, !disabled);
                 float mouseDeltaX = Fugui.GetCurrentMouse().Movement.x;
                 if (knobActive && mouseDeltaX != 0.0f && !disabled)
                 {
@@ -145,7 +145,6 @@ namespace Fu.Framework
             /// <summary>
             /// Runs the draw arc workflow.
             /// </summary>
-            /// <param name="layout">The layout value.</param>
             /// <param name="radius">The radius value.</param>
             /// <param name="size">The size value.</param>
             /// <param name="start_angle">The start angle value.</param>
@@ -153,11 +152,11 @@ namespace Fu.Framework
             /// <param name="color">The color value.</param>
             /// <param name="segments">The segments value.</param>
             /// <param name="bezier_count">The bezier count value.</param>
-            internal void draw_arc(FuLayout layout, float radius, float size, float start_angle, float end_angle, color_set color, int segments, int bezier_count)
+            internal void draw_arc(float radius, float size, float start_angle, float end_angle, color_set color, int segments, int bezier_count)
             {
                 var track_radius = radius * this.radius;
                 var track_size = size * this.radius * 0.5f + 0.0001f;
-                layout.draw_arc(
+                FuLayout.CurrentDrawerPath.Peek().draw_arc(
                         center,
                         track_radius,
                         start_angle,

@@ -140,7 +140,7 @@ namespace Fu.Framework
             }
 
             FuSelectablePopupState<T> state = GetSelectablePopupState<T>(stateId);
-            state.Prepare(this, stateId, items, selectedIndex, itemChange, null, listUpdated, mappedCallbackValues, true);
+            state.Prepare(LastItemDisabled, stateId, items, selectedIndex, itemChange, null, listUpdated, mappedCallbackValues, true);
             Combobox(text, items.Count > 0 ? items[selectedIndex].ToString() : "No Items", state.DrawAction, size, popupSize, style, popupPosition);
         }
 

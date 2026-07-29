@@ -116,7 +116,8 @@ namespace Fu.Framework
         public FuGridDefinition(float colWidth)
         {
             NbColumns = 0;
-            ColumnWidth = (int)(colWidth * Fugui.CurrentContext.Scale);
+            // Definitions are context-independent values; scaling is deferred until the grid is drawn.
+            ColumnWidth = (int)colWidth;
             MinSecondColumnSize = -1;
             ColumnsWidth = null;
             GridType = FuGridType.FlexibleCols;
@@ -220,7 +221,8 @@ namespace Fu.Framework
                     break;
 
                 case FuGridType.FlexibleCols:
-                    nbCols = Mathf.FloorToInt(availWidth / (ColumnWidth + cellPadding * 2f));
+                    float scaledColumnWidth = ColumnWidth * Fugui.CurrentContext.Scale;
+                    nbCols = Mathf.FloorToInt(availWidth / (scaledColumnWidth + cellPadding * 2f));
                     if (nbCols < 1)
                     {
                         nbCols = 1;

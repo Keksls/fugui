@@ -77,10 +77,9 @@ namespace Fu.Framework
         /// <summary>
         /// Draws the value.
         /// </summary>
-        /// <param name="layout">The layout value.</param>
-        public void Draw(FuLayout layout)
+        public void Draw()
         {
-            if (layout.Button(Text, FuElementSize.AutoSize, Style))
+            if (Fugui.Layout.Button(Text, FuElementSize.AutoSize, Style))
             {
                 Callback?.Invoke();
                 Fugui.CloseModal();

@@ -175,11 +175,11 @@ public class MyFuguiBootstrap : MonoBehaviour
         Fugui.CreateWindow(Tools);
     }
 
-    private void DrawTools(FuWindow window, FuLayout layout)
+    private void DrawTools(FuWindow window)
     {
-        layout.Text("Hello Fugui");
+        Fugui.Layout.Text("Hello Fugui");
 
-        if (layout.Button("Force redraw"))
+        if (Fugui.Layout.Button("Force redraw"))
         {
             window.ForceDraw();
         }
@@ -200,7 +200,7 @@ public class InventoryWindow : FuWindowBehaviour
     private bool _enabled = true;
     private float _weight = 12.5f;
 
-    public override void OnUI(FuWindow window, FuLayout layout)
+    public override void OnUI(FuWindow window)
     {
         using (new FuPanel("inventory-panel", FuStyle.Unpadded))
         using (var grid = new FuGrid("inventory-grid"))
@@ -235,14 +235,14 @@ public class SceneViewWindow : FuCameraWindowBehaviour
     {
         definition.SetHeaderUI((win, size) =>
         {
-            win.Layout.CenterNextItemH("Scene View");
-            win.Layout.Text("Scene View");
+            Fugui.Layout.CenterNextItemH("Scene View");
+            Fugui.Layout.Text("Scene View");
         }, 24f);
     }
 
-    public override void OnUI(FuWindow window, FuLayout layout)
+    public override void OnUI(FuWindow window)
     {
-        layout.Text("Overlay UI below/above the camera view");
+        Fugui.Layout.Text("Overlay UI below/above the camera view");
     }
 }
 ```
@@ -255,7 +255,7 @@ definition.SetWindowDecorationUI(DrawCustomHeader, 32f);
 definition.SetHeaderUI(DrawCustomHeader, 32f, overrideWindowDecorations: true);
 ```
 
-Le header custom conserve la zone de drag/docking. Les fenetres dockees gardent leur tab bar de layout.
+Le header custom conserve la zone de drag/docking. Les fenetres dockees gardent leur tab bar de Fugui.Layout.
 
 `FuCameraWindow` gere:
 
@@ -438,19 +438,19 @@ Utilisation:
 
 ```csharp
 Fugui.PushFont(18, FontType.Bold);
-layout.Text("Titre");
+Fugui.Layout.Text("Titre");
 Fugui.PopFont();
 
 Fugui.PushFont("Mono", 14, FontType.Regular);
-layout.Text("Code");
+Fugui.Layout.Text("Code");
 Fugui.PopFont();
 
 Fugui.PushFont(14, "Mono");
-layout.Text("Code compact");
+Fugui.Layout.Text("Code compact");
 Fugui.PopFont();
 
 Fugui.Push(FuColors.Text, Color.cyan);
-layout.Text("Texte colore");
+Fugui.Layout.Text("Texte colore");
 Fugui.PopColor();
 ```
 
@@ -491,9 +491,9 @@ using (var grid = new FuGrid("settings", FuGridDefinition.DefaultFixed, FuGridFl
 Exemple de table filtrable:
 
 ```csharp
-layout.SearchBox("assets-search", ref search, "Search assets...");
+Fugui.Layout.SearchBox("assets-search", ref search, "Search assets...");
 
-layout.TableView(
+Fugui.Layout.TableView(
     "assets-table",
     assets,
     new[]
@@ -543,7 +543,7 @@ options.XAxis.SetRange(0f, 120f);
 options.YAxis.SetAutoRange(includeZero: true);
 
 FuChartHoverState hover;
-layout.Chart("runtime-chart", series, options, out hover);
+Fugui.Layout.Chart("runtime-chart", series, options, out hover);
 ```
 
 ## Popups, modales, notifications et menus
@@ -551,12 +551,12 @@ layout.Chart("runtime-chart", series, options, out hover);
 ### Popup custom
 
 ```csharp
-if (layout.Button("Options"))
+if (Fugui.Layout.Button("Options"))
 {
     Fugui.OpenPopUp("options-popup", () =>
     {
-        layout.Text("Options");
-        layout.CheckBox("Enabled", ref enabled);
+        Fugui.Layout.Text("Options");
+        Fugui.Layout.CheckBox("Enabled", ref enabled);
     }, new Vector2(240f, 120f));
 }
 
@@ -619,7 +619,7 @@ List<FuContextMenuItem> items = FuContextMenuBuilder.Start()
     .Build();
 
 Fugui.PushContextMenuItems(items);
-layout.Text("Right click me");
+Fugui.Layout.Text("Right click me");
 Fugui.TryOpenContextMenuOnItemClick();
 Fugui.PopContextMenuItems();
 ```
@@ -689,7 +689,7 @@ Le sample package reference `Samples~/Demo` et `Samples~/MobileDemo` dans `Packa
 - Verifie que la camera UI est sur le layer attendu par `FuguiRenderFeature._cameraLayer`.
 - Verifie que `FuguiRenderFeature` est ajoutee au renderer URP.
 - Verifie que le shader Fugui URP est assigne.
-- Verifie que la fenetre est bien creee (`Fugui.CreateWindow`) ou auto-instanciee par un layout.
+- Verifie que la fenetre est bien creee (`Fugui.CreateWindow`) ou auto-instanciee par un Fugui.Layout.
 
 ### Erreurs de police ou glyphes manquants
 

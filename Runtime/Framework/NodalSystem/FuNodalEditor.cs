@@ -88,10 +88,9 @@ namespace Fu.Framework.Nodal
         /// <summary>
         /// Draw the context menu for adding nodes.
         /// </summary>
-        /// <param name="layout"> The FuLayout to use for ImGui calls.</param>
         /// <param name="types"> The list of node TypeIds to include in the menu.</param>
         /// <param name="drawCustom"> Whether to invoke custom menu items.</param>
-        private void DrawContextMenu(FuLayout layout, IEnumerable<string> types, bool drawCustom, bool forceOpen, bool tryAutoConnect)
+        private void DrawContextMenu(IEnumerable<string> types, bool drawCustom, bool forceOpen, bool tryAutoConnect)
         {
             FuContextMenuBuilder builder = new FuContextMenuBuilder();
 
@@ -223,7 +222,6 @@ namespace Fu.Framework.Nodal
         /// <summary>
         /// Draw the nodal canvas (pan/zoom, grid, nodes, edges, interaction).
         /// </summary>
-        /// <param name="layout"> The FuLayout to use for ImGui calls.</param>
         private void DrawCanvas(FuWindow window)
         {
             _canvasOrigin = ImGui.GetCursorScreenPos();// Window.LocalPosition + Window.WorkingAreaPosition;
@@ -878,9 +876,9 @@ namespace Fu.Framework.Nodal
             dl.AddRectFilled(rectMin, new Vector2(rectMax.x, rectMin.y + node.EditorData.headerHeight),
                 ImGui.GetColorU32(headerColor), Fugui.Themes.WindowRounding * z, FuDrawFlags.RoundCornersTop);
 
-            window.Layout.CenterNextItemH(node.Title);
-            window.Layout.CenterNextItemV(node.Title, node.EditorData.headerHeight);
-            window.Layout.Text(node.Title);
+            Fugui.Layout.CenterNextItemH(node.Title);
+            Fugui.Layout.CenterNextItemV(node.Title, node.EditorData.headerHeight);
+            Fugui.Layout.Text(node.Title);
 
             dl.AddLine(
                     new Vector2(rectMin.x, Snap(rectMin.y + node.EditorData.headerHeight)),
@@ -938,8 +936,8 @@ namespace Fu.Framework.Nodal
             ImGui.SetCursorScreenPos(uiMin);
             ImGui.BeginChild(GetNodeUiChildId(node.Id), uiSize, ImGuiChildFlags.AutoResizeY,
                 ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
-            node.OnDraw(window.Layout);
-            window.Layout.Dummy(0f, 2f);
+            node.OnDraw();
+            Fugui.Layout.Dummy(0f, 2f);
             Fugui.EndRawChild();
 
             ImGui.SetWindowFontScale(1.0f);
@@ -1315,7 +1313,7 @@ namespace Fu.Framework.Nodal
             var compatibleTypes = Graph.Registry.GetCompatibleNodes(direction, dataTypes);
             voidLinkFromNode = fromNode;
             voidLinkFromPort = fromPort;
-            DrawContextMenu(FuWindow.CurrentDrawingWindow.Layout, compatibleTypes, false, true, true);
+            DrawContextMenu(compatibleTypes, false, true, true);
         }
 
         /// <summary>
@@ -1414,12 +1412,11 @@ namespace Fu.Framework.Nodal
         }
 
         /// <summary>
-        /// Draw the nodal canvas within the given layout.
+        /// Draw the nodal canvas through the global Fugui layout.
         /// </summary>
-        /// <param name="layout"> The FuLayout to draw into.</param>
         public void Draw(FuWindow window)
         {
-            DrawContextMenu(window.Layout, Graph.Registry.GetRegisteredNode(), true, false, false);
+            DrawContextMenu(Graph.Registry.GetRegisteredNode(), true, false, false);
 
             // push font and scale
             Fugui.Themes.CurrentTheme.Apply(_zoom);

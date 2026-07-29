@@ -138,12 +138,29 @@ namespace Fu.Framework
         /// <summary>
         /// Initializes a new instance of the Fu Layout class.
         /// </summary>
-        public FuLayout()
+        internal FuLayout()
         {
             CurrentDrawerPath.Push(this);
             _tooltipAppearDuration = Fugui.Settings.TooltipAppearDuration;
         }
         #endregion
+
+        /// <summary>
+        /// Resets state that belongs to one root drawing surface while preserving session widget caches.
+        /// </summary>
+        internal void ResetSurfaceState()
+        {
+            // Windows and overlays share this layout, so transient element configuration cannot cross their boundaries.
+            LastItemDisabled = false;
+            _elementHoverFramedEnabled = false;
+            _currentToolTips = null;
+            _currentToolTipsStyles = null;
+            _currentToolTipsIndex = 0;
+            _currentToolTipsOnLabels = false;
+            _animationEnabled = true;
+            _longDisabled = false;
+            _drawElement = true;
+        }
 
         /// <summary>
         /// Disposes this Layout

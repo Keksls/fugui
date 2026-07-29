@@ -106,7 +106,7 @@ namespace Fu.Framework
                             FuFrameStyle.Default.Push(!LastItemDisabled);
                             try
                             {
-                                k.Draw(this, label, ref p_value, v_min, v_max, speed, format, flags, LastItemDisabled);
+                                k.Draw(label, ref p_value, v_min, v_max, speed, format, flags, LastItemDisabled);
                             }
                             finally
                             {
@@ -237,28 +237,28 @@ namespace Fu.Framework
                     case FuKnobVariant.Wiper:
                         {
                             knob.draw_circle(0.7f, GetSecondaryColorSet(), 32);
-                            knob.draw_arc(this, 0.8f, 0.41f, knob.angle_min, knob.angle_max, GetTrackColorSet(), 16, 2);
+                            knob.draw_arc(0.8f, 0.41f, knob.angle_min, knob.angle_max, GetTrackColorSet(), 16, 2);
 
                             if (knob.t > 0.01f)
                             {
-                                knob.draw_arc(this, 0.8f, 0.43f, knob.angle_min, knob.angle, GetPrimaryColorSet(), 16, 2);
+                                knob.draw_arc(0.8f, 0.43f, knob.angle_min, knob.angle, GetPrimaryColorSet(), 16, 2);
                             }
                             break;
                         }
                     case FuKnobVariant.WiperOnly:
                         {
-                            knob.draw_arc(this, 0.8f, 0.41f, knob.angle_min, knob.angle_max, GetTrackColorSet(), 32, 2);
+                            knob.draw_arc(0.8f, 0.41f, knob.angle_min, knob.angle_max, GetTrackColorSet(), 32, 2);
 
                             if (knob.t > 0.01)
                             {
-                                knob.draw_arc(this, 0.8f, 0.43f, knob.angle_min, knob.angle, GetPrimaryColorSet(), 16, 2);
+                                knob.draw_arc(0.8f, 0.43f, knob.angle_min, knob.angle, GetPrimaryColorSet(), 16, 2);
                             }
                             break;
                         }
                     case FuKnobVariant.WiperDot:
                         {
                             knob.draw_circle(0.6f, GetSecondaryColorSet(), 32);
-                            knob.draw_arc(this, 0.85f, 0.41f, knob.angle_min, knob.angle_max, GetTrackColorSet(), 16, 2);
+                            knob.draw_arc(0.85f, 0.41f, knob.angle_min, knob.angle_max, GetTrackColorSet(), 16, 2);
                             knob.draw_dot(0.1f, 0.85f, knob.angle, GetPrimaryColorSet(), true, 12);
                             break;
                         }
@@ -281,9 +281,9 @@ namespace Fu.Framework
 
                             if (knob.t > 0.01f)
                             {
-                                knob.draw_arc(this, 0.4f, 0.15f, knob.angle_min - 1.0f, knob.angle - 1.0f, GetPrimaryColorSet(), 16, 2);
-                                knob.draw_arc(this, 0.6f, 0.15f, knob.angle_min + 1.0f, knob.angle + 1.0f, GetPrimaryColorSet(), 16, 2);
-                                knob.draw_arc(this, 0.8f, 0.15f, knob.angle_min + 3.0f, knob.angle + 3.0f, GetPrimaryColorSet(), 16, 2);
+                                knob.draw_arc(0.4f, 0.15f, knob.angle_min - 1.0f, knob.angle - 1.0f, GetPrimaryColorSet(), 16, 2);
+                                knob.draw_arc(0.6f, 0.15f, knob.angle_min + 1.0f, knob.angle + 1.0f, GetPrimaryColorSet(), 16, 2);
+                                knob.draw_arc(0.8f, 0.15f, knob.angle_min + 3.0f, knob.angle + 3.0f, GetPrimaryColorSet(), 16, 2);
                             }
                             break;
                         }

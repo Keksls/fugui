@@ -54,7 +54,6 @@ namespace Fu
         public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
 
         internal Dictionary<string, Dictionary<int, FontSet>> Fonts = new Dictionary<string, Dictionary<int, FontSet>>();
-        internal FuLayout contextLayout;
         internal FontSet DefaultFont { get; set; }
         internal string FontAtlasCacheKey { get; private set; }
         internal bool UsesSharedFontAtlas => _sharedFontAtlas != null;
@@ -124,7 +123,6 @@ namespace Fu
                 PlatformIO = ImGui.GetPlatformIO();
                 onInitialize?.Invoke();
                 sub_initialize();
-                contextLayout = new FuLayout();
                 Started = true;
             }
             catch (Exception initializationException)
@@ -405,10 +403,7 @@ namespace Fu
             RunCleanupStep(() => FuSharedFontAtlasCache.Release(_sharedFontAtlas), ref cleanupException);
             RunCleanupStep(ReleaseIniFilenameAllocation, ref cleanupException);
             RunCleanupStep(_drawData.Dispose, ref cleanupException);
-            RunCleanupStep(() => contextLayout?.Dispose(), ref cleanupException);
-
             _sharedFontAtlas = null;
-            contextLayout = null;
             Fonts.Clear();
             DefaultFont = null;
 

@@ -42,10 +42,10 @@ namespace Fu.Framework.Demo
         /// Handles the Draw event.
         /// </summary>
         /// <param name="layout">The layout value.</param>
-        public override void OnDraw(FuLayout layout)
+        public override void OnDraw()
         {
             Vector3 v = GetPortValue<Vector3>("Out", Vector3.zero);
-            if (layout.Drag("##"+Id, ref v))
+            if (Fugui.Layout.Drag("##"+Id, ref v))
                 SetPortValue("Out","core/v3", v);
         }
 

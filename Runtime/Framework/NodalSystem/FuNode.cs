@@ -26,8 +26,7 @@ namespace Fu.Framework
         /// <summary>
         /// Override to draw custom UI inside the node
         /// </summary>
-        /// <param name="layout"> the current layout to draw ui in</param>
-        public abstract void OnDraw(FuLayout layout);
+        public abstract void OnDraw();
 
         /// <summary>
         /// get input values from state

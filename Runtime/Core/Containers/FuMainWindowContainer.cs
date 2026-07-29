@@ -121,6 +121,8 @@ namespace Fu
         {
             // set current Fugui context
             _fuguiContext = FuguiContext;
+            // Expose a valid container size before the first render preparation.
+            _size = getContextSize();
             // Initialize the windows dictionary
             Windows = new Dictionary<string, FuWindow>();
             // Initialize the queues for windows

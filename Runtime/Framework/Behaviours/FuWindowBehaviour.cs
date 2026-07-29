@@ -33,6 +33,7 @@ namespace Fu.Framework
         [SerializeField]
         protected bool _forceCreateAloneOnAwake = false;
         protected FuWindow _fuWindow;
+        private uint? _registeredRuntimeGeneration;
 
         public FuWindow Window => _fuWindow;
         #endregion
@@ -47,6 +48,10 @@ namespace Fu.Framework
             if (!enabled)
                 return;
 
+            // Register this behaviour only once for each Fugui runtime session.
+            if (_registeredRuntimeGeneration == Fugui.RuntimeGeneration)
+                return;
+
             _fuWindow = null;
 
             // creeate the window definition, it will automaticaly be registered into fugui windows definitions list
@@ -55,6 +60,7 @@ namespace Fu.Framework
             OnWindowDefinitionCreated(windowDefinition);
             // register the OnUIWindowCreated event to handle the window creation
             windowDefinition.OnUIWindowCreated += WindowDefinition_OnUIWindowCreated;
+            _registeredRuntimeGeneration = Fugui.RuntimeGeneration;
 
             // Force the creation of the window immediately on Awake
             if (_forceCreateAloneOnAwake)

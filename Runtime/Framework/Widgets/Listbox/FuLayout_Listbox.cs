@@ -97,7 +97,7 @@ namespace Fu.Framework
             }
 
             FuSelectablePopupState<T> state = GetSelectablePopupState<T>(stateId);
-            state.Prepare(this, stateId, items, selectedIndex, indexChange, itemChange, listUpdated, mappedCallbackValues, false);
+            state.Prepare(LastItemDisabled, stateId, items, selectedIndex, indexChange, itemChange, listUpdated, mappedCallbackValues, false);
             ListBox(text, state.DrawAction, size);
         }
 

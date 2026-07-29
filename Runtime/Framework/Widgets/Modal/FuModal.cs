@@ -14,7 +14,7 @@ namespace Fu
         private static bool _showModal = false;
         private static bool _preventCloseModal = false;
         private static string _modalTitle;
-        private static Action<FuLayout> _modalBody;
+        private static Action _modalBody;
         private static FuModalButton[] _modalButtons;
         private static FuModalSize _currentModalSize;
         private static FuModalFlags _currentModalFlags = FuModalFlags.Default;
@@ -37,7 +37,7 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="buttons">List of buttons in the modal, each button contains a text and callback</param>
-        public static void ShowModal(string title, Action<FuLayout> body, FuModalSize modalSize, params FuModalButton[] buttons)
+        public static void ShowModal(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
             ShowModal(title, body, modalSize, FuModalFlags.Default, buttons);
         }
@@ -49,7 +49,7 @@ namespace Fu
         /// <param name="body">Body callback drawn inside the modal content area.</param>
         /// <param name="size">Unscaled modal body size. The size is scaled by Fugui before rendering.</param>
         /// <param name="buttons">List of buttons in the modal, each button contains a text and callback.</param>
-        public static void ShowModal(string title, Action<FuLayout> body, Vector2 size, params FuModalButton[] buttons)
+        public static void ShowModal(string title, Action body, Vector2 size, params FuModalButton[] buttons)
         {
             ShowModal(title, body, new FuModalSize(size), FuModalFlags.Default, buttons);
         }
@@ -62,7 +62,7 @@ namespace Fu
         /// <param name="size">Unscaled modal body size. The size is scaled by Fugui before rendering.</param>
         /// <param name="flags">Modal chrome flags. Use CustomSurface with NoTitleBar and NoFooterBar for a fully custom modal surface.</param>
         /// <param name="buttons">List of buttons in the modal, each button contains a text and callback.</param>
-        public static void ShowModal(string title, Action<FuLayout> body, Vector2 size, FuModalFlags flags, params FuModalButton[] buttons)
+        public static void ShowModal(string title, Action body, Vector2 size, FuModalFlags flags, params FuModalButton[] buttons)
         {
             ShowModal(title, body, new FuModalSize(size), flags, buttons);
         }
@@ -75,7 +75,7 @@ namespace Fu
         /// <param name="modalSize">Size of the modal</param>
         /// <param name="flags">Modal chrome flags</param>
         /// <param name="buttons">List of buttons in the modal, each button contains a text and callback</param>
-        public static void ShowModal(string title, Action<FuLayout> body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
+        public static void ShowModal(string title, Action body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
         {
             _modalTitle = title; //store the title
             _modalBody = body; //store the body
@@ -273,15 +273,7 @@ namespace Fu
                                 {
                                     float cursorY = ImGui.GetCursorScreenPos().y;
                                     ImGui.Dummy(Vector2.zero);
-                                    FuLayout layout = AcquireModalLayout(out bool ownsLayout);
-                                    try
-                                    {
-                                        _modalBody(layout);
-                                    }
-                                    finally
-                                    {
-                                        ReleaseModalLayout(layout, ownsLayout);
-                                    }
+                                    _modalBody();
                                     ImGui.Dummy(Vector2.zero);
                                     // get body height for this frame
                                     SetMeasuredModalBodyHeight(ImGui.GetCursorScreenPos().y - cursorY);
@@ -324,17 +316,9 @@ namespace Fu
         private static void DrawTitle(string title)
         {
             Vector2 cursorPos = ImGui.GetCursorScreenPos();
-            FuLayout layout = AcquireModalLayout(out bool ownsLayout);
-            try
-            {
-                layout.CenterNextItemH(title);
-                layout.CenterNextItemV(title, _currentTitleHeight);
-                layout.Text(title);
-            }
-            finally
-            {
-                ReleaseModalLayout(layout, ownsLayout);
-            }
+            Fugui.Layout.CenterNextItemH(title);
+            Fugui.Layout.CenterNextItemV(title, _currentTitleHeight);
+            Fugui.Layout.Text(title);
             ImGui.SetCursorScreenPos(new Vector2(cursorPos.x, cursorPos.y + _currentTitleHeight));
         }
 
@@ -351,60 +335,19 @@ namespace Fu
             float spacing = 8f * Fugui.Scale;
             float footerY = _currentModalPos.y + _currentTitleHeight + _currentBodySize.y;
             float cursorX = _currentModalPos.x + _currentBodySize.x;
-            FuLayout layout = AcquireModalLayout(out bool ownsLayout);
-            try
+            // Draw each button with the unique session layout.
+            foreach (var button in _modalButtons)
             {
-                // Draw each button
-                foreach (var button in _modalButtons)
-                {
-                    // Set cursor position
-                    Vector2 size = button.GetButtonSize();
-                    cursorX -= size.x + spacing;
-                    ImGui.SetCursorScreenPos(new Vector2(cursorX, footerY + Mathf.Max(0f, (_currentFooterheight - size.y) * 0.5f)));
+                // Set cursor position
+                Vector2 size = button.GetButtonSize();
+                cursorX -= size.x + spacing;
+                ImGui.SetCursorScreenPos(new Vector2(cursorX, footerY + Mathf.Max(0f, (_currentFooterheight - size.y) * 0.5f)));
 
-                    // Draw button
-                    button.Draw(layout);
-                }
-            }
-            finally
-            {
-                ReleaseModalLayout(layout, ownsLayout);
+                // Draw button
+                button.Draw();
             }
 
             ImGui.SetCursorScreenPos(new Vector2(ImGui.GetCursorScreenPos().x, footerY + _currentFooterheight));
-        }
-
-        /// <summary>
-        /// Acquires the current window layout and only creates a fallback outside a window render.
-        /// </summary>
-        /// <param name="ownsLayout">True when the caller must dispose the fallback layout.</param>
-        /// <returns>Layout used to draw modal content.</returns>
-        private static FuLayout AcquireModalLayout(out bool ownsLayout)
-        {
-            // Normal modal rendering reuses the window-owned layout and performs no managed allocation.
-            FuLayout layout = FuWindow.CurrentDrawingWindow?.Layout;
-            if (layout != null)
-            {
-                ownsLayout = false;
-                return layout;
-            }
-
-            ownsLayout = true;
-            return new FuLayout();
-        }
-
-        /// <summary>
-        /// Releases a modal layout only when it was created as an out-of-window fallback.
-        /// </summary>
-        /// <param name="layout">Layout returned by <see cref="AcquireModalLayout"/>.</param>
-        /// <param name="ownsLayout">Whether the layout is owned by the modal call.</param>
-        private static void ReleaseModalLayout(FuLayout layout, bool ownsLayout)
-        {
-            // Window-owned layouts live with their windows; only the exceptional fallback is disposable here.
-            if (ownsLayout)
-            {
-                layout.Dispose();
-            }
         }
 
         private static bool HasModalTitleBar()
@@ -508,7 +451,7 @@ namespace Fu
         /// <param name="callback">Callback to be called when the yes button is pressed</param>
         /// <param name="yesButtonText">text of the yes button</param>
         /// <param name="noButtonText">text of the no button</param>
-        public static void ShowYesNoModal(string title, Action<FuLayout> body, Action<bool> callback, FuModalSize modalSize, string yesButtonText = "Yes", string noButtonText = "No")
+        public static void ShowYesNoModal(string title, Action body, Action<bool> callback, FuModalSize modalSize, string yesButtonText = "Yes", string noButtonText = "No")
         {
             ShowYesNoModal(title, body, callback, modalSize, FuModalFlags.Default, yesButtonText, noButtonText);
         }
@@ -523,7 +466,7 @@ namespace Fu
         /// <param name="flags">Modal chrome flags</param>
         /// <param name="yesButtonText">text of the yes button</param>
         /// <param name="noButtonText">text of the no button</param>
-        public static void ShowYesNoModal(string title, Action<FuLayout> body, Action<bool> callback, FuModalSize modalSize, FuModalFlags flags, string yesButtonText = "Yes", string noButtonText = "No")
+        public static void ShowYesNoModal(string title, Action body, Action<bool> callback, FuModalSize modalSize, FuModalFlags flags, string yesButtonText = "Yes", string noButtonText = "No")
         {
             //call the ShowModal method with the title and buttons
             ShowModal(title, body, modalSize, flags,
@@ -547,7 +490,7 @@ namespace Fu
         /// <param name="modalSize">size of the modal</param>
         /// <param name="icon">icon of the modal box</param>
         /// <param name="color">color of the icon</param>
-        private static void ShowBox(string title, Action<FuLayout> body, FuModalSize modalSize, Texture2D icon, Color color, params FuModalButton[] buttons)
+        private static void ShowBox(string title, Action body, FuModalSize modalSize, Texture2D icon, Color color, params FuModalButton[] buttons)
         {
             ShowBox(title, body, modalSize, FuModalFlags.Default, icon, color, buttons);
         }
@@ -561,10 +504,10 @@ namespace Fu
         /// <param name="flags">Modal chrome flags</param>
         /// <param name="icon">icon of the modal box</param>
         /// <param name="color">color of the icon</param>
-        private static void ShowBox(string title, Action<FuLayout> body, FuModalSize modalSize, FuModalFlags flags, Texture2D icon, Color color, params FuModalButton[] buttons)
+        private static void ShowBox(string title, Action body, FuModalSize modalSize, FuModalFlags flags, Texture2D icon, Color color, params FuModalButton[] buttons)
         {
             //call the ShowModal method with the title, body, and buttons
-            ShowModal(title, (layout) =>
+            ShowModal(title, () =>
             {
                 string gridId = FuLayout.GetCachedCompositeId("modal", title, "infoGrid");
                 using (FuGrid grid = new FuGrid(gridId, _modalBoxGridDefinition, FuGridFlag.NoAutoLabels, outterPadding: 8f))
@@ -576,7 +519,7 @@ namespace Fu
                     grid.NextElementYPadding(pad);
                     grid.Image(FuLayout.GetCachedCompositeId("modalBoxIcon", title), icon, new Vector2(imgH, imgH), color);
                     grid.NextColumn();
-                    body?.Invoke(layout);
+                    body?.Invoke();
                 }
                 ;
             }, modalSize, flags, buttons);
@@ -606,9 +549,9 @@ namespace Fu
         /// <param name="color">color of the icon</param>
         private static void ShowBox(string title, string body, FuModalSize modalSize, FuModalFlags flags, Texture2D icon, Color color, params FuModalButton[] buttons)
         {
-            ShowBox(title, (layout) =>
+            ShowBox(title, () =>
             {
-                layout.Text(body);
+                Fugui.Layout.Text(body);
             }, modalSize, flags, icon, color, buttons);
         }
 
@@ -618,7 +561,7 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowInfo(string title, Action<FuLayout> body, FuModalSize modalSize, params FuModalButton[] buttons)
+        public static void ShowInfo(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
             ShowInfo(title, body, modalSize, FuModalFlags.Default, buttons);
         }
@@ -630,7 +573,7 @@ namespace Fu
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
         /// <param name="flags">Modal chrome flags</param>
-        public static void ShowInfo(string title, Action<FuLayout> body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
+        public static void ShowInfo(string title, Action body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
         {
             ShowBox(title, body, modalSize, flags, Fugui.Settings.InfoIcon, FuTextStyle.Info.Text, buttons);
         }
@@ -664,7 +607,7 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowDanger(string title, Action<FuLayout> body, FuModalSize modalSize, params FuModalButton[] buttons)
+        public static void ShowDanger(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
             ShowDanger(title, body, modalSize, FuModalFlags.Default, buttons);
         }
@@ -676,7 +619,7 @@ namespace Fu
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
         /// <param name="flags">Modal chrome flags</param>
-        public static void ShowDanger(string title, Action<FuLayout> body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
+        public static void ShowDanger(string title, Action body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
         {
             ShowBox(title, body, modalSize, flags, Fugui.Settings.DangerIcon, FuTextStyle.Danger.Text, buttons);
         }
@@ -710,7 +653,7 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowWarning(string title, Action<FuLayout> body, FuModalSize modalSize, params FuModalButton[] buttons)
+        public static void ShowWarning(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
             ShowWarning(title, body, modalSize, FuModalFlags.Default, buttons);
         }
@@ -722,7 +665,7 @@ namespace Fu
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
         /// <param name="flags">Modal chrome flags</param>
-        public static void ShowWarning(string title, Action<FuLayout> body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
+        public static void ShowWarning(string title, Action body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
         {
             ShowBox(title, body, modalSize, flags, Fugui.Settings.WarningIcon, FuTextStyle.Warning.Text, buttons);
         }
@@ -756,7 +699,7 @@ namespace Fu
         /// <param name="title">Title of the modal</param>
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
-        public static void ShowSuccess(string title, Action<FuLayout> body, FuModalSize modalSize, params FuModalButton[] buttons)
+        public static void ShowSuccess(string title, Action body, FuModalSize modalSize, params FuModalButton[] buttons)
         {
             ShowSuccess(title, body, modalSize, FuModalFlags.Default, buttons);
         }
@@ -768,7 +711,7 @@ namespace Fu
         /// <param name="body">Body of the modal</param>
         /// <param name="modalSize">Size of the modal</param>
         /// <param name="flags">Modal chrome flags</param>
-        public static void ShowSuccess(string title, Action<FuLayout> body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
+        public static void ShowSuccess(string title, Action body, FuModalSize modalSize, FuModalFlags flags, params FuModalButton[] buttons)
         {
             ShowBox(title, body, modalSize, flags, Fugui.Settings.SuccessIcon, FuTextStyle.Success.Text, buttons);
         }

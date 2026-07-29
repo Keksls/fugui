@@ -67,7 +67,8 @@ namespace Fu
 
             if (ImGui.Begin("Fugui Debug Tools"))
             {
-                FuLayout layout = new FuLayout();
+                // The debug panel uses the same session layout as every other root surface.
+                Layout.ResetSurfaceState();
                 using (FuPanel panel = new FuPanel("fuguiDebugPanel"))
                 {
                     using (FuGrid grid = new FuGrid("fuDebugToolGrid"))
@@ -76,113 +77,112 @@ namespace Fu
                         grid.Toggle("Force Render All", ref _forceRenderAll);
                     }
 
-                    layout.Collapsable("Colors##fuDebugColorsCol", () =>
+                    Layout.Collapsable("Colors##fuDebugColorsCol", () =>
                     {
                         using (FuGrid grid = new FuGrid("fuDebugColorGrid"))
                         {
                             grid.Text("Push");
                             grid.NextColumn();
                             PushFont(Core.FontType.Bold);
-                            layout.Text(nbColorsPush.ToString());
+                            Layout.Text(nbColorsPush.ToString());
                             PopFont();
 
                             grid.Text("Pop");
                             grid.NextColumn();
                             PushFont(Core.FontType.Bold);
-                            layout.Text(nbColorsPop.ToString());
+                            Layout.Text(nbColorsPop.ToString());
                             PopFont();
                         }
 
-                        layout.Separator();
-                        layout.SetNextElementToolTipWithLabel("The following must be empty.\n" +
+                        Layout.Separator();
+                        Layout.SetNextElementToolTipWithLabel("The following must be empty.\n" +
                             "Note that the remaning push are just the last, it does not means that this is these items that must be pop.\n" +
                             "Please investigate to find witch ones are missing.");
                         PushFont(Core.FontType.Bold);
-                        layout.Text("Remaning push in stack : " + colors.Count, colors.Count > 0 ? FuTextStyle.Danger : FuTextStyle.Default);
+                        Layout.Text("Remaning push in stack : " + colors.Count, colors.Count > 0 ? FuTextStyle.Danger : FuTextStyle.Default);
                         PopFont();
 
                         foreach (var colData in colors)
                         {
                             PushFont(Core.FontType.Bold);
-                            layout.Text(colData.color.ToString());
+                            Layout.Text(colData.color.ToString());
                             PopFont();
                             if (_showStackTraces)
                             {
-                                layout.Text(colData.stackTrace);
+                                Layout.Text(colData.stackTrace);
                             }
-                            layout.Separator();
+                            Layout.Separator();
                         }
 
                         PushFont(Core.FontType.Bold);
-                        layout.Text("Extra Pop : " + tooMutchColorPop.Count, tooMutchColorPop.Count > 0 ? FuTextStyle.Danger : FuTextStyle.Default);
+                        Layout.Text("Extra Pop : " + tooMutchColorPop.Count, tooMutchColorPop.Count > 0 ? FuTextStyle.Danger : FuTextStyle.Default);
                         PopFont();
                         foreach (var colData in tooMutchColorPop)
                         {
                             PushFont(Core.FontType.Bold);
-                            layout.Text(colData.color.ToString());
+                            Layout.Text(colData.color.ToString());
                             PopFont();
                             if (_showStackTraces)
                             {
-                                layout.Text(colData.stackTrace);
+                                Layout.Text(colData.stackTrace);
                             }
-                            layout.Separator();
+                            Layout.Separator();
                         }
                     });
 
-                    layout.Collapsable("Styles Var##fuDebugSVCol", () =>
+                    Layout.Collapsable("Styles Var##fuDebugSVCol", () =>
                     {
                         using (FuGrid grid = new FuGrid("fuDebugSVGrid"))
                         {
                             grid.Text("Push");
                             grid.NextColumn();
                             PushFont(Core.FontType.Bold);
-                            layout.Text(nbStylesPush.ToString());
+                            Layout.Text(nbStylesPush.ToString());
                             PopFont();
 
                             grid.Text("Pop");
                             grid.NextColumn();
                             PushFont(Core.FontType.Bold);
-                            layout.Text(nbStylesPop.ToString());
+                            Layout.Text(nbStylesPop.ToString());
                             PopFont();
                         }
 
-                        layout.Separator();
-                        layout.SetNextElementToolTipWithLabel("The following must be empty.\n" +
+                        Layout.Separator();
+                        Layout.SetNextElementToolTipWithLabel("The following must be empty.\n" +
                             "Note that the remaning push are just the last, it does not means that this is these items that must be pop.\n" +
                             "Please investigate to find witch ones are missing.");
                         PushFont(Core.FontType.Bold);
-                        layout.Text("Remaning push in stack : " + styles.Count, styles.Count > 0 ? FuTextStyle.Danger : FuTextStyle.Default);
+                        Layout.Text("Remaning push in stack : " + styles.Count, styles.Count > 0 ? FuTextStyle.Danger : FuTextStyle.Default);
                         PopFont();
 
                         foreach (var svData in styles)
                         {
                             PushFont(Core.FontType.Bold);
-                            layout.Text(svData.style.ToString());
+                            Layout.Text(svData.style.ToString());
                             PopFont();
                             if (_showStackTraces)
                             {
-                                layout.Text(svData.stackTrace);
+                                Layout.Text(svData.stackTrace);
                             }
-                            layout.Separator();
+                            Layout.Separator();
                         }
 
                         PushFont(Core.FontType.Bold);
-                        layout.Text("Extra Pop : " + tooMutchStylePop.Count, tooMutchStylePop.Count > 0 ? FuTextStyle.Danger : FuTextStyle.Default);
+                        Layout.Text("Extra Pop : " + tooMutchStylePop.Count, tooMutchStylePop.Count > 0 ? FuTextStyle.Danger : FuTextStyle.Default);
                         PopFont();
                         foreach (var svData in tooMutchStylePop)
                         {
                             PushFont(Core.FontType.Bold);
-                            layout.Text(svData.style.ToString());
+                            Layout.Text(svData.style.ToString());
                             PopFont();
                             if (_showStackTraces)
                             {
-                                layout.Text(svData.stackTrace);
+                                Layout.Text(svData.stackTrace);
                             }
-                            layout.Separator();
+                            Layout.Separator();
                         }
                     });
                 }
-                layout.Dispose();
                 ImGui.End();
             }
 

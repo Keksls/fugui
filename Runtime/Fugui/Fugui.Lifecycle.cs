@@ -73,6 +73,7 @@ namespace Fu
             try
             {
                 // Build the complete session transactionally so failures return Fugui to the inactive state.
+                Layout = new FuLayout();
                 Themes = new FuThemeManager();
                 Layouts = new FuDockingLayoutManager();
                 ImGuiAssertHandler.Initialize();
@@ -204,6 +205,7 @@ namespace Fu
                 RunShutdownStep(Fu3DWindowContainer.ShutdownSharedResources);
                 RunShutdownStep(DisposeListClippers);
                 RunShutdownStep(Fugui.World.ShutdownSessionResources);
+                RunShutdownStep(DisposeGlobalLayout);
                 RunShutdownStep(DestroyAllContextsImmediately);
                 RunShutdownStep(TextureManager.ShutdownSharedResources);
                 RunShutdownStep(FuSharedFontAtlasCache.Shutdown);
@@ -287,6 +289,16 @@ namespace Fu
         }
 
         /// <summary>
+        /// Disposes the unique session layout and releases its instance-owned widget caches.
+        /// </summary>
+        private static void DisposeGlobalLayout()
+        {
+            // The root layout outlives every drawing surface but never survives its owning session.
+            Layout?.Dispose();
+            Layout = null;
+        }
+
+        /// <summary>
         /// Resets all session-owned managed state without retaining references to the previous session.
         /// </summary>
         private static void ResetRuntimeState()
@@ -304,6 +316,7 @@ namespace Fu
             DefaultContext = null;
             DefaultContainer = null;
             CurrentContext = null;
+            Layout = null;
             _contextID = 0;
             Time = 0f;
 

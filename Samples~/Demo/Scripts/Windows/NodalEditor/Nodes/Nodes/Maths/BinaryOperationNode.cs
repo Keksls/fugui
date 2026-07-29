@@ -169,29 +169,29 @@ namespace Fu.Framework.Demo
         /// Handles the Draw event.
         /// </summary>
         /// <param name="layout">The layout value.</param>
-        public override void OnDraw(FuLayout layout)
+        public override void OnDraw()
         {
             string dataType = GetPortType("Out");
-            layout.DisableNextElement();
+            Fugui.Layout.DisableNextElement();
 
             switch (dataType)
             {
                 case "core/float":
                 case "core/int":
                     float valueFloat = GetPortValue<float>("Out", DefaultValue);
-                    layout.Drag("##" + Id, ref valueFloat, "", float.MinValue, float.MaxValue);
+                    Fugui.Layout.Drag("##" + Id, ref valueFloat, "", float.MinValue, float.MaxValue);
                     break;
                 case "core/v2":
                     Vector2 valueV2 = GetPortValue<Vector2>("Out", Vector2.zero);
-                    layout.Drag("##" + Id, ref valueV2, "");
+                    Fugui.Layout.Drag("##" + Id, ref valueV2, "");
                     break;
                 case "core/v3":
                     Vector3 valueV3 = GetPortValue<Vector3>("Out", Vector3.zero);
-                    layout.Drag("##" + Id, ref valueV3, "");
+                    Fugui.Layout.Drag("##" + Id, ref valueV3, "");
                     break;
                 case "core/v4":
                     Vector4 valueV4 = GetPortValue<Vector4>("Out", Vector4.zero);
-                    layout.Drag("##" + Id, ref valueV4, "");
+                    Fugui.Layout.Drag("##" + Id, ref valueV4, "");
                     break;
             }
         }

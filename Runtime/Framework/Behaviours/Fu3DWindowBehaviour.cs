@@ -295,8 +295,7 @@ namespace Fu.Framework
         /// Override this method to draw the window UI.
         /// </summary>
         /// <param name="window">The Fugui window.</param>
-        /// <param name="layout">The Fugui layout.</param>
-        public virtual void OnUI(FuWindow window, FuLayout layout)
+        public virtual void OnUI(FuWindow window)
         {
         }
 

@@ -78,8 +78,7 @@ namespace FuguiDemo
         /// A Method that draw a tree item.
         /// </summary>
         /// <param name="item">item to draw</param>
-        /// <param name="layout">layout to draw item with</param>
-        private void drawTreeItem(treeTestItem item, FuLayout layout)
+        private void drawTreeItem(treeTestItem item)
         {
             float scale = Fugui.CurrentContext.Scale;
             float rowHeight = _treeItemHeight * scale;
@@ -100,7 +99,7 @@ namespace FuguiDemo
             iconBg.w = selected ? 0.24f : rowHovered ? 0.20f : 0.15f;
             drawList.AddRectFilled(iconRect.min, iconRect.max, Fugui.GetColorU32(iconBg), iconRadius, FuDrawFlags.RoundCornersAll);
             Fugui.Push(FuColors.Text, accent);
-            layout.EnboxedText(item.Icon, iconRect.position, iconRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
+            Fugui.Layout.EnboxedText(item.Icon, iconRect.position, iconRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
             float actionSize = 22f * scale;
@@ -116,10 +115,10 @@ namespace FuguiDemo
                     Fugui.SetMouseCursor(FuMouseCursor.Hand);
                 }
                 Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDanger, deleteHovered ? 1f : 0.50f));
-                layout.EnboxedText(Icons.Close, deleteRect.position, deleteRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
+                Fugui.Layout.EnboxedText(Icons.Close, deleteRect.position, deleteRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
                 Fugui.PopColor();
             }
-            layout.SetToolTip("deleteTreeItem" + item.Id, "Delete " + item.DisplayName, deleteHovered);
+            Fugui.Layout.SetToolTip("deleteTreeItem" + item.Id, "Delete " + item.DisplayName, deleteHovered);
 
             if (deleteHovered && Fugui.IsMouseReleased(FuMouseButton.Left))
             {
@@ -134,7 +133,7 @@ namespace FuguiDemo
             badgeBg.w = selected ? 0.24f : 0.17f;
             drawList.AddRectFilled(badgeRect.min, badgeRect.max, Fugui.GetColorU32(badgeBg), badgeRect.height * 0.5f, FuDrawFlags.RoundCornersAll);
             Fugui.Push(FuColors.Text, accent);
-            layout.EnboxedText(badgeText, badgeRect.position, badgeRect.size, badgePadding, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
+            Fugui.Layout.EnboxedText(badgeText, badgeRect.position, badgeRect.size, badgePadding, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
             float textX = iconRect.xMax + 9f * scale;
@@ -142,7 +141,7 @@ namespace FuguiDemo
             Vector2 titlePos = new Vector2(textX, pos.y + 3f * scale);
             Vector2 titleSize = new Vector2(rightLimit - textX, 15f * scale);
             Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.Text, selected ? 1f : 0.95f));
-            layout.EnboxedText(item.DisplayName, titlePos, titleSize, Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Clip);
+            Fugui.Layout.EnboxedText(item.DisplayName, titlePos, titleSize, Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
             string details = item.Kind + " / " + item.Detail;
@@ -151,7 +150,7 @@ namespace FuguiDemo
                 details += " / " + item.DescendantCount + " items";
             }
             Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, selected ? 0.95f : 0.78f));
-            layout.EnboxedText(details, new Vector2(textX, pos.y + 16f * scale), new Vector2(rightLimit - textX, 13f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Clip);
+            Fugui.Layout.EnboxedText(details, new Vector2(textX, pos.y + 16f * scale), new Vector2(rightLimit - textX, 13f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
             Fugui.Dummy(new Vector2(width, rowHeight));
@@ -178,11 +177,10 @@ namespace FuguiDemo
         /// Called each frame to draw the UI of this window.
         /// </summary>
         /// <param name="window"> the window that is drawing this UI</param>
-        /// <param name="layout">the layout that is drawing this UI</param>
-        public override void OnUI(FuWindow window, FuLayout layout)
+        public override void OnUI(FuWindow window)
         {
-            drawToolbar(layout);
-            layout.Dummy(0f, 4f);
+            drawToolbar();
+            Fugui.Layout.Dummy(0f, 4f);
 
             // Create a bordered panel to draw the tree on it.
             using (FuPanel panel = new FuPanel("treePanel", false, 0, 0, FuPanelFlags.DrawBorders))
@@ -196,13 +194,12 @@ namespace FuguiDemo
         /// <summary>
         /// Draws the tree toolbar.
         /// </summary>
-        /// <param name="layout">The layout.</param>
-        private void drawToolbar(FuLayout layout)
+        private void drawToolbar()
         {
             float scale = Fugui.CurrentContext.Scale;
             float headerHeight = 78f * scale;
             float padding = 10f * scale;
-            Rect headerRect = layout.Surface("treeHeaderSurface", new FuElementSize(-1f, headerHeight / scale), FuColors.Highlight, FuSurfaceFlags.Default, 0.68f, 0.58f, 0.80f, 8f);
+            Rect headerRect = Fugui.Layout.Surface("treeHeaderSurface", new FuElementSize(-1f, headerHeight / scale), FuColors.Highlight, FuSurfaceFlags.Default, 0.68f, 0.58f, 0.80f, 8f);
             Vector2 headerPos = headerRect.position;
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
@@ -210,7 +207,7 @@ namespace FuguiDemo
             Vector4 iconBg = Fugui.GetColor(FuColors.Highlight, 0.20f);
             drawList.AddRectFilled(iconRect.min, iconRect.max, Fugui.GetColorU32(iconBg), 6f * scale, FuDrawFlags.RoundCornersAll);
             Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.HighlightText, 0.95f));
-            layout.EnboxedText(Icons.TreeList_solid, iconRect.position, iconRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
+            Fugui.Layout.EnboxedText(Icons.TreeList_solid, iconRect.position, iconRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
             Fugui.PopColor();
 
             string summary = getVisibleItems().Count + " matching / " + treeTestItem.getAll(_treeItems).Count + " total / " + getSelectedCount() + " selected";
@@ -224,14 +221,14 @@ namespace FuguiDemo
             summarySize.x = Mathf.Min(summaryNaturalSize.x, summaryAvailableWidth);
             Rect summaryRect = new Rect(new Vector2(headerRect.xMax - padding - summarySize.x, headerPos.y + 9f * scale), summarySize);
             float titleRight = Mathf.Max(titlePos.x, summaryRect.xMin - 10f * scale);
-            layout.EnboxedText("Tree Explorer", titlePos, new Vector2(titleRight - titlePos.x, 20f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
+            Fugui.Layout.EnboxedText("Tree Explorer", titlePos, new Vector2(titleRight - titlePos.x, 20f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
 
             Vector4 summaryBg = Fugui.GetColor(FuColors.ChildBg, 0.58f);
             if (summarySize.x > 1f && summarySize.y > 1f)
             {
                 drawList.AddRectFilled(summaryRect.min, summaryRect.max, Fugui.GetColorU32(summaryBg), summaryRect.height * 0.5f, FuDrawFlags.RoundCornersAll);
                 Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, 0.92f));
-                layout.EnboxedText(summary, summaryRect.position, summaryRect.size, summaryPadding, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
+                Fugui.Layout.EnboxedText(summary, summaryRect.position, summaryRect.size, summaryPadding, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
                 Fugui.PopColor();
             }
 
@@ -245,29 +242,29 @@ namespace FuguiDemo
             float searchWidth = Mathf.Max(48f * scale, controlX - gap - searchX);
 
             Fugui.SetCursorScreenPos(new Vector2(searchX, controlY));
-            bool searchUpdated = layout.SearchBox("treeSearch", ref _searchText, "Search nodes, assets or states...", searchWidth / scale);
+            bool searchUpdated = Fugui.Layout.SearchBox("treeSearch", ref _searchText, "Search nodes, assets or states...", searchWidth / scale);
 
             Vector2 buttonPos = new Vector2(controlX, controlY);
 
-            if (drawHeaderIconButton(layout, "treeAdd", Icons.Plus_solid, new Rect(buttonPos, new Vector2(buttonSize, controlHeight)), FuButtonStyle.Highlight, "Add a node", FuColors.HighlightText))
+            if (drawHeaderIconButton("treeAdd", Icons.Plus_solid, new Rect(buttonPos, new Vector2(buttonSize, controlHeight)), FuButtonStyle.Highlight, "Add a node", FuColors.HighlightText))
             {
                 addItem();
             }
 
             buttonPos.x += buttonSize + gap;
-            if (drawHeaderIconButton(layout, "treeExpand", Icons.ArrowDown_solid, new Rect(buttonPos, new Vector2(buttonSize, controlHeight)), FuButtonStyle.Default, "Expand all"))
+            if (drawHeaderIconButton("treeExpand", Icons.ArrowDown_solid, new Rect(buttonPos, new Vector2(buttonSize, controlHeight)), FuButtonStyle.Default, "Expand all"))
             {
                 setAllOpen(true);
             }
 
             buttonPos.x += buttonSize + gap;
-            if (drawHeaderIconButton(layout, "treeCollapse", Icons.ArrowRight_solid, new Rect(buttonPos, new Vector2(buttonSize, controlHeight)), FuButtonStyle.Default, "Fold all"))
+            if (drawHeaderIconButton("treeCollapse", Icons.ArrowRight_solid, new Rect(buttonPos, new Vector2(buttonSize, controlHeight)), FuButtonStyle.Default, "Fold all"))
             {
                 setAllOpen(false);
             }
 
             buttonPos.x += buttonSize + gap;
-            if (drawHeaderIconButton(layout, "treeClear", Icons.Close, new Rect(buttonPos, new Vector2(buttonSize, controlHeight)), FuButtonStyle.Default, "Clear selection"))
+            if (drawHeaderIconButton("treeClear", Icons.Close, new Rect(buttonPos, new Vector2(buttonSize, controlHeight)), FuButtonStyle.Default, "Clear selection"))
             {
                 _tree.DeselectAll();
             }
@@ -284,18 +281,17 @@ namespace FuguiDemo
         /// <summary>
         /// Draws a compact icon-only button for the tree header.
         /// </summary>
-        /// <param name="layout">The layout.</param>
         /// <param name="id">The button id.</param>
         /// <param name="icon">The icon text.</param>
         /// <param name="rect">The button rect.</param>
         /// <param name="style">The button style.</param>
         /// <param name="tooltip">The tooltip.</param>
         /// <returns>Whether the button was clicked.</returns>
-        private bool drawHeaderIconButton(FuLayout layout, string id, string icon, Rect rect, FuButtonStyle style, string tooltip, FuColors textColorName = FuColors.Text)
+        private bool drawHeaderIconButton(string id, string icon, Rect rect, FuButtonStyle style, string tooltip, FuColors textColorName = FuColors.Text)
         {
             float scale = Fugui.CurrentContext.Scale;
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-            bool clicked = layout.InvisibleInteractionAt("##" + id, rect.position, rect.size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft);
+            bool clicked = Fugui.Layout.InvisibleInteractionAt("##" + id, rect.position, rect.size, out bool hovered, out bool active, FuButtonFlags.MouseButtonLeft);
 
             Vector4 bg = active ? style.ButtonActive : hovered ? style.ButtonHovered : style.Button;
             Vector4 border = Fugui.GetColor(FuColors.Border, hovered ? 0.72f : 0.42f);
@@ -314,7 +310,7 @@ namespace FuguiDemo
             Vector2 iconSize = Fugui.CalcTextSize(displayIcon);
             Vector2 iconPos = rect.position + (rect.size - iconSize) * 0.5f;
             drawList.AddText(iconPos, Fugui.GetColorU32(textColor), displayIcon);
-            layout.SetToolTip(id + "Tip", tooltip, hovered);
+            Fugui.Layout.SetToolTip(id + "Tip", tooltip, hovered);
             return clicked;
         }
 

@@ -314,17 +314,16 @@ namespace Fu
         /// <summary>
         /// Draw debug information about the external window
         /// </summary>
-        /// <param name="layout"> The layout to draw into </param>
-        public void DrawDebug(FuLayout layout)
+        public void DrawDebug()
         {
-            layout.Text($"Position: {_position.x}, {_position.y}");
-            layout.Text($"Size: {Width} x {Height}");
-            layout.Separator();
+            Fugui.Layout.Text($"Position: {_position.x}, {_position.y}");
+            Fugui.Layout.Text($"Size: {Width} x {Height}");
+            Fugui.Layout.Separator();
 
             // mouse position and state
             Vector2 mousePos = Window.Container.Context.IO.MousePos;
-            layout.Text($"Mouse Pos: {mousePos.x}, {mousePos.y}");
-            layout.Text($"Mouse Buttons: L[{(Window.Mouse.IsPressed(FuMouseButton.Left) ? "X" : " ")}] " +
+            Fugui.Layout.Text($"Mouse Pos: {mousePos.x}, {mousePos.y}");
+            Fugui.Layout.Text($"Mouse Buttons: L[{(Window.Mouse.IsPressed(FuMouseButton.Left) ? "X" : " ")}] " +
             $"M[{(Window.Mouse.IsPressed(FuMouseButton.Center) ? "X" : " ")}] R[{(Window.Mouse.IsPressed(FuMouseButton.Right) ? "X" : " ")}]");
         }
 

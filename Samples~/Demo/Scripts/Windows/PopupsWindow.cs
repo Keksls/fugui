@@ -69,96 +69,95 @@ public class PopupsWindow : FuWindowBehaviour
     /// Handles the UI event.
     /// </summary>
     /// <param name="window">The window value.</param>
-    /// <param name="layout">The layout value.</param>
-    public override void OnUI(FuWindow window, FuLayout layout)
+    public override void OnUI(FuWindow window)
     {
         using (FuPanel panel = new FuPanel("popupWindowPanel", FuStyle.Unpadded))
         {
-            layout.Collapsable("Modals", () =>
+            Fugui.Layout.Collapsable("Modals", () =>
             {
-                if (layout.Button("Theme Modal"))
+                if (Fugui.Layout.Button("Theme Modal"))
                 {
                     Fugui.ShowModal("Theme Manager", Fugui.DrawThemes, FuModalSize.Medium);
                 }
 
-                layout.SetNextElementToolTip("Info style tooltip", "Success style tooltip", "Warning style tooltip", "Danger style tooltip");
-                layout.SetNextElementToolTipStyles(FuTextStyle.Info, FuTextStyle.Success, FuTextStyle.Warning, FuTextStyle.Danger);
-                if (layout.Button("Info modal", FuButtonStyle.Info))
+                Fugui.Layout.SetNextElementToolTip("Info style tooltip", "Success style tooltip", "Warning style tooltip", "Danger style tooltip");
+                Fugui.Layout.SetNextElementToolTipStyles(FuTextStyle.Info, FuTextStyle.Success, FuTextStyle.Warning, FuTextStyle.Danger);
+                if (Fugui.Layout.Button("Info modal", FuButtonStyle.Info))
                 {
-                    Fugui.ShowInfo("This is an Information", (layout) =>
+                    Fugui.ShowInfo("This is an Information", () =>
                     {
-                        layout.Text("This is a nomal text");
-                        layout.Text("This is an info text", FuTextStyle.Info);
+                        Fugui.Layout.Text("This is a nomal text");
+                        Fugui.Layout.Text("This is an info text", FuTextStyle.Info);
                     }, FuModalSize.Medium);
                 }
 
-                if (layout.Button("Success modal", FuButtonStyle.Success))
+                if (Fugui.Layout.Button("Success modal", FuButtonStyle.Success))
                 {
-                    Fugui.ShowSuccess("This is a Success", (layout) =>
+                    Fugui.ShowSuccess("This is a Success", () =>
                     {
-                        layout.Text("This is a nomal text");
-                        layout.Text("This is a success text", FuTextStyle.Success);
+                        Fugui.Layout.Text("This is a nomal text");
+                        Fugui.Layout.Text("This is a success text", FuTextStyle.Success);
                     }, FuModalSize.Medium);
                 }
 
-                if (layout.Button("Warning modal", FuButtonStyle.Warning))
+                if (Fugui.Layout.Button("Warning modal", FuButtonStyle.Warning))
                 {
-                    Fugui.ShowWarning("This is a Warning", (layout) =>
+                    Fugui.ShowWarning("This is a Warning", () =>
                     {
-                        layout.Text("This is a nomal text");
-                        layout.Text("This is a warning text", FuTextStyle.Warning);
+                        Fugui.Layout.Text("This is a nomal text");
+                        Fugui.Layout.Text("This is a warning text", FuTextStyle.Warning);
                     }, FuModalSize.Medium);
                 }
 
-                if (layout.Button("Danger modal", FuButtonStyle.Danger))
+                if (Fugui.Layout.Button("Danger modal", FuButtonStyle.Danger))
                 {
-                    Fugui.ShowDanger("This is a Danger", (layout) =>
+                    Fugui.ShowDanger("This is a Danger", () =>
                     {
-                        layout.Text("This is a nomal text");
-                        layout.Text("This is a danger text", FuTextStyle.Danger);
+                        Fugui.Layout.Text("This is a nomal text");
+                        Fugui.Layout.Text("This is a danger text", FuTextStyle.Danger);
                     }, FuModalSize.Medium);
                 }
             });
 
-            layout.Collapsable("Notifications", () =>
+            Fugui.Layout.Collapsable("Notifications", () =>
             {
-                layout.SetNextElementToolTipWithLabel("Change this flag to set the Fugui notify system anchor");
-                layout.ComboboxEnum<FuOverlayAnchorLocation>("Notify Anchor", (anchor) =>
+                Fugui.Layout.SetNextElementToolTipWithLabel("Change this flag to set the Fugui notify system anchor");
+                Fugui.Layout.ComboboxEnum<FuOverlayAnchorLocation>("Notify Anchor", (anchor) =>
                 {
                     Fugui.Settings.NotificationAnchorPosition = (FuOverlayAnchorLocation)anchor;
                 }, () => Fugui.Settings.NotificationAnchorPosition);
-                layout.Separator();
+                Fugui.Layout.Separator();
 
                 foreach (StateType type in Enum.GetValues(typeof(StateType)))
                 {
-                    if (layout.Button("Notify " + type, FuButtonStyle.GetStyleForState(type)))
+                    if (Fugui.Layout.Button("Notify " + type, FuButtonStyle.GetStyleForState(type)))
                     {
                         Fugui.Notify(type.ToString(), "This is a test " + type + " small notification.", type);
                     }
                 }
-                layout.Separator();
+                Fugui.Layout.Separator();
 
                 foreach (StateType type in Enum.GetValues(typeof(StateType)))
                 {
-                    if (layout.Button("Notify long " + type, FuButtonStyle.GetStyleForState(type)))
+                    if (Fugui.Layout.Button("Notify long " + type, FuButtonStyle.GetStyleForState(type)))
                     {
                         Fugui.Notify(type.ToString(), "This is a test " + type + " notification. it's a quite long text for a notification but I have to test that the text wrapping don't mess with my notification panel height calculation.", type);
                     }
                 }
-                layout.Separator();
+                Fugui.Layout.Separator();
 
                 foreach (StateType type in Enum.GetValues(typeof(StateType)))
                 {
-                    if (layout.Button("Notify title " + type, FuButtonStyle.GetStyleForState(type)))
+                    if (Fugui.Layout.Button("Notify title " + type, FuButtonStyle.GetStyleForState(type)))
                     {
                         Fugui.Notify("this is a type " + type.ToString(), null, type);
                     }
                 }
-                layout.Separator();
+                Fugui.Layout.Separator();
 
                 foreach (StateType type in Enum.GetValues(typeof(StateType)))
                 {
-                    if (layout.Button("Notify message " + type, FuButtonStyle.GetStyleForState(type)))
+                    if (Fugui.Layout.Button("Notify message " + type, FuButtonStyle.GetStyleForState(type)))
                     {
                         Fugui.Notify(null, "this is a type " + type.ToString(), type);
                     }
@@ -166,23 +165,23 @@ public class PopupsWindow : FuWindowBehaviour
             });
 
             Fugui.PushContextMenuItems(someContextMenuItems);
-            layout.Collapsable("Context menu", () =>
+            Fugui.Layout.Collapsable("Context menu", () =>
             {
                 Fugui.PushContextMenuItem("you clic the text !", () =>
                 {
                     Debug.Log("text click !");
                 });
-                layout.Text("Right click me");
+                Fugui.Layout.Text("Right click me");
                 Fugui.PopContextMenuItems();
 
                 Fugui.PushContextMenuItems(someMoreContextMenuItems);
-                if (layout.Button("click me !"))
+                if (Fugui.Layout.Button("click me !"))
                 {
                     Fugui.TryOpenContextMenu();
                 }
 
                 Fugui.PushContextMenuItems(yetAnotherContextMenuItem);
-                layout.FramedText("I have extra item");
+                Fugui.Layout.FramedText("I have extra item");
                 Fugui.TryOpenContextMenuOnItemClick();
                 Fugui.PopContextMenuItems(2);
             });

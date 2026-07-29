@@ -103,9 +103,9 @@ namespace Fu
         /// </summary>
         public static FuDockingLayoutManager Layouts { get; private set; }
         /// <summary>
-        /// The Fugui Layout of the current context
+        /// The unique Fugui layout shared by every drawing surface in the active runtime session.
         /// </summary>
-        public static FuLayout ContextLayout => CurrentContext != null ? CurrentContext.contextLayout : null;
+        public static FuLayout Layout { get; private set; }
 
         /// <summary>
         /// FuGui Controller instance

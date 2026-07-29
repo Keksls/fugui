@@ -83,7 +83,7 @@ namespace Fu.Framework.Demo
         {
             base.OnWindowDefinitionCreated(windowDefinition);
             FuOverlay overlay = new FuOverlay("editorMinimap", new Vector2Int(128, 128),
-                (overlay, layout) =>
+                (overlay) =>
                 {
                     _nodalEditor.DrawMiniMap(new Vector2(128, 128));
                 });
@@ -94,10 +94,9 @@ namespace Fu.Framework.Demo
         /// Handles the UI event.
         /// </summary>
         /// <param name="window">The window value.</param>
-        /// <param name="layout">The layout value.</param>
-        public override void OnUI(FuWindow window, FuLayout layout)
+        public override void OnUI(FuWindow window)
         {
-            base.OnUI(window, layout);
+            base.OnUI(window);
             _nodalEditor.Draw(window);
         }
         #endregion

@@ -126,16 +126,15 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
     /// Draws the documentation UI.
     /// </summary>
     /// <param name="window">The Fugui window.</param>
-    /// <param name="layout">The active layout.</param>
-    public override void OnUI(FuWindow window, FuLayout layout)
+    public override void OnUI(FuWindow window)
     {
         ensureDocumentation();
 
         using (new FuPanel("fugui-documentation-root", FuStyle.Unpadded))
         {
-            drawHero(layout);
-            drawSearchAndTabs(layout);
-            drawDocumentationBody(layout);
+            drawHero();
+            drawSearchAndTabs();
+            drawDocumentationBody();
         }
     }
 
@@ -154,7 +153,6 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
 
     private void drawHeader(FuWindow window, Vector2 size)
     {
-        FuLayout layout = window.Layout;
         float scale = Fugui.CurrentContext.Scale;
         Vector2 pos = Fugui.GetCursorScreenPos();
         Vector2 padding = new Vector2(12f, 0f) * scale;
@@ -165,7 +163,7 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         drawList.AddRectFilled(pos, new Vector2(pos.x + 3f * scale, pos.y + size.y), Fugui.GetColorU32(accent), 0f);
 
         Fugui.PushFont(FontType.Bold);
-        layout.EnboxedText("Fugui Documentation", pos + padding, size - padding * 2f, Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
+        Fugui.Layout.EnboxedText("Fugui Documentation", pos + padding, size - padding * 2f, Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopFont();
 
         string count = _sections.Count + " topics";
@@ -173,86 +171,85 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         Rect badge = new Rect(new Vector2(pos.x + size.x - countSize.x - 10f * scale, pos.y + (size.y - countSize.y) * 0.5f), countSize);
         drawList.AddRectFilled(badge.min, badge.max, Fugui.GetColorU32(Fugui.GetColor(FuColors.Highlight, 0.16f)), badge.height * 0.5f, FuDrawFlags.RoundCornersAll);
         Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.HighlightText, 0.92f));
-        layout.EnboxedText(count, badge.position, badge.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
+        Fugui.Layout.EnboxedText(count, badge.position, badge.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopColor();
     }
 
     private void drawFooter(FuWindow window, Vector2 size)
     {
-        FuLayout layout = window.Layout;
         string text = string.IsNullOrWhiteSpace(_searchText)
             ? "Runtime guide, API map, integration checklist and troubleshooting"
             : _lastVisibleCount + " matching sections for \"" + _searchText + "\"";
 
         Fugui.PushFont(FontType.Italic);
-        layout.CenterNextItemH(text);
-        layout.CenterNextItemV(text, size.y);
-        layout.Text(text, FuTextStyle.Deactivated, FuTextWrapping.Clip);
+        Fugui.Layout.CenterNextItemH(text);
+        Fugui.Layout.CenterNextItemV(text, size.y);
+        Fugui.Layout.Text(text, FuTextStyle.Deactivated, FuTextWrapping.Clip);
         Fugui.PopFont();
     }
 
-    private void drawHero(FuLayout layout)
+    private void drawHero()
     {
-        layout.FeaturePanel(
+        Fugui.Layout.FeaturePanel(
             "fugui-docs-hero",
             "Build runtime tools with Fugui",
             "A complete in-scene guide to setup, windows, docking, widgets, styling, overlays, 3D panels, mobile input and production checks.",
             new string[] { "Immediate mode", "Dockable", "Unity runtime" },
             new FuColors[] { FuColors.Highlight, FuColors.BackgroundSuccess, FuColors.BackgroundInfo });
-        layout.Dummy(0f, 6f);
+        Fugui.Layout.Dummy(0f, 6f);
     }
 
-    private void drawSearchAndTabs(FuLayout layout)
+    private void drawSearchAndTabs()
     {
-        bool searchChanged = layout.SearchBox("fugui-docs-search", ref _searchText, "Search setup, windows, widgets, overlays, mobile...");
+        bool searchChanged = Fugui.Layout.SearchBox("fugui-docs-search", ref _searchText, "Search setup, windows, widgets, overlays, mobile...");
         if (searchChanged || _lastSearchText != _searchText)
         {
             _lastSearchText = _searchText;
             syncSelectionWithSearch();
         }
 
-        layout.Dummy(0f, 6f);
+        Fugui.Layout.Dummy(0f, 6f);
 
         if (isSearchActive())
         {
-            drawSearchModeBar(layout);
-            layout.Dummy(0f, 8f);
+            drawSearchModeBar();
+            Fugui.Layout.Dummy(0f, 8f);
             return;
         }
 
         int previous = _selectedGroupIndex;
-        if (layout.Tabs("fugui-docs-groups", Groups, ref _selectedGroupIndex, FuTabsFlags.Stretch | FuTabsFlags.EqualWidth | FuTabsFlags.Compact)
+        if (Fugui.Layout.Tabs("fugui-docs-groups", Groups, ref _selectedGroupIndex, FuTabsFlags.Stretch | FuTabsFlags.EqualWidth | FuTabsFlags.Compact)
             && previous != _selectedGroupIndex)
         {
             DocSection first = getGroupSections(Groups[_selectedGroupIndex]).FirstOrDefault();
             if (first != null)
             {
                 selectSection(first, true);
-                openOnlySection(layout, first);
+                openOnlySection(first);
             }
         }
 
-        layout.Dummy(0f, 8f);
+        Fugui.Layout.Dummy(0f, 8f);
     }
 
-    private void drawSearchModeBar(FuLayout layout)
+    private void drawSearchModeBar()
     {
         float scale = Fugui.CurrentContext.Scale;
-        Rect rect = layout.Surface("fugui-docs-search-mode", new FuElementSize(-1f, 30f), FuColors.Highlight, FuSurfaceFlags.Border, 0.34f, 0.24f, 0.72f, 5f);
+        Rect rect = Fugui.Layout.Surface("fugui-docs-search-mode", new FuElementSize(-1f, 30f), FuColors.Highlight, FuSurfaceFlags.Border, 0.34f, 0.24f, 0.72f, 5f);
         Vector2 afterSurfacePos = Fugui.GetCursorScreenPos();
         FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
         int count = getNavigationSections().Count();
 
         string label = count + " search results";
         Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, 0.90f));
-        layout.EnboxedText(label, rect.position + new Vector2(10f, 0f) * scale, new Vector2(rect.width - 96f * scale, rect.height), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
+        Fugui.Layout.EnboxedText(label, rect.position + new Vector2(10f, 0f) * scale, new Vector2(rect.width - 96f * scale, rect.height), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopColor();
 
         Rect clearRect = new Rect(new Vector2(rect.xMax - 78f * scale, rect.yMin + 4f * scale), new Vector2(68f * scale, rect.height - 8f * scale));
-        bool clicked = layout.InvisibleInteractionAt("##fugui-docs-clear-search", clearRect.position, clearRect.size, out bool hovered, out _);
+        bool clicked = Fugui.Layout.InvisibleInteractionAt("##fugui-docs-clear-search", clearRect.position, clearRect.size, out bool hovered, out _);
         Vector4 clearBg = Fugui.GetColor(hovered ? FuColors.ButtonHovered : FuColors.Button, hovered ? 0.72f : 0.42f);
         drawList.AddRectFilled(clearRect.min, clearRect.max, Fugui.GetColorU32(clearBg), clearRect.height * 0.5f, FuDrawFlags.RoundCornersAll);
-        layout.EnboxedText("Clear", clearRect.position, clearRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
+        Fugui.Layout.EnboxedText("Clear", clearRect.position, clearRect.size, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f), FuTextWrapping.Clip);
         if (hovered)
         {
             Fugui.SetMouseCursor(FuMouseCursor.Hand);
@@ -267,14 +264,14 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         Fugui.SetCursorScreenPos(afterSurfacePos);
     }
 
-    private void drawDocumentationBody(FuLayout layout)
+    private void drawDocumentationBody()
     {
         if (!isSearchActive())
         {
             ensureSelectedSectionForCurrentGroup();
         }
 
-        Vector2 available = layout.GetAvailable();
+        Vector2 available = Fugui.Layout.GetAvailable();
         float scale = Fugui.CurrentContext.Scale;
         bool wide = available.x > 760f * scale;
 
@@ -282,33 +279,33 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         {
             float navWidth = Mathf.Clamp(224f * scale, 190f * scale, Mathf.Min(300f * scale, available.x * 0.33f));
             Fugui.BeginChild("fugui-docs-navigation", new Vector2(navWidth, 0f), FuChildFlags.None, FuWindowStyleFlags.None);
-            drawSidebar(layout);
+            drawSidebar();
             Fugui.EndChild();
 
             Fugui.SameLine();
             Fugui.BeginChild("fugui-docs-content", Vector2.zero, FuChildFlags.None, FuWindowStyleFlags.None);
-            drawSections(layout);
+            drawSections();
             Fugui.EndChild();
         }
         else
         {
-            layout.Collapsable("Contents", () => drawSidebar(layout), FuButtonStyle.Collapsable, 0f, false);
-            layout.Dummy(0f, 6f);
-            drawSections(layout);
+            Fugui.Layout.Collapsable("Contents", () => drawSidebar(), FuButtonStyle.Collapsable, 0f, false);
+            Fugui.Layout.Dummy(0f, 6f);
+            drawSections();
         }
     }
 
-    private void drawSidebar(FuLayout layout)
+    private void drawSidebar()
     {
         List<DocSection> sections = getNavigationSections().ToList();
         _lastVisibleCount = sections.Count;
 
-        drawSidebarCard(layout, sections.Count);
-        layout.Dummy(0f, 6f);
+        drawSidebarCard(sections.Count);
+        Fugui.Layout.Dummy(0f, 6f);
 
         if (sections.Count == 0)
         {
-            layout.Text("No matching documentation section.", FuTextStyle.Deactivated, FuTextWrapping.Wrap);
+            Fugui.Layout.Text("No matching documentation section.", FuTextStyle.Deactivated, FuTextWrapping.Wrap);
             return;
         }
 
@@ -319,33 +316,33 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
             {
                 if (previousGroup != null)
                 {
-                    layout.Dummy(0f, 4f);
+                    Fugui.Layout.Dummy(0f, 4f);
                 }
-                drawNavGroupLabel(layout, section.Group);
+                drawNavGroupLabel(section.Group);
                 previousGroup = section.Group;
             }
 
-            if (layout.NavigationItem("doc-nav-" + section.Id, section.Title, section.Id == _selectedSectionId, section.Summary))
+            if (Fugui.Layout.NavigationItem("doc-nav-" + section.Id, section.Title, section.Id == _selectedSectionId, section.Summary))
             {
                 selectSection(section, true);
-                openOnlySection(layout, section);
+                openOnlySection(section);
             }
-            layout.Dummy(0f, 2f);
+            Fugui.Layout.Dummy(0f, 2f);
         }
 
-        layout.Dummy(0f, 8f);
-        layout.Text("Tip: use the Window Names tab in Tools > Fugui > Editor to keep IDs unique.", FuTextStyle.Deactivated, FuTextWrapping.Wrap);
-        layout.Dummy(0f, 4f);
+        Fugui.Layout.Dummy(0f, 8f);
+        Fugui.Layout.Text("Tip: use the Window Names tab in Tools > Fugui > Editor to keep IDs unique.", FuTextStyle.Deactivated, FuTextWrapping.Wrap);
+        Fugui.Layout.Dummy(0f, 4f);
     }
 
-    private void drawSections(FuLayout layout)
+    private void drawSections()
     {
         List<DocSection> sections = getContentSections().ToList();
         _lastVisibleCount = getNavigationSections().Count();
 
         if (sections.Count == 0)
         {
-            drawEmptyState(layout);
+            drawEmptyState();
             return;
         }
 
@@ -358,96 +355,96 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
                 _pendingScrollToSelected = false;
             }
 
-            layout.Collapsable(section.CollapseLabel(), () =>
+            Fugui.Layout.Collapsable(section.CollapseLabel(), () =>
             {
-                drawSectionBody(layout, section);
+                drawSectionBody(section);
             }, selected ? FuButtonStyle.Highlight : FuButtonStyle.Collapsable, 10f, selected);
 
-            layout.Dummy(0f, 8f);
+            Fugui.Layout.Dummy(0f, 8f);
         }
     }
 
-    private void drawSectionBody(FuLayout layout, DocSection section)
+    private void drawSectionBody(DocSection section)
     {
-        layout.Callout("doc-callout-" + section.Id, section.Summary, FuColors.Highlight);
+        Fugui.Layout.Callout("doc-callout-" + section.Id, section.Summary, FuColors.Highlight);
 
         if (!string.IsNullOrWhiteSpace(section.Body))
         {
-            layout.Text(section.Body, FuTextStyle.Default, FuTextWrapping.Wrap);
-            layout.Dummy(0f, 6f);
+            Fugui.Layout.Text(section.Body, FuTextStyle.Default, FuTextWrapping.Wrap);
+            Fugui.Layout.Dummy(0f, 6f);
         }
 
         foreach (string bullet in section.Bullets)
         {
-            drawBullet(layout, bullet);
+            drawBullet(bullet);
         }
 
         if (!string.IsNullOrWhiteSpace(section.Code))
         {
-            layout.Dummy(0f, 6f);
-            drawCodeBlock(layout, section.CodeTitle, section.Code);
+            Fugui.Layout.Dummy(0f, 6f);
+            drawCodeBlock(section.CodeTitle, section.Code);
         }
 
         if (section.Tags.Length > 0)
         {
-            layout.Dummy(0f, 6f);
-            layout.PillRow("doc-tags-" + section.Id, section.Tags);
+            Fugui.Layout.Dummy(0f, 6f);
+            Fugui.Layout.PillRow("doc-tags-" + section.Id, section.Tags);
         }
     }
 
-    private void drawSidebarCard(FuLayout layout, int visibleSections)
+    private void drawSidebarCard(int visibleSections)
     {
         float scale = Fugui.CurrentContext.Scale;
-        Rect rect = layout.Surface("fugui-docs-sidebar-card", new FuElementSize(-1f, 54f), FuColors.Highlight, FuSurfaceFlags.Border, 0.40f, 0.20f, 0.72f, 5f);
+        Rect rect = Fugui.Layout.Surface("fugui-docs-sidebar-card", new FuElementSize(-1f, 54f), FuColors.Highlight, FuSurfaceFlags.Border, 0.40f, 0.20f, 0.72f, 5f);
 
         Fugui.PushFont(14, FontType.Bold);
-        layout.EnboxedText(isSearchActive() ? "Search Results" : Groups[_selectedGroupIndex], rect.position + new Vector2(10f, 5f) * scale, new Vector2(rect.width - 20f * scale, 19f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
+        Fugui.Layout.EnboxedText(isSearchActive() ? "Search Results" : Groups[_selectedGroupIndex], rect.position + new Vector2(10f, 5f) * scale, new Vector2(rect.width - 20f * scale, 19f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopFont();
 
         string subtitle = isSearchActive()
             ? visibleSections + " sections match"
             : getGroupSections(Groups[_selectedGroupIndex]).Count() + " sections in this area";
         Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, 0.76f));
-        layout.EnboxedText(subtitle, rect.position + new Vector2(10f, 27f) * scale, new Vector2(rect.width - 20f * scale, 18f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
+        Fugui.Layout.EnboxedText(subtitle, rect.position + new Vector2(10f, 27f) * scale, new Vector2(rect.width - 20f * scale, 18f * scale), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f), FuTextWrapping.Clip);
         Fugui.PopColor();
     }
 
-    private void drawNavGroupLabel(FuLayout layout, string group)
+    private void drawNavGroupLabel(string group)
     {
         Fugui.PushFont(12, FontType.Bold);
         Fugui.Push(FuColors.Text, Fugui.GetColor(FuColors.TextDisabled, 0.78f));
-        layout.Text(group.ToUpperInvariant(), FuTextWrapping.Clip);
+        Fugui.Layout.Text(group.ToUpperInvariant(), FuTextWrapping.Clip);
         Fugui.PopColor();
         Fugui.PopFont();
     }
 
-    private void drawBullet(FuLayout layout, string text)
+    private void drawBullet(string text)
     {
         float scale = Fugui.CurrentContext.Scale;
-        float width = Mathf.Max(1f, layout.GetAvailableWidth());
+        float width = Mathf.Max(1f, Fugui.Layout.GetAvailableWidth());
         Vector2 pos = Fugui.GetCursorScreenPos();
         Vector2 textSize = Fugui.CalcTextSize(text, FuTextWrapping.Wrap, new Vector2(width - 24f * scale, 300f * scale));
         float height = Mathf.Max(Fugui.GetTextLineHeight(), textSize.y) + 4f * scale;
         FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
         Vector2 dot = pos + new Vector2(7f, 9f) * scale;
         drawList.AddCircleFilled(dot, 3f * scale, Fugui.GetColorU32(Fugui.GetColor(FuColors.Highlight, 0.84f)), 16);
-        layout.EnboxedText(text, pos + new Vector2(20f, 0f) * scale, new Vector2(width - 20f * scale, height), Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Wrap);
+        Fugui.Layout.EnboxedText(text, pos + new Vector2(20f, 0f) * scale, new Vector2(width - 20f * scale, height), Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Wrap);
         Fugui.Dummy(new Vector2(width, height));
     }
 
-    private void drawCodeBlock(FuLayout layout, string title, string code)
+    private void drawCodeBlock(string title, string code)
     {
         if (!string.IsNullOrWhiteSpace(title))
         {
             Fugui.PushFont(12, FontType.Bold);
-            layout.Text(title, FuTextStyle.Deactivated, FuTextWrapping.Clip);
+            Fugui.Layout.Text(title, FuTextStyle.Deactivated, FuTextWrapping.Clip);
             Fugui.PopFont();
-            layout.Dummy(0f, 3f);
+            Fugui.Layout.Dummy(0f, 3f);
         }
 
         string[] lines = code.Replace("\r\n", "\n").Split('\n');
         float scale = Fugui.CurrentContext.Scale;
-        float width = Mathf.Max(1f, layout.GetAvailableWidth());
+        float width = Mathf.Max(1f, Fugui.Layout.GetAvailableWidth());
         Vector2 padding = new Vector2(10f, 8f) * scale;
         Fugui.PushFont(13, FontType.Regular);
         float lineHeight = Fugui.GetTextLineHeightWithSpacing();
@@ -474,9 +471,9 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         Fugui.Dummy(new Vector2(width, height + 4f * scale));
     }
 
-    private void drawEmptyState(FuLayout layout)
+    private void drawEmptyState()
     {
-        layout.Callout("doc-empty-state", "No section matches the current search. Try setup, window, layout, theme, 3D, mobile, widget or modal.", FuColors.BackgroundWarning);
+        Fugui.Layout.Callout("doc-empty-state", "No section matches the current search. Try setup, window, layout, theme, 3D, mobile, widget or modal.", FuColors.BackgroundWarning);
     }
 
     private bool isSearchActive()
@@ -548,9 +545,9 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
         _pendingScrollToSelected = requestScroll;
     }
 
-    private void openOnlySection(FuLayout layout, DocSection openedSection)
+    private void openOnlySection(DocSection openedSection)
     {
-        if (layout == null || openedSection == null)
+        if (openedSection == null)
         {
             return;
         }
@@ -562,10 +559,10 @@ public class FuguiDocumentationWindow : FuWindowBehaviour
                 continue;
             }
 
-            layout.CloseCollapsable(section.CollapseLabel());
+            Fugui.Layout.CloseCollapsable(section.CollapseLabel());
         }
 
-        layout.OpenCollapsable(openedSection.CollapseLabel());
+        Fugui.Layout.OpenCollapsable(openedSection.CollapseLabel());
     }
 
     private IEnumerable<DocSection> getGroupSections(string group)
@@ -689,7 +686,7 @@ public class InventoryWindow : FuWindowBehaviour
     private bool _enabled = true;
     private float _weight = 12.5f;
 
-    public override void OnUI(FuWindow window, FuLayout layout)
+    public override void OnUI(FuWindow window)
     {
         using (new FuPanel(""inventory-panel"", FuStyle.Unpadded))
         using (var grid = new FuGrid(""inventory-grid""))
@@ -749,7 +746,7 @@ public class MyWindowNames : FuSystemWindowsNames
                 "FuguiAwake creates a FuWindowDefinition with window name, explicit layer, OnUI callback, optional position, size and flags.",
                 "OnWindowDefinitionCreated is called before instances are created.",
                 "WindowDefinition_OnUIWindowCreated stores the live FuWindow and calls OnWindowCreated.",
-                "Force Create Alone On Awake immediately creates the window outside the current docking layout.",
+                "Force Create Alone On Awake immediately creates the window outside the current docking Fugui.Layout.",
                 "Use window.ForceDraw when data changes while the window is idling."
             },
             "Explicit definition and creation",
@@ -862,7 +859,7 @@ Fugui.CreateWindow(MyWindowNames.Tools);",
             new string[]
             {
                 "Window assignments are IDs, not titles.",
-                "Set Fugui.Layouts.SetLayout(\"LayoutName\") to apply a layout.",
+                "Set Fugui.Layouts.SetLayout(\"LayoutName\") to apply a Fugui.Layout.",
                 "The main menu can expose layouts automatically when FuLayoutSetter enables it.",
                 "If a window does not appear, check the ID is registered and the layout references it.",
                 "Use the editor to avoid malformed JSON and duplicate node IDs."
@@ -878,15 +875,15 @@ Fugui.CreateWindow(MyWindowNames.Tools);",
             "layout-basics",
             "UI",
             "FuLayout Basics",
-            "FuLayout is the immediate-mode drawing surface passed into every window UI callback.",
+            "Fugui.Layout is the unique immediate-mode drawing surface shared by every window UI callback.",
             "Use it for freeform UI: text, buttons, tabs, search boxes, popups, separators, spacing, tooltips, alignment helpers and low-level composition. It tracks the current item state so custom widgets can share hover, active and click behaviour.",
             new string[]
             {
-                "Use layout.Text, SmartText, ClickableText, FramedText and TextURL for text.",
-                "Use layout.Button, ButtonsGroup, Toggle, CheckBox, RadioButton, Combobox, SearchBox and Tabs for controls.",
-                "Use layout.Surface, FeaturePanel, Callout, NavigationItem, Pill and PillRow for reusable framed content and badges.",
-                "Use layout.GetAvailableWidth and GetAvailableHeight for responsive sizing.",
-                "Use layout.SetNextElementToolTipWithLabel before a control to document intent.",
+                "Use Fugui.Layout.Text, SmartText, ClickableText, FramedText and TextURL for text.",
+                "Use Fugui.Layout.Button, ButtonsGroup, Toggle, CheckBox, RadioButton, Combobox, SearchBox and Tabs for controls.",
+                "Use Fugui.Layout.Surface, FeaturePanel, Callout, NavigationItem, Pill and PillRow for reusable framed content and badges.",
+                "Use Fugui.Layout.GetAvailableWidth and GetAvailableHeight for responsive sizing.",
+                "Use Fugui.Layout.SetNextElementToolTipWithLabel before a control to document intent.",
                 "Direct ImGui calls can be mixed when custom drawing is required."
             },
             tags: new string[] { "FuLayout", "widgets", "immediate mode" }));
@@ -906,14 +903,14 @@ Fugui.CreateWindow(MyWindowNames.Tools);",
                 "PillRow wraps compact badges across lines when space is tight."
             },
             "Reusable layout chrome",
-            @"layout.FeaturePanel(
+            @"Fugui.Layout.FeaturePanel(
     ""tool-summary"",
     ""Build runtime tools with Fugui"",
     ""Dockable runtime windows, inspectors and overlays for Unity."",
     new string[] { ""Immediate mode"", ""Dockable"", ""Unity runtime"" });
 
-layout.Callout(""api-note"", ""Surface helpers return their Rect for custom composition."");
-layout.PillRow(""tags"", new string[] { ""runtime UI"", ""Dear ImGui"", ""Unity 6"" });",
+Fugui.Layout.Callout(""api-note"", ""Surface helpers return their Rect for custom composition."");
+Fugui.Layout.PillRow(""tags"", new string[] { ""runtime UI"", ""Dear ImGui"", ""Unity 6"" });",
             new string[] { "surface", "callout", "pill", "badge" }));
 
         _sections.Add(new DocSection(
@@ -975,9 +972,9 @@ layout.PillRow(""tags"", new string[] { ""runtime UI"", ""Dear ImGui"", ""Unity 
                 "Media: Texture2D, RenderTexture images and video player."
             },
             "Search and table pattern",
-            @"layout.SearchBox(""items-search"", filter, ""Search items..."");
+            @"Fugui.Layout.SearchBox(""items-search"", filter, ""Search items..."");
 
-layout.TableView(
+Fugui.Layout.TableView(
     ""items-table"",
     items,
     columns,
@@ -1020,7 +1017,7 @@ layout.TableView(
             "Theme-aware custom color",
             @"Vector4 accent = Fugui.GetColor(FuColors.Highlight, 0.8f);
 Fugui.Push(FuColors.Text, accent);
-layout.Text(""Theme-aware text"");
+Fugui.Layout.Text(""Theme-aware text"");
 Fugui.PopColor();",
             new string[] { "themes", "fonts", "icons" }));
 
@@ -1054,7 +1051,7 @@ Fugui.PopColor();",
                 "FuSettings controls notification anchor, width, icons and duration."
             },
             "Modal and notification",
-            @"if (layout.Button(""Delete"", FuButtonStyle.Danger))
+            @"if (Fugui.Layout.Button(""Delete"", FuButtonStyle.Danger))
 {
     Fugui.ShowDanger(
         ""Remove item"",
@@ -1091,7 +1088,7 @@ Fugui.Notify(""Saved"", ""Layout saved successfully."", StateType.Success);",
     .Build();
 
 Fugui.PushContextMenuItems(menu);
-layout.Text(""Right click me"");
+Fugui.Layout.Text(""Right click me"");
 Fugui.PopContextMenuItems();",
             new string[] { "right click", "builder", "submenu" }));
 
@@ -1114,7 +1111,7 @@ Fugui.PopContextMenuItems();",
     FuOverlay overlay = new FuOverlay(
         ""fps-overlay"",
         new Vector2Int(102, 52),
-        (overlay, layout) => DrawFps(layout),
+        (overlay) => DrawFps(),
         FuOverlayFlags.Default,
         FuOverlayDragPosition.Right);
 
@@ -1167,7 +1164,7 @@ _graph.Registry.RegisterType(
 
 _graph.Registry.RegisterNode(""Variables/Float"", () => new FloatNode(Color.cyan));
 
-public override void OnUI(FuWindow window, FuLayout layout)
+public override void OnUI(FuWindow window)
 {
     _editor.Draw(window);
 }",

@@ -130,8 +130,7 @@ namespace Fu.Samples.MobileDemo
         /// Draws the selected app screen inside a scrollable Fugui panel.
         /// </summary>
         /// <param name="window">The active Fugui window.</param>
-        /// <param name="layout">The window layout.</param>
-        public override void OnUI(FuWindow window, FuLayout layout)
+        public override void OnUI(FuWindow window)
         {
             UpdateLiveValues(window);
 
@@ -140,17 +139,17 @@ namespace Fu.Samples.MobileDemo
                 switch (_selectedTab)
                 {
                     case 1:
-                        DrawRooms(layout);
+                        DrawRooms();
                         break;
                     case 2:
-                        DrawActivity(layout);
+                        DrawActivity();
                         break;
                     default:
-                        DrawHome(layout);
+                        DrawHome();
                         break;
                 }
 
-                layout.Dummy(0f, 14f);
+                Fugui.Layout.Dummy(0f, 14f);
             }
         }
 
@@ -176,10 +175,9 @@ namespace Fu.Samples.MobileDemo
         /// <param name="size">Header size.</param>
         private void DrawHeader(FuWindow window, Vector2 size)
         {
-            FuLayout layout = window.Layout;
-            layout.Text("Fugui Home", FuTextStyle.Highlight, FuTextWrapping.Clip);
-            layout.Text((_securityArmed ? "Armed" : "Disarmed") + " - Loft Studio - " + GetOnlineDeviceCount() + " online", FuTextStyle.Deactivated, FuTextWrapping.Clip);
-            layout.Text((_cloudConnected ? "Cloud sync" : "Local only") + " - " + _energyToday.ToString("0.0") + " kWh today", FuTextStyle.Info, FuTextWrapping.Clip);
+            Fugui.Layout.Text("Fugui Home", FuTextStyle.Highlight, FuTextWrapping.Clip);
+            Fugui.Layout.Text((_securityArmed ? "Armed" : "Disarmed") + " - Loft Studio - " + GetOnlineDeviceCount() + " online", FuTextStyle.Deactivated, FuTextWrapping.Clip);
+            Fugui.Layout.Text((_cloudConnected ? "Cloud sync" : "Local only") + " - " + _energyToday.ToString("0.0") + " kWh today", FuTextStyle.Info, FuTextWrapping.Clip);
         }
 
         /// <summary>
@@ -189,8 +187,7 @@ namespace Fu.Samples.MobileDemo
         /// <param name="size">Footer size.</param>
         private void DrawFooter(FuWindow window, Vector2 size)
         {
-            FuLayout layout = window.Layout;
-            if (layout.Tabs("mobile-demo-bottom-navigation", _footerTabs, ref _selectedTab, FuTabsFlags.Stretch | FuTabsFlags.EqualWidth))
+            if (Fugui.Layout.Tabs("mobile-demo-bottom-navigation", _footerTabs, ref _selectedTab, FuTabsFlags.Stretch | FuTabsFlags.EqualWidth))
             {
                 window.ForceDraw();
             }
@@ -199,59 +196,56 @@ namespace Fu.Samples.MobileDemo
         /// <summary>
         /// Draws the home dashboard.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
-        private void DrawHome(FuLayout layout)
+        private void DrawHome()
         {
-            DrawScreenTitle(layout, "Tonight", "Everything important is one tap away.");
-            DrawStatusOverview(layout);
-            DrawScenes(layout);
-            DrawFavorites(layout);
-            DrawEnergy(layout);
+            DrawScreenTitle("Tonight", "Everything important is one tap away.");
+            DrawStatusOverview();
+            DrawScenes();
+            DrawFavorites();
+            DrawEnergy();
         }
 
         /// <summary>
         /// Draws the room and device control screen.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
-        private void DrawRooms(FuLayout layout)
+        private void DrawRooms()
         {
-            DrawScreenTitle(layout, "Rooms", "Search, filter and control the home.");
-            layout.SearchBox("home-device-search", ref _searchText, "Search devices", 0f);
-            layout.Dummy(0f, 10f);
-            layout.Tabs("home-room-filter", _roomTabs, ref _selectedRoom, FuTabsFlags.Stretch | FuTabsFlags.EqualWidth | FuTabsFlags.Compact);
-            layout.Dummy(0f, 12f);
+            DrawScreenTitle("Rooms", "Search, filter and control the home.");
+            Fugui.Layout.SearchBox("home-device-search", ref _searchText, "Search devices", 0f);
+            Fugui.Layout.Dummy(0f, 10f);
+            Fugui.Layout.Tabs("home-room-filter", _roomTabs, ref _selectedRoom, FuTabsFlags.Stretch | FuTabsFlags.EqualWidth | FuTabsFlags.Compact);
+            Fugui.Layout.Dummy(0f, 12f);
 
-            DrawSectionTitle(layout, "Devices");
-            DrawLightDevice(layout, "Living", "Pendant lights", ref _livingLightsOn, ref _livingBrightness);
-            DrawClimateDevice(layout, "Living", "Thermostat", ref _climateEco, ref _targetTemperature);
-            DrawMediaDevice(layout, "Living", "Speaker", ref _mediaPlaying, ref _speakerVolume);
-            DrawLightDevice(layout, "Kitchen", "Counter lights", ref _kitchenLightsOn, ref _kitchenBrightness);
-            DrawSensorDevice(layout, "Kitchen", "Air sensor", _airQuality);
-            DrawLightDevice(layout, "Studio", "Desk lights", ref _studioLightsOn, ref _studioBrightness);
-            DrawSecurityDevice(layout, "Studio", "Security", ref _presenceEnabled, ref _securityArmed);
+            DrawSectionTitle("Devices");
+            DrawLightDevice("Living", "Pendant lights", ref _livingLightsOn, ref _livingBrightness);
+            DrawClimateDevice("Living", "Thermostat", ref _climateEco, ref _targetTemperature);
+            DrawMediaDevice("Living", "Speaker", ref _mediaPlaying, ref _speakerVolume);
+            DrawLightDevice("Kitchen", "Counter lights", ref _kitchenLightsOn, ref _kitchenBrightness);
+            DrawSensorDevice("Kitchen", "Air sensor", _airQuality);
+            DrawLightDevice("Studio", "Desk lights", ref _studioLightsOn, ref _studioBrightness);
+            DrawSecurityDevice("Studio", "Security", ref _presenceEnabled, ref _securityArmed);
         }
 
         /// <summary>
         /// Draws the activity and automation screen.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
-        private void DrawActivity(FuLayout layout)
+        private void DrawActivity()
         {
-            DrawScreenTitle(layout, "Activity", "Recent events and mobile Fugui flows.");
+            DrawScreenTitle("Activity", "Recent events and mobile Fugui flows.");
 
-            DrawSectionTitle(layout, "Automations");
-            layout.Toggle("Live updates", ref _liveData, "Paused", "Live", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
-            layout.Toggle("Quiet mode", ref _quietNotifications, "Normal", "Quiet", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
-            layout.ProgressBar("activity-sync", _syncProgress, new FuElementSize(-1f, 22f), ProgressBarTextPosition.Right, Mathf.RoundToInt(_syncProgress * 100f) + "% sync");
-            layout.Dummy(0f, 12f);
+            DrawSectionTitle("Automations");
+            Fugui.Layout.Toggle("Live updates", ref _liveData, "Paused", "Live", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
+            Fugui.Layout.Toggle("Quiet mode", ref _quietNotifications, "Normal", "Quiet", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
+            Fugui.Layout.ProgressBar("activity-sync", _syncProgress, new FuElementSize(-1f, 22f), ProgressBarTextPosition.Right, Mathf.RoundToInt(_syncProgress * 100f) + "% sync");
+            Fugui.Layout.Dummy(0f, 12f);
 
-            DrawSectionTitle(layout, "Actions");
-            if (layout.Button("Run away mode", new FuElementSize(-1f, 46f), FuButtonStyle.Warning))
+            DrawSectionTitle("Actions");
+            if (Fugui.Layout.Button("Run away mode", new FuElementSize(-1f, 46f), FuButtonStyle.Warning))
             {
                 ApplyAwayScene();
             }
 
-            if (layout.Button("Show summary", new FuElementSize(-1f, 46f), FuButtonStyle.Info))
+            if (Fugui.Layout.Button("Show summary", new FuElementSize(-1f, 46f), FuButtonStyle.Info))
             {
                 Fugui.ShowInfo(
                     "Fugui Home",
@@ -260,82 +254,77 @@ namespace Fu.Samples.MobileDemo
                     new FuModalButton("Close"));
             }
 
-            layout.Dummy(0f, 12f);
-            DrawSectionTitle(layout, "Timeline");
+            Fugui.Layout.Dummy(0f, 12f);
+            DrawSectionTitle("Timeline");
             for (int i = 0; i < _activityFeed.Length; i++)
             {
-                DrawTimelineRow(layout, _activityFeed[i]);
+                DrawTimelineRow(_activityFeed[i]);
             }
 
-            DrawSectionTitle(layout, "Runtime");
-            DrawInfoRow(layout, "Fugui scale", Fugui.Scale.ToString("0.00"), FuTextStyle.Info);
-            DrawInfoRow(layout, "Window", _desktopPreviewSize.x + "x" + _desktopPreviewSize.y, FuTextStyle.Default);
-            DrawInfoRow(layout, "Safe area", GetSafeAreaText(), FuTextStyle.Success);
+            DrawSectionTitle("Runtime");
+            DrawInfoRow("Fugui scale", Fugui.Scale.ToString("0.00"), FuTextStyle.Info);
+            DrawInfoRow("Window", _desktopPreviewSize.x + "x" + _desktopPreviewSize.y, FuTextStyle.Default);
+            DrawInfoRow("Safe area", GetSafeAreaText(), FuTextStyle.Success);
         }
 
         /// <summary>
         /// Draws a screen heading.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="title">The screen title.</param>
         /// <param name="subtitle">The screen subtitle.</param>
-        private void DrawScreenTitle(FuLayout layout, string title, string subtitle)
+        private void DrawScreenTitle(string title, string subtitle)
         {
-            layout.Text(title, FuTextStyle.Highlight, FuTextWrapping.Clip);
-            layout.Text(subtitle, FuTextStyle.Deactivated, FuTextWrapping.Wrap);
-            layout.Dummy(0f, 12f);
+            Fugui.Layout.Text(title, FuTextStyle.Highlight, FuTextWrapping.Clip);
+            Fugui.Layout.Text(subtitle, FuTextStyle.Deactivated, FuTextWrapping.Wrap);
+            Fugui.Layout.Dummy(0f, 12f);
         }
 
         /// <summary>
         /// Draws a compact section title.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="title">Section title.</param>
-        private void DrawSectionTitle(FuLayout layout, string title)
+        private void DrawSectionTitle(string title)
         {
-            layout.Text(title, FuTextStyle.Highlight, FuTextWrapping.Clip);
-            layout.Separator();
-            layout.Dummy(0f, 8f);
+            Fugui.Layout.Text(title, FuTextStyle.Highlight, FuTextWrapping.Clip);
+            Fugui.Layout.Separator();
+            Fugui.Layout.Dummy(0f, 8f);
         }
 
         /// <summary>
         /// Draws the main status overview.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
-        private void DrawStatusOverview(FuLayout layout)
+        private void DrawStatusOverview()
         {
-            DrawSectionTitle(layout, "Overview");
-            DrawMetricRow(layout, "Security", _securityArmed ? "Armed" : "Disarmed", _securityArmed ? FuTextStyle.Success : FuTextStyle.Warning);
-            DrawMetricRow(layout, "Climate", _targetTemperature.ToString("0.0") + " C", FuTextStyle.Info);
-            DrawMetricRow(layout, "Energy", _energyToday.ToString("0.0") + " kWh", _energyToday < 7f ? FuTextStyle.Success : FuTextStyle.Warning);
-            layout.ProgressBar("home-health", _homeHealth, new FuElementSize(-1f, 24f), ProgressBarTextPosition.Right, Mathf.RoundToInt(_homeHealth * 100f) + "% ready");
-            layout.Dummy(0f, 12f);
+            DrawSectionTitle("Overview");
+            DrawMetricRow("Security", _securityArmed ? "Armed" : "Disarmed", _securityArmed ? FuTextStyle.Success : FuTextStyle.Warning);
+            DrawMetricRow("Climate", _targetTemperature.ToString("0.0") + " C", FuTextStyle.Info);
+            DrawMetricRow("Energy", _energyToday.ToString("0.0") + " kWh", _energyToday < 7f ? FuTextStyle.Success : FuTextStyle.Warning);
+            Fugui.Layout.ProgressBar("home-health", _homeHealth, new FuElementSize(-1f, 24f), ProgressBarTextPosition.Right, Mathf.RoundToInt(_homeHealth * 100f) + "% ready");
+            Fugui.Layout.Dummy(0f, 12f);
         }
 
         /// <summary>
         /// Draws scene actions.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
-        private void DrawScenes(FuLayout layout)
+        private void DrawScenes()
         {
-            DrawSectionTitle(layout, "Scenes");
-            DrawSceneButton(layout, "Morning comfort", FuButtonStyle.Highlight, ApplyMorningScene);
-            DrawSceneButton(layout, "Focus studio", FuButtonStyle.Info, ApplyFocusScene);
-            DrawSceneButton(layout, "Away mode", FuButtonStyle.Warning, ApplyAwayScene);
-            DrawSceneButton(layout, "Night mode", FuButtonStyle.Success, ApplyNightScene);
-            layout.Dummy(0f, 6f);
+            DrawSectionTitle("Scenes");
+            DrawSceneButton("Morning comfort", FuButtonStyle.Highlight, ApplyMorningScene);
+            DrawSceneButton("Focus studio", FuButtonStyle.Info, ApplyFocusScene);
+            DrawSceneButton("Away mode", FuButtonStyle.Warning, ApplyAwayScene);
+            DrawSceneButton("Night mode", FuButtonStyle.Success, ApplyNightScene);
+            Fugui.Layout.Dummy(0f, 6f);
         }
 
         /// <summary>
         /// Draws one scene button.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="label">Button label.</param>
         /// <param name="style">Button style.</param>
         /// <param name="action">Action to run.</param>
-        private void DrawSceneButton(FuLayout layout, string label, FuButtonStyle style, System.Action action)
+        private void DrawSceneButton(string label, FuButtonStyle style, System.Action action)
         {
-            if (layout.Button(label, new FuElementSize(-1f, 46f), style))
+            if (Fugui.Layout.Button(label, new FuElementSize(-1f, 46f), style))
             {
                 action?.Invoke();
             }
@@ -344,212 +333,199 @@ namespace Fu.Samples.MobileDemo
         /// <summary>
         /// Draws favorite controls on the home dashboard.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
-        private void DrawFavorites(FuLayout layout)
+        private void DrawFavorites()
         {
-            DrawSectionTitle(layout, "Favorites");
-            DrawCompactLightControl(layout, "Living lights", ref _livingLightsOn, ref _livingBrightness);
-            DrawCompactLightControl(layout, "Studio desk", ref _studioLightsOn, ref _studioBrightness);
-            DrawCompactMediaControl(layout);
-            layout.Dummy(0f, 8f);
+            DrawSectionTitle("Favorites");
+            DrawCompactLightControl("Living lights", ref _livingLightsOn, ref _livingBrightness);
+            DrawCompactLightControl("Studio desk", ref _studioLightsOn, ref _studioBrightness);
+            DrawCompactMediaControl();
+            Fugui.Layout.Dummy(0f, 8f);
         }
 
         /// <summary>
         /// Draws the energy chart.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
-        private void DrawEnergy(FuLayout layout)
+        private void DrawEnergy()
         {
-            DrawSectionTitle(layout, "Energy");
-            layout.Chart("home-energy-chart", _energyValues, FuChartSeriesType.Area);
-            layout.ProgressBar("home-energy-target", Mathf.Clamp01(1f - _energyToday / 12f), new FuElementSize(-1f, 22f), ProgressBarTextPosition.Right, "target");
+            DrawSectionTitle("Energy");
+            Fugui.Layout.Chart("home-energy-chart", _energyValues, FuChartSeriesType.Area);
+            Fugui.Layout.ProgressBar("home-energy-target", Mathf.Clamp01(1f - _energyToday / 12f), new FuElementSize(-1f, 22f), ProgressBarTextPosition.Right, "target");
         }
 
         /// <summary>
         /// Draws a compact metric row.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="label">Metric label.</param>
         /// <param name="value">Metric value.</param>
         /// <param name="style">Value style.</param>
-        private void DrawMetricRow(FuLayout layout, string label, string value, FuTextStyle style)
+        private void DrawMetricRow(string label, string value, FuTextStyle style)
         {
-            layout.FramedText(label + " - " + value, new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
-            layout.Text(value, style, FuTextWrapping.Clip);
-            layout.Dummy(0f, 6f);
+            Fugui.Layout.FramedText(label + " - " + value, new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
+            Fugui.Layout.Text(value, style, FuTextWrapping.Clip);
+            Fugui.Layout.Dummy(0f, 6f);
         }
 
         /// <summary>
         /// Draws a compact light control.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="label">Control label.</param>
         /// <param name="enabled">Power state.</param>
         /// <param name="level">Brightness level.</param>
-        private void DrawCompactLightControl(FuLayout layout, string label, ref bool enabled, ref float level)
+        private void DrawCompactLightControl(string label, ref bool enabled, ref float level)
         {
-            layout.FramedText(label + " - " + (enabled ? Mathf.RoundToInt(level * 100f) + "%" : "Off"), new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
-            layout.Toggle(label + " power", ref enabled, "Off", "On", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
-            layout.Slider(label + " level", ref level, 0f, 1f, new FuElementSize(-1f, 10f), 0.01f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.0f");
-            layout.Dummy(0f, 10f);
+            Fugui.Layout.FramedText(label + " - " + (enabled ? Mathf.RoundToInt(level * 100f) + "%" : "Off"), new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
+            Fugui.Layout.Toggle(label + " power", ref enabled, "Off", "On", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
+            Fugui.Layout.Slider(label + " level", ref level, 0f, 1f, new FuElementSize(-1f, 10f), 0.01f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.0f");
+            Fugui.Layout.Dummy(0f, 10f);
         }
 
         /// <summary>
         /// Draws the compact media control.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
-        private void DrawCompactMediaControl(FuLayout layout)
+        private void DrawCompactMediaControl()
         {
-            layout.FramedText("Speaker - " + (_mediaPlaying ? "Playing" : "Paused"), new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
-            layout.Toggle("Speaker playback", ref _mediaPlaying, "Paused", "Playing", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
-            layout.Slider("Speaker volume", ref _speakerVolume, 0f, 1f, new FuElementSize(-1f, 10f), 0.01f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.0f");
-            layout.Dummy(0f, 10f);
+            Fugui.Layout.FramedText("Speaker - " + (_mediaPlaying ? "Playing" : "Paused"), new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
+            Fugui.Layout.Toggle("Speaker playback", ref _mediaPlaying, "Paused", "Playing", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
+            Fugui.Layout.Slider("Speaker volume", ref _speakerVolume, 0f, 1f, new FuElementSize(-1f, 10f), 0.01f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.0f");
+            Fugui.Layout.Dummy(0f, 10f);
         }
 
         /// <summary>
         /// Draws one light device card.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="room">Room name.</param>
         /// <param name="name">Device name.</param>
         /// <param name="enabled">Whether the device is on.</param>
         /// <param name="level">Brightness level.</param>
-        private void DrawLightDevice(FuLayout layout, string room, string name, ref bool enabled, ref float level)
+        private void DrawLightDevice(string room, string name, ref bool enabled, ref float level)
         {
             if (!ShouldDrawDevice(room, name))
             {
                 return;
             }
 
-            DrawDeviceHeader(layout, room, name, enabled ? Mathf.RoundToInt(level * 100f) + "%" : "Off");
-            layout.Toggle(name + " power", ref enabled, "Off", "On", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
-            layout.Slider(name + " brightness", ref level, 0f, 1f, new FuElementSize(-1f, 10f), 0.01f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.0f");
-            layout.Dummy(0f, 12f);
+            DrawDeviceHeader(room, name, enabled ? Mathf.RoundToInt(level * 100f) + "%" : "Off");
+            Fugui.Layout.Toggle(name + " power", ref enabled, "Off", "On", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
+            Fugui.Layout.Slider(name + " brightness", ref level, 0f, 1f, new FuElementSize(-1f, 10f), 0.01f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.0f");
+            Fugui.Layout.Dummy(0f, 12f);
         }
 
         /// <summary>
         /// Draws the climate device card.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="room">Room name.</param>
         /// <param name="name">Device name.</param>
         /// <param name="eco">Eco mode.</param>
         /// <param name="target">Target temperature.</param>
-        private void DrawClimateDevice(FuLayout layout, string room, string name, ref bool eco, ref float target)
+        private void DrawClimateDevice(string room, string name, ref bool eco, ref float target)
         {
             if (!ShouldDrawDevice(room, name))
             {
                 return;
             }
 
-            DrawDeviceHeader(layout, room, name, target.ToString("0.0") + " C");
-            layout.Toggle("Eco mode", ref eco, "Comfort", "Eco", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
-            layout.Slider("Target temperature", ref target, 17f, 25f, new FuElementSize(-1f, 10f), 0.1f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.1f C");
-            layout.Dummy(0f, 12f);
+            DrawDeviceHeader(room, name, target.ToString("0.0") + " C");
+            Fugui.Layout.Toggle("Eco mode", ref eco, "Comfort", "Eco", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
+            Fugui.Layout.Slider("Target temperature", ref target, 17f, 25f, new FuElementSize(-1f, 10f), 0.1f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.1f C");
+            Fugui.Layout.Dummy(0f, 12f);
         }
 
         /// <summary>
         /// Draws the media device card.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="room">Room name.</param>
         /// <param name="name">Device name.</param>
         /// <param name="playing">Whether media is playing.</param>
         /// <param name="volume">Speaker volume.</param>
-        private void DrawMediaDevice(FuLayout layout, string room, string name, ref bool playing, ref float volume)
+        private void DrawMediaDevice(string room, string name, ref bool playing, ref float volume)
         {
             if (!ShouldDrawDevice(room, name))
             {
                 return;
             }
 
-            DrawDeviceHeader(layout, room, name, playing ? "Playing" : "Paused");
-            layout.Toggle("Playback", ref playing, "Paused", "Playing", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
-            layout.Slider("Volume", ref volume, 0f, 1f, new FuElementSize(-1f, 10f), 0.01f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.0f");
-            layout.Dummy(0f, 12f);
+            DrawDeviceHeader(room, name, playing ? "Playing" : "Paused");
+            Fugui.Layout.Toggle("Playback", ref playing, "Paused", "Playing", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
+            Fugui.Layout.Slider("Volume", ref volume, 0f, 1f, new FuElementSize(-1f, 10f), 0.01f, FuSliderFlags.NoDrag | FuSliderFlags.UpdateOnBarClick, "%.0f");
+            Fugui.Layout.Dummy(0f, 12f);
         }
 
         /// <summary>
         /// Draws the air sensor card.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="room">Room name.</param>
         /// <param name="name">Device name.</param>
         /// <param name="quality">Air quality value.</param>
-        private void DrawSensorDevice(FuLayout layout, string room, string name, float quality)
+        private void DrawSensorDevice(string room, string name, float quality)
         {
             if (!ShouldDrawDevice(room, name))
             {
                 return;
             }
 
-            DrawDeviceHeader(layout, room, name, Mathf.RoundToInt(quality * 100f) + "%");
-            layout.ProgressBar(name + " air quality", quality, new FuElementSize(-1f, 22f), ProgressBarTextPosition.Right, Mathf.RoundToInt(quality * 100f) + "% air");
-            layout.Dummy(0f, 12f);
+            DrawDeviceHeader(room, name, Mathf.RoundToInt(quality * 100f) + "%");
+            Fugui.Layout.ProgressBar(name + " air quality", quality, new FuElementSize(-1f, 22f), ProgressBarTextPosition.Right, Mathf.RoundToInt(quality * 100f) + "% air");
+            Fugui.Layout.Dummy(0f, 12f);
         }
 
         /// <summary>
         /// Draws the security card.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="room">Room name.</param>
         /// <param name="name">Device name.</param>
         /// <param name="presence">Presence detection state.</param>
         /// <param name="armed">Security state.</param>
-        private void DrawSecurityDevice(FuLayout layout, string room, string name, ref bool presence, ref bool armed)
+        private void DrawSecurityDevice(string room, string name, ref bool presence, ref bool armed)
         {
             if (!ShouldDrawDevice(room, name))
             {
                 return;
             }
 
-            DrawDeviceHeader(layout, room, name, armed ? "Armed" : "Disarmed");
-            layout.Toggle("Presence", ref presence, "Off", "On", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
-            layout.Toggle("Security", ref armed, "Disarmed", "Armed", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
-            if (layout.Button("Test notification", new FuElementSize(-1f, 44f), FuButtonStyle.Info))
+            DrawDeviceHeader(room, name, armed ? "Armed" : "Disarmed");
+            Fugui.Layout.Toggle("Presence", ref presence, "Off", "On", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
+            Fugui.Layout.Toggle("Security", ref armed, "Disarmed", "Armed", FuToggleFlags.AlignLeft | FuToggleFlags.MaximumTextSize);
+            if (Fugui.Layout.Button("Test notification", new FuElementSize(-1f, 44f), FuButtonStyle.Info))
             {
                 Notify("Security check", armed ? "Sensors are armed and reporting normally." : "Security is disarmed.", armed ? StateType.Success : StateType.Warning);
             }
-            layout.Dummy(0f, 12f);
+            Fugui.Layout.Dummy(0f, 12f);
         }
 
         /// <summary>
         /// Draws a repeated device card header.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="room">Room name.</param>
         /// <param name="name">Device name.</param>
         /// <param name="state">Device state.</param>
-        private void DrawDeviceHeader(FuLayout layout, string room, string name, string state)
+        private void DrawDeviceHeader(string room, string name, string state)
         {
-            layout.FramedText(room + " - " + name + " - " + state, new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
-            layout.Dummy(0f, 6f);
+            Fugui.Layout.FramedText(room + " - " + name + " - " + state, new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
+            Fugui.Layout.Dummy(0f, 6f);
         }
 
         /// <summary>
         /// Draws a key/value row using Fugui text.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="label">Row label.</param>
         /// <param name="value">Row value.</param>
         /// <param name="style">Value style.</param>
-        private void DrawInfoRow(FuLayout layout, string label, string value, FuTextStyle style)
+        private void DrawInfoRow(string label, string value, FuTextStyle style)
         {
-            layout.Text(label, FuTextStyle.Deactivated, FuTextWrapping.Clip);
-            layout.Text(value, style, FuTextWrapping.Clip);
-            layout.Separator();
-            layout.Dummy(0f, 6f);
+            Fugui.Layout.Text(label, FuTextStyle.Deactivated, FuTextWrapping.Clip);
+            Fugui.Layout.Text(value, style, FuTextWrapping.Clip);
+            Fugui.Layout.Separator();
+            Fugui.Layout.Dummy(0f, 6f);
         }
 
         /// <summary>
         /// Draws an event row with a Fugui frame.
         /// </summary>
-        /// <param name="layout">The current Fugui layout.</param>
         /// <param name="text">Event text.</param>
-        private void DrawTimelineRow(FuLayout layout, string text)
+        private void DrawTimelineRow(string text)
         {
-            layout.FramedText(text, new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
-            layout.Dummy(0f, 6f);
+            Fugui.Layout.FramedText(text, new FuElementSize(-1f, 38f), FuFrameStyle.Default, 0f, FuTextWrapping.Clip, 12f, 12f);
+            Fugui.Layout.Dummy(0f, 6f);
         }
 
         /// <summary>

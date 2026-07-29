@@ -137,33 +137,32 @@ public class WidgetsWindow : FuWindowBehaviour
     /// Handles the UI event.
     /// </summary>
     /// <param name="window">The window value.</param>
-    /// <param name="layout">The layout value.</param>
-    public override void OnUI(FuWindow window, FuLayout layout)
+    public override void OnUI(FuWindow window)
     {
-        layout.CenterNextItemH("Check Fugui's git page.");
-        layout.Text("Check Fugui's ");
-        layout.SameLine();
-        layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui");
-        layout.Toggle("##toggleDisable", ref _enableWidgets, "Widgets Disabled", "Widgets Enabled", FuToggleFlags.MaximumTextSize);
+        Fugui.Layout.CenterNextItemH("Check Fugui's git page.");
+        Fugui.Layout.Text("Check Fugui's ");
+        Fugui.Layout.SameLine();
+        Fugui.Layout.TextURL("git page.", "https://framagit.org/Hydrocode/fugui");
+        Fugui.Layout.Toggle("##toggleDisable", ref _enableWidgets, "Widgets Disabled", "Widgets Enabled", FuToggleFlags.MaximumTextSize);
 
         using (new FuPanel("widgetsDemoPanel", FuStyle.Unpadded))
         {
-            layout.Collapsable("Sliders", drawSliders);
-            layout.Collapsable("Basics Widgets", () => { drawBasics(layout); }, 0);
-            layout.Collapsable("Layout Surfaces", () => { drawLayoutSurfaces(layout); });
-            layout.Collapsable("Custom DrawList Shaders", () => { drawCustomMaterialShaders(layout); });
-            layout.Collapsable("Texts", () => { drawTexts(layout); });
-            layout.Collapsable("Buttons", () => { drawButtons(layout); });
-            layout.Collapsable("Drags", drawDrags);
-            layout.Collapsable("Progress Bars", drawProgressbar);
-            layout.Collapsable("Knobs", drawKnobs);
-            layout.Collapsable("Spinners", () =>
+            Fugui.Layout.Collapsable("Sliders", drawSliders);
+            Fugui.Layout.Collapsable("Basics Widgets", () => { drawBasics(); }, 0);
+            Fugui.Layout.Collapsable("Layout Surfaces", () => { drawLayoutSurfaces(); });
+            Fugui.Layout.Collapsable("Custom DrawList Shaders", () => { drawCustomMaterialShaders(); });
+            Fugui.Layout.Collapsable("Texts", () => { drawTexts(); });
+            Fugui.Layout.Collapsable("Buttons", () => { drawButtons(); });
+            Fugui.Layout.Collapsable("Drags", drawDrags);
+            Fugui.Layout.Collapsable("Progress Bars", drawProgressbar);
+            Fugui.Layout.Collapsable("Knobs", drawKnobs);
+            Fugui.Layout.Collapsable("Spinners", () =>
             {
-                drawSpinners(layout);
+                drawSpinners();
             });
-            layout.Collapsable("Lists", () => { drawBoxes(layout); });
-            layout.Collapsable("Search and Table View", () => { drawSearchAndTableView(layout); });
-            layout.Collapsable("Charts", () => { drawCharts(layout); });
+            Fugui.Layout.Collapsable("Lists", () => { drawBoxes(); });
+            Fugui.Layout.Collapsable("Search and Table View", () => { drawSearchAndTableView(); });
+            Fugui.Layout.Collapsable("Charts", () => { drawCharts(); });
         }
     }
 
@@ -182,16 +181,15 @@ public class WidgetsWindow : FuWindowBehaviour
     /// <summary>
     /// Draws the opt-in custom draw-list material showcase or its activation instructions.
     /// </summary>
-    /// <param name="layout">Layout receiving the showcase.</param>
-    private void drawCustomMaterialShaders(FuLayout layout)
+    private void drawCustomMaterialShaders()
     {
 #if FU_CUSTOM_MATERIALS_ENABLED
         // Allocate the showcase only after its collapsable is opened for the first time.
         _customDrawMaterialDemo ??= new CustomDrawMaterialDemo();
-        _customDrawMaterialDemo.Draw(layout, _enableWidgets);
+        _customDrawMaterialDemo.Draw(_enableWidgets);
 #else
         // Keep the sample visible while documenting why the zero-cost feature is currently compiled out.
-        layout.Callout(
+        Fugui.Layout.Callout(
             "customDrawMaterialsDisabled",
             "Custom draw materials are compiled out. Add FU_CUSTOM_MATERIALS_ENABLED to the active Scripting Define Symbols, then reopen this section.",
             FuColors.BackgroundWarning);
@@ -201,15 +199,14 @@ public class WidgetsWindow : FuWindowBehaviour
     /// <summary>
     /// Runs the reusable layout surface widgets demo.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
-    private void drawLayoutSurfaces(FuLayout layout)
+    private void drawLayoutSurfaces()
     {
         if (!_enableWidgets)
         {
-            layout.DisableNextElements();
+            Fugui.Layout.DisableNextElements();
         }
 
-        layout.FeaturePanel(
+        Fugui.Layout.FeaturePanel(
             "layoutSurfaceDemoFeature",
             "Reusable layout surfaces",
             "Use these helpers for clean in-window chrome without rewriting draw-list code in every demo or tool.",
@@ -218,48 +215,48 @@ public class WidgetsWindow : FuWindowBehaviour
             FuColors.Highlight,
             104f);
 
-        layout.Dummy(0f, 8f);
-        layout.Callout("layoutSurfaceDemoCallout", "Callout sizes itself around wrapped text and keeps a readable accent stripe for notes, summaries and warnings.", FuColors.BackgroundInfo);
+        Fugui.Layout.Dummy(0f, 8f);
+        Fugui.Layout.Callout("layoutSurfaceDemoCallout", "Callout sizes itself around wrapped text and keeps a readable accent stripe for notes, summaries and warnings.", FuColors.BackgroundInfo);
 
-        layout.Text("NavigationItem");
-        if (layout.NavigationItem("layoutSurfaceDemoNavOverview", "Overview", layoutSurfaceDemoNavigationIndex == 0, "A selected sidebar row with a soft accent."))
+        Fugui.Layout.Text("NavigationItem");
+        if (Fugui.Layout.NavigationItem("layoutSurfaceDemoNavOverview", "Overview", layoutSurfaceDemoNavigationIndex == 0, "A selected sidebar row with a soft accent."))
         {
             layoutSurfaceDemoNavigationIndex = 0;
         }
-        if (layout.NavigationItem("layoutSurfaceDemoNavDetails", "Details", layoutSurfaceDemoNavigationIndex == 1, "A compact hoverable row for documentation or inspectors."))
+        if (Fugui.Layout.NavigationItem("layoutSurfaceDemoNavDetails", "Details", layoutSurfaceDemoNavigationIndex == 1, "A compact hoverable row for documentation or inspectors."))
         {
             layoutSurfaceDemoNavigationIndex = 1;
         }
-        if (layout.NavigationItem("layoutSurfaceDemoNavReference", "Reference", layoutSurfaceDemoNavigationIndex == 2, "Click rows update local demo state."))
+        if (Fugui.Layout.NavigationItem("layoutSurfaceDemoNavReference", "Reference", layoutSurfaceDemoNavigationIndex == 2, "Click rows update local demo state."))
         {
             layoutSurfaceDemoNavigationIndex = 2;
         }
 
-        layout.Dummy(0f, 8f);
-        layout.Text("Pills");
-        layout.Pill("layoutSurfaceDemoPillImmediate", "Immediate mode", FuColors.Highlight);
-        layout.SameLine();
-        layout.Pill("layoutSurfaceDemoPillDockable", "Dockable", FuColors.BackgroundSuccess);
-        layout.SameLine();
-        layout.Pill("layoutSurfaceDemoPillRuntime", "Unity runtime", FuColors.BackgroundInfo);
+        Fugui.Layout.Dummy(0f, 8f);
+        Fugui.Layout.Text("Pills");
+        Fugui.Layout.Pill("layoutSurfaceDemoPillImmediate", "Immediate mode", FuColors.Highlight);
+        Fugui.Layout.SameLine();
+        Fugui.Layout.Pill("layoutSurfaceDemoPillDockable", "Dockable", FuColors.BackgroundSuccess);
+        Fugui.Layout.SameLine();
+        Fugui.Layout.Pill("layoutSurfaceDemoPillRuntime", "Unity runtime", FuColors.BackgroundInfo);
 
-        layout.Dummy(0f, 6f);
-        layout.PillRow(
+        Fugui.Layout.Dummy(0f, 6f);
+        Fugui.Layout.PillRow(
             "layoutSurfaceDemoPillRow",
             new string[] { "runtime UI", "Dear ImGui", "Unity 6", "theme aware", "wrapping row", "small labels" },
             new FuColors[] { FuColors.BackgroundInfo, FuColors.Highlight, FuColors.BackgroundSuccess, FuColors.BackgroundWarning, FuColors.BackgroundInfo, FuColors.Highlight });
 
-        layout.Dummy(0f, 8f);
-        Rect surfaceRect = layout.Surface("layoutSurfaceDemoCustomSurface", new FuElementSize(-1f, 58f), FuColors.BackgroundSuccess, FuSurfaceFlags.Border | FuSurfaceFlags.AccentTop, 0.34f, 0.24f, 0.80f, 6f);
+        Fugui.Layout.Dummy(0f, 8f);
+        Rect surfaceRect = Fugui.Layout.Surface("layoutSurfaceDemoCustomSurface", new FuElementSize(-1f, 58f), FuColors.BackgroundSuccess, FuSurfaceFlags.Border | FuSurfaceFlags.AccentTop, 0.34f, 0.24f, 0.80f, 6f);
         if (surfaceRect.width > 0f && surfaceRect.height > 0f)
         {
             float scale = Fugui.CurrentContext.Scale;
-            layout.EnboxedText("Surface returns a Rect, so custom content can be drawn inside while Fugui owns spacing, border and accent styling.", surfaceRect.position + new Vector2(12f, 10f) * scale, surfaceRect.size - new Vector2(24f, 18f) * scale, Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Wrap);
+            Fugui.Layout.EnboxedText("Surface returns a Rect, so custom content can be drawn inside while Fugui owns spacing, border and accent styling.", surfaceRect.position + new Vector2(12f, 10f) * scale, surfaceRect.size - new Vector2(24f, 18f) * scale, Vector2.zero, Vector2.zero, new Vector2(0f, 0f), FuTextWrapping.Wrap);
         }
 
         if (!_enableWidgets)
         {
-            layout.EnableNextElements();
+            Fugui.Layout.EnableNextElements();
         }
     }
 
@@ -286,21 +283,20 @@ public class WidgetsWindow : FuWindowBehaviour
     /// <summary>
     /// Runs the draw buttons workflow.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
-    private void drawButtons(FuLayout layout)
+    private void drawButtons()
     {
         using (var grid = new FuGrid("buttonsGrid"))
         {
             if (!_enableWidgets)
             {
                 grid.DisableNextElements();
-                layout.DisableNextElements();
+                Fugui.Layout.DisableNextElements();
             }
 
             grid.Button("Button");
             grid.Button("Selected", FuElementSize.AutoSize, FuButtonStyle.Selected);
             grid.SameLine();
-            layout.Button("Highlight", FuElementSize.AutoSize, FuButtonStyle.Highlight);
+            Fugui.Layout.Button("Highlight", FuElementSize.AutoSize, FuButtonStyle.Highlight);
 
             grid.Text("Info");
             grid.Button("Info", FuButtonStyle.Info);
@@ -323,7 +319,7 @@ public class WidgetsWindow : FuWindowBehaviour
             if (!_enableWidgets)
             {
                 grid.EnableNextElements();
-                layout.EnableNextElements();
+                Fugui.Layout.EnableNextElements();
             }
         }
     }
@@ -331,10 +327,9 @@ public class WidgetsWindow : FuWindowBehaviour
     /// <summary>
     /// Runs the draw basics workflow.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
-    private void drawBasics(FuLayout layout)
+    private void drawBasics()
     {
-        layout.Tabs("basicWidgetsTabs", new string[] { "Checkbox and Toggles", "Images", "ColorPicker", "RadioButtons", "DatePicker" }, (index) =>
+        Fugui.Layout.Tabs("basicWidgetsTabs", new string[] { "Checkbox and Toggles", "Images", "ColorPicker", "RadioButtons", "DatePicker" }, (index) =>
         {
             using (var grid = new FuGrid("basicWidgetsGrid"))
             {
@@ -427,50 +422,49 @@ public class WidgetsWindow : FuWindowBehaviour
     /// <summary>
     /// Runs the draw boxes workflow.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
-    private void drawBoxes(FuLayout layout)
+    private void drawBoxes()
     {
         using (var grid = new FuGrid("listsGrid"))
         {
             if (!_enableWidgets)
             {
                 grid.DisableNextElements();
-                layout.DisableNextElements();
+                Fugui.Layout.DisableNextElements();
             }
             grid.Combobox("test callback combo", "click me custom", () =>
             {
-                layout.CheckBox("chdk1", ref boolVal);
-                layout.Drag("drdag", ref floatVal);
-                layout.Button("big button");
-                layout.DisableNextElement();
-                layout.Button("big button", FuButtonStyle.Highlight);
-                layout.Slider("sdlc1", ref intVal);
-                layout.DisableNextElement();
-                layout.Slider("sdlc2", ref intVal);
-                layout.Slider("sdlc3", ref floatVal);
+                Fugui.Layout.CheckBox("chdk1", ref boolVal);
+                Fugui.Layout.Drag("drdag", ref floatVal);
+                Fugui.Layout.Button("big button");
+                Fugui.Layout.DisableNextElement();
+                Fugui.Layout.Button("big button", FuButtonStyle.Highlight);
+                Fugui.Layout.Slider("sdlc1", ref intVal);
+                Fugui.Layout.DisableNextElement();
+                Fugui.Layout.Slider("sdlc2", ref intVal);
+                Fugui.Layout.Slider("sdlc3", ref floatVal);
             });
             grid.Combobox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
             grid.ComboboxEnum<myTestEnum>("Enum combobox", (index) => { _selectedEnumValue = (myTestEnum)index; }, () => _selectedEnumValue);
 
-            layout.Separator();
+            Fugui.Layout.Separator();
 
             grid.ListBox("test callback combo", () =>
             {
-                layout.CheckBox("chdk1", ref boolVal);
-                layout.Drag("drdag", ref floatVal);
-                layout.Button("big button");
-                layout.DisableNextElement();
-                layout.Button("big button", FuButtonStyle.Highlight);
-                layout.Slider("sdlc1", ref intVal);
-                layout.DisableNextElement();
-                layout.Slider("sdlc2", ref intVal);
-                layout.Slider("sdlc3", ref floatVal);
+                Fugui.Layout.CheckBox("chdk1", ref boolVal);
+                Fugui.Layout.Drag("drdag", ref floatVal);
+                Fugui.Layout.Button("big button");
+                Fugui.Layout.DisableNextElement();
+                Fugui.Layout.Button("big button", FuButtonStyle.Highlight);
+                Fugui.Layout.Slider("sdlc1", ref intVal);
+                Fugui.Layout.DisableNextElement();
+                Fugui.Layout.Slider("sdlc2", ref intVal);
+                Fugui.Layout.Slider("sdlc3", ref floatVal);
             });
             grid.ListBox("test combobox", cbTexts, (newValue) => { Debug.Log(newValue); });
             if (!_enableWidgets)
             {
                 grid.EnableNextElements();
-                layout.EnableNextElements();
+                Fugui.Layout.EnableNextElements();
             }
         }
     }
@@ -478,18 +472,17 @@ public class WidgetsWindow : FuWindowBehaviour
     /// <summary>
     /// Runs the draw search and table view workflow.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
-    private void drawSearchAndTableView(FuLayout layout)
+    private void drawSearchAndTableView()
     {
         if (!_enableWidgets)
         {
-            layout.DisableNextElements();
+            Fugui.Layout.DisableNextElements();
         }
 
-        layout.SearchBox("tableDemoSearch", tableDemoFilter, "Search widget, category or state...");
-        layout.Spacing();
+        Fugui.Layout.SearchBox("tableDemoSearch", tableDemoFilter, "Search widget, category or state...");
+        Fugui.Layout.Spacing();
 
-        bool selectionChanged = layout.TableView(
+        bool selectionChanged = Fugui.Layout.TableView(
             "widgetTableDemo",
             tableDemoItems,
             getTableDemoColumns(),
@@ -504,12 +497,12 @@ public class WidgetsWindow : FuWindowBehaviour
             Debug.Log("Selected table demo item: " + tableDemoItems[selectedTableDemoIndex].Name);
         }
 
-        layout.Spacing();
-        drawSelectedTableDemoItem(layout);
+        Fugui.Layout.Spacing();
+        drawSelectedTableDemoItem();
 
         if (!_enableWidgets)
         {
-            layout.EnableNextElements();
+            Fugui.Layout.EnableNextElements();
         }
     }
 
@@ -558,21 +551,19 @@ public class WidgetsWindow : FuWindowBehaviour
     /// Draws the custom state cell for the table view demo.
     /// </summary>
     /// <param name="item">The table item value.</param>
-    /// <param name="layout">The layout value.</param>
-    private void drawTableDemoStateCell(WidgetTableDemoItem item, FuLayout layout)
+    private void drawTableDemoStateCell(WidgetTableDemoItem item)
     {
-        layout.Text(item.Enabled ? "Enabled" : "Disabled", item.Enabled ? FuTextStyle.Success : FuTextStyle.Deactivated);
+        Fugui.Layout.Text(item.Enabled ? "Enabled" : "Disabled", item.Enabled ? FuTextStyle.Success : FuTextStyle.Deactivated);
     }
 
     /// <summary>
     /// Draws the currently selected table item summary.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
-    private void drawSelectedTableDemoItem(FuLayout layout)
+    private void drawSelectedTableDemoItem()
     {
         if (selectedTableDemoIndex < 0 || selectedTableDemoIndex >= tableDemoItems.Count)
         {
-            layout.Text("No table row selected.", FuTextStyle.Deactivated);
+            Fugui.Layout.Text("No table row selected.", FuTextStyle.Deactivated);
             return;
         }
 
@@ -594,14 +585,13 @@ public class WidgetsWindow : FuWindowBehaviour
     /// <summary>
     /// Runs the draw charts workflow.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
-    private void drawCharts(FuLayout layout)
+    private void drawCharts()
     {
         ensureChartDemoData();
 
         if (!_enableWidgets)
         {
-            layout.DisableNextElements();
+            Fugui.Layout.DisableNextElements();
         }
 
         using (var grid = new FuGrid("chartsControlGrid", FuGridDefinition.DefaultFixed, FuGridFlag.LinesBackground))
@@ -628,13 +618,13 @@ public class WidgetsWindow : FuWindowBehaviour
         applyChartDemoOptions();
 
         FuChartHoverState hover;
-        layout.Chart("chartDemo", chartDemoSeries, chartDemoOptions, out hover);
-        layout.Spacing();
-        drawChartDemoHover(layout, hover);
+        Fugui.Layout.Chart("chartDemo", chartDemoSeries, chartDemoOptions, out hover);
+        Fugui.Layout.Spacing();
+        drawChartDemoHover(hover);
 
         if (!_enableWidgets)
         {
-            layout.EnableNextElements();
+            Fugui.Layout.EnableNextElements();
         }
     }
 
@@ -769,13 +759,12 @@ public class WidgetsWindow : FuWindowBehaviour
     /// <summary>
     /// Draws the hover readout returned by the chart widget.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
     /// <param name="hover">The current chart hover state.</param>
-    private void drawChartDemoHover(FuLayout layout, FuChartHoverState hover)
+    private void drawChartDemoHover(FuChartHoverState hover)
     {
         if (!hover.HasPoint)
         {
-            layout.Text("No chart point hovered.", FuTextStyle.Deactivated);
+            Fugui.Layout.Text("No chart point hovered.", FuTextStyle.Deactivated);
             return;
         }
 
@@ -813,37 +802,36 @@ public class WidgetsWindow : FuWindowBehaviour
     /// <summary>
     /// Runs the draw texts workflow.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
-    private void drawTexts(FuLayout layout)
+    private void drawTexts()
     {
         if (!_enableWidgets)
-            layout.DisableNextElements();
+            Fugui.Layout.DisableNextElements();
 
-        layout.Text("Default text");
-        layout.Text("Highlight text", FuTextStyle.Highlight);
-        layout.Text("Selected text", FuTextStyle.Selected);
-        layout.Text("Info text", FuTextStyle.Info);
-        layout.Text("Success text", FuTextStyle.Success);
-        layout.Text("Warning text", FuTextStyle.Warning);
-        layout.Text("Danger text", FuTextStyle.Danger);
-        layout.Separator();
+        Fugui.Layout.Text("Default text");
+        Fugui.Layout.Text("Highlight text", FuTextStyle.Highlight);
+        Fugui.Layout.Text("Selected text", FuTextStyle.Selected);
+        Fugui.Layout.Text("Info text", FuTextStyle.Info);
+        Fugui.Layout.Text("Success text", FuTextStyle.Success);
+        Fugui.Layout.Text("Warning text", FuTextStyle.Warning);
+        Fugui.Layout.Text("Danger text", FuTextStyle.Danger);
+        Fugui.Layout.Separator();
 
-        layout.TextURL("This is a hyperkling text URL", "https://framagit.org/Hydrocode/fugui");
+        Fugui.Layout.TextURL("This is a hyperkling text URL", "https://framagit.org/Hydrocode/fugui");
 
-        layout.Text("This text is wrapped because its too long.This text is wrapped because its too long.This text is wrapped because its too long.", FuTextWrapping.Wrap);
+        Fugui.Layout.Text("This text is wrapped because its too long.This text is wrapped because its too long.This text is wrapped because its too long.", FuTextWrapping.Wrap);
 
-        layout.FramedText("This is a frammed text");
+        Fugui.Layout.FramedText("This is a frammed text");
 
-        layout.SetNextElementToolTipWithLabel("This is a 128px clipped text, it's clipped");
-        layout.Text("This is a 128px clipped text, it's clipped", new Vector2(128f, 0f), FuTextWrapping.Clip);
+        Fugui.Layout.SetNextElementToolTipWithLabel("This is a 128px clipped text, it's clipped");
+        Fugui.Layout.Text("This is a 128px clipped text, it's clipped", new Vector2(128f, 0f), FuTextWrapping.Clip);
 
-        layout.SetNextElementToolTip("This is a clickable text, click it !");
-        if (layout.ClickableText("This text can be clicked"))
+        Fugui.Layout.SetNextElementToolTip("This is a clickable text, click it !");
+        if (Fugui.Layout.ClickableText("This text can be clicked"))
         {
             Debug.Log("Clicked !");
         }
 
-        layout.SmartText("This is a smart <b>Bold <color=red>red</color></b> text.");
+        Fugui.Layout.SmartText("This is a smart <b>Bold <color=red>red</color></b> text.");
 
         using (var grid = new FuGrid("dragsGrid"))
         {
@@ -859,16 +847,15 @@ public class WidgetsWindow : FuWindowBehaviour
             if (!_enableWidgets)
                 grid.EnableNextElements();
         }
-        layout.SmartText(richText);
+        Fugui.Layout.SmartText(richText);
         if (!_enableWidgets)
-            layout.EnableNextElements();
+            Fugui.Layout.EnableNextElements();
     }
 
     /// <summary>
     /// Runs the draw spinners workflow.
     /// </summary>
-    /// <param name="layout">The layout value.</param>
-    private void drawSpinners(FuLayout layout)
+    private void drawSpinners()
     {
         using (var grid = new FuGrid("gSPN", FuGridFlag.LinesBackground))
         {
@@ -876,84 +863,84 @@ public class WidgetsWindow : FuWindowBehaviour
                 grid.DisableNextElements();
             grid.Loader_Arc(spinnerSize, spinnerRingThickness);
             grid.Text("Arc");
-            layout.Slider("size##spinnerArc", ref spinnerSize, 8f, 128f);
-            layout.Slider("thickness##spinnerArc", ref spinnerRingThickness, 1f, 12f);
+            Fugui.Layout.Slider("size##spinnerArc", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("thickness##spinnerArc", ref spinnerRingThickness, 1f, 12f);
 
             grid.Loader_DualRing(spinnerSize, spinnerRingThickness);
             grid.Text("Dual Ring");
-            layout.Slider("size##spinnerDualRing", ref spinnerSize, 8f, 128f);
-            layout.Slider("thickness##spinnerDualRing", ref spinnerRingThickness, 1f, 12f);
+            Fugui.Layout.Slider("size##spinnerDualRing", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("thickness##spinnerDualRing", ref spinnerRingThickness, 1f, 12f);
 
             grid.Loader_Spinner(spinnerSize, spinnerNbDots, spinnerDotsSize, spinnerDoubleColor);
             grid.Text("Dot Trail");
-            layout.Slider("size##spinnerDots", ref spinnerSize, 8f, 128f);
-            layout.Slider("dots##spinnerDots", ref spinnerNbDots, 3, 32);
-            layout.Slider("dot size##spinnerDots", ref spinnerDotsSize, 1f, 16f);
-            layout.Toggle("double colors##spinnerDots", ref spinnerDoubleColor);
+            Fugui.Layout.Slider("size##spinnerDots", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("dots##spinnerDots", ref spinnerNbDots, 3, 32);
+            Fugui.Layout.Slider("dot size##spinnerDots", ref spinnerDotsSize, 1f, 16f);
+            Fugui.Layout.Toggle("double colors##spinnerDots", ref spinnerDoubleColor);
 
             grid.Loader_CircleSpinner(spinnerSize, spinnerNbDots);
             grid.Text("Circle spinner");
-            layout.Slider("size##spinnerCircle", ref spinnerSize, 8f, 128f);
-            layout.Slider("dots##spinnerCircle", ref spinnerNbDots, 3, 32);
+            Fugui.Layout.Slider("size##spinnerCircle", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("dots##spinnerCircle", ref spinnerNbDots, 3, 32);
 
             grid.Loader_EllipseSpinner(spinnerSize, spinnerNbDots, spinnerDotsSize, spinnerDoubleColor);
             grid.Text("Ellipse Spinner");
-            layout.Slider("size##spinnerEllipse", ref spinnerSize, 8f, 128f);
-            layout.Slider("dots##spinnerEllipse", ref spinnerNbDots, 4, 32);
-            layout.Slider("dot size##spinnerEllipse", ref spinnerDotsSize, 1f, 16f);
-            layout.Toggle("double colors##spinnerEllipse", ref spinnerDoubleColor);
+            Fugui.Layout.Slider("size##spinnerEllipse", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("dots##spinnerEllipse", ref spinnerNbDots, 4, 32);
+            Fugui.Layout.Slider("dot size##spinnerEllipse", ref spinnerDotsSize, 1f, 16f);
+            Fugui.Layout.Toggle("double colors##spinnerEllipse", ref spinnerDoubleColor);
 
             grid.Loader_Orbit(spinnerSize, Mathf.Clamp(spinnerNbDots / 2, 1, 6));
             grid.Text("Orbit");
-            layout.Slider("size##spinnerOrbit", ref spinnerSize, 8f, 128f);
-            layout.Slider("dots##spinnerOrbit", ref spinnerNbDots, 2, 12);
+            Fugui.Layout.Slider("size##spinnerOrbit", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("dots##spinnerOrbit", ref spinnerNbDots, 2, 12);
 
             grid.Loader_BreathingDots(spinnerV2Size, Mathf.Clamp(spinnerNbDots, 2, 8));
             grid.Text("Breathing Dots");
-            layout.Drag("size##spinnerBreathingDots", ref spinnerV2Size, "", "", 8f, 160f);
-            layout.Slider("dots##spinnerBreathingDots", ref spinnerNbDots, 2, 8);
+            Fugui.Layout.Drag("size##spinnerBreathingDots", ref spinnerV2Size, "", "", 8f, 160f);
+            Fugui.Layout.Slider("dots##spinnerBreathingDots", ref spinnerNbDots, 2, 8);
 
             grid.Loader_Bars(spinnerV2Size, spinnerBars);
             grid.Text("Bars");
-            layout.Drag("size##spinnerBars", ref spinnerV2Size, "", "", 8f, 160f);
-            layout.Slider("bars##spinnerBars", ref spinnerBars, 3, 9);
+            Fugui.Layout.Drag("size##spinnerBars", ref spinnerV2Size, "", "", 8f, 160f);
+            Fugui.Layout.Slider("bars##spinnerBars", ref spinnerBars, 3, 9);
 
             grid.Loader_Shimmer(spinnerV2Size);
             grid.Text("Shimmer");
-            layout.Drag("size##spinnerShimmer", ref spinnerV2Size, "", "", 8f, 180f);
+            Fugui.Layout.Drag("size##spinnerShimmer", ref spinnerV2Size, "", "", 8f, 180f);
 
             grid.Loader_Wheel(spinnerSize);
             grid.Text("Wheel");
-            layout.Slider("size##spinnerWheel", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("size##spinnerWheel", ref spinnerSize, 8f, 128f);
 
             grid.Loader_WavyLine(spinnerV2Size, spinnerFrequency, spinnerDoubleColor);
             grid.Text("Wavy Line");
-            layout.Drag("size##spinnerWave", ref spinnerV2Size, "", "", 8f, 180f);
-            layout.Slider("frequency##spinnerWave", ref spinnerFrequency, 0.5f, 24f);
+            Fugui.Layout.Drag("size##spinnerWave", ref spinnerV2Size, "", "", 8f, 180f);
+            Fugui.Layout.Slider("frequency##spinnerWave", ref spinnerFrequency, 0.5f, 24f);
 
             grid.Loader_Squares(spinnerSize);
             grid.Text("Squares");
-            layout.Slider("size##spinnerSquares", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("size##spinnerSquares", ref spinnerSize, 8f, 128f);
 
             grid.Loader_SquareCircleDance(spinnerSize);
             grid.Text("Oval Orbit");
-            layout.Slider("size##spinnerOvalOrbit", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("size##spinnerOvalOrbit", ref spinnerSize, 8f, 128f);
 
             grid.Loader_PulsingLines(spinnerV2Size);
             grid.Text("Pulsing Lines");
-            layout.Drag("size##spinnerPulsingLines", ref spinnerV2Size, "", "", 8f, 160f);
+            Fugui.Layout.Drag("size##spinnerPulsingLines", ref spinnerV2Size, "", "", 8f, 160f);
 
             grid.Loader_Clocker(spinnerSize);
             grid.Text("Clock");
-            layout.Slider("size##spinnerClock", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("size##spinnerClock", ref spinnerSize, 8f, 128f);
 
             grid.Loader_Pulsar(spinnerSize);
             grid.Text("Pulsar");
-            layout.Slider("size##spinnerPulsar", ref spinnerSize, 8f, 128f);
+            Fugui.Layout.Slider("size##spinnerPulsar", ref spinnerSize, 8f, 128f);
 
             grid.Loader_SpikedWheel(spinnerV2Size);
             grid.Text("Segment Wheel");
-            layout.Drag("size##spinnerSegmentWheel", ref spinnerV2Size, "", "", 8f, 160f);
+            Fugui.Layout.Drag("size##spinnerSegmentWheel", ref spinnerV2Size, "", "", 8f, 160f);
             if (!_enableWidgets)
                 grid.EnableNextElements();
         }

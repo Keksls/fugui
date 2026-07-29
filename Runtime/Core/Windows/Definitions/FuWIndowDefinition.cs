@@ -14,7 +14,7 @@ namespace Fu
         // A unique identifier for the window
         public FuWindowName WindowName { get; private set; }
         // A delegate for updating the window's UI
-        public Action<FuWindow, FuLayout> UI { get; private set; }
+        public Action<FuWindow> UI { get; private set; }
         // The position of the window on the screen
         public Vector2Int Position { get; private set; }
         // The size of the window
@@ -96,7 +96,7 @@ namespace Fu
         /// <param name="externalFlags">External window flags of this window definition</param>
         /// <param name="windowStyleFlags">ImGui window flags exposed through Fugui.</param>
         /// <param name="resizableSides">Sides that can resize this window when resize is enabled.</param>
-        public FuWindowDefinition(FuWindowName windowName, FuLayer layer, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default, FuWindowResizeSides resizableSides = FuWindowResizeSides.Default)
+        public FuWindowDefinition(FuWindowName windowName, FuLayer layer, Action<FuWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default, FuWindowResizeSides resizableSides = FuWindowResizeSides.Default)
         {
             Vector2Int resolvedSize = size.HasValue ? size.Value : new Vector2Int(256, 128);
             if (string.IsNullOrWhiteSpace(windowName.Name))
@@ -355,7 +355,7 @@ namespace Fu
         /// </summary>
         /// <param name="ui">The action to be performed on the UI window.</param>
         /// <returns>The current UIWindowDefinition object.</returns>
-        public FuWindowDefinition SetUI(Action<FuWindow, FuLayout> ui = null)
+        public FuWindowDefinition SetUI(Action<FuWindow> ui = null)
         {
             // Assign the specified action to the UI field
             UI = ui;

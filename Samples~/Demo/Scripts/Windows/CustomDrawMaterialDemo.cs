@@ -31,13 +31,12 @@ internal sealed class CustomDrawMaterialDemo : IDisposable
     /// <summary>
     /// Draws the complete interactive custom-material showcase.
     /// </summary>
-    /// <param name="layout">Layout receiving the demo controls and widgets.</param>
     /// <param name="enabled">Whether the showcase widgets can be interacted with.</param>
-    internal void Draw(FuLayout layout, bool enabled)
+    internal void Draw(bool enabled)
     {
         if (!EnsureMaterials())
         {
-            layout.Callout(
+            Fugui.Layout.Callout(
                 "customDrawMaterialShadersMissing",
                 "The custom-material demo shaders could not be loaded from Resources/FuguiCustomMaterials.",
                 FuColors.BackgroundDanger);
@@ -45,30 +44,30 @@ internal sealed class CustomDrawMaterialDemo : IDisposable
         }
 
         // Keep the sample self-contained: sliders directly drive properties on the caller-owned Unity materials.
-        layout.Callout(
+        Fugui.Layout.Callout(
             "customDrawMaterialIntro",
             "These buttons are regular DrawList geometry wrapped by PushMaterial(...) / PopMaterial(). Their labels and borders return to Fugui's standard material after the pop.",
             FuColors.BackgroundInfo);
 
         if (!enabled)
         {
-            layout.DisableNextElements();
+            Fugui.Layout.DisableNextElements();
         }
 
-        layout.Slider("Neon intensity##customDrawMaterialNeonGlow", ref _neonGlow, 0.35f, 2.80f);
-        layout.Slider("Glass intensity##customDrawMaterialGlassGlow", ref _glassGlow, 0.35f, 2.80f);
+        Fugui.Layout.Slider("Neon intensity##customDrawMaterialNeonGlow", ref _neonGlow, 0.35f, 2.80f);
+        Fugui.Layout.Slider("Glass intensity##customDrawMaterialGlassGlow", ref _glassGlow, 0.35f, 2.80f);
 
         if (!enabled)
         {
-            layout.EnableNextElements();
+            Fugui.Layout.EnableNextElements();
         }
 
         _neonMaterial.SetFloat(GlowProperty, _neonGlow);
         _glassMaterial.SetFloat(GlowProperty, _glassGlow);
 
-        DrawMaterialButtons(layout, enabled);
-        layout.Dummy(0f, 6f);
-        layout.Text($"Neon activations: {_neonActivationCount}    Hologram lock: {(_glassLocked ? "ENGAGED" : "OPEN")}");
+        DrawMaterialButtons(enabled);
+        Fugui.Layout.Dummy(0f, 6f);
+        Fugui.Layout.Text($"Neon activations: {_neonActivationCount}    Hologram lock: {(_glassLocked ? "ENGAGED" : "OPEN")}");
     }
 
     /// <summary>
@@ -88,13 +87,12 @@ internal sealed class CustomDrawMaterialDemo : IDisposable
     /// <summary>
     /// Draws the responsive row containing both shader-driven buttons.
     /// </summary>
-    /// <param name="layout">Layout receiving the button interactions.</param>
     /// <param name="enabled">Whether button interaction is enabled.</param>
-    private void DrawMaterialButtons(FuLayout layout, bool enabled)
+    private void DrawMaterialButtons(bool enabled)
     {
         // Use one row on wide windows and stack the same public API example on narrow windows.
         float scale = Fugui.CurrentContext.Scale;
-        float availableWidth = Mathf.Max(1f, layout.GetAvailableWidth());
+        float availableWidth = Mathf.Max(1f, Fugui.Layout.GetAvailableWidth());
         float gap = 10f * scale;
         bool drawSideBySide = availableWidth >= 500f * scale;
         float buttonWidth = drawSideBySide
@@ -102,7 +100,6 @@ internal sealed class CustomDrawMaterialDemo : IDisposable
             : availableWidth;
 
         if (DrawMaterialButton(
-            layout,
             "customDrawMaterialNeonButton",
             buttonWidth,
             "NEON OVERDRIVE",
@@ -117,11 +114,10 @@ internal sealed class CustomDrawMaterialDemo : IDisposable
 
         if (drawSideBySide)
         {
-            layout.SameLine();
+            Fugui.Layout.SameLine();
         }
 
         if (DrawMaterialButton(
-            layout,
             "customDrawMaterialGlassButton",
             buttonWidth,
             _glassLocked ? "HOLOGRAM LOCKED" : "HOLOGRAPHIC GLASS",
@@ -138,7 +134,6 @@ internal sealed class CustomDrawMaterialDemo : IDisposable
     /// <summary>
     /// Draws one interactive button whose background uses a caller-selected shader.
     /// </summary>
-    /// <param name="layout">Layout receiving the invisible interaction item.</param>
     /// <param name="id">Stable Fugui interaction identifier.</param>
     /// <param name="width">Button width in screen pixels.</param>
     /// <param name="title">Primary button label.</param>
@@ -149,7 +144,6 @@ internal sealed class CustomDrawMaterialDemo : IDisposable
     /// <param name="latched">Whether the button is currently latched.</param>
     /// <returns>True when the button was clicked during this frame.</returns>
     private bool DrawMaterialButton(
-        FuLayout layout,
         string id,
         float width,
         string title,
@@ -163,7 +157,7 @@ internal sealed class CustomDrawMaterialDemo : IDisposable
         float scale = Fugui.CurrentContext.Scale;
         Vector2 position = Fugui.GetCursorScreenPos();
         Vector2 size = new Vector2(width, 104f * scale);
-        bool clicked = layout.InvisibleInteraction(id, size, out bool hovered, out bool active, enabled: enabled);
+        bool clicked = Fugui.Layout.InvisibleInteraction(id, size, out bool hovered, out bool active, enabled: enabled);
         float interaction = active ? 1f : hovered ? 0.66f : latched ? 0.48f : 0f;
         material.SetFloat(InteractionProperty, interaction);
 

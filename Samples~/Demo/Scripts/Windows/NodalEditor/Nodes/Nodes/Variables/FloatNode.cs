@@ -41,28 +41,27 @@ namespace Fu.Framework.Demo
         /// <summary>
         /// Handles the Draw event.
         /// </summary>
-        /// <param name="layout">The layout value.</param>
-        public override void OnDraw(FuLayout layout)
+        public override void OnDraw()
         {
             float v = GetPortValue<float>("Out", 0f);
-            if (layout.ClickableText(Icons.Settings_solid))
+            if (Fugui.Layout.ClickableText(Icons.Settings_solid))
             {
-                Fugui.ShowModal("Float Settings " + Id, (l) =>
+                Fugui.ShowModal("Float Settings " + Id, () =>
                 {
-                    l.CheckBox("Use Slider", ref _slider);
-                    l.Drag("Min", ref _min);
-                    l.Drag("Max", ref _max);
+                    Fugui.Layout.CheckBox("Use Slider", ref _slider);
+                    Fugui.Layout.Drag("Min", ref _min);
+                    Fugui.Layout.Drag("Max", ref _max);
                 }, FuModalSize.Small, new FuModalButton("OK", FuKeysCode.Enter));
             }
-            layout.SameLine();
+            Fugui.Layout.SameLine();
             if (_slider)
             {
-                if (layout.Slider("##" + Id, ref v, _min, _max, flags: FuSliderFlags.NoDrag))
+                if (Fugui.Layout.Slider("##" + Id, ref v, _min, _max, flags: FuSliderFlags.NoDrag))
                     SetPortValue("Out", "core/float", v);
             }
             else
             {
-                if (layout.Drag("##" + Id, ref v, "", _min, _max))
+                if (Fugui.Layout.Drag("##" + Id, ref v, "", _min, _max))
                     SetPortValue("Out", "core/float", v);
             }
         }

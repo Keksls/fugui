@@ -124,11 +124,10 @@ namespace Fu
         /// <summary>
         /// Draws the themes.
         /// </summary>
-        /// <param name="layout">The layout value.</param>
-        public static void DrawThemes(FuLayout layout)
+        public static void DrawThemes()
         {
             RefreshThemeSelectionItems();
-            layout.Collapsable("Theme Managment", () =>
+            Fugui.Layout.Collapsable("Theme Managment", () =>
             {
                 using (FuGrid grid = new FuGrid("themeManagmentGrid"))
                 {
@@ -146,7 +145,7 @@ namespace Fu
                     if (grid.Button("New"))
                     {
                         _newThemeName = string.Empty;
-                        ShowModal("Create new Theme", (layout) =>
+                        ShowModal("Create new Theme", () =>
                         {
                             using (FuGrid grid = new FuGrid("newThemeGrid"))
                             {
@@ -167,10 +166,10 @@ namespace Fu
                     if (grid.Button("Delete", FuButtonStyle.Danger))
                     {
                         _newThemeName = string.Empty;
-                        ShowModal("Delete this theme", (layout) =>
+                        ShowModal("Delete this theme", () =>
                         {
-                            layout.Dummy();
-                            layout.Text("Are you sure you want to delete this theme?\nThis can't be undone.");
+                            Fugui.Layout.Dummy();
+                            Fugui.Layout.Text("Are you sure you want to delete this theme?\nThis can't be undone.");
                         }, FuModalSize.Medium,
                         new FuModalButton("Yes", () =>
                         {
@@ -182,7 +181,7 @@ namespace Fu
                 }
             });
 
-            layout.Collapsable("Theme Variables", () =>
+            Fugui.Layout.Collapsable("Theme Variables", () =>
             {
                 using (FuGrid grid = new FuGrid("FuguiThemeVariablesGrid", FuGridFlag.LinesBackground | FuGridFlag.AutoToolTipsOnLabels))
                 {
@@ -194,7 +193,7 @@ namespace Fu
                 }
             });
 
-            layout.Collapsable("Theme Colors", () =>
+            Fugui.Layout.Collapsable("Theme Colors", () =>
             {
                 using (FuGrid grid = new FuGrid("FuguiThemeColorGrid", _themeColorsGridDefinition, FuGridFlag.AutoToolTipsOnLabels | FuGridFlag.LinesBackground, 4f))
                 {

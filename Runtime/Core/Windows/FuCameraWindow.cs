@@ -119,12 +119,12 @@ namespace Fu
                 IsInterractable = true;
                 Camera.enabled = false;
 
-                UI = (window, layout) =>
+                UI = (window) =>
                 {
                     Vector2 cursorPos = ImGui.GetCursorScreenPos();
                     ImGui.Image(Container.Context.TextureManager.GetTextureId(_rTexture), WorkingAreaSize);
                     ImGui.SetCursorScreenPos(cursorPos);
-                    windowDefinition.UI?.Invoke(this, Layout);
+                    windowDefinition.UI?.Invoke(this);
                 };
 
                 // Register camera input only after every GPU resource has initialized successfully.

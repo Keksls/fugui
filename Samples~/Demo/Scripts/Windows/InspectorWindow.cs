@@ -18,13 +18,12 @@ public class InspectorWindow : FuWindowBehaviour
     /// Handles the UI event.
     /// </summary>
     /// <param name="window">The window value.</param>
-    /// <param name="layout">The layout value.</param>
-    public override void OnUI(FuWindow window, FuLayout layout)
+    public override void OnUI(FuWindow window)
     {
         using (new FuPanel("demoContainer", FuStyle.Unpadded))
         {
             // raycaster transform
-            layout.Collapsable("Transform (raycaster)", () =>
+            Fugui.Layout.Collapsable("Transform (raycaster)", () =>
             {
                 using (FuGrid grid = new FuGrid("transformGrid", rowsPadding: 1f, outterPadding: 8f))
                 {
@@ -53,7 +52,7 @@ public class InspectorWindow : FuWindowBehaviour
             }, 8f);
 
             // camera settings
-            layout.Collapsable("Camera", () =>
+            Fugui.Layout.Collapsable("Camera", () =>
             {
                 using (FuGrid grid = new FuGrid("cameraGrid", outterPadding: 8f))
                 {
@@ -96,8 +95,8 @@ public class InspectorWindow : FuWindowBehaviour
             }, FuButtonStyle.Collapsable, 8f, true, 22f, (h) =>
             {
                 bool camEnabled = CameraWindow.enabled;
-                layout.CenterNextItemV(16f * Fugui.Scale, h);
-                if (layout.CheckBox("##cmEnbldChkCsbl", ref camEnabled))
+                Fugui.Layout.CenterNextItemV(16f * Fugui.Scale, h);
+                if (Fugui.Layout.CheckBox("##cmEnbldChkCsbl", ref camEnabled))
                 {
                     CameraWindow.enabled = camEnabled;
                 }
@@ -105,17 +104,17 @@ public class InspectorWindow : FuWindowBehaviour
             {
                 string cameraSettingsPopupID = "cmPppStng";
                 Fugui.PushFont(18, FontType.Regular);
-                layout.CenterNextItemV(Icons.MenuDots, h, false);
-                if (layout.ClickableText(Icons.MenuDots))
+                Fugui.Layout.CenterNextItemV(Icons.MenuDots, h, false);
+                if (Fugui.Layout.ClickableText(Icons.MenuDots))
                 {
                     Fugui.OpenPopUp(cameraSettingsPopupID, () =>
                     {
-                        layout.Spacing();
+                        Fugui.Layout.Spacing();
                         using (FuGrid grid = new FuGrid("cmStngGrd", width: 196f, outterPadding: 8f))
                         {
                             grid.Slider("Hit force", ref CameraWindow.HitForce, 10f, 500f, format: "%.0f N");
                         }
-                        layout.Spacing();
+                        Fugui.Layout.Spacing();
                     });
                 }
                 Fugui.PopFont();

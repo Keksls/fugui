@@ -14,7 +14,7 @@ namespace Fu.Framework
     {
         #region State
         /// <summary>Delegate for displaying an element in the tree.</summary>
-        private Action<T, FuLayout> _display;
+        private Action<T> _display;
         /// <summary>Delegate for checking if an element is open.</summary>
         private Func<T, bool> _isOpen;
         /// <summary>Delegate for checking if an element is selected.</summary>
@@ -70,7 +70,7 @@ namespace Fu.Framework
         ///<param name="isOpen">Delegate for checking if an element is open.</param>
         ///<param name="isSelected">Delegate for checking if an element is selected.</param>
         ///<param name="itemHeight">The height of each tree item.</param>
-        public FuTree(string id, Func<IEnumerable<T>> getAll, FuTextStyle carretStyle, Action<T, FuLayout> display, Func<T, float, Vector2> getSelectableSize, Action<T> onOpen, Action<T> onClose, Action<IEnumerable<T>> onSelect, Action<IEnumerable<T>> onDeSelect, Func<T, int> getLevel, Func<T, T, bool> equals, Func<T, IEnumerable<T>> getDirectChildren, Func<T, bool> isOpen, Func<T, bool> isSelected, float itemHeight)
+        public FuTree(string id, Func<IEnumerable<T>> getAll, FuTextStyle carretStyle, Action<T> display, Func<T, float, Vector2> getSelectableSize, Action<T> onOpen, Action<T> onClose, Action<IEnumerable<T>> onSelect, Action<IEnumerable<T>> onDeSelect, Func<T, int> getLevel, Func<T, T, bool> equals, Func<T, IEnumerable<T>> getDirectChildren, Func<T, bool> isOpen, Func<T, bool> isSelected, float itemHeight)
         {
             _id = id;
             _getAll = getAll;
@@ -428,8 +428,6 @@ namespace Fu.Framework
             float indent = 18f * Fugui.CurrentContext.Scale;
             // Get the draw list and color.
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
-            // Reuse the window-owned layout; creating and disposing a layout here allocated on every frame.
-            FuLayout layout = FuWindow.CurrentDrawingWindow.Layout;
             int count = _elements.Count;
             Fugui.ListClipperBegin(Math.Max(1, count), height);
             try
@@ -451,7 +449,7 @@ namespace Fu.Framework
                             try
                             {
                                 // Always restore indentation when custom element drawing fails.
-                                drawElement(_elements[i], layout, drawList, itemRect);
+                                drawElement(_elements[i], drawList, itemRect);
                             }
                             finally
                             {
@@ -460,7 +458,7 @@ namespace Fu.Framework
                         }
                         else
                         {
-                            drawElement(_elements[i], layout, drawList, itemRect);
+                            drawElement(_elements[i], drawList, itemRect);
                         }
                     }
                 }
@@ -524,10 +522,9 @@ namespace Fu.Framework
         ///Draws an element of the tree.
         /// </summary>
         ///<param name="element">The element to draw.</param>
-        ///<param name="layout">The layout object.</param>
         ///<param name="drawList">The draw list.</param>
         ///<param name="itemRect">The rect of the item.</param>
-        private void drawElement(T element, FuLayout layout, FuDrawList drawList, Rect itemRect)
+        private void drawElement(T element, FuDrawList drawList, Rect itemRect)
         {
             float scale = Fugui.CurrentContext.Scale;
             float height = Fugui.CurrentContext.Scale * _itemHeight;
@@ -595,7 +592,7 @@ namespace Fu.Framework
             {
                 ImGui.Dummy(new Vector2(carretHitWidth, height));
                 Rect carretRect = new Rect(cursorPos, new Vector2(carretHitWidth, height));
-                bool clicked = layout.InvisibleInteractionAt(getCaretId(element), carretRect.min, carretRect.size, out bool hover, out bool active, FuButtonFlags.MouseButtonLeft, true);
+                bool clicked = Fugui.Layout.InvisibleInteractionAt(getCaretId(element), carretRect.min, carretRect.size, out bool hover, out bool active, FuButtonFlags.MouseButtonLeft, true);
 
                 // set mouse cursor
                 if (hover)
@@ -656,7 +653,7 @@ namespace Fu.Framework
             ImGui.SameLine(0f, 0f);
 
             // draw custom element
-            _display(element, layout);
+            _display(element);
 
             // Keep the row height stable for the internal list clipper.
             ImGui.SetCursorScreenPos(new Vector2(itemRect.xMin, itemRect.yMin + height));

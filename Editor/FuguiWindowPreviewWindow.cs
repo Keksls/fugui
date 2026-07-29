@@ -541,7 +541,7 @@ namespace Fu.Editor
             ForcePreviewWindowToContainer();
         }
 
-        private void DrawTargetWindow(FuWindow window, FuLayout layout)
+        private void DrawTargetWindow(FuWindow window)
         {
             if (_target == null)
             {
@@ -549,7 +549,7 @@ namespace Fu.Editor
             }
 
             ForcePreviewWindowToContainer();
-            _target.OnUI(window, layout);
+            _target.OnUI(window);
             ForcePreviewWindowToContainer();
         }
 

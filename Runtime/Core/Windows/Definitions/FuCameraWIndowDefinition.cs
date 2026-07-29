@@ -50,7 +50,7 @@ namespace Fu
         /// <param name="externalWindowFlags">External window flags of this window definition</param>
         /// <param name="windowStyleFlags">ImGui window flags exposed through Fugui.</param>
         /// <param name="resizableSides">Sides that can resize this window when resize is enabled.</param>
-        public FuCameraWindowDefinition(FuWindowName windowName, Camera camera, int idleCameraFPS, int manipulatingCameraFPS, MSAASamples mSAASamples, FuLayer layer, Action<FuWindow, FuLayout> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalWindowFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default, FuWindowResizeSides resizableSides = FuWindowResizeSides.Default) : base(windowName, layer, ui, pos, size, flags, externalWindowFlags, windowStyleFlags, resizableSides)
+        public FuCameraWindowDefinition(FuWindowName windowName, Camera camera, int idleCameraFPS, int manipulatingCameraFPS, MSAASamples mSAASamples, FuLayer layer, Action<FuWindow> ui = null, Vector2Int? pos = null, Vector2Int? size = null, FuWindowFlags flags = FuWindowFlags.Default, FuExternalWindowFlags externalWindowFlags = FuExternalWindowFlags.Default, FuWindowStyleFlags windowStyleFlags = FuWindowStyleFlags.Default, FuWindowResizeSides resizableSides = FuWindowResizeSides.Default) : base(windowName, layer, ui, pos, size, flags, externalWindowFlags, windowStyleFlags, resizableSides)
         {
             // set default camera window supersampling
             SuperSampling = 1f;

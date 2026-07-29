@@ -2502,7 +2502,7 @@ namespace Fu
         /// <summary>
         /// Draw docked window tabs using the Fugui custom tabs widget.
         /// </summary>
-        internal void DrawDockedTabs(FuWindow window, FuLayout layout)
+        internal void DrawDockedTabs(FuWindow window)
         {
             if (IsDockingDisabled())
             {
@@ -2510,7 +2510,7 @@ namespace Fu
             }
 
             uint nodeId = GetDockNodeId(window);
-            if (nodeId == 0u || layout == null || !_nodeWindowIds.TryGetValue(nodeId, out List<string> windowIds) || windowIds.Count == 0)
+            if (nodeId == 0u || !_nodeWindowIds.TryGetValue(nodeId, out List<string> windowIds) || windowIds.Count == 0)
             {
                 return;
             }
@@ -2537,7 +2537,7 @@ namespace Fu
             string tabBarId = GetDockTabBarId(nodeId);
             FuTabsFlags tabFlags = FuTabsFlags.Compact;
             tabFlags |= floatingRoot != null ? FuTabsFlags.ReserveTrailingSpace : FuTabsFlags.Stretch;
-            if (layout.TabsUnique(tabBarId, _dockTabLabels, ref selected, tabFlags))
+            if (Fugui.Layout.TabsUnique(tabBarId, _dockTabLabels, ref selected, tabFlags))
             {
                 _nodeSelectedIndices[nodeId] = selected;
                 Fugui.ForceDrawAllWindows(2);
@@ -3602,9 +3602,9 @@ namespace Fu
                         {
                             if (showConfigModal)
                             {
-                                Fugui.ShowModal("Delete Docking Layout", (layout) =>
+                                Fugui.ShowModal("Delete Docking Layout", () =>
                                 {
-                                    layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrap);
+                                    Fugui.Layout.Text("This action cannot be rollbacked. Are you sure you want to continue ?", FuTextWrapping.Wrap);
                                     if (Fugui.DefaultContainer.Keyboard.GetKeyDown(FuKeysCode.Enter))
                                     {
                                         confirmDeleteSelectedLayoutFile(folderPath, layoutName, callback);

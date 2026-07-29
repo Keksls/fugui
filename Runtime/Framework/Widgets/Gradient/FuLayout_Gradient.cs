@@ -165,13 +165,11 @@ namespace Fu.Framework
             float colorKeySize = COLOR_KEY_SIZE * Fugui.CurrentContext.Scale;
             FuDrawList drawList = Fugui.GetCurrentWindowDrawList();
 
-            // The current layout already owns the element stack and avoids a per-frame nested layout allocation.
-            FuLayout layout = this;
             // Draw Header
             // TODO : Add Fugui icons and use it to draw buttons glyphs
 
             // Add a new color key
-            if (layout.Button(GetCachedCompositeId("+##addKey", text), new FuElementSize(24f, 0f)))
+            if (Button(GetCachedCompositeId("+##addKey", text), new FuElementSize(24f, 0f)))
             {
                 // get selected key
                 if (_currentGradient.GetKey(_selectedColorKeyIndex, out FuGradientColorKey selectedKey))
@@ -195,10 +193,10 @@ namespace Fu.Framework
                     }
                 }
             }
-            layout.SameLine();
+            SameLine();
 
             // Remove selected color key
-            if (layout.Button(GetCachedCompositeId("-##remKey", text), new FuElementSize(24f, 0f)))
+            if (Button(GetCachedCompositeId("-##remKey", text), new FuElementSize(24f, 0f)))
             {
                 _currentGradient.RemoveColorKey(_selectedColorKeyIndex);
                 edited = true;
@@ -208,7 +206,7 @@ namespace Fu.Framework
                     _selectedColorKeyIndex = 0;
                 }
             }
-            layout.SameLine();
+            SameLine();
 
             // draw Key index
             ImGui.SetNextItemWidth(64f);
@@ -218,16 +216,16 @@ namespace Fu.Framework
             {
                 _selectedColorKeyIndex = keyIndex - 1;
             }
-            layout.SameLine();
+            SameLine();
 
             // set the blending mode
-            layout.SetNextElementToolTipWithLabel("However you want this gradient to blend color values");
-            layout.ComboboxEnum<FuGradientBlendMode>("Blending", (index) =>
+            SetNextElementToolTipWithLabel("However you want this gradient to blend color values");
+            ComboboxEnum<FuGradientBlendMode>("Blending", (index) =>
             {
                 _currentGradient.SetBlendMode((FuGradientBlendMode)index);
             }, () => _currentGradient.BlendMode, new Vector2(GetAvailableWidth() - 52f * Fugui.CurrentContext.Scale, 0f), Vector2.zero, FuButtonStyle.Default);
-            layout.SameLine();
-            layout.Combobox(GetCachedCompositeId("##GpStng", text), FuIcons.Fu_Gear_Duotone, () =>
+            SameLine();
+            Combobox(GetCachedCompositeId("##GpStng", text), FuIcons.Fu_Gear_Duotone, () =>
             {
                 if (ImGui.Selectable("Reset gradient"))
                 {
@@ -252,7 +250,7 @@ namespace Fu.Framework
             }, FuElementSize.FullSize, new Vector2(102f, -1f), FuButtonStyle.Default);
             Fugui.PopContextMenuItems();
             Fugui.PopContextMenuItems();
-            layout.Separator();
+            Separator();
 
             Vector2 mousePos = ImGui.GetMousePos();
             Vector2 startPos = ImGui.GetCursorScreenPos();
@@ -372,17 +370,17 @@ namespace Fu.Framework
             {
                 if (_currentGradient.GetKey(_selectedColorKeyIndex, out FuGradientColorKey key))
                 {
-                    layout.Separator();
+                    Separator();
                     using (FuGrid grid = new FuGrid(GetCachedCompositeId(text, "grdPkrFtrGrd"), _gradientFooterGridDefinition))
                     {
                         grid.NextColumn();
-                        layout.Text("Color");
-                        layout.SameLine();
+                        Text("Color");
+                        SameLine();
                         // color with Alpha
                         if (allowAlpha)
                         {
                             Vector4 col = key.Color;
-                            if (layout.ColorPicker(GetCachedCompositeId(text, "cp"), ref col))
+                            if (ColorPicker(GetCachedCompositeId(text, "cp"), ref col))
                             {
                                 _currentGradient.SetKeyColor(_selectedColorKeyIndex, col);
                             }
@@ -391,7 +389,7 @@ namespace Fu.Framework
                         else
                         {
                             Vector3 col = (Vector4)key.Color;
-                            if (layout.ColorPicker(GetCachedCompositeId(text, "cp"), ref col))
+                            if (ColorPicker(GetCachedCompositeId(text, "cp"), ref col))
                             {
                                 Vector4 newCol = (Vector4)col;
                                 newCol.w = 1f;
@@ -399,12 +397,12 @@ namespace Fu.Framework
                             }
                         }
                         grid.NextColumn();
-                        layout.Text("Location");
-                        layout.SameLine();
+                        Text("Location");
+                        SameLine();
                         if (relativeMin >= relativeMax)
                         {
                             float time = key.Time * 100f;
-                            if (layout.Drag(GetCachedCompositeId("##drag", text), ref time, string.Empty, 0f, 100f, 0.01f, "%.1f %%"))
+                            if (Drag(GetCachedCompositeId("##drag", text), ref time, string.Empty, 0f, 100f, 0.01f, "%.1f %%"))
                             {
                                 _currentGradient.SetKeyTime(_selectedColorKeyIndex, time / 100f);
                             }
@@ -412,7 +410,7 @@ namespace Fu.Framework
                         else
                         {
                             float relativeTime = Mathf.Lerp(relativeMin, relativeMax, key.Time);
-                            if (layout.Drag(GetCachedCompositeId("##drag", text), ref relativeTime, string.Empty, relativeMin, relativeMax, format: "%.2f"))
+                            if (Drag(GetCachedCompositeId("##drag", text), ref relativeTime, string.Empty, relativeMin, relativeMax, format: "%.2f"))
                             {
                                 float time = (relativeTime - relativeMin) / (relativeMax - relativeMin);
                                 _currentGradient.SetKeyTime(_selectedColorKeyIndex, time);

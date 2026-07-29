@@ -46,7 +46,7 @@ namespace Fu.Framework
         #region Constructors
         /// <summary>
         /// Create a new instance a FuVideoPlayer with the given ID
-        /// Must be call only y fugui. If you need an instance of FuVideoPlayer, please call layout.GetVideoPlayer() instead
+        /// Must be called only by Fugui. Use Fugui.Layout.GetVideoPlayer() to obtain a player instance.
         /// </summary>
         /// <param name="id">UniqueID of the FuVideoPlayer</param>
         internal FuVideoPlayer(string id)

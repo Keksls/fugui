@@ -300,7 +300,7 @@ definition
 `SetHeaderUI(DrawHeader, 32f, overrideWindowDecorations: true)` ou
 `SetWindowDecorationUI(DrawHeader, 32f)` remplace le title bar Fugui des
 fenetres flottantes par un header custom. La zone reste utilisable pour le
-drag/docking; les fenetres dockees conservent leur tab bar de layout.
+drag/docking; les fenetres dockees conservent leur tab bar de Fugui.Layout.
 
 Flags:
 
@@ -361,7 +361,7 @@ Override principaux:
 ```csharp
 public override void OnWindowDefinitionCreated(FuWindowDefinition definition) {}
 public override void OnWindowCreated(FuWindow window) {}
-public override void OnUI(FuWindow window, FuLayout layout) {}
+public override void OnUI(FuWindow window) {}
 ```
 
 ### `FuCameraWindowBehaviour`
@@ -570,21 +570,21 @@ Base de dessin immediate-mode. Points cles:
 Methodes structurelles:
 
 ```csharp
-layout.SetNextElementToolTip("line 1", "line 2");
-layout.SetNextElementToolTipWithLabel("description");
-layout.SetNextElementToolTipStyles(FuTextStyle.Info);
-layout.DisableNextElement();
-layout.DisableNextElements();
-layout.EnableNextElements();
-layout.Separator();
-layout.Spacing();
-layout.SameLine();
-layout.Dummy(8f, 8f);
-layout.BeginGroup();
-layout.EndGroup();
-layout.CenterNextItemH("Text");
-layout.CenterNextItemV("Text", height);
-layout.CenterNextItemHV("Text", width, height);
+Fugui.Layout.SetNextElementToolTip("line 1", "line 2");
+Fugui.Layout.SetNextElementToolTipWithLabel("description");
+Fugui.Layout.SetNextElementToolTipStyles(FuTextStyle.Info);
+Fugui.Layout.DisableNextElement();
+Fugui.Layout.DisableNextElements();
+Fugui.Layout.EnableNextElements();
+Fugui.Layout.Separator();
+Fugui.Layout.Spacing();
+Fugui.Layout.SameLine();
+Fugui.Layout.Dummy(8f, 8f);
+Fugui.Layout.BeginGroup();
+Fugui.Layout.EndGroup();
+Fugui.Layout.CenterNextItemH("Text");
+Fugui.Layout.CenterNextItemV("Text", height);
+Fugui.Layout.CenterNextItemHV("Text", width, height);
 ```
 
 ### `FuGrid`
@@ -627,13 +627,13 @@ Tous les widgets de `FuLayout` sont disponibles sur `FuGrid`.
 ### Texte
 
 ```csharp
-layout.Text("Default");
-layout.Text("Info", FuTextStyle.Info);
-layout.Text("Long text", FuTextWrapping.Wrap);
-layout.SmartText("Hello <b>bold</b> <color=red>red</color>");
-layout.TextURL("docs", "https://example.com");
-bool clicked = layout.ClickableText("Click");
-layout.FramedText("Status", FuElementSize.AutoSize);
+Fugui.Layout.Text("Default");
+Fugui.Layout.Text("Info", FuTextStyle.Info);
+Fugui.Layout.Text("Long text", FuTextWrapping.Wrap);
+Fugui.Layout.SmartText("Hello <b>bold</b> <color=red>red</color>");
+Fugui.Layout.TextURL("docs", "https://example.com");
+bool clicked = Fugui.Layout.ClickableText("Click");
+Fugui.Layout.FramedText("Status", FuElementSize.AutoSize);
 ```
 
 Styles texte: `Default`, `Deactivated`, `Selected`, `Highlight`, `Info`, `Warning`, `Danger`, `Success`.
@@ -641,11 +641,11 @@ Styles texte: `Default`, `Deactivated`, `Selected`, `Highlight`, `Info`, `Warnin
 ### Boutons
 
 ```csharp
-layout.Button("Button");
-layout.Button("Danger", FuButtonStyle.Danger);
-layout.Button("Sized", new FuElementSize(120f, 28f));
-layout.ButtonsGroup("Mode", labels, index => selected = index);
-layout.ButtonsGroup<MyEnum>("Enum", value => selected = value);
+Fugui.Layout.Button("Button");
+Fugui.Layout.Button("Danger", FuButtonStyle.Danger);
+Fugui.Layout.Button("Sized", new FuElementSize(120f, 28f));
+Fugui.Layout.ButtonsGroup("Mode", labels, index => selected = index);
+Fugui.Layout.ButtonsGroup<MyEnum>("Enum", value => selected = value);
 ```
 
 Styles bouton: `Default`, `Transparent`, `Selected`, `Highlight`, `Info`, `Success`, `Warning`, `Danger`, `Collapsable`.
@@ -653,11 +653,11 @@ Styles bouton: `Default`, `Transparent`, `Selected`, `Highlight`, `Info`, `Succe
 ### Inputs numeriques
 
 ```csharp
-layout.Slider("Float", ref value, 0f, 1f);
-layout.Slider("Int", ref count, 0, 10);
-layout.Range("Range", ref min, ref max, 0f, 100f);
-layout.Drag("Vector3", ref position, "X", "Y", "Z", -10f, 10f);
-layout.Knob("Gain", ref gain, 0f, 1f, FuKnobVariant.Wiper);
+Fugui.Layout.Slider("Float", ref value, 0f, 1f);
+Fugui.Layout.Slider("Int", ref count, 0, 10);
+Fugui.Layout.Range("Range", ref min, ref max, 0f, 100f);
+Fugui.Layout.Drag("Vector3", ref position, "X", "Y", "Z", -10f, 10f);
+Fugui.Layout.Knob("Gain", ref gain, 0f, 1f, FuKnobVariant.Wiper);
 ```
 
 Flags slider:
@@ -670,21 +670,21 @@ Flags slider:
 ### Booleens et selection
 
 ```csharp
-layout.CheckBox("Enabled", ref enabled);
-layout.Toggle("Power", ref power, "Off", "On");
-layout.RadioButton("Option", selected);
-layout.Combobox("Items", items, item => selected = item);
-layout.ComboboxEnum<MyEnum>("Mode", i => mode = (MyEnum)i, () => mode);
-layout.ListBox("List", items, item => selected = item);
-layout.Tabs("tabs", new[] { "A", "B" }, index => currentTab = index);
+Fugui.Layout.CheckBox("Enabled", ref enabled);
+Fugui.Layout.Toggle("Power", ref power, "Off", "On");
+Fugui.Layout.RadioButton("Option", selected);
+Fugui.Layout.Combobox("Items", items, item => selected = item);
+Fugui.Layout.ComboboxEnum<MyEnum>("Mode", i => mode = (MyEnum)i, () => mode);
+Fugui.Layout.ListBox("List", items, item => selected = item);
+Fugui.Layout.Tabs("tabs", new[] { "A", "B" }, index => currentTab = index);
 ```
 
 ### Recherche et tables
 
 ```csharp
-layout.SearchBox("objects-search", ref search, "Search...");
+Fugui.Layout.SearchBox("objects-search", ref search, "Search...");
 
-layout.TableView(
+Fugui.Layout.TableView(
     "objects-table",
     objects,
     new[]
@@ -734,7 +734,7 @@ options.YAxis.Label = "Value";
 options.YAxis.SetAutoRange(includeZero: true);
 
 FuChartHoverState hover;
-layout.Chart("chart", series, options, out hover);
+Fugui.Layout.Chart("chart", series, options, out hover);
 ```
 
 `FuChartOptions.BeforePlotDraw`, `AfterPlotDraw` et `FuChartSeries.Custom` exposent `FuChartDrawContext`, qui donne acces au `DrawList`, au `PlotRect`, aux bornes `Min/Max`, au hover courant et aux conversions `ToScreen` / `ToValue`. Pour les gros datasets, `MaxRenderedPointsPerSeries` limite le nombre de segments/points dessines et utilises par le hit-test; fixez les ranges des axes pour eviter le scan automatique si les donnees sont deja bornees.
@@ -742,9 +742,9 @@ layout.Chart("chart", series, options, out hover);
 ### Images, couleurs, gradients
 
 ```csharp
-layout.Image("Logo", texture, new FuElementSize(64f, 64f));
-layout.ImageButton("Logo Button", texture, Vector2.one * 32f, Vector2.zero);
-layout.ColorPicker("Tint", ref color);
+Fugui.Layout.Image("Logo", texture, new FuElementSize(64f, 64f));
+Fugui.Layout.ImageButton("Logo Button", texture, Vector2.one * 32f, Vector2.zero);
+Fugui.Layout.ColorPicker("Tint", ref color);
 
 FuGradient gradient = new FuGradient();
 gradient.AddColorKey(0f, Color.black);
@@ -757,9 +757,9 @@ Texture2D preview = gradient.GetGradientTexture();
 ```csharp
 using (new FuPanel("panel", FuStyle.Unpadded))
 {
-    layout.Collapsable("Section", () =>
+    Fugui.Layout.Collapsable("Section", () =>
     {
-        layout.Text("Content");
+        Fugui.Layout.Text("Content");
     });
 }
 ```
@@ -767,10 +767,10 @@ using (new FuPanel("panel", FuStyle.Unpadded))
 ### Fichiers
 
 ```csharp
-layout.InputFile("File", path => selectedFile = path, selectedFile,
+Fugui.Layout.InputFile("File", path => selectedFile = path, selectedFile,
     new ExtensionFilter("Images", "png", "jpg"));
 
-layout.InputFolder("Folder", path => selectedFolder = path, selectedFolder);
+Fugui.Layout.InputFolder("Folder", path => selectedFolder = path, selectedFolder);
 ```
 
 ### Loaders
@@ -799,7 +799,7 @@ Methodes:
 ### Video
 
 ```csharp
-FuVideoPlayer player = layout.GetVideoPlayer("preview");
+FuVideoPlayer player = Fugui.Layout.GetVideoPlayer("preview");
 player.SetFile(path);
 player.SetLoop(true);
 player.Play();
@@ -861,7 +861,7 @@ using (var grid = new FuGrid("tool-settings"))
 ```csharp
 using (new FuPanel("content", FuPanelStyle.Default, FuPanelFlags.Default))
 {
-    layout.Text("Scrollable content");
+    Fugui.Layout.Text("Scrollable content");
 }
 ```
 
@@ -1057,7 +1057,7 @@ Creation:
 FuOverlay overlay = new FuOverlay(
     "stats",
     new Vector2Int(160, 80),
-    (o, layout) => layout.Text("FPS"),
+    (o) => Fugui.Layout.Text("FPS"),
     FuOverlayFlags.Default,
     FuOverlayDragPosition.Right
 );
@@ -1172,10 +1172,10 @@ public sealed class FloatNode : FuNode
         });
     }
 
-    public override void OnDraw(FuLayout layout)
+    public override void OnDraw()
     {
         float value = GetPortValue<float>("Out");
-        if (layout.Drag("##value", ref value))
+        if (Fugui.Layout.Drag("##value", ref value))
         {
             SetPortValue("Out", "core/float", value);
         }
@@ -1378,7 +1378,7 @@ public sealed class ToolWindow : FuWindowBehaviour
     private float _radius = 5f;
     private Vector4 _color = Color.cyan;
 
-    public override void OnUI(FuWindow window, FuLayout layout)
+    public override void OnUI(FuWindow window)
     {
         using (new FuPanel("tool-panel", FuStyle.Unpadded))
         using (var grid = new FuGrid("tool-grid", FuGridDefinition.DefaultFixed, FuGridFlag.LinesBackground))
@@ -1410,9 +1410,9 @@ FuWindowName Stats = new FuWindowName(200, "Stats", true, 10);
 
 FuWindowDefinition definition = new FuWindowDefinition(
     Stats,
-    (window, layout) =>
+    (window) =>
     {
-        layout.Text("Main stats window");
+        Fugui.Layout.Text("Main stats window");
     },
     size: new Vector2Int(360, 240)
 );
@@ -1420,10 +1420,10 @@ FuWindowDefinition definition = new FuWindowDefinition(
 FuOverlay overlay = new FuOverlay(
     "stats-overlay",
     new Vector2Int(120, 52),
-    (o, layout) =>
+    (o) =>
     {
-        layout.Text("Stats");
-        layout.Text("Time " + Fugui.Time.ToString("0.00"));
+        Fugui.Layout.Text("Stats");
+        Fugui.Layout.Text("Time " + Fugui.Time.ToString("0.00"));
     }
 );
 
@@ -1456,7 +1456,7 @@ public sealed class AssetPayload
     public string Path;
 }
 
-if (layout.Button("Drag asset"))
+if (Fugui.Layout.Button("Drag asset"))
 {
     // element source dessine avant BeginDragDropSource
 }
@@ -1464,11 +1464,11 @@ if (layout.Button("Drag asset"))
 Fugui.BeginDragDropSource(
     "asset-payload",
     ImGuiDragDropFlags.None,
-    () => layout.Text("Dragging asset"),
+    () => Fugui.Layout.Text("Dragging asset"),
     new AssetPayload { Path = "Assets/My.asset" }
 );
 
-layout.FramedText("Drop here");
+Fugui.Layout.FramedText("Drop here");
 Fugui.BeginDragDropTarget<AssetPayload>("asset-payload", payload =>
 {
     Debug.Log(payload.Path);
@@ -1491,7 +1491,7 @@ graph.Registry.RegisterNode("Variables/Float", () => new FloatNode(Color.green))
 
 FuNodalEditor editor = new FuNodalEditor(graph, 0.5f, 2f, FuNodalEditorFlags.Default);
 
-public override void OnUI(FuWindow window, FuLayout layout)
+public override void OnUI(FuWindow window)
 {
     editor.Draw(window);
 }

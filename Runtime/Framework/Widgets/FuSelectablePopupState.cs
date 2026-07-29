@@ -10,7 +10,7 @@ namespace Fu.Framework
     internal sealed class FuSelectablePopupState<T>
     {
         #region State
-        private FuLayout _layout;
+        private bool _disabled;
         private string _selectableId;
         private List<T> _items;
         private Action<int> _indexChange;
@@ -37,7 +37,7 @@ namespace Fu.Framework
         /// <summary>
         /// Updates the live inputs consumed when the popup is drawn.
         /// </summary>
-        /// <param name="layout">Owning Fugui layout.</param>
+        /// <param name="disabled">Whether popup entries are disabled by the owning drawer.</param>
         /// <param name="selectableId">Window-scoped selectable identifier.</param>
         /// <param name="items">Current selectable items.</param>
         /// <param name="selectedIndex">Current selected index.</param>
@@ -47,7 +47,7 @@ namespace Fu.Framework
         /// <param name="mappedCallbackValues">Optional values mapped from visual indices.</param>
         /// <param name="highlightSelection">Whether selected entries use combobox highlighting.</param>
         internal void Prepare(
-            FuLayout layout,
+            bool disabled,
             string selectableId,
             List<T> items,
             int selectedIndex,
@@ -58,7 +58,7 @@ namespace Fu.Framework
             bool highlightSelection)
         {
             // Only references and scalar state change per frame; the draw delegate remains stable.
-            _layout = layout;
+            _disabled = disabled;
             _selectableId = selectableId;
             _items = items;
             _selectedIndex = selectedIndex;
@@ -74,7 +74,7 @@ namespace Fu.Framework
         /// </summary>
         private void Draw()
         {
-            if (_layout == null || _items == null)
+            if (_items == null)
             {
                 return;
             }
@@ -99,7 +99,7 @@ namespace Fu.Framework
 
                 try
                 {
-                    ImGuiSelectableFlags flags = _layout.LastItemDisabled
+                    ImGuiSelectableFlags flags = _disabled
                         ? ImGuiSelectableFlags.Disabled
                         : ImGuiSelectableFlags.None;
                     if (!ImGui.Selectable(displayLabels[i], selected, flags))

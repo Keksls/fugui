@@ -181,6 +181,10 @@ namespace Fu
             {
                 throw new ArgumentNullException(nameof(windowsToGet));
             }
+            if (Settings != null && Settings.RenderingMode == FuRenderingMode.DrawListOnly)
+            {
+                throw new InvalidOperationException("FuWindow creation is unavailable while Fugui uses the DrawListOnly rendering mode.");
+            }
             if (autoAddToMainContainer && DefaultContainer == null)
             {
                 throw new InvalidOperationException("Cannot create windows in the main container before it is initialized.");
@@ -239,6 +243,10 @@ namespace Fu
             if (windowsToGet == null)
             {
                 throw new ArgumentNullException(nameof(windowsToGet));
+            }
+            if (Settings != null && Settings.RenderingMode == FuRenderingMode.DrawListOnly)
+            {
+                throw new InvalidOperationException("FuWindow creation is unavailable while Fugui uses the DrawListOnly rendering mode.");
             }
             if (autoAddToMainContainer && DefaultContainer == null)
             {

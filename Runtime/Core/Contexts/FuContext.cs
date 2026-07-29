@@ -51,6 +51,7 @@ namespace Fu
         internal DrawData DrawData => _drawData;
         public bool RenderPrepared { get; protected set; } = false;
         internal float LastPublishedDrawDataTime = float.NegativeInfinity;
+        internal FuRenderingMode RenderingMode { get; set; } = FuRenderingMode.Standard;
         public FuContainerScaleConfig ContainerScaleConfig { get; private set; }
 
         internal Dictionary<string, Dictionary<int, FontSet>> Fonts = new Dictionary<string, Dictionary<int, FontSet>>();
@@ -287,7 +288,15 @@ namespace Fu
                 // keep draw data for this context while rendering
                 lock (DrawData)
                 {
-                    ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData(), ref _drawData);
+                    if (RenderingMode == FuRenderingMode.DrawListOnly)
+                    {
+                        // The explicit raw draw-list mode bypasses every FuWindow classification and mesh cache.
+                        _drawData.BindDrawListOnly(ImGui.GetDrawData(), ID);
+                    }
+                    else
+                    {
+                        ImGuiDrawListUtils.GetDrawCmd(Fugui.UIWindows, ImGui.GetDrawData(), ref _drawData);
+                    }
                 }
             }
             //Debug.Log(this.ID + " Rendered with " + _drawData.CmdListsCount + " Draw Lists and " + _drawData.TotalVtxCount + " vertices.");

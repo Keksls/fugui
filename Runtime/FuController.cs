@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fu
@@ -99,7 +100,11 @@ namespace Fu
             NotifyFuguiBehaviours();
 
             // if no layouts and settings is set so, display Fugui settings to avoid 'softLocked scene'
-            if (Fugui.MainContainerEnabled && Fugui.Layouts.CurrentLayout == null && Fugui.Layouts.Layouts.Count == 0 && Fugui.Settings.DisplaySettingsIfNoLayout)
+            if (Fugui.Settings.RenderingMode == FuRenderingMode.Standard &&
+                Fugui.MainContainerEnabled &&
+                Fugui.Layouts.CurrentLayout == null &&
+                Fugui.Layouts.Layouts.Count == 0 &&
+                Fugui.Settings.DisplaySettingsIfNoLayout)
             {
                 Fugui.CreateWindow(FuSystemWindowsNames.FuguiSettings);
             }
@@ -110,17 +115,20 @@ namespace Fu
         /// </summary>
         private static void NotifyFuguiBehaviours()
         {
+            // SendMessage targets every component on a GameObject, so notify each GameObject only once.
+            HashSet<GameObject> notifiedGameObjects = new HashSet<GameObject>();
 #if UNITY_6000_4_OR_NEWER
             foreach (var mono in GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include))
-            {
-                mono.SendMessage("FuguiAwake", SendMessageOptions.DontRequireReceiver);
-            }
 #else
             foreach (var mono in GameObject.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
-                mono.SendMessage("FuguiAwake", SendMessageOptions.DontRequireReceiver);
-            }
 #endif
+            {
+                GameObject target = mono.gameObject;
+                if (notifiedGameObjects.Add(target))
+                {
+                    target.SendMessage("FuguiAwake", SendMessageOptions.DontRequireReceiver);
+                }
+            }
         }
 
         /// <summary>

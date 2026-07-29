@@ -31,6 +31,10 @@ namespace Fu
         [FuToggle]
         public bool DisplayOpenWindowsInMainMenu = false;
 
+        [Tooltip("Rendering pipeline used by Unity contexts. Keep Standard for FuWindow interfaces. DrawListOnly is an explicit fast path for contexts that only submit global or raw draw lists.")]
+        [FuTooltip("Rendering pipeline used by Unity contexts. Keep Standard for FuWindow interfaces. DrawListOnly is an explicit fast path for contexts that only submit global or raw draw lists.")]
+        public FuRenderingMode RenderingMode = FuRenderingMode.Standard;
+
         [Tooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
         [FuTooltip("The number of FPS to be used when the UI windows are not being manipulated.")]
         [Range(0, 120)]

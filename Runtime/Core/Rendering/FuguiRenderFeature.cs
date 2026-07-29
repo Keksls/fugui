@@ -642,6 +642,18 @@ namespace Fu
             {
                 int transientMeshIndex = 0;
 
+                if (drawData.IsDrawListOnly)
+                {
+                    DrawListMesh meshData = drawData.DrawListOnlyMesh;
+                    if (meshData != null && meshData.Mesh != null && meshData.SubMeshCount > 0 && meshData.TotalVtxCount > 0)
+                    {
+                        CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawData.DrawLists, drawData, fbSize, Vector2.zero);
+                    }
+
+                    TrimTransientMeshes(ctxId, 0);
+                    return;
+                }
+
                 if (drawData.RenderItems == null || drawData.RenderItems.Count == 0)
                 {
                     DrawListMesh fallbackMesh = GetOrCreateTransientMesh(ctxId, transientMeshIndex);
@@ -712,6 +724,18 @@ namespace Fu
             private void RenderDrawItems(int ctxId, UnsafeCommandBuffer commandBuffer, Material material, DrawData drawData, Vector2 fbSize, TextureHandle target, TextureHandle backdropA, TextureHandle backdropB, int downsample, int blurWidth, int blurHeight)
             {
                 int transientMeshIndex = 0;
+
+                if (drawData.IsDrawListOnly)
+                {
+                    DrawListMesh meshData = drawData.DrawListOnlyMesh;
+                    if (meshData != null && meshData.Mesh != null && meshData.SubMeshCount > 0 && meshData.TotalVtxCount > 0)
+                    {
+                        CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawData.DrawLists, drawData, fbSize, Vector2.zero, target, backdropA, backdropB, downsample, blurWidth, blurHeight);
+                    }
+
+                    TrimTransientMeshes(ctxId, 0);
+                    return;
+                }
 
                 if (drawData.RenderItems == null || drawData.RenderItems.Count == 0)
                 {
@@ -1371,6 +1395,18 @@ namespace Fu
             private void RenderDrawItems(int ctxId, CommandBuffer commandBuffer, Material material, DrawData drawData, Vector2 fbSize)
             {
                 int transientMeshIndex = 0;
+
+                if (drawData.IsDrawListOnly)
+                {
+                    DrawListMesh meshData = drawData.DrawListOnlyMesh;
+                    if (meshData != null && meshData.Mesh != null && meshData.SubMeshCount > 0 && meshData.TotalVtxCount > 0)
+                    {
+                        CreateDrawCommands(meshData.Mesh, material, commandBuffer, drawData.DrawLists, drawData, fbSize, Vector2.zero);
+                    }
+
+                    TrimTransientMeshes(ctxId, 0);
+                    return;
+                }
 
                 if (drawData.RenderItems == null || drawData.RenderItems.Count == 0)
                 {

@@ -605,6 +605,18 @@ namespace Fu
             #endregion
 
             #region Constructors
+            /// <summary>
+            /// Initializes one active frozen capture or replay scope.
+            /// </summary>
+            /// <param name="data">Cache entry used by the scope.</param>
+            /// <param name="capturing">Whether the scope is capturing live geometry.</param>
+            /// <param name="replayed">Whether the scope already replayed cached geometry.</param>
+            /// <param name="drawList">Exact draw list targeted by the scope.</param>
+            /// <param name="startIndex">First index emitted by the live block.</param>
+            /// <param name="startCursorScreenPos">Cursor or raw origin at capture start.</param>
+            /// <param name="captureOrigin">Screen-space origin used for replay offsets.</param>
+            /// <param name="captureSize">Window size used by layout-aware blocks.</param>
+            /// <param name="usesWindowLayout">Whether the scope preserves ImGui window layout.</param>
             public FuFrozenUIContext(
                 FuFrozenUIData data,
                 bool capturing,

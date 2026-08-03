@@ -46,6 +46,7 @@
             {
                 Varyings o = (Varyings)0;
                 UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 // One mul instead of two:
                 o.vertex = TransformObjectToHClip(float3(input.vertex, 0.0));
                 // Robust UV flip:
@@ -56,6 +57,7 @@
 
             half4 ImGuiPassFrag(Varyings i) : SV_Target
             {
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
                 //return half4(1, 1, 1, 1);
                 half4 tex = SAMPLE_TEXTURE2D(_Texture, sampler_Texture, i.uv);
                 if (_TextureIsAlpha > 0.5h)

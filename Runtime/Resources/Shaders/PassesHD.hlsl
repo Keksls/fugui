@@ -23,6 +23,8 @@ half4 unpack_color(uint c)
 Varyings ImGuiPassVertex(ImVert input)
 {
 	Varyings output = (Varyings)0;
+	UNITY_SETUP_INSTANCE_ID(input);
+	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 	output.vertex = UnityObjectToClipPos(float4(input.vertex, 0, 1));
 	output.uv = float2(input.uv.x, 1 - input.uv.y);
 	output.color = unpack_color(input.color);
@@ -31,6 +33,7 @@ Varyings ImGuiPassVertex(ImVert input)
 
 half4 ImGuiPassFrag(Varyings input) : SV_Target
 {
+	UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 	return input.color * tex2D(_Texture, input.uv);
 }
 

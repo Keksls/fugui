@@ -8,6 +8,7 @@ struct FuguiWorldVert
     float2 uv           : TEXCOORD0;
     uint   color        : TEXCOORD1;
     float2 clipPosition : TEXCOORD2;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 // Data interpolated into the fragment stage.
@@ -17,6 +18,7 @@ struct FuguiWorldVaryings
     float2 uv           : TEXCOORD0;
     half4  color        : COLOR;
     float2 clipPosition : TEXCOORD1;
+    UNITY_VERTEX_OUTPUT_STEREO
 };
 
 CBUFFER_START(UnityPerMaterial)
@@ -43,6 +45,7 @@ FuguiWorldVaryings FuguiWorldPassVertex(FuguiWorldVert input)
 {
     FuguiWorldVaryings output = (FuguiWorldVaryings)0;
     UNITY_SETUP_INSTANCE_ID(input);
+    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
     output.vertex = TransformObjectToHClip(input.vertex);
     output.uv = float2(input.uv.x, 1.0 - input.uv.y);
     output.color = FuguiWorldUnpackColor(input.color);
@@ -53,6 +56,8 @@ FuguiWorldVaryings FuguiWorldPassVertex(FuguiWorldVert input)
 // Fragment stage for Fugui world-space meshes.
 half4 FuguiWorldPassFrag(FuguiWorldVaryings input) : SV_Target
 {
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
     clip(input.clipPosition.x - _ClipRect.x);
     clip(input.clipPosition.y - _ClipRect.y);
     clip(_ClipRect.z - input.clipPosition.x);

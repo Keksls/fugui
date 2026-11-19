@@ -112,6 +112,23 @@ Fugui answers them in one package:
 
 Fugui is the UI layer of every application built at [VRDTM Studio](https://vrdtmstudio.com).
 
+### Game UI: Slyvek
+
+Fugui is designed for software first, but it is not limited to tools. Every screen of **Slyvek**, a tactical MMORPG, is drawn with Fugui: server selection, character creation, character sheet, skill tree, inventory, crafting, rich tooltips, settings and chat, with a fully custom game theme.
+
+<p align="center">
+  <img src="Documentation~/media/slyvek_character.jpg" alt="Slyvek: character sheet with stats, equipment slots and a 1,100-item inventory grid, next to the zoomable skill tree, the chat and the spell bar">
+</p>
+<p align="center">
+  <img src="Documentation~/media/slyvek_combat_style.jpg" width="49%" alt="Slyvek: choosing a combat style, with illustrated spell packs">
+  <img src="Documentation~/media/slyvek_starter_spell.jpg" width="49%" alt="Slyvek: choosing a starter spell, with a detailed preview">
+</p>
+<p align="center">
+  <img src="Documentation~/media/slyvek_inventory.jpg" height="300" alt="Slyvek: inventory with search, filters and a rich item tooltip">
+  <img src="Documentation~/media/slyvek_spell_tooltip.jpg" height="300" alt="Slyvek: spell tooltip with range and area grids drawn with the draw list">
+  <img src="Documentation~/media/slyvek_elements.jpg" height="300" alt="Slyvek: element affinity table">
+</p>
+
 ## Quick start
 
 ```csharp

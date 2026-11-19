@@ -807,6 +807,41 @@ player.DrawImage(320f, 180f);
 player.DrawTimeLine();
 ```
 
+### Clavier virtuel
+
+`FuVirtualKeyboard` porte les touches, l'etat et le comportement; `Fugui.Layout.VirtualKeyboard` le dessine.
+
+```csharp
+FuVirtualKeyboard keyboard = new FuVirtualKeyboard(FuVirtualKeyboard.GetSystemLayout());
+keyboard.Target = new FuTextKeyboardTarget(() => login, text => login = text);
+keyboard.OnLayoutChanged += layout => PlayerPrefs.SetInt("keyboardLayout", (int)layout);
+
+Fugui.Layout.TextInput("Login", ref login);
+Fugui.Layout.VirtualKeyboard("loginKeyboard", keyboard);
+```
+
+Dispositions:
+
+- `FuVirtualKeyboardLayout.Qwerty` et `Azerty`, changees par la touche de disposition ou `keyboard.Layout`;
+- `FuVirtualKeyboard.GetSystemLayout()` choisit AZERTY pour un clavier francais ou belge (ou un systeme francais), QWERTY sinon.
+
+Rangees, de haut en bas:
+
+- chiffres et Backspace;
+- trois rangees de lettres, la troisieme commencant par Shift; les caracteres des adresses et des logins (`. - _ @ : /`) y sont;
+- la couche de symboles remplace les lettres (dont `\` pour les logins Windows);
+- disposition, symboles, espace, `:` et Enter.
+
+Cibles (`IFuVirtualKeyboardTarget`):
+
+- `FuTextKeyboardTarget`: une string lue et ecrite par deux delegates, les caracteres vont a la fin. Pour un clavier dans la meme fenetre que l'input: le clic sur une touche retire le focus a l'input, qui affiche alors la string modifiee;
+- `FuContextKeyboardTarget`: l'input qui a le focus dans un `FuContext`, comme un clavier physique (`AddInputCharactersUTF8`, Backspace et Enter dans la queue d'inputs). Pour un clavier dessine dans un autre contexte que l'input (fenetre 3D sous une fenetre ecran, par exemple);
+- toute classe de l'application qui implemente `Insert`, `Backspace` et `Submit`.
+
+Dessin par l'application (monde 3D, pointeur propre): `keyboard.GetKeyRects(area, spacing, keys)` place les touches dans une zone, `keyboard.GetLabel(key)` et `keyboard.IsOn(key)` donnent leur texte et leur etat, `keyboard.Press(key)` applique la touche choisie. Les libelles `BackspaceLabel`, `ShiftLabel`, `SpaceLabel` et `EnterLabel` acceptent des icones.
+
+Evenements: `OnLayoutChanged`, `OnKeyPressed`, `OnSubmitted`.
+
 ## AutoGrid
 
 Le systeme AutoGrid dessine un objet a partir d'attributs.

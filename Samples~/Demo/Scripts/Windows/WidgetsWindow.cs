@@ -127,6 +127,9 @@ public class WidgetsWindow : FuWindowBehaviour
     private int chartDemoMaxPoints = 512;
     // layout surfaces
     private int layoutSurfaceDemoNavigationIndex = 0;
+    // virtual keyboard
+    private string virtualKeyboardText = "";
+    private FuVirtualKeyboard virtualKeyboard;
 #if FU_CUSTOM_MATERIALS_ENABLED
     private CustomDrawMaterialDemo _customDrawMaterialDemo;
 #endif
@@ -163,6 +166,7 @@ public class WidgetsWindow : FuWindowBehaviour
             Fugui.Layout.Collapsable("Lists", () => { drawBoxes(); });
             Fugui.Layout.Collapsable("Search and Table View", () => { drawSearchAndTableView(); });
             Fugui.Layout.Collapsable("Charts", () => { drawCharts(); });
+            Fugui.Layout.Collapsable("Virtual Keyboard", drawVirtualKeyboard);
         }
     }
 
@@ -965,6 +969,27 @@ public class WidgetsWindow : FuWindowBehaviour
             if (!_enableWidgets)
                 grid.EnableNextElements();
         }
+    }
+
+    /// <summary>
+    /// Draws a text input and a virtual keyboard that types in it (layout of the keyboard of the computer).
+    /// </summary>
+    private void drawVirtualKeyboard()
+    {
+        if (virtualKeyboard == null)
+        {
+            virtualKeyboard = new FuVirtualKeyboard(FuVirtualKeyboard.GetSystemLayout());
+            virtualKeyboard.Target = new FuTextKeyboardTarget(() => virtualKeyboardText, text => virtualKeyboardText = text);
+        }
+
+        using (var grid = new FuGrid("virtualKeyboardGrid"))
+        {
+            if (!_enableWidgets)
+                grid.DisableNextElements();
+            grid.TextInput("typed text", "click the keys below", ref virtualKeyboardText);
+        }
+
+        Fugui.Layout.VirtualKeyboard("virtualKeyboardDemo", virtualKeyboard);
     }
 
     /// <summary>

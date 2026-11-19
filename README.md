@@ -1,720 +1,167 @@
-# Fugui Unity6
+<p align="center">
+  <img src="Logo/ColorFull/FuGui_Full_Logo_256.png" width="128" alt="Fugui logo">
+</p>
 
-Fugui est un framework d'interface immediate-mode pour Unity, base sur Dear ImGui / ImGui.NET, pense pour construire des outils runtime, des interfaces dockables, des vues camera, des overlays et des panneaux UI 3D avec un cout de rendu controlable.
+<h1 align="center">Fugui</h1>
 
-Le package fournit un runtime complet: contexte ImGui Unity, renderer URP, gestion des fenetres, docking layouts sauvegardables, themes, widgets haut niveau, systeme de notifications/modales, menus contextuels, explorateur de fichiers natif, fenetres externes optionnelles, support mobile et editeur nodal.
+<p align="center">
+  <b>A production-grade Dear ImGui framework for Unity 6.</b><br>
+  Dockable tools, camera views, 3D/VR panels and mobile apps, drawn by Dear ImGui and rendered natively in URP.
+</p>
 
-## Sommaire
+<p align="center">
+  <img alt="Unity 6" src="https://img.shields.io/badge/Unity-6-000000?logo=unity">
+  <img alt="URP RenderGraph" src="https://img.shields.io/badge/URP-RenderGraph-5B8DB8">
+  <img alt="Platforms" src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android%20%7C%20iOS-8A8F98">
+  <img alt="Dear ImGui" src="https://img.shields.io/badge/built%20on-Dear%20ImGui-2b2b2b">
+</p>
 
-- [Fonctionnalites](#fonctionnalites)
-- [Structure du package](#structure-du-package)
-- [Installation](#installation)
-- [Setup Unity](#setup-unity)
-- [Premier ecran Fugui](#premier-ecran-fugui)
-- [Fenetre par MonoBehaviour](#fenetre-par-monobehaviour)
-- [Fenetre camera](#fenetre-camera)
-- [Fenetre UI 3D](#fenetre-ui-3d)
-- [Docking layouts](#docking-layouts)
-- [Themes, fonts et assets](#themes-fonts-et-assets)
-- [Widgets disponibles](#widgets-disponibles)
-- [Popups, modales, notifications et menus](#popups-modales-notifications-et-menus)
-- [Externalisation de fenetres](#externalisation-de-fenetres)
-- [Mobile et inputs](#mobile-et-inputs)
-- [Samples](#samples)
-- [Depannage](#depannage)
-- [Documentation technique](#documentation-technique)
+<p align="center">
+  <img src="Documentation~/media/overview.jpg" alt="Fugui demo scene: widgets, nodal editor, inspector, tree explorer and settings, all docked in one Unity runtime window">
+</p>
 
-## Fonctionnalites
+Fugui is not a debug overlay. It uses [Dear ImGui](https://github.com/ocornut/imgui) as a low-level drawing and layout engine, and builds on top of it everything you need to ship **real software** inside Unity: docking with saved layouts, multi-instance windows, camera views, world-space and VR panels, windows you can drag out to another monitor, themes, high-level widgets, a nodal editor, touch input for mobile, and tight control over how often each piece of UI is redrawn.
 
-- UI immediate-mode basee sur Dear ImGui, exposee via `Fu.Fugui`, `Fu.Framework.FuLayout` et `Fu.Framework.FuGrid`.
-- Fenetres dockables, closables, multi-instances, externalisables et configurables par `FuWindowDefinition`.
-- Gestion de performance par etat de fenetre: idle FPS configurable, manipulating FPS global, FPS max global, redraw force.
-- Docking layouts persistants en `.fdl`, indexes JSON et outil Unity Editor de creation/edition (`Tools > Fugui > Editor`, onglets `Layouts` et `Window Names`).
-- Themes Fugui en `.fskin`, chargement depuis `StreamingAssets`, theme manager et couleurs extensibles.
-- Widgets haut niveau: texte enrichi, boutons, groupes de boutons, checkbox, toggles, sliders, ranges, drags, knobs, combobox, listbox, color picker, gradient, image, tree, tabs, date/time, progress bar, loaders, video player, path fields.
-- Layouts ergonomiques: `FuLayout` pour les widgets libres, `FuGrid` pour formulaires et inspectors responsives, `FuPanel` pour zones scrollables.
-- Fenetres camera avec render texture, MSAA, supersampling, FPS camera idle/manipulation et raycast depuis la vue camera.
-- Panneaux UI 3D en world-space avec resolution fixe ou calculee depuis la taille du panneau, scaling de contexte et resizing runtime.
-- Surfaces Fugui world-space via `Fugui.World.Surface`, rendues en mesh URP depuis une `FuDrawList` generique.
-- Overlays ancrables, deplacables, collapsables, avec points d'ancrage et offsets.
-- Modales, notifications, popup messages et popups custom.
-- Menus contextuels empilables, sous-menus, images et shortcuts.
-- Systeme de drag and drop generique avec payload typable.
-- Editeur nodal: graphe, nodes, ports, edges, registry de types, minimap, clipboard, serialization JSON.
-- File browser natif via `FileBrowser` et `ExtensionFilter`.
-- Support d'inputs par contexte/fenetre: clavier, souris, raycasting 3D, touch/mobile.
-- Integration URP via `FuguiRenderFeature`.
-- Bindings et plugins embarques: ImGui.NET, ImNodes, ImPlot, ImGuizmo, OpenTK, SDL2, Triangle, SharpFont, Ookii dialogs, Newtonsoft.Json.
+It has been in production for years: it is the interface of **Dragonfly**, the real-time 3D viewer used at **Airbus Defence and Space** for satellite, aircraft and helicopter projects, and of every application I build.
 
-## Structure du package
+---
 
-```text
-Runtime/
-  Fugui.cs                       API globale, lifecycle, contexts, windows, inputs, drag/drop
-  FuController.cs                composant d'initialisation et de boucle Update/Render
-  Core/
-    Containers/                  containers main, 3D, external, scaling
-    Contexts/                    contextes ImGui Unity/external, textures, fonts
-    Inputs/                      clavier, souris, raycasting, etats d'input
-    Mobile/                      scroll/touch mobile
-    Rendering/                   render features URP, draw data, draw lists
-    StandaloneFileBrowser/       open/save file/folder panels
-    UnityConfiguration/          fonts, cursors, configs ScriptableObject
-    Windows/                     FuWindow, FuCameraWindow, FuOverlay, definitions
-  Framework/
-    Behaviours/                  MonoBehaviours de fenetres et fenetres 3D
-    Grid/                        FuGrid, AutoGrid et attributs
-    Layouts/                     dockspaces et layout manager
-    MainMenu/                    barre de menu globale
-    NodalSystem/                 graphe nodal, editor, serialization
-    World/                       surfaces draw-list rendues directement en world-space
-    Styles/                      styles predefinis
-    Themes/                      theme manager et couleurs
-    Widgets/                     widgets de haut niveau
-  Resources/                     shaders, images, cursors, prefab controller, FontConfig
-StreamingAssets/Fugui/
-  Fonts/                         polices runtime et icones
-  Layouts/                       layouts `.fdl` et `layouts_index.json`
-  Themes/                        themes `.fskin` et `themes_index.json`
-Samples~/Demo/                   scene demo, fenetres, nodal editor, materiaux
-Logo/                            logos Fugui
+## Why Fugui
+
+Dear ImGui is the best way to write tools fast. Bringing it into Unity for a product, not just for debug, raises questions the existing bindings don't answer: how do you dock and restore layouts, render into a camera view or a VR panel, run on a phone, theme it like a real product, and keep the UI from eating the frame budget of a heavy 3D scene?
+
+Fugui answers them in one package:
+
+- **Software first, games welcome.** Designed for 3D tools, viewers, editors and dashboards. Also used for full game UIs.
+- **You pay only for what you see.** Each window has its own redraw rate. Static UI can be frozen and replayed from cached draw commands. Hidden parts cost nothing.
+- **Unity-native rendering.** Draw lists go straight through a URP `ScriptableRendererFeature` (RenderGraph, Unity 6), with optional custom materials per draw command.
+- **Easy to write, easy to maintain.** Immediate-mode code, plus `FuLayout` and `FuGrid` for clean, responsive inspectors and forms in a few lines.
+- **Made to be customized.** Full theme system, multiple fonts, icon fonts, custom headers, custom shaders.
+
+## What you get
+
+### Windows, docking and layouts
+- Dockable, closable, multi-instance windows declared once with `FuWindowDefinition`.
+- Custom docking system with tabs and groups; layouts saved to files and edited from a Unity editor tool.
+- **Externalized windows**: drag a window out of the app and it becomes a real OS window on another screen (SDL2 / OpenGL).
+- Overlays anchored inside windows, custom window headers and footers, modal dialogs, notifications, multi-level context menus.
+
+<p align="center">
+  <img src="Documentation~/media/docs_charts.jpg" alt="Widgets, sortable table view, charts and the in-app documentation window">
+</p>
+
+### Camera views and 3D / VR panels
+- **Camera windows**: any Unity camera rendered inside a Fugui window, with supersampling, MSAA, its own FPS and raycasting from the view.
+- **3D windows**: Fugui windows placed in the scene as world-space panels, optionally curved, movable and resizable at runtime, interactive with a raycaster, usable in VR.
+- **World surfaces**: draw Fugui draw lists directly in world space for labels, markers and diegetic panels, without a full window.
+
+<p align="center">
+  <img src="Documentation~/media/camera_window_3d.jpg" width="45%" alt="Camera window with overlays: camera at 57 FPS, UI at 504 FPS">
+  &nbsp;
+  <img src="Documentation~/media/nodal_editor.jpg" width="50%" alt="Typed nodal editor with minimap">
+</p>
+
+### Widgets
+- Text with smart formatting, buttons and button groups, checkboxes, toggles, radio buttons, sliders, ranges, drags, knobs, combo boxes, list boxes, tabs.
+- Color picker, gradient editor, images, video player, date and time pickers, file and folder fields with native dialogs, progress bars and loaders.
+- **Search box and sortable, filterable table view.**
+- **Charts**: lines, bars, points, custom series, hover state, thousands of points.
+- **Tree explorer** with icons, states, search and selection.
+- **Nodal editor**: typed ports, graph registry, minimap, clipboard, JSON serialization.
+- **`FuGrid` and `FuLayout`**: aligned label/value rows, fixed, proportional or responsive columns. This is what makes inspectors pleasant to write.
+
+<p align="center">
+  <img src="Documentation~/media/tree.jpg" height="420" alt="Tree explorer">
+  &nbsp;
+  <img src="Documentation~/media/context_menu.jpg" width="40%" alt="Multi-level context menu with images, sections and shortcuts">
+</p>
+
+### Themes and fonts
+- Complete themes switchable at runtime, a theme editor, and your own colors added to the theme system.
+- Several fonts and sizes at once, icon fonts (regular and duotone), hot reload of the font atlas, baked atlases for fast startup.
+
+<p align="center">
+  <img src="Documentation~/media/themes.jpg" alt="The same inspector in five built-in themes: DarkSky, DarkFlight, DarkEmerald, DarkCrimson, LightClear">
+</p>
+
+### Performance
+- **Per-window frame rate**: idle FPS, manipulation FPS and a global max FPS. A window that doesn't change doesn't redraw.
+- **Frozen UI**: any static block can be captured after a few frames and replayed from its cached draw commands.
+- **Draw-list-only mode** and reduced per-frame allocations in the render path; optimized unsafe code for font glyphs.
+- **Baked and shared font atlases**, pooled resources for 3D windows.
+- In the demo scene above, the UI renders at **500+ FPS** while the 3D camera view runs at its own pace.
+
+### Platforms and input
+- Windows (x86, x64, ARM64), macOS, Linux, **Android and iOS**.
+- Touch-first input on mobile: scrolling, drag thresholds, larger hit areas. A mobile demo app is included.
+- Keyboard, mouse, raycast and touch input handled per context and per window; Unity Input Manager or Input System.
+
+### Editor tooling
+- Setup wizard that checks and fixes your project (controller, URP feature, assets, fonts).
+- Editors for docking layouts and window names, font atlas baking, real-time window preview.
+
+## Used in production
+
+| Project | What it is |
+|---|---|
+| **Dragonfly**, Airbus Defence and Space | Real-time 3D viewer for satellites, aircraft and helicopters: heavy CAD models, exploded views, cuts, measurements, annotations, VR, remote control API. The whole interface is Fugui. |
+| **VR cockpit flight simulator** | Flight training in VR, seated inside the cockpit. Fugui drives both the flat 2D interface and the in-cockpit 3D/VR interfaces, on Windows, macOS, Android and Meta Quest standalone. |
+| **Aircraft configurator back-office** | The production tool behind a web aircraft and livery configurator: database binding, content generation and configuration. |
+| **Slyvek** | A tactical MMORPG. Its full game interface is built with Fugui. |
+| **Dodge From Light** | An online multiplayer speed game with a collaborative level editor. |
+
+Fugui is the UI layer of every application built at [VRDTM Studio](https://vrdtmstudio.com).
+
+## Quick start
+
+```csharp
+using Fu;
+using Fu.Framework;
+
+public class InspectorWindow : FuWindowBehaviour
+{
+    private bool _enabled = true;
+    private float _intensity = 0.5f;
+    private Color _tint = Color.white;
+
+    public override void OnUI(FuWindow window)
+    {
+        using (var grid = new FuGrid("inspector"))
+        {
+            grid.Toggle("Enabled", ref _enabled);
+            grid.Slider("Intensity", ref _intensity, 0f, 1f);
+            grid.ColorPicker("Tint", ref _tint);
+        }
+
+        if (Fugui.Layout.Button("Save"))
+            Fugui.Notify("Saved", "Settings saved", StateType.Success);
+    }
+}
 ```
+
+Add the component to a GameObject, pick its window name in the inspector, press Play: the window is created, docked according to your layout, themed, and only redrawn when needed.
 
 ## Installation
 
-### Via Unity Package Manager
+1. In Unity 6 (URP), open **Window > Package Manager > + > Add package from git URL** and paste:
+   `https://github.com/Keksls/fugui.git`
+2. Open **Tools > Fugui > Editor > Setup** and apply the suggested fixes. It adds the controller, installs the URP render feature and copies the runtime assets.
+3. Import the **Fugui Demo Scene** sample from the Package Manager to see everything above running.
 
-1. Ouvre `Window > Package Manager`.
-2. Clique sur `+ > Add package from git URL...`.
-3. Ajoute l'URL du depot Fugui.
-4. Verifie que le package `com.keksls.fugui` apparait dans le projet.
+Dear ImGui is used through [ImGui.NET](https://github.com/ImGuiNET/ImGui.NET) and cimgui native libraries, shipped for every supported platform. ImPlot, ImNodes and ImGuizmo bindings are included.
 
-### Via dossier local
+## Documentation
 
-1. Copie le dossier du package dans `Packages/` ou `Assets/`.
-2. Si le package est dans `Assets/`, garde les dossiers `Runtime`, `StreamingAssets`, `Samples~` et `Logo` ensemble.
-3. Laisse Unity importer les `.meta`.
+- **Full guide** (setup, windows, camera and 3D windows, world surfaces, docking, themes, widgets, popups, externalization, mobile): [Documentation~/Guide_FR.md](Documentation~/Guide_FR.md) (in French, English version in progress).
+- **Technical documentation**: [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md).
 
-### Dependances
+## License and contributing
 
-Le package declare `com.unity.postprocessing` en dependance. L'assembly `Runtime/Fugui.asmdef` reference aussi plusieurs assemblies precompilees embarquees dans `Runtime/Plugins`.
+Fugui is free and open source under the [MIT License](LICENSE).
+Contributions are welcome through pull requests, reviewed and merged by the maintainer: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Le rendu principal est prevu pour URP avec `FuguiRenderFeature`.
+## Credits
 
-## Setup Unity
+Fugui is built on [Dear ImGui](https://github.com/ocornut/imgui) by Omar Cornut and contributors, through [ImGui.NET](https://github.com/ImGuiNET/ImGui.NET) and [cimgui](https://github.com/cimgui/cimgui).
 
-### Setup automatique
-
-Ouvre `Tools > Fugui > Editor`, puis l'onglet `Setup`, pour diagnostiquer le projet et appliquer les correctifs courants: ajout du prefab `FuguiController`, installation/reparation de `FuguiRenderFeature` sur le renderer URP actif, copie de `StreamingAssets/Fugui`, verification des fonts et conseil sur l'input handling.
-
-### 1. Ajouter le controller
-
-Ajoute le prefab `Runtime/Resources/FuguiController.prefab` dans ta scene, ou cree un GameObject avec `FuController`.
-
-Configure dans l'inspector:
-
-- `Settings`: instance de `FuSettings`.
-- `UI Camera`: camera qui rend le container principal Fugui.
-- `Update Mode`: `Update`, `LateUpdate` ou `Manual`.
-- `Log Errors`: log les exceptions UI via `Fugui.OnUIException`.
-
-Au `Awake`, `FuController` initialise Fugui, cree le contexte Unity principal, le container principal, les managers de themes/layouts, puis appelle `FuguiAwake` sur les MonoBehaviours de la scene.
-
-### 2. Ajouter le renderer URP
-
-Dans ton URP Renderer:
-
-1. Ajoute `FuguiRenderFeature`.
-2. Assigne le shader Fugui URP (`Runtime/Resources/Shaders/Fugui_URP_Mesh.shader`).
-3. Regle `_cameraLayer` pour correspondre au layer de la camera UI. La valeur par defaut est `5` (layer UI Unity).
-
-La render feature execute les draw lists Fugui apres les transparents, rend le contexte principal sur la camera active et les contextes offscreen dans leurs render textures.
-
-Pour les surfaces world-space:
-
-1. Ajoute aussi `FuguiWorldRenderFeature`.
-2. Assigne le shader world (`Runtime/Resources/Shaders/Fugui_URP_WorldMesh.shader`).
-3. Ajoute `FuguiWorldRenderCamera` sur chaque camera de scene qui doit voir les surfaces world Fugui.
-
-`FuguiWorldRenderFeature` ne rend pas sur toutes les cameras par defaut. Elle ne dessine que dans les cameras explicitement enregistrees par `FuguiWorldRenderCamera`.
-
-### 3. Configurer les assets runtime
-
-Les assets de runtime attendus sont dans `Runtime/Resources` et `StreamingAssets/Fugui`:
-
-- `FontConfig.asset`: configuration des tailles et polices.
-- `StreamingAssets/Fugui/Fonts/current/`: `regular.ttf`, `bold.ttf`, `icons.ttf`.
-- `StreamingAssets/Fugui/Themes/`: themes `.fskin`.
-- `StreamingAssets/Fugui/Layouts/`: layouts `.fdl`.
-- `Runtime/Resources/Cursors/`: packs de cursors.
-- `Runtime/Resources/Images/`: icons de notification et fallback texture.
-
-## Premier ecran Fugui
-
-Le chemin recommande est de declarer une definition de fenetre, puis de l'instancier.
-
-```csharp
-using Fu;
-using Fu.Framework;
-using UnityEngine;
-
-public class MyFuguiBootstrap : MonoBehaviour
-{
-    private static readonly FuWindowName Tools =
-        new FuWindowName(100, "Tools", true, -1);
-
-    private void Start()
-    {
-        new FuWindowDefinition(
-            Tools,
-            DrawTools,
-            size: new Vector2Int(360, 240),
-            flags: FuWindowFlags.Default
-        );
-
-        Fugui.CreateWindow(Tools);
-    }
-
-    private void DrawTools(FuWindow window)
-    {
-        Fugui.Layout.Text("Hello Fugui");
-
-        if (Fugui.Layout.Button("Force redraw"))
-        {
-            window.ForceDraw();
-        }
-    }
-}
-```
-
-## Fenetre par MonoBehaviour
-
-Pour une fenetre maintenable dans Unity, derive de `FuWindowBehaviour`.
-
-```csharp
-using Fu;
-using Fu.Framework;
-
-public class InventoryWindow : FuWindowBehaviour
-{
-    private bool _enabled = true;
-    private float _weight = 12.5f;
-
-    public override void OnUI(FuWindow window)
-    {
-        using (new FuPanel("inventory-panel", FuStyle.Unpadded))
-        using (var grid = new FuGrid("inventory-grid"))
-        {
-            grid.CheckBox("Enabled", ref _enabled);
-            grid.Slider("Weight", ref _weight, 0f, 100f);
-            grid.ProgressBar("Capacity", _weight / 100f);
-        }
-    }
-}
-```
-
-Dans l'inspector, `FuWindowBehaviourEditor` affiche une popup de `FuWindowName`, les flags, la taille, la position et l'option `Force Create Alone On Awake`.
-
-## Fenetre camera
-
-Derive de `FuCameraWindowBehaviour` pour afficher une camera dans une fenetre Fugui.
-
-```csharp
-using Fu;
-using Fu.Framework;
-using UnityEngine;
-
-public class SceneViewWindow : FuCameraWindowBehaviour
-{
-    public override void OnWindowCreated(FuWindow window)
-    {
-        CameraWindow.ForceRenderCamera();
-    }
-
-    public override void OnWindowDefinitionCreated(FuWindowDefinition definition)
-    {
-        definition.SetHeaderUI((win, size) =>
-        {
-            Fugui.Layout.CenterNextItemH("Scene View");
-            Fugui.Layout.Text("Scene View");
-        }, 24f);
-    }
-
-    public override void OnUI(FuWindow window)
-    {
-        Fugui.Layout.Text("Overlay UI below/above the camera view");
-    }
-}
-```
-
-Pour remplacer le title bar Fugui par ton propre header sur les fenetres flottantes, utilise:
-
-```csharp
-definition.SetWindowDecorationUI(DrawCustomHeader, 32f);
-// equivalent:
-definition.SetHeaderUI(DrawCustomHeader, 32f, overrideWindowDecorations: true);
-```
-
-Le header custom conserve la zone de drag/docking. Les fenetres dockees gardent leur tab bar de Fugui.Layout.
-
-`FuCameraWindow` gere:
-
-- camera source;
-- FPS idle et FPS manipulation;
-- supersampling;
-- MSAA;
-- ray camera via `GetCameraRay()`;
-- `ForceRenderCamera()`;
-- headers/footers de fenetre.
-
-## Fenetre UI 3D
-
-`Fu3DWindowBehaviour` permet d'attacher une fenetre Fugui a un panneau world-space.
-
-Fonctionnement:
-
-- le transform sert de placeholder;
-- `scale.x` et `scale.y` pilotent la taille du panneau;
-- `Depth` pilote l'epaisseur;
-- `CreateExtrudedPanelMesh` active/desactive le mesh de backing extrude; false garde seulement le mesh render texture;
-- `Render Resolution` pilote la resolution texture/contexte;
-- le container peut etre resizable runtime;
-- le context scale et font scale peuvent etre fixes ou derives d'un scaler.
-
-Creation par API:
-
-```csharp
-FuWindow window = Fugui.CreateWindow(MyWindowNames.Tools, autoAddToMainContainer: false);
-
-Fu3DWindowSettings settings = Fu3DWindowSettings.FixedResolutionMatchingPanelAspect(
-    panelSize: new Vector2(1.2f, 0.8f),
-    referenceResolution: new Vector2Int(1024, 768),
-    referencePanelSize: new Vector2(1.2f, 0.8f),
-    contextScale: 1f,
-    fontScale: 1f,
-    createExtrudedPanelMesh: false
-);
-
-Fu3DWindowContainer container = Fugui.Add3DWindow(
-    window,
-    settings,
-    position: new Vector3(0f, 1.5f, 2f),
-    rotation: Quaternion.identity
-);
-```
-
-## Surfaces Fugui World
-
-`Fugui.World.Surface` permet de dessiner des primitives `FuDrawList` directement en world-space sans creer une fenetre Fugui complete et sans passer par un contexte offscreen.
-
-Usage typique:
-
-- labels et marqueurs 3D;
-- overlays de debug dans la scene;
-- petits panneaux diegetiques;
-- informations au-dessus d'un objet ou d'un point de raycast.
-
-Configuration requise:
-
-- `FuguiWorldRenderFeature` dans le renderer URP actif;
-- shader `Fugui/URP_WorldMesh`;
-- `FuguiWorldRenderCamera` sur chaque camera qui doit rendre ces surfaces.
-
-Exemple:
-
-```csharp
-using (FuguiWorldSurface surface = Fugui.World.Surface(new FuguiWorldSurfaceDesc
-{
-    Position = transform.position,
-    Rotation = transform.rotation,
-    Scale = transform.lossyScale,
-    Size = new Vector2(2f, 0.5f),
-    Resolution = new Vector2Int(512, 128),
-    Pivot = FuguiWorldPivot.Center,
-    DepthMode = FuguiWorldDepthMode.Test
-}))
-{
-    FuDrawList drawList = surface.DrawList;
-    drawList.AddText(new Vector2(16f, 16f), Fugui.GetColorU32(Color.white), "World label");
-}
-```
-
-## Materiaux custom de DrawList
-
-Cette API est entierement compilee sous le scripting define symbol `FU_CUSTOM_MATERIALS_ENABLED`. Sans ce define, les types, les registres et les branches de rendu associes ne sont pas inclus.
-
-Un `FuDrawMaterial` est cree une fois puis reutilise. Le `Material` Unity reste possede par l'appelant:
-
-```csharp
-#if FU_CUSTOM_MATERIALS_ENABLED
-[SerializeField] private Material customButtonMaterial;
-private FuDrawMaterial _buttonDrawMaterial;
-
-private void Awake()
-{
-    _buttonDrawMaterial = new FuDrawMaterial(customButtonMaterial);
-}
-
-private void DrawCustomButton(FuDrawList drawList, Rect rect)
-{
-    drawList.PushMaterial(_buttonDrawMaterial);
-    try
-    {
-        drawList.AddRectFilled(
-            rect.min,
-            rect.max,
-            Fugui.GetColorU32(Color.white),
-            8f);
-    }
-    finally
-    {
-        drawList.PopMaterial();
-    }
-}
-#endif
-```
-
-`PushMaterial(material)` conserve la texture active. `PushMaterial(material, texture)` force une texture pour le scope. Les changements de texture internes a `AddImage` ou `AddText` conservent le materiau custom, les scopes peuvent etre imbriques et les commandes sont preservees par `FrozenUI`.
-
-Contrat du shader overlay:
-
-- layout vertex compatible avec `Runtime/Resources/Shaders/Common.hlsl`;
-- texture recue dans `_Texture`;
-- `_TextureIsAlpha` vaut `1` pour l'atlas de fonts;
-- blending, culling et depth states declares par le shader custom.
-
-Pour `Fugui.World`, le constructeur accepte un material world optionnel et les passes correspondant a `None`, `Test` et `TestAndWrite`. Sans material world, le renderer standard est utilise sur les surfaces world. Les fenetres externes OpenGL conservent la texture mais utilisent leur shader Fugui standard, car elles ne peuvent pas executer un `Material` Unity.
-
-## Docking layouts
-
-Fugui charge les layouts depuis `Application.streamingAssetsPath + "/" + Fugui.Settings.LayoutsFolder`.
-
-Par defaut:
-
-- `LayoutsFolder = "Fugui/Layouts"`;
-- `layouts_index.json` liste les layouts;
-- chaque layout est un fichier `.fdl`;
-- `Fugui.Layouts` est l'instance de `FuDockingLayoutManager`.
-
-Operations courantes:
-
-```csharp
-Fugui.Layouts.SetLayout("FuguiDemoScene");
-
-FuDockingLayoutDefinition generated = Fugui.Layouts.GenerateCurrentLayout();
-Fugui.Layouts.SaveLayoutFile(
-    System.IO.Path.Combine(Application.streamingAssetsPath, Fugui.Settings.LayoutsFolder),
-    generated
-);
-```
-
-Les fenetres sont associees aux dockspaces par l'ID de leur `FuWindowName`.
-
-## Themes, fonts et assets
-
-`Fugui.Themes` expose `FuThemeManager`.
-
-Fonctions importantes:
-
-- `LoadAllThemes()`;
-- `SetTheme(FuTheme theme, bool allContexts = true)`;
-- `GetTheme(string themeName, out FuTheme theme)`;
-- `SaveTheme(FuTheme theme)`;
-- `DeleteTheme(FuTheme theme)`;
-- `GetColor(FuColors color)`;
-- `GetColorU32(FuColors color)`;
-- `ExtendThemes(Enum themesExtension)` pour ajouter des couleurs metier.
-
-Les polices sont configurees avec `FontConfig`. Les glyphes d'icones respectent deux plages:
-
-- icons classiques: `0xE000` a `0xEC7E`;
-- icons duotone: `0xEC7F` a `0xF8FF`.
-
-Les atlas de polices peuvent etre bakes depuis `Tools > Fugui > Editor`, onglet `Font Atlas`. Les textures sont stockees dans `Assets/StreamingAssets/Fugui/FontAtlases/<font-hash>/scale_<scale>.png` et le runtime les recharge automatiquement quand `FontConfig.UseBakedFontAtlas` est actif. Si aucun atlas bake ne correspond au `FontScale` courant, Fugui reconstruit l'atlas en memoire comme avant.
-
-Chaque entree `FontSizeConfig` peut porter un `Name`. Deux polices peuvent donc partager la meme taille sans se remplacer; les appels sans nom utilisent `FontConfig.DefaultFontName`.
-
-Utilisation:
-
-```csharp
-Fugui.PushFont(18, FontType.Bold);
-Fugui.Layout.Text("Titre");
-Fugui.PopFont();
-
-Fugui.PushFont("Mono", 14, FontType.Regular);
-Fugui.Layout.Text("Code");
-Fugui.PopFont();
-
-Fugui.PushFont(14, "Mono");
-Fugui.Layout.Text("Code compact");
-Fugui.PopFont();
-
-Fugui.Push(FuColors.Text, Color.cyan);
-Fugui.Layout.Text("Texte colore");
-Fugui.PopColor();
-```
-
-## Widgets disponibles
-
-Les widgets sont exposes principalement sur `FuLayout` et herites par `FuGrid`.
-
-Principales familles:
-
-- Texte: `Text`, `SmartText`, `TextURL`, `ClickableText`, `FramedText`, wrapping `None`, `Clip`, `Wrap`.
-- Boutons: `Button`, `ImageButton`, `ButtonsGroup`.
-- Booleens: `CheckBox`, `Toggle`, `RadioButton`.
-- Valeurs numeriques: `Slider`, `Range`, `Drag`, `Knob`.
-- Recherche, donnees et charts: `SearchBox`, `FuSearchFilter`, `TableView`, `FuTableViewColumn<T>`, `Chart`, `FuChartSeries`, `FuChartOptions`.
-- Selection: `Combobox`, `ComboboxEnum`, `ListBox`, `Tabs`.
-- Couleurs et textures: `ColorPicker`, `Gradient`, `Image`.
-- Fichiers: `InputFile`, `InputFolder`.
-- Hierarchie: `FuTree<T>`.
-- Feedback: `ProgressBar`, loaders/spinners, notifications.
-- Video: `FuVideoPlayer`, `GetVideoPlayer`, `DrawImage`, `DrawTimeLine`.
-- UI structurelle: `FuPanel`, `FuGrid`, `Collapsable`, `Separator`, `SameLine`, `Dummy`, groups.
-
-Exemple de formulaire:
-
-```csharp
-using (var grid = new FuGrid("settings", FuGridDefinition.DefaultFixed, FuGridFlag.LinesBackground))
-{
-    grid.SetNextElementToolTipWithLabel("Active ou desactive le module");
-    grid.Toggle("Enabled", ref enabled);
-
-    grid.SetNextElementToolTip("Valeur entre 0 et 100");
-    grid.Slider("Intensity", ref intensity, 0f, 100f);
-
-    grid.ColorPicker("Tint", ref tint);
-}
-```
-
-Exemple de table filtrable:
-
-```csharp
-Fugui.Layout.SearchBox("assets-search", ref search, "Search assets...");
-
-Fugui.Layout.TableView(
-    "assets-table",
-    assets,
-    new[]
-    {
-        new FuTableViewColumn<AssetInfo>("Name", item => item.Name),
-        new FuTableViewColumn<AssetInfo>("Type", item => item.Type),
-        new FuTableViewColumn<AssetInfo>("Size", item => item.SizeKb.ToString("0") + " KB", 80f,
-            sortComparison: (a, b) => a.SizeKb.CompareTo(b.SizeKb))
-    },
-    ref selectedAssetIndex,
-    search,
-    height: 240f,
-    flags: FuTableViewFlags.Default | FuTableViewFlags.ScrollY);
-```
-
-Exemple de chart drawlist:
-
-```csharp
-var series = new List<FuChartSeries>()
-{
-    new FuChartSeries("Signal", signalPoints, FuChartSeriesType.Line)
-    {
-        LineThickness = 2.25f,
-        ShowPoints = false
-    },
-    new FuChartSeries("Volume", volumePoints, FuChartSeriesType.Bar)
-    {
-        FillAlpha = 0.70f,
-        Baseline = 0f
-    },
-    FuChartSeries.Custom("Band", (ctx, s) =>
-    {
-        Vector2 a = ctx.ToScreen(new Vector2(10f, ctx.Min.y));
-        Vector2 b = ctx.ToScreen(new Vector2(20f, ctx.Max.y));
-        ctx.DrawList.AddRectFilled(new Vector2(a.x, b.y), new Vector2(b.x, a.y),
-            Fugui.Themes.GetColorU32(FuColors.TextInfo, 0.12f));
-    })
-};
-
-var options = new FuChartOptions()
-{
-    Size = new FuElementSize(-1f, 260f),
-    Flags = FuChartFlags.Default,
-    MaxRenderedPointsPerSeries = 2048
-};
-options.XAxis.SetRange(0f, 120f);
-options.YAxis.SetAutoRange(includeZero: true);
-
-FuChartHoverState hover;
-Fugui.Layout.Chart("runtime-chart", series, options, out hover);
-```
-
-## Popups, modales, notifications et menus
-
-### Popup custom
-
-```csharp
-if (Fugui.Layout.Button("Options"))
-{
-    Fugui.OpenPopUp("options-popup", () =>
-    {
-        Fugui.Layout.Text("Options");
-        Fugui.Layout.CheckBox("Enabled", ref enabled);
-    }, new Vector2(240f, 120f));
-}
-
-Fugui.DrawPopup("options-popup");
-```
-
-Le cache de rendu est aussi disponible pour n'importe quel bloc UI statique:
-
-```csharp
-try
-{
-    if (Fugui.BeginFrozenUI("static-help", nbFrameBeforeCache: 3))
-    {
-        DrawStaticHelp();
-    }
-}
-finally
-{
-    Fugui.EndFrozenUI();
-}
-
-Fugui.InvalidateFrozenUI("static-help");
-```
-
-`BeginFrozenUI` dessine le bloc en live pendant les premieres frames, puis rejoue les draw commands capturees. Le cache est purge automatiquement quand le bloc n'est plus soumis pendant les frames configurees.
-
-### Modale
-
-```csharp
-Fugui.ShowWarning(
-    "Confirmer",
-    "Cette action modifie la scene.",
-    FuModalSize.Medium,
-    new FuModalButton("OK", () => Apply(), FuButtonStyle.Warning),
-    new FuModalButton("Cancel")
-);
-```
-
-`FuModalFlags.NoTitleBar` et `FuModalFlags.NoFooterBar` peuvent etre passes apres la taille pour masquer le titre ou le footer:
-
-```csharp
-Fugui.ShowModal("Progress", DrawProgress, FuModalSize.Small, FuModalFlags.NoTitleBar | FuModalFlags.NoFooterBar);
-```
-
-### Notification
-
-```csharp
-Fugui.Notify("Sauvegarde", "Layout enregistre", StateType.Success, duration: 2f);
-```
-
-### Menu contextuel
-
-```csharp
-List<FuContextMenuItem> items = FuContextMenuBuilder.Start()
-    .AddItem("Duplicate", DuplicateSelection)
-    .AddSeparator()
-    .BeginChild("Advanced")
-    .AddItem("Reset", ResetSelection)
-    .EndChild()
-    .Build();
-
-Fugui.PushContextMenuItems(items);
-Fugui.Layout.Text("Right click me");
-Fugui.TryOpenContextMenuOnItemClick();
-Fugui.PopContextMenuItems();
-```
-
-## Externalisation de fenetres
-
-L'externalisation permet de sortir une fenetre Fugui du container Unity vers une fenetre native separee.
-
-Pour l'activer:
-
-1. Ajoute le scripting define symbol `FU_EXTERNALIZATION`.
-2. Verifie que `FuSettings.EnableExternalizations` est actif.
-3. Configure les flags `FuExternalWindowFlags` si besoin.
-
-```csharp
-FuWindow window = Fugui.CreateWindow(MyWindowNames.Tools);
-window.Externalize();
-window.Internalize();
-```
-
-Sans `FU_EXTERNALIZATION`, les appels affichent un message indiquant d'ajouter le define.
-
-## Mobile et inputs
-
-Sur Android/iOS, le code active `FUMOBILE` et adapte:
-
-- touch scrolling;
-- begin/end child avec scrolling mobile;
-- seuils mobile (`DragThresholdMobile`, `ClickMaxDistMobile`);
-- etat input via `InputSystemPlatform` / `InputManagerPlatform`.
-
-Pour interroger les inputs Fugui:
-
-```csharp
-if (Fugui.GetKeyDown(FuKeysCode.Enter))
-{
-    Debug.Log("Enter dans un contexte Fugui");
-}
-
-FuMouseState mouse = Fugui.GetCurrentMouse();
-```
-
-## Samples
-
-Le dossier `Samples~/Demo` contient:
-
-- `WidgetsWindow`: showcase des widgets, panels, grids, sliders, drags, loaders, text, combobox, listbox.
-- `CameraWindow`: fenetre camera, overlays, header/footer, raycast dans la vue camera.
-- `InspectorWindow`: inspector runtime pour transform/camera.
-- `TreeWindow`: `FuTree<T>` avec selection, suppression et clipping.
-- `PopupsWindow`: modales, notifications, menus contextuels, popups.
-- `NodalEditorDemo`: graphe nodal, types, nodes variables/math, minimap, save/load JSON.
-- `FuWindowsNames`: registre de noms de fenetres de demo.
-
-Le dossier `Samples~/MobileDemo` contient:
-
-- `MobileDemoBootstrap`: comportement `FuWindowBehaviour` qui cree une appli mobile de demo type smart home au Play Mode, avec header/footer Fugui, navigation basse, dashboard, rooms/devices filtrables, timeline, panels scrollables, charts, sliders/toggles tactiles, modales et notifications.
-- `FuMobileDemoWindowNames`: registre du nom de fenetre `Mobile Demo`.
-
-Le sample package reference `Samples~/Demo` et `Samples~/MobileDemo` dans `Package.json`.
-
-## Depannage
-
-### Rien ne s'affiche
-
-- Verifie que `FuController` est present et que `UI Camera` est renseignee.
-- Verifie que la camera UI est sur le layer attendu par `FuguiRenderFeature._cameraLayer`.
-- Verifie que `FuguiRenderFeature` est ajoutee au renderer URP.
-- Verifie que le shader Fugui URP est assigne.
-- Verifie que la fenetre est bien creee (`Fugui.CreateWindow`) ou auto-instanciee par un Fugui.Layout.
-
-### Erreurs de police ou glyphes manquants
-
-- Verifie `FontConfig.asset`.
-- Verifie `StreamingAssets/Fugui/Fonts/current`.
-- Pour les icones custom, respecte les ranges de glyphes documentees dans `FontConfig`.
-
-### Layout non charge
-
-- Verifie `StreamingAssets/Fugui/Layouts/layouts_index.json`.
-- Verifie que les `.fdl` listes existent.
-- Verifie `FuSettings.LayoutsFolder`.
-
-### Theme non charge
-
-- Verifie `StreamingAssets/Fugui/Themes/themes_index.json`.
-- Verifie que les `.fskin` listes existent.
-- Verifie `FuSettings.ThemesFolder`.
-
-### Externalisation inactive
-
-- Ajoute `FU_EXTERNALIZATION` aux scripting define symbols.
-- Verifie les plugins SDL/OpenTK dans `Runtime/Plugins`.
-- Verifie `FuSettings.EnableExternalizations`.
-
-## Documentation technique
-
-La documentation technique complete est dans [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md).
+Created and maintained by Kévin Bouetard ([VRDTM Studio](https://vrdtmstudio.com)), Unity / C# developer and former lead developer of Dragonfly.

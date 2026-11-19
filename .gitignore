@@ -1,1 +1,4 @@
 .vs/
+.codex_tools/
+.agents/
+.DS_Store

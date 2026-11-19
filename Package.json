@@ -2,7 +2,8 @@
   "name": "com.keksls.fugui",
   "version": "0.1.2",
   "displayName": "Fugui Unity6",
-  "description": "Imediate GUI Framework for Unity based on https://github.com/ocornut/imgui.",
+  "description": "Dear ImGui framework for Unity 6 (URP): docking, camera and 3D/VR windows, themes, nodal editor, charts, mobile. Based on https://github.com/ocornut/imgui.",
+  "license": "MIT",
   "keywords": [
     "fugui",
     "dear imgui",

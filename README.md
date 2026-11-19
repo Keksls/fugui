@@ -112,6 +112,17 @@ Fugui answers them in one package:
 
 Fugui is the UI layer of every application built at [VRDTM Studio](https://vrdtmstudio.com).
 
+### Tool UI: Dragonfly
+
+**Dragonfly** is the real-time 3D viewer used at Airbus Defence and Space for satellite, aircraft and helicopter projects. Its entire interface is Fugui: scene tree, inspectors with live parameters, materials library, displacement, alignment and explode tools, galactic rendering controls, metadata, replay and recording, a guided features tour, docked around the 3D view with performance and quality modes.
+
+<p align="center">
+  <img src="Documentation~/media/dragonfly_tools.jpg" alt="Dragonfly: scene tree, displacement and explode tools, transform gizmo, materials library and replay panel around the 3D view">
+</p>
+<p align="center">
+  <img src="Documentation~/media/dragonfly_space.jpg" alt="Dragonfly: galactic rendering with the Earth and the Sun, scene tree, inspector with cylinder settings and planet controls">
+</p>
+
 ### Game UI: Slyvek
 
 Fugui is designed for software first, but it is not limited to tools. Every screen of **Slyvek**, a tactical MMORPG, is drawn with Fugui: server selection, character creation, character sheet, skill tree, inventory, crafting, rich tooltips, settings and chat, with a fully custom game theme.

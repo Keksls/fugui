@@ -471,6 +471,29 @@ namespace Fu
         {
             ImGuiNative.ImDrawList_AddRectFilledMultiColor((ImDrawList*)(NativePtr), p_min, p_max, col_upr_left, col_upr_right, col_bot_right, col_bot_left);
         }
+        /// <summary>
+        /// Adds a filled triangle with a color at each corner, blended across it: gradients of any shape (fans, rings)
+        /// </summary>
+        /// <param name="p1">first corner</param>
+        /// <param name="p2">second corner</param>
+        /// <param name="p3">third corner</param>
+        /// <param name="col1">color of the first corner</param>
+        /// <param name="col2">color of the second corner</param>
+        /// <param name="col3">color of the third corner</param>
+        public void AddTriangleFilledMultiColor(Vector2 p1, Vector2 p2, Vector2 p3, uint col1, uint col2, uint col3)
+        {
+            // fully transparent: nothing to draw
+            if (((col1 | col2 | col3) & 0xFF000000u) == 0)
+            {
+                return;
+            }
+
+            Vector2 uv = ImGui.GetFontTexUvWhitePixel();
+            PrimReserve(3, 3);
+            PrimVtx(p1, uv, col1);
+            PrimVtx(p2, uv, col2);
+            PrimVtx(p3, uv, col3);
+        }
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
         public void AddText(Vector2 pos, uint col, ReadOnlySpan<char> text_begin)
         {

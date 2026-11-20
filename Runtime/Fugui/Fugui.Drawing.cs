@@ -38,6 +38,9 @@ namespace Fu
 
         private static readonly Stack<FuBackdropStyle> _backdropStack = new Stack<FuBackdropStyle>();
 
+        // secondary glyph of each duotone icon drawn by the draw list helpers, as a string
+        private static readonly Dictionary<char, string> _duotoneSecondaryGlyphs = new Dictionary<char, string>();
+
         /// <summary>
         /// Returns the current Fugui draw list.
         /// </summary>
@@ -184,6 +187,7 @@ namespace Fu
             }
 
             drawList.AddText(pos, color, text);
+            AddDuotoneSecondaryGlyphs(drawList, ImGui.GetFont(), ImGui.GetFontSize(), pos, text, color);
         }
 
         /// <summary>
@@ -233,6 +237,67 @@ namespace Fu
             }
 
             drawList.AddText(font, scaledFontSize, pos, color, text);
+            AddDuotoneSecondaryGlyphs(drawList, font, scaledFontSize, pos, text, color);
+        }
+
+        /// <summary>
+        /// Draws the secondary glyph of each duotone icon of a single line text already drawn with a font: the glyph that
+        /// follows the icon in the font, after the width of the text before the icon, in the color of the text with its
+        /// red, green and blue at 90% (as <see cref="GetSecondaryDuotoneColor(bool)"/> does for a custom text color)
+        /// </summary>
+        /// <param name="drawList">draw list the text was drawn into</param>
+        /// <param name="font">font of the text</param>
+        /// <param name="fontSize">size the text was drawn at</param>
+        /// <param name="pos">position of the text</param>
+        /// <param name="text">the text</param>
+        /// <param name="color">packed color of the text</param>
+        private static void AddDuotoneSecondaryGlyphs(FuDrawList drawList, ImFontPtr font, float fontSize, Vector2 pos, string text, uint color)
+        {
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (!IsDuoToneChar(text[i]))
+                {
+                    continue;
+                }
+
+                Vector2 glyphPos = pos;
+                if (i > 0)
+                {
+                    glyphPos.x += font.CalcTextSizeA(fontSize, float.MaxValue, 0f, text.Substring(0, i)).x;
+                }
+
+                if (!_duotoneSecondaryGlyphs.TryGetValue(text[i], out string glyph))
+                {
+                    glyph = ((char)(text[i] + 1)).ToString();
+                    _duotoneSecondaryGlyphs[text[i]] = glyph;
+                }
+
+                // ImGui packs colors as ABGR: the alpha is kept, the red, green and blue are darkened
+                uint red = (color & 0xFFu) * 9u / 10u;
+                uint green = ((color >> 8) & 0xFFu) * 9u / 10u;
+                uint blue = ((color >> 16) & 0xFFu) * 9u / 10u;
+                uint secondaryColor = (color & 0xFF000000u) | (blue << 16) | (green << 8) | red;
+                drawList.AddText(font, fontSize, glyphPos, secondaryColor, glyph);
+            }
+        }
+
+        /// <summary>
+        /// Calculates the size of a single line text as <see cref="DrawText(FuDrawList, Vector2, string, uint, string, float, FontType)"/>
+        /// draws it: same font, same size, same scale of the context
+        /// </summary>
+        /// <param name="text">text to measure</param>
+        /// <param name="fontName">configured Fugui font name, null for the default one</param>
+        /// <param name="fontSize">unscaled Fugui font size</param>
+        /// <param name="fontType">configured Fugui font type</param>
+        /// <returns>the size of the text in pixels, zero without a text or a font</returns>
+        public static Vector2 CalcTextSize(string text, string fontName, float fontSize, FontType fontType = FontType.Regular)
+        {
+            if (string.IsNullOrEmpty(text) || !TryResolveDrawTextFont(fontName, fontSize, fontType, out ImFontPtr font, out float scaledFontSize))
+            {
+                return Vector2.zero;
+            }
+
+            return font.CalcTextSizeA(scaledFontSize, float.MaxValue, 0f, text);
         }
 
         /// <summary>
@@ -679,13 +744,8 @@ namespace Fu
                 // this char is Duotone, let's render secondary Glyph
                 if (IsDuoToneChar(text[i]))
                 {
-                    // get preText string
-                    char[] preTextCharArray = new char[i];
-                    for (int j = 0; j < i; j++)
-                    {
-                        preTextCharArray[j] = text[i];
-                    }
-                    string preText = new string(preTextCharArray);
+                    // get the text before the icon
+                    string preText = text.Substring(0, i);
                     // get pretext size
                     Vector2 size = CalcTextSize(preText, FuTextWrapping.None);
                     // place virtual cursor to right position

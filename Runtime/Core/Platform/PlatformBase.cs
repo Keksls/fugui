@@ -38,7 +38,9 @@ namespace Fu
         /// <returns> True if initialization was successful, false otherwise. </returns>
         internal virtual bool Initialize(ImGuiIOPtr io, ImGuiPlatformIOPtr pio, string platformName = null)
         {
+#if FUDEBUG
             Debug.Log($"Initializing platform: {platformName ?? "Unnamed"}");
+#endif
             SetBackendPlatformName(io, platformName);
             io.BackendFlags |= ImGuiBackendFlags.HasMouseCursors;
 

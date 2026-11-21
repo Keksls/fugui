@@ -3,7 +3,6 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AdaptivePerformance;
 
 namespace Fu.Framework
 {

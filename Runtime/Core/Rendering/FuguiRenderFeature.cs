@@ -1153,7 +1153,8 @@ namespace Fu
                     1f / Mathf.Max(1, fbSize.y) * Mathf.Max(1, downsample) * prefilterRadius,
                     0f,
                     0f));
-                Blitter.BlitTexture(commandBuffer, target, FullBlitScaleBias, _backdropMaterial, BackdropCopyPass);
+                // Native command buffer: Blitter has no UnsafeCommandBuffer overload before Unity 6.x (URP 17.0).
+                Blitter.BlitTexture(CommandBufferHelpers.GetNativeCommandBuffer(commandBuffer), target, FullBlitScaleBias, _backdropMaterial, BackdropCopyPass);
 
                 if (scaledBlurRadius > 0f)
                 {
@@ -1165,13 +1166,13 @@ namespace Fu
                         commandBuffer.SetGlobalFloat(_backdropBlurRadiusID, iterationRadius);
                         commandBuffer.SetRenderTarget(backdropB);
                         commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
-                        Blitter.BlitTexture(commandBuffer, backdropA, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
+                        Blitter.BlitTexture(CommandBufferHelpers.GetNativeCommandBuffer(commandBuffer), backdropA, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
 
                         commandBuffer.SetGlobalVector(_backdropBlurDirectionID, new Vector4(0f, 1f, 0f, 0f));
                         commandBuffer.SetGlobalFloat(_backdropBlurRadiusID, iterationRadius);
                         commandBuffer.SetRenderTarget(backdropA);
                         commandBuffer.SetViewport(new Rect(0f, 0f, blurWidth, blurHeight));
-                        Blitter.BlitTexture(commandBuffer, backdropB, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
+                        Blitter.BlitTexture(CommandBufferHelpers.GetNativeCommandBuffer(commandBuffer), backdropB, FullBlitScaleBias, _backdropMaterial, BackdropBlurPass);
                     }
                 }
 
